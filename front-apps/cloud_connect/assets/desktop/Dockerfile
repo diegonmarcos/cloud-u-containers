@@ -143,7 +143,8 @@ RUN pacman -S --noconfirm --needed \
     networkmanager-openconnect \
     openconnect \
     openresolv \
-    bind
+    bind \
+    rclone
 
 # ============================================================================
 # SHELLS - Fish & Zsh with shared config
@@ -205,7 +206,9 @@ RUN npm install -g \
     prettier \
     typescript-language-server \
     vscode-langservers-extracted \
-    @biomejs/biome
+    @biomejs/biome \
+    @anthropic-ai/claude-code \
+    @google/generative-ai
 
 # ============================================================================
 # DEVELOPMENT - Rust
@@ -255,16 +258,20 @@ RUN pacman -S --noconfirm --needed \
     redis
 
 # ============================================================================
-# DEVELOPMENT - Version Control & Tools
+# DEVELOPMENT - Version Control & Git Tools
 # ============================================================================
 
 RUN pacman -S --noconfirm --needed \
     git \
     git-lfs \
+    git-crypt \
     github-cli \
     lazygit \
     delta \
-    difftastic
+    difftastic \
+    tig \
+    git-absorb \
+    gitui
 
 # ============================================================================
 # USER SETUP
@@ -376,6 +383,15 @@ RUN systemctl set-default graphical.target && \
 
 # First login password change script
 COPY --chmod=755 first-login.sh /etc/profile.d/first-login.sh
+
+# Auto-clone repositories script
+COPY --chmod=755 setup-repos.sh /usr/local/bin/setup-repos
+RUN echo '/usr/local/bin/setup-repos' >> /etc/profile.d/99-setup-repos.sh && \
+    chmod +x /etc/profile.d/99-setup-repos.sh
+
+# Create Projects directory
+RUN mkdir -p /home/$USERNAME/Projects && \
+    chown $USERNAME:$USERNAME /home/$USERNAME/Projects
 
 # Startup script
 COPY --chmod=755 entrypoint.sh /entrypoint.sh

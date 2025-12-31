@@ -233,39 +233,106 @@ zi                  # Interactive selection
 
 ## Git & Version Control
 
-### Commands
+### Core Commands
 
 ```bash
-# Aliases
+# Basic operations
 g                   # git
 gs                  # git status
 ga                  # git add
 gaa                 # git add --all
 gc                  # git commit
 gcm                 # git commit -m
+gca                 # git commit --amend
 gp                  # git push
+gpf                 # git push --force-with-lease
 gpl                 # git pull
 gf                  # git fetch
+gfa                 # git fetch --all --prune
+
+# Branching
 gco                 # git checkout
 gcb                 # git checkout -b
+gsw                 # git switch
+gswc                # git switch -c
 gb                  # git branch
+gba                 # git branch -a
+gbd                 # git branch -d
+gbD                 # git branch -D
+
+# Diff & Log
 gd                  # git diff
 gds                 # git diff --staged
-gl                  # git log (short)
-gla                 # git log --all
+gdw                 # git diff --word-diff
+gl                  # git log --oneline -15
+gla                 # git log --all --graph
+glp                 # git log -p
+
+# Stash
 gst                 # git stash
 gstp                # git stash pop
-lg                  # lazygit (TUI)
+gstl                # git stash list
+gsts                # git stash show -p
 ```
 
-### Tools
+### TUI Tools
 
-| Tool | Description |
-|------|-------------|
-| lazygit | TUI git client |
-| gh | GitHub CLI |
-| delta | Diff highlighter |
-| difftastic | Structural diff |
+```bash
+lg                  # lazygit (recommended)
+gui                 # gitui (fast alternative)
+tig                 # tig (text-mode interface)
+tiga                # tig --all (all branches)
+```
+
+### Advanced Tools
+
+```bash
+# Git absorb - auto-fixup commits
+gab                 # git absorb
+gabr                # git absorb --and-rebase
+
+# Git crypt - transparent encryption
+gcrypt              # git-crypt
+gcl                 # git-crypt lock
+gcu                 # git-crypt unlock
+
+# Utilities
+gwip                # Quick WIP commit
+gunwip              # Undo last commit (keep changes)
+gundo               # Soft reset last commit
+gamend              # Amend without editing message
+gclean              # Clean untracked files
+greset              # Hard reset to HEAD
+grebase             # Interactive rebase
+gcp                 # Cherry-pick
+gref                # Reflog
+```
+
+### GitHub CLI
+
+```bash
+ghpr                # gh pr create
+ghprl               # gh pr list
+ghprv               # gh pr view
+ghprc               # gh pr checkout
+ghis                # gh issue list
+ghic                # gh issue create
+ghrepo              # gh repo view --web
+```
+
+### Tools Reference
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| **lazygit** | `lg` | Full-featured TUI git client |
+| **gitui** | `gui` | Blazing fast TUI for git |
+| **tig** | `tig` | Text-mode interface for git |
+| **git-crypt** | `gcrypt` | Transparent file encryption in git |
+| **git-absorb** | `gab` | Automatically absorb staged changes |
+| **git-lfs** | `git lfs` | Large file storage |
+| **delta** | (auto) | Syntax-highlighting pager for diffs |
+| **difftastic** | `difft` | Structural diff tool |
+| **gh** | `gh` | GitHub CLI |
 
 ---
 
@@ -288,6 +355,72 @@ dprune              # docker system prune -af
 podman              # Docker alternative
 buildah             # Container builder
 ```
+
+---
+
+## AI Assistants
+
+### Claude CLI (Anthropic)
+
+```bash
+claude              # Start Claude Code CLI
+ai                  # Alias for claude
+
+# Usage
+claude "explain this code"
+claude -f file.py "review this"
+```
+
+### Gemini (Google)
+
+```bash
+gemini              # Start Gemini CLI
+
+# Requires API key setup
+export GEMINI_API_KEY="your-key"
+```
+
+---
+
+## Cloud Storage (rclone)
+
+### Commands
+
+```bash
+rc                  # rclone
+rcconfig            # rclone config (setup remotes)
+rcls                # rclone ls (list files)
+rclsd               # rclone lsd (list directories)
+rccopy              # rclone copy
+rcsync              # rclone sync
+rcmount             # rclone mount
+rccheck             # rclone check
+rcsize              # rclone size
+```
+
+### Common Usage
+
+```bash
+# Configure a new remote
+rclone config
+
+# List remotes
+rclone listremotes
+
+# Sync local to cloud
+rclone sync ~/Documents remote:backup/Documents
+
+# Mount cloud storage
+rclone mount remote:folder ~/mnt/cloud --daemon
+
+# Copy with progress
+rclone copy -P local/folder remote:folder
+```
+
+### Supported Providers
+
+Google Drive, Dropbox, OneDrive, S3, Backblaze B2, Mega, pCloud,
+Nextcloud, WebDAV, SFTP, and 40+ more.
 
 ---
 
