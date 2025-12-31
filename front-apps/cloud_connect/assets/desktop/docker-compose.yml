@@ -1,0 +1,101 @@
+version: '3.8'
+
+# Cloud Desktop - KDE Plasma in Docker
+# Resource limits are set dynamically via environment variables
+# CLOUD_MEM_LIMIT: 90% of system RAM
+# CLOUD_MEMSWAP_LIMIT: 180% of system RAM (mem + swap = 2x mem)
+# CLOUD_CPUS: 90% of available CPUs
+
+services:
+  kde-desktop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cloud-desktop
+    hostname: cloud-desktop
+
+    # Privileged for hardware access
+    privileged: true
+
+    # Security options for desktop
+    security_opt:
+      - seccomp:unconfined
+
+    # Device access
+    devices:
+      - /dev/dri:/dev/dri          # GPU
+      - /dev/snd:/dev/snd          # Audio
+      - /dev/input:/dev/input      # Input devices
+      - /dev/net/tun:/dev/net/tun  # VPN
+
+    # Volumes
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /run/dbus:/run/dbus:ro
+      - /dev/shm:/dev/shm
+      - user-data:/home/diegonmarcos
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/machine-id:/etc/machine-id:ro
+
+    # Environment
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - PULSE_SERVER=unix:/run/user/1000/pulse/native
+      - XDG_RUNTIME_DIR=/tmp/runtime-diegonmarcos
+      - DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
+      - QT_X11_NO_MITSHM=1
+      - _JAVA_AWT_WM_NONREPARENTING=1
+
+    # Network
+    network_mode: host
+
+    # Capabilities for VPN/networking
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_MODULE
+
+    # Keep running
+    stdin_open: true
+    tty: true
+
+    # Restart policy
+    restart: unless-stopped
+
+    # =========================================================================
+    # RESOURCE LIMITS - Never use more than 90% of system resources
+    # =========================================================================
+    # Set via environment variables (calculated by cloud CLI):
+    #   CLOUD_MEM_LIMIT   = 90% of RAM (e.g., "14g" for 16GB system)
+    #   CLOUD_MEMSWAP_LIMIT = mem_limit * 2 (gives swap = RAM)
+    #   CLOUD_CPUS        = 90% of CPUs (e.g., "3.6" for 4-core)
+    # =========================================================================
+
+    # Memory limit (90% of system RAM)
+    mem_limit: ${CLOUD_MEM_LIMIT:-8g}
+
+    # Memory + Swap limit (2x memory = swap equals RAM)
+    memswap_limit: ${CLOUD_MEMSWAP_LIMIT:-16g}
+
+    # CPU limit (90% of available CPUs)
+    cpus: ${CLOUD_CPUS:-3.6}
+
+    # OOM settings
+    oom_kill_disable: false
+    oom_score_adj: 500
+
+    # Limit open files to prevent resource exhaustion
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 32768
+        hard: 32768
+
+    # Shared memory size for X11/graphics
+    shm_size: '2gb'
+
+volumes:
+  user-data:
+    driver: local

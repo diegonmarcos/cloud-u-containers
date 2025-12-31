@@ -1,0 +1,907 @@
+openapi: 3.0.3
+info:
+  title: Cloud Control API
+  description: REST API endpoints for cloud_control.json - runtime monitoring, topology,
+    costs, and administrative actions
+  version: 1.0.0
+  contact:
+    name: Diego Nepomuceno Marcos
+    url: https://diegonmarcos.com
+servers:
+- url: https://api.diegonmarcos.com
+  description: Production API via NPM proxy
+- url: http://127.0.0.1:5000
+  description: Direct Flask access (internal only)
+- url: http://localhost:5000
+  description: Local development
+tags:
+- name: health
+  description: API health and status checks
+- name: vmControl
+  description: Virtual machine control via cloud provider APIs (OCI/GCloud)
+- name: serviceControl
+  description: Service runtime operations
+- name: domainStatus
+  description: Domain runtime status
+- name: topology
+  description: Infrastructure topology data (for cloud_control_topology.md)
+- name: cost
+  description: Cost and billing data (for cloud_control_cost.md)
+- name: monitor
+  description: Runtime monitoring data (for cloud_control_monitor.md)
+- name: actions
+  description: Administrative actions
+- name: index
+  description: API discovery and metadata
+paths:
+  /health:
+    get:
+      tags:
+      - health
+      summary: Simple health check
+      operationId: health_ping
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+  /health/ready:
+    get:
+      tags:
+      - health
+      summary: Readiness check (DB, cache connections)
+      operationId: health_ready
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+  /vms/{vmId}/status:
+    get:
+      tags:
+      - vmControl
+      summary: Get live VM status (runtime data)
+      operationId: vmControl_status
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: vmId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /vms/{vmId}/start:
+    post:
+      tags:
+      - vmControl
+      summary: Start a stopped VM via cloud provider API (OCI instance_action START)
+      operationId: vmControl_start
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: vmId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /vms/{vmId}/stop:
+    post:
+      tags:
+      - vmControl
+      summary: Stop a running VM via cloud provider API (OCI instance_action STOP)
+      operationId: vmControl_stop
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: vmId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /vms/{vmId}/reboot:
+    post:
+      tags:
+      - vmControl
+      summary: Graceful reboot VM via cloud provider API (OCI instance_action SOFTRESET)
+      operationId: vmControl_reboot
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: vmId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /vms/{vmId}/reset:
+    post:
+      tags:
+      - vmControl
+      summary: Hard reset VM via cloud provider API (OCI instance_action RESET) -
+        use with caution
+      operationId: vmControl_reset
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: vmId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /services/{serviceId}/health:
+    get:
+      tags:
+      - serviceControl
+      summary: Check service health
+      operationId: serviceControl_health
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /services/{serviceId}/containers:
+    get:
+      tags:
+      - serviceControl
+      summary: List containers for a service
+      operationId: serviceControl_containers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /services/{serviceId}/restart:
+    post:
+      tags:
+      - serviceControl
+      summary: Restart all containers for a service
+      operationId: serviceControl_restart
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /services/{serviceId}/logs:
+    get:
+      tags:
+      - serviceControl
+      summary: Get recent logs for service containers
+      operationId: serviceControl_logs
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+      - name: lines
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: ''
+      - name: container
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Specific container name
+  /domains/{domain}/status:
+    get:
+      tags:
+      - domainStatus
+      summary: Check domain DNS, SSL, and HTTP status
+      operationId: domainStatus_status
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: domain
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /domains/{domain}/ssl:
+    get:
+      tags:
+      - domainStatus
+      summary: Get SSL certificate details
+      operationId: domainStatus_ssl
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: domain
+        in: path
+        required: true
+        schema:
+          type: string
+        description: ''
+  /topology:
+    get:
+      tags:
+      - topology
+      summary: Get complete topology data
+      operationId: topology_full
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/vms:
+    get:
+      tags:
+      - topology
+      summary: Get VM topology table
+      operationId: topology_vms
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/services-by-vm:
+    get:
+      tags:
+      - topology
+      summary: Get services grouped by VM
+      operationId: topology_servicesByVm
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/service-types:
+    get:
+      tags:
+      - topology
+      summary: Get services grouped by type (A120, A121, etc.)
+      operationId: topology_serviceTypes
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/containers:
+    get:
+      tags:
+      - topology
+      summary: Get all containers by VM
+      operationId: topology_containers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/databases:
+    get:
+      tags:
+      - topology
+      summary: Get database allocations by VM
+      operationId: topology_databases
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/networks:
+    get:
+      tags:
+      - topology
+      summary: Get Docker networks
+      operationId: topology_networks
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /topology/summaries:
+    get:
+      tags:
+      - topology
+      summary: Get storage and container summaries
+      operationId: topology_summaries
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost:
+    get:
+      tags:
+      - cost
+      summary: Get complete cost data
+      operationId: cost_full
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost/summary:
+    get:
+      tags:
+      - cost
+      summary: Get cost summary (this month, projected, YTD)
+      operationId: cost_summary
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost/breakdown:
+    get:
+      tags:
+      - cost
+      summary: Get cost breakdown by provider/VM
+      operationId: cost_breakdown
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost/free-tier:
+    get:
+      tags:
+      - cost
+      summary: Get free tier utilization
+      operationId: cost_freeTier
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost/resource-usage:
+    get:
+      tags:
+      - cost
+      summary: Get resource usage by VM
+      operationId: cost_resourceUsage
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /cost/comparison:
+    get:
+      tags:
+      - cost
+      summary: Get market price comparison
+      operationId: cost_comparison
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor:
+    get:
+      tags:
+      - monitor
+      summary: Get complete monitoring data
+      operationId: monitor_full
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/summary:
+    get:
+      tags:
+      - monitor
+      summary: Get monitoring summary (VMs online, endpoints healthy, etc.)
+      operationId: monitor_summary
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/vms:
+    get:
+      tags:
+      - monitor
+      summary: Get VM overview with resource usage
+      operationId: monitor_vmOverview
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/vm-status:
+    get:
+      tags:
+      - monitor
+      summary: Get live VM status (ping, SSH, latency)
+      operationId: monitor_vmStatus
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/endpoints:
+    get:
+      tags:
+      - monitor
+      summary: Get endpoint status (HTTP, SSL)
+      operationId: monitor_endpoints
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/containers:
+    get:
+      tags:
+      - monitor
+      summary: Get container status by VM
+      operationId: monitor_containers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/service-breakdown:
+    get:
+      tags:
+      - monitor
+      summary: Get service resource breakdown by VM
+      operationId: monitor_serviceBreakdown
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/audit:
+    get:
+      tags:
+      - monitor
+      summary: Get recent audit events
+      operationId: monitor_audit
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: ''
+  /monitor/audit/metrics:
+    get:
+      tags:
+      - monitor
+      summary: Get audit metrics (total events, success rate, blocked)
+      operationId: monitor_auditMetrics
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/alerts:
+    get:
+      tags:
+      - monitor
+      summary: Get active alerts
+      operationId: monitor_alerts
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/orchestrate:
+    get:
+      tags:
+      - monitor
+      summary: Get Dockge instances for container management
+      operationId: monitor_orchestrate
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - read
+  /monitor/refresh:
+    post:
+      tags:
+      - monitor
+      summary: Trigger a full status refresh
+      operationId: monitor_refresh
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+  /actions/refresh-all:
+    post:
+      tags:
+      - actions
+      summary: Refresh all monitoring data (VMs, endpoints, containers)
+      operationId: actions_refreshAll
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+  /actions/generate-md:
+    post:
+      tags:
+      - actions
+      summary: Regenerate cloud_control_*.md files from JSON
+      operationId: actions_generateMd
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+      parameters:
+      - name: target
+        in: query
+        required: false
+        schema:
+          type: string
+        description: ''
+  /actions/backup:
+    post:
+      tags:
+      - actions
+      summary: Backup architecture and control JSON files
+      operationId: actions_backup
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth:
+        - admin
+  /:
+    get:
+      tags:
+      - index
+      summary: API root - returns available endpoints
+      operationId: index_root
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/docs:
+    get:
+      tags:
+      - index
+      summary: Get API specification
+      operationId: index_docs
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/schema:
+    get:
+      tags:
+      - index
+      summary: Get JSON schemas for request/response validation
+      operationId: index_schema
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Authelia OIDC token from https://auth.diegonmarcos.com/api/oidc/token
+  schemas:
+    VmStatus:
+      type: object
+      properties:
+        ip:
+          type: string
+          format: ipv4
+        pingable:
+          type: boolean
+        sshable:
+          type: boolean
+        latencyMs:
+          type: integer
+        lastCheck:
+          type: string
+          format: date-time
+    EndpointStatus:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        httpCode:
+          type: integer
+        sslValid:
+          type: boolean
+        sslExpiry:
+          type: string
+          format: date
+        wakeOnDemand:
+          type: boolean
+    ContainerStatus:
+      type: object
+      properties:
+        name:
+          type: string
+        running:
+          type: boolean
+        restarts:
+          type: integer
+        memoryMb:
+          type: number
+        cpuPercent:
+          type: number
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

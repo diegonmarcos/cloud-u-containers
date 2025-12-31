@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  alerts-api:
+    container_name: alerts-api
+    build: .
+    restart: unless-stopped
+    cpus: "0.1"
+    mem_limit: 64m
+    ports:
+      - "5050:5000"
+    volumes:
+      - alerts-data:/data
+    environment:
+      - DB_PATH=/data/alerts.db
+      - NTFY_URL=https://rss.diegonmarcos.com
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  alerts-data:
+
+networks:
+  npm_default:
+    external: true

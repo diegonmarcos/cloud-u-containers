@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-12-15T23:21:41.934151",
+  "date": "2025-12-15",
+  "hour": "23",
+  "vms": {
+    "oci-f-micro_1": {
+      "status": "unreachable",
+      "ip": "130.110.251.193"
+    },
+    "oci-f-micro_2": {
+      "status": "unreachable",
+      "ip": "129.151.228.66"
+    },
+    "gcp-f-micro_1": {
+      "status": "ok",
+      "ip": "34.55.55.234",
+      "system": {
+        "raw": " 22:21:57 up 10 days, 23:49,  3 users,  load average: 0.35, 0.27, 0.15\n=== MEMORY ===\n               total        used        free      shared  buff/cache   available\nMem:             945         563          74           0         444         381\nSwap:            944         197         747\n=== TOP ===\nUSER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nroot        1338  0.3  6.3 2641736 61492 ?       Ssl  Dec04  50:05 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock --selinux-enabled --userland-proxy-path /usr/bin/docker-proxy --init-path /usr/bin/tini-static\nroot         485  0.0  4.7 316304 45860 ?        Ss   Dec04   7:37 /usr/lib/systemd/systemd-journald\ndiego    1142823  0.2  4.0  59932 39136 ?        S    22:19   0:00 /usr/local/bin/python3.12 /usr/local/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 run:app\ndiego    1143177  3.1  4.0  59932 38996 ?        S    22:21   0:00 /usr/local/bin/python3.12 /usr/local/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 run:app\nroot        1313  0.1  3.2 2247060 31552 ?       Ssl  Dec04  25:56 /usr/bin/containerd\nroot      819118  0.0  2.2 2223168 21852 ?       Ssl  Dec12   2:03 authelia\nroot      818541  0.0  1.9 1346736 18460 ?       Sl   Dec12   1:07 node --abort_on_uncaught_exception --max_old_space_size=250 index.js\n65532     423123  0.0  1.2 1253160 12448 ?       Ssl  Dec08   0:37 /bin/oauth2-proxy --http-address=0.0.0.0:4180 --provider=github --client-id=Ov23liOg9JhezyYUCHmS --client-secret=9e0d2aa1e2ee3f1ac8fd8a1d8d4c54e3d1c6c2ce --cookie-secret=abcdefghijklmnopqrstuvwxyz123456 --cookie-secure=true --cookie-domain=.diegonmarcos.com --cookie-name=_oauth2_proxy --reverse-proxy=true --github-user=diegonmarcos --email-domain=* --scope=user:email --whitelist-domain=.diegonmarcos.com --set-xauthrequest=true --pass-user-headers=true --set-authorization-header=true --redirect-url=https://auth.diegonmarcos.com/oauth2/callback --upstream=static://200\nroot     1021112  0.0  1.1 1319632 11412 ?       Ssl  00:59   0:17 /portainer\n"
+      },
+      "disk": {
+        "raw": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda4       9.0G  3.8G  4.6G  46% /\ndevtmpfs        444M     0  444M   0% /dev\ntmpfs           473M     0  473M   0% /dev/shm\nefivarfs         56K   24K   27K  48% /sys/firmware/efi/efivars\ntmpfs           190M  1.5M  188M   1% /run\ntmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-journald.service\ntmpfs           473M 1000K  472M   1% /tmp\n/dev/sda3       966M   96M  805M  11% /boot\n/dev/sda4       9.0G  3.8G  4.6G  46% /var\n/dev/sda4       9.0G  3.8G  4.6G  46% /home\n/dev/sda2       100M   17M   83M  18% /boot/efi\ntmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service\ntmpfs           1.0M     0  1.0M   0% /run/credentials/getty@tty1.service\ntmpfs           1.0M     0  1.0M   0% /run/credentials/serial-getty@ttyS0.service\ntmpfs            95M  4.0K   95M   1% /run/user/1000\n=== INODES ===\nFilesystem      Inodes IUsed   IFree IUse% Mounted on\n/dev/sda4            0     0       0     - /\nefivarfs             0     0       0     - /sys/firmware/efi/efivars\n/dev/sda3        64000   666   63334    2% /boot\n/dev/sda4            0     0       0     - /var\n/dev/sda4            0     0       0     - /home\n/dev/sda2            0     0       0     - /boot/efi\n"
+      },
+      "network": {
+        "raw": "Total: 219\nTCP:   52 (estab 3, closed 28, orphaned 0, timewait 1)\n\nTransport Total     IP        IPv6\nRAW\t  1         0         1        \nUDP\t  9         6         3        \nTCP\t  24        16        8        \nINET\t  34        22        12       \nFRAG\t  0         0         0        \n\n"
+      },
+      "docker": {
+        "raw": "NAMES             STATUS\nflask-api         Up 38 minutes (healthy)\nc3-collector      Up 48 minutes\nportainer         Up 21 hours\ndozzle            Up 22 hours\noauth2-proxy      Up 6 days\nauthelia-redis    Up 3 days\nnpm-expose-test   Up 8 days\nauthelia          Up 3 days (healthy)\nnpm               Up 3 days\nNAME              CPU %     MEM USAGE / LIMIT\nflask-api         1.43%     92.91MiB / 945.6MiB\nc3-collector      0.00%     1.148MiB / 945.6MiB\nportainer         0.00%     11.81MiB / 945.6MiB\ndozzle            0.00%     10.27MiB / 945.6MiB\noauth2-proxy      0.00%     6.656MiB / 945.6MiB\nauthelia-redis    0.33%     3.129MiB / 945.6MiB\nnpm-expose-test   0.02%     324KiB / 945.6MiB\nauthelia          0.03%     23.16MiB / 945.6MiB\nnpm               0.02%     16.51MiB / 945.6MiB\n"
+      },
+      "services": {
+        "raw": "  UNIT                           LOAD   ACTIVE SUB    DESCRIPTION\n\u25cf google-startup-scripts.service loaded failed failed Google Compute Engine Startup Scripts\n\nLegend: LOAD   \u2192 Reflects whether the unit definition was properly loaded.\n        ACTIVE \u2192 The high-level unit activation state, i.e. generalization of SUB.\n        SUB    \u2192 The low-level unit activation state, values depend on unit type.\n\n1 loaded units listed.\n"
+      }
+    },
+    "oci-p-flex_1": {
+      "status": "unreachable",
+      "ip": "84.235.234.87"
+    }
+  }
+}

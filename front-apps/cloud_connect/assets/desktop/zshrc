@@ -1,0 +1,212 @@
+# Cloud Desktop - Zsh Configuration
+# Shares aliases with Fish via /etc/profile.d/cloud-aliases.sh
+
+# ============================================================================
+# ENVIRONMENT
+# ============================================================================
+
+export EDITOR=nvim
+export VISUAL=nvim
+export BROWSER=brave
+export TERM=xterm-256color
+
+# XDG Base Directories
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_STATE_HOME="$HOME/.local/state"
+
+# ============================================================================
+# PATH
+# ============================================================================
+
+typeset -U path
+path=(
+    $HOME/.local/bin
+    $HOME/.cargo/bin
+    $HOME/go/bin
+    $HOME/.npm-global/bin
+    $path
+)
+
+# ============================================================================
+# HISTORY
+# ============================================================================
+
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+
+setopt EXTENDED_HISTORY          # Write timestamps to history
+setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicates first
+setopt HIST_IGNORE_DUPS          # Ignore duplicates
+setopt HIST_IGNORE_ALL_DUPS      # Remove older duplicate
+setopt HIST_IGNORE_SPACE         # Ignore commands starting with space
+setopt HIST_FIND_NO_DUPS         # Don't show duplicates in search
+setopt HIST_REDUCE_BLANKS        # Remove blank lines
+setopt HIST_VERIFY               # Show command before executing from history
+setopt SHARE_HISTORY             # Share history between sessions
+setopt APPEND_HISTORY            # Append to history file
+setopt INC_APPEND_HISTORY        # Add commands immediately
+
+# ============================================================================
+# OPTIONS
+# ============================================================================
+
+setopt AUTO_CD                   # cd by typing directory name
+setopt AUTO_PUSHD                # Push directories to stack
+setopt PUSHD_IGNORE_DUPS         # Don't push duplicates
+setopt PUSHD_SILENT              # Don't print directory stack
+setopt CORRECT                   # Command correction
+setopt INTERACTIVE_COMMENTS      # Allow comments in interactive shell
+setopt NO_BEEP                   # Disable beep
+setopt GLOB_DOTS                 # Include dotfiles in glob
+
+# ============================================================================
+# COMPLETION
+# ============================================================================
+
+autoload -Uz compinit && compinit
+
+zstyle ':completion:*' menu select                        # Menu selection
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # Case insensitive
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}     # Colored completion
+zstyle ':completion:*' group-name ''                       # Group completions
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+zstyle ':completion:*:warnings' format '%F{red}-- no matches --%f'
+
+# ============================================================================
+# LOAD SHARED ALIASES
+# ============================================================================
+
+if [[ -f /etc/profile.d/cloud-aliases.sh ]]; then
+    source /etc/profile.d/cloud-aliases.sh
+fi
+
+# ============================================================================
+# ZSH-SPECIFIC ALIASES
+# ============================================================================
+
+# Override if needed
+alias reload='source ~/.zshrc'
+
+# ============================================================================
+# FUNCTIONS
+# ============================================================================
+
+# Create directory and cd into it
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Extract any archive
+extract() {
+    if [[ -f "$1" ]]; then
+        case "$1" in
+            *.tar.bz2) tar xjf "$1" ;;
+            *.tar.gz)  tar xzf "$1" ;;
+            *.tar.xz)  tar xJf "$1" ;;
+            *.bz2)     bunzip2 "$1" ;;
+            *.gz)      gunzip "$1" ;;
+            *.tar)     tar xf "$1" ;;
+            *.tbz2)    tar xjf "$1" ;;
+            *.tgz)     tar xzf "$1" ;;
+            *.zip)     unzip "$1" ;;
+            *.7z)      7z x "$1" ;;
+            *.rar)     unar "$1" ;;
+            *)         echo "Unknown archive format: $1" ;;
+        esac
+    else
+        echo "File not found: $1"
+    fi
+}
+
+# Quick backup
+backup() {
+    cp "$1" "$1.bak.$(date +%Y%m%d_%H%M%S)"
+}
+
+# Git clone and cd
+gclone() {
+    git clone "$1" && cd "$(basename "$1" .git)"
+}
+
+# Find and replace in files
+replace() {
+    if [[ $# -lt 3 ]]; then
+        echo "Usage: replace <search> <replace> <files...>"
+        return 1
+    fi
+    local search="$1"
+    local replace="$2"
+    shift 2
+    for file in "$@"; do
+        sed -i "s/$search/$replace/g" "$file"
+    done
+}
+
+# ============================================================================
+# PLUGINS
+# ============================================================================
+
+# Zsh Autosuggestions
+if [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+    source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+
+# Zsh Syntax Highlighting (must be last)
+if [[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
+
+# ============================================================================
+# KEY BINDINGS
+# ============================================================================
+
+bindkey -e                                  # Emacs mode
+bindkey '^[[A' history-search-backward      # Up arrow
+bindkey '^[[B' history-search-forward       # Down arrow
+bindkey '^[[H' beginning-of-line            # Home
+bindkey '^[[F' end-of-line                  # End
+bindkey '^[[3~' delete-char                 # Delete
+bindkey '^[[1;5C' forward-word              # Ctrl+Right
+bindkey '^[[1;5D' backward-word             # Ctrl+Left
+bindkey '^H' backward-kill-word             # Ctrl+Backspace
+bindkey '^[[3;5~' kill-word                 # Ctrl+Delete
+bindkey '^ ' autosuggest-accept             # Ctrl+Space to accept suggestion
+
+# ============================================================================
+# TOOLS INTEGRATION
+# ============================================================================
+
+# Starship prompt
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+fi
+
+# Zoxide (smart cd)
+if command -v zoxide &> /dev/null; then
+    eval "$(zoxide init zsh)"
+fi
+
+# FZF
+if command -v fzf &> /dev/null; then
+    source <(fzf --zsh)
+fi
+
+# Direnv
+if command -v direnv &> /dev/null; then
+    eval "$(direnv hook zsh)"
+fi
+
+# ============================================================================
+# WELCOME MESSAGE
+# ============================================================================
+
+if [[ -o interactive ]]; then
+    echo ""
+    echo "  Welcome to Cloud Desktop"
+    echo "  Shell: Zsh | Prompt: Starship"
+    echo "  Type 'fish' to switch to Fish shell"
+    echo ""
+fi

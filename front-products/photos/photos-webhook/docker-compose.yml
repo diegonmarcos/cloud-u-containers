@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  photos-db:
+    image: postgres:16-alpine
+    container_name: photos-db
+    environment:
+      POSTGRES_DB: photos
+      POSTGRES_USER: photos_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SECURE_PASSWORD_HERE}
+    volumes:
+      - photos_db_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - photos_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U photos_user -d photos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Webhook Processor
+  photos-webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: photos-webhook
+    environment:
+      DB_HOST: photos-db
+      DB_NAME: photos
+      DB_USER: photos_user
+      DB_PASSWORD: ${DB_PASSWORD:-SECURE_PASSWORD_HERE}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: eu-marseille-1
+      S3_BUCKET: photos
+      WEBHOOK_PORT: 5001
+    ports:
+      - "5001:5001"
+    depends_on:
+      photos-db:
+        condition: service_healthy
+    volumes:
+      - ./webhook.py:/app/webhook.py
+      - ./requirements.txt:/app/requirements.txt
+    networks:
+      - photos_net
+    restart: unless-stopped
+    command: python webhook.py flask
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  photos_db_data:
+    driver: local
+
+networks:
+  photos_net:
+    driver: bridge

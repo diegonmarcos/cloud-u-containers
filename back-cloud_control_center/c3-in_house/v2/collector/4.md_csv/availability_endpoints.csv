@@ -1,0 +1,8 @@
+date,timestamp,url,status,code,latency_ms
+2025-12-15,2025-12-15T23:19:48.681400,https://diegonmarcos.com,up,200,1086.77
+2025-12-15,2025-12-15T23:19:48.681400,https://photos.app.diegonmarcos.com,down,,
+2025-12-15,2025-12-15T23:19:48.681400,https://analytics.diegonmarcos.com,up,200,1457.67
+2025-12-15,2025-12-15T23:19:48.681400,https://sync.diegonmarcos.com,up,200,1202.96
+2025-12-15,2025-12-15T23:19:48.681400,https://n8n.diegonmarcos.com,up,200,1193.18
+2025-12-15,2025-12-15T23:19:48.681400,https://proxy.diegonmarcos.com,up,200,1108.87
+2025-12-15,2025-12-15T23:19:48.681400,https://auth.diegonmarcos.com,down,,

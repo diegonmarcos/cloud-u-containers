@@ -1,0 +1,14 @@
+# THIS FILE IS NOT USED - WireGuard runs NATIVELY on all VMs
+# See README.md for actual configuration
+# Keeping this file for reference only
+
+# WireGuard Mesh Network Topology:
+#
+#   GCP Hub (10.0.0.1) - 34.55.55.234:51820
+#       │
+#       ├── Oracle Dev (10.0.0.2) - 84.235.234.87:51820
+#       ├── Oracle Web (10.0.0.3) - 130.110.251.193:51820
+#       ├── Oracle Services (10.0.0.4) - 129.151.228.66:51820
+#       └── Local Machine (10.0.0.5) - dynamic IP
+#
+# All peers connect to GCP Hub, which routes traffic between them.

@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  sauron:
+    container_name: sauron
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile.sauron
+    # Resource limits (safe for 1 vCPU free-tier VMs)
+    cpus: "0.25"
+    mem_limit: 256m
+    volumes:
+      # Watch paths (read-only for security)
+      - /etc:/watch/etc:ro
+      - /var/lib/docker/volumes:/watch/docker-volumes:ro
+      # YARA rules
+      - ./yara-rules:/etc/sauron/yara-rules:ro
+      # Entrypoint (for updates without rebuild)
+      - ./entrypoint.sh:/entrypoint.sh:ro
+    environment:
+      - RULES_DIR=/etc/sauron/yara-rules/custom
+      - WATCH_DIR=/watch
+      - SCAN_INTERVAL=3600
+      - WORKERS=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - security
+
+  collector:
+    container_name: collector
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    cpus: "0.05"
+    mem_limit: 32m
+    volumes:
+      # Access to host journald logs
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      # Access to docker socket for container logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - API_URL=https://alerts.diegonmarcos.com
+      - NTFY_URL=https://rss.diegonmarcos.com
+      - VM_NAME=${VM_NAME:-oci-flex}
+      - CHECK_INTERVAL=30
+    depends_on:
+      - sauron
+    network_mode: host
+
+volumes:
+  sauron-logs:
+
+networks:
+  security:
+    driver: bridge

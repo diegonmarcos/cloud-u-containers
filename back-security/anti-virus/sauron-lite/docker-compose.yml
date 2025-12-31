@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  sauron:
+    container_name: sauron
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Watch paths (read-only)
+      - /etc:/watch/etc:ro
+      - /home:/watch/home:ro
+      # YARA rules
+      - ./yara-rules:/etc/sauron/yara-rules:ro
+      # Persistent logs and queue
+      - sauron-data:/var/log/sauron
+      - sauron-queue:/var/spool/sauron
+    environment:
+      - VM_NAME=${VM_NAME:-unknown}
+      - WATCH_DIRS=/watch/etc /watch/home
+      - QUEUE_FILE=/var/spool/sauron/scan-queue.txt
+      - ALERTS_FILE=/var/log/sauron/alerts.jsonl
+      - RULES_DIR=/etc/sauron/yara-rules
+    # Resource limits for 1GB VMs
+    # Memory: hard cap at 64MB
+    # CPU: allow bursts up to 50% during YARA scans
+    mem_limit: 64m
+    mem_reservation: 16m
+    cpus: 0.5
+    # Limit CPU during idle with cgroup weight (nice level)
+    cpu_shares: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - security
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "inotifywait"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+  forwarder:
+    image: alpine:3.19
+    container_name: sauron-forwarder
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache netcat-openbsd
+        echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
+        tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
+          echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true
+        done
+    volumes:
+      - sauron-data:/var/log/sauron:ro
+    environment:
+      - CENTRAL_HOST=${CENTRAL_HOST:-34.55.55.234}
+      - CENTRAL_PORT=${CENTRAL_PORT:-5514}
+    depends_on:
+      - sauron
+    mem_limit: 16m
+    cpus: 0.05
+    networks:
+      - security
+
+volumes:
+  sauron-data:
+  sauron-queue:
+
+networks:
+  security:
+    driver: bridge

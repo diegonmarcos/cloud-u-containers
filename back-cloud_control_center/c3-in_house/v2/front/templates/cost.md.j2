@@ -1,0 +1,78 @@
+{# Cost Template - Outputs Markdown from cloud_control.json -> cost #}
+# Cost
+
+> Generated: {{ now.strftime('%Y-%m-%d %H:%M') }}
+
+---
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+{% for item in cost.summary.data -%}
+| {{ item.metric }} | {{ item.value }} |
+{% endfor %}
+
+---
+
+## Provider Distribution
+
+| Provider | Cost | Percentage |
+|----------|------|------------|
+{% for p in cost.providerDistribution.data -%}
+| {{ p.provider }} | {{ p.cost }} | {{ p.percentage }} |
+{% endfor %}
+
+---
+
+## Infrastructure Breakdown
+
+| Provider | VM | Tier | Cost |
+|----------|-----|------|------|
+{% for item in cost.infraBreakdown.data -%}
+| {{ item.provider }} | {{ item.vm }} | {{ item.tier }} | {{ item.cost }} |
+{% endfor %}
+
+---
+
+## Resource Usage by VM
+
+{% for vmId, vmData in cost.resourceUsageByVm.items() if not vmId.startswith('_') %}
+### {{ vmData.displayName }}
+
+*Specs: {{ vmData.specs }}*
+
+**Total**: CPU {{ vmData.vmTotal.cpu }}%, RAM {{ vmData.vmTotal.ram }}%, Storage {{ vmData.vmTotal.storage }}%
+
+| Service | CPU | RAM | Storage |
+|---------|-----|-----|---------|
+{% for svc in vmData.services -%}
+| {{ svc.name }} | {{ svc.cpu }}{% if svc.cpu is number %}%{% endif %} | {{ svc.ram }}{% if svc.ram is number %}%{% endif %} | {{ svc.storage }}{% if svc.storage is number %}%{% endif %} |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Free Tier Utilization
+
+{% for providerId, providerData in cost.freeTierUtilization.items() if not providerId.startswith('_') %}
+### {{ providerData.name }} ({{ providerData.tier }})
+
+| Resource | Usage | Limit | Notes |
+|----------|-------|-------|-------|
+{% for r in providerData.resources -%}
+| {{ r.name }} | {{ r.usage }}% | {{ r.limit }} | {{ r.notes }} |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Market Comparison
+
+| Provider | Cost | Equivalent Specs |
+|----------|------|------------------|
+{% for item in cost.marketComparison.data -%}
+| {{ item.provider }} | {{ item.cost }} | {{ item.specs }} |
+{% endfor %}
