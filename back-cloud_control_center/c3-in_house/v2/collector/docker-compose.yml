@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  c3-collector:
+    build: .
+    container_name: c3-collector
+    restart: unless-stopped
+    volumes:
+      # Output JSON files (shared with API)
+      - c3-data:/app/4.jsons
+      # Raw data storage
+      - c3-raw:/app/2.raw
+      # SSH keys for VM access
+      - ~/.ssh:/root/.ssh:ro
+      # Architecture config (source of truth)
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/4.jsons/dashboard.json"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  c3-data:
+    name: c3-data
+  c3-raw:
+    name: c3-raw
+
+networks:
+  npm_default:
+    external: true

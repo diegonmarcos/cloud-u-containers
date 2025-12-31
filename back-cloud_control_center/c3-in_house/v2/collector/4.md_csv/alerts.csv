@@ -1,0 +1,10 @@
+date,timestamp,level,vm,message
+2025-12-15,2025-12-15T23:27:49.413802,critical,oci-f-micro_1,VM unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,oci-f-micro_2,VM unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,oci-p-flex_1,VM unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,,VM oci-f-micro_1 unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,,VM oci-f-micro_2 unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,,VM oci-p-flex_1 unreachable
+2025-12-15,2025-12-15T23:27:49.413802,critical,,Endpoint down: https://photos.app.diegonmarcos.com
+2025-12-15,2025-12-15T23:27:49.413802,critical,,Endpoint down: https://auth.diegonmarcos.com
+2025-12-15,2025-12-15T23:27:49.413802,warning,gcp-f-micro_1,100 suspicious requests detected

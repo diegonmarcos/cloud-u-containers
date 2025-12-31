@@ -1,0 +1,170 @@
+{
+  "exported_at": "2025-12-19T17:00:28.521822",
+  "hosts": {
+    "arch-1": {
+      "name": "arch-1",
+      "provider": "gcp",
+      "display_name": "GCP: arch-1",
+      "ip": "34.55.55.234",
+      "instance_id": "",
+      "zone": "us-central1-a"
+    },
+    "flex1": {
+      "name": "flex1",
+      "provider": "oci",
+      "display_name": "OCI: flex1 (dev-server)",
+      "ip": "84.235.234.87",
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczachwpa3qrh7n25vfez3smidz4o7gpmtj4ga4d7zqlja5yq",
+      "zone": ""
+    },
+    "micro1": {
+      "name": "micro1",
+      "provider": "oci",
+      "display_name": "OCI: micro1 (mail)",
+      "ip": "130.110.251.193",
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
+      "zone": ""
+    },
+    "micro2": {
+      "name": "micro2",
+      "provider": "oci",
+      "display_name": "OCI: micro2 (matomo)",
+      "ip": "129.151.228.66",
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
+      "zone": ""
+    }
+  },
+  "containers": {
+    "authelia": {
+      "name": "authelia",
+      "host": "arch-1",
+      "display_name": "authelia (GCP)"
+    },
+    "authelia-redis": {
+      "name": "authelia-redis",
+      "host": "arch-1",
+      "display_name": "authelia-redis (GCP)"
+    },
+    "c3-collector": {
+      "name": "c3-collector",
+      "host": "arch-1",
+      "display_name": "c3-collector (GCP)"
+    },
+    "dozzle": {
+      "name": "dozzle",
+      "host": "arch-1",
+      "display_name": "dozzle (GCP)"
+    },
+    "flask-api": {
+      "name": "flask-api",
+      "host": "arch-1",
+      "display_name": "flask-api (GCP)"
+    },
+    "npm": {
+      "name": "npm",
+      "host": "arch-1",
+      "display_name": "npm (GCP)"
+    },
+    "oauth2-proxy": {
+      "name": "oauth2-proxy",
+      "host": "arch-1",
+      "display_name": "oauth2-proxy (GCP)"
+    },
+    "portainer": {
+      "name": "portainer",
+      "host": "arch-1",
+      "display_name": "portainer (GCP)"
+    },
+    "cache-app": {
+      "name": "cache-app",
+      "host": "flex1",
+      "display_name": "cache-app (flex1)"
+    },
+    "cloud-app": {
+      "name": "cloud-app",
+      "host": "flex1",
+      "display_name": "cloud-app (flex1)"
+    },
+    "photoprism-app": {
+      "name": "photoprism-app",
+      "host": "flex1",
+      "display_name": "photoprism-app (flex1)"
+    },
+    "photos-db": {
+      "name": "photos-db",
+      "host": "flex1",
+      "display_name": "photos-db (flex1)"
+    },
+    "radicale-app": {
+      "name": "radicale-app",
+      "host": "flex1",
+      "display_name": "radicale-app (flex1)"
+    },
+    "sync-app": {
+      "name": "sync-app",
+      "host": "flex1",
+      "display_name": "sync-app (flex1)"
+    },
+    "mailu-admin-1": {
+      "name": "mailu-admin-1",
+      "host": "micro1",
+      "display_name": "mailu-admin-1 (micro1)"
+    },
+    "mailu-antispam-1": {
+      "name": "mailu-antispam-1",
+      "host": "micro1",
+      "display_name": "mailu-antispam-1 (micro1)"
+    },
+    "mailu-front-1": {
+      "name": "mailu-front-1",
+      "host": "micro1",
+      "display_name": "mailu-front-1 (micro1)"
+    },
+    "mailu-imap-1": {
+      "name": "mailu-imap-1",
+      "host": "micro1",
+      "display_name": "mailu-imap-1 (micro1)"
+    },
+    "mailu-redis-1": {
+      "name": "mailu-redis-1",
+      "host": "micro1",
+      "display_name": "mailu-redis-1 (micro1)"
+    },
+    "mailu-resolver-1": {
+      "name": "mailu-resolver-1",
+      "host": "micro1",
+      "display_name": "mailu-resolver-1 (micro1)"
+    },
+    "mailu-smtp-1": {
+      "name": "mailu-smtp-1",
+      "host": "micro1",
+      "display_name": "mailu-smtp-1 (micro1)"
+    },
+    "mailu-webmail-1": {
+      "name": "mailu-webmail-1",
+      "host": "micro1",
+      "display_name": "mailu-webmail-1 (micro1)"
+    },
+    "smtp-proxy": {
+      "name": "smtp-proxy",
+      "host": "micro1",
+      "display_name": "smtp-proxy (micro1)"
+    },
+    "syncthing": {
+      "name": "syncthing",
+      "host": "micro1",
+      "display_name": "syncthing (micro1)"
+    },
+    "matomo-app": {
+      "name": "matomo-app",
+      "host": "micro2",
+      "display_name": "matomo-app (micro2)"
+    },
+    "matomo-db": {
+      "name": "matomo-db",
+      "host": "micro2",
+      "display_name": "matomo-db (micro2)"
+    }
+  },
+  "statuses": {}
+}

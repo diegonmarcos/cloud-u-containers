@@ -1,0 +1,50 @@
+version: '3.8'
+
+# SQLite Database for Mail Server (Embedded)
+# VM: gcloud-arch-1 (pending)
+# Note: Docker-mailserver uses SQLite internally
+
+# No separate container needed
+# This file is for documentation purposes
+
+# Mail data locations:
+# - /var/mail: Mailboxes (Maildir format)
+# - /var/mail-state: DKIM keys, SSL certs, fail2ban state
+# - /var/log/mail: Mail logs
+
+# To backup:
+# docker cp mail-app:/var/mail ./backup/mail
+# docker cp mail-app:/var/mail-state ./backup/mail-state
+
+# Alternative: External database for accounts (if using LDAP/MySQL)
+services:
+  mail-db:
+    image: mariadb:11.4
+    container_name: mail-db
+    restart: unless-stopped
+    profiles:
+      - external-db  # Only start with: docker compose --profile external-db up
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MAIL_DB_ROOT_PASSWORD:-changeme}
+      - MYSQL_DATABASE=${MAIL_DB_NAME:-postfixadmin}
+      - MYSQL_USER=${MAIL_DB_USER:-postfixadmin}
+      - MYSQL_PASSWORD=${MAIL_DB_PASSWORD:-changeme}
+    volumes:
+      - mail_db_data:/var/lib/mysql
+    networks:
+      - mail_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+networks:
+  mail_network:
+    name: mail_network
+    driver: bridge
+
+volumes:
+  mail_db_data:
+    name: mail_db_data

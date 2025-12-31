@@ -1,0 +1,231 @@
+{
+  "timestamp": "2025-12-15T22:45:27.607390",
+  "date": "2025-12-15",
+  "hour": "22",
+  "vms": {
+    "gcp-hub": {
+      "ip": "10.0.0.1",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 10.0.0.1 (10.0.0.1) 56(84) bytes of data.\n\n--- 10.0.0.1 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2086ms\n\n"
+      },
+      "ssh": {
+        "status": "fail",
+        "output": ""
+      },
+      "ports": {
+        "22": {
+          "status": "closed",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    },
+    "oracle-dev": {
+      "ip": "10.0.0.2",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.\n\n--- 10.0.0.2 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2030ms\n\n"
+      },
+      "ssh": {
+        "status": "fail",
+        "output": ""
+      },
+      "ports": {
+        "22": {
+          "status": "closed",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    },
+    "oracle-web": {
+      "ip": "10.0.0.3",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.\n\n--- 10.0.0.3 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2029ms\n\n"
+      },
+      "ssh": {
+        "status": "fail",
+        "output": ""
+      },
+      "ports": {
+        "22": {
+          "status": "closed",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    },
+    "oracle-services": {
+      "ip": "10.0.0.4",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 10.0.0.4 (10.0.0.4) 56(84) bytes of data.\n\n--- 10.0.0.4 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2028ms\n\n"
+      },
+      "ssh": {
+        "status": "fail",
+        "output": ""
+      },
+      "ports": {
+        "22": {
+          "status": "closed",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "url": "https://diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1219.37
+    },
+    {
+      "url": "https://photos.app.diegonmarcos.com",
+      "status": "down",
+      "error": "[Errno -2] Name or service not known"
+    },
+    {
+      "url": "https://analytics.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 3017.65
+    },
+    {
+      "url": "https://sync.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 2001.82
+    },
+    {
+      "url": "https://n8n.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1890.54
+    },
+    {
+      "url": "https://proxy.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1328.97
+    },
+    {
+      "url": "https://auth.diegonmarcos.com",
+      "status": "down",
+      "error": "Forbidden"
+    }
+  ],
+  "ssl": [
+    {
+      "domain": "diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-07T12:33:09",
+      "days_left": 81,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Google Trust Services",
+        "commonName": "WE1"
+      }
+    },
+    {
+      "domain": "photos.app.diegonmarcos.com",
+      "status": "error",
+      "error": "[Errno -2] Name or service not known"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T00:09:37",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    },
+    {
+      "domain": "sync.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T13:36:12",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    },
+    {
+      "domain": "n8n.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T00:11:12",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    }
+  ],
+  "dns": [
+    {
+      "domain": "diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tdiegonmarcos.com\nAddress: 104.21.46.63\nName:\tdiegonmarcos.com\nAddress: 172.67.168.34\nName:\tdiegonmarcos.com\nAddress: 2606:4700:3035::6815:2e3f\nName:\tdiegonmarcos.com\nAddress: 2606:4700:3035::ac43:a822\n\n"
+    },
+    {
+      "domain": "photos.app.diegonmarcos.com",
+      "status": "error",
+      "error": "Command '['nslookup', 'photos.app.diegonmarcos.com']' timed out after 10 seconds"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tanalytics.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    },
+    {
+      "domain": "sync.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tsync.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    },
+    {
+      "domain": "n8n.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tn8n.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    }
+  ]
+}

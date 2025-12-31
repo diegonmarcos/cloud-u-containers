@@ -1,0 +1,104 @@
+# Cloud Desktop - Yazi File Manager Configuration
+
+[manager]
+# Ratio of parent:current:preview columns
+ratio = [1, 3, 4]
+
+# Sorting
+sort_by = "natural"
+sort_sensitive = false
+sort_reverse = false
+sort_dir_first = true
+
+# Display
+show_hidden = false
+show_symlink = true
+linemode = "size"
+
+[preview]
+# Tab size for code files
+tab_size = 2
+
+# Max file size to preview (in bytes)
+max_width = 1000
+max_height = 1000
+
+# Image preview
+image_filter = "triangle"
+image_quality = 75
+
+# Syntax highlighting
+syntect_theme = "base16-ocean.dark"
+
+[opener]
+# Default openers
+folder = [
+    { run = 'dolphin "$@"', desc = "Open in Dolphin", block = false },
+]
+text = [
+    { run = 'nvim "$@"', desc = "Edit in Neovim", block = true },
+    { run = 'kate "$@"', desc = "Open in Kate", block = false },
+]
+image = [
+    { run = 'gwenview "$@"', desc = "View in Gwenview", block = false },
+]
+video = [
+    { run = 'mpv "$@"', desc = "Play in MPV", block = false },
+]
+audio = [
+    { run = 'mpv "$@"', desc = "Play in MPV", block = false },
+]
+pdf = [
+    { run = 'okular "$@"', desc = "Open in Okular", block = false },
+]
+archive = [
+    { run = 'ark "$@"', desc = "Open in Ark", block = false },
+]
+
+[open]
+# Rules for file opening
+rules = [
+    { name = "*/", use = "folder" },
+    { mime = "text/*", use = "text" },
+    { mime = "image/*", use = "image" },
+    { mime = "video/*", use = "video" },
+    { mime = "audio/*", use = "audio" },
+    { mime = "application/pdf", use = "pdf" },
+    { mime = "application/zip", use = "archive" },
+    { mime = "application/x-tar", use = "archive" },
+    { mime = "application/gzip", use = "archive" },
+    { mime = "application/x-7z-compressed", use = "archive" },
+]
+
+[tasks]
+# Micro-task parallelism
+micro_workers = 5
+macro_workers = 10
+
+# Image decoding parallelism
+image_alloc = 536870912  # 512MB
+image_bound = [0, 0]
+
+[input]
+# Cursor behavior
+cursor_blink = true
+
+[select]
+# Selection behavior
+open_title = "Open with:"
+open_origin = "hovered"
+open_offset = [0, 1, 50, 7]
+
+[which]
+# Sort by key or description
+sort_by = "none"
+sort_sensitive = false
+sort_reverse = false
+
+[log]
+# Log level (off, error, warn, info, debug, trace)
+enabled = false
+
+[headsup]
+# Disable headsup notifications
+disable_exec_warn = false

@@ -1,0 +1,100 @@
+# Cloud Infrastructure SSH Config
+# Auto-imported by Konsole SSH Manager
+
+# ============================================
+# Oracle Cloud Infrastructure (OCI)
+# ============================================
+
+# OCI Flex 1 - Main services (photoprism, sync, n8n, radicale)
+Host oci-flex-1
+    HostName 84.235.234.87
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+# OCI Micro 1 - Mail server (mailu)
+Host oci-micro-1
+    HostName 130.110.251.193
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+# OCI Micro 2 - Analytics (matomo)
+Host oci-micro-2
+    HostName 129.151.228.66
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+# ============================================
+# Google Cloud Platform (GCP)
+# ============================================
+
+# GCP Arch 1 - Central proxy (npm, authelia, flask-api)
+# Note: Prefer 'gcloud compute ssh arch-1 --zone=us-central1-a'
+Host gcp-arch-1
+    HostName 34.55.55.234
+    User diego
+    IdentityFile ~/.ssh/google_compute_engine
+    IdentitiesOnly yes
+
+# ============================================
+# Aliases (short names)
+# ============================================
+
+Host flex1
+    HostName 84.235.234.87
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+Host micro1
+    HostName 130.110.251.193
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+Host micro2
+    HostName 129.151.228.66
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+
+Host arch1
+    HostName 34.55.55.234
+    User diego
+    IdentityFile ~/.ssh/google_compute_engine
+    IdentitiesOnly yes
+
+# ============================================
+# Service-based aliases
+# ============================================
+
+Host photos
+    HostName 84.235.234.87
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+
+Host mail
+    HostName 130.110.251.193
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+
+Host analytics
+    HostName 129.151.228.66
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+
+Host proxy
+    HostName 34.55.55.234
+    User diego
+    IdentityFile ~/.ssh/google_compute_engine
+
+# ============================================
+# Global defaults
+# ============================================
+
+Host *
+    AddKeysToAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3

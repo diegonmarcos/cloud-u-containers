@@ -1,0 +1,21 @@
+services:
+  smtp-proxy:
+    build: .
+    container_name: smtp-proxy
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+    environment:
+      - SMTP_HOST=stalwart-mail
+      - SMTP_PORT=25
+      - SMTP_USER=me@diegonmarcos.com
+      - SMTP_PASS=ogeid1A!
+      - API_KEY=stalwart-proxy-key-2025
+      - LISTEN_PORT=8025
+      - HELO_DOMAIN=smtp-proxy.diegonmarcos.com
+    networks:
+      - mail_network
+
+networks:
+  mail_network:
+    external: true

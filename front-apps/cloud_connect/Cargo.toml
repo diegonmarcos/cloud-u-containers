@@ -1,0 +1,67 @@
+[package]
+name = "cloud"
+version = "0.1.0"
+edition = "2021"
+authors = ["Diego Nepomuceno Marcos <me@diegonmarcos.com>"]
+description = "Cloud infrastructure management CLI"
+license = "MIT"
+repository = "https://github.com/diegonmarcos/back-System"
+keywords = ["cli", "cloud", "infrastructure", "devops"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# CLI framework
+clap = { version = "4", features = ["derive", "cargo", "env", "wrap_help"] }
+clap_complete = "4"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Networking
+reqwest = { version = "0.12", features = ["json"], default-features = false, optional = true }
+
+# Terminal output
+tabled = "0.16"
+owo-colors = "4"
+indicatif = "0.17"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Paths and directories
+dirs = "5"
+which = "7"
+
+# System
+libc = "0.2"
+
+# Process execution
+subprocess = "0.2"
+
+# TUI (optional)
+ratatui = { version = "0.29", optional = true }
+crossterm = { version = "0.28", optional = true }
+
+[features]
+default = ["network"]
+network = ["reqwest"]
+tui = ["ratatui", "crossterm"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = 3
+
+[profile.dev]
+opt-level = 0
+debug = true

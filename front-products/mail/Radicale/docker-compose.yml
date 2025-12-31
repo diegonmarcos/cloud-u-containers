@@ -1,0 +1,26 @@
+services:
+  radicale:
+    image: tomsquest/docker-radicale:latest
+    container_name: radicale
+    restart: unless-stopped
+    ports:
+      - "5232:5232"
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro
+    environment:
+      - TAKE_FILE_OWNERSHIP=true
+    healthcheck:
+      test: curl -f http://localhost:5232/.web/ || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mail_network
+      - mailu_default
+
+networks:
+  mail_network:
+    external: true
+  mailu_default:
+    external: true

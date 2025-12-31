@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  flask-api:
+    build: .
+    container_name: flask-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # C3 JSON data (shared volume from c3-collector)
+      - c3-data:/app/c3-data:ro
+      # Architecture config
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+      # SSH keys for live VM checks
+      - ~/.ssh:/home/appuser/.ssh:ro
+      # OCI config for wake-on-demand
+      - /home/diego/cloud/oci_config:/app/config/oci_config:ro
+      - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+    environment:
+      - FLASK_DEBUG=false
+      - CLOUD_CONFIG_PATH=/app/config/architecture.json
+      - OCI_CONFIG_FILE=/app/config/oci_config
+      - OCI_KEY_FILE=/app/config/oci_api_key.pem
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - c3-collector
+
+  c3-collector:
+    build: ../c3/in-house
+    container_name: c3-collector
+    restart: unless-stopped
+    volumes:
+      # Output JSON files
+      - c3-data:/app/4.jsons
+      # Raw data storage
+      - c3-raw:/app/2.raw
+      # SSH keys for VM access
+      - ~/.ssh:/root/.ssh:ro
+      # Architecture config
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - npm_default
+
+volumes:
+  c3-data:
+    name: c3-data
+  c3-raw:
+    name: c3-raw
+
+networks:
+  npm_default:
+    external: true

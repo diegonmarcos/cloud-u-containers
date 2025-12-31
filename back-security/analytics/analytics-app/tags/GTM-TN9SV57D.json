@@ -1,0 +1,1006 @@
+{
+    "exportFormatVersion": 2,
+    "exportTime": "2025-11-18 01:12:04",
+    "containerVersion": {
+        "path": "accounts/6321374781/containers/233770428/versions/2",
+        "accountId": "6321374781",
+        "containerId": "233770428",
+        "containerVersionId": "2",
+        "name": "main",
+        "container": {
+            "path": "accounts/6321374781/containers/233770428",
+            "accountId": "6321374781",
+            "containerId": "233770428",
+            "name": "diegonmarcos",
+            "publicId": "GTM-TN9SV57D",
+            "usageContext": [
+                "WEB"
+            ],
+            "fingerprint": "1763428239547",
+            "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/6321374781/containers/233770428/workspaces?apiLink=container",
+            "features": {
+                "supportUserPermissions": true,
+                "supportEnvironments": true,
+                "supportWorkspaces": true,
+                "supportGtagConfigs": false,
+                "supportBuiltInVariables": true,
+                "supportClients": false,
+                "supportFolders": true,
+                "supportTags": true,
+                "supportTemplates": true,
+                "supportTriggers": true,
+                "supportVariables": true,
+                "supportVersions": true,
+                "supportZones": true,
+                "supportTransformations": false
+            },
+            "tagIds": [
+                "GTM-TN9SV57D"
+            ]
+        },
+        "tag": [
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "23",
+                "name": "GA4 Config - All Pages",
+                "type": "googtag",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "tagId",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831403686",
+                "firingTriggerId": [
+                    "22"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "24",
+                "name": "GA4 Event - Scroll Depth",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "depth_percentage"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Scroll Depth Threshold}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "page_path"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page Path}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "page_title"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page Title}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "scroll_depth"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831903041",
+                "firingTriggerId": [
+                    "11"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "25",
+                "name": "GA4 Event - Outbound Link",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_url"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click URL}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_text"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click Text}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_domain"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Link Domain}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "page_location"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page URL}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "outbound_click"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831904779",
+                "firingTriggerId": [
+                    "12"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "26",
+                "name": "GA4 Event - File Download",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "file_name"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click Text}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "file_url"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click URL}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "file_extension"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{File Extension}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "page_location"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page URL}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "file_download"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831906693",
+                "firingTriggerId": [
+                    "13"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "27",
+                "name": "Session Info Tracking",
+                "type": "html",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "\n<script>\n(function() {\n  window.dataLayer = window.dataLayer || [];\n\n  dataLayer.push({\n    'event': 'session_info',\n    'device_type': /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',\n    'browser': (function() {\n      var ua = navigator.userAgent;\n      if (ua.indexOf('Firefox') > -1) return 'Firefox';\n      if (ua.indexOf('Chrome') > -1) return 'Chrome';\n      if (ua.indexOf('Safari') > -1) return 'Safari';\n      if (ua.indexOf('Edge') > -1) return 'Edge';\n      return 'Other';\n    })(),\n    'viewport_width': window.innerWidth,\n    'viewport_height': window.innerHeight,\n    'screen_resolution': screen.width + 'x' + screen.height,\n    'language': navigator.language,\n    'referrer': document.referrer\n  });\n})();\n</script>\n"
+                    }
+                ],
+                "fingerprint": "1761831908560",
+                "firingTriggerId": [
+                    "22"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "28",
+                "name": "Video Tracking - Universal",
+                "type": "html",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "\n<script>\n(function() {\n  window.dataLayer = window.dataLayer || [];\n\n  setTimeout(function() {\n    var videos = document.querySelectorAll('video');\n\n    videos.forEach(function(video, index) {\n      var videoId = video.id || 'video_' + index;\n\n      video.addEventListener('play', function() {\n        dataLayer.push({\n          'event': 'video_interaction',\n          'video_action': 'play',\n          'video_id': videoId,\n          'video_src': video.currentSrc,\n          'video_duration': video.duration\n        });\n      });\n\n      video.addEventListener('pause', function() {\n        dataLayer.push({\n          'event': 'video_interaction',\n          'video_action': 'pause',\n          'video_id': videoId,\n          'video_current_time': video.currentTime,\n          'video_percent': Math.round((video.currentTime / video.duration) * 100)\n        });\n      });\n\n      video.addEventListener('ended', function() {\n        dataLayer.push({\n          'event': 'video_interaction',\n          'video_action': 'complete',\n          'video_id': videoId\n        });\n      });\n    });\n  }, 1000);\n})();\n</script>\n"
+                    }
+                ],
+                "fingerprint": "1761831910393",
+                "firingTriggerId": [
+                    "22"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "29",
+                "name": "GA4 Event - Linktree Link Click",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_category"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Linktree Link Category}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_subsection"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Linktree Link Subsection}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_text"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click Text}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_url"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click URL}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "page_location"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page URL}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "linktree_link_click"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831912132",
+                "firingTriggerId": [
+                    "19"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "30",
+                "name": "GA4 Event - Social Icon Click",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "icon_platform"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click Text}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "icon_location"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "header"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "link_url"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click URL}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "social_icon_click"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761832288528",
+                "firingTriggerId": [
+                    "20"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "tagId": "31",
+                "name": "GA4 Event - CV Download",
+                "type": "gaawe",
+                "parameter": [
+                    {
+                        "type": "LIST",
+                        "key": "eventSettingsTable",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "cv_format"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{CV Format}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "download_location"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Page Path}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameter",
+                                        "value": "button_text"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "parameterValue",
+                                        "value": "{{Click Text}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventName",
+                        "value": "cv_download"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "measurementIdOverride",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761832290299",
+                "firingTriggerId": [
+                    "21"
+                ],
+                "consentSettings": {
+                    "consentStatus": "NOT_SET"
+                }
+            }
+        ],
+        "trigger": [
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "11",
+                "name": "Scroll Depth - 25%, 50%, 75%, 100%",
+                "type": "SCROLL_DEPTH",
+                "fingerprint": "1761831066352"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "12",
+                "name": "Outbound Link Click",
+                "type": "LINK_CLICK",
+                "filter": [
+                    {
+                        "type": "CONTAINS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{Click URL}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "http"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "MATCH_REGEX",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{Click URL}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "^(?!.*diegonmarcos\\.github\\.io).*$"
+                            }
+                        ]
+                    }
+                ],
+                "waitForTags": {
+                    "type": "TEMPLATE"
+                },
+                "checkValidation": {
+                    "type": "TEMPLATE"
+                },
+                "waitForTagsTimeout": {
+                    "type": "TEMPLATE"
+                },
+                "uniqueTriggerId": {
+                    "type": "TEMPLATE"
+                },
+                "fingerprint": "1761831287936"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "13",
+                "name": "File Download Click",
+                "type": "CLICK",
+                "fingerprint": "1761831288920"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "14",
+                "name": "Timer - 10s",
+                "type": "TIMER",
+                "eventName": {
+                    "type": "TEMPLATE"
+                },
+                "interval": {
+                    "type": "TEMPLATE",
+                    "value": "10000"
+                },
+                "limit": {
+                    "type": "TEMPLATE",
+                    "value": "1"
+                },
+                "fingerprint": "1761831338885"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "15",
+                "name": "Timer - 30s",
+                "type": "TIMER",
+                "eventName": {
+                    "type": "TEMPLATE"
+                },
+                "interval": {
+                    "type": "TEMPLATE",
+                    "value": "30000"
+                },
+                "limit": {
+                    "type": "TEMPLATE",
+                    "value": "1"
+                },
+                "fingerprint": "1761831339750"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "16",
+                "name": "Timer - 60s",
+                "type": "TIMER",
+                "eventName": {
+                    "type": "TEMPLATE"
+                },
+                "interval": {
+                    "type": "TEMPLATE",
+                    "value": "60000"
+                },
+                "limit": {
+                    "type": "TEMPLATE",
+                    "value": "1"
+                },
+                "fingerprint": "1761831340764"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "17",
+                "name": "Timer - 120s",
+                "type": "TIMER",
+                "eventName": {
+                    "type": "TEMPLATE"
+                },
+                "interval": {
+                    "type": "TEMPLATE",
+                    "value": "120000"
+                },
+                "limit": {
+                    "type": "TEMPLATE",
+                    "value": "1"
+                },
+                "fingerprint": "1761831341683"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "18",
+                "name": "Timer - 300s",
+                "type": "TIMER",
+                "eventName": {
+                    "type": "TEMPLATE"
+                },
+                "interval": {
+                    "type": "TEMPLATE",
+                    "value": "300000"
+                },
+                "limit": {
+                    "type": "TEMPLATE",
+                    "value": "1"
+                },
+                "fingerprint": "1761831342678"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "19",
+                "name": "Linktree - Link Click",
+                "type": "CLICK",
+                "fingerprint": "1761831399527"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "20",
+                "name": "Linktree - Social Icon Click",
+                "type": "CLICK",
+                "fingerprint": "1761831400532"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "21",
+                "name": "CV - Download Button Click",
+                "type": "CLICK",
+                "fingerprint": "1761831401058"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "triggerId": "22",
+                "name": "All Pages",
+                "type": "PAGEVIEW",
+                "fingerprint": "1761831402730"
+            }
+        ],
+        "variable": [
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "4",
+                "name": "GA4 Measurement ID",
+                "type": "c",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "value",
+                        "value": "G-VB9ENP6DZ0"
+                    }
+                ],
+                "fingerprint": "1761831058839"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "5",
+                "name": "Link Domain",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  var url = {{Click URL}};\n  if (url) {\n    try {\n      var domain = url.match(/:\\/\\/(.[^/]+)/)[1];\n      return domain;\n    } catch(e) {\n      return 'unknown';\n    }\n  }\n  return 'unknown';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831059835"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "6",
+                "name": "File Extension",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  var url = {{Click URL}};\n  if (url) {\n    var extension = url.split('.').pop().split('?')[0].toLowerCase();\n    return extension;\n  }\n  return 'unknown';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831060761"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "7",
+                "name": "Linktree Link Category",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  var element = {{Click Element}};\n  if (!element) return 'Unknown';\n\n  var section = element.closest('.link-section');\n  if (section) {\n    var title = section.querySelector('.section-title');\n    return title ? title.textContent.trim() : 'Unknown';\n  }\n  return 'Unknown';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831061775"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "8",
+                "name": "Linktree Link Subsection",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  var element = {{Click Element}};\n  if (!element) return 'Unknown';\n\n  var container = element.closest('.links-container');\n  if (container) {\n    var titles = container.parentElement.querySelectorAll('.subsection-title');\n    for (var i = 0; i < titles.length; i++) {\n      var nextEl = titles[i].nextElementSibling;\n      while (nextEl) {\n        if (nextEl === container) return titles[i].textContent.trim();\n        nextEl = nextEl.nextElementSibling;\n      }\n    }\n  }\n  return 'Unknown';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831062685"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "9",
+                "name": "CV Format",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  var element = {{Click Element}};\n  if (!element) return 'unknown';\n\n  var id = element.id || element.getAttribute('id');\n  if (id) {\n    if (id.includes('pdf')) return 'PDF';\n    if (id.includes('docx')) return 'DOCX';\n    if (id.includes('csv')) return 'CSV';\n    if (id.includes('md')) return 'Markdown';\n  }\n\n  var text = element.textContent || '';\n  if (text.toLowerCase().includes('pdf')) return 'PDF';\n  if (text.toLowerCase().includes('docx')) return 'DOCX';\n  if (text.toLowerCase().includes('markdown')) return 'Markdown';\n\n  return 'unknown';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831063972"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "10",
+                "name": "Device Type",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  return /Mobile|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';\n}\n"
+                    }
+                ],
+                "fingerprint": "1761831065477"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "variableId": "32",
+                "name": "Page Title",
+                "type": "jsm",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "javascript",
+                        "value": "\nfunction() {\n  return document.title;\n}\n"
+                    }
+                ],
+                "fingerprint": "1761834250183"
+            }
+        ],
+        "builtInVariable": [
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "PAGE_URL",
+                "name": "Page URL"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "PAGE_HOSTNAME",
+                "name": "Page Hostname"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "PAGE_PATH",
+                "name": "Page Path"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "REFERRER",
+                "name": "Referrer"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "EVENT",
+                "name": "Event"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "CLICK_ELEMENT",
+                "name": "Click Element"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "CLICK_URL",
+                "name": "Click URL"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "CLICK_TEXT",
+                "name": "Click Text"
+            },
+            {
+                "accountId": "6321374781",
+                "containerId": "233770428",
+                "type": "SCROLL_DEPTH_THRESHOLD",
+                "name": "Scroll Depth Threshold"
+            }
+        ],
+        "fingerprint": "1761834850441",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/6321374781/containers/233770428/versions/2?apiLink=version"
+    }
+}

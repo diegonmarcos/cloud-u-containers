@@ -1,0 +1,231 @@
+{
+  "timestamp": "2025-12-15T23:19:48.681400",
+  "date": "2025-12-15",
+  "hour": "23",
+  "vms": {
+    "oci-f-micro_1": {
+      "ip": "130.110.251.193",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 130.110.251.193 (130.110.251.193) 56(84) bytes of data.\n\n--- 130.110.251.193 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2067ms\n\n"
+      },
+      "ssh": {
+        "status": "ok",
+        "output": "OK"
+      },
+      "ports": {
+        "22": {
+          "status": "open",
+          "port": 22
+        },
+        "80": {
+          "status": "open",
+          "port": 80
+        },
+        "443": {
+          "status": "open",
+          "port": 443
+        }
+      }
+    },
+    "oci-f-micro_2": {
+      "ip": "129.151.228.66",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 129.151.228.66 (129.151.228.66) 56(84) bytes of data.\n\n--- 129.151.228.66 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2047ms\n\n"
+      },
+      "ssh": {
+        "status": "ok",
+        "output": "OK"
+      },
+      "ports": {
+        "22": {
+          "status": "open",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    },
+    "gcp-f-micro_1": {
+      "ip": "34.55.55.234",
+      "ping": {
+        "status": "up",
+        "latency_ms": 248.303,
+        "raw": "PING 34.55.55.234 (34.55.55.234) 56(84) bytes of data.\n64 bytes from 34.55.55.234: icmp_seq=1 ttl=51 time=260 ms\n64 bytes from 34.55.55.234: icmp_seq=2 ttl=51 time=283 ms\n64 bytes from 34.55.55.234: icmp_seq=3 ttl=51 time=202 ms\n\n--- 34.55.55.234 ping statistics ---\n3 packets transmitted, 3 received, 0% packet loss, time 2003ms\nrtt min/avg/max/mdev = 202.389/248.303/282.523/33.743 ms\n"
+      },
+      "ssh": {
+        "status": "error",
+        "error": "Command '['gcloud', 'compute', 'ssh', 'arch-1', '--zone', 'us-central1-a', '--command=echo OK']' timed out after 10 seconds"
+      },
+      "ports": {
+        "22": {
+          "status": "open",
+          "port": 22
+        },
+        "80": {
+          "status": "open",
+          "port": 80
+        },
+        "443": {
+          "status": "open",
+          "port": 443
+        }
+      }
+    },
+    "oci-p-flex_1": {
+      "ip": "84.235.234.87",
+      "ping": {
+        "status": "down",
+        "latency_ms": null,
+        "raw": "PING 84.235.234.87 (84.235.234.87) 56(84) bytes of data.\n\n--- 84.235.234.87 ping statistics ---\n3 packets transmitted, 0 received, 100% packet loss, time 2047ms\n\n"
+      },
+      "ssh": {
+        "status": "error",
+        "error": "Command '['ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=10', '-i', '/home/diego/Documents/Git/LOCAL_KEYS/00_terminal/ssh/id_rsa', 'ubuntu@84.235.234.87', 'echo OK']' timed out after 10 seconds"
+      },
+      "ports": {
+        "22": {
+          "status": "closed",
+          "port": 22
+        },
+        "80": {
+          "status": "closed",
+          "port": 80
+        },
+        "443": {
+          "status": "closed",
+          "port": 443
+        }
+      }
+    }
+  },
+  "endpoints": [
+    {
+      "url": "https://diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1086.77
+    },
+    {
+      "url": "https://photos.app.diegonmarcos.com",
+      "status": "down",
+      "error": "[Errno -2] Name or service not known"
+    },
+    {
+      "url": "https://analytics.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1457.67
+    },
+    {
+      "url": "https://sync.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1202.96
+    },
+    {
+      "url": "https://n8n.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1193.18
+    },
+    {
+      "url": "https://proxy.diegonmarcos.com",
+      "status": "up",
+      "code": 200,
+      "latency_ms": 1108.87
+    },
+    {
+      "url": "https://auth.diegonmarcos.com",
+      "status": "down",
+      "error": "Forbidden"
+    }
+  ],
+  "ssl": [
+    {
+      "domain": "diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-07T12:33:09",
+      "days_left": 81,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Google Trust Services",
+        "commonName": "WE1"
+      }
+    },
+    {
+      "domain": "photos.app.diegonmarcos.com",
+      "status": "error",
+      "error": "[Errno -2] Name or service not known"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T00:09:37",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    },
+    {
+      "domain": "sync.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T13:36:12",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    },
+    {
+      "domain": "n8n.diegonmarcos.com",
+      "status": "ok",
+      "expires": "2026-03-09T00:11:12",
+      "days_left": 83,
+      "issuer": {
+        "countryName": "US",
+        "organizationName": "Let's Encrypt",
+        "commonName": "E8"
+      }
+    }
+  ],
+  "dns": [
+    {
+      "domain": "diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tdiegonmarcos.com\nAddress: 172.67.168.34\nName:\tdiegonmarcos.com\nAddress: 104.21.46.63\nName:\tdiegonmarcos.com\nAddress: 2606:4700:3035::6815:2e3f\nName:\tdiegonmarcos.com\nAddress: 2606:4700:3035::ac43:a822\n\n"
+    },
+    {
+      "domain": "photos.app.diegonmarcos.com",
+      "status": "error",
+      "error": "Command '['nslookup', 'photos.app.diegonmarcos.com']' timed out after 10 seconds"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tanalytics.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    },
+    {
+      "domain": "sync.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tsync.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    },
+    {
+      "domain": "n8n.diegonmarcos.com",
+      "status": "ok",
+      "raw": "Server:\t\t127.0.0.53\nAddress:\t127.0.0.53#53\n\nNon-authoritative answer:\nName:\tn8n.diegonmarcos.com\nAddress: 34.55.55.234\n\n"
+    }
+  ]
+}

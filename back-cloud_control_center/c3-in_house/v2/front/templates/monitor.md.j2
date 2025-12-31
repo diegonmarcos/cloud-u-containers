@@ -1,0 +1,125 @@
+{# Monitor Template - Outputs Markdown from cloud_control.json -> monitor #}
+# Monitor
+
+> Generated: {{ now.strftime('%Y-%m-%d %H:%M') }}
+
+---
+
+## VM Overview
+
+| VM | CPU | RAM | Storage | VRAM | Status |
+|----|-----|-----|---------|------|--------|
+{% for vm in monitor.vmOverview.data -%}
+| {{ vm.vm }} | {{ vm.cpu }} | {{ vm.ram }} | {{ vm.storage }} | {{ vm.vram }} | {{ vm.status }} |
+{% endfor %}
+
+---
+
+## Service Breakdown by VM
+
+{% for vmId, vmData in monitor.serviceBreakdownByVm.items() if not vmId.startswith('_') %}
+### {{ vmData.displayName }}
+
+*Specs: {{ vmData.specs }}*
+
+**Total**: CPU {{ vmData.vmTotal.cpu }}, RAM {{ vmData.vmTotal.ram }}, Storage {{ vmData.vmTotal.storage }}
+
+| Service | CPU | RAM | Storage |
+|---------|-----|-----|---------|
+{% for svc in vmData.services -%}
+| {{ svc.name }} | {{ svc.cpu }} | {{ svc.ram }} | {{ svc.storage }} |
+{% endfor %}
+
+{% endfor %}
+
+---
+
+## Audit Analytics
+
+| Service | URL | Status |
+|---------|-----|--------|
+{% for item in monitor.auditAnalytics.data -%}
+| {{ item.service }} | {{ item.url }} | {{ item.status }} |
+{% endfor %}
+
+---
+
+## Audit Logs Metrics
+
+| Metric | Value |
+|--------|-------|
+{% for item in monitor.auditLogsMetrics.data -%}
+| {{ item.metric }} | {{ item.value }} |
+{% endfor %}
+
+---
+
+## Event Type Distribution
+
+| Type | Percentage |
+|------|------------|
+{% for item in monitor.eventTypeDistribution.data -%}
+| {{ item.type }} | {{ item.percentage }} |
+{% endfor %}
+
+---
+
+## Status Breakdown
+
+| Status | Count | Percentage |
+|--------|-------|------------|
+{% for item in monitor.statusBreakdown.data -%}
+| {{ item.status }} | {{ item.count }} | {{ item.percentage }} |
+{% endfor %}
+
+---
+
+## Recent Audit Events
+
+| Timestamp | Event | Source | User/IP | Status |
+|-----------|-------|--------|---------|--------|
+{% for e in monitor.recentAuditEvents.data -%}
+| {{ e.timestamp }} | {{ e.event }} | {{ e.source }} | {{ e.userIp }} | {{ e.status }} |
+{% endfor %}
+
+---
+
+## Container Orchestration (Dockge)
+
+| VM | IP | Description | Dockge URL |
+|----|-----|-------------|------------|
+{% for item in monitor.orchestrate.data -%}
+| {{ item.vm }} | `{{ item.ip }}` | {{ item.description }} | {{ item.dockgeUrl }} |
+{% endfor %}
+
+---
+
+## SSH Commands
+
+| VM | Command |
+|----|---------|
+{% for item in monitor.sshCommands.data -%}
+| {{ item.vm }} | `{{ item.command }}` |
+{% endfor %}
+
+---
+
+## Cloud Consoles
+
+| Provider | Console URL |
+|----------|-------------|
+{% for item in monitor.cloudConsoles.data -%}
+| {{ item.provider }} | {{ item.url }} |
+{% endfor %}
+
+---
+
+## Alerts
+
+{% if monitor.alerts and monitor.alerts | length > 0 -%}
+{% for alert in monitor.alerts -%}
+- **{{ alert.severity | default('info') | upper }}**: {{ alert.message }}
+{% endfor %}
+{% else -%}
+*No active alerts*
+{% endif %}

@@ -1,0 +1,44 @@
+{
+  "timestamp": "2025-12-15T23:17:57.088547",
+  "date": "2025-12-15",
+  "hour": "23",
+  "vms": {
+    "oci-f-micro_1": {
+      "status": "unreachable",
+      "ip": "130.110.251.193"
+    },
+    "oci-f-micro_2": {
+      "status": "unreachable",
+      "ip": "129.151.228.66"
+    },
+    "gcp-f-micro_1": {
+      "status": "ok",
+      "ip": "34.55.55.234",
+      "containers": {
+        "raw": "ERROR: Timeout"
+      },
+      "stats": {
+        "raw": "=== STATS ===\nNAME              CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O\nflask-api         0.02%     92.65MiB / 945.6MiB   9.80%     1.19MB / 949kB    97.2MB / 46.2MB\nc3-collector      0.00%     2.059MiB / 945.6MiB   0.22%     2.17kB / 264B     19.4MB / 5.27MB\nportainer         0.00%     11.02MiB / 945.6MiB   1.17%     366kB / 16.7MB    744MB / 20.7MB\ndozzle            0.00%     10.64MiB / 945.6MiB   1.13%     243kB / 1.41MB    1.01GB / 38.9MB\noauth2-proxy      0.00%     5.121MiB / 945.6MiB   0.54%     3.35MB / 26MB     1.74GB / 67.3MB\nauthelia-redis    0.30%     2.168MiB / 945.6MiB   0.23%     10.2MB / 12.2MB   708MB / 370MB\nnpm-expose-test   0.00%     292KiB / 945.6MiB     0.03%     141kB / 126B      1.4MB / 90.1kB\nauthelia          0.01%     24.25MiB / 945.6MiB   2.56%     20.4MB / 31.6MB   3.45GB / 312MB\nnpm               0.03%     21.45MiB / 945.6MiB   2.27%     180MB / 244MB     4.55GB / 1.07GB\n=== JSON ===\n{\"BlockIO\":\"104MB / 46.2MB\",\"CPUPerc\":\"25.88%\",\"Container\":\"7284b809f137ea049a903dc3bb65c4ca6c6e82836bd1c64d896f684411071bac\",\"ID\":\"7284b809f137\",\"MemPerc\":\"8.81%\",\"MemUsage\":\"83.34MiB / 945.6MiB\",\"Name\":\"flask-api\",\"NetIO\":\"1.19MB / 950kB\",\"PIDs\":\"3\"}\n{\"BlockIO\":\"19.4MB / 5.27MB\",\"CPUPerc\":\"0.00%\",\"Container\":\"3e4e129b25abd53851c88e2ff76514e01d75b39d0adc2a0b17a8be1f88e2d867\",\"ID\":\"3e4e129b25ab\",\"MemPerc\":\"0.22%\",\"MemUsage\":\"2.059MiB / 945.6MiB\",\"Name\":\"c3-collector\",\"NetIO\":\"2.17kB / 264B\",\"PIDs\":\"3\"}\n{\"BlockIO\":\"744MB / 20.7MB\",\"CPUPerc\":\"0.04%\",\"Container\":\"e14a1da9babf8058440d4c7b6c89ed3a30cf70c65b609ade2d7d2a13c8e4981e\",\"ID\":\"e14a1da9babf\",\"MemPerc\":\"1.17%\",\"MemUsage\":\"11.02MiB / 945.6MiB\",\"Name\":\"portainer\",\"NetIO\":\"366kB / 16.7MB\",\"PIDs\":\"7\"}\n{\"BlockIO\":\"1.01GB / 38.9MB\",\"CPUPerc\":\"0.00%\",\"Container\":\"b44a695dfeca14f3349e23d21cd6013bffb5bd608aa08fd9f96f50873bc25ecd\",\"ID\":\"b44a695dfeca\",\"MemPerc\":\"1.13%\",\"MemUsage\":\"10.64MiB / 945.6MiB\",\"Name\":\"dozzle\",\"NetIO\":\"243kB / 1.41MB\",\"PIDs\":\"8\"}\n{\"BlockIO\":\"1.74GB / 67.3MB\",\"CPUPerc\":\"0.00%\",\"Container\":\"9621923e0571a7806d9fc0908756876b482280bd18328487cde7139f7ff4719f\",\"ID\":\"9621923e0571\",\"MemPerc\":\"0.54%\",\"MemUsage\":\"5.121MiB / 945.6MiB\",\"Name\":\"oauth2-proxy\",\"NetIO\":\"3.35MB / 26MB\",\"PIDs\":\"8\"}\n{\"BlockIO\":\"708MB / 370MB\",\"CPUPerc\":\"0.33%\",\"Container\":\"697f17dfff965b5a7d29c90dc82d33dd4a73b7cc7e4001e674a0247ea3a69d55\",\"ID\":\"697f17dfff96\",\"MemPerc\":\"0.26%\",\"MemUsage\":\"2.418MiB / 945.6MiB\",\"Name\":\"authelia-redis\",\"NetIO\":\"10.2MB / 12.2MB\",\"PIDs\":\"6\"}\n{\"BlockIO\":\"1.4MB / 90.1kB\",\"CPUPerc\":\"0.00%\",\"Container\":\"1f29a71940a968abb0be1fcf19fe5283201f3837238dfe5a5905ceade11c9d26\",\"ID\":\"1f29a71940a9\",\"MemPerc\":\"0.03%\",\"MemUsage\":\"292KiB / 945.6MiB\",\"Name\":\"npm-expose-test\",\"NetIO\":\"141kB / 126B\",\"PIDs\":\"1\"}\n{\"BlockIO\":\"3.45GB / 312MB\",\"CPUPerc\":\"0.01%\",\"Container\":\"ae4caaa4196cced8e57612e8d0479037e626c0edd49b0dd54ac578a43e752791\",\"ID\":\"ae4caaa4196c\",\"MemPerc\":\"2.56%\",\"MemUsage\":\"24.25MiB / 945.6MiB\",\"Name\":\"authelia\",\"NetIO\":\"20.4MB / 31.6MB\",\"PIDs\":\"11\"}\n{\"BlockIO\":\"4.55GB / 1.07GB\",\"CPUPerc\":\"0.02%\",\"Container\":\"14db11073740baa9886320fa49d2f175087693ebeda10135de40cd2b494f77ab\",\"ID\":\"14db11073740\",\"MemPerc\":\"2.29%\",\"MemUsage\":\"21.7MiB / 945.6MiB\",\"Name\":\"npm\",\"NetIO\":\"180MB / 244MB\",\"PIDs\":\"25\"}\n"
+      },
+      "health": {
+        "raw": "=== HEALTH STATUS ===\n/flask-api: health=healthy restarts=0 started=2025-12-15T21:43:55.142671717Z\n/c3-collector: health=no-healthcheck restarts=0 started=2025-12-15T21:34:11.311981418Z\n/portainer: health=no-healthcheck restarts=0 started=2025-12-15T00:59:20.26545184Z\n/dozzle: health=no-healthcheck restarts=0 started=2025-12-15T00:02:43.778950189Z\n/oauth2-proxy: health=no-healthcheck restarts=0 started=2025-12-08T23:15:43.36791311Z\n/authelia-redis: health=no-healthcheck restarts=0 started=2025-12-12T20:04:18.107116795Z\n/npm-expose-test: health=no-healthcheck restarts=0 started=2025-12-07T01:20:14.379077467Z\n/authelia: health=healthy restarts=0 started=2025-12-12T21:22:26.938561457Z\n/npm: health=no-healthcheck restarts=0 started=2025-12-12T21:21:07.666196696Z\n"
+      },
+      "restarts": {
+        "raw": "=== RESTART COUNTS ===\n=== RECENTLY DIED ===\nNAMES     STATUS\n"
+      },
+      "logs_errors": {
+        "raw": "=== CONTAINER ERRORS (last 1h) ===\n--- flask-api ---\n[2025-12-15 22:09:44 +0000] [1] [ERROR] Worker (pid:743) was sent SIGKILL! Perhaps out of memory?\n[2025-12-15 22:11:14 +0000] [783] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:11:14 +0000] [782] [ERROR] Error handling request (no URI read)\n[2025-12-15 22:12:44 +0000] [830] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:13:45 +0000] [831] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:14:44 +0000] [869] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:15:44 +0000] [947] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:16:44 +0000] [985] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:17:44 +0000] [1024] [ERROR] Error handling request /api/cloud_control/monitor\n[2025-12-15 22:18:44 +0000] [908] [ERROR] Error handling request /api/cloud_control/monitor\n"
+      },
+      "images": {
+        "raw": "=== IMAGES ===\nREPOSITORY                          TAG       SIZE      CREATED\ncloud-api-flask-api                 latest    262MB     43 minutes ago\nin-house-c3-collector               latest    233MB     45 minutes ago\ncloud-dashboard-flask-server        latest    262MB     22 hours ago\nflask-app-flask-server              latest    262MB     23 hours ago\namir20/dozzle                       latest    75.7MB    29 hours ago\napi                                 latest    212MB     5 days ago\nalpine                              latest    13.9MB    12 days ago\nalpine/socat                        latest    15.7MB    12 days ago\nauthelia/authelia                   latest    102MB     2 weeks ago\nportainer/portainer-ce              latest    246MB     2 weeks ago\nredis                               alpine    131MB     3 weeks ago\njc21/nginx-proxy-manager            latest    1.61GB    3 weeks ago\nquay.io/oauth2-proxy/oauth2-proxy   latest    62.7MB    5 weeks ago\nquay.io/oauth2-proxy/oauth2-proxy   v7.6.0    56.9MB    22 months ago\nquay.io/oauth2-proxy/oauth2-proxy   v7.5.1    53.2MB    2 years ago\nquay.io/oauth2-proxy/oauth2-proxy   v7.4.0    48.1MB    3 years ago\n=== DISK USAGE ===\nTYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE\nImages          16        9         2.941GB   2.573GB (87%)\nContainers      9         9         4.612MB   0B (0%)\nLocal Volumes   7         4         7.496MB   16.33kB (0%)\nBuild Cache     44        0         410.9MB   148.7MB\n"
+      },
+      "networks": {
+        "raw": "=== NETWORKS ===\nNETWORK ID     NAME                DRIVER    SCOPE\n17d017ffe05e   authelia-net        bridge    local\n4db2628aa000   authelia_auth-net   bridge    local\n6c78d3a60291   bridge              bridge    local\n6cd13cfbc577   dev_network         bridge    local\n0502e02fc169   host                host      local\n143c73731749   none                null      local\n1d8b757fc136   npm_default         bridge    local\n=== NETWORK DETAILS ===\n--- 17d017ffe05e ---\nauthelia-net: authelia-redis authelia \n--- 4db2628aa000 ---\nauthelia_auth-net: authelia \n--- 6c78d3a60291 ---\nbridge: \n--- 6cd13cfbc577 ---\ndev_network: npm oauth2-proxy \n--- 0502e02fc169 ---\nhost: \n--- 143c73731749 ---\nnone: \n--- 1d8b757fc136 ---\nnpm_default: npm npm-expose-test c3-collector flask-api authelia dozzle portainer \n"
+      }
+    },
+    "oci-p-flex_1": {
+      "status": "unreachable",
+      "ip": "84.235.234.87"
+    }
+  }
+}

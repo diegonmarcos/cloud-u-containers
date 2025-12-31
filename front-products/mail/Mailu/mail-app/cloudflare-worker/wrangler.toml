@@ -1,0 +1,17 @@
+name = "email-forwarder"
+main = "email-forwarder.js"
+compatibility_date = "2024-01-01"
+account_id = "e5cb0a0c6f448e54f217de484259f0ae"
+
+# Email routing - Worker handles emails for this address
+# Configure in Cloudflare Dashboard: Email > Email Routing > Routes
+# Rule: me@diegonmarcos.com -> Send to Worker -> email-forwarder
+
+# Environment variables
+[vars]
+# SMTP Proxy URL - direct connection to mail server SMTP proxy on port 8080
+SMTP_PROXY_URL = "http://smtp.diegonmarcos.com:8080/"
+SMTP_PROXY_KEY = "stalwart-proxy-key-2025"
+# Backup email (Google Workspace) - only used if primary Mailu delivery fails
+# Note: Cannot use me@diegonmarcos.com as backup - would trigger Worker loop
+BACKUP_EMAIL = ""

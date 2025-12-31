@@ -1,0 +1,42 @@
+FROM rust:1.75-slim-bookworm AS builder
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    git \
+    libyara-dev \
+    libclang-dev \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build sauron from GitHub (evilsocket/sauron - the security tool)
+RUN git clone --depth 1 https://github.com/evilsocket/sauron.git /sauron \
+    && cd /sauron \
+    && cargo build --release \
+    && cp /sauron/target/release/sauron /usr/local/bin/
+
+# Runtime image
+FROM debian:bookworm-slim
+
+# Copy yara library from builder
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libyara* /usr/lib/x86_64-linux-gnu/
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && ldconfig
+
+COPY --from=builder /usr/local/bin/sauron /usr/local/bin/sauron
+
+# Create directories
+RUN mkdir -p /etc/sauron/yara-rules /var/log/sauron /watch
+
+# Wrapper script for continuous monitoring with JSON output
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+WORKDIR /
+
+ENTRYPOINT ["/entrypoint.sh"]

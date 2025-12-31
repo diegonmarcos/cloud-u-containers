@@ -1,0 +1,5 @@
+name,provider,display_name,ip,instance_id,zone
+arch-1,gcp,GCP: arch-1,34.55.55.234,,us-central1-a
+flex1,oci,OCI: flex1 (dev-server),84.235.234.87,ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczachwpa3qrh7n25vfez3smidz4o7gpmtj4ga4d7zqlja5yq,
+micro1,oci,OCI: micro1 (mail),130.110.251.193,ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq,
+micro2,oci,OCI: micro2 (matomo),129.151.228.66,ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq,

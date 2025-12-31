@@ -1,0 +1,11 @@
+services:
+  webmail:
+    volumes:
+      - "/opt/mailu/webmail:/data"
+      - "/opt/mailu/overrides/roundcube:/overrides:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/calendar:/var/www/roundcube/plugins/calendar:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/libcalendaring:/var/www/roundcube/plugins/libcalendaring:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/libkolab:/var/www/roundcube/plugins/libkolab:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/pear/HTTP:/usr/share/php83/HTTP:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/pear/Net:/usr/share/php83/Net:ro"
+      - "/opt/mailu/plugins/roundcube_calendar/pear/PEAR:/usr/share/php83/PEAR:ro"

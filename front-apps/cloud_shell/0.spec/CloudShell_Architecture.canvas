@@ -1,0 +1,320 @@
+{
+  "nodes": [
+    {
+      "id": "title",
+      "type": "text",
+      "x": 400,
+      "y": -600,
+      "width": 400,
+      "height": 80,
+      "text": "# Cloud Shell\n**Tauri Desktop App with AI-Powered Terminal**",
+      "color": "6"
+    },
+    {
+      "id": "arch-group",
+      "type": "group",
+      "x": -100,
+      "y": -480,
+      "width": 1400,
+      "height": 900,
+      "label": "Architecture Diagram",
+      "color": "5"
+    },
+    {
+      "id": "user-layer",
+      "type": "text",
+      "x": 400,
+      "y": -440,
+      "width": 400,
+      "height": 60,
+      "text": "## User Input Layer\n`Natural language OR exact commands`",
+      "color": "4"
+    },
+    {
+      "id": "frontend",
+      "type": "text",
+      "x": 0,
+      "y": -340,
+      "width": 350,
+      "height": 200,
+      "text": "## Frontend (WebView)\n**Technology:** Svelte 5 + HTML/CSS\n\n- `Terminal.svelte` - xterm.js wrapper\n- `Autocomplete.svelte` - Rich suggestions\n- `HealthTable.svelte` - VM status cards\n- `Chart.svelte` - D3.js visualizations\n\n**RAM:** ~15-20 MB",
+      "color": "3"
+    },
+    {
+      "id": "xtermjs",
+      "type": "text",
+      "x": 400,
+      "y": -340,
+      "width": 300,
+      "height": 200,
+      "text": "## xterm.js\n**Purpose:** Terminal Emulator\n\n- ANSI code rendering\n- Full color support\n- Mouse support\n- vim/htop work perfectly\n- Addons: WebGL, fit, search\n\n**Battle-tested by VS Code**",
+      "color": "2"
+    },
+    {
+      "id": "tauri-ipc",
+      "type": "text",
+      "x": 750,
+      "y": -340,
+      "width": 300,
+      "height": 200,
+      "text": "## Tauri IPC Bridge\n**Purpose:** Frontend <-> Backend\n\n```typescript\ninvoke('execute_cmd', {cmd})\ninvoke('ssh_exec', {vm, cmd})\ninvoke('get_autocomplete')\nlisten('terminal_output')\n```\n\n**Secure, typed, fast**",
+      "color": "1"
+    },
+    {
+      "id": "backend",
+      "type": "text",
+      "x": 0,
+      "y": -80,
+      "width": 350,
+      "height": 220,
+      "text": "## Backend (Rust)\n**Technology:** Tauri + Tokio\n\n```\nsrc-tauri/\n├── commands/\n│   ├── shell.rs      # PTY\n│   ├── ssh.rs        # Remote\n│   ├── autocomplete.rs\n│   └── health.rs\n└── main.rs\n```\n\n**RAM:** ~5-10 MB",
+      "color": "4"
+    },
+    {
+      "id": "cloud-lib",
+      "type": "text",
+      "x": 400,
+      "y": -80,
+      "width": 300,
+      "height": 220,
+      "text": "## cloud_control_lib\n**Shared Rust Library**\n\n```rust\nuse cloud_control_lib::{\n    health,\n    vms,\n    containers,\n    services,\n    ssh,\n    wake\n};\n```\n\n**Shared with CLI + API**",
+      "color": "4"
+    },
+    {
+      "id": "ai-layer",
+      "type": "text",
+      "x": 750,
+      "y": -80,
+      "width": 300,
+      "height": 220,
+      "text": "## AI Intent Resolver\n**Purpose:** NL -> Commands\n\n```\n\"check my servers\"\n      ↓\n1. ssh gcp docker ps\n2. ping 34.55.55.234\n3. curl https://proxy...\n```\n\n**Options:**\n- Local: Ollama/llama.cpp\n- API: Claude/GPT",
+      "color": "6"
+    },
+    {
+      "id": "system-layer",
+      "type": "text",
+      "x": 200,
+      "y": 200,
+      "width": 800,
+      "height": 120,
+      "text": "## System Layer\n\n| PTY (fork/exec) | SSH (russh) | HTTP (reqwest) | File I/O |\n|-----------------|-------------|----------------|----------|\n| Local commands | Remote VMs | Health checks | Config |\n\n**Full system access - NO browser sandbox limitations**",
+      "color": "5"
+    },
+    {
+      "id": "ui-group",
+      "type": "group",
+      "x": -100,
+      "y": 500,
+      "width": 1400,
+      "height": 1100,
+      "label": "UI Mockups",
+      "color": "3"
+    },
+    {
+      "id": "ui-main",
+      "type": "text",
+      "x": 0,
+      "y": 540,
+      "width": 650,
+      "height": 500,
+      "text": "## Main Terminal View\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│  Cloud Shell                                    [─] [□] [×] │\n├─────────────────────────────────────────────────────────────┤\n│  Tab: GCP │ Tab: OCI │ Tab: Local │ Tab: Dashboard          │\n├─────────────────────────────────────────────────────────────┤\n│                                                             │\n│  diego@cloud:~$ health                                      │\n│                                                             │\n│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │\n│  │ GCP Hub  │ │ OCI Flex │ │ OCI Mail │ │ OCI Ana  │       │\n│  │ ● Online │ │ ○ Sleep  │ │ ● Online │ │ ● Online │       │\n│  │ 4 cont.  │ │ 3 cont.  │ │ 5 cont.  │ │ 2 cont.  │       │\n│  │ [SSH]    │ │ [Wake]   │ │ [SSH]    │ │ [SSH]    │       │\n│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │\n│                                                             │\n│  diego@cloud:~$ _                                           │\n│                                                             │\n└─────────────────────────────────────────────────────────────┘\n```",
+      "color": "4"
+    },
+    {
+      "id": "ui-autocomplete",
+      "type": "text",
+      "x": 700,
+      "y": 540,
+      "width": 550,
+      "height": 500,
+      "text": "## Rich Autocomplete\n\n```\n$ docker co│\n           │\n┌──────────▼─────────────────────────────┐\n│ COMMANDS                                │\n│ ┌─────────────────────────────────────┐│\n│ │  container   Manage containers      ││\n│ │  compose     Docker Compose         ││\n│ │  config      Manage config          ││\n│ └─────────────────────────────────────┘│\n│                                         │\n│ HISTORY                                 │\n│ ┌─────────────────────────────────────┐│\n│ │  ↺ docker compose up -d  (2h ago)  ││\n│ │  ↺ docker container ls   (3h ago)  ││\n│ └─────────────────────────────────────┘│\n│                                         │\n│ AI SUGGESTION                          │\n│ ┌─────────────────────────────────────┐│\n│ │  \"show running containers\"         ││\n│ │  → docker ps                        ││\n│ └─────────────────────────────────────┘│\n└─────────────────────────────────────────┘\n```",
+      "color": "2"
+    },
+    {
+      "id": "ui-ai",
+      "type": "text",
+      "x": 0,
+      "y": 1080,
+      "width": 650,
+      "height": 400,
+      "text": "## AI Mode (# trigger)\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│                                                             │\n│  diego@cloud:~$ # restart photoprism on flex vm            │\n│                                                             │\n│  ╭─ AI Plan ─────────────────────────────────────────────╮ │\n│  │                                                        │ │\n│  │  I'll restart the Photoprism container on OCI Flex:   │ │\n│  │                                                        │ │\n│  │  1. Check if VM is running                            │ │\n│  │  2. SSH to oci-flex                                   │ │\n│  │  3. docker restart photoprism                         │ │\n│  │                                                        │ │\n│  │  Command:                                              │ │\n│  │  ssh oci-flex \"docker restart photoprism\"             │ │\n│  │                                                        │ │\n│  ╰────────────────────────────────────────────────────────╯ │\n│                                                             │\n│  [Run] [Edit] [Explain] [Cancel]                           │\n│                                                             │\n└─────────────────────────────────────────────────────────────┘\n```",
+      "color": "6"
+    },
+    {
+      "id": "ui-ssh",
+      "type": "text",
+      "x": 700,
+      "y": 1080,
+      "width": 550,
+      "height": 400,
+      "text": "## SSH Session (with htop)\n\n```\n┌─────────────────────────────────────────────────────────────┐\n│  Tab: GCP SSH │ Tab: OCI SSH │ Tab: Local                   │\n├─────────────────────────────────────────────────────────────┤\n│                                                             │\n│  diego@gcp:~$ htop                                         │\n│  ┌─────────────────────────────────────────────────────┐   │\n│  │ CPU[||||||||||||        32%]   Tasks: 42            │   │\n│  │ Mem[|||||||             1.2G/4G]                    │   │\n│  │                                                     │   │\n│  │  PID  USER   CPU%  MEM%  COMMAND                   │   │\n│  │  1234 root   12.0  4.2   docker                    │   │\n│  │  5678 diego   8.0  2.1   npm                       │   │\n│  │  9012 diego   4.0  1.5   nginx                     │   │\n│  └─────────────────────────────────────────────────────┘   │\n│                                                             │\n│  ← xterm.js renders htop perfectly                         │\n│    Full interactivity, colors, keyboard                    │\n│                                                             │\n└─────────────────────────────────────────────────────────────┘\n```",
+      "color": "5"
+    },
+    {
+      "id": "tech-group",
+      "type": "group",
+      "x": 1400,
+      "y": -480,
+      "width": 600,
+      "height": 600,
+      "label": "Technology Choices",
+      "color": "1"
+    },
+    {
+      "id": "why-tauri",
+      "type": "text",
+      "x": 1450,
+      "y": -440,
+      "width": 500,
+      "height": 250,
+      "text": "## Why Tauri?\n\n| vs Electron | Advantage |\n|-------------|----------|\n| RAM | 50-80 MB vs 150-300 MB |\n| Bundle | ~5 MB vs ~150 MB |\n| Backend | Native Rust vs Node.js |\n| Security | Rust safety vs JS |\n\n**Same WebView capabilities**\n**3-4x lighter than Electron**",
+      "color": "4"
+    },
+    {
+      "id": "why-xtermjs",
+      "type": "text",
+      "x": 1450,
+      "y": -150,
+      "width": 500,
+      "height": 200,
+      "text": "## Why xterm.js?\n\n- Battle-tested (VS Code, Hyper, Tabby)\n- Full ANSI support\n- Interactive apps work (vim, htop)\n- WebGL renderer option\n- No Rust terminal equivalent exists\n\n**Would take years to rebuild in Rust**",
+      "color": "2"
+    },
+    {
+      "id": "render-group",
+      "type": "group",
+      "x": 1400,
+      "y": 200,
+      "width": 600,
+      "height": 700,
+      "label": "Rendering Stack Options",
+      "color": "6"
+    },
+    {
+      "id": "render-current",
+      "type": "text",
+      "x": 1450,
+      "y": 240,
+      "width": 500,
+      "height": 180,
+      "text": "## Current: Tauri + WebView\n\n```\nRust Backend → JSON → WebView → HTML/CSS\n                         ↓\n                    xterm.js → GPU\n```\n\n**Pragmatic choice for fast development**",
+      "color": "4"
+    },
+    {
+      "id": "render-pure-rust",
+      "type": "text",
+      "x": 1450,
+      "y": 460,
+      "width": 500,
+      "height": 180,
+      "text": "## Alternative: Pure Rust\n\n```\nRust Code → Slint/Iced UI → wgpu → GPU\n```\n\n- No xterm.js (must build terminal)\n- Frameworks: Slint, Iced, Dioxus\n- **Future option when ecosystem matures**",
+      "color": "3"
+    },
+    {
+      "id": "render-gpui",
+      "type": "text",
+      "x": 1450,
+      "y": 680,
+      "width": 500,
+      "height": 180,
+      "text": "## Future: GPUI (Zed)\n\n```\n100% Rust → Custom UI → Metal/Vulkan → GPU\n```\n\n- Maximum performance (~120 FPS)\n- Pre-1.0, breaking changes\n- **Watch but don't adopt yet**",
+      "color": "6"
+    },
+    {
+      "id": "wasm-note",
+      "type": "text",
+      "x": 1400,
+      "y": 1000,
+      "width": 600,
+      "height": 180,
+      "text": "## Cross-Platform Strategy\n\n```\n         Rust + wgpu\n              │\n    ┌─────────┴─────────┐\n    ↓                   ↓\ncargo build        wasm-pack\n    ↓                   ↓\n  Native             Browser\n(Vulkan/Metal)      (WebGPU)\n```\n\n**Same code, two platforms**",
+      "color": "5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "user-layer",
+      "toNode": "frontend",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e2",
+      "fromNode": "user-layer",
+      "toNode": "xtermjs",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e3",
+      "fromNode": "user-layer",
+      "toNode": "tauri-ipc",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e4",
+      "fromNode": "frontend",
+      "toNode": "backend",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e5",
+      "fromNode": "xtermjs",
+      "toNode": "cloud-lib",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e6",
+      "fromNode": "tauri-ipc",
+      "toNode": "ai-layer",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e7",
+      "fromNode": "backend",
+      "toNode": "system-layer",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e8",
+      "fromNode": "cloud-lib",
+      "toNode": "system-layer",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e9",
+      "fromNode": "ai-layer",
+      "toNode": "system-layer",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e10",
+      "fromNode": "why-tauri",
+      "toNode": "why-xtermjs",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e11",
+      "fromNode": "render-current",
+      "toNode": "render-pure-rust",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e12",
+      "fromNode": "render-pure-rust",
+      "toNode": "render-gpui",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ]
+}

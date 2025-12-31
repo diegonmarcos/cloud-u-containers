@@ -1,0 +1,839 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Cloud Architecture API",
+    "description": "REST API endpoints for cloud_architecture.json - static infrastructure definitions (VMs, services, domains, networks)",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Diego Nepomuceno Marcos",
+      "url": "https://diegonmarcos.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.diegonmarcos.com",
+      "description": "Production API via NPM proxy"
+    },
+    {
+      "url": "http://127.0.0.1:5000",
+      "description": "Direct Flask access (internal only)"
+    },
+    {
+      "url": "http://localhost:5000",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "API health and status checks"
+    },
+    {
+      "name": "architecture",
+      "description": "Access cloud_architecture.json data (static infrastructure definitions)"
+    },
+    {
+      "name": "vms",
+      "description": "Virtual machine definitions (static data)"
+    },
+    {
+      "name": "services",
+      "description": "Service definitions (static data)"
+    },
+    {
+      "name": "domains",
+      "description": "Domain configuration (static data)"
+    },
+    {
+      "name": "index",
+      "description": "API discovery and metadata"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Simple health check",
+        "operationId": "health_ping",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness check (DB, cache connections)",
+        "operationId": "health_ready",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/architecture": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get complete architecture.json",
+        "operationId": "architecture_full",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/overview": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partI_overview section",
+        "operationId": "architecture_overview",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/infrastructure": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partII_infrastructure section",
+        "operationId": "architecture_infrastructure",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/security": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partIII_security section",
+        "operationId": "architecture_security",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/data": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partIV_data section",
+        "operationId": "architecture_data",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/operations": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partV_operations section",
+        "operationId": "architecture_operations",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/reference": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get partVI_reference section",
+        "operationId": "architecture_reference",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/architecture/version": {
+      "get": {
+        "tags": [
+          "architecture"
+        ],
+        "summary": "Get architecture version and metadata",
+        "operationId": "architecture_version",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vms": {
+      "get": {
+        "tags": [
+          "vms"
+        ],
+        "summary": "List all virtual machines",
+        "operationId": "vms_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by provider"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by status"
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by availability"
+          }
+        ]
+      }
+    },
+    "/vms/{vmId}": {
+      "get": {
+        "tags": [
+          "vms"
+        ],
+        "summary": "Get single VM details",
+        "operationId": "vms_get",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vmId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          }
+        ]
+      }
+    },
+    "/vms/{vmId}/ssh": {
+      "get": {
+        "tags": [
+          "vms"
+        ],
+        "summary": "Get SSH connection command for VM",
+        "operationId": "vms_ssh",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vmId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          }
+        ]
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "List all services",
+        "operationId": "services_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vmId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by VM"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          }
+        ]
+      }
+    },
+    "/services/{serviceId}": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Get single service details",
+        "operationId": "services_get",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          }
+        ]
+      }
+    },
+    "/domains": {
+      "get": {
+        "tags": [
+          "domains"
+        ],
+        "summary": "List all domains and subdomains",
+        "operationId": "domains_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    "/domains/{domain}": {
+      "get": {
+        "tags": [
+          "domains"
+        ],
+        "summary": "Get domain configuration",
+        "operationId": "domains_get",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          }
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "index"
+        ],
+        "summary": "API root - returns available endpoints",
+        "operationId": "index_root",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/docs": {
+      "get": {
+        "tags": [
+          "index"
+        ],
+        "summary": "Get API specification",
+        "operationId": "index_docs",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Authelia OIDC token from https://auth.diegonmarcos.com/api/oidc/token"
+      }
+    },
+    "schemas": {
+      "VirtualMachine": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "provider",
+          "network"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(oci|gcp)-[a-z]+-[a-z]+_[0-9]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "oracle",
+              "gcloud"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "services",
+              "ml"
+            ]
+          },
+          "instanceType": {
+            "type": "string"
+          },
+          "specs": {
+            "type": "object",
+            "properties": {
+              "cpu": {
+                "type": "string"
+              },
+              "ram": {
+                "type": "string"
+              },
+              "storage": {
+                "type": "string"
+              }
+            }
+          },
+          "network": {
+            "type": "object",
+            "properties": {
+              "publicIp": {
+                "type": "string",
+                "format": "ipv4"
+              },
+              "dockerNetwork": {
+                "type": "string"
+              },
+              "dockerSubnet": {
+                "type": "string"
+              }
+            }
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "24/7",
+              "wake-on-demand"
+            ]
+          },
+          "cost": {
+            "type": "object",
+            "properties": {
+              "monthly": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string",
+                "default": "USD"
+              }
+            }
+          }
+        }
+      },
+      "Service": {
+        "type": "object",
+        "required": [
+          "id",
+          "displayName",
+          "category",
+          "vmId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "vmId": {
+            "type": "string"
+          },
+          "containers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "technology": {
+            "type": "object"
+          },
+          "urls": {
+            "type": "object"
+          },
+          "authRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "resources": {
+            "type": "object"
+          }
+        }
+      },
+      "Domain": {
+        "type": "object",
+        "required": [
+          "service",
+          "ssl"
+        ],
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "vmId": {
+            "type": "string"
+          },
+          "proxyVia": {
+            "type": "string"
+          },
+          "ssl": {
+            "type": "boolean"
+          },
+          "auth": {
+            "type": "string",
+            "enum": [
+              "none",
+              "authelia",
+              "native"
+            ]
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

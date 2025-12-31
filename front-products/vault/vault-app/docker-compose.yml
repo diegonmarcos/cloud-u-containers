@@ -1,0 +1,70 @@
+version: '3.8'
+
+# Vaultwarden - Self-hosted Bitwarden-compatible server
+# VM: oci-p-flex_1 (84.235.234.87)
+# Domain: vault.diegonmarcos.com (via NPM proxy)
+
+services:
+  vault-app:
+    image: vaultwarden/server:latest
+    container_name: vault-app
+    restart: unless-stopped
+    environment:
+      # Admin Panel - CHANGE THIS TOKEN AFTER FIRST SETUP
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+
+      # Domain configuration
+      - DOMAIN=https://vault.diegonmarcos.com
+
+      # Security settings
+      - SIGNUPS_ALLOWED=false
+      - INVITATIONS_ALLOWED=true
+      - SHOW_PASSWORD_HINT=false
+
+      # Email (via Gmail SMTP relay)
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_SECURITY=starttls
+      - SMTP_FROM=vault@diegonmarcos.com
+      - SMTP_FROM_NAME=Vaultwarden
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+
+      # WebSocket for live sync
+      - WEBSOCKET_ENABLED=true
+
+      # Database (SQLite by default, sufficient for single user)
+      - DATABASE_URL=/data/db.sqlite3
+
+      # Logging
+      - LOG_LEVEL=warn
+      - EXTENDED_LOGGING=false
+
+    ports:
+      - "8081:80"      # Web vault
+      - "3012:3012"    # WebSocket
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - dev_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  dev_network:
+    name: dev_network
+    driver: bridge
+
+volumes:
+  vaultwarden_data:
+    name: vaultwarden_data
