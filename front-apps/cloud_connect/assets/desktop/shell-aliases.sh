@@ -63,7 +63,7 @@ alias code='code --no-sandbox'
 alias k='kate'
 
 # ============================================================================
-# GIT
+# GIT - Core Commands
 # ============================================================================
 alias g='git'
 alias gs='git status'
@@ -71,19 +71,67 @@ alias ga='git add'
 alias gaa='git add --all'
 alias gc='git commit'
 alias gcm='git commit -m'
+alias gca='git commit --amend'
 alias gp='git push'
+alias gpf='git push --force-with-lease'
 alias gpl='git pull'
 alias gf='git fetch'
+alias gfa='git fetch --all --prune'
 alias gco='git checkout'
 alias gcb='git checkout -b'
+alias gsw='git switch'
+alias gswc='git switch -c'
 alias gb='git branch'
+alias gba='git branch -a'
+alias gbd='git branch -d'
+alias gbD='git branch -D'
 alias gd='git diff'
 alias gds='git diff --staged'
+alias gdw='git diff --word-diff'
 alias gl='git log --oneline --graph --decorate -15'
 alias gla='git log --oneline --graph --decorate --all'
+alias glp='git log -p'
 alias gst='git stash'
 alias gstp='git stash pop'
+alias gstl='git stash list'
+alias gsts='git stash show -p'
+
+# ============================================================================
+# GIT - Advanced & Tools
+# ============================================================================
 alias lg='lazygit'
+alias gui='gitui'
+alias tig='tig'
+alias tiga='tig --all'
+alias gab='git absorb'
+alias gabr='git absorb --and-rebase'
+alias gcrypt='git-crypt'
+alias gcl='git-crypt lock'
+alias gcu='git-crypt unlock'
+
+# Git utilities
+alias gwip='git add -A && git commit -m "WIP"'
+alias gunwip='git reset HEAD~1'
+alias gclean='git clean -fd'
+alias greset='git reset --hard HEAD'
+alias gundo='git reset --soft HEAD~1'
+alias gamend='git commit --amend --no-edit'
+alias grebase='git rebase -i'
+alias gcp='git cherry-pick'
+alias gblame='git blame'
+alias gbisect='git bisect'
+alias gref='git reflog'
+alias gtag='git tag'
+alias gtagl='git tag -l'
+
+# GitHub CLI
+alias ghpr='gh pr create'
+alias ghprl='gh pr list'
+alias ghprv='gh pr view'
+alias ghprc='gh pr checkout'
+alias ghis='gh issue list'
+alias ghic='gh issue create'
+alias ghrepo='gh repo view --web'
 
 # ============================================================================
 # DOCKER
@@ -182,6 +230,26 @@ alias bwnote='bw get notes'
 alias bwsearch='bw list items --search'
 
 # ============================================================================
+# AI ASSISTANTS (Claude & Gemini)
+# ============================================================================
+alias claude='claude'
+alias ai='claude'
+alias gemini='gemini'
+
+# ============================================================================
+# RCLONE (Cloud Storage Sync)
+# ============================================================================
+alias rc='rclone'
+alias rcls='rclone ls'
+alias rclsd='rclone lsd'
+alias rccopy='rclone copy'
+alias rcsync='rclone sync'
+alias rcmount='rclone mount'
+alias rcconfig='rclone config'
+alias rccheck='rclone check'
+alias rcsize='rclone size'
+
+# ============================================================================
 # PACKAGE MANAGEMENT (Arch)
 # ============================================================================
 alias pac='sudo pacman'
@@ -238,8 +306,30 @@ alias q='exit'
 alias :q='exit'
 alias e='exit'
 
-# Project navigation (customize these)
+# ============================================================================
+# PROJECT NAVIGATION
+# ============================================================================
 alias proj='cd ~/Projects'
 alias docs='cd ~/Documents'
 alias dl='cd ~/Downloads'
 alias desk='cd ~/Desktop'
+
+# Main repositories
+alias cloud='cd ~/Projects/cloud'
+alias front='cd ~/Projects/front-Github_io'
+alias ops='cd ~/Projects/ops-Tooling'
+alias vault='cd ~/Projects/MyVault'
+alias infra='cd ~/Projects/cloud'
+alias web='cd ~/Projects/front-Github_io'
+alias tools='cd ~/Projects/ops-Tooling'
+alias keys='cd ~/Projects/MyVault'
+
+# Quick project access
+alias pcloud='cd ~/Projects/cloud && ls'
+alias pfront='cd ~/Projects/front-Github_io && ls'
+alias pops='cd ~/Projects/ops-Tooling && ls'
+alias pvault='cd ~/Projects/MyVault && ls'
+
+# Clone/sync repos
+alias repos='setup-repos'
+alias sync-all='cd ~/Projects && for d in */; do echo "=== $d ===" && cd "$d" && git pull && cd ..; done'

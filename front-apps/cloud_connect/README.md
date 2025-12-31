@@ -14,9 +14,11 @@
 - [A) How to Use](#a-how-to-use)
 - [B) What is This](#b-what-is-this)
 - [C) UI Designs](#c-ui-designs)
-- [D) Architecture Diagrams](#d-architecture-diagrams)
+- [D) Architecture](#d-architecture)
 - [E) Stack and Resource Usage](#e-stack-and-resource-usage)
-- [F) References & Links](#f-references--links)
+- [F) Technical Specification](#f-technical-specification)
+- [G) Roadmap](#g-roadmap)
+- [H) References & Links](#h-references--links)
 
 ---
 
@@ -70,7 +72,33 @@ cloud setup usb create /dev/sdX --iso ~/Downloads/archlinux.iso
 | **Username** | `diegonmarcos` |
 | **Password** | `changeme` |
 
-> ⚠️ **You MUST change the password on first login** - the system enforces this.
+> **You MUST change the password on first login** - the system enforces this.
+
+#### Auto-Cloned Repositories
+
+On first login, the following repositories are automatically cloned to `~/Projects`:
+
+| Repository | Path | Description |
+|------------|------|-------------|
+| **cloud** | `~/Projects/cloud` | Backend, infrastructure, cloud configs |
+| **front-Github_io** | `~/Projects/front-Github_io` | Frontend, GitHub Pages projects |
+| **ops-Tooling** | `~/Projects/ops-Tooling` | DevOps tools and utilities |
+| **MyVault** | `~/Projects/MyVault` | Personal vault (copy manually) |
+
+```bash
+# Quick navigation
+cloud       # cd ~/Projects/cloud
+front       # cd ~/Projects/front-Github_io
+ops         # cd ~/Projects/ops-Tooling
+vault       # cd ~/Projects/MyVault
+proj        # cd ~/Projects
+
+# Sync all repos
+sync-all    # Pull latest for all projects
+
+# Re-run clone script
+repos       # Run setup-repos again
+```
 
 #### CLI Commands Reference
 
@@ -125,6 +153,9 @@ zsh     # Switch to Zsh
 | **Security** | Bitwarden | Password manager (desktop + CLI) |
 | | ProtonVPN | Privacy-focused VPN client |
 | | WireGuard | Fast, modern VPN protocol |
+| **AI Tools** | Claude CLI | Anthropic's Claude Code assistant |
+| | Gemini | Google's Gemini AI |
+| **Cloud Sync** | rclone | Sync files to 40+ cloud providers |
 | **Python** | Python 3 | Interpreter with pip, poetry |
 | | NumPy/Pandas | Data science libraries |
 | | Jupyter | Interactive notebooks |
@@ -140,8 +171,17 @@ zsh     # Switch to Zsh
 | **Go** | go | Go compiler and tools |
 | **Containers** | Docker | Container runtime |
 | | Podman | Rootless containers |
-| **CLI Tools** | Yazi | TUI file manager (blazing fast) |
+| **Git Tools** | git | Core version control |
+| | git-lfs | Large file storage |
+| | git-crypt | Transparent file encryption |
 | | lazygit | TUI git client |
+| | gitui | Fast TUI for git |
+| | tig | Text-mode git interface |
+| | git-absorb | Auto-fixup commits |
+| | delta | Syntax-highlighting diff |
+| | difftastic | Structural diff tool |
+| | gh | GitHub CLI |
+| **CLI Tools** | Yazi | TUI file manager (blazing fast) |
 | | ripgrep | Fast grep replacement |
 | | fd | Fast find replacement |
 | | bat | cat with syntax highlighting |
@@ -149,7 +189,6 @@ zsh     # Switch to Zsh
 | | fzf | Fuzzy finder |
 | | zoxide | Smart cd (learns your habits) |
 | | btop | Beautiful system monitor |
-| | delta | Git diff with syntax highlighting |
 
 #### Aliases Quick Reference
 
@@ -170,17 +209,43 @@ zsh     # Switch to Zsh
 | `code` | `code --no-sandbox` | VS Code |
 | `k` | `kate` | Kate editor |
 
-**Git**
+**Git - Core**
 | Alias | Command | Description |
 |-------|---------|-------------|
 | `gs` | `git status` | Status |
 | `ga` | `git add` | Stage files |
 | `gaa` | `git add --all` | Stage all |
 | `gcm` | `git commit -m` | Commit with message |
+| `gca` | `git commit --amend` | Amend last commit |
 | `gp` | `git push` | Push |
+| `gpf` | `git push --force-with-lease` | Safe force push |
 | `gpl` | `git pull` | Pull |
+| `gf` | `git fetch` | Fetch |
+| `gfa` | `git fetch --all --prune` | Fetch all remotes |
 | `gd` | `git diff` | Show diff |
+| `gds` | `git diff --staged` | Staged diff |
+| `gl` | `git log --oneline` | Short log |
+| `gla` | `git log --all --graph` | Full graph log |
+
+**Git - Tools**
+| Alias | Command | Description |
+|-------|---------|-------------|
 | `lg` | `lazygit` | TUI git client |
+| `gui` | `gitui` | Fast TUI for git |
+| `tig` | `tig` | Text-mode interface |
+| `tiga` | `tig --all` | All branches |
+| `gab` | `git absorb` | Auto-fixup commits |
+| `gcrypt` | `git-crypt` | Encrypt files |
+
+**Git - Utilities**
+| Alias | Command | Description |
+|-------|---------|-------------|
+| `gwip` | `git add -A && commit "WIP"` | Quick WIP commit |
+| `gunwip` | `git reset HEAD~1` | Undo last commit |
+| `gamend` | `git commit --amend --no-edit` | Amend no message |
+| `gundo` | `git reset --soft HEAD~1` | Soft undo |
+| `ghpr` | `gh pr create` | Create PR |
+| `ghprl` | `gh pr list` | List PRs |
 
 **Docker**
 | Alias | Command | Description |
@@ -218,6 +283,16 @@ zsh     # Switch to Zsh
 | `bwsync` | `bw sync` | Sync vault |
 | `bwpass` | `bw get password` | Get password |
 
+**AI & Cloud**
+| Alias | Command | Description |
+|-------|---------|-------------|
+| `claude` | `claude` | Claude Code CLI |
+| `ai` | `claude` | Alias for Claude |
+| `gemini` | `gemini` | Gemini CLI |
+| `rc` | `rclone` | Cloud sync |
+| `rcconfig` | `rclone config` | Setup remotes |
+| `rcsync` | `rclone sync` | Sync files |
+
 **System**
 | Alias | Command | Description |
 |-------|---------|-------------|
@@ -253,10 +328,22 @@ zsh     # Switch to Zsh
 
 ### Overview
 
-**Cloud Connect** is a Rust CLI tool that creates portable, encrypted development environments using Docker. It packages a complete KDE Plasma desktop with pre-configured development tools into either:
+**Cloud Connect** is a comprehensive CLI toolset that provides:
 
-1. **Docker Sandbox** - Run on any Linux machine with Docker
-2. **Bootable USB** - LUKS-encrypted portable workstation
+1. **Desktop Sandbox** - Portable, encrypted KDE Plasma environment in Docker
+2. **Cloud Connectivity** - VPN, SSH, and mount management for cloud infrastructure
+3. **Bootable USB** - LUKS-encrypted portable workstation
+
+### Problem Statement
+
+**Scenario:** User is on an untrusted/non-safe computer (public machine, borrowed laptop, fresh install) and needs to:
+
+1. Work in an isolated environment that doesn't touch the host system
+2. Establish secure network connectivity to personal cloud infrastructure
+3. Access cloud-synced files with bidirectional sync
+4. Use familiar tools with personal configurations
+
+**Solution:** A single CLI that bootstraps a secure, isolated, fully-configured workstation environment.
 
 ### Key Features
 
@@ -266,9 +353,12 @@ zsh     # Switch to Zsh
 | **Encrypted** | LUKS2 AES-256 encryption for USB |
 | **Development Ready** | Python, Node.js, Rust pre-installed |
 | **VPN Ready** | WireGuard, OpenVPN, ProtonVPN |
+| **Split Tunnel** | Cloud traffic via WireGuard, public via ProtonVPN |
 | **Resource Safe** | Limited to 90% CPU/RAM to prevent crashes |
 | **Portable** | Same environment everywhere |
 | **Persistent** | Data survives reboots (USB mode) |
+| **Cloud Sync** | rclone bisync with 40+ providers |
+| **AI Ready** | Claude CLI and Gemini pre-installed |
 
 ### Use Cases
 
@@ -277,23 +367,7 @@ zsh     # Switch to Zsh
 - **Travel Computing** - Carry your desktop on USB
 - **Testing/Development** - Disposable environments
 - **Privacy** - ProtonVPN + encrypted storage
-
-### Included Software
-
-| Category | Applications |
-|----------|--------------|
-| **Desktop** | KDE Plasma, Dolphin, Konsole, Kate, Yakuake |
-| **Browsers** | Brave |
-| **Notes** | Obsidian |
-| **IDE** | VS Code, Neovim |
-| **Security** | Bitwarden (Desktop + CLI) |
-| **VPN** | ProtonVPN, WireGuard, OpenVPN |
-| **Dev - Python** | pip, poetry, numpy, pandas, jupyter |
-| **Dev - Node** | npm, pnpm, yarn, typescript |
-| **Dev - Rust** | rustup, cargo, rust-analyzer |
-| **Dev - Other** | Go, Lua, Ruby, GCC, Clang |
-| **Containers** | Docker, Podman |
-| **CLI Tools** | yazi, lazygit, ripgrep, fzf, bat, eza |
+- **Cloud Access** - Connect to VMs via VPN with file sync
 
 ---
 
@@ -302,58 +376,117 @@ zsh     # Switch to Zsh
 ### Desktop Environment
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Cloud Desktop - KDE Plasma                                    [_][□][X]│
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
-│   │         │  │         │  │         │  │         │  │         │      │
-│   │ Dolphin │  │ Konsole │  │  Kate   │  │  Brave  │  │Obsidian │      │
-│   │         │  │         │  │         │  │         │  │         │      │
-│   └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘      │
-│                                                                         │
-│   ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐      │
-│   │         │  │         │  │         │  │         │  │         │      │
-│   │ VS Code │  │ Spotify │  │  Yazi   │  │ Lazygit │  │ Settings│      │
-│   │         │  │         │  │         │  │         │  │         │      │
-│   └─────────┘  └─────────┘  └─────────┘  └─────────┘  └─────────┘      │
-│                                                                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│ ☰ Applications │ 🗂 Files │ 🌐 Brave │ 📝 Kate │        │ 🔊 │ 📶 │ 🕐 │
-└─────────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------------+
+|  Cloud Desktop - KDE Plasma                                    [_][o][X] |
++---------------------------------------------------------------------------+
+|                                                                           |
+|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|   |         |  |         |  |         |  |         |  |         |        |
+|   | Dolphin |  | Konsole |  |  Kate   |  |  Brave  |  |Obsidian |        |
+|   |         |  |         |  |         |  |         |  |         |        |
+|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|                                                                           |
+|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|   |         |  |         |  |         |  |         |  |         |        |
+|   | VS Code |  | Spotify |  |  Yazi   |  | Lazygit |  | Settings|        |
+|   |         |  |         |  |         |  |         |  |         |        |
+|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|                                                                           |
++---------------------------------------------------------------------------+
+| = Applications | Files | Brave | Kate |              | Vol | Net | Clock |
++---------------------------------------------------------------------------+
 ```
 
 ### Terminal (Fish + Starship)
 
 ```
-╭─  diegonmarcos  ~/Projects/myapp  main !?  v1.2.0
-╰─❯ cargo build --release
++-- diegonmarcos  ~/Projects/myapp  main !?  v1.2.0
++-> cargo build --release
    Compiling myapp v1.2.0
     Finished release [optimized] target(s) in 2.34s
 
-╭─  diegonmarcos  ~/Projects/myapp  main  took 2s
-╰─❯ _
++-- diegonmarcos  ~/Projects/myapp  main  took 2s
++-> _
 ```
 
-### Yazi File Manager
+### Cloud Connect TUI
 
 ```
-┌─ /home/diegonmarcos ─────────────────────────────────────────────────────┐
-│  ..                                                                      │
-│   Documents/                                              <DIR>         │
-│   Downloads/                                              <DIR>         │
-│   Projects/                                               <DIR>         │
-│   .config/                                                <DIR>         │
-│   .bashrc                                                 4.2K         │
-│   .zshrc                                                  3.1K         │
-├──────────────────────────────────────────────────────────────────────────┤
-│ [q]uit [h]elp [o]pen [y]ank [d]elete [r]ename [/]search                 │
-└──────────────────────────────────────────────────────────────────────────┘
++==============================================================================+
+|                         CLOUD CONNECT v2.0                                   |
+|                    VPN - SSH - Mount - Vault Manager                         |
++==============================================================================+
+|                                                                              |
+|                              INTERNET                                        |
+|                                 |                                            |
+|         +-------------------+---+---+-------------------+                    |
+|         |                   |       |                   |                    |
+|         v                   v       v                   v                    |
+|   +-----------+      +-----------+      +-----------+      +-----------+     |
+|   |Oracle Dev |      |  GCP Hub  |      |Oracle Web |      |Oracle Svc |     |
+|   |84.235.234 |      |34.55.55   |      |130.110.251|      |129.151.228|     |
+|   +-----------+      +-----------+      +-----------+      +-----------+     |
+|         |                   |                   |                   |        |
+|         +-------------------+-------------------+-------------------+        |
+|                    WireGuard VPN (10.0.0.0/24)                               |
+|                         @ CONNECTED (split)                                  |
+|                                 |                                            |
+|                           +-----------+                                      |
+|                           | 10.0.0.5  |                                      |
+|                           |   LOCAL   |                                      |
+|                           +-----------+                                      |
+|                                                                              |
++==============================================================================+
+|  VM STATUS                                                                   |
+|  ------------------------------------------------------------------------   |
+|  VM              WG IP        Public IP        WG      Public    Mount      |
+|  GCP Hub         10.0.0.1     34.55.55.234     12ms    45ms      @          |
+|  Oracle Dev      10.0.0.2     84.235.234.87    18ms    52ms      @          |
+|  Oracle Web      10.0.0.3     130.110.251.193  15ms    48ms      o          |
+|  Oracle Services 10.0.0.4     129.151.228.66   20ms    55ms      @          |
+|                                                                              |
++==============================================================================+
+|  VPN: @ UP (split) | Transfer: v 1.2MB ^ 456KB | Mounts: 3/4 | Vault: Open  |
++==============================================================================+
+|                                                                              |
+|  +--------------+  +--------------+  +--------------+  +--------------+      |
+|  | [V] VPN      |  | [S] SSH      |  | [M] Mount    |  | [B] Vault    |      |
+|  |              |  |              |  |              |  |              |      |
+|  |  v) up       |  |  1) gcp      |  |  m) all      |  |  b) open     |      |
+|  |  d) down     |  |  2) dev      |  |  u) unmount  |  |  l) lock     |      |
+|  |  t) toggle   |  |  3) web      |  |  a) pub IP   |  |  s) sync     |      |
+|  |  f) full     |  |  4) services |  |              |  |              |      |
+|  |  p) split    |  |              |  |  1-4) indiv  |  |              |      |
+|  +--------------+  +--------------+  +--------------+  +--------------+      |
+|                                                                              |
+|  [X] Setup        [R] Refresh       [?] Help        [Q] Quit                 |
+|                                                                              |
++==============================================================================+
+
+ >
 ```
+
+### TUI Keybindings
+
+| Key | Action |
+|-----|--------|
+| `v` | VPN up |
+| `d` / `V` | VPN down |
+| `t` | Toggle tunnel (split/full) |
+| `f` | Full tunnel |
+| `p` | Split tunnel |
+| `1-4` | SSH to VM |
+| `m` | Mount all |
+| `u` / `M` | Unmount all |
+| `b` | Vault menu |
+| `x` | Setup menu |
+| `r` | Refresh |
+| `?` | Help |
+| `q` | Quit |
 
 ### CLI Interface
 
-```
+```bash
 $ cloud setup sandbox create mydesktop
 
 Creating Cloud Desktop Sandbox
@@ -373,9 +506,9 @@ Setting up Docker KDE Desktop...
 Building Docker image (this may take 10-15 minutes)...
 Starting container with resource limits...
 
-══════════════════════════════════════════════════════════
+======================================================================
 Success: Sandbox 'mydesktop' created!
-══════════════════════════════════════════════════════════
+======================================================================
 
 Desktop access:
   Enter shell: cloud setup sandbox enter mydesktop
@@ -388,112 +521,155 @@ First login:
 
 ---
 
-## D) Architecture Diagrams
+## D) Architecture
 
 ### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           HOST SYSTEM                                   │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                        DOCKER ENGINE                              │  │
-│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
-│  │  │              CLOUD DESKTOP CONTAINER                        │  │  │
-│  │  │  ┌─────────────────────────────────────────────────────┐    │  │  │
-│  │  │  │                  KDE PLASMA                         │    │  │  │
-│  │  │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │    │  │  │
-│  │  │  │  │ Dolphin  │ │ Konsole  │ │   Kate   │            │    │  │  │
-│  │  │  │  └──────────┘ └──────────┘ └──────────┘            │    │  │  │
-│  │  │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │    │  │  │
-│  │  │  │  │  Brave   │ │ Obsidian │ │ VS Code  │            │    │  │  │
-│  │  │  │  └──────────┘ └──────────┘ └──────────┘            │    │  │  │
-│  │  │  └─────────────────────────────────────────────────────┘    │  │  │
-│  │  │  ┌─────────────────────────────────────────────────────┐    │  │  │
-│  │  │  │              DEVELOPMENT TOOLS                      │    │  │  │
-│  │  │  │  Python │ Node.js │ Rust │ Go │ Docker │ Git       │    │  │  │
-│  │  │  └─────────────────────────────────────────────────────┘    │  │  │
-│  │  │  ┌─────────────────────────────────────────────────────┐    │  │  │
-│  │  │  │                 VPN / NETWORK                       │    │  │  │
-│  │  │  │  WireGuard │ ProtonVPN │ OpenVPN                    │    │  │  │
-│  │  │  └─────────────────────────────────────────────────────┘    │  │  │
-│  │  └─────────────────────────────────────────────────────────────┘  │  │
-│  │                              │                                    │  │
-│  │                    ┌─────────▼─────────┐                          │  │
-│  │                    │   Docker Volume   │                          │  │
-│  │                    │  (Persistent Data)│                          │  │
-│  │                    └───────────────────┘                          │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                 │                                       │
-│            ┌────────────────────┼────────────────────┐                  │
-│            │                    │                    │                  │
-│       ┌────▼────┐         ┌─────▼─────┐        ┌────▼────┐             │
-│       │  X11    │         │  /dev/dri │        │ /dev/snd│             │
-│       │ Socket  │         │   (GPU)   │        │ (Audio) │             │
-│       └─────────┘         └───────────┘        └─────────┘             │
-└─────────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------------+
+|                           HOST SYSTEM                                      |
+|  +---------------------------------------------------------------------+  |
+|  |                        DOCKER ENGINE                                |  |
+|  |  +---------------------------------------------------------------+  |  |
+|  |  |              CLOUD DESKTOP CONTAINER                          |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  |  |                  KDE PLASMA                             |  |  |  |
+|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
+|  |  |  |  | Dolphin  | | Konsole  | |   Kate   |                 |  |  |  |
+|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
+|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
+|  |  |  |  |  Brave   | | Obsidian | | VS Code  |                 |  |  |  |
+|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  |  |              DEVELOPMENT TOOLS                          |  |  |  |
+|  |  |  |  Python | Node.js | Rust | Go | Docker | Git            |  |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  |  |                 VPN / NETWORK                           |  |  |  |
+|  |  |  |  WireGuard | ProtonVPN | OpenVPN | rclone               |  |  |  |
+|  |  |  +---------------------------------------------------------+  |  |  |
+|  |  +---------------------------------------------------------------+  |  |
+|  |                              |                                      |  |
+|  |                    +---------v---------+                            |  |
+|  |                    |   Docker Volume   |                            |  |
+|  |                    |  (Persistent Data)|                            |  |
+|  |                    +-------------------+                            |  |
+|  +---------------------------------------------------------------------+  |
+|                                 |                                         |
+|            +--------------------+--------------------+                    |
+|            |                    |                    |                    |
+|       +----v----+         +-----v-----+        +----v----+               |
+|       |  X11    |         |  /dev/dri |        | /dev/snd|               |
+|       | Socket  |         |   (GPU)   |        | (Audio) |               |
+|       +---------+         +-----------+        +---------+               |
++---------------------------------------------------------------------------+
 ```
+
+### Network Architecture (Split Tunnel)
+
+```
+                          SANDBOX
+                             |
+              +--------------+---------------+
+              |                              |
+              v                              v
+     +----------------+            +----------------+
+     |  WireGuard VPN |            |   Proton VPN   |
+     |  (Cloud Infra) |            |  (Free Tier)   |
+     +-------+--------+            +-------+--------+
+             |                              |
+             v                              v
+     +----------------+            +----------------+
+     |  Cloud VMs     |            |  Public        |
+     |  - GCP Hub     |            |  Internet      |
+     |  - OCI Flex    |            |  (Browsing)    |
+     |  - OCI Micros  |            |                |
+     +----------------+            +----------------+
+
+     Routes:                       Routes:
+     - 10.0.0.0/24 (WG)           - 0.0.0.0/0 (default)
+     - VM public IPs
+     - Internal services
+
+     DNS: Encrypted (DoH/DoT)
+     Provider: Cloudflare 1.1.1.1 / Quad9
+```
+
+### Split Tunnel Routing
+
+| Traffic Type | Route Via |
+|--------------|-----------|
+| `10.0.0.0/24` | WireGuard (cloud LAN) |
+| `34.55.55.234/32` | WireGuard (GCP Hub) |
+| `84.235.234.87/32` | WireGuard (OCI Flex) |
+| `130.110.251.193/32` | WireGuard (OCI Mail) |
+| `129.151.228.66/32` | WireGuard (OCI Analytics) |
+| `*.diegonmarcos.com` | WireGuard (services) |
+| `192.168.0.0/16` | Direct (local LAN) |
+| `0.0.0.0/0` | Proton VPN (public internet) |
 
 ### USB Boot Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         USB DRIVE (16GB+)                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────────────┐│
-│  │  Partition 1 │  │  Partition 2 │  │         Partition 3            ││
-│  │    (EFI)     │  │  (Arch ISO)  │  │    (LUKS Encrypted)            ││
-│  │    512MB     │  │    2GB       │  │      Remaining Space           ││
-│  │   FAT32      │  │   ISO9660    │  │                                ││
-│  │              │  │              │  │  ┌────────────────────────┐    ││
-│  │  ┌────────┐  │  │  ┌────────┐  │  │  │    LUKS2 Container     │    ││
-│  │  │ Boot   │  │  │  │ Arch   │  │  │  │  ┌──────────────────┐  │    ││
-│  │  │ Loader │  │  │  │ Linux  │  │  │  │  │   EXT4 Filesystem │  │    ││
-│  │  │        │  │  │  │ Live   │  │  │  │  │                    │  │    ││
-│  │  │systemd │  │  │  │        │  │  │  │  │  /docker/         │  │    ││
-│  │  │ -boot  │  │  │  │        │  │  │  │  │  /home/           │  │    ││
-│  │  └────────┘  │  │  └────────┘  │  │  │  │  /persistence.conf│  │    ││
-│  └──────────────┘  └──────────────┘  │  │  └──────────────────┘  │    ││
-│                                      │  └────────────────────────┘    ││
-│                                      └────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------------+
+|                         USB DRIVE (16GB+)                                  |
++---------------------------------------------------------------------------+
+|                                                                            |
+|  +--------------+  +--------------+  +----------------------------------+ |
+|  |  Partition 1 |  |  Partition 2 |  |         Partition 3              | |
+|  |    (EFI)     |  |  (Arch ISO)  |  |    (LUKS Encrypted)              | |
+|  |    512MB     |  |    2GB       |  |      Remaining Space             | |
+|  |   FAT32      |  |   ISO9660    |  |                                  | |
+|  |              |  |              |  |  +----------------------------+  | |
+|  |  +--------+  |  |  +--------+  |  |  |    LUKS2 Container         |  | |
+|  |  | Boot   |  |  |  | Arch   |  |  |  |  +----------------------+  |  | |
+|  |  | Loader |  |  |  | Linux  |  |  |  |  |   EXT4 Filesystem    |  |  | |
+|  |  |        |  |  |  | Live   |  |  |  |  |                      |  |  | |
+|  |  |systemd |  |  |  |        |  |  |  |  |  /docker/            |  |  | |
+|  |  | -boot  |  |  |  |        |  |  |  |  |  /home/              |  |  | |
+|  |  +--------+  |  |  +--------+  |  |  |  |  /persistence.conf   |  |  | |
+|  +--------------+  +--------------+  |  |  +----------------------+  |  | |
+|                                      |  +----------------------------+  | |
+|                                      +----------------------------------+ |
++---------------------------------------------------------------------------+
 
 Boot Flow:
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│  UEFI   │───▶│  Boot   │───▶│  LUKS   │───▶│ Mount   │───▶│ Docker  │
-│  Boot   │    │ Loader  │    │ Unlock  │    │ Persist │    │ Desktop │
-└─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
++---------+    +---------+    +---------+    +---------+    +---------+
+|  UEFI   |--->|  Boot   |--->|  LUKS   |--->| Mount   |--->| Docker  |
+|  Boot   |    | Loader  |    | Unlock  |    | Persist |    | Desktop |
++---------+    +---------+    +---------+    +---------+    +---------+
 ```
 
 ### Component Flow
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        CLOUD CONNECT CLI                             │
-│                         (Rust Binary)                                │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │
-                ┌───────────────┼───────────────┐
-                │               │               │
-                ▼               ▼               ▼
-        ┌───────────┐   ┌───────────┐   ┌───────────┐
-        │   Setup   │   │  Connect  │   │   Status  │
-        │  Module   │   │  Module   │   │  Module   │
-        └─────┬─────┘   └─────┬─────┘   └───────────┘
-              │               │
-    ┌─────────┼─────────┐     │
-    │         │         │     │
-    ▼         ▼         ▼     ▼
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│Sandbox│ │  USB  │ │ Apps  │ │  VPN  │
-│Module │ │Module │ │Module │ │Module │
-└───┬───┘ └───┬───┘ └───┬───┘ └───┬───┘
-    │         │         │         │
-    ▼         ▼         ▼         ▼
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│Docker │ │ LUKS  │ │Pacman │ │WireG- │
-│Compose│ │Encrypt│ │  AUR  │ │ uard  │
-└───────┘ └───────┘ └───────┘ └───────┘
++----------------------------------------------------------------------+
+|                        CLOUD CONNECT CLI                              |
+|                         (Rust Binary)                                 |
++----------------------------------+-----------------------------------+
+                                   |
+                +------------------+------------------+
+                |                  |                  |
+                v                  v                  v
+        +-----------+      +-----------+      +-----------+
+        |   Setup   |      |  Connect  |      |   Status  |
+        |  Module   |      |  Module   |      |  Module   |
+        +-----+-----+      +-----+-----+      +-----------+
+              |                  |
+    +---------+---------+        |
+    |         |         |        |
+    v         v         v        v
++-------+ +-------+ +-------+ +-------+
+|Sandbox| |  USB  | | Apps  | |  VPN  |
+|Module | |Module | |Module | |Module |
++---+---+ +---+---+ +---+---+ +---+---+
+    |         |         |         |
+    v         v         v         v
++-------+ +-------+ +-------+ +-------+
+|Docker | | LUKS  | |Pacman | |WireG- |
+|Compose| |Encrypt| |  AUR  | | uard  |
++-------+ +-------+ +-------+ +-------+
 ```
 
 ---
@@ -514,76 +690,77 @@ Boot Flow:
 
 ### Download & Storage Requirements
 
-| Component | Size | RAM Idle | RAM Active | CPU Load | Download (50Mbps) | Build Time |
-|-----------|------|----------|------------|----------|-------------------|------------|
+| Component | Size | RAM Idle | RAM Active | Download (50Mbps) | Build Time |
+|-----------|------|----------|------------|-------------------|------------|
 | **Base System** |
-| Arch Linux base | 400 MB | 50 MB | 50 MB | Idle | 1 min | 5 sec |
-| System utilities | 200 MB | 20 MB | 30 MB | Low | 32 sec | 3 sec |
+| Arch Linux base | 400 MB | 50 MB | 50 MB | 1 min | 5 sec |
+| System utilities | 200 MB | 20 MB | 30 MB | 32 sec | 3 sec |
 | **Display** |
-| Xorg + drivers | 300 MB | 100 MB | 150 MB | Low-Med | 48 sec | 5 sec |
+| Xorg + drivers | 300 MB | 100 MB | 150 MB | 48 sec | 5 sec |
 | **KDE Plasma** |
-| Plasma Desktop | 800 MB | 400 MB | 600 MB | Med | 2 min 8 sec | 10 sec |
-| KDE Apps | 400 MB | 50 MB | 200 MB | Low | 1 min 4 sec | 5 sec |
-| Yakuake | 20 MB | 30 MB | 50 MB | Low | 3 sec | 1 sec |
+| Plasma Desktop | 800 MB | 400 MB | 600 MB | 2 min | 10 sec |
+| KDE Apps | 400 MB | 50 MB | 200 MB | 1 min | 5 sec |
+| Yakuake | 20 MB | 30 MB | 50 MB | 3 sec | 1 sec |
 | **Fonts** |
-| All fonts | 200 MB | 10 MB | 10 MB | Idle | 32 sec | 2 sec |
+| All fonts | 200 MB | 10 MB | 10 MB | 32 sec | 2 sec |
 | **Audio** |
-| PipeWire stack | 50 MB | 30 MB | 50 MB | Low | 8 sec | 2 sec |
-| **Networking** |
-| WireGuard + OpenVPN | 50 MB | 10 MB | 20 MB | Low | 8 sec | 2 sec |
+| PipeWire stack | 50 MB | 30 MB | 50 MB | 8 sec | 2 sec |
+| **Networking & Cloud** |
+| WireGuard + OpenVPN | 50 MB | 10 MB | 20 MB | 8 sec | 2 sec |
+| rclone | 40 MB | 20 MB | 100 MB | 6 sec | 2 sec |
+| **AI Tools** |
+| Claude CLI | 50 MB | 50 MB | 150 MB | 8 sec | 5 sec |
+| Gemini SDK | 30 MB | 30 MB | 100 MB | 5 sec | 3 sec |
 | **Shells** |
-| Fish + Zsh + plugins | 30 MB | 20 MB | 30 MB | Low | 5 sec | 2 sec |
-| Starship prompt | 5 MB | 5 MB | 5 MB | Low | 1 sec | 1 sec |
+| Fish + Zsh + plugins | 30 MB | 20 MB | 30 MB | 5 sec | 2 sec |
+| Starship prompt | 5 MB | 5 MB | 5 MB | 1 sec | 1 sec |
 | **File Managers** |
-| Yazi | 10 MB | 15 MB | 30 MB | Low | 2 sec | 1 sec |
-| Dolphin | 50 MB | 80 MB | 150 MB | Low | 8 sec | 2 sec |
+| Yazi | 10 MB | 15 MB | 30 MB | 2 sec | 1 sec |
+| Dolphin | 50 MB | 80 MB | 150 MB | 8 sec | 2 sec |
 | **Python** |
-| Python + pip | 100 MB | 30 MB | 50 MB | Low | 16 sec | 3 sec |
-| NumPy + Pandas | 150 MB | 100 MB | 500 MB | Med-High | 24 sec | 30 sec |
-| Jupyter | 200 MB | 200 MB | 400 MB | Med | 32 sec | 20 sec |
-| Other packages | 50 MB | - | varies | varies | 8 sec | 10 sec |
+| Python + pip | 100 MB | 30 MB | 50 MB | 16 sec | 3 sec |
+| NumPy + Pandas | 150 MB | 100 MB | 500 MB | 24 sec | 30 sec |
+| Jupyter | 200 MB | 200 MB | 400 MB | 32 sec | 20 sec |
 | **Node.js** |
-| Node + npm | 100 MB | 50 MB | 100 MB | Low | 16 sec | 3 sec |
-| pnpm + yarn | 50 MB | 20 MB | 50 MB | Low | 8 sec | 5 sec |
-| TypeScript + ESLint | 100 MB | 100 MB | 300 MB | Med | 16 sec | 10 sec |
-| Biome | 50 MB | 50 MB | 100 MB | Med | 8 sec | 5 sec |
+| Node + npm | 100 MB | 50 MB | 100 MB | 16 sec | 3 sec |
+| pnpm + yarn | 50 MB | 20 MB | 50 MB | 8 sec | 5 sec |
+| TypeScript + tools | 150 MB | 150 MB | 400 MB | 24 sec | 15 sec |
 | **Rust** |
-| Rustup + toolchain | 500 MB | 50 MB | 100 MB | Low | 1 min 20 sec | 30 sec |
-| rust-analyzer | 200 MB | 500 MB | 1500 MB | **High** | 32 sec | 3 sec |
-| Cargo tools | 300 MB | 50 MB | 100 MB | Low | 48 sec | **3-5 min** |
-| Compilation | - | 1 GB | 4 GB | **Very High** | - | varies |
+| Rustup + toolchain | 500 MB | 50 MB | 100 MB | 1 min 20 sec | 30 sec |
+| rust-analyzer | 200 MB | 500 MB | 1500 MB | 32 sec | 3 sec |
+| Cargo tools | 300 MB | 50 MB | 100 MB | 48 sec | 3-5 min |
 | **Other Languages** |
-| Go | 150 MB | 50 MB | 200 MB | Low | 24 sec | 5 sec |
-| GCC + Clang + LLVM | 400 MB | 100 MB | 500 MB | Low | 1 min 4 sec | 10 sec |
-| GDB + Valgrind | 100 MB | 50 MB | 500 MB | Med | 16 sec | 3 sec |
+| Go | 150 MB | 50 MB | 200 MB | 24 sec | 5 sec |
+| GCC + Clang + LLVM | 400 MB | 100 MB | 500 MB | 1 min | 10 sec |
 | **Containers** |
-| Docker + Compose | 150 MB | 100 MB | 200 MB | Low | 24 sec | 5 sec |
-| Podman + Buildah | 100 MB | 80 MB | 150 MB | Low | 16 sec | 3 sec |
+| Docker + Compose | 150 MB | 100 MB | 200 MB | 24 sec | 5 sec |
+| Podman + Buildah | 100 MB | 80 MB | 150 MB | 16 sec | 3 sec |
 | **AUR Apps** |
-| **Brave Browser** | 300 MB | 300 MB | 2000 MB | **Med-High** | 48 sec | **2-3 min** |
-| **VS Code** | 400 MB | 400 MB | 1500 MB | **Med-High** | 1 min 4 sec | **1-2 min** |
-| **Obsidian** | 250 MB | 200 MB | 800 MB | Med | 40 sec | **1-2 min** |
-| ProtonVPN CLI | 50 MB | 30 MB | 50 MB | Low | 8 sec | 30 sec |
-| Proton Mail | 150 MB | 200 MB | 500 MB | Med | 24 sec | **1-2 min** |
-| **Bitwarden** | 200 MB | 150 MB | 400 MB | Med | 32 sec | **1-2 min** |
-| Bitwarden CLI | 20 MB | 20 MB | 50 MB | Low | 3 sec | 20 sec |
-| **Spotify** | 150 MB | 150 MB | 400 MB | Med | 24 sec | **1-2 min** |
-| **CLI Tools** |
-| ripgrep | 5 MB | 10 MB | 20 MB | Low | 1 sec | 1 sec |
-| fd | 3 MB | 10 MB | 20 MB | Low | 1 sec | 1 sec |
-| bat | 6 MB | 15 MB | 30 MB | Low | 1 sec | 1 sec |
-| fzf | 3 MB | 20 MB | 50 MB | Low | 1 sec | 1 sec |
-| eza | 2 MB | 5 MB | 10 MB | Low | 1 sec | 1 sec |
-| lazygit | 15 MB | 30 MB | 80 MB | Low | 2 sec | 1 sec |
-| btop | 3 MB | 20 MB | 40 MB | Low | 1 sec | 1 sec |
+| Brave Browser | 300 MB | 300 MB | 2000 MB | 48 sec | 2-3 min |
+| VS Code | 400 MB | 400 MB | 1500 MB | 1 min | 1-2 min |
+| Obsidian | 250 MB | 200 MB | 800 MB | 40 sec | 1-2 min |
+| ProtonVPN CLI | 50 MB | 30 MB | 50 MB | 8 sec | 30 sec |
+| Proton Mail | 150 MB | 200 MB | 500 MB | 24 sec | 1-2 min |
+| Bitwarden | 200 MB | 150 MB | 400 MB | 32 sec | 1-2 min |
+| Spotify | 150 MB | 150 MB | 400 MB | 24 sec | 1-2 min |
+| **Git Tools** |
+| git + git-lfs | 50 MB | 20 MB | 50 MB | 8 sec | 2 sec |
+| git-crypt | 2 MB | 5 MB | 10 MB | 1 sec | 1 sec |
+| lazygit | 15 MB | 30 MB | 80 MB | 2 sec | 1 sec |
+| gitui | 10 MB | 20 MB | 50 MB | 2 sec | 1 sec |
+| tig | 3 MB | 10 MB | 20 MB | 1 sec | 1 sec |
+| git-absorb | 5 MB | 10 MB | 20 MB | 1 sec | 1 sec |
+| delta | 8 MB | 15 MB | 30 MB | 1 sec | 1 sec |
+| difftastic | 15 MB | 20 MB | 40 MB | 2 sec | 1 sec |
+| gh (GitHub CLI) | 30 MB | 30 MB | 60 MB | 5 sec | 2 sec |
 
 ### Totals
 
 | Metric | Value |
 |--------|-------|
-| **Total Download Size** | ~6.7 GB |
-| **Download Time (50 Mbps)** | ~19-21 minutes |
-| **Docker Image Size** | ~7.5-8.5 GB |
+| **Total Download Size** | ~7.1 GB |
+| **Download Time (50 Mbps)** | ~20-23 minutes |
+| **Docker Image Size** | ~8-9 GB |
 | **Build Time** | ~15-25 minutes |
 
 ### Runtime Resource Usage
@@ -619,7 +796,375 @@ This prevents the desktop from crashing the host system.
 
 ---
 
-## F) References & Links
+## F) Technical Specification
+
+### Module Architecture
+
+```
+cloud_connect/
+|-- Cargo.toml                  # Workspace definition
+|
+|-- crates/
+|   |
+|   |-- connect_lib/            # CORE LIBRARY
+|   |   +-- src/
+|   |       |-- lib.rs          # Public API exports
+|   |       |
+|   |       |-- sandbox/        # Docker isolation
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # SandboxConfig, SandboxStatus
+|   |       |   |-- container.rs    # create(), enter(), stop(), destroy()
+|   |       |   |-- image.rs        # build(), pull(), list()
+|   |       |   +-- volumes.rs      # mount_volume(), unmount_volume()
+|   |       |
+|   |       |-- network/        # Secure networking
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # NetworkConfig, VpnStatus, DnsConfig
+|   |       |   |-- wireguard.rs    # wg_up(), wg_down(), wg_status()
+|   |       |   |-- proton.rs       # proton_up(), proton_down()
+|   |       |   |-- dns.rs          # set_dns(), test_dns()
+|   |       |   +-- routing.rs      # enable_split(), disable_split()
+|   |       |
+|   |       |-- sync/           # File synchronization
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # MountConfig, BisyncPair
+|   |       |   |-- fuse.rs         # mount(), unmount(), list_mounts()
+|   |       |   |-- bisync.rs       # run_bisync(), dry_run()
+|   |       |   +-- rclone.rs       # install_rclone(), import_config()
+|   |       |
+|   |       |-- tools/          # Application setup
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # ToolConfig, InstallResult
+|   |       |   |-- installer.rs    # install_package(), PackageManager
+|   |       |   |-- brave.rs        # install_brave(), apply_config()
+|   |       |   |-- obsidian.rs     # install_obsidian(), apply_config()
+|   |       |   |-- konsole.rs      # install_konsole(), setup_shell()
+|   |       |   |-- kate.rs         # install_kate(), apply_config()
+|   |       |   +-- dolphin.rs      # install_dolphin(), apply_config()
+|   |       |
+|   |       |-- bootstrap/      # Orchestration
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # BootstrapConfig, BootstrapProgress
+|   |       |   |-- sequence.rs     # run_bootstrap()
+|   |       |   +-- preflight.rs    # run_preflight_checks()
+|   |       |
+|   |       |-- config/         # Configuration management
+|   |       |   |-- mod.rs
+|   |       |   |-- types.rs    # AppConfig
+|   |       |   |-- loader.rs       # load_config(), save_config()
+|   |       |   +-- paths.rs        # get_config_dir()
+|   |       |
+|   |       +-- error.rs        # CloudError, Result type alias
+|   |
+|   +-- connect_cli/            # CLI BINARY
+|       +-- src/
+|           |-- main.rs         # Entry point, clap setup
+|           |-- commands/       # Command handlers
+|           |   |-- mod.rs
+|           |   |-- sandbox.rs
+|           |   |-- network.rs
+|           |   |-- sync.rs
+|           |   |-- tools.rs
+|           |   +-- bootstrap.rs
+|           +-- output/         # CLI formatting
+|               |-- mod.rs
+|               |-- table.rs
+|               |-- progress.rs
+|               +-- colors.rs
+```
+
+### Full Command Tree
+
+```
+cloud-connect
+|-- sandbox
+|   |-- create [--name <name>]
+|   |-- enter [--name <name>]
+|   |-- stop [--name <name>]
+|   |-- destroy [--name <name>]
+|   |-- list
+|   +-- status
+|
+|-- network
+|   |-- wg {up|down|status}
+|   |-- proton {up|down|status|servers}
+|   |-- dns {set <provider>|status|test}
+|   |-- split {enable|disable|status}
+|   +-- status
+|
+|-- sync
+|   |-- mount [<remote>]
+|   |-- unmount [<remote>]
+|   |-- mounts
+|   |-- rclone {install|config|remotes}
+|   +-- bisync {run|status|dry-run}
+|
+|-- tools
+|   |-- install [<tool>]
+|   |-- brave {install|config|addons}
+|   |-- obsidian {install|config}
+|   |-- konsole {install|config}
+|   |-- kate {install|config}
+|   |-- dolphin {install|config}
+|   +-- status
+|
+|-- bootstrap [--yes] [--skip <module>] [--only <module>]
+|   +-- status
+|
++-- status                    # Overall system status
+```
+
+### Configuration File
+
+**Location:** `~/.config/cloud-connect/config.toml`
+
+```toml
+[general]
+verbose = false
+sandbox_name = "secure-workstation"
+
+# SANDBOX
+[sandbox]
+image = "cloud-connect-sandbox:latest"
+network_mode = "host"
+privileged = true
+x11_forward = true
+
+[sandbox.volumes]
+"/tmp/.X11-unix" = "/tmp/.X11-unix"
+"~/.config/cloud-connect" = "/home/sandbox/.config/cloud-connect"
+
+# NETWORK
+[network.wireguard]
+interface = "wg0"
+config_path = "~/.config/wireguard/wg0.conf"
+endpoint = "34.55.55.234:51820"
+keepalive = 25
+
+[network.proton]
+username = "diego"
+protocol = "udp"
+
+[network.dns]
+provider = "cloudflare"   # cloudflare | quad9 | google
+protocol = "doh"          # doh | dot
+
+[network.split_tunnel]
+enabled = true
+wireguard_routes = [
+    "10.0.0.0/24",
+    "34.55.55.234/32",
+    "84.235.234.87/32",
+    "130.110.251.193/32",
+    "129.151.228.66/32",
+]
+local_bypass = [
+    "192.168.0.0/16",
+    "172.16.0.0/12",
+]
+
+# SYNC
+[sync.rclone]
+config_source = "LOCAL_KEYS/configs/rclone/rclone.conf"
+
+[[sync.mounts]]
+name = "gcp-home"
+remote = "sftp-gcp"
+remote_path = "/home/diego"
+local_path = "~/mnt/cloud/gcp"
+type = "sshfs"
+
+[[sync.bisync]]
+name = "obsidian-vault"
+path1 = "~/Documents/Obsidian"
+path2 = "gcp:/home/diego/Documents/Obsidian"
+conflict_resolve = "newer"
+
+# TOOLS
+[tools.brave]
+install_method = "flatpak"
+profile_source = "LOCAL_KEYS/configs/browser/brave/"
+extensions = [
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm",  # uBlock Origin
+    "nngceckbapebfimnlniiiahkandclblb",  # Bitwarden
+    "dbepggeogbaibhgnhhndojpepiihcmeb",  # Vimium
+    "eimadpbcbfnmbkopoojfekhnkhdbieeh",  # Dark Reader
+]
+
+[tools.obsidian]
+install_method = "flatpak"
+vault_path = "~/mnt/cloud/gcp/Documents/Obsidian"
+config_source = "LOCAL_KEYS/configs/obsidian/"
+plugins = ["obsidian-git", "dataview", "templater", "calendar", "excalidraw"]
+
+[tools.konsole]
+install_method = "pacman"
+profile_source = "LOCAL_KEYS/configs/konsole/"
+
+[tools.shell]
+default = "fish"
+fish_config = "LOCAL_KEYS/configs/linux/fish/"
+starship_config = "LOCAL_KEYS/configs/linux/starship.toml"
+
+[tools.kate]
+install_method = "pacman"
+config_source = "LOCAL_KEYS/configs/kate/"
+
+[tools.dolphin]
+install_method = "pacman"
+config_source = "LOCAL_KEYS/configs/dolphin/"
+```
+
+### Security Model
+
+#### Threat Model
+
+| Threat | Mitigation |
+|--------|------------|
+| Host keylogger | Docker isolation, no host shell access |
+| Network sniffing | Encrypted DNS + VPN for all traffic |
+| Local file access | Sandbox volumes limited to necessary paths |
+| Credential theft | Keys stay in LOCAL_KEYS, accessed via mount |
+| DNS leaks | DoH/DoT enforced, leak test on startup |
+| Traffic analysis | Split tunnel hides cloud infrastructure |
+
+#### Security Layers
+
+```
+Layer 1: SANDBOX ISOLATION
++-- Docker container boundaries
++-- Limited volume mounts
++-- No privileged host access (except network)
++-- Ephemeral by default
+
+Layer 2: NETWORK ENCRYPTION
++-- WireGuard (cloud traffic) - ChaCha20-Poly1305
++-- Proton VPN (public traffic) - AES-256-GCM
++-- DNS over HTTPS/TLS
++-- No plaintext DNS queries
+
+Layer 3: SPLIT TUNNEL ROUTING
++-- Cloud infra traffic -> WireGuard
++-- Public traffic -> Proton VPN
++-- Local traffic -> Direct
++-- No traffic leaks to ISP
+
+Layer 4: CREDENTIAL SECURITY
++-- SSH keys in LOCAL_KEYS only
++-- No secrets in container image
++-- Secrets mounted read-only
++-- No persistent credential storage
+```
+
+### Rust Dependencies
+
+```toml
+[dependencies]
+# Async
+tokio = { version = "1", features = ["full", "process"] }
+
+# CLI
+clap = { version = "4", features = ["derive", "cargo", "env"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Terminal UI
+tabled = "0.17"
+owo-colors = "4"
+indicatif = "0.17"
+console = "0.15"
+
+# Paths
+dirs = "6"
+
+# Process execution
+which = "7"
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+```
+
+---
+
+## G) Roadmap
+
+### Phase 1: Core Foundation (Current)
+
+- [x] Docker image with KDE Plasma
+- [x] Full development stack (Python, Node, Rust, Go)
+- [x] Shell configuration (Fish, Zsh, Starship)
+- [x] Git tools and aliases
+- [x] AI tools (Claude, Gemini)
+- [x] Cloud sync (rclone)
+- [x] Auto-clone repositories
+- [ ] Rust CLI project structure
+- [ ] CLI parser (clap)
+- [ ] Config loader (TOML)
+- [ ] Error handling
+
+### Phase 2: Sandbox Module
+
+- [ ] Container lifecycle (create/enter/stop/destroy)
+- [ ] Volume management
+- [ ] X11 forwarding setup
+- [ ] Resource limit configuration
+- [ ] First-run password change
+
+### Phase 3: USB Module
+
+- [ ] ISO download and verification
+- [ ] Partition creation (EFI, ISO, LUKS)
+- [ ] LUKS encryption setup
+- [ ] Persistence configuration
+- [ ] Boot loader installation
+
+### Phase 4: Network Module
+
+- [ ] WireGuard wrapper
+- [ ] Proton VPN integration
+- [ ] Encrypted DNS setup (DoH/DoT)
+- [ ] Split tunnel routing
+- [ ] Connection status monitoring
+
+### Phase 5: Sync Module
+
+- [ ] rclone installation and config import
+- [ ] SSHFS/FUSE mount management
+- [ ] Bisync configuration
+- [ ] Mount status tracking
+- [ ] Auto-reconnect on disconnect
+
+### Phase 6: Tools Module
+
+- [ ] Package installation abstraction
+- [ ] Brave setup + config import + extensions
+- [ ] Obsidian setup + plugins
+- [ ] Konsole + shell setup
+- [ ] Kate + Dolphin setup
+
+### Phase 7: Bootstrap Orchestration
+
+- [ ] Preflight checks
+- [ ] Sequential module execution
+- [ ] Progress tracking with indicatif
+- [ ] Verification suite
+- [ ] Resume from failure
+
+### Phase 8: TUI Mode
+
+- [ ] Interactive menu system
+- [ ] Network topology diagram
+- [ ] VM status table
+- [ ] VPN/Mount status bar
+- [ ] Keybinding navigation
+
+---
+
+## H) References & Links
 
 ### Core Technologies
 
@@ -674,6 +1219,7 @@ This prevents the desktop from crashing the host system.
 | **zoxide** | [github.com/ajeetdsouza/zoxide](https://github.com/ajeetdsouza/zoxide) | Smarter cd command |
 | **btop** | [github.com/aristocratos/btop](https://github.com/aristocratos/btop) | Resource monitor |
 | **delta** | [github.com/dandavison/delta](https://github.com/dandavison/delta) | Syntax-highlighting pager |
+| **rclone** | [github.com/rclone/rclone](https://github.com/rclone/rclone) | Cloud storage sync |
 
 ### VPN & Security
 
@@ -702,6 +1248,7 @@ This prevents the desktop from crashing the host system.
 | **anyhow** | [github.com/dtolnay/anyhow](https://github.com/dtolnay/anyhow) | Error handling |
 | **serde** | [github.com/serde-rs/serde](https://github.com/serde-rs/serde) | Serialization |
 | **owo-colors** | [github.com/jam1garner/owo-colors](https://github.com/jam1garner/owo-colors) | Terminal colors |
+| **indicatif** | [github.com/console-rs/indicatif](https://github.com/console-rs/indicatif) | Progress bars |
 
 ---
 
