@@ -1,49 +1,62 @@
-# Cloud Desktop - Pre-installed Tools Reference
+# Cloud Connect - Pre-installed Tools Reference
 
 > **Version**: 2.0
 > **Base**: Arch Linux
-> **Desktop**: KDE Plasma
+> **Desktop**: Openbox (via VNC)
 
 ---
 
 ## Quick Start
 
 ```bash
-# First login credentials
-User:     diegonmarcos
-Password: changeme (MUST change on first login)
+# Start container
+./cloud-connect.sh
 
-# Default shell
-Shell: Fish (with Zsh also available)
+# Container credentials
+User:     clouduser
+Sudo:     Passwordless
+VNC Pass: cloudvnc (if VNC enabled)
 
-# Switch shells
-fish    # Switch to Fish
-zsh     # Switch to Zsh
+# Enable VNC desktop
+CLOUD_START_VNC=1 ./cloud-connect.sh
+# Connect VNC client to localhost:5901
+
+# Available shells
+bash    # Default
+fish    # Fish shell
+zsh     # Zsh shell
 ```
 
 ---
 
-## Desktop Environment
+## VNC Desktop Environment
 
-### KDE Plasma
+### Openbox Window Manager
 
-| App | Description | Shortcut |
-|-----|-------------|----------|
-| Dolphin | File Manager | `files` or `dolphin` |
-| Konsole | Terminal | `term` or `konsole` |
-| Kate | Text Editor | `k` or `kate` |
-| Yakuake | Drop-down Terminal | F12 |
-| Spectacle | Screenshots | Print Screen |
-| Gwenview | Image Viewer | - |
-| Okular | PDF Viewer | - |
+| Feature | Description | Usage |
+|---------|-------------|-------|
+| Right-click menu | Application launcher | Right-click desktop |
+| Alt+F2 | dmenu run dialog | Alt+F2 |
+| Alt+Tab | Window switch | Alt+Tab |
+| Alt+F4 | Close window | Alt+F4 |
+| Double-click titlebar | Maximize | Mouse |
+
+### Desktop Apps (Qt-based)
+
+| App | Description | Usage |
+|-----|-------------|-------|
+| Brave | Privacy browser | `brave` |
+| Dolphin | File Manager | `dolphin` |
+| Konsole | Terminal | `konsole` |
+| dmenu | App launcher | Alt+F2 |
 
 ### File Management
 
 | Tool | Description | Usage |
 |------|-------------|-------|
-| Yazi | TUI File Manager | `y` or `yazi` |
-| Dolphin | GUI File Manager | `files` |
-| eza | Modern ls | `ls`, `la`, `ll`, `lt` |
+| Dolphin | GUI File Manager | `dolphin` |
+| eza | Modern ls | `ls`, `la`, `ll` |
+| fd | Fast find | `fd pattern` |
 
 ---
 
@@ -358,26 +371,39 @@ buildah             # Container builder
 
 ---
 
-## AI Assistants
+## AI Assistants (Pre-installed)
 
-### Claude CLI (Anthropic)
+### Claude CLI (Anthropic) - v2.x
 
 ```bash
 claude              # Start Claude Code CLI
-ai                  # Alias for claude
+claude --version    # Check version (v2.0.76+)
 
 # Usage
 claude "explain this code"
 claude -f file.py "review this"
+claude              # Interactive mode
+
+# Authentication
+# Run `claude` and follow login prompts
 ```
 
-### Gemini (Google)
+### Gemini CLI (Google) - v0.22+
 
 ```bash
 gemini              # Start Gemini CLI
+gemini --version    # Check version
 
 # Requires API key setup
 export GEMINI_API_KEY="your-key"
+gemini "your prompt"
+```
+
+### Both CLIs are globally accessible
+
+```bash
+which claude        # /usr/local/bin/claude
+which gemini        # /usr/sbin/gemini
 ```
 
 ---
@@ -624,4 +650,27 @@ This container is configured to never exceed:
 - **Memory**: 90% of host RAM
 - **Swap**: Equal to memory limit
 
-This prevents the desktop from crashing the host system.
+Actual usage (tested):
+- **Image size**: ~2.5 GB
+- **Idle RAM**: ~200 MB (shell only)
+- **With VNC**: ~500 MB
+- **With Brave**: ~1.5 GB
+
+This prevents the container from crashing the host system.
+
+---
+
+## Home Folder Structure
+
+The container includes a pre-created home structure:
+
+```
+/home/clouduser/
+├── apps/       # Local applications
+├── git/        # Git repositories
+├── mnt/        # Mount points
+├── syncs/      # Sync folders
+├── sys/        # System configs
+├── user/       # User data
+└── vault/      # Personal vault (empty)
+```
