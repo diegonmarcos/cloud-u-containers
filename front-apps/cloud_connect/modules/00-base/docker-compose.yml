@@ -1,0 +1,125 @@
+# Cloud Connect - Docker Compose
+# Anonymous isolated environment with resource limits
+#
+# Usage:
+#   docker compose up -d      # Start container
+#   docker compose down       # Stop container
+#   docker compose logs -f    # View logs
+
+services:
+  cloud-connect:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${CLOUD_IMAGE_NAME:-cloud-connect}:${CLOUD_IMAGE_TAG:-latest}
+    container_name: ${CLOUD_CONTAINER_NAME:-cloud-connect}
+
+    # Interactive mode
+    stdin_open: true
+    tty: true
+
+    # Hostname
+    hostname: cloud-connect
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # RESOURCE LIMITS (90% of system)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # CPU limit (90% of host)
+    cpus: ${CLOUD_CPUS:-3.6}
+
+    # Memory limit (90% of host)
+    mem_limit: ${CLOUD_MEM_LIMIT:-8g}
+
+    # Swap limit (2x memory)
+    memswap_limit: ${CLOUD_MEMSWAP_LIMIT:-16g}
+
+    # Memory swappiness
+    mem_swappiness: 60
+
+    # OOM handling - kill container, not host
+    oom_kill_disable: false
+    oom_score_adj: 500
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # CAPABILITIES
+    # ═══════════════════════════════════════════════════════════════════════
+
+    cap_add:
+      - NET_ADMIN      # VPN networking
+      - SYS_ADMIN      # FUSE mounts (if needed)
+
+    # Don't run as fully privileged
+    privileged: false
+
+    # Security options
+    security_opt:
+      - apparmor:unconfined  # Allow VPN operations
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # NETWORKING
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # Use host network for VPN to work properly
+    network_mode: host
+
+    # DNS (will be overridden by cloudflared inside container)
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # VOLUMES
+    # ═══════════════════════════════════════════════════════════════════════
+
+    volumes:
+      # Project files (for development, modules can be updated without rebuild)
+      - ../../lib:/opt/cloud-connect/lib:ro
+      - ../:/opt/cloud-connect/modules:ro
+      - ../../configs:/opt/cloud-connect/configs:ro
+
+      # X11 socket for GUI apps
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+      # Vault mount point (will be mounted by vault module)
+      - vault_data:/vault
+
+      # Persistent home directory
+      - home_data:/home/clouduser
+
+      # SSH agent socket (if available on host)
+      - ${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent:ro
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # ENVIRONMENT
+    # ═══════════════════════════════════════════════════════════════════════
+
+    environment:
+      # Display for GUI apps
+      - DISPLAY=${DISPLAY:-:0}
+
+      # SSH agent
+      - SSH_AUTH_SOCK=/ssh-agent
+
+      # Cloud Connect
+      - CLOUD_IN_CONTAINER=1
+      - CLOUD_ROOT=/opt/cloud-connect
+
+      # Timezone
+      - TZ=${TZ:-UTC}
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # RESTART POLICY
+    # ═══════════════════════════════════════════════════════════════════════
+
+    restart: unless-stopped
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════════════════════
+
+volumes:
+  vault_data:
+    name: cloud-connect-vault
+  home_data:
+    name: cloud-connect-home

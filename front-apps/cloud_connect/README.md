@@ -1,11 +1,11 @@
 # Cloud Connect
 
-> Portable, encrypted KDE desktop environment in Docker with full development stack
+> Anonymous isolated environment in Docker with VPN, encrypted DNS, and development tools
 
 [![Arch Linux](https://img.shields.io/badge/Arch-Linux-1793D1?logo=arch-linux&logoColor=white)](https://archlinux.org/)
-[![KDE Plasma](https://img.shields.io/badge/KDE-Plasma-1D99F3?logo=kde&logoColor=white)](https://kde.org/)
-[![Rust](https://img.shields.io/badge/Built%20with-Rust-orange?logo=rust)](https://www.rust-lang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Container-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![ProtonVPN](https://img.shields.io/badge/ProtonVPN-Ready-6D4AFF?logo=protonvpn&logoColor=white)](https://protonvpn.com/)
+[![Shell](https://img.shields.io/badge/Shell-Script-4EAA25?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 
 ---
 
@@ -24,171 +24,120 @@
 
 ## A) How to Use
 
-### A.1) Installation
-
-#### Build from Source
+### A.1) Quick Start
 
 ```bash
-cargo build --release
-./target/release/cloud
+# Clone and run
+git clone https://github.com/diegonmarcos/cloud-connect.git
+cd cloud-connect
+./cloud-connect.sh
+
+# That's it! You now have:
+# - ProtonVPN ready to connect
+# - Encrypted DNS (Cloudflare DoH)
+# - Brave browser
+# - AI CLI tools (Claude, Gemini)
+# - Modern CLI utilities
 ```
 
-#### Create Desktop Sandbox
-
-```bash
-# Create a new desktop sandbox
-cloud setup sandbox create mydesktop
-
-# Enter the sandbox
-cloud setup sandbox enter mydesktop
-
-# List all sandboxes
-cloud setup sandbox list
-
-# Destroy a sandbox
-cloud setup sandbox destroy mydesktop --force
-```
-
-#### Create Bootable USB
-
-```bash
-# List available USB devices
-cloud setup usb list
-
-# Download latest Arch ISO
-cloud setup usb download
-
-# Create encrypted bootable USB (minimum 16GB)
-cloud setup usb create /dev/sdX
-
-# With custom ISO
-cloud setup usb create /dev/sdX --iso ~/Downloads/archlinux.iso
-```
-
-#### First Login
+### A.2) Container Credentials
 
 | Credential | Value |
 |------------|-------|
-| **Username** | `diegonmarcos` |
-| **Password** | `changeme` |
+| **Username** | `clouduser` |
+| **Sudo** | Passwordless |
+| **VNC Password** | `cloudvnc` (if VNC enabled) |
 
-> **You MUST change the password on first login** - the system enforces this.
+### A.3) VNC Desktop Access (Optional)
 
-#### Auto-Cloned Repositories
-
-On first login, the following repositories are automatically cloned to `~/Projects`:
-
-| Repository | Path | Description |
-|------------|------|-------------|
-| **cloud** | `~/Projects/cloud` | Backend, infrastructure, cloud configs |
-| **front-Github_io** | `~/Projects/front-Github_io` | Frontend, GitHub Pages projects |
-| **ops-Tooling** | `~/Projects/ops-Tooling` | DevOps tools and utilities |
-| **MyVault** | `~/Projects/MyVault` | Personal vault (copy manually) |
+The container includes a lightweight VNC desktop (Openbox + Qt apps). Disabled by default.
 
 ```bash
-# Quick navigation
-cloud       # cd ~/Projects/cloud
-front       # cd ~/Projects/front-Github_io
-ops         # cd ~/Projects/ops-Tooling
-vault       # cd ~/Projects/MyVault
-proj        # cd ~/Projects
+# Start container with VNC desktop
+CLOUD_START_VNC=1 ./cloud-connect.sh
 
-# Sync all repos
-sync-all    # Pull latest for all projects
+# Connect with any VNC client to:
+# localhost:5901
 
-# Re-run clone script
-repos       # Run setup-repos again
+# Available apps in VNC:
+# - Brave Browser
+# - Dolphin (file manager)
+# - Konsole (terminal)
+# - dmenu (Alt+F2 to run commands)
 ```
 
-#### CLI Commands Reference
+### A.4) CLI Commands Reference
 
 ```bash
-cloud setup sandbox create <name>    # Create KDE desktop container
-cloud setup sandbox enter <name>     # Enter container shell
-cloud setup sandbox list             # List all containers
-cloud setup sandbox destroy <name>   # Remove container
+# Container management
+./cloud-connect.sh              # Create and enter container
+./cloud-connect.sh enter        # Enter existing container
+./cloud-connect.sh stop         # Stop container
+./cloud-connect.sh destroy      # Remove container
+./cloud-connect.sh status       # Show status
+./cloud-connect.sh logs         # View logs
 
-cloud setup usb list                 # List USB devices
-cloud setup usb download             # Download Arch ISO
-cloud setup usb verify <iso>         # Verify ISO checksum
-cloud setup usb create <device>      # Create bootable USB
+# Inside container - modules
+cloud tools install             # Add dev tools (Python, Node, Rust, Go)
+cloud vault load /path          # Load personal vault
+cloud vpn up                    # Connect WireGuard VPN
+cloud mount up                  # Mount remote filesystems
+cloud config apply              # Apply personal configs
+cloud status                    # Show full status
+```
 
-cloud setup apps install             # Install configured apps
-cloud setup apps list                # List available apps
-cloud setup apps check               # Check installed status
+### A.5) Home Folder Structure
 
-cloud setup check                    # Run all setup checks
+The container mirrors a typical development home layout:
+
+```
+/home/clouduser/
+├── apps/       # Local applications
+├── git/        # Git repositories
+├── mnt/        # Mount points (FUSE, SSHFS)
+├── syncs/      # Sync folders
+├── sys/        # System configs
+├── user/       # User data
+└── vault/      # Personal vault (empty by default)
 ```
 
 ---
 
-### A.2) Tools & Aliases
+### A.6) Pre-installed Tools
 
-#### Shell Configuration
-
-| Shell | Default | Features |
-|-------|---------|----------|
-| **Fish** | Yes | Autosuggestions, syntax highlighting, smart completions |
-| **Zsh** | No | Plugin support, POSIX-compatible, shared aliases |
-| **Starship** | Prompt | Cross-shell prompt with git status, language versions |
-
-```bash
-fish    # Switch to Fish (default)
-zsh     # Switch to Zsh
-```
-
-#### Pre-installed Stack
+#### Base Image (Always Available)
 
 | Category | Tools | Description |
 |----------|-------|-------------|
-| **Desktop** | KDE Plasma | Full desktop environment with Wayland/X11 |
-| | Dolphin | KDE file manager with previews and plugins |
-| | Konsole | KDE terminal emulator |
-| | Kate | Advanced text editor with LSP support |
-| | Yakuake | Drop-down terminal (F12) |
-| **Browsers** | Brave | Privacy-focused Chromium browser |
-| **Notes** | Obsidian | Markdown-based knowledge management |
-| **IDE** | VS Code | Full IDE with extensions support |
-| | Neovim | Terminal-based editor |
-| **Security** | Bitwarden | Password manager (desktop + CLI) |
-| | ProtonVPN | Privacy-focused VPN client |
-| | WireGuard | Fast, modern VPN protocol |
-| **AI Tools** | Claude CLI | Anthropic's Claude Code assistant |
-| | Gemini | Google's Gemini AI |
-| **Cloud Sync** | rclone | Sync files to 40+ cloud providers |
-| **Python** | Python 3 | Interpreter with pip, poetry |
-| | NumPy/Pandas | Data science libraries |
-| | Jupyter | Interactive notebooks |
-| | Black/Pylint | Formatters and linters |
-| **Node.js** | Node LTS | JavaScript runtime |
-| | npm/pnpm/yarn | Package managers |
-| | TypeScript | Type-safe JavaScript |
-| | ESLint/Biome | Linters and formatters |
-| **Rust** | rustup | Toolchain manager |
-| | cargo | Package manager and build tool |
-| | rust-analyzer | LSP for IDE integration |
-| | clippy/rustfmt | Linter and formatter |
-| **Go** | go | Go compiler and tools |
-| **Containers** | Docker | Container runtime |
-| | Podman | Rootless containers |
-| **Git Tools** | git | Core version control |
-| | git-lfs | Large file storage |
-| | git-crypt | Transparent file encryption |
-| | lazygit | TUI git client |
-| | gitui | Fast TUI for git |
-| | tig | Text-mode git interface |
-| | git-absorb | Auto-fixup commits |
-| | delta | Syntax-highlighting diff |
-| | difftastic | Structural diff tool |
-| | gh | GitHub CLI |
-| **CLI Tools** | Yazi | TUI file manager (blazing fast) |
-| | ripgrep | Fast grep replacement |
-| | fd | Fast find replacement |
+| **Shells** | Bash, Fish, Zsh | Multiple shell options |
+| | Starship | Cross-shell prompt |
+| **VPN & DNS** | ProtonVPN CLI | Anonymous VPN (free tier) |
+| | WireGuard | Fast VPN protocol |
+| | cloudflared | Encrypted DNS (DoH) |
+| **Browser** | Brave | Privacy-focused browser |
+| **AI Tools** | Claude CLI | Anthropic's Claude Code (v2.x) |
+| | Gemini CLI | Google's Gemini AI |
+| **CLI Tools** | eza | Modern ls with icons |
 | | bat | cat with syntax highlighting |
-| | eza | Modern ls with icons |
+| | fd | Fast find replacement |
+| | ripgrep | Fast grep (rg) |
 | | fzf | Fuzzy finder |
-| | zoxide | Smart cd (learns your habits) |
-| | btop | Beautiful system monitor |
+| | zoxide | Smart cd |
+| **VNC Desktop** | TigerVNC | VNC server (optional) |
+| | Openbox | Lightweight window manager |
+| | Dolphin | Qt file manager |
+| | Konsole | Qt terminal |
+| | dmenu | Application launcher |
+
+#### Optional Dev Tools (via `cloud tools install`)
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **Python** | Python 3, pip, poetry | Python development |
+| **Node.js** | Node LTS, npm, pnpm | JavaScript runtime |
+| **Rust** | rustup, cargo | Rust development |
+| **Go** | go | Go development |
+| **Git** | git, lazygit, gh, delta | Version control |
 
 #### Aliases Quick Reference
 
@@ -328,84 +277,87 @@ zsh     # Switch to Zsh
 
 ### Overview
 
-**Cloud Connect** is a comprehensive CLI toolset that provides:
+**Cloud Connect** is a modular shell toolkit that creates an anonymous, isolated Docker environment with:
 
-1. **Desktop Sandbox** - Portable, encrypted KDE Plasma environment in Docker
-2. **Cloud Connectivity** - VPN, SSH, and mount management for cloud infrastructure
-3. **Bootable USB** - LUKS-encrypted portable workstation
+1. **Anonymous Environment** - ProtonVPN + Encrypted DNS + Brave browser
+2. **AI-Ready CLI** - Claude Code and Gemini CLIs pre-installed
+3. **Optional VNC Desktop** - Lightweight Openbox desktop via VNC
+4. **Optional Dev Tools** - Python, Node.js, Rust, Go on-demand
+5. **Optional Cloud Access** - Personal vault, WireGuard VPN, FUSE mounts
 
 ### Problem Statement
 
-**Scenario:** User is on an untrusted/non-safe computer (public machine, borrowed laptop, fresh install) and needs to:
+**Scenario:** User is on an untrusted computer (public machine, borrowed laptop, fresh install) and needs to:
 
 1. Work in an isolated environment that doesn't touch the host system
-2. Establish secure network connectivity to personal cloud infrastructure
-3. Access cloud-synced files with bidirectional sync
-4. Use familiar tools with personal configurations
+2. Have anonymous network connectivity (VPN + encrypted DNS)
+3. Optionally install development tools
+4. Optionally connect to personal cloud infrastructure
 
-**Solution:** A single CLI that bootstraps a secure, isolated, fully-configured workstation environment.
+**Constraint:** The host system only has Linux + Docker + Shell.
+
+**Solution:** A single shell script that creates a fully-configured isolated environment.
 
 ### Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **Full Desktop** | KDE Plasma with Dolphin, Konsole, Kate |
-| **Encrypted** | LUKS2 AES-256 encryption for USB |
-| **Development Ready** | Python, Node.js, Rust pre-installed |
-| **VPN Ready** | WireGuard, OpenVPN, ProtonVPN |
-| **Split Tunnel** | Cloud traffic via WireGuard, public via ProtonVPN |
-| **Resource Safe** | Limited to 90% CPU/RAM to prevent crashes |
-| **Portable** | Same environment everywhere |
-| **Persistent** | Data survives reboots (USB mode) |
-| **Cloud Sync** | rclone bisync with 40+ providers |
-| **AI Ready** | Claude CLI and Gemini pre-installed |
+| **Anonymous by Default** | ProtonVPN (free tier) + Cloudflare DoH |
+| **AI CLI Tools** | Claude Code + Gemini pre-installed |
+| **VNC Desktop** | Openbox + Dolphin + Konsole (optional) |
+| **Modern CLI** | eza, bat, fd, ripgrep, fzf, zoxide |
+| **Resource Safe** | Limited to 90% CPU/RAM |
+| **Modular Design** | Add only what you need |
+| **Shell Script Entry** | Works on any Linux with Docker |
+| **No Root Required** | Uses Docker, not system packages |
 
 ### Use Cases
 
-- **Fresh Machine Setup** - Instantly get your full dev environment
-- **Secure Workstation** - Encrypted, isolated from host
-- **Travel Computing** - Carry your desktop on USB
-- **Testing/Development** - Disposable environments
-- **Privacy** - ProtonVPN + encrypted storage
-- **Cloud Access** - Connect to VMs via VPN with file sync
+- **Anonymous Browsing** - VPN + encrypted DNS + Brave
+- **AI Development** - Claude and Gemini ready to use
+- **Disposable Environments** - Fresh container each time
+- **Remote Desktop** - VNC access from anywhere
+- **Privacy** - Isolated from host system
+- **Cloud Access** - Connect to personal infrastructure (optional)
 
 ---
 
 ## C) UI Designs
 
-### Desktop Environment
+### VNC Desktop (Openbox)
 
 ```
 +---------------------------------------------------------------------------+
-|  Cloud Desktop - KDE Plasma                                    [_][o][X] |
+|  Cloud Connect - Openbox (VNC :5901)                           [_][M][X] |
 +---------------------------------------------------------------------------+
 |                                                                           |
-|   +---------+  +---------+  +---------+  +---------+  +---------+        |
-|   |         |  |         |  |         |  |         |  |         |        |
-|   | Dolphin |  | Konsole |  |  Kate   |  |  Brave  |  |Obsidian |        |
-|   |         |  |         |  |         |  |         |  |         |        |
-|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|   +-------------------------+  +-------------------------+                |
+|   |                         |  |                         |                |
+|   |     Brave Browser       |  |       Konsole           |                |
+|   |                         |  |                         |                |
+|   |   Anonymous browsing    |  |   clouduser@cloud ~     |                |
+|   |   with ProtonVPN        |  |   $ claude "help me"    |                |
+|   |                         |  |                         |                |
+|   +-------------------------+  +-------------------------+                |
 |                                                                           |
-|   +---------+  +---------+  +---------+  +---------+  +---------+        |
-|   |         |  |         |  |         |  |         |  |         |        |
-|   | VS Code |  | Spotify |  |  Yazi   |  | Lazygit |  | Settings|        |
-|   |         |  |         |  |         |  |         |  |         |        |
-|   +---------+  +---------+  +---------+  +---------+  +---------+        |
+|   Right-click for menu:                                                   |
+|   - Brave Browser                                                         |
+|   - Dolphin Files                                                         |
+|   - Konsole Terminal                                                      |
+|   - Run... (Alt+F2 / dmenu)                                               |
 |                                                                           |
-+---------------------------------------------------------------------------+
-| = Applications | Files | Brave | Kate |              | Vol | Net | Clock |
 +---------------------------------------------------------------------------+
 ```
 
-### Terminal (Fish + Starship)
+### Terminal (Starship Prompt)
 
 ```
-+-- diegonmarcos  ~/Projects/myapp  main !?  v1.2.0
-+-> cargo build --release
-   Compiling myapp v1.2.0
-    Finished release [optimized] target(s) in 2.34s
++-- clouduser  ~/git/myapp  main !?
++-> claude "explain this code"
 
-+-- diegonmarcos  ~/Projects/myapp  main  took 2s
+I'll analyze the code...
+
++-- clouduser  ~/git/myapp  main
 +-> _
 ```
 
@@ -531,37 +483,36 @@ First login:
 |  +---------------------------------------------------------------------+  |
 |  |                        DOCKER ENGINE                                |  |
 |  |  +---------------------------------------------------------------+  |  |
-|  |  |              CLOUD DESKTOP CONTAINER                          |  |  |
+|  |  |              CLOUD CONNECT CONTAINER (Arch Linux)             |  |  |
+|  |  |                                                                |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
-|  |  |  |                  KDE PLASMA                             |  |  |  |
+|  |  |  |              VNC DESKTOP (Optional)                     |  |  |  |
+|  |  |  |  TigerVNC :5901 + Openbox WM                            |  |  |  |
 |  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
-|  |  |  |  | Dolphin  | | Konsole  | |   Kate   |                 |  |  |  |
-|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
-|  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
-|  |  |  |  |  Brave   | | Obsidian | | VS Code  |                 |  |  |  |
+|  |  |  |  | Dolphin  | | Konsole  | |  Brave   |                 |  |  |  |
 |  |  |  |  +----------+ +----------+ +----------+                 |  |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
-|  |  |  |              DEVELOPMENT TOOLS                          |  |  |  |
-|  |  |  |  Python | Node.js | Rust | Go | Docker | Git            |  |  |  |
+|  |  |  |              AI & CLI TOOLS (Base)                      |  |  |  |
+|  |  |  |  Claude CLI | Gemini CLI | Modern CLI (eza,bat,fd,rg)  |  |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
 |  |  |  |                 VPN / NETWORK                           |  |  |  |
-|  |  |  |  WireGuard | ProtonVPN | OpenVPN | rclone               |  |  |  |
+|  |  |  |  ProtonVPN | WireGuard | Encrypted DNS (cloudflared)    |  |  |  |
 |  |  |  +---------------------------------------------------------+  |  |  |
 |  |  +---------------------------------------------------------------+  |  |
 |  |                              |                                      |  |
 |  |                    +---------v---------+                            |  |
-|  |                    |   Docker Volume   |                            |  |
-|  |                    |  (Persistent Data)|                            |  |
+|  |                    |   Volume Mounts   |                            |  |
+|  |                    |  (lib, modules)   |                            |  |
 |  |                    +-------------------+                            |  |
 |  +---------------------------------------------------------------------+  |
 |                                 |                                         |
 |            +--------------------+--------------------+                    |
 |            |                    |                    |                    |
 |       +----v----+         +-----v-----+        +----v----+               |
-|       |  X11    |         |  /dev/dri |        | /dev/snd|               |
-|       | Socket  |         |   (GPU)   |        | (Audio) |               |
+|       |  X11    |         | Network   |        |  VNC    |               |
+|       | Socket  |         | (host)    |        | :5901   |               |
 |       +---------+         +-----------+        +---------+               |
 +---------------------------------------------------------------------------+
 ```
@@ -680,13 +631,14 @@ Boot Flow:
 
 | Layer | Technology |
 |-------|------------|
-| **CLI** | Rust, Clap, Tokio |
+| **Entry Point** | Shell Script (bash) |
 | **Container** | Docker, Docker Compose |
-| **Desktop** | KDE Plasma, X11 |
+| **VNC Desktop** | TigerVNC, Openbox, Qt apps |
 | **Base OS** | Arch Linux |
-| **Encryption** | LUKS2, AES-256-XTS |
-| **VPN** | WireGuard, OpenVPN |
-| **Shell** | Fish, Zsh, Starship |
+| **VPN** | ProtonVPN CLI, WireGuard |
+| **DNS** | cloudflared (DoH) |
+| **AI CLIs** | Claude Code, Gemini |
+| **Shell** | Bash, Fish, Zsh, Starship |
 
 ### Download & Storage Requirements
 
@@ -754,24 +706,23 @@ Boot Flow:
 | difftastic | 15 MB | 20 MB | 40 MB | 2 sec | 1 sec |
 | gh (GitHub CLI) | 30 MB | 30 MB | 60 MB | 5 sec | 2 sec |
 
-### Totals
+### Totals (Base Image)
 
 | Metric | Value |
 |--------|-------|
-| **Total Download Size** | ~7.1 GB |
-| **Download Time (50 Mbps)** | ~20-23 minutes |
-| **Docker Image Size** | ~8-9 GB |
-| **Build Time** | ~15-25 minutes |
+| **Docker Image Size** | ~2.5 GB |
+| **Build Time** | ~10-15 minutes |
+| **First Start** | ~30 seconds |
 
 ### Runtime Resource Usage
 
 | Scenario | RAM Usage | CPU Usage |
 |----------|-----------|-----------|
-| **Idle Desktop** (KDE only) | 800 MB - 1.2 GB | 2-5% |
-| **Light Use** (terminal, file manager) | 1.5 - 2 GB | 5-10% |
-| **Development** (VS Code + terminal) | 2 - 4 GB | 10-30% |
-| **Heavy** (VS Code + Brave + Rust compile) | 4 - 8 GB | 50-90% |
-| **Maximum** (all apps + compilation) | 8 - 12 GB | 90%+ |
+| **Idle (shell only)** | ~200 MB | 1-2% |
+| **With VNC desktop** | ~500 MB | 2-5% |
+| **Light Use** (terminal, file manager) | ~800 MB | 5-10% |
+| **With Brave browser** | ~1.5 GB | 10-30% |
+| **Development** (with tools installed) | 2 - 4 GB | 20-50% |
 
 ### System Requirements
 
@@ -1092,75 +1043,56 @@ thiserror = "2"
 
 ## G) Roadmap
 
-### Phase 1: Core Foundation (Current)
+### Phase 1: Core Foundation (Complete)
 
-- [x] Docker image with KDE Plasma
-- [x] Full development stack (Python, Node, Rust, Go)
-- [x] Shell configuration (Fish, Zsh, Starship)
-- [x] Git tools and aliases
-- [x] AI tools (Claude, Gemini)
-- [x] Cloud sync (rclone)
-- [x] Auto-clone repositories
-- [ ] Rust CLI project structure
-- [ ] CLI parser (clap)
-- [ ] Config loader (TOML)
-- [ ] Error handling
+- [x] Docker image with Arch Linux base
+- [x] Shell entry point script
+- [x] Shared libraries (common.sh, docker.sh)
+- [x] Resource limits (90% CPU/RAM)
+- [x] ProtonVPN CLI integration
+- [x] Encrypted DNS (cloudflared)
+- [x] Brave browser
 
-### Phase 2: Sandbox Module
+### Phase 2: AI & Desktop Tools (Complete)
 
-- [ ] Container lifecycle (create/enter/stop/destroy)
-- [ ] Volume management
-- [ ] X11 forwarding setup
-- [ ] Resource limit configuration
-- [ ] First-run password change
+- [x] Claude CLI installation
+- [x] Gemini CLI installation
+- [x] Modern CLI tools (eza, bat, fd, rg, fzf, zoxide)
+- [x] Multiple shells (bash, fish, zsh)
+- [x] Starship prompt
+- [x] VNC server (TigerVNC)
+- [x] Openbox window manager
+- [x] Qt desktop apps (Dolphin, Konsole)
+- [x] Home folder structure
 
-### Phase 3: USB Module
+### Phase 3: Development Tools (In Progress)
 
-- [ ] ISO download and verification
-- [ ] Partition creation (EFI, ISO, LUKS)
-- [ ] LUKS encryption setup
-- [ ] Persistence configuration
-- [ ] Boot loader installation
+- [ ] Python installer module
+- [ ] Node.js installer module
+- [ ] Rust installer module
+- [ ] Go installer module
+- [ ] Git tools installer
 
-### Phase 4: Network Module
+### Phase 4: Personalization (Planned)
 
-- [ ] WireGuard wrapper
-- [ ] Proton VPN integration
-- [ ] Encrypted DNS setup (DoH/DoT)
-- [ ] Split tunnel routing
-- [ ] Connection status monitoring
+- [ ] Vault module (load/decrypt)
+- [ ] WireGuard VPN module
+- [ ] SSH connections module
+- [ ] FUSE mount module
+- [ ] Config apply module
 
-### Phase 5: Sync Module
+### Phase 5: Utilities (Planned)
 
-- [ ] rclone installation and config import
-- [ ] SSHFS/FUSE mount management
-- [ ] Bisync configuration
-- [ ] Mount status tracking
-- [ ] Auto-reconnect on disconnect
+- [ ] Status module (health checks)
+- [ ] Topology view
+- [ ] Export module
 
-### Phase 6: Tools Module
+### Phase 6: Polish (Future)
 
-- [ ] Package installation abstraction
-- [ ] Brave setup + config import + extensions
-- [ ] Obsidian setup + plugins
-- [ ] Konsole + shell setup
-- [ ] Kate + Dolphin setup
-
-### Phase 7: Bootstrap Orchestration
-
-- [ ] Preflight checks
-- [ ] Sequential module execution
-- [ ] Progress tracking with indicatif
-- [ ] Verification suite
-- [ ] Resume from failure
-
-### Phase 8: TUI Mode
-
-- [ ] Interactive menu system
-- [ ] Network topology diagram
-- [ ] VM status table
-- [ ] VPN/Mount status bar
-- [ ] Keybinding navigation
+- [ ] Documentation finalization
+- [ ] Multi-distro testing
+- [ ] Image optimization
+- [ ] TUI mode (optional)
 
 ---
 
