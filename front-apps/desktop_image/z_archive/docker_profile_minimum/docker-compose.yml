@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  cloud-connect:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cloud-connect:minimum
+    container_name: cloud-minimum
+    hostname: cloud-minimum
+
+    volumes:
+      - cloud-home:/home/clouduser
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+    environment:
+      - DISPLAY=${DISPLAY}
+      - CLOUD_PROFILE=minimum
+
+    network_mode: host
+
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
+    restart: unless-stopped
+
+volumes:
+  cloud-home:
