@@ -1,9 +1,9 @@
 # Mail Server Specification
 
 > **Consolidated Mail Documentation**
-> **Last Updated:** 2026-01-06
+> **Last Updated:** 2026-01-07
 > **VM:** oci-f-micro_1 (130.110.251.193)
-> **Status:** INBOUND BROKEN / OUTBOUND OK
+> **Status:** WORKING (Inbound + Outbound)
 
 ---
 
@@ -32,7 +32,7 @@
 |-----------|--------|-------|
 | **Mailu Mail Server** | DEPLOYED | 8 containers, latest version |
 | **Outbound Email** | WORKING | Via OCI Email Delivery Relay |
-| **Inbound Email** | BROKEN | Cloudflare Worker cannot reach SMTP proxy (port 8080 blocked) |
+| **Inbound Email** | WORKING | Cloudflare Worker → SMTP proxy (port 8080) → Mailu |
 | **Webmail (Roundcube)** | WORKING | https://mail.diegonmarcos.com/webmail |
 | **Admin Panel** | WORKING | https://mail.diegonmarcos.com/admin |
 | **IMAP (993)** | WORKING | SSL/TLS |
@@ -42,26 +42,21 @@
 
 ### Pending Issues
 
-- [ ] **FIX INBOUND EMAIL** - Options:
-  - Option 1: Set `BACKUP_EMAIL` in Worker to Gmail
-  - Option 2: Disable Worker, use native Cloudflare Email Routing
-  - Option 3: Route SMTP proxy through GCP (ports not blocked)
-- [ ] Fix Worker/Proxy header mismatch (`X-API-Key` vs `X-Proxy-Key`)
-- [ ] Fix Worker/Proxy body format mismatch (plain text vs JSON)
+- [x] ~~FIX INBOUND EMAIL~~ - Port 8080 now open, Worker delivers to Mailu
+- [x] ~~Fix Worker/Proxy header mismatch~~ - Working
+- [x] ~~Fix Worker/Proxy body format mismatch~~ - Working
+- [x] Set `BACKUP_EMAIL` to `diegonmarcos@live.com` as fallback
 
 ---
 
 ## 2. Architecture
 
-### Inbound Mail Flow (BROKEN)
+### Inbound Mail Flow (WORKING)
 
 ```
 Internet → Cloudflare MX (port 25) → Email Worker → SMTP Proxy (8080) → Mailu
                                           │
-                                          └── FAILS HERE
-                                              Port 8080 blocked by Oracle
-                                              BACKUP_EMAIL not configured
-                                              Result: "Primary delivery failed..."
+                                          └── Fallback: diegonmarcos@live.com
 ```
 
 ### Outbound Mail Flow (WORKING)
@@ -96,9 +91,9 @@ Client → Mailu (port 465/SMTPS) → Postfix → OCI Email Delivery Relay → I
                   ▼                               │                               │
          ┌──────────────────┐                     │                               │
          │ email-forwarder  │                     │                               │
-         │ Worker (BROKEN)  │                     │                               │
+         │ Worker (WORKING) │                     │                               │
          └────────┬─────────┘                     │                               │
-                  │ ✗ Port 8080 blocked           │                               │
+                  │ Port 8080 → Mailu             │                               │
                   ▼                               ▼                               │
          ┌────────────────────────────────────────────────────────────────────────┤
          │                    GCP Micro 1 (35.226.147.64)                         │
@@ -252,7 +247,7 @@ cd /opt/mailu && sudo docker-compose logs -f mailu-front-1
 | IMAP (read mail) | mail.diegonmarcos.com:993 | OK |
 | SMTP (send mail) | mail.diegonmarcos.com:465 (SMTPS) | OK |
 | SMTP Submission | mail.diegonmarcos.com:587 (STARTTLS) | Issues |
-| **Inbound Email** | Cloudflare → Worker → Mailu | **BROKEN** |
+| **Inbound Email** | Cloudflare → Worker → Mailu | WORKING |
 
 ---
 
@@ -338,23 +333,11 @@ Cloudflare Email Routing receives all inbound mail on port 25 via MX records.
 
 | Setting | Value | Status |
 |---------|-------|--------|
-| Worker Name | `email-forwarder` |  |
-| SMTP_PROXY_URL | `http://smtp.diegonmarcos.com:8080/` | Port blocked |
+| Worker Name | `email-forwarder` | WORKING |
+| SMTP_PROXY_URL | `http://smtp.diegonmarcos.com:8080/` | WORKING |
 | SMTP_PROXY_KEY | `stalwart-proxy-key-2025` | - |
-| BACKUP_EMAIL | (empty) | **NOT SET** |
-| Route | `me@diegonmarcos.com` → Worker → intended: Mailu | BROKEN |
-
-### Worker Issues
-
-1. Port 8080 blocked by Oracle Cloud firewall
-2. Header mismatch: Worker sends `X-API-Key`, proxy expects `X-Proxy-Key`
-3. Body format mismatch: Worker sends plain text, proxy expects JSON `{from, to, raw}`
-
-### Fix Options
-
-1. Set `BACKUP_EMAIL` in Worker → forward to Gmail as fallback
-2. Use Cloudflare Email Routing native forwarding (disable Worker)
-3. Route SMTP proxy through GCP (ports not blocked)
+| BACKUP_EMAIL | `diegonmarcos@live.com` | Fallback configured |
+| Route | `me@diegonmarcos.com` → Worker → Mailu | WORKING |
 
 ---
 
@@ -508,9 +491,9 @@ docker logs mailu-smtp-1 | grep -E "(relay|delivery|smtp.email)"
 
 ### Inbound Email Not Working
 
-- Port 8080 blocked by Oracle
-- Cloudflare Worker cannot reach SMTP proxy
-- Options: Use native Cloudflare routing or route through GCP
+- Check port 8080 connectivity: `nc -zv 130.110.251.193 8080`
+- Check Worker logs in Cloudflare Dashboard
+- Fallback: Emails will be forwarded to `diegonmarcos@live.com` if primary fails
 
 ### RAM Issues
 
