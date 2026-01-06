@@ -1,1 +1,0 @@
-/home/diego/Documents/Git/back-System/cloud/a_solutions/vpn/wireguard/cloud_connect.py

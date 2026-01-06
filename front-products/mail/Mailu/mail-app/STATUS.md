@@ -1,8 +1,9 @@
 # Mail App Status
 
-**Status:** WORKING
-**Date:** 2025-12-29
+**Status:** INBOUND BROKEN (Outbound OK)
+**Date:** 2026-01-06
 **VM:** oci-f-micro_1 (130.110.251.193)
+**Issue:** Cloudflare Worker cannot reach SMTP proxy (Oracle blocks port 8080)
 
 ---
 
@@ -98,8 +99,9 @@ mailu-resolver-1    mailu/unbound:latest               Up (healthy)    -
 |---------|-----|--------|
 | Mailu Admin | https://mail.diegonmarcos.com/admin | OK |
 | Roundcube Webmail | https://mail.diegonmarcos.com/webmail | OK |
-| IMAP | mail.diegonmarcos.com:993 | OK |
-| SMTP Submission | mail.diegonmarcos.com:465 (SMTPS) | OK |
+| IMAP (read mail) | mail.diegonmarcos.com:993 | OK |
+| SMTP (send mail) | mail.diegonmarcos.com:465 (SMTPS) | OK |
+| **Inbound Email** | Cloudflare → Worker → Mailu | **BROKEN** |
 
 ---
 
@@ -119,20 +121,46 @@ mailu-resolver-1    mailu/unbound:latest               Up (healthy)    -
 
 - [x] ~~Test SMTP submission (port 587 TLS issue)~~ - Using port 465 (SMTPS) instead
 - [x] ~~Update Thunderbird configuration for Mailu~~ - Updated to port 465/SSL
-- [ ] Cloudflare Worker for archive forwarding
+- [x] ~~Cloudflare Worker for archive forwarding~~ - DEPLOYED but BROKEN (port 8080 blocked)
+- [ ] **FIX INBOUND EMAIL** - Choose one:
+  - [ ] Option 1: Set BACKUP_EMAIL in Worker to Gmail
+  - [ ] Option 2: Disable Worker, use native Cloudflare Email Routing
+  - [ ] Option 3: Route SMTP proxy through GCP
+- [ ] Fix Worker/Proxy header mismatch (X-API-Key vs X-Proxy-Key)
+- [ ] Fix Worker/Proxy body format mismatch (plain text vs JSON)
 - [ ] DKIM configuration
 
 ---
 
 ## Architecture
 
-### Inbound Mail Flow
+### Inbound Mail Flow (BROKEN)
 ```
-Internet → Cloudflare (port 25) → Email Routing → Gmail (PRIMARY)
-                                                → Mailu (ARCHIVE via Worker - planned)
+Internet → Cloudflare MX (port 25) → Email Worker → SMTP Proxy (8080) → Mailu
+                                          │
+                                          └── FAILS HERE
+                                              Port 8080 blocked by Oracle
+                                              BACKUP_EMAIL not configured
+                                              Result: "Primary delivery failed..."
 ```
 
-### Outbound Mail Flow
+**Cloudflare Worker Configuration (email-forwarder):**
+| Setting | Value | Status |
+|---------|-------|--------|
+| SMTP_PROXY_URL | http://smtp.diegonmarcos.com:8080/ | Port blocked |
+| SMTP_PROXY_KEY | stalwart-proxy-key-2025 | - |
+| BACKUP_EMAIL | (empty) | NOT SET |
+
+**Additional Issues:**
+- Worker sends `X-API-Key` header, proxy expects `X-Proxy-Key`
+- Worker sends plain text body, proxy expects JSON `{from, to, raw}`
+
+**Fix Options:**
+1. Set `BACKUP_EMAIL` in Worker → forward to Gmail as fallback
+2. Use Cloudflare Email Routing native forwarding (disable Worker)
+3. Route SMTP proxy through GCP (ports not blocked)
+
+### Outbound Mail Flow (WORKING)
 ```
 Client → Mailu (port 465/SMTPS) → Postfix → OCI Email Delivery Relay → Internet
                                             [smtp.email.eu-marseille-1.oci.oraclecloud.com]:587

@@ -1,1 +1,0 @@
-../../in-house/1.collectors/4.architecture.py
