@@ -1,0 +1,55 @@
+services:
+  palantir-monitor:
+    container_name: palantir-monitor
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    cpus: 0.25
+    mem_limit: 64m    # Lite version uses ~30MB
+    volumes:
+      # SSH keys for VM access
+      - ${SSH_KEY_OCI:-~/.ssh/id_rsa}:/root/.ssh/id_rsa:ro
+      - ${SSH_KEY_GCP:-~/.ssh/google_compute_engine}:/root/.ssh/google_compute_engine:ro
+      # Reports storage
+      - palantir-reports:/app/reports
+      # Config
+      - ./config:/app/config:ro
+    environment:
+      - SMTP_PROXY_URL=http://smtp.diegonmarcos.com:8080/
+      - SMTP_PROXY_KEY=stalwart-proxy-key-2025
+      - DAEMON_MODE=false
+      - CHECK_INTERVAL=86400
+      # VM IPs
+      - OCI_MICRO_1=130.110.251.193
+      - OCI_MICRO_2=129.151.228.66
+      - GCP_MICRO_1=35.226.147.64
+      - OCI_FLEX_1=84.235.234.87
+    networks:
+      - monitor
+
+  # Scheduled runs via cron container
+  palantir-cron:
+    container_name: palantir-cron
+    image: alpine:3.19
+    restart: unless-stopped
+    cpus: 0.05
+    mem_limit: 16m
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        apk add --no-cache docker-cli
+        echo "0 7 * * * docker start palantir-monitor" | crontab -
+        crond -f -l 2
+    networks:
+      - monitor
+
+volumes:
+  palantir-reports:
+
+networks:
+  monitor:
+    driver: bridge
