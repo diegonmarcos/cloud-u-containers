@@ -130,21 +130,123 @@ cat << EOF
 EOF
 
 if [[ -S /var/run/docker.sock ]]; then
-    echo "| Container | User | Privileged |"
-    echo "|-----------|------|------------|"
+    # Basic security checks
+    echo "**Security Configuration:**"
+    echo ""
+    echo "| Container | User | Privileged | Health | Capabilities |"
+    echo "|-----------|------|------------|--------|--------------|"
 
     docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
         user=$(docker inspect "$name" --format '{{.Config.User}}' 2>/dev/null)
         priv=$(docker inspect "$name" --format '{{.HostConfig.Privileged}}' 2>/dev/null)
+        health=$(docker inspect "$name" --format '{{.State.Health.Status}}' 2>/dev/null)
+        caps=$(docker inspect "$name" --format '{{.HostConfig.CapAdd}}' 2>/dev/null)
 
         user_status="[OK] $user"
-        [[ -z "$user" || "$user" == "root" ]] && user_status="[WARN] root"
+        [[ -z "$user" || "$user" == "root" || "$user" == "0" ]] && user_status="[WARN] root"
 
         priv_status="[OK] No"
         [[ "$priv" == "true" ]] && priv_status="[FAIL] Yes"
 
-        echo "| $name | $user_status | $priv_status |"
+        health_status="[OK] ${health:-none}"
+        [[ "$health" == "unhealthy" ]] && health_status="[FAIL] unhealthy"
+        [[ -z "$health" || "$health" == "<no value>" ]] && health_status="- (none)"
+
+        caps_status="[OK] default"
+        [[ "$caps" != "[]" && "$caps" != "<no value>" ]] && caps_status="[WARN] $caps"
+
+        echo "| $name | $user_status | $priv_status | $health_status | $caps_status |"
     done
+
+    # Resource limits check
+    echo ""
+    echo "**Resource Limits:**"
+    echo ""
+    echo "| Container | Memory Limit | CPU Limit | Restart Policy |"
+    echo "|-----------|-------------|-----------|----------------|"
+
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        mem=$(docker inspect "$name" --format '{{.HostConfig.Memory}}' 2>/dev/null)
+        cpu=$(docker inspect "$name" --format '{{.HostConfig.NanoCpus}}' 2>/dev/null)
+        restart=$(docker inspect "$name" --format '{{.HostConfig.RestartPolicy.Name}}' 2>/dev/null)
+
+        mem_status="[WARN] unlimited"
+        if [[ "$mem" != "0" ]]; then
+            mem_mb=$((mem / 1024 / 1024))
+            mem_status="[OK] ${mem_mb}MB"
+        fi
+
+        cpu_status="[WARN] unlimited"
+        if [[ "$cpu" != "0" ]]; then
+            cpu_cores=$(echo "scale=2; $cpu / 1000000000" | bc)
+            cpu_status="[OK] ${cpu_cores}"
+        fi
+
+        restart_status="[OK] $restart"
+        [[ "$restart" == "no" || -z "$restart" ]] && restart_status="[WARN] no"
+
+        echo "| $name | $mem_status | $cpu_status | $restart_status |"
+    done
+
+    # Exposed ports check
+    echo ""
+    echo "**Exposed Sensitive Ports:**"
+    echo ""
+    echo "| Container | Exposed Ports | Risk |"
+    echo "|-----------|---------------|------|"
+
+    sensitive_found=0
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        ports=$(docker inspect "$name" --format '{{range $p, $conf := .NetworkSettings.Ports}}{{$p}} {{end}}' 2>/dev/null)
+
+        for port in $ports; do
+            port_num=$(echo "$port" | grep -oE '^[0-9]+')
+            case "$port_num" in
+                3306|5432|6379|27017|9200|2375|2376)
+                    case "$port_num" in
+                        3306) service="MySQL" ;;
+                        5432) service="PostgreSQL" ;;
+                        6379) service="Redis" ;;
+                        27017) service="MongoDB" ;;
+                        9200) service="Elasticsearch" ;;
+                        2375) service="Docker API" ;;
+                        2376) service="Docker TLS" ;;
+                    esac
+                    echo "| $name | $port_num ($service) | [WARN] Sensitive |"
+                    sensitive_found=1
+                    ;;
+            esac
+        done
+    done
+
+    [[ $sensitive_found -eq 0 ]] && echo "| - | - | [OK] None detected |"
+
+    # Volume mounts check
+    echo ""
+    echo "**Volume Mounts (Security Review):**"
+    echo ""
+    echo "| Container | Mount Type | Source | Risk |"
+    echo "|-----------|------------|--------|------|"
+
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        mounts=$(docker inspect "$name" --format '{{json .Mounts}}' 2>/dev/null)
+
+        echo "$mounts" | jq -r '.[] | "\(.Type)|\(.Source)|\(.Destination)"' 2>/dev/null | while IFS='|' read type source dest; do
+            risk="[OK] Normal"
+
+            # Check for sensitive mounts
+            if [[ "$source" == "/var/run/docker.sock" ]]; then
+                risk="[WARN] Docker socket"
+            elif [[ "$source" == "/" || "$source" == "/etc" || "$source" == "/root" ]]; then
+                risk="[FAIL] Root filesystem"
+            elif [[ "$type" == "bind" ]]; then
+                risk="[INFO] Bind mount"
+            fi
+
+            echo "| $name | $type | $source | $risk |"
+        done
+    done
+
 else
     echo "(docker socket not mounted)"
 fi

@@ -99,3 +99,115 @@ done
 
 echo "| (scan complete) | - | - | - |"
 
+cat << EOF
+
+### Container Port Mappings
+
+EOF
+
+if [[ -S /var/run/docker.sock ]]; then
+    echo "**Published Ports (Host -> Container):**"
+    echo ""
+    echo "| Container | Host Port | Container Port | Protocol | Public |"
+    echo "|-----------|-----------|----------------|----------|--------|"
+
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        port_mappings=$(docker inspect "$name" --format '{{json .NetworkSettings.Ports}}' 2>/dev/null)
+
+        if [[ -n "$port_mappings" && "$port_mappings" != "null" && "$port_mappings" != "{}" ]]; then
+            echo "$port_mappings" | jq -r 'to_entries[] | select(.value != null) | .key as $cport | .value[] | "\($cport)|\(.HostIp)|\(.HostPort)"' 2>/dev/null | while IFS='|' read cport hostip hostport; do
+                container_port=$(echo "$cport" | cut -d'/' -f1)
+                protocol=$(echo "$cport" | cut -d'/' -f2)
+
+                # Check if publicly accessible
+                public_status="[OK] Local"
+                if [[ "$hostip" == "0.0.0.0" || "$hostip" == "::" || -z "$hostip" ]]; then
+                    public_status="[WARN] Public"
+                fi
+
+                # Highlight sensitive ports
+                port_status="$hostport"
+                case "$container_port" in
+                    3306|5432|6379|27017|9200)
+                        port_status="[WARN] $hostport (DB)"
+                        ;;
+                    2375|2376)
+                        port_status="[FAIL] $hostport (Docker API)"
+                        ;;
+                esac
+
+                echo "| $name | $port_status | $container_port | $protocol | $public_status |"
+            done
+        fi
+    done
+
+    # Internal exposed ports (not published)
+    echo ""
+    echo "**Internal Exposed Ports (not published to host):**"
+    echo ""
+    echo "| Container | Internal Port | Protocol | Service Hint |"
+    echo "|-----------|---------------|----------|--------------|"
+
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        exposed=$(docker inspect "$name" --format '{{range $port, $_ := .Config.ExposedPorts}}{{$port}} {{end}}' 2>/dev/null)
+        published=$(docker inspect "$name" --format '{{range $port, $bindings := .NetworkSettings.Ports}}{{if $bindings}}{{$port}} {{end}}{{end}}' 2>/dev/null)
+
+        for port in $exposed; do
+            # Check if this port is published
+            is_published=0
+            for pub in $published; do
+                if [[ "$port" == "$pub" ]]; then
+                    is_published=1
+                    break
+                fi
+            done
+
+            if [[ $is_published -eq 0 ]]; then
+                port_num=$(echo "$port" | cut -d'/' -f1)
+                protocol=$(echo "$port" | cut -d'/' -f2)
+
+                # Guess service
+                service=""
+                case "$port_num" in
+                    80) service="HTTP" ;;
+                    443) service="HTTPS" ;;
+                    3306) service="MySQL" ;;
+                    5432) service="PostgreSQL" ;;
+                    6379) service="Redis" ;;
+                    27017) service="MongoDB" ;;
+                    9200) service="Elasticsearch" ;;
+                    8080) service="HTTP Alt" ;;
+                    *) service="Unknown" ;;
+                esac
+
+                echo "| $name | $port_num | $protocol | $service |"
+            fi
+        done
+    done
+
+    # High port analysis
+    echo ""
+    echo "**High Port Usage Analysis (>1024):**"
+    echo ""
+
+    high_port_count=0
+    docker ps --format "{{.Names}}" 2>/dev/null | while read name; do
+        docker inspect "$name" --format '{{json .NetworkSettings.Ports}}' 2>/dev/null | \
+            jq -r 'to_entries[] | select(.value != null) | .value[] | .HostPort' 2>/dev/null | while read port; do
+            if [[ $port -gt 1024 ]]; then
+                ((high_port_count++))
+            fi
+        done
+    done
+
+    if [[ $high_port_count -gt 0 ]]; then
+        echo "- [INFO] $high_port_count high port(s) in use (>1024)"
+        echo "  - High ports are generally safe but review for unexpected services"
+    else
+        echo "- [INFO] Only standard ports (<1024) are published"
+    fi
+
+else
+    echo "(docker socket not mounted - cannot analyze container ports)"
+fi
+
