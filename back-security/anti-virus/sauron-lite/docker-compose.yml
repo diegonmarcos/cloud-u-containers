@@ -24,10 +24,10 @@ services:
       - RULES_DIR=/etc/sauron/yara-rules
     # Resource limits for 1GB VMs
     # Memory: hard cap at 64MB
-    # CPU: allow bursts up to 50% during YARA scans
+    # CPU: capped at 25% to prevent system impact
     mem_limit: 64m
     mem_reservation: 16m
-    cpus: 0.5
+    cpus: 0.25
     # Limit CPU during idle with cgroup weight (nice level)
     cpu_shares: 256
     logging:
