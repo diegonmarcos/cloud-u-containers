@@ -11,6 +11,8 @@ services:
       # SSH keys for VM access
       - ${SSH_KEY_OCI:-~/.ssh/id_rsa}:/root/.ssh/id_rsa:ro
       - ${SSH_KEY_GCP:-~/.ssh/google_compute_engine}:/root/.ssh/google_compute_engine:ro
+      # Docker socket for local container security scanning
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       # Reports storage
       - palantir-reports:/app/reports
       # Config
