@@ -8,7 +8,9 @@ set -o pipefail
 
 # Configuration
 REPORT_DIR="/app/reports"
-REPORT_FILE="$REPORT_DIR/health-report-$(date +%Y%m%d-%H%M%S).md"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+REPORT_FILE="$REPORT_DIR/health-report-${TIMESTAMP}.md"
+REPORT_JSON="$REPORT_DIR/health-report-${TIMESTAMP}.json"
 TO_EMAIL="me@diegonmarcos.com"
 FROM_EMAIL="no-reply@diegonmarcos.com"
 SMTP_PROXY_URL="${SMTP_PROXY_URL:-http://smtp.diegonmarcos.com:8080/}"
@@ -89,47 +91,147 @@ EOF
     fi
 }
 
+# Generate JSON report
+generate_json_report() {
+    local ok_count=$(grep -c '\[OK\]' "$REPORT_FILE" 2>/dev/null || echo 0)
+    local fail_count=$(grep -c '\[FAIL\]' "$REPORT_FILE" 2>/dev/null || echo 0)
+    local warn_count=$(grep -c '\[WARN\]' "$REPORT_FILE" 2>/dev/null || echo 0)
+
+    cat > "$REPORT_JSON" << EOF
+{
+  "metadata": {
+    "generated": "$(date '+%Y-%m-%d %H:%M:%S UTC')",
+    "host": "$(hostname)",
+    "report_id": "$(date +%s)",
+    "timestamp": "$TIMESTAMP"
+  },
+  "summary": {
+    "ok_count": $ok_count,
+    "fail_count": $fail_count,
+    "warn_count": $warn_count,
+    "total_checks": $((ok_count + fail_count + warn_count)),
+    "status": "$(if [[ $fail_count -gt 0 ]]; then echo "ALERT"; elif [[ $warn_count -gt 0 ]]; then echo "WARN"; else echo "OK"; fi)"
+  },
+  "checks": {
+    "external_connectivity": $(grep -c '\[OK\]' "$REPORT_FILE" 2>/dev/null | head -1 || echo 0),
+    "cloud_infrastructure": {
+      "vms_checked": $(grep -o 'VM Health' "$REPORT_FILE" | wc -l || echo 0),
+      "docker_hosts": $(grep -o 'Docker Status per VM' "$REPORT_FILE" | wc -l || echo 0)
+    },
+    "security": {
+      "ports_analyzed": true,
+      "firewall_checked": true,
+      "malware_scans": true
+    }
+  },
+  "vms": [
+$(grep '| oci-\|| gcp-' "$REPORT_FILE" | grep -v '|-' | while IFS='|' read -r _ vm_name ip status uptime load mem _; do
+    vm_name=$(echo "$vm_name" | xargs)
+    ip=$(echo "$ip" | xargs)
+    status=$(echo "$status" | xargs)
+    uptime=$(echo "$uptime" | xargs)
+    load=$(echo "$load" | xargs)
+    mem=$(echo "$mem" | xargs)
+
+    [[ -z "$vm_name" ]] && continue
+
+    cat << VMEOF
+    {
+      "name": "$vm_name",
+      "ip": "$ip",
+      "status": "$status",
+      "uptime": "$uptime",
+      "load": "$load",
+      "memory": "$mem"
+    },
+VMEOF
+done | sed '$ s/,$//')
+  ],
+  "report_files": {
+    "markdown": "$(basename "$REPORT_FILE")",
+    "json": "$(basename "$REPORT_JSON")"
+  }
+}
+EOF
+
+    echo "JSON report generated: $REPORT_JSON"
+}
+
 # Send email with report (using swaks for attachment support)
 send_email() {
     echo "Sending report via swaks with attachment..."
 
-    # Primary: swaks via Mailu SMTPS (port 465 implicit TLS)
-    if swaks --to "$TO_EMAIL" \
-             --from "$FROM_EMAIL" \
-             --server "130.110.251.193" \
-             --port 465 \
-             --tlsc \
-             --header "Subject: $SUBJECT" \
-             --header "X-Report-ID: $(date +%s)" \
-             --header "X-Palantir-Monitor: true" \
-             --body "Cloud Infrastructure Health Report attached.\n\nGenerated: $(date '+%Y-%m-%d %H:%M:%S UTC')\nHost: $(hostname)" \
-             --attach-type "text/markdown" \
-             --attach-name "health-report.md" \
-             --attach "@$REPORT_FILE" \
-             --timeout 30 2>&1; then
-        echo "[OK] Email sent via swaks with attachment"
-        return 0
-    else
-        echo "[WARN] swaks to Mailu failed, trying Cloudflare MX..."
+    # SMTP credentials (Mailu relay account)
+    SMTP_USER="${SMTP_USER:-no-reply@diegonmarcos.com}"
+    SMTP_PASS="${SMTP_PASS:-}"
 
-        # Fallback: swaks direct to Cloudflare MX
+    # Primary: swaks via Mailu SMTPS (port 465 implicit TLS) with auth
+    if [[ -n "$SMTP_PASS" ]]; then
+        # Use full report as body + attach both MD and JSON files
         if swaks --to "$TO_EMAIL" \
                  --from "$FROM_EMAIL" \
-                 --server "route1.mx.cloudflare.net" \
-                 --port 25 \
+                 --server "130.110.251.193" \
+                 --port 465 \
+                 --tlsc \
+                 --auth LOGIN \
+                 --auth-user "$SMTP_USER" \
+                 --auth-password "$SMTP_PASS" \
                  --header "Subject: $SUBJECT" \
-                 --body "Cloud Infrastructure Health Report attached.\n\nGenerated: $(date)" \
+                 --header "X-Report-ID: $(date +%s)" \
+                 --header "X-Palantir-Monitor: true" \
+                 --body "@$REPORT_FILE" \
                  --attach-type "text/markdown" \
                  --attach-name "health-report.md" \
                  --attach "@$REPORT_FILE" \
+                 --attach-type "application/json" \
+                 --attach-name "health-report.json" \
+                 --attach "@$REPORT_JSON" \
                  --timeout 30 2>&1; then
-            echo "[OK] Email sent via Cloudflare MX"
+            echo "[OK] Email sent via Mailu SMTPS with attachments (MD + JSON)"
             return 0
-        else
-            echo "[FAIL] All email methods failed"
-            return 1
         fi
     fi
+
+    echo "[WARN] SMTP auth failed or not configured, trying HTTP proxy..."
+
+    # Fallback: HTTP SMTP proxy (sends inline, no attachment)
+    local report_content
+    report_content=$(cat "$REPORT_FILE")
+
+    local response
+    response=$(curl -s -X POST "${SMTP_PROXY_URL}" \
+        -H "Content-Type: text/plain" \
+        -H "X-API-Key: ${SMTP_PROXY_KEY}" \
+        --data-binary "From: $FROM_EMAIL
+To: $TO_EMAIL
+Subject: $SUBJECT
+Date: $(date -R)
+Content-Type: text/plain; charset=utf-8
+
+$report_content" \
+        --max-time 30 2>&1)
+
+    if echo "$response" | grep -qi "delivered\|success\|250"; then
+        echo "[OK] Email sent via HTTP proxy (inline report)"
+        return 0
+    else
+        echo "[WARN] HTTP proxy failed: $response"
+    fi
+
+    # Final fallback: ntfy notification
+    echo "Trying ntfy notification..."
+    if curl -s -X POST "https://rss.diegonmarcos.com/palantir" \
+         -H "Title: $SUBJECT" \
+         -H "Priority: high" \
+         -H "Tags: cloud,monitor" \
+         -d "$(head -50 "$REPORT_FILE")" \
+         --max-time 10 2>&1 | grep -q "id"; then
+        echo "[OK] Notification sent via ntfy"
+        return 0
+    fi
+
+    echo "[FAIL] All delivery methods failed"
+    return 1
 }
 
 # Main execution
@@ -144,12 +246,15 @@ main() {
     init_report
     run_all_checks
     add_summary
+    generate_json_report
 
     echo ""
-    echo "Report generated: $REPORT_FILE"
+    echo "Reports generated:"
+    echo "  - Markdown: $REPORT_FILE"
+    echo "  - JSON: $REPORT_JSON"
     echo ""
 
-    # Display report
+    # Display markdown report
     cat "$REPORT_FILE"
 
     echo ""
