@@ -1,32 +1,44 @@
+# Multi-stage build for Rust-based Palantir Monitor
+
+# Stage 1: Build
+FROM rustlang/rust:nightly-bookworm as builder
+
+WORKDIR /build
+
+# Copy dependency manifests
+COPY Cargo.toml ./
+
+# Copy source code
+COPY src ./src
+COPY templates ./templates
+
+# Build release binary
+RUN cargo build --release --bin palantir-monitor
+
+# Stage 2: Runtime
 FROM debian:bookworm-slim
 
-# Lightweight tools - NO heavy CLIs (OCI/GCloud)
-# Uses SSH + curl APIs instead for ~30MB RAM vs ~400MB
+# Install only necessary runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
-    curl \
-    jq \
-    bc \
-    netcat-openbsd \
-    dnsutils \
-    openssl \
-    openssh-client \
-    swaks \
     ca-certificates \
-    libnet-ssleay-perl \
-    libio-socket-ssl-perl \
+    libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directories
-RUN mkdir -p /app/scripts /app/reports /app/config /root/.ssh && \
+RUN mkdir -p /app/reports /app/config /root/.ssh && \
     chmod 700 /root/.ssh
-
-# Copy scripts and entrypoint
-COPY scripts/ /app/scripts/
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/scripts/*.sh /app/entrypoint.sh
 
 WORKDIR /app
 
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["/app/scripts/run-checks.sh"]
+# Copy compiled binary from builder
+COPY --from=builder /build/target/release/palantir-monitor /app/palantir-monitor
+
+# Copy configuration and templates
+COPY config /app/config
+COPY templates /app/templates
+
+# Make binary executable
+RUN chmod +x /app/palantir-monitor
+
+# Entrypoint
+ENTRYPOINT ["/app/palantir-monitor"]

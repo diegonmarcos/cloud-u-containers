@@ -1,16 +1,14 @@
 services:
   palantir-monitor:
     container_name: palantir-monitor
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: palantir-monitor:v2-rust
     restart: "no"
-    cpus: 0.25
-    mem_limit: 64m    # Lite version uses ~30MB
+    cpus: 0.5
+    mem_limit: 128m    # Rust version uses ~50-80MB
     volumes:
       # SSH keys for VM access
-      - ${SSH_KEY_OCI:-~/.ssh/id_rsa}:/root/.ssh/id_rsa:ro
-      - ${SSH_KEY_GCP:-~/.ssh/google_compute_engine}:/root/.ssh/google_compute_engine:ro
+      - ${SSH_KEY_OCI:-/home/diego/usr_vault/A0_keys/ssh/id_rsa}:/root/.ssh/id_rsa:ro
+      - ${SSH_KEY_GCP:-/home/diego/usr_vault/A0_keys/ssh/google_compute_engine}:/root/.ssh/google_compute_engine:ro
       # Docker socket for local container security scanning
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Reports storage

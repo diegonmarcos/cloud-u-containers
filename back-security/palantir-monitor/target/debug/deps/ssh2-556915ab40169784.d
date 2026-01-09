@@ -1,0 +1,13 @@
+/home/diego/mnt_git/cloud/a_solutions/back-security/palantir-monitor/target/debug/deps/ssh2-556915ab40169784.d: /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/lib.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/agent.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/channel.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/error.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/knownhosts.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/listener.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/session.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/sftp.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/util.rs
+
+/home/diego/mnt_git/cloud/a_solutions/back-security/palantir-monitor/target/debug/deps/libssh2-556915ab40169784.rmeta: /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/lib.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/agent.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/channel.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/error.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/knownhosts.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/listener.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/session.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/sftp.rs /home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/util.rs
+
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/lib.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/agent.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/channel.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/error.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/knownhosts.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/listener.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/session.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/sftp.rs:
+/home/diego/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ssh2-0.9.5/src/util.rs:
