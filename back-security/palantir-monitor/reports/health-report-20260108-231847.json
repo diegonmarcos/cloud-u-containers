@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "generated": "2026-01-08T23:19:00Z",
+    "host": "d1fd65b63793",
+    "report_id": "1767914340",
+    "timestamp": "20260108-231847",
+    "version": "2.0"
+  },
+  "summary": {
+    "ok_count": 63,
+    "fail_count": 24,
+    "warn_count": 20,
+    "total_checks": 107,
+    "health_score": 58,
+    "status": "ALERT"
+  },
+  "topology": {
+    "providers": ["Oracle Cloud (OCI)", "Google Cloud (GCP)"],
+    "regions": {
+      "oci": "eu-marseille-1",
+      "gcp": "us-central1"
+    },
+    "vms": [
+      {"id": "oci-f-micro_1", "provider": "OCI", "ip": "130.110.251.193", "ram": "1GB", "role": "Mail Server", "services": ["Mailu"]},
+      {"id": "oci-f-micro_2", "provider": "OCI", "ip": "129.151.228.66", "ram": "1GB", "role": "Analytics", "services": ["Matomo"]},
+      {"id": "gcp-f-micro_1", "provider": "GCP", "ip": "35.226.147.64", "ram": "1GB", "role": "Proxy/Auth", "services": ["NPM", "Authelia", "ntfy"]},
+      {"id": "oci-p-flex_1", "provider": "OCI", "ip": "84.235.234.87", "ram": "8GB", "role": "Media", "services": ["Photoprism", "Syncthing", "Radicale"], "mode": "wake-on-demand"}
+    ],
+    "domains": {
+      "root": "diegonmarcos.com",
+      "subdomains": ["mail", "analytics", "proxy", "auth", "rss", "cloud", "photos", "sync", "cal"]
+    },
+    "networks": [
+      {"name": "mail_network", "subnet": "172.20.0.0/24", "vm": "oci-f-micro_1"},
+      {"name": "matomo_network", "subnet": "172.21.0.0/24", "vm": "oci-f-micro_2"},
+      {"name": "npm_default", "subnet": "172.18.0.0/24", "vm": "gcp-f-micro_1"},
+      {"name": "dev_network", "subnet": "172.24.0.0/24", "vm": "oci-p-flex_1"}
+    ]
+  },
+  "checks": {
+    "external_connectivity": {
+      "total": 15,
+      "ssh_accessible": 9,
+      "https_accessible": 3
+    },
+    "cloud_infrastructure": {
+      "vms_online": 0
+0,
+      "containers_running": 27,
+      "containers_stopped": 5
+    },
+    "ports": {
+      "expected_open": 32,
+      "unexpected_closed": 9,
+      "database_ports_exposed": false
+    },
+    "security": {
+      "ssl_certs_valid": 5,
+      "security_headers_present": 4,
+      "malware_scanners_active": 0
+0
+    }
+  },
+  "report_files": {
+    "markdown": "health-report-20260108-231847.md",
+    "json": "health-report-20260108-231847.json"
+  }
+}
