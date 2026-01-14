@@ -55,9 +55,18 @@ Lightweight cloud infrastructure monitoring container (~30MB RAM) that generates
 │         ┌────────────────┼────────────────┐                │
 │         ▼                ▼                ▼                │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│  │ MD Report  │  │ Console    │  │ Email via  │           │
-│  │ (stored)   │  │ Output     │  │ SMTP Proxy │           │
-│  └────────────┘  └────────────┘  └────────────┘           │
+│  │ MD Report  │  │ HTML       │  │ JSON       │           │
+│  │ (stored)   │  │ Report     │  │ Report     │           │
+│  └────┬───────┘  └────┬───────┘  └────┬───────┘           │
+│       │               │               │                    │
+│       └───────────────┴───────────────┘                    │
+│                       │                                    │
+│                       ▼                                    │
+│              ┌────────────────┐                            │
+│              │ Email via      │                            │
+│              │ Mailu SMTPS    │                            │
+│              │ (HTML + 3 att.)│                            │
+│              └────────────────┘                            │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
          │
@@ -91,8 +100,10 @@ volumes:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SMTP_PROXY_URL` | http://smtp.diegonmarcos.com:8080/ | Email endpoint |
-| `SMTP_PROXY_KEY` | stalwart-proxy-key-2025 | API key |
+| `SMTP_USER` | no-reply@diegonmarcos.com | SMTP auth username |
+| `SMTP_PASS` | (required) | SMTP auth password |
+| `SMTP_PROXY_URL` | http://smtp.diegonmarcos.com:8080/ | Fallback email endpoint |
+| `SMTP_PROXY_KEY` | stalwart-proxy-key-2025 | Fallback API key |
 | `OCI_MICRO_1` | 130.110.251.193 | Mail server IP |
 | `OCI_MICRO_2` | 129.151.228.66 | Analytics IP |
 | `GCP_MICRO_1` | 35.226.147.64 | Proxy IP |
@@ -102,6 +113,10 @@ volumes:
 
 ### Manual Run
 ```bash
+# With email (requires SMTP password)
+docker-compose run --rm -e SMTP_PASS=your_password palantir-monitor
+
+# Without email (console output only)
 docker-compose run --rm palantir-monitor
 ```
 
@@ -126,6 +141,13 @@ docker run --rm -v palantir-monitor_palantir-reports:/reports alpine ls -la /rep
 6. **Security Checks** - SSL expiry, headers
 7. **Malware Reports** - Sauron alerts from all VMs
 
+### Report Formats
+
+Each run generates three report files:
+- **Markdown** (`health-report-YYYYMMDD-HHMMSS.md`) - Human-readable text format
+- **HTML** (`health-report-YYYYMMDD-HHMMSS.html`) - Styled web format with CSS
+- **JSON** (`health-report-YYYYMMDD-HHMMSS.json`) - Machine-readable data with metadata
+
 ## Files
 
 ```
@@ -137,6 +159,7 @@ palantir-monitor/
 │   └── endpoints.conf      # IPs, domains
 └── scripts/
     ├── run-checks.sh       # Orchestrator
+    ├── generate-html.sh    # MD to HTML converter
     ├── check-external.sh   # HTTP/port/DNS
     ├── check-cloud.sh      # VM health via SSH
     ├── check-docker.sh     # Container summary
@@ -151,4 +174,14 @@ palantir-monitor/
 - **From:** no-reply@diegonmarcos.com
 - **To:** me@diegonmarcos.com
 - **Subject:** `[OK]`, `[WARN]`, or `[ALERT]` based on findings
-- **Body:** Full Markdown report
+- **Body:** Styled HTML report with:
+  - Professional CSS styling (blue theme)
+  - Color-coded status indicators (✅ OK, ⚠️ WARN, ❌ FAIL)
+  - Responsive tables with hover effects
+  - ASCII topology diagrams
+- **Attachments:**
+  - `health-report.html` - Full HTML report
+  - `health-report.md` - Markdown version
+  - `health-report.json` - Machine-readable summary
+- **Delivery:** SMTPS (port 465) via Mailu with authentication
+- **Schedule:** Daily at 7:00 AM UTC via cron
