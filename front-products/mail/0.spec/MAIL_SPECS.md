@@ -1,7 +1,7 @@
 # Mail Server Specification
 
 > **Consolidated Mail Documentation**
-> **Last Updated:** 2026-01-07
+> **Last Updated:** 2026-01-14
 > **VM:** oci-f-micro_1 (130.110.251.193)
 > **Status:** WORKING (Inbound + Outbound)
 
@@ -503,6 +503,44 @@ free -h
 docker stats --no-stream
 
 # VM has 1GB total, Mailu uses ~512MB-1GB
+```
+
+### iptables Rules Reset After Docker Restart (Fixed 2026-01-14)
+
+**Problem:** Custom iptables rules in DOCKER-USER chain get wiped when Docker restarts.
+
+**Cause:** `netfilter-persistent` was disabled, no `/etc/iptables/rules.v4` file existed.
+
+**Solution:** Persistent iptables restoration system was created:
+
+| File | Purpose |
+|------|---------|
+| `/usr/local/bin/docker-iptables-restore` | Script to restore DOCKER-USER rules |
+| `/etc/systemd/system/docker-iptables.service` | Systemd service, runs after Docker |
+| `/etc/systemd/system/docker.service.d/iptables-restore.conf` | Docker drop-in for ExecStartPost |
+| `/etc/iptables/rules.v4` | Saved iptables rules |
+
+**Verify Fix:**
+```bash
+sudo systemctl restart docker && sleep 10 && sudo iptables -L DOCKER-USER -n
+# Should show RETURN rule
+```
+
+### Cloudflare Email Routing - Destination Not Verified (2026-01-14)
+
+**Problem:** Email delivery fails with `555 5.7.1 destination address not verified`
+
+**Cause:** Cloudflare Email Routing destination addresses missing or not verified.
+
+**Solution:**
+1. Cloudflare Dashboard → Email → Email Routing → Destination addresses
+2. Add fallback address (e.g., `diegonmarcos@live.com`)
+3. Click verification link sent to that email
+
+**Verify via API:**
+```bash
+curl -s "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/email/routing/addresses" \
+  -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_KEY"
 ```
 
 ---
