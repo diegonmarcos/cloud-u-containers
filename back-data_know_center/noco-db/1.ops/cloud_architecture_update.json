@@ -1,0 +1,73 @@
+{
+  "_comment": "Add this service to cloud_architecture.json under services",
+
+  "nocodb": {
+    "name": "NocoDB",
+    "description": "Open-source Airtable alternative - Database UI",
+    "category": "data",
+    "vmId": "oci-p-flex_1",
+    "status": "active",
+    "availability": "wake-on-demand",
+    "technology": {
+      "stack": ["NocoDB", "PostgreSQL 16"],
+      "image": "nocodb/nocodb:latest",
+      "containers": ["nocodb", "nocodb-db"]
+    },
+    "network": {
+      "internalPort": 8085,
+      "dockerNetwork": "nocodb_network",
+      "subnet": "172.25.0.0/24",
+      "bindIp": "10.0.0.2"
+    },
+    "urls": {
+      "gui": "https://db.diegonmarcos.com",
+      "api": "https://db.diegonmarcos.com/api/v1"
+    },
+    "auth": {
+      "type": "authelia",
+      "policy": "two_factor",
+      "users": ["diego"]
+    },
+    "resources": {
+      "ram": {
+        "min": "400MB",
+        "max": "800MB"
+      },
+      "storage": {
+        "min": "1GB",
+        "max": "15GB"
+      }
+    },
+    "backup": {
+      "method": "pg_dump",
+      "frequency": "daily",
+      "retention": "7d"
+    },
+    "healthCheck": {
+      "endpoint": "/api/v1/health",
+      "interval": "30s"
+    },
+    "integrations": [
+      {
+        "service": "matomo-db",
+        "type": "database_link",
+        "direction": "read"
+      },
+      {
+        "service": "photoprism-db",
+        "type": "database_link",
+        "direction": "read"
+      }
+    ]
+  },
+
+  "_dockerNetwork": {
+    "_comment": "Add to dockerNetworks section",
+    "nocodb_network": {
+      "vmId": "oci-p-flex_1",
+      "subnet": "172.25.0.0/24",
+      "driver": "bridge",
+      "containers": ["nocodb", "nocodb-db"]
+    }
+  }
+}
