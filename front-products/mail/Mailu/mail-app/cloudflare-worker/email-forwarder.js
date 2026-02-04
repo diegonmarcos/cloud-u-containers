@@ -11,8 +11,11 @@ export default {
     // Get raw email content
     const rawEmail = await new Response(message.raw).text();
 
-    // Primary: Forward to Mailu via SMTP proxy
+    // Primary: Forward to Mailu via SMTP proxy (with 5s timeout)
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(env.SMTP_PROXY_URL, {
         method: 'POST',
         headers: {
@@ -20,7 +23,9 @@ export default {
           'X-API-Key': env.SMTP_PROXY_KEY,
         },
         body: rawEmail,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         console.log(`Email delivered to Mailu via SMTP proxy`);
