@@ -14,4 +14,4 @@ SMTP_PROXY_URL = "http://smtp.diegonmarcos.com:8080/"
 SMTP_PROXY_KEY = "stalwart-proxy-key-2025"
 # Backup email (Google Workspace) - only used if primary Mailu delivery fails
 # Note: Cannot use me@diegonmarcos.com as backup - would trigger Worker loop
-BACKUP_EMAIL = ""
+BACKUP_EMAIL = "diegonmarcos@live.com"
