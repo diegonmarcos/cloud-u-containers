@@ -23,7 +23,7 @@
 
     # Dockerfile for building the proxy
     dockerfile = pkgs.writeText "Dockerfile" ''
-      FROM python:3.11-alpine
+      FROM python:3.11-slim-bookworm
 
       WORKDIR /app
 

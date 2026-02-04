@@ -74,7 +74,7 @@
             start_period: 60s
 
         affine-redis:
-          image: redis:7-alpine
+          image: redis:7-bookworm
           container_name: affine-redis
           restart: unless-stopped
           volumes:
@@ -89,7 +89,7 @@
           command: redis-server --save 60 1 --loglevel warning
 
         affine-postgres:
-          image: postgres:16-alpine
+          image: postgres:16-bookworm
           container_name: affine-postgres
           restart: unless-stopped
           volumes:

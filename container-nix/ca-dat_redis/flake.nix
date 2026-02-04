@@ -11,7 +11,7 @@
 
     config = {
       container_name = "redis";
-      image = "redis:7-alpine";
+      image = "redis:7-bookworm";
       port = 6379;
       timezone = "Europe/Madrid";
 

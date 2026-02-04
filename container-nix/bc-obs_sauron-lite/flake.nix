@@ -24,14 +24,16 @@
 
     # Dockerfile for the scanner
     dockerfile = pkgs.writeText "Dockerfile" ''
-      FROM alpine:3.19
+      FROM debian:bookworm-slim
 
-      RUN apk add --no-cache \
+      RUN apt-get update && apt-get install -y --no-install-recommends \
           inotify-tools \
           yara \
           bash \
           coreutils \
-          findutils
+          findutils \
+          procps \
+          && rm -rf /var/lib/apt/lists/*
 
       WORKDIR /app
 
@@ -189,13 +191,13 @@
             retries: 3
 
         forwarder:
-          image: alpine:3.19
+          image: debian:bookworm-slim
           container_name: sauron-forwarder
           restart: unless-stopped
           entrypoint: ["/bin/sh", "-c"]
           command:
             - |
-              apk add --no-cache netcat-openbsd
+              apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
               echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
               tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
                 echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true

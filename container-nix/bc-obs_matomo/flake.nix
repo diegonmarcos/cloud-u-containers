@@ -13,7 +13,7 @@
       domain = "analytics.diegonmarcos.com";
       app_container = "matomo-app";
       db_container = "matomo-db";
-      app_image = "matomo:fpm-alpine";
+      app_image = "matomo:fpm";
       db_image = "mariadb:11.4";
       app_port = 8080;
       timezone = "Europe/Madrid";
@@ -64,7 +64,7 @@
 
         # Nginx sidecar to serve PHP-FPM
         matomo-nginx:
-          image: nginx:alpine
+          image: nginx:stable-bookworm
           container_name: matomo-nginx
           restart: unless-stopped
           depends_on:
