@@ -1,0 +1,27 @@
+# Nix build outputs
+result
+result-*
+
+# Deploy staging directories
+.deploy-*
+.tmp-*
+
+# Decrypted secrets (NEVER commit)
+.env
+*/.env
+
+# Terraform state (contains secrets)
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+!*.tfvars.template
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store

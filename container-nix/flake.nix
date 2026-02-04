@@ -8,7 +8,6 @@
     affine.url = "path:./app_affine";
     code-server.url = "path:./app_code-server";
     github-rss.url = "path:./app_github-rss";
-    nocodb.url = "path:./app_nocodb";
     ntfy.url = "path:./app_ntfy";
     photoprism.url = "path:./app_photoprism";
     radicale.url = "path:./app_radicale";
@@ -19,15 +18,16 @@
     flask-api.url = "path:./bac_tools-flask-api";
     mailu.url = "path:./bac_tools-mailu";
     matomo.url = "path:./bac_tools-matomo";
-    npm.url = "path:./bac_tools-npm";
-    palantir-cron.url = "path:./bac_tools-palantir-cron";
+    nocodb.url = "path:./bac_tools-nocodb";
     redis.url = "path:./bac_tools-redis";
     smtp-proxy.url = "path:./bac_tools-smtp-proxy";
     syslog.url = "path:./bac_tools-syslog";
 
     # Backend security (bac_sec-)
     authelia.url = "path:./bac_sec-authelia";
-    introspect-proxy.url = "path:./bac_sec-introspect-proxy";
+    npm.url = "path:./bac_sec-npm";
+    npm-introspect-proxy.url = "path:./bac_sec-npm-introspect-proxy";
+    palantir-cron.url = "path:./bac_sec-palantir-cron";
     sauron-lite.url = "path:./bac_sec-sauron-lite";
     vaultwarden.url = "path:./bac_sec-vaultwarden";
     wireguard.url = "path:./bac_sec-wireguard";
@@ -76,7 +76,6 @@
       affine = inputs.affine.packages.${system}.default;
       code-server = inputs.code-server.packages.${system}.default;
       github-rss = inputs.github-rss.packages.${system}.default;
-      nocodb = inputs.nocodb.packages.${system}.default;
       ntfy = inputs.ntfy.packages.${system}.default;
       photoprism = inputs.photoprism.packages.${system}.default;
       radicale = inputs.radicale.packages.${system}.default;
@@ -87,15 +86,16 @@
       flask-api = inputs.flask-api.packages.${system}.default;
       mailu = inputs.mailu.packages.${system}.default;
       matomo = inputs.matomo.packages.${system}.default;
-      npm = inputs.npm.packages.${system}.default;
-      palantir-cron = inputs.palantir-cron.packages.${system}.default;
+      nocodb = inputs.nocodb.packages.${system}.default;
       redis = inputs.redis.packages.${system}.default;
       smtp-proxy = inputs.smtp-proxy.packages.${system}.default;
       syslog = inputs.syslog.packages.${system}.default;
 
       # Backend security
       authelia = inputs.authelia.packages.${system}.default;
-      introspect-proxy = inputs.introspect-proxy.packages.${system}.default;
+      npm = inputs.npm.packages.${system}.default;
+      npm-introspect-proxy = inputs.npm-introspect-proxy.packages.${system}.default;
+      palantir-cron = inputs.palantir-cron.packages.${system}.default;
       sauron-lite = inputs.sauron-lite.packages.${system}.default;
       vaultwarden = inputs.vaultwarden.packages.${system}.default;
       wireguard = inputs.wireguard.packages.${system}.default;
@@ -113,7 +113,6 @@
         ln -s ${inputs.affine.packages.${system}.default} $out/app/affine
         ln -s ${inputs.code-server.packages.${system}.default} $out/app/code-server
         ln -s ${inputs.github-rss.packages.${system}.default} $out/app/github-rss
-        ln -s ${inputs.nocodb.packages.${system}.default} $out/app/nocodb
         ln -s ${inputs.ntfy.packages.${system}.default} $out/app/ntfy
         ln -s ${inputs.photoprism.packages.${system}.default} $out/app/photoprism
         ln -s ${inputs.radicale.packages.${system}.default} $out/app/radicale
@@ -124,15 +123,16 @@
         ln -s ${inputs.flask-api.packages.${system}.default} $out/bac_tools/flask-api
         ln -s ${inputs.mailu.packages.${system}.default} $out/bac_tools/mailu
         ln -s ${inputs.matomo.packages.${system}.default} $out/bac_tools/matomo
-        ln -s ${inputs.npm.packages.${system}.default} $out/bac_tools/npm
-        ln -s ${inputs.palantir-cron.packages.${system}.default} $out/bac_tools/palantir-cron
+        ln -s ${inputs.nocodb.packages.${system}.default} $out/bac_tools/nocodb
         ln -s ${inputs.redis.packages.${system}.default} $out/bac_tools/redis
         ln -s ${inputs.smtp-proxy.packages.${system}.default} $out/bac_tools/smtp-proxy
         ln -s ${inputs.syslog.packages.${system}.default} $out/bac_tools/syslog
 
         # Backend security
         ln -s ${inputs.authelia.packages.${system}.default} $out/bac_sec/authelia
-        ln -s ${inputs.introspect-proxy.packages.${system}.default} $out/bac_sec/introspect-proxy
+        ln -s ${inputs.npm.packages.${system}.default} $out/bac_sec/npm
+        ln -s ${inputs.npm-introspect-proxy.packages.${system}.default} $out/bac_sec/npm-introspect-proxy
+        ln -s ${inputs.palantir-cron.packages.${system}.default} $out/bac_sec/palantir-cron
         ln -s ${inputs.sauron-lite.packages.${system}.default} $out/bac_sec/sauron-lite
         ln -s ${inputs.vaultwarden.packages.${system}.default} $out/bac_sec/vaultwarden
         ln -s ${inputs.wireguard.packages.${system}.default} $out/bac_sec/wireguard
@@ -147,9 +147,9 @@
       deploy = pkgs.writeShellScriptBin "deploy-cloud" ''
         set -e
 
-        APP_SERVICES="affine code-server github-rss nocodb ntfy photoprism radicale syncthing"
-        TOOLS_SERVICES="c3-collector flask-api mailu matomo npm palantir-cron redis smtp-proxy syslog"
-        SEC_SERVICES="authelia introspect-proxy sauron-lite vaultwarden wireguard"
+        APP_SERVICES="affine code-server github-rss ntfy photoprism radicale syncthing"
+        TOOLS_SERVICES="c3-collector flask-api mailu matomo nocodb redis smtp-proxy syslog"
+        SEC_SERVICES="authelia npm npm-introspect-proxy palantir-cron sauron-lite vaultwarden wireguard"
         CLOUD_SERVICES="cloudflare gcloud oci"
 
         case "$1" in
