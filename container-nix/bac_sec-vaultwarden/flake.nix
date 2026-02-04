@@ -16,29 +16,23 @@
       port = 8080;
       timezone = "Europe/Madrid";
 
-      # Security settings
-      admin_token = "CHANGE_ME_ADMIN_TOKEN";  # Generate with: openssl rand -base64 48
+      # Non-secret settings
       signups_allowed = "false";
       invitations_allowed = "true";
       show_password_hint = "false";
-
-      # SMTP for notifications (optional)
-      smtp_host = "";
-      smtp_from = "vault@diegonmarcos.com";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         vaultwarden:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             DOMAIN: https://${config.domain}
-            ADMIN_TOKEN: ${config.admin_token}
             SIGNUPS_ALLOWED: ${config.signups_allowed}
             INVITATIONS_ALLOWED: ${config.invitations_allowed}
             SHOW_PASSWORD_HINT: ${config.show_password_hint}
@@ -46,7 +40,7 @@
             LOG_LEVEL: info
           ports:
             - "${toString config.port}:80"
-            - "3012:3012"  # WebSocket
+            - "3012:3012"
           volumes:
             - ./data:/data
           networks:
@@ -63,11 +57,10 @@
         mkdir -p $out/data
         cp ${dockerCompose} $out/docker-compose.yml
       '';
-      docker-compose = dockerCompose;
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.openssl ];
+      packages = [ pkgs.docker-compose pkgs.sops pkgs.age ];
     };
   };
 }

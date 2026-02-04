@@ -48,7 +48,7 @@
       "description": "GitHub RSS Feeds"
     },
     "nocodb": {
-      "category": "app",
+      "category": "tools",
       "vm": "oci-p-flex_1",
       "description": "Database UI"
     },
@@ -93,12 +93,12 @@
       "description": "Analytics"
     },
     "npm": {
-      "category": "tools",
+      "category": "sec",
       "vm": "gcp-f-micro_1",
       "description": "Reverse Proxy"
     },
     "palantir-cron": {
-      "category": "tools",
+      "category": "sec",
       "vm": "gcp-f-micro_1",
       "description": "Scheduled Tasks"
     },
@@ -138,7 +138,7 @@
       "vm": "gcp-f-micro_1",
       "description": "2FA Authentication"
     },
-    "introspect-proxy": {
+    "npm-introspect-proxy": {
       "category": "sec",
       "vm": "gcp-f-micro_1",
       "description": "Authelia Token Introspection"
