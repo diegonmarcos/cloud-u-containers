@@ -152,7 +152,7 @@
 
         # Redis for session storage
         redis:
-          image: redis:7-alpine
+          image: redis:7-bookworm
           container_name: mailu-redis
           restart: unless-stopped
           volumes:
