@@ -1,0 +1,196 @@
+{
+  "ssh_key": "/home/diego/Mounts/Git/vault/A0_keys/ssh/id_rsa",
+  "remote_base": "/opt/containers",
+
+  "vms": {
+    "oci-f-micro_1": {
+      "ip": "130.110.251.193",
+      "user": "ubuntu",
+      "method": "key",
+      "description": "Oracle Free - Mail Server"
+    },
+    "oci-f-micro_2": {
+      "ip": "129.151.228.66",
+      "user": "ubuntu",
+      "method": "key",
+      "description": "Oracle Free - Analytics"
+    },
+    "gcp-f-micro_1": {
+      "ip": "35.226.147.64",
+      "user": "diego",
+      "method": "gcloud",
+      "gcloud_instance": "arch-1",
+      "gcloud_zone": "us-central1-a",
+      "description": "GCloud Free - Central Proxy"
+    },
+    "oci-p-flex_1": {
+      "ip": "144.24.196.72",
+      "user": "ubuntu",
+      "method": "key",
+      "description": "Oracle Paid - Heavy Services (Wake-on-Demand)"
+    }
+  },
+
+  "services": {
+    "affine": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Workspace (Notion Alternative)"
+    },
+    "code-server": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "VS Code IDE"
+    },
+    "github-rss": {
+      "category": "app",
+      "vm": "gcp-f-micro_1",
+      "description": "GitHub RSS Feeds"
+    },
+    "nocodb": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Database UI"
+    },
+    "ntfy": {
+      "category": "app",
+      "vm": "gcp-f-micro_1",
+      "description": "Push Notifications"
+    },
+    "photoprism": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Photo Gallery"
+    },
+    "radicale": {
+      "category": "app",
+      "vm": "oci-f-micro_1",
+      "description": "Calendar/Contacts"
+    },
+    "syncthing": {
+      "category": "app",
+      "vm": "oci-f-micro_1",
+      "description": "File Sync"
+    },
+    "c3-collector": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Metrics Collector"
+    },
+    "flask-api": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Cloud API"
+    },
+    "mailu": {
+      "category": "tools",
+      "vm": "oci-f-micro_1",
+      "description": "Mail Server"
+    },
+    "matomo": {
+      "category": "tools",
+      "vm": "oci-f-micro_2",
+      "description": "Analytics"
+    },
+    "npm": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Reverse Proxy"
+    },
+    "palantir-cron": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Scheduled Tasks"
+    },
+    "redis": {
+      "category": "tools",
+      "vm": "oci-f-micro_1",
+      "description": "Cache Server"
+    },
+    "smtp-proxy": {
+      "category": "tools",
+      "vm": "oci-f-micro_1",
+      "description": "SMTP Relay"
+    },
+    "syslog-central": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "flake": "syslog",
+      "subfolder": "central",
+      "description": "Central Syslog Server"
+    },
+    "syslog-forwarder-micro1": {
+      "category": "tools",
+      "vm": "oci-f-micro_1",
+      "flake": "syslog",
+      "subfolder": "forwarder",
+      "description": "Syslog Forwarder"
+    },
+    "syslog-forwarder-micro2": {
+      "category": "tools",
+      "vm": "oci-f-micro_2",
+      "flake": "syslog",
+      "subfolder": "forwarder",
+      "description": "Syslog Forwarder"
+    },
+    "authelia": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "2FA Authentication"
+    },
+    "introspect-proxy": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Authelia Token Introspection"
+    },
+    "sauron-lite-micro1": {
+      "category": "sec",
+      "vm": "oci-f-micro_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-micro2": {
+      "category": "sec",
+      "vm": "oci-f-micro_2",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-gcp": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-flex": {
+      "category": "sec",
+      "vm": "oci-p-flex_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "vaultwarden": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Password Manager"
+    },
+    "wireguard": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "VPN"
+    },
+    "cloudflare": {
+      "category": "cloud",
+      "vm": "local",
+      "description": "Cloudflare DNS & Firewall (Terraform)"
+    },
+    "gcloud": {
+      "category": "cloud",
+      "vm": "local",
+      "description": "Google Cloud Infrastructure (Terraform)"
+    },
+    "oci": {
+      "category": "cloud",
+      "vm": "local",
+      "description": "Oracle Cloud Infrastructure (Terraform)"
+    }
+  }
+}
