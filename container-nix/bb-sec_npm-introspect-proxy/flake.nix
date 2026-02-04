@@ -55,7 +55,7 @@
 
       @app.route('/introspect', methods=['POST'])
       def introspect():
-          auth_header = request.headers.get('Authorization', ''')
+          auth_header = request.headers.get('Authorization', "")
           if not auth_header.startswith('Bearer '):
               return jsonify({'active': False, 'error': 'No bearer token'}), 401
 
@@ -77,9 +77,9 @@
       @app.route('/auth', methods=['GET'])
       def auth():
           """NPM forward-auth compatible endpoint"""
-          auth_header = request.headers.get('Authorization', ''')
+          auth_header = request.headers.get('Authorization', "")
           if not auth_header.startswith('Bearer '):
-              return '', 401
+              return "", 401
 
           token = auth_header[7:]
 
@@ -92,10 +92,10 @@
               )
               data = resp.json()
               if data.get('active'):
-                  return '', 200
-              return '', 401
+                  return "", 200
+              return "", 401
           except:
-              return '', 401
+              return "", 401
 
       if __name__ == '__main__':
           app.run(host='0.0.0.0', port=4182, debug=DEBUG)

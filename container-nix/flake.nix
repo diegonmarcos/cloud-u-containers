@@ -4,38 +4,42 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
-    # Application services (app_)
-    affine.url = "path:./app_affine";
-    code-server.url = "path:./app_code-server";
-    github-rss.url = "path:./app_github-rss";
-    ntfy.url = "path:./app_ntfy";
-    photoprism.url = "path:./app_photoprism";
-    radicale.url = "path:./app_radicale";
-    syncthing.url = "path:./app_syncthing";
+    # Suite services (aa-sui_)
+    affine.url = "path:./aa-sui_affine";
+    code-server.url = "path:./aa-sui_code-server";
+    mailu.url = "path:./aa-sui_tools-mailu";
+    photoprism.url = "path:./aa-sui_photoprism";
+    radicale.url = "path:./aa-sui_radicale";
+    smtp-proxy.url = "path:./aa-sui_tools-smtp-proxy";
 
-    # Backend tools (bac_tools-)
-    c3-collector.url = "path:./bac_tools-c3-collector";
-    flask-api.url = "path:./bac_tools-flask-api";
-    mailu.url = "path:./bac_tools-mailu";
-    matomo.url = "path:./bac_tools-matomo";
-    nocodb.url = "path:./bac_tools-nocodb";
-    redis.url = "path:./bac_tools-redis";
-    smtp-proxy.url = "path:./bac_tools-smtp-proxy";
-    syslog.url = "path:./bac_tools-syslog";
+    # Misc tools (ab-mic_)
+    syncthing.url = "path:./ab-mic_syncthing";
+    vaultwarden.url = "path:./ab-mic_vaultwarden";
 
-    # Backend security (bac_sec-)
-    authelia.url = "path:./bac_sec-authelia";
-    npm.url = "path:./bac_sec-npm";
-    npm-introspect-proxy.url = "path:./bac_sec-npm-introspect-proxy";
-    palantir-cron.url = "path:./bac_sec-palantir-cron";
-    sauron-lite.url = "path:./bac_sec-sauron-lite";
-    vaultwarden.url = "path:./bac_sec-vaultwarden";
-    wireguard.url = "path:./bac_sec-wireguard";
+    # Cloud providers (ba-clo_)
+    cloudflare.url = "path:./ba-clo_cloudflare";
+    gcloud.url = "path:./ba-clo_gcloud";
+    oci.url = "path:./ba-clo_oci";
 
-    # Cloud provider infrastructure (bac_cloud-)
-    cloudflare.url = "path:./bac_cloud-cloudflare";
-    gcloud.url = "path:./bac_cloud-gcloud";
-    oci.url = "path:./bac_cloud-oci";
+    # Security (bb-sec_)
+    authelia.url = "path:./bb-sec_authelia";
+    flask-api.url = "path:./bb-sec_flask-api";
+    npm.url = "path:./bb-sec_npm";
+    npm-introspect-proxy.url = "path:./bb-sec_npm-introspect-proxy";
+    wireguard.url = "path:./bb-sec_wireguard";
+
+    # Observability (bc-obs_)
+    c3-collector.url = "path:./bc-obs_c3-collector";
+    github-rss.url = "path:./bc-obs_github-rss";
+    matomo.url = "path:./bc-obs_matomo";
+    nocodb.url = "path:./bc-obs_nocodb";
+    ntfy.url = "path:./bc-obs_ntfy";
+    palantir-cron.url = "path:./bc-obs_palantir-cron";
+    sauron-lite.url = "path:./bc-obs_sauron-lite";
+    syslog.url = "path:./bc-obs_syslog";
+
+    # Databases (ca-dat_)
+    redis.url = "path:./ca-dat_redis";
   };
 
   outputs = { self, nixpkgs, ... }@inputs: let
@@ -72,85 +76,95 @@
   in {
     # Export all individual service packages
     packages.${system} = {
-      # Application services
+      # Suite services (aa-sui_)
       affine = inputs.affine.packages.${system}.default;
       code-server = inputs.code-server.packages.${system}.default;
-      github-rss = inputs.github-rss.packages.${system}.default;
-      ntfy = inputs.ntfy.packages.${system}.default;
+      mailu = inputs.mailu.packages.${system}.default;
       photoprism = inputs.photoprism.packages.${system}.default;
       radicale = inputs.radicale.packages.${system}.default;
-      syncthing = inputs.syncthing.packages.${system}.default;
-
-      # Backend tools
-      c3-collector = inputs.c3-collector.packages.${system}.default;
-      flask-api = inputs.flask-api.packages.${system}.default;
-      mailu = inputs.mailu.packages.${system}.default;
-      matomo = inputs.matomo.packages.${system}.default;
-      nocodb = inputs.nocodb.packages.${system}.default;
-      redis = inputs.redis.packages.${system}.default;
       smtp-proxy = inputs.smtp-proxy.packages.${system}.default;
-      syslog = inputs.syslog.packages.${system}.default;
 
-      # Backend security
-      authelia = inputs.authelia.packages.${system}.default;
-      npm = inputs.npm.packages.${system}.default;
-      npm-introspect-proxy = inputs.npm-introspect-proxy.packages.${system}.default;
-      palantir-cron = inputs.palantir-cron.packages.${system}.default;
-      sauron-lite = inputs.sauron-lite.packages.${system}.default;
+      # Misc tools (ab-mic_)
+      syncthing = inputs.syncthing.packages.${system}.default;
       vaultwarden = inputs.vaultwarden.packages.${system}.default;
-      wireguard = inputs.wireguard.packages.${system}.default;
 
-      # Cloud provider infrastructure (Terraform)
+      # Cloud providers (ba-clo_)
       cloudflare = inputs.cloudflare.packages.${system}.default;
       gcloud = inputs.gcloud.packages.${system}.default;
       oci = inputs.oci.packages.${system}.default;
 
+      # Security (bb-sec_)
+      authelia = inputs.authelia.packages.${system}.default;
+      flask-api = inputs.flask-api.packages.${system}.default;
+      npm = inputs.npm.packages.${system}.default;
+      npm-introspect-proxy = inputs.npm-introspect-proxy.packages.${system}.default;
+      wireguard = inputs.wireguard.packages.${system}.default;
+
+      # Observability (bc-obs_)
+      c3-collector = inputs.c3-collector.packages.${system}.default;
+      github-rss = inputs.github-rss.packages.${system}.default;
+      matomo = inputs.matomo.packages.${system}.default;
+      nocodb = inputs.nocodb.packages.${system}.default;
+      ntfy = inputs.ntfy.packages.${system}.default;
+      palantir-cron = inputs.palantir-cron.packages.${system}.default;
+      sauron-lite = inputs.sauron-lite.packages.${system}.default;
+      syslog = inputs.syslog.packages.${system}.default;
+
+      # Databases (ca-dat_)
+      redis = inputs.redis.packages.${system}.default;
+
       # Build all configs
       all = pkgs.runCommand "all-configs" {} ''
-        mkdir -p $out/{app,bac_tools,bac_sec,bac_cloud}
+        mkdir -p $out/{aa-sui,ab-mic,ba-clo,bb-sec,bc-obs,ca-dat}
 
-        # Applications
-        ln -s ${inputs.affine.packages.${system}.default} $out/app/affine
-        ln -s ${inputs.code-server.packages.${system}.default} $out/app/code-server
-        ln -s ${inputs.github-rss.packages.${system}.default} $out/app/github-rss
-        ln -s ${inputs.ntfy.packages.${system}.default} $out/app/ntfy
-        ln -s ${inputs.photoprism.packages.${system}.default} $out/app/photoprism
-        ln -s ${inputs.radicale.packages.${system}.default} $out/app/radicale
-        ln -s ${inputs.syncthing.packages.${system}.default} $out/app/syncthing
+        # Suite services (aa-sui_)
+        ln -s ${inputs.affine.packages.${system}.default} $out/aa-sui/affine
+        ln -s ${inputs.code-server.packages.${system}.default} $out/aa-sui/code-server
+        ln -s ${inputs.mailu.packages.${system}.default} $out/aa-sui/mailu
+        ln -s ${inputs.photoprism.packages.${system}.default} $out/aa-sui/photoprism
+        ln -s ${inputs.radicale.packages.${system}.default} $out/aa-sui/radicale
+        ln -s ${inputs.smtp-proxy.packages.${system}.default} $out/aa-sui/smtp-proxy
 
-        # Backend tools
-        ln -s ${inputs.c3-collector.packages.${system}.default} $out/bac_tools/c3-collector
-        ln -s ${inputs.flask-api.packages.${system}.default} $out/bac_tools/flask-api
-        ln -s ${inputs.mailu.packages.${system}.default} $out/bac_tools/mailu
-        ln -s ${inputs.matomo.packages.${system}.default} $out/bac_tools/matomo
-        ln -s ${inputs.nocodb.packages.${system}.default} $out/bac_tools/nocodb
-        ln -s ${inputs.redis.packages.${system}.default} $out/bac_tools/redis
-        ln -s ${inputs.smtp-proxy.packages.${system}.default} $out/bac_tools/smtp-proxy
-        ln -s ${inputs.syslog.packages.${system}.default} $out/bac_tools/syslog
+        # Misc tools (ab-mic_)
+        ln -s ${inputs.syncthing.packages.${system}.default} $out/ab-mic/syncthing
+        ln -s ${inputs.vaultwarden.packages.${system}.default} $out/ab-mic/vaultwarden
 
-        # Backend security
-        ln -s ${inputs.authelia.packages.${system}.default} $out/bac_sec/authelia
-        ln -s ${inputs.npm.packages.${system}.default} $out/bac_sec/npm
-        ln -s ${inputs.npm-introspect-proxy.packages.${system}.default} $out/bac_sec/npm-introspect-proxy
-        ln -s ${inputs.palantir-cron.packages.${system}.default} $out/bac_sec/palantir-cron
-        ln -s ${inputs.sauron-lite.packages.${system}.default} $out/bac_sec/sauron-lite
-        ln -s ${inputs.vaultwarden.packages.${system}.default} $out/bac_sec/vaultwarden
-        ln -s ${inputs.wireguard.packages.${system}.default} $out/bac_sec/wireguard
+        # Cloud providers (ba-clo_)
+        ln -s ${inputs.cloudflare.packages.${system}.default} $out/ba-clo/cloudflare
+        ln -s ${inputs.gcloud.packages.${system}.default} $out/ba-clo/gcloud
+        ln -s ${inputs.oci.packages.${system}.default} $out/ba-clo/oci
 
-        # Cloud providers (Terraform)
-        ln -s ${inputs.cloudflare.packages.${system}.default} $out/bac_cloud/cloudflare
-        ln -s ${inputs.gcloud.packages.${system}.default} $out/bac_cloud/gcloud
-        ln -s ${inputs.oci.packages.${system}.default} $out/bac_cloud/oci
+        # Security (bb-sec_)
+        ln -s ${inputs.authelia.packages.${system}.default} $out/bb-sec/authelia
+        ln -s ${inputs.flask-api.packages.${system}.default} $out/bb-sec/flask-api
+        ln -s ${inputs.npm.packages.${system}.default} $out/bb-sec/npm
+        ln -s ${inputs.npm-introspect-proxy.packages.${system}.default} $out/bb-sec/npm-introspect-proxy
+        ln -s ${inputs.wireguard.packages.${system}.default} $out/bb-sec/wireguard
+
+        # Observability (bc-obs_)
+        ln -s ${inputs.c3-collector.packages.${system}.default} $out/bc-obs/c3-collector
+        ln -s ${inputs.github-rss.packages.${system}.default} $out/bc-obs/github-rss
+        ln -s ${inputs.matomo.packages.${system}.default} $out/bc-obs/matomo
+        ln -s ${inputs.nocodb.packages.${system}.default} $out/bc-obs/nocodb
+        ln -s ${inputs.ntfy.packages.${system}.default} $out/bc-obs/ntfy
+        ln -s ${inputs.palantir-cron.packages.${system}.default} $out/bc-obs/palantir-cron
+        ln -s ${inputs.sauron-lite.packages.${system}.default} $out/bc-obs/sauron-lite
+        ln -s ${inputs.syslog.packages.${system}.default} $out/bc-obs/syslog
+
+        # Databases (ca-dat_)
+        ln -s ${inputs.redis.packages.${system}.default} $out/ca-dat/redis
       '';
 
       # Deploy script
       deploy = pkgs.writeShellScriptBin "deploy-cloud" ''
         set -e
 
-        APP_SERVICES="affine code-server github-rss ntfy photoprism radicale syncthing"
-        TOOLS_SERVICES="c3-collector flask-api mailu matomo nocodb redis smtp-proxy syslog"
-        SEC_SERVICES="authelia npm npm-introspect-proxy palantir-cron sauron-lite vaultwarden wireguard"
+        SUITE_SERVICES="affine code-server mailu photoprism radicale smtp-proxy"
+        MISC_SERVICES="syncthing vaultwarden"
         CLOUD_SERVICES="cloudflare gcloud oci"
+        SEC_SERVICES="authelia flask-api npm npm-introspect-proxy wireguard"
+        OBS_SERVICES="c3-collector github-rss matomo nocodb ntfy palantir-cron sauron-lite syslog"
+        DATA_SERVICES="redis"
 
         case "$1" in
           build)
@@ -159,23 +173,31 @@
             echo "Configs built in ./result/"
             echo ""
             echo "Structure:"
-            echo "  result/app/       - Application services"
-            echo "  result/bac_tools/ - Backend tools"
-            echo "  result/bac_sec/   - Security services"
-            echo "  result/bac_cloud/ - Cloud provider configs (Terraform)"
+            echo "  result/aa-sui/ - Suite services"
+            echo "  result/ab-mic/ - Misc tools"
+            echo "  result/ba-clo/ - Cloud providers (Terraform)"
+            echo "  result/bb-sec/ - Security services"
+            echo "  result/bc-obs/ - Observability"
+            echo "  result/ca-dat/ - Databases"
             ;;
           list)
-            echo "Application services (app_):"
-            for s in $APP_SERVICES; do echo "  - $s"; done
+            echo "Suite services (aa-sui_):"
+            for s in $SUITE_SERVICES; do echo "  - $s"; done
             echo ""
-            echo "Backend tools (bac_tools-):"
-            for s in $TOOLS_SERVICES; do echo "  - $s"; done
+            echo "Misc tools (ab-mic_):"
+            for s in $MISC_SERVICES; do echo "  - $s"; done
             echo ""
-            echo "Security services (bac_sec-):"
+            echo "Cloud providers (ba-clo_):"
+            for s in $CLOUD_SERVICES; do echo "  - $s (Terraform)"; done
+            echo ""
+            echo "Security services (bb-sec_):"
             for s in $SEC_SERVICES; do echo "  - $s"; done
             echo ""
-            echo "Cloud providers (bac_cloud-):"
-            for s in $CLOUD_SERVICES; do echo "  - $s (Terraform)"; done
+            echo "Observability (bc-obs_):"
+            for s in $OBS_SERVICES; do echo "  - $s"; done
+            echo ""
+            echo "Databases (ca-dat_):"
+            for s in $DATA_SERVICES; do echo "  - $s"; done
             ;;
           *)
             echo "Usage: deploy-cloud [build|list]"
