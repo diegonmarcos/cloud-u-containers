@@ -7,7 +7,6 @@
     # Suite services (aa-sui_)
     affine.url = "path:./aa-sui_affine";
     code-server.url = "path:./aa-sui_code-server";
-    gitea.url = "path:./aa-sui_gitea";
     mailu.url = "path:./aa-sui_tools-mailu";
     photoprism.url = "path:./aa-sui_photoprism";
     radicale.url = "path:./aa-sui_radicale";
@@ -41,6 +40,7 @@
 
     # Databases & Backups (ca-dat_)
     redis.url = "path:./ca-dat_redis";
+    gitea.url = "path:./ca-dat_gitea";
     backup-bup.url = "path:./ca-dat_backup-bup";
     backup-borg.url = "path:./ca-dat_backup-borg";
   };
@@ -82,7 +82,6 @@
       # Suite services (aa-sui_)
       affine = inputs.affine.packages.${system}.default;
       code-server = inputs.code-server.packages.${system}.default;
-      gitea = inputs.gitea.packages.${system}.default;
       mailu = inputs.mailu.packages.${system}.default;
       photoprism = inputs.photoprism.packages.${system}.default;
       radicale = inputs.radicale.packages.${system}.default;
@@ -116,6 +115,7 @@
 
       # Databases & Backups (ca-dat_)
       redis = inputs.redis.packages.${system}.default;
+      gitea = inputs.gitea.packages.${system}.default;
       backup-bup = inputs.backup-bup.packages.${system}.default;
       backup-borg = inputs.backup-borg.packages.${system}.default;
 
@@ -126,7 +126,6 @@
         # Suite services (aa-sui_)
         ln -s ${inputs.affine.packages.${system}.default} $out/aa-sui/affine
         ln -s ${inputs.code-server.packages.${system}.default} $out/aa-sui/code-server
-        ln -s ${inputs.gitea.packages.${system}.default} $out/aa-sui/gitea
         ln -s ${inputs.mailu.packages.${system}.default} $out/aa-sui/mailu
         ln -s ${inputs.photoprism.packages.${system}.default} $out/aa-sui/photoprism
         ln -s ${inputs.radicale.packages.${system}.default} $out/aa-sui/radicale
@@ -160,6 +159,7 @@
 
         # Databases & Backups (ca-dat_)
         ln -s ${inputs.redis.packages.${system}.default} $out/ca-dat/redis
+        ln -s ${inputs.gitea.packages.${system}.default} $out/ca-dat/gitea
         ln -s ${inputs.backup-bup.packages.${system}.default} $out/ca-dat/backup-bup
         ln -s ${inputs.backup-borg.packages.${system}.default} $out/ca-dat/backup-borg
       '';
@@ -168,12 +168,12 @@
       deploy = pkgs.writeShellScriptBin "deploy-cloud" ''
         set -e
 
-        SUITE_SERVICES="affine code-server gitea mailu photoprism radicale smtp-proxy"
+        SUITE_SERVICES="affine code-server mailu photoprism radicale smtp-proxy"
         MISC_SERVICES="syncthing vaultwarden"
         CLOUD_SERVICES="cloudflare gcloud oci"
         SEC_SERVICES="authelia flask-api npm npm-introspect-proxy wireguard"
         OBS_SERVICES="c3-collector github-rss matomo nocodb ntfy palantir-cron sauron-lite syslog"
-        DATA_SERVICES="redis backup-bup backup-borg"
+        DATA_SERVICES="redis gitea backup-bup backup-borg"
 
         case "$1" in
           build)

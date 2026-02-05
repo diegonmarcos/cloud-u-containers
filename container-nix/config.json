@@ -193,9 +193,9 @@
       "description": "Oracle Cloud Infrastructure (Terraform)"
     },
     "gitea": {
-      "category": "app",
+      "category": "data",
       "vm": "oci-p-flex_1",
-      "description": "Self-hosted Git Server"
+      "description": "Git Backup Server (Code Mirror)"
     },
     "backup-bup": {
       "category": "data",
