@@ -17,17 +17,11 @@
       db_image = "mariadb:11.4";
       app_port = 8080;
       timezone = "Europe/Madrid";
-
-      # Database settings
       db_name = "matomo";
       db_user = "matomo";
-      db_password = "CHANGE_ME_DB_PASSWORD";
-      db_root_password = "CHANGE_ME_ROOT_PASSWORD";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         matomo-app:
           image: ${config.app_image}
@@ -35,12 +29,13 @@
           restart: unless-stopped
           depends_on:
             - matomo-db
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             MATOMO_DATABASE_HOST: matomo-db
             MATOMO_DATABASE_DBNAME: ${config.db_name}
             MATOMO_DATABASE_USERNAME: ${config.db_user}
-            MATOMO_DATABASE_PASSWORD: ${config.db_password}
           volumes:
             - ./html:/var/www/html
           networks:
@@ -51,12 +46,12 @@
           image: ${config.db_image}
           container_name: ${config.db_container}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             MYSQL_DATABASE: ${config.db_name}
             MYSQL_USER: ${config.db_user}
-            MYSQL_PASSWORD: ${config.db_password}
-            MYSQL_ROOT_PASSWORD: ${config.db_root_password}
           volumes:
             - ./db:/var/lib/mysql
           networks:

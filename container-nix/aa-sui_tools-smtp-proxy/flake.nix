@@ -14,24 +14,18 @@
       image = "namshi/smtp:latest";
       port = 25;
       timezone = "Europe/Madrid";
-
-      # Relay configuration
-      relay_host = "mail.diegonmarcos.com";
-      relay_port = 587;
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         smtp-proxy:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
-            RELAY_HOST: ${config.relay_host}
-            RELAY_PORT: ${toString config.relay_port}
           ports:
             - "${toString config.port}:25"
           volumes:

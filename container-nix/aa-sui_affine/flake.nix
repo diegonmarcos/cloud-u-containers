@@ -15,20 +15,11 @@
       image = "ghcr.io/toeverything/affine-graphql:stable";
       port = 3010;
       timezone = "Europe/Madrid";
-
-      # Admin credentials
-      admin_email = "admin@diegonmarcos.com";
-      admin_password = "CHANGE_ME_ADMIN_PASSWORD";
-
-      # Database
       db_user = "affine";
-      db_password = "CHANGE_ME_DB_PASSWORD";
       db_name = "affine";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         affine:
           image: ${config.image}
@@ -45,15 +36,15 @@
           volumes:
             - ./data/config:/root/.affine/config
             - ./data/storage:/root/.affine/storage
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             NODE_OPTIONS: "--import=./scripts/register.js"
             AFFINE_CONFIG_PATH: /root/.affine/config
             REDIS_SERVER_HOST: affine-redis
-            DATABASE_URL: postgres://${config.db_user}:${config.db_password}@affine-postgres:5432/${config.db_name}
+            DATABASE_URL: postgres://${config.db_user}:$${POSTGRES_PASSWORD}@affine-postgres:5432/${config.db_name}
             NODE_ENV: production
-            AFFINE_ADMIN_EMAIL: ${config.admin_email}
-            AFFINE_ADMIN_PASSWORD: ${config.admin_password}
             AFFINE_SERVER_HOST: "0.0.0.0"
             AFFINE_SERVER_PORT: "3010"
             AFFINE_SERVER_HTTPS: "false"
@@ -94,9 +85,10 @@
           restart: unless-stopped
           volumes:
             - ./data/postgres:/var/lib/postgresql/data
+          env_file:
+            - .env
           environment:
             POSTGRES_USER: ${config.db_user}
-            POSTGRES_PASSWORD: ${config.db_password}
             POSTGRES_DB: ${config.db_name}
             PGDATA: /var/lib/postgresql/data/pgdata
           networks:

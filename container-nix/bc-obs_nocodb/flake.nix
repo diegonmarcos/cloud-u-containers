@@ -15,22 +15,18 @@
       image = "nocodb/nocodb:latest";
       port = 8080;
       timezone = "Europe/Madrid";
-
-      # Auth
-      nc_auth_jwt_secret = "CHANGE_ME_JWT_SECRET";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         nocodb:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
-            NC_AUTH_JWT_SECRET: ${config.nc_auth_jwt_secret}
             NC_PUBLIC_URL: https://${config.domain}
           ports:
             - "${toString config.port}:8080"

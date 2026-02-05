@@ -15,17 +15,9 @@
       image = "python:3.11-slim";
       port = 5000;
       timezone = "Europe/Madrid";
-
-      # OCI credentials for wake-on-demand
-      oci_user_ocid = "CHANGE_ME";
-      oci_tenancy_ocid = "CHANGE_ME";
-      oci_region = "eu-marseille-1";
-      oci_fingerprint = "CHANGE_ME";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         api:
           build:
@@ -33,13 +25,11 @@
             dockerfile: Dockerfile
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             FLASK_ENV: production
-            OCI_USER_OCID: ${config.oci_user_ocid}
-            OCI_TENANCY_OCID: ${config.oci_tenancy_ocid}
-            OCI_REGION: ${config.oci_region}
-            OCI_FINGERPRINT: ${config.oci_fingerprint}
           ports:
             - "${toString config.port}:5000"
           volumes:
