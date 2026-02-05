@@ -192,7 +192,7 @@
       "vm": "local",
       "description": "Oracle Cloud Infrastructure (Terraform)"
     },
-    "gitea": {
+    "backup-gitea": {
       "category": "data",
       "vm": "oci-p-flex_1",
       "description": "Git Backup Server (Code Mirror)"

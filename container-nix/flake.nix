@@ -40,7 +40,7 @@
 
     # Databases & Backups (ca-dat_)
     redis.url = "path:./ca-dat_redis";
-    gitea.url = "path:./ca-dat_gitea";
+    backup-gitea.url = "path:./ca-dat_backup-gitea";
     backup-bup.url = "path:./ca-dat_backup-bup";
     backup-borg.url = "path:./ca-dat_backup-borg";
   };
@@ -72,7 +72,7 @@
       # Oracle Paid Flex 1 - Heavy Services (Wake-on-Demand)
       oci-p-flex_1 = {
         ip = "144.24.196.72";
-        services = [ "photoprism" "nocodb" "code-server" "affine" "gitea" "backup-bup" "backup-borg" ];
+        services = [ "photoprism" "nocodb" "code-server" "affine" "backup-gitea" "backup-bup" "backup-borg" ];
       };
     };
 
@@ -115,7 +115,7 @@
 
       # Databases & Backups (ca-dat_)
       redis = inputs.redis.packages.${system}.default;
-      gitea = inputs.gitea.packages.${system}.default;
+      backup-gitea = inputs.backup-gitea.packages.${system}.default;
       backup-bup = inputs.backup-bup.packages.${system}.default;
       backup-borg = inputs.backup-borg.packages.${system}.default;
 
@@ -159,7 +159,7 @@
 
         # Databases & Backups (ca-dat_)
         ln -s ${inputs.redis.packages.${system}.default} $out/ca-dat/redis
-        ln -s ${inputs.gitea.packages.${system}.default} $out/ca-dat/gitea
+        ln -s ${inputs.backup-gitea.packages.${system}.default} $out/ca-dat/backup-gitea
         ln -s ${inputs.backup-bup.packages.${system}.default} $out/ca-dat/backup-bup
         ln -s ${inputs.backup-borg.packages.${system}.default} $out/ca-dat/backup-borg
       '';
@@ -173,7 +173,7 @@
         CLOUD_SERVICES="cloudflare gcloud oci"
         SEC_SERVICES="authelia flask-api npm npm-introspect-proxy wireguard"
         OBS_SERVICES="c3-collector github-rss matomo nocodb ntfy palantir-cron sauron-lite syslog"
-        DATA_SERVICES="redis gitea backup-bup backup-borg"
+        DATA_SERVICES="redis backup-gitea backup-bup backup-borg"
 
         case "$1" in
           build)
