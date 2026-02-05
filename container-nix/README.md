@@ -21,6 +21,10 @@ Declarative Docker Compose configurations managed via Nix flakes.
 | `ab-mic_syncthing` | Continuous file synchronization |
 | `ab-mic_vaultwarden` | Self-hosted Bitwarden password manager |
 
+
+---
+
+
 ## Cloud Providers (ba-clo_*)
 
 | Container | Description |
@@ -28,6 +32,8 @@ Declarative Docker Compose configurations managed via Nix flakes.
 | `ba-clo_cloudflare` | Cloudflare tunnel and DNS management |
 | `ba-clo_gcloud` | Google Cloud SDK and tools |
 | `ba-clo_oci` | Oracle Cloud Infrastructure CLI |
+
+---
 
 ## Security (bb-sec_*)
 
@@ -52,19 +58,18 @@ Declarative Docker Compose configurations managed via Nix flakes.
 | `bc-obs_sauron-lite` | Lightweight log aggregation and alerting |
 | `bc-obs_syslog` | Centralized logging server |
 
+---
 
 ## Admin (bd-adm_*)
 
 | Container | Description |
 |-----------|-------------|
 
-
-## Databases (ca-dat_*)
+## Data & Backups (ca-dat_*)
 
 | Container | Description |
 |-----------|-------------|
 | `ca-dat_redis` | In-memory data store for caching |
-
-## Front (da-*)
-## Front (db-*)
-## Front (dc-*)
+| `ca-dat_backup-gitea` | Git server for code backup and mirroring |
+| `ca-dat_backup-bup` | Database backups (SQLite, MySQL, PostgreSQL) using bup |
+| `ca-dat_backup-borg` | Media backups (photos, files) using Borg deduplication |
