@@ -1,0 +1,70 @@
+version: '3.8'
+
+# NocoDB - Airtable alternative
+# Database as spreadsheet
+# Deployed on: oci-p-flex_1 (Oracle Flex)
+
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb_app
+    restart: unless-stopped
+
+    ports:
+      - "3020:8080"
+
+    volumes:
+      - nocodb_data:/usr/app/data
+
+    environment:
+      - NC_DB=pg://postgres:5432?u=nocodb&p=nocodb&d=nocodb
+      - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET:-changeme-secret-key}
+      - NC_PUBLIC_URL=https://nocodb.diegonmarcos.com
+      - NC_DISABLE_TELE=true
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/api/v1/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: nocodb_postgres
+    restart: unless-stopped
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    environment:
+      - POSTGRES_USER=nocodb
+      - POSTGRES_PASSWORD=nocodb
+      - POSTGRES_DB=nocodb
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nocodb']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network
+
+volumes:
+  nocodb_data:
+    driver: local
+  postgres_data:
+    driver: local

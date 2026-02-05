@@ -1,0 +1,111 @@
+version: '3.8'
+
+# AFFiNE - Privacy-first all-in-one workspace
+# Alternative to Notion/Miro
+# Deployed on: oci-p-flex_1 (Oracle Flex)
+
+services:
+  affine:
+    image: ghcr.io/toeverything/affine-graphql:stable
+    container_name: affine_app
+    restart: unless-stopped
+    command:
+      ['sh', '-c', 'node ./scripts/self-host-predeploy && node ./dist/index.js']
+
+    ports:
+      - "3010:3010"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - affine_config:/root/.affine/config
+      - affine_storage:/root/.affine/storage
+
+    environment:
+      - NODE_OPTIONS=--import=./scripts/register.js
+      - AFFINE_CONFIG_PATH=/root/.affine/config
+      - REDIS_SERVER_HOST=redis
+      - DATABASE_URL=postgres://affine:affine@postgres:5432/affine
+      - NODE_ENV=production
+      - AFFINE_ADMIN_EMAIL=${AFFINE_ADMIN_EMAIL:-admin@diegonmarcos.com}
+      - AFFINE_ADMIN_PASSWORD=${AFFINE_ADMIN_PASSWORD:-changeme}
+      - AFFINE_SERVER_HOST=0.0.0.0
+      - AFFINE_SERVER_PORT=3010
+      - AFFINE_SERVER_HTTPS=false
+      - AFFINE_SERVER_EXTERNAL_URL=https://drive-notes-affine.diegonmarcos.com
+      - ENABLE_CAPTCHA=false
+      - THROTTLE_TTL=60
+      - THROTTLE_LIMIT=120
+      - AFFINE_STORAGE_PROVIDER=fs
+      - AFFINE_STORAGE_PATH=/root/.affine/storage
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD-SHELL', 'node ./scripts/health-check.js']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: affine_redis
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    command: redis-server --save 60 1 --loglevel warning
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: affine_postgres
+    restart: unless-stopped
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    environment:
+      - POSTGRES_USER=affine
+      - POSTGRES_PASSWORD=affine
+      - POSTGRES_DB=affine
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U affine']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network
+
+volumes:
+  affine_config:
+    driver: local
+  affine_storage:
+    driver: local
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
