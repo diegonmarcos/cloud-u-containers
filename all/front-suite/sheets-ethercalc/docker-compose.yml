@@ -1,0 +1,64 @@
+version: '3.8'
+
+# Ethercalc - Real-time collaborative spreadsheet
+# Alternative to Google Sheets
+# Deployed on: oci-p-flex_1 (Oracle Flex)
+
+services:
+  ethercalc:
+    image: audreyt/ethercalc:latest
+    container_name: ethercalc_app
+    restart: unless-stopped
+
+    ports:
+      - "3011:8000"
+
+    volumes:
+      - ethercalc_data:/var/ethercalc
+
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: ethercalc_redis
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    command: redis-server --save 60 1 --loglevel warning
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network
+
+volumes:
+  ethercalc_data:
+    driver: local
+  redis_data:
+    driver: local

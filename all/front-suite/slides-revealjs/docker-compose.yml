@@ -1,0 +1,38 @@
+version: '3.8'
+
+# Reveal.js - HTML presentation framework
+# Self-hosted presentation server
+# Deployed on: oci-p-flex_1 (Oracle Flex)
+
+services:
+  revealjs:
+    image: vimagick/reveal.js:latest
+    container_name: revealjs_app
+    restart: unless-stopped
+
+    ports:
+      - "3014:8000"
+
+    volumes:
+      - revealjs_presentations:/reveal.js/presentations
+
+    environment:
+      - NODE_ENV=production
+
+    networks:
+      - dev_network
+
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network
+
+volumes:
+  revealjs_presentations:
+    driver: local
