@@ -1,5 +1,3 @@
-version: '3.8'
-
 # LGTM Stack - Grafana Labs Observability
 # Loki (logs), Grafana (viz), Tempo (traces), Mimir (metrics)
 # Deployed on: oci-p-flex_1 (Oracle Flex)
@@ -9,17 +7,18 @@ services:
     image: grafana/grafana:latest
     container_name: lgtm_grafana
     restart: unless-stopped
+    env_file:
+      - .env
 
     ports:
       - "3016:3000"
 
     volumes:
       - grafana_data:/var/lib/grafana
-      - grafana_provisioning:/etc/grafana/provisioning
+      - ./provisioning:/etc/grafana/provisioning:ro
 
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=https://grafana.diegonmarcos.com
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
@@ -113,8 +112,6 @@ networks:
 
 volumes:
   grafana_data:
-    driver: local
-  grafana_provisioning:
     driver: local
   loki_data:
     driver: local
