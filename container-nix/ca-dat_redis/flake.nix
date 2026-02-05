@@ -21,8 +21,6 @@
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         redis:
           image: ${config.image}
@@ -30,13 +28,16 @@
           restart: unless-stopped
           ports:
             - "127.0.0.1:${toString config.port}:6379"
+          env_file:
+            - .env
           command: >
-            redis-server
+            sh -c "redis-server
             --appendonly yes
             --maxmemory ${config.maxmemory}
             --maxmemory-policy ${config.maxmemory_policy}
             --save 60 1
             --loglevel warning
+            --requirepass $$REDIS_PASSWORD"
           volumes:
             - ./data:/data
           environment:

@@ -19,7 +19,7 @@
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
+      
 
       services:
         syncthing:

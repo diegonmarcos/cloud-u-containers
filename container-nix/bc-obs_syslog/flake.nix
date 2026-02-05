@@ -17,7 +17,7 @@
 
     # Central syslog server (on gcp-f-micro_1)
     dockerComposeCentral = pkgs.writeText "docker-compose-central.yml" ''
-      version: "3.8"
+      
 
       services:
         syslog-central:
@@ -42,7 +42,7 @@
 
     # Forwarder (on each remote VM)
     dockerComposeForwarder = pkgs.writeText "docker-compose-forwarder.yml" ''
-      version: "3.8"
+      
 
       services:
         syslog-forwarder:

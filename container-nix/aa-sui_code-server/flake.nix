@@ -15,26 +15,20 @@
       image = "linuxserver/code-server:latest";
       port = 8443;
       timezone = "Europe/Madrid";
-
-      # Auth
-      password = "REDACTED";
-      sudo_password = "REDACTED";
     };
 
     dockerCompose = pkgs.writeText "docker-compose.yml" ''
-      version: "3.8"
-
       services:
         code-server:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             TZ: ${config.timezone}
             PUID: 1000
             PGID: 1000
-            PASSWORD: ${config.password}
-            SUDO_PASSWORD: ${config.sudo_password}
             PROXY_DOMAIN: ${config.domain}
           ports:
             - "${toString config.port}:8443"
