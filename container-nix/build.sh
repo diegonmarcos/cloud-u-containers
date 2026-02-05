@@ -282,12 +282,13 @@ get_service_folder() {
     # Use flake name if specified, otherwise service name
     base_name="${flake:-$service}"
 
-    # Map category to folder prefix
+    # Map category to folder prefix (new naming convention)
     case "$category" in
-        app)    echo "app_${base_name}" ;;
-        tools)  echo "bac_tools-${base_name}" ;;
-        sec)    echo "bac_sec-${base_name}" ;;
-        cloud)  echo "bac_cloud-${base_name}" ;;
+        app)    echo "aa-sui_${base_name}" ;;
+        tools)  echo "bc-obs_${base_name}" ;;
+        sec)    echo "bb-sec_${base_name}" ;;
+        cloud)  echo "ba-clo_${base_name}" ;;
+        data)   echo "ca-dat_${base_name}" ;;
         *)      echo "$base_name" ;;
     esac
 }

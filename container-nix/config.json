@@ -191,6 +191,21 @@
       "category": "cloud",
       "vm": "local",
       "description": "Oracle Cloud Infrastructure (Terraform)"
+    },
+    "gitea": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Self-hosted Git Server"
+    },
+    "backup-bup": {
+      "category": "data",
+      "vm": "oci-p-flex_1",
+      "description": "Database Backups (bup)"
+    },
+    "backup-borg": {
+      "category": "data",
+      "vm": "oci-p-flex_1",
+      "description": "Media Backups (Borg)"
     }
   }
 }
