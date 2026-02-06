@@ -8,7 +8,7 @@ services:
   etherpad:
     image: etherpad/etherpad:latest
     container_name: etherpad_app
-    restart: unless-stopped
+    restart: "no"
 
     ports:
       - "3012:9001"
@@ -21,7 +21,7 @@ services:
       - DEFAULT_PAD_TEXT=Welcome to Etherpad!
       - ADMIN_PASSWORD=${ETHERPAD_ADMIN_PASSWORD:-changeme}
       - DB_TYPE=postgres
-      - DB_HOST=postgres
+      - DB_HOST=etherpad_postgres
       - DB_PORT=5432
       - DB_NAME=etherpad
       - DB_USER=etherpad
@@ -44,7 +44,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: etherpad_postgres
-    restart: unless-stopped
+    restart: "no"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data

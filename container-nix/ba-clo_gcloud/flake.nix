@@ -316,7 +316,7 @@ EOF
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.opentofu pkgs.terraform pkgs.google-cloud-sdk ];
+      packages = [ pkgs.opentofu pkgs.terraform pkgs.google-cloud-sdk pkgs.sops pkgs.age ];
     };
   };
 }

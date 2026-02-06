@@ -116,7 +116,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.mariadb ];
+      packages = [ pkgs.docker-compose pkgs.mariadb pkgs.sops pkgs.age ];
     };
   };
 }

@@ -75,7 +75,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.apacheHttpd ]; # htpasswd is in apacheHttpd
+      packages = [ pkgs.docker-compose pkgs.apacheHttpd pkgs.sops pkgs.age ]; # htpasswd is in apacheHttpd
     };
   };
 }

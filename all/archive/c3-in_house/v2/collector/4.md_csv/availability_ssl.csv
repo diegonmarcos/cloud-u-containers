@@ -1,0 +1,6 @@
+date,timestamp,domain,status,days_left,expires
+2025-12-15,2025-12-15T23:19:48.681400,diegonmarcos.com,ok,81,2026-03-07T12:33:09
+2025-12-15,2025-12-15T23:19:48.681400,photos.app.diegonmarcos.com,error,,
+2025-12-15,2025-12-15T23:19:48.681400,analytics.diegonmarcos.com,ok,83,2026-03-09T00:09:37
+2025-12-15,2025-12-15T23:19:48.681400,sync.diegonmarcos.com,ok,83,2026-03-09T13:36:12
+2025-12-15,2025-12-15T23:19:48.681400,n8n.diegonmarcos.com,ok,83,2026-03-09T00:11:12

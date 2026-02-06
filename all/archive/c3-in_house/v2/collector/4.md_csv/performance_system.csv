@@ -1,0 +1,2 @@
+date,timestamp,vm,load_1m,mem_total_mb,mem_used_mb,mem_free_mb,mem_percent
+2025-12-15,2025-12-15T23:21:41.934151,gcp-f-micro_1,0.35,945,563,74,59.6

@@ -8,7 +8,7 @@ services:
   photoprism:
     image: photoprism/photoprism:latest
     container_name: photoprism_app
-    restart: unless-stopped
+    restart: "no"
 
     ports:
       - "3013:2342"
@@ -40,9 +40,9 @@ services:
       - PHOTOPRISM_UPLOAD_NSFW=true
       - PHOTOPRISM_DATABASE_DRIVER=mysql
       - PHOTOPRISM_DATABASE_SERVER=mariadb:3306
-      - PHOTOPRISM_DATABASE_NAME=photoprism
-      - PHOTOPRISM_DATABASE_USER=photoprism
-      - PHOTOPRISM_DATABASE_PASSWORD=photoprism
+      - PHOTOPRISM_DATABASE_NAME=${MARIADB_DATABASE:-photoprism}
+      - PHOTOPRISM_DATABASE_USER=${MARIADB_USER:-photoprism}
+      - PHOTOPRISM_DATABASE_PASSWORD=${MARIADB_PASSWORD:-changeme}
 
     depends_on:
       mariadb:
@@ -61,7 +61,7 @@ services:
   mariadb:
     image: mariadb:11
     container_name: photoprism_mariadb
-    restart: unless-stopped
+    restart: "no"
 
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -69,10 +69,10 @@ services:
     environment:
       - MARIADB_AUTO_UPGRADE=1
       - MARIADB_INITDB_SKIP_TZINFO=1
-      - MARIADB_DATABASE=photoprism
-      - MARIADB_USER=photoprism
-      - MARIADB_PASSWORD=photoprism
-      - MARIADB_ROOT_PASSWORD=photoprism
+      - MARIADB_DATABASE=${MARIADB_DATABASE:-photoprism}
+      - MARIADB_USER=${MARIADB_USER:-photoprism}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changeme}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changeme}
 
     networks:
       - dev_network

@@ -243,7 +243,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.yara ];
+      packages = [ pkgs.docker-compose pkgs.yara pkgs.sops pkgs.age ];
     };
   };
 }

@@ -330,7 +330,7 @@ EOF
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.opentofu pkgs.terraform ];
+      packages = [ pkgs.opentofu pkgs.terraform pkgs.sops pkgs.age ];
     };
   };
 }

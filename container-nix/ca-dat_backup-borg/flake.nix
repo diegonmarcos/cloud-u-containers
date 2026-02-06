@@ -178,7 +178,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.borgbackup ];
+      packages = [ pkgs.docker-compose pkgs.borgbackup pkgs.sops pkgs.age ];
     };
   };
 }

@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/config.json"
 
 # Age key for sops decryption
-: "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/age/keys.txt}"
+: "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/system/oauth/age_keys.txt}"
 export SOPS_AGE_KEY_FILE
 
 # =============================================================================
@@ -193,7 +193,7 @@ OPTIONS:
     -h, --help          Show this help
 
 ENCRYPTION:
-    Age key (private):  /home/diego/Mounts/Git/vault/A0_keys/age/keys.txt
+    Age key (private):  /home/diego/Mounts/Git/vault/A0_keys/system/oauth/age_keys.txt
     Age key (public):   age1u575hx8h4t5cgle2uznmyfy75e7cgd02h9t5dax506luz9e05vlqxtd7pq
 
     Override key path:

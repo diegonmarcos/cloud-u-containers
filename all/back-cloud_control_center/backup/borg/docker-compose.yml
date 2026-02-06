@@ -1,0 +1,37 @@
+# Borg - Binary backup for media/large files
+# Deploy to: oci-p-flex_1
+# SSH server for borg clients
+
+services:
+  borg:
+    image: alpine:3.19
+    container_name: borg-server
+    restart: unless-stopped
+    command: >
+      sh -c "
+        apk add --no-cache borgbackup openssh-server &&
+        mkdir -p /backup/media /root/.ssh &&
+        chmod 700 /root/.ssh &&
+        ssh-keygen -A &&
+        echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
+        /usr/sbin/sshd -D
+      "
+    volumes:
+      - borg_data:/backup/media
+      - ./authorized_keys:/root/.ssh/authorized_keys:ro
+    ports:
+      - "2224:22"  # SSH for borg
+    networks:
+      - backup_network
+
+volumes:
+  borg_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /backup/media
+
+networks:
+  backup_network:
+    external: true

@@ -83,7 +83,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.gitea ];
+      packages = [ pkgs.docker-compose pkgs.gitea pkgs.sops pkgs.age ];
     };
   };
 }

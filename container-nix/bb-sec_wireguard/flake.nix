@@ -105,7 +105,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.wireguard-tools ];
+      packages = [ pkgs.docker-compose pkgs.wireguard-tools pkgs.sops pkgs.age ];
     };
   };
 }
