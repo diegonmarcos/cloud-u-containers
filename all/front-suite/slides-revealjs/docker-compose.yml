@@ -1,29 +1,26 @@
-version: '3.8'
-
-# Reveal.js - HTML presentation framework
-# Self-hosted presentation server
+# RevealMD - Markdown to reveal.js presentations
+# Easy markdown-based slides
 # Deployed on: oci-p-flex_1 (Oracle Flex)
 
 services:
-  revealjs:
-    image: vimagick/reveal.js:latest
-    container_name: revealjs_app
-    restart: unless-stopped
+  revealmd:
+    image: webpronl/reveal-md:latest
+    container_name: revealmd_app
+    restart: "no"
 
     ports:
-      - "3014:8000"
+      - "3014:1948"
 
     volumes:
-      - revealjs_presentations:/reveal.js/presentations
+      - slides_data:/slides
 
-    environment:
-      - NODE_ENV=production
+    command: /slides --watch
 
     networks:
       - dev_network
 
     healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8000']
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1948']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -34,5 +31,5 @@ networks:
     name: dev_network
 
 volumes:
-  revealjs_presentations:
+  slides_data:
     driver: local

@@ -58,7 +58,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.ntfy-sh ];
+      packages = [ pkgs.docker-compose pkgs.ntfy-sh pkgs.sops pkgs.age ];
     };
   };
 }

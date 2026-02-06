@@ -1,56 +1,34 @@
-version: '3.8'
-
-# Ethercalc - Real-time collaborative spreadsheet
-# Alternative to Google Sheets
+# Grist - Modern collaborative spreadsheet
+# Alternative to Google Sheets (replaces unmaintained Ethercalc)
 # Deployed on: oci-p-flex_1 (Oracle Flex)
 
 services:
-  ethercalc:
-    image: audreyt/ethercalc:latest
-    container_name: ethercalc_app
-    restart: unless-stopped
+  grist:
+    image: gristlabs/grist:latest
+    container_name: grist_app
+    restart: "no"
 
     ports:
-      - "3011:8000"
+      - "3011:8484"
 
     volumes:
-      - ethercalc_data:/var/ethercalc
+      - grist_data:/persist
 
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-
-    depends_on:
-      redis:
-        condition: service_healthy
+      - GRIST_SESSION_SECRET=changeme-secret-key
+      - GRIST_SINGLE_ORG=docs
+      - GRIST_DEFAULT_EMAIL=${GRIST_ADMIN_EMAIL:-admin@diegonmarcos.com}
+      - APP_HOME_URL=https://sheets.diegonmarcos.com
+      - GRIST_SANDBOX_FLAVOR=unsandboxed
 
     networks:
       - dev_network
 
     healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8000']
+      test: ['CMD', 'curl', '-f', 'http://localhost:8484/']
       interval: 30s
       timeout: 10s
       retries: 3
-
-  redis:
-    image: redis:7-alpine
-    container_name: ethercalc_redis
-    restart: unless-stopped
-
-    volumes:
-      - redis_data:/data
-
-    networks:
-      - dev_network
-
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    command: redis-server --save 60 1 --loglevel warning
 
 networks:
   dev_network:
@@ -58,7 +36,5 @@ networks:
     name: dev_network
 
 volumes:
-  ethercalc_data:
-    driver: local
-  redis_data:
+  grist_data:
     driver: local

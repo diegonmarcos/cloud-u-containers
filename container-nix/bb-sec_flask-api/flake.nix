@@ -95,7 +95,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.python3 pkgs.python3Packages.flask ];
+      packages = [ pkgs.docker-compose pkgs.python3 pkgs.python3Packages.flask pkgs.sops pkgs.age ];
     };
   };
 }

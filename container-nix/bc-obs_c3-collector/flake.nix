@@ -76,7 +76,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose ];
+      packages = [ pkgs.docker-compose pkgs.sops pkgs.age ];
     };
   };
 }

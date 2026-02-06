@@ -7,8 +7,15 @@ result-*
 .tmp-*
 
 # Decrypted secrets (NEVER commit)
+# Security model:
+#   - secrets.yaml (encrypted with SOPS/age) → safe to commit
+#   - .env (plaintext, generated at deploy) → NEVER commit
 .env
 */.env
+**/.env
+.env.*
+**/.env.*
+*.env.deploy
 
 # Terraform state (contains secrets)
 *.tfstate

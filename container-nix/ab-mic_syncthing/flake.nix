@@ -57,7 +57,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.syncthing ];
+      packages = [ pkgs.docker-compose pkgs.syncthing pkgs.sops pkgs.age ];
     };
   };
 }

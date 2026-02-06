@@ -1,0 +1,2 @@
+date,month,gcp_status,gcp_tier,oci_status,oci_tier,ai_cost_usd
+2025-12-15,2025-12,ok,free,ok,always-free,0

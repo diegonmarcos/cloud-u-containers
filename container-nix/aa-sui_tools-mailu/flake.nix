@@ -235,7 +235,7 @@
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.docker-compose pkgs.openssl ];
+      packages = [ pkgs.docker-compose pkgs.openssl pkgs.sops pkgs.age ];
     };
   };
 }

@@ -1,0 +1,19 @@
+# Windmill .gitignore
+
+# Environment files with secrets
+env/windmill.env
+
+# Secrets directory (except .gitkeep)
+secrets/*
+!secrets/.gitkeep
+
+# Docker volumes (if mounted locally)
+data/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~

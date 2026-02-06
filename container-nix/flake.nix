@@ -228,6 +228,9 @@
         pkgs.rsync
         pkgs.openssh
         pkgs.opentofu
+        pkgs.sops
+        pkgs.age
+        pkgs.yq-go
         self.packages.${system}.deploy
       ];
     };

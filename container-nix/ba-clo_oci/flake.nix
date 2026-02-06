@@ -521,7 +521,7 @@ EOF
     };
 
     devShells.${system}.default = pkgs.mkShell {
-      packages = [ pkgs.opentofu pkgs.terraform pkgs.oci-cli ];
+      packages = [ pkgs.opentofu pkgs.terraform pkgs.oci-cli pkgs.sops pkgs.age ];
     };
   };
 }
