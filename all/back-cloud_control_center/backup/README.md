@@ -1,16 +1,15 @@
 # Backup Infrastructure
 
-Three-tier backup system on Flex VM (oci-p-flex_1).
+Four-tier backup system. `db-agent` runs on ALL VMs, bup/borg/gitea on Flex.
 
-## Nix Flakes
+## Components
 
-Managed via `container-nix/ca-dat_backup-*`:
-
-| Flake | Service | Description |
-|-------|---------|-------------|
-| `ca-dat_backup-gitea` | backup-gitea | Git server for code mirroring |
-| `ca-dat_backup-bup` | backup-bup | Database backups (SQLite, MySQL, PostgreSQL) |
-| `ca-dat_backup-borg` | backup-borg | Media backups with deduplication |
+| Component | Deploy To | Description |
+|-----------|-----------|-------------|
+| `db-agent/` | ALL VMs | Docker container: auto-detect DBs, dump, log, ntfy notify |
+| `bup/` | Flex | SSH server receiving dumps from all VMs via bup |
+| `borg/` | Flex | Media backups with content-defined deduplication |
+| `gitea/` | Flex | Git mirror server for code repos |
 
 ## Architecture
 
@@ -69,21 +68,28 @@ Managed via `container-nix/ca-dat_backup-*`:
 | Databases | **bup** | SQL dumps | Git packfiles |
 | Media | **Borg** | Binary files | Content-defined chunking |
 
-## Deploy via Nix
+## Deploy db-agent
 
 ```bash
-cd /home/diego/Mounts/Git/cloud/a_solutions/container-nix
+# Deploy to each VM via deploy.sh:
+VM_NAME=gcp   ./deploy.sh back-cloud_control_center/backup/db-agent up -d
+VM_NAME=flex  ./deploy.sh back-cloud_control_center/backup/db-agent up -d
+VM_NAME=micro1 ./deploy.sh back-cloud_control_center/backup/db-agent up -d
+VM_NAME=micro2 ./deploy.sh back-cloud_control_center/backup/db-agent up -d
 
-# Build individual backup service
-nix build .#backup-gitea
-nix build .#backup-bup
-nix build .#backup-borg
-
-# Deploy to VM
-./build.sh deploy backup-gitea
-./build.sh deploy backup-bup
-./build.sh deploy backup-borg
+# Or directly with docker compose:
+VM_NAME=gcp docker compose -f db-agent/docker-compose.yml up -d
 ```
+
+### db-agent features
+- Auto-detects running DB containers (SQLite, PostgreSQL, MariaDB, Redis)
+- Dumps each using native tools (sqlite3 .backup, pg_dump, mysqldump)
+- Runs on cron schedule (default: 3 AM daily)
+- Logs every job to `/var/log/db-agent/` with timestamps
+- Writes `last-run.json` status for monitoring
+- Sends ntfy notifications (success/failure)
+- Optional bup remote push to Flex
+- 7-day local retention, 30-day log retention
 
 ## Schedule
 
