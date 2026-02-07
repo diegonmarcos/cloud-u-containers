@@ -1,0 +1,37 @@
+# Event Collector - Docker container metrics forwarder
+# Deployed on: gcp-f-micro_1 (35.226.147.64)
+# Path on server: /home/diego/collector/
+
+version: "3.8"
+
+services:
+  collector:
+    container_name: collector
+    build: .
+    restart: unless-stopped
+    mem_limit: 16m
+    mem_reservation: 8m
+    cpus: 0.05
+    environment:
+      - VM_NAME=${VM_NAME:-unknown}
+      - NTFY_URL=http://ntfy:80
+      - INTERVAL=300
+      - TIMEOUT=10
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "entrypoint"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "2"
+
+networks:
+  npm_default:
+    external: true

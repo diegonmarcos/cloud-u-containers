@@ -22,6 +22,9 @@ services:
       - CLOUD_CONFIG_PATH=/app/config/architecture.json
       - OCI_CONFIG_FILE=/app/config/oci_config
       - OCI_KEY_FILE=/app/config/oci_api_key.pem
+      - OCI_WAKE_INSTANCE_ID=${OCI_WAKE_INSTANCE_ID}
+      - NTFY_URL=http://ntfy:80
+      - NTFY_TOKEN=${NTFY_TOKEN}
     networks:
       - npm_default
     healthcheck:
