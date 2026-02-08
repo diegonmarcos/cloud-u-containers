@@ -44,6 +44,9 @@
       default = pkgs.runCommand "smtp-proxy-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
+        cp ${./nginx.conf} $out/nginx.conf
+        cp ${./smtp_proxy.py} $out/smtp_proxy.py
       '';
     });
   };

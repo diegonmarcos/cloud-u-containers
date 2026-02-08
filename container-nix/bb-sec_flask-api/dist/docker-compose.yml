@@ -31,7 +31,7 @@ services:
       - c3-collector
 
   c3-collector:
-    build: ../c3/in-house
+    build: ./c3-collector
     container_name: c3-collector
     restart: unless-stopped
     volumes:

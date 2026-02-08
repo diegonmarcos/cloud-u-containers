@@ -105,6 +105,7 @@
       default = pkgs.runCommand "postlite-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
       '';
     });
   };
