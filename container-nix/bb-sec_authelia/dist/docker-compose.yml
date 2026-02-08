@@ -1,0 +1,19 @@
+services:
+  authelia:
+    image: authelia/authelia:latest
+    container_name: authelia
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Madrid
+    volumes:
+      - ./config:/config
+    ports:
+      - "9091:9091"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

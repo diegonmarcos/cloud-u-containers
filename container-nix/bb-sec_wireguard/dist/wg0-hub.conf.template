@@ -1,0 +1,27 @@
+[Interface]
+Address = 10.0.0.1/24
+ListenPort = 51820
+PrivateKey = <REDACTED>
+
+# Oracle Flex (10.0.0.2)
+[Peer]
+PublicKey = CHANGE_ME
+AllowedIPs = 10.0.0.2/32
+Endpoint = 144.24.196.72:51820
+
+# Oracle Micro 1 (10.0.0.3)
+[Peer]
+PublicKey = CHANGE_ME
+AllowedIPs = 10.0.0.3/32
+Endpoint = 130.110.251.193:51820
+
+# Oracle Micro 2 (10.0.0.4)
+[Peer]
+PublicKey = CHANGE_ME
+AllowedIPs = 10.0.0.4/32
+Endpoint = 129.151.228.66:51820
+
+# Local Machine (10.0.0.5)
+[Peer]
+PublicKey = CHANGE_ME
+AllowedIPs = 10.0.0.5/32

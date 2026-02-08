@@ -1,0 +1,20 @@
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Madrid
+      NC_PUBLIC_URL: https://db.diegonmarcos.com
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/usr/app/data
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

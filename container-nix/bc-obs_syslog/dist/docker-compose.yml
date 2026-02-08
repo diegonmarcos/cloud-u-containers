@@ -1,0 +1,21 @@
+
+
+services:
+  syslog-central:
+    image: balabit/syslog-ng:4.4.0
+    container_name: syslog-central
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Madrid
+    ports:
+      - "514:514/udp"
+      - "514:514/tcp"
+    volumes:
+      - ./config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
+      - ./logs:/var/log/remote
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
