@@ -49,8 +49,11 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "alerts-api-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/app
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
+        cp ${./requirements.txt} $out/requirements.txt
+        cp ${./app/main.py} $out/app/main.py
       '';
     });
   };

@@ -66,8 +66,24 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "matomo-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/config $out/manage $out/receiver $out/scripts
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./matomo-hybrid/Dockerfile} $out/Dockerfile
+        # Config files
+        cp ${./matomo-hybrid/config/mariadb.cnf} $out/config/mariadb.cnf
+        cp ${./matomo-hybrid/config/matomo-fpm.conf} $out/config/matomo-fpm.conf
+        cp ${./matomo-hybrid/config/matomo-nginx.conf} $out/config/matomo-nginx.conf
+        cp ${./matomo-hybrid/config/receiver-fpm.conf} $out/config/receiver-fpm.conf
+        cp ${./matomo-hybrid/config/receiver-nginx.conf} $out/config/receiver-nginx.conf
+        cp ${./matomo-hybrid/config/supervisord.conf} $out/config/supervisord.conf
+        # Scripts
+        cp ${./matomo-hybrid/scripts/entrypoint.sh} $out/scripts/entrypoint.sh
+        cp ${./matomo-hybrid/scripts/import-inbox.sh} $out/scripts/import-inbox.sh
+        cp ${./matomo-hybrid/scripts/matomo-sleep.sh} $out/scripts/matomo-sleep.sh
+        cp ${./matomo-hybrid/scripts/matomo-wake.sh} $out/scripts/matomo-wake.sh
+        # Management & receiver
+        cp ${./matomo-hybrid/manage/matomo-manage.sh} $out/manage/matomo-manage.sh
+        cp ${./matomo-hybrid/receiver/receive.php} $out/receiver/receive.php
       '';
     });
   };

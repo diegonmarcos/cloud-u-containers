@@ -142,8 +142,12 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "introspect-proxy-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/app $out/npm-configs
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
+        cp ${./app/main.py} $out/app/main.py
+        cp ${./app/requirements.txt} $out/app/requirements.txt
+        cp -r ${./npm-configs}/* $out/npm-configs/
       '';
     });
   };

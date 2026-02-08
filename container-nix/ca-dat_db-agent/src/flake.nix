@@ -68,6 +68,8 @@
       default = pkgs.runCommand "db-agent-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
+        cp ${./entrypoint.sh} $out/entrypoint.sh
       '';
     });
   };

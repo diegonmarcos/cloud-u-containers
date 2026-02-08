@@ -88,6 +88,10 @@
       default = pkgs.runCommand "photos-webhook-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
+        cp ${./requirements.txt} $out/requirements.txt
+        cp ${./webhook.py} $out/webhook.py
+        cp ${./schema.sql} $out/schema.sql
       '';
     });
   };
