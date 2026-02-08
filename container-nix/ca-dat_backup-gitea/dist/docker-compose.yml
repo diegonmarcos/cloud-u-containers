@@ -1,0 +1,45 @@
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Madrid
+      USER_UID: 1000
+      USER_GID: 1000
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__database__PATH: /data/gitea/gitea.db
+      GITEA__server__DOMAIN: git.diegonmarcos.com
+      GITEA__server__ROOT_URL: https://git.diegonmarcos.com/
+      GITEA__server__HTTP_PORT: 3000
+      GITEA__server__SSH_DOMAIN: git.diegonmarcos.com
+      GITEA__server__SSH_PORT: 2222
+      GITEA__server__SSH_LISTEN_PORT: 22
+      GITEA__server__DISABLE_SSH: "false"
+      GITEA__service__DISABLE_REGISTRATION: true
+      GITEA__service__REQUIRE_SIGNIN_VIEW: true
+      GITEA__openid__ENABLE_OPENID_SIGNIN: "false"
+      GITEA__openid__ENABLE_OPENID_SIGNUP: "false"
+      GITEA__ui__DEFAULT_THEME: gitea-dark
+      GITEA__repository__DEFAULT_PRIVATE: "true"
+    volumes:
+      - ./data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      - "2222:22"
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  proxy:
+    external: true

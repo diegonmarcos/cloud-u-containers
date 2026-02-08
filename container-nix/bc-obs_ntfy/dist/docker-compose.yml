@@ -1,0 +1,69 @@
+# ntfy - Push Notification Server
+# Deployed on: gcp-f-micro_1 (35.226.147.64)
+# Domain: rss.diegonmarcos.com
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy
+    container_name: ntfy
+    command:
+      - serve
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./cache:/var/cache/ntfy
+      - ./etc:/etc/ntfy
+    ports:
+      - '127.0.0.1:8090:80'
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - npm_default
+
+  syslog-bridge:
+    image: python:3.11-slim
+    container_name: syslog-bridge
+    command: python -u /app/syslog-to-ntfy.py
+    volumes:
+      - ./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro
+      - ./cache:/var/cache/ntfy
+      - syslog-central-logs:/var/log:ro
+    environment:
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - ntfy
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+    networks:
+      - npm_default
+
+  github-rss:
+    image: python:3.11-slim
+    container_name: github-rss
+    command: python -u /app/github-rss-to-ntfy.py
+    volumes:
+      - ./github-rss-to-ntfy.py:/app/github-rss-to-ntfy.py:ro
+      - ./cache:/var/cache/ntfy
+    environment:
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - ntfy
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - npm_default
+
+volumes:
+  syslog-central-logs:
+    external: true
+
+networks:
+  npm_default:
+    external: true

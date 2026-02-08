@@ -1,0 +1,55 @@
+services:
+  flask-api:
+    build: .
+    container_name: flask-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - c3-data:/app/c3-data:ro
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+      - ~/.ssh:/home/appuser/.ssh:ro
+      - /home/diego/cloud/oci_config:/app/config/oci_config:ro
+      - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+    environment:
+      - FLASK_DEBUG=false
+      - CLOUD_CONFIG_PATH=/app/config/architecture.json
+      - OCI_CONFIG_FILE=/app/config/oci_config
+      - OCI_KEY_FILE=/app/config/oci_api_key.pem
+      - OCI_WAKE_INSTANCE_ID=${OCI_WAKE_INSTANCE_ID}
+      - NTFY_URL=http://ntfy:80
+      - NTFY_TOKEN=${NTFY_TOKEN}
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - c3-collector
+
+  c3-collector:
+    build: ../c3/in-house
+    container_name: c3-collector
+    restart: unless-stopped
+    volumes:
+      - c3-data:/app/4.jsons
+      - c3-raw:/app/2.raw
+      - ~/.ssh:/root/.ssh:ro
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - npm_default
+
+volumes:
+  c3-data:
+    name: c3-data
+  c3-raw:
+    name: c3-raw
+
+networks:
+  npm_default:
+    external: true

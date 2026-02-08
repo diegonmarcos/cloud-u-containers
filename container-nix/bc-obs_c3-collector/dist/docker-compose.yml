@@ -1,0 +1,21 @@
+
+
+services:
+  c3-collector:
+    image: grafana/alloy:latest
+    container_name: c3-collector
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Madrid
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./config:/etc/alloy
+      - ./data:/var/lib/alloy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

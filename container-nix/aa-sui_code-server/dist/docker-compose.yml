@@ -1,0 +1,23 @@
+services:
+  code-server:
+    image: linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Madrid
+      PUID: 1000
+      PGID: 1000
+      PROXY_DOMAIN: ide.diegonmarcos.com
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./config:/config
+      - ./workspace:/workspace
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

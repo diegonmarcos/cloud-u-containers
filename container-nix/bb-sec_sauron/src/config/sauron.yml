@@ -1,0 +1,56 @@
+# Sauron Configuration
+# File integrity monitoring + YARA scanning
+
+watch:
+  paths:
+    - /watch/etc
+    - /watch/home
+    - /watch/www
+    - /watch/docker-volumes
+
+  exclude:
+    - "*.log"
+    - "*.tmp"
+    - "*.swp"
+    - "*.cache"
+    - ".git"
+    - "node_modules"
+    - "__pycache__"
+    - ".npm"
+    - ".cargo"
+
+  # File extensions to scan with YARA
+  scan_extensions:
+    - ".php"
+    - ".js"
+    - ".py"
+    - ".sh"
+    - ".bash"
+    - ".pl"
+    - ".rb"
+    - ".exe"
+    - ".dll"
+    - ".so"
+    - ".bin"
+
+yara:
+  enabled: true
+  rules_dir: /etc/sauron/yara-rules
+  timeout: 30
+  max_file_size: 10485760  # 10MB
+
+output:
+  # JSON lines to file (syslog-ng will tail this)
+  file:
+    enabled: true
+    path: /var/log/sauron/alerts.jsonl
+    format: json
+
+  # Also log to stdout for docker logs
+  stdout:
+    enabled: true
+    format: json
+
+logging:
+  level: info
+  file: /var/log/sauron/sauron.log

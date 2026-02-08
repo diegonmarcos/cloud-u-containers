@@ -1,0 +1,81 @@
+# LGTM Stack - Grafana Labs Observability
+# Deployed on: oci-p-flex_1 (Oracle Flex)
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: lgtm_grafana
+    restart: unless-stopped
+    ports:
+      - "3016:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.diegonmarcos.com
+    depends_on:
+      - loki
+    networks:
+      - dev_network
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  loki:
+    image: grafana/loki:latest
+    container_name: lgtm_loki
+    restart: unless-stopped
+    ports:
+      - "3017:3100"
+    volumes:
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - dev_network
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3100/ready']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: lgtm_tempo
+    restart: unless-stopped
+    ports:
+      - "3018:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - tempo_data:/var/tempo
+      - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    networks:
+      - dev_network
+
+  mimir:
+    image: grafana/mimir:latest
+    container_name: lgtm_mimir
+    restart: unless-stopped
+    ports:
+      - "3019:8080"
+    volumes:
+      - mimir_data:/data
+      - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
+    command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network
+
+volumes:
+  grafana_data:
+  loki_data:
+  tempo_data:
+  mimir_data:

@@ -13,7 +13,7 @@
       "ip": "129.151.228.66",
       "user": "ubuntu",
       "method": "key",
-      "description": "Oracle Free - Analytics"
+      "description": "Oracle Free - Analytics + Workflows"
     },
     "gcp-f-micro_1": {
       "ip": "35.226.147.64",
@@ -21,7 +21,7 @@
       "method": "gcloud",
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
-      "description": "GCloud Free - Central Proxy"
+      "description": "GCloud Free - Central Proxy + Control"
     },
     "oci-p-flex_1": {
       "ip": "144.24.196.72",
@@ -35,82 +35,193 @@
     "affine": {
       "category": "app",
       "vm": "oci-p-flex_1",
-      "description": "Workspace (Notion Alternative)"
+      "description": "HedgeDoc Collaborative Editor (notes.diegonmarcos.com)"
     },
     "code-server": {
       "category": "app",
       "vm": "oci-p-flex_1",
-      "description": "VS Code IDE"
+      "description": "VS Code IDE (Authelia protected)"
     },
-    "github-rss": {
+    "etherpad": {
       "category": "app",
-      "vm": "gcp-f-micro_1",
-      "description": "GitHub RSS Feeds"
-    },
-    "nocodb": {
-      "category": "tools",
       "vm": "oci-p-flex_1",
-      "description": "Database UI"
+      "description": "Collaborative Document Editor"
     },
-    "ntfy": {
+    "filebrowser": {
       "category": "app",
-      "vm": "gcp-f-micro_1",
-      "description": "Push Notifications"
+      "vm": "oci-p-flex_1",
+      "description": "Web File Manager"
+    },
+    "grist": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Collaborative Spreadsheet (sheets.diegonmarcos.com)"
     },
     "photoprism": {
       "category": "app",
       "vm": "oci-p-flex_1",
-      "description": "Photo Gallery"
+      "description": "Photo Gallery (photos.diegonmarcos.com)"
+    },
+    "photos-webhook": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "PhotoPrism Webhook + S3 Processor"
     },
     "radicale": {
       "category": "app",
       "vm": "oci-f-micro_1",
-      "description": "Calendar/Contacts"
+      "description": "Calendar/Contacts (cal.diegonmarcos.com)"
+    },
+    "revealmd": {
+      "category": "app",
+      "vm": "oci-p-flex_1",
+      "description": "Markdown Presentations (slides.diegonmarcos.com)"
+    },
+    "mailu": {
+      "category": "app",
+      "flake": "tools-mailu",
+      "vm": "oci-f-micro_1",
+      "description": "Mail Server"
+    },
+    "smtp-proxy": {
+      "category": "app",
+      "flake": "tools-smtp-proxy",
+      "vm": "oci-f-micro_1",
+      "description": "SMTP Relay"
     },
     "syncthing": {
-      "category": "app",
+      "category": "mic",
       "vm": "oci-f-micro_1",
       "description": "File Sync"
+    },
+    "vaultwarden": {
+      "category": "mic",
+      "vm": "gcp-f-micro_1",
+      "description": "Password Manager (vault.diegonmarcos.com)"
+    },
+    "npm": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Reverse Proxy (Nginx Proxy Manager)"
+    },
+    "authelia": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "2FA Authentication"
+    },
+    "npm-introspect-proxy": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Authelia Token Introspection"
+    },
+    "flask-api": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Cloud API (api.diegonmarcos.com)"
+    },
+    "sauron": {
+      "category": "sec",
+      "vm": "oci-p-flex_1",
+      "description": "YARA Security Scanner (full)"
+    },
+    "sauron-central": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Central Syslog Collector + SIEM API"
+    },
+    "sauron-lite-micro1": {
+      "category": "tools",
+      "vm": "oci-f-micro_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-micro2": {
+      "category": "tools",
+      "vm": "oci-f-micro_2",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-gcp": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "sauron-lite-flex": {
+      "category": "tools",
+      "vm": "oci-p-flex_1",
+      "flake": "sauron-lite",
+      "description": "File Integrity Scanner"
+    },
+    "wireguard": {
+      "category": "sec",
+      "vm": "all",
+      "description": "VPN Mesh (native, not Docker)"
+    },
+    "ntfy": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Push Notifications + syslog-bridge + github-rss"
+    },
+    "github-rss": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "GitHub RSS Feeds (part of ntfy stack)"
     },
     "c3-collector": {
       "category": "tools",
       "vm": "gcp-f-micro_1",
       "description": "Metrics Collector"
     },
-    "flask-api": {
+    "collector-events": {
       "category": "tools",
       "vm": "gcp-f-micro_1",
-      "description": "Cloud API"
+      "description": "Docker Container Metrics Forwarder"
     },
-    "mailu": {
+    "alerts-api": {
       "category": "tools",
-      "vm": "oci-f-micro_1",
-      "description": "Mail Server"
+      "vm": "gcp-f-micro_1",
+      "description": "Security Alert Aggregation API"
+    },
+    "palantir-cron": {
+      "category": "tools",
+      "vm": "gcp-f-micro_1",
+      "description": "Security Scanning + Cron Scheduler"
     },
     "matomo": {
       "category": "tools",
       "vm": "oci-f-micro_2",
-      "description": "Analytics"
+      "description": "Analytics (analytics.diegonmarcos.com)"
     },
-    "npm": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "description": "Reverse Proxy"
+    "windmill": {
+      "category": "tools",
+      "vm": "oci-f-micro_2",
+      "description": "Workflow Orchestration (windmill.diegonmarcos.com)"
     },
-    "palantir-cron": {
-      "category": "sec",
+    "nocodb": {
+      "category": "tools",
+      "vm": "oci-p-flex_1",
+      "description": "Database UI (db.diegonmarcos.com)"
+    },
+    "lgtm": {
+      "category": "tools",
+      "vm": "oci-p-flex_1",
+      "description": "LGTM Stack (Grafana/Loki/Tempo/Mimir)"
+    },
+    "dozzle": {
+      "category": "tools",
       "vm": "gcp-f-micro_1",
-      "description": "Scheduled Tasks"
+      "description": "Docker Log Viewer"
+    },
+    "postlite": {
+      "category": "data",
+      "vm": "gcp-f-micro_1",
+      "description": "SQLite REST API (WireGuard only)"
     },
     "redis": {
-      "category": "tools",
+      "category": "data",
       "vm": "oci-f-micro_1",
       "description": "Cache Server"
-    },
-    "smtp-proxy": {
-      "category": "tools",
-      "vm": "oci-f-micro_1",
-      "description": "SMTP Relay"
     },
     "syslog-central": {
       "category": "tools",
@@ -132,50 +243,6 @@
       "flake": "syslog",
       "subfolder": "forwarder",
       "description": "Syslog Forwarder"
-    },
-    "authelia": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "description": "2FA Authentication"
-    },
-    "npm-introspect-proxy": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "description": "Authelia Token Introspection"
-    },
-    "sauron-lite-micro1": {
-      "category": "sec",
-      "vm": "oci-f-micro_1",
-      "flake": "sauron-lite",
-      "description": "File Integrity Scanner"
-    },
-    "sauron-lite-micro2": {
-      "category": "sec",
-      "vm": "oci-f-micro_2",
-      "flake": "sauron-lite",
-      "description": "File Integrity Scanner"
-    },
-    "sauron-lite-gcp": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "flake": "sauron-lite",
-      "description": "File Integrity Scanner"
-    },
-    "sauron-lite-flex": {
-      "category": "sec",
-      "vm": "oci-p-flex_1",
-      "flake": "sauron-lite",
-      "description": "File Integrity Scanner"
-    },
-    "vaultwarden": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "description": "Password Manager"
-    },
-    "wireguard": {
-      "category": "sec",
-      "vm": "gcp-f-micro_1",
-      "description": "VPN"
     },
     "cloudflare": {
       "category": "cloud",
@@ -200,12 +267,30 @@
     "backup-bup": {
       "category": "data",
       "vm": "oci-p-flex_1",
-      "description": "Database Backups (bup)"
+      "description": "Database Backups SSH Server (bup)"
     },
     "backup-borg": {
       "category": "data",
       "vm": "oci-p-flex_1",
-      "description": "Media Backups (Borg)"
+      "description": "Media Backups SSH Server (Borg)"
+    },
+    "db-agent-gcp": {
+      "category": "data",
+      "vm": "gcp-f-micro_1",
+      "flake": "db-agent",
+      "description": "Central DB Backup Agent"
+    },
+    "db-agent-micro2": {
+      "category": "data",
+      "vm": "oci-f-micro_2",
+      "flake": "db-agent",
+      "description": "Central DB Backup Agent"
+    },
+    "db-agent-flex": {
+      "category": "data",
+      "vm": "oci-p-flex_1",
+      "flake": "db-agent",
+      "description": "Central DB Backup Agent"
     }
   }
 }

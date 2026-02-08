@@ -1,0 +1,66 @@
+
+
+services:
+  sauron:
+    build: .
+    container_name: sauron
+    restart: unless-stopped
+    volumes:
+      # Watch paths (read-only)
+      - /etc:/watch/etc:ro
+      - /home:/watch/home:ro
+      # YARA rules
+      - ./yara-rules:/etc/sauron/yara-rules:ro
+      # Persistent logs and queue
+      - ./data/logs:/var/log/sauron
+      - ./data/queue:/var/spool/sauron
+    environment:
+      TZ: Europe/Madrid
+      VM_NAME: "${VM_NAME:-unknown}"
+      WATCH_DIRS: /watch/etc /watch/home
+      QUEUE_FILE: /var/spool/sauron/scan-queue.txt
+      ALERTS_FILE: /var/log/sauron/alerts.jsonl
+      RULES_DIR: /etc/sauron/yara-rules
+    mem_limit: 64m
+    cpus: 0.25
+    cpu_shares: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - security
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "inotifywait"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+  forwarder:
+    image: debian:bookworm-slim
+    container_name: sauron-forwarder
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
+        echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
+        tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
+          echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true
+        done
+    volumes:
+      - ./data/logs:/var/log/sauron:ro
+    environment:
+      CENTRAL_HOST: 35.226.147.64
+      CENTRAL_PORT: "5514"
+    depends_on:
+      - sauron
+    mem_limit: 16m
+    cpus: "0.05"
+    networks:
+      - security
+
+networks:
+  security:
+    driver: bridge

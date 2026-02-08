@@ -1,0 +1,2 @@
+# SSH authorized keys for bup backup clients
+# Add public keys of machines that need to push backups

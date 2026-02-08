@@ -1,0 +1,80 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://lgtm_loki:3100
+    isDefault: true
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://lgtm_tempo:3200
+
+  - name: Mimir
+    type: prometheus
+    access: proxy
+    url: http://lgtm_mimir:8080/prometheus
+
+  - name: Photoprism MariaDB
+    type: mysql
+    access: proxy
+    url: photoprism-db:3306
+    database: photoprism
+    user: photoprism
+    secureJsonData:
+      password: photoprism_db123
+
+  - name: Matomo MariaDB
+    type: mysql
+    access: proxy
+    url: 10.0.0.4:3306
+    database: matomo
+    user: matomo
+    secureJsonData:
+      password: <REDACTED-LEAK-2026-04-21>
+
+  - name: NPM SQLite (Postlite)
+    type: postgres
+    access: proxy
+    url: 10.0.0.1:5433
+    database: database
+    user: any
+    secureJsonData:
+      password: any
+    jsonData:
+      sslmode: disable
+
+  - name: Vaultwarden SQLite (Postlite)
+    type: postgres
+    access: proxy
+    url: 10.0.0.1:5434
+    database: db
+    user: any
+    secureJsonData:
+      password: any
+    jsonData:
+      sslmode: disable
+
+  - name: ntfy SQLite (Postlite)
+    type: postgres
+    access: proxy
+    url: 10.0.0.1:5435
+    database: cache
+    user: any
+    secureJsonData:
+      password: any
+    jsonData:
+      sslmode: disable
+
+  - name: Authelia SQLite (Postlite)
+    type: postgres
+    access: proxy
+    url: 10.0.0.1:5436
+    database: db
+    user: any
+    secureJsonData:
+      password: any
+    jsonData:
+      sslmode: disable
