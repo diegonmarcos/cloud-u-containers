@@ -22,7 +22,23 @@ api_bp = Blueprint('api', __name__)
 
 @api_bp.route('/health', methods=['GET'])
 def health_check():
-    """API health check endpoint."""
+    """API health check endpoint.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: API is healthy
+        schema:
+          properties:
+            status:
+              type: string
+              example: ok
+            service:
+              type: string
+            version:
+              type: string
+    """
     return jsonify({
         'status': 'ok',
         'service': 'cloud-dashboard-api',
@@ -36,7 +52,16 @@ def health_check():
 
 @api_bp.route('/config', methods=['GET'])
 def get_full_config():
-    """Get full infrastructure configuration."""
+    """Get full infrastructure configuration.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: Full JSON config
+      404:
+        description: Config file not found
+    """
     try:
         config = load_config()
         return jsonify(config)
@@ -46,7 +71,16 @@ def get_full_config():
 
 @api_bp.route('/config/reload', methods=['POST'])
 def reload_config():
-    """Force reload configuration from disk."""
+    """Force reload configuration from disk.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: Configuration reloaded
+      404:
+        description: Config file not found
+    """
     try:
         config = load_config(force_reload=True)
         return jsonify({'status': 'ok', 'message': 'Configuration reloaded'})
@@ -60,7 +94,41 @@ def reload_config():
 
 @api_bp.route('/vms', methods=['GET'])
 def list_vms():
-    """List all VMs with basic info."""
+    """List all VMs with basic info.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+        description: Filter by VM category
+    responses:
+      200:
+        description: List of VMs
+        schema:
+          properties:
+            vms:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  provider:
+                    type: string
+                  category:
+                    type: string
+                  ip:
+                    type: string
+                  instanceType:
+                    type: string
+                  configStatus:
+                    type: string
+    """
     category = request.args.get('category')
 
     if category:
@@ -86,7 +154,25 @@ def list_vms():
 
 @api_bp.route('/vms/categories', methods=['GET'])
 def list_vm_categories():
-    """List all VM categories."""
+    """List all VM categories.
+    ---
+    tags:
+      - vms
+    responses:
+      200:
+        description: List of VM categories
+        schema:
+          properties:
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+    """
     categories = []
     for cat_id in get_vm_categories():
         categories.append({
@@ -98,7 +184,22 @@ def list_vm_categories():
 
 @api_bp.route('/vms/<vm_id>', methods=['GET'])
 def get_vm_info(vm_id: str):
-    """Get detailed VM information."""
+    """Get detailed VM information.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+        description: VM identifier
+    responses:
+      200:
+        description: VM details
+      404:
+        description: VM not found
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -111,7 +212,21 @@ def get_vm_info(vm_id: str):
 
 @api_bp.route('/vms/<vm_id>/status', methods=['GET'])
 def get_vm_health(vm_id: str):
-    """Get VM health status (ping, SSH)."""
+    """Get VM health status (ping, SSH).
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM health status with ping, SSH, and RAM info
+      404:
+        description: VM not found
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -130,7 +245,23 @@ def get_vm_health(vm_id: str):
 
 @api_bp.route('/vms/<vm_id>/details', methods=['GET'])
 def get_vm_remote_details(vm_id: str):
-    """Get detailed system info from VM via SSH."""
+    """Get detailed system info from VM via SSH.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Detailed system info (CPU, memory, disk, etc.)
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -148,7 +279,23 @@ def get_vm_remote_details(vm_id: str):
 
 @api_bp.route('/vms/<vm_id>/containers', methods=['GET'])
 def get_vm_containers(vm_id: str):
-    """Get Docker container status on VM."""
+    """Get Docker container status on VM.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of Docker containers on the VM
+      404:
+        description: VM not found
+      503:
+        description: Failed to get container status
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -170,7 +317,39 @@ def get_vm_containers(vm_id: str):
 
 @api_bp.route('/services', methods=['GET'])
 def list_services():
-    """List all services with basic info."""
+    """List all services with basic info.
+    ---
+    tags:
+      - services
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+        description: Filter by service category
+    responses:
+      200:
+        description: List of services
+        schema:
+          properties:
+            services:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  category:
+                    type: string
+                  vmId:
+                    type: string
+                  url:
+                    type: string
+                  configStatus:
+                    type: string
+    """
     category = request.args.get('category')
 
     if category:
@@ -196,7 +375,14 @@ def list_services():
 
 @api_bp.route('/services/categories', methods=['GET'])
 def list_service_categories():
-    """List all service categories."""
+    """List all service categories.
+    ---
+    tags:
+      - services
+    responses:
+      200:
+        description: List of service categories
+    """
     categories = []
     for cat_id in get_service_categories():
         categories.append({
@@ -208,7 +394,21 @@ def list_service_categories():
 
 @api_bp.route('/services/<svc_id>', methods=['GET'])
 def get_service_info(svc_id: str):
-    """Get detailed service information."""
+    """Get detailed service information.
+    ---
+    tags:
+      - services
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service details
+      404:
+        description: Service not found
+    """
     svc_data = get_svc(svc_id)
     if not svc_data:
         return jsonify({'error': f'Service not found: {svc_id}'}), 404
@@ -221,7 +421,21 @@ def get_service_info(svc_id: str):
 
 @api_bp.route('/services/<svc_id>/status', methods=['GET'])
 def get_service_health(svc_id: str):
-    """Get service health status (HTTP check)."""
+    """Get service health status (HTTP check).
+    ---
+    tags:
+      - services
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service health status
+      404:
+        description: Service not found
+    """
     svc_data = get_svc(svc_id)
     if not svc_data:
         return jsonify({'error': f'Service not found: {svc_id}'}), 404
@@ -243,7 +457,14 @@ def get_service_health(svc_id: str):
 
 @api_bp.route('/dashboard/summary', methods=['GET'])
 def get_dashboard_summary():
-    """Get summary of all VMs and services with status."""
+    """Get summary of all VMs and services with status.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Dashboard summary grouped by category with health status
+    """
     # VMs
     vm_summary = []
     for cat_id in get_vm_categories():
@@ -296,7 +517,14 @@ def get_dashboard_summary():
 
 @api_bp.route('/dashboard/quick-status', methods=['GET'])
 def get_quick_status():
-    """Get quick status without health checks (from config only)."""
+    """Get quick status without health checks (from config only).
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Quick status from config (no live health checks)
+    """
     # VMs
     vms = []
     for vm_id in get_vm_ids():
@@ -336,14 +564,28 @@ def get_quick_status():
 
 @api_bp.route('/providers', methods=['GET'])
 def list_providers():
-    """List all cloud providers."""
+    """List all cloud providers.
+    ---
+    tags:
+      - infrastructure
+    responses:
+      200:
+        description: Cloud provider details
+    """
     config = load_config()
     return jsonify({'providers': config.get('providers', {})})
 
 
 @api_bp.route('/domains', methods=['GET'])
 def list_domains():
-    """List all domains and subdomains."""
+    """List all domains and subdomains.
+    ---
+    tags:
+      - infrastructure
+    responses:
+      200:
+        description: Domain configuration
+    """
     config = load_config()
     return jsonify(config.get('domains', {}))
 
@@ -354,7 +596,14 @@ def list_domains():
 
 @api_bp.route('/cloud_control/monitor', methods=['GET'])
 def cloud_control_monitor():
-    """Monitor page - VMs and services status summary."""
+    """Monitor page - VMs and services status summary.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Full monitor view with live VM and service status
+    """
     # VMs
     vm_summary = []
     for cat_id in get_vm_categories():
@@ -409,7 +658,14 @@ def cloud_control_monitor():
 
 @api_bp.route('/cloud_control/costs_infra', methods=['GET'])
 def cloud_control_costs_infra():
-    """Infrastructure costs page - cloud provider costs."""
+    """Infrastructure costs page - cloud provider costs.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Infrastructure cost breakdown
+    """
     config = load_config()
     costs_infra = config.get('costs', {}).get('infra', {})
 
@@ -421,7 +677,14 @@ def cloud_control_costs_infra():
 
 @api_bp.route('/cloud_control/costs_ai', methods=['GET'])
 def cloud_control_costs_ai():
-    """AI costs page - Claude/OpenAI/etc usage costs."""
+    """AI costs page - Claude/OpenAI/etc usage costs.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: AI service cost breakdown
+    """
     config = load_config()
     costs_ai = config.get('costs', {}).get('ai', {})
 
@@ -433,7 +696,14 @@ def cloud_control_costs_ai():
 
 @api_bp.route('/cloud_control/infrastructure', methods=['GET'])
 def cloud_control_infrastructure():
-    """Infrastructure page - full details on VMs, services, providers, domains."""
+    """Infrastructure page - full details on VMs, services, providers, domains.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Complete infrastructure details
+    """
     config = load_config()
 
     # VMs with full details
@@ -593,7 +863,23 @@ def _wake_worker():
 
 @api_bp.route('/wake/trigger', methods=['POST'])
 def trigger_wake():
-    """Trigger wake for the photoprism VM (oci-p-flex_1)."""
+    """Trigger wake for the photoprism VM (oci-p-flex_1).
+    ---
+    tags:
+      - wake
+    responses:
+      200:
+        description: Wake triggered or already running
+        schema:
+          properties:
+            status:
+              type: string
+              enum: [ok, already_running, starting]
+            message:
+              type: string
+      503:
+        description: OCI SDK not configured
+    """
     global _wake_state
 
     # Check if OCI is configured
@@ -638,7 +924,24 @@ def trigger_wake():
 
 @api_bp.route('/wake/status', methods=['GET'])
 def wake_status():
-    """Get current wake/instance status."""
+    """Get current wake/instance status.
+    ---
+    tags:
+      - wake
+    responses:
+      200:
+        description: Current instance and wake status
+        schema:
+          properties:
+            instance_state:
+              type: string
+            wake_status:
+              type: string
+            message:
+              type: string
+            last_trigger:
+              type: number
+    """
     current_state = _get_instance_state()
 
     with _wake_lock:
@@ -721,7 +1024,25 @@ def _gcp_instance_state(vm_name: str, zone: str) -> str:
 
 @api_bp.route('/vms/<vm_id>/start', methods=['POST'])
 def start_vm(vm_id: str):
-    """Start a VM."""
+    """Start a VM.
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM started or already running
+      400:
+        description: Instance ID not configured
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to start VM
+    """
     # Check if OCI VM
     if vm_id in VM_INSTANCE_IDS:
         instance_id = VM_INSTANCE_IDS[vm_id]
@@ -754,7 +1075,25 @@ def start_vm(vm_id: str):
 
 @api_bp.route('/vms/<vm_id>/stop', methods=['POST'])
 def stop_vm(vm_id: str):
-    """Stop a VM."""
+    """Stop a VM.
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM stopped or already stopped
+      400:
+        description: Instance ID not configured
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to stop VM
+    """
     # Check if OCI VM
     if vm_id in VM_INSTANCE_IDS:
         instance_id = VM_INSTANCE_IDS[vm_id]
@@ -787,7 +1126,25 @@ def stop_vm(vm_id: str):
 
 @api_bp.route('/vms/<vm_id>/reset', methods=['POST'])
 def reset_vm(vm_id: str):
-    """Reset a VM (reboot if running, start if stopped)."""
+    """Reset a VM (reboot if running, start if stopped).
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM reset/started
+      400:
+        description: Instance ID not configured or invalid state
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to reset VM
+    """
     # Check if OCI VM
     if vm_id in VM_INSTANCE_IDS:
         instance_id = VM_INSTANCE_IDS[vm_id]
@@ -871,7 +1228,25 @@ def _ssh_command(vm_id: str, command: str) -> tuple:
 
 @api_bp.route('/vms/<vm_id>/containers/<container_name>/restart', methods=['POST'])
 def restart_container(vm_id: str, container_name: str):
-    """Restart a Docker container on a VM."""
+    """Restart a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container restarted
+      500:
+        description: Failed to restart container
+    """
     success, output = _ssh_command(vm_id, f'docker restart {container_name}')
 
     if success:
@@ -892,7 +1267,25 @@ def restart_container(vm_id: str, container_name: str):
 
 @api_bp.route('/vms/<vm_id>/containers/<container_name>/stop', methods=['POST'])
 def stop_container(vm_id: str, container_name: str):
-    """Stop a Docker container on a VM."""
+    """Stop a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container stopped
+      500:
+        description: Failed to stop container
+    """
     success, output = _ssh_command(vm_id, f'docker stop {container_name}')
 
     if success:
@@ -912,7 +1305,25 @@ def stop_container(vm_id: str, container_name: str):
 
 @api_bp.route('/vms/<vm_id>/containers/<container_name>/start', methods=['POST'])
 def start_container(vm_id: str, container_name: str):
-    """Start a Docker container on a VM."""
+    """Start a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container started
+      500:
+        description: Failed to start container
+    """
     success, output = _ssh_command(vm_id, f'docker start {container_name}')
 
     if success:

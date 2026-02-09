@@ -5,6 +5,7 @@ API backend for cloud infrastructure monitoring and management
 import os
 from flask import Flask
 from flask_cors import CORS
+from flasgger import Swagger
 
 
 def create_app():
@@ -33,5 +34,23 @@ def create_app():
     app.register_blueprint(c3_bp, url_prefix='/api/c3')
     app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
     app.register_blueprint(web_bp)  # Serves at / for HTML dashboard
+
+    # Initialize Swagger (auto-generates OpenAPI spec from docstrings)
+    swagger_template = {
+        "info": {
+            "title": "Cloud Dashboard API",
+            "version": "1.0.0",
+            "description": "REST API for cloud infrastructure monitoring & management"
+        },
+        "securityDefinitions": {
+            "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+        }
+    }
+    swagger_config = {
+        "specs_route": "/apidocs/",
+        "swagger_ui": False,
+        "specs": [{"endpoint": "apispec", "route": "/apispec.json"}]
+    }
+    Swagger(app, template=swagger_template, config=swagger_config)
 
     return app

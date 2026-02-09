@@ -3,6 +3,7 @@ Cloud Dashboard Flask Server
 API backend for cloud infrastructure monitoring and management
 """
 import os
+import re
 from flask import Flask
 from flask_cors import CORS
 from flasgger import Swagger
@@ -11,7 +12,14 @@ from flasgger import Swagger
 def create_app():
     """Application factory."""
     app = Flask(__name__, template_folder='../templates')
-    allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    raw_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    # Convert wildcard patterns (e.g. http://localhost:*) to compiled regex
+    allowed_origins = []
+    for o in raw_origins:
+        if '*' in o and o != '*':
+            allowed_origins.append(re.compile(o.replace('.', r'\.').replace('*', '.*')))
+        else:
+            allowed_origins.append(o)
     CORS(app, origins=allowed_origins, supports_credentials=True)
 
     # Load config
@@ -49,7 +57,8 @@ def create_app():
     swagger_config = {
         "specs_route": "/apidocs/",
         "swagger_ui": False,
-        "specs": [{"endpoint": "apispec", "route": "/apispec.json"}]
+        "specs": [{"endpoint": "apispec", "route": "/apispec.json"}],
+        "headers": []
     }
     Swagger(app, template=swagger_template, config=swagger_config)
 

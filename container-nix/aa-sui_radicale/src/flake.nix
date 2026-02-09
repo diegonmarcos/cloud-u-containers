@@ -21,45 +21,27 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          expose:
-            - "5232"
+          ports:
+            - "${toString config.port}:5232"
           volumes:
             - ./data:/data
             - ./config:/config:ro
           environment:
-            - RADICALE_CONFIG=/config/config
-          networks:
-            - calendar_net
+            - TAKE_FILE_OWNERSHIP=true
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:5232/.web/"]
+            test: curl -f http://localhost:5232/.web/ || exit 1
             interval: 30s
             timeout: 10s
             retries: 3
-            start_period: 10s
-
-        caddy:
-          image: caddy:alpine
-          container_name: caddy-calendar
-          restart: unless-stopped
-          ports:
-            - "80:80"
-            - "443:443"
-          volumes:
-            - ./Caddyfile:/etc/caddy/Caddyfile:ro
-            - caddy_data:/data
-            - caddy_config:/config
           networks:
-            - calendar_net
-          depends_on:
-            - radicale
+            - mail_network
+            - mailu_default
 
       networks:
-        calendar_net:
-          driver: bridge
-
-      volumes:
-        caddy_data:
-        caddy_config:
+        mail_network:
+          external: true
+        mailu_default:
+          external: true
     '';
 
     mkRadicaleConfig = pkgs: pkgs.writeText "config" ''
@@ -67,26 +49,21 @@
       hosts = 0.0.0.0:5232
 
       [auth]
-      type = htpasswd
-      htpasswd_filename = /config/users
-      htpasswd_encryption = bcrypt
+      type = imap
+      imap_host = imap:143
+      imap_security = none
 
       [storage]
       filesystem_folder = /data/collections
 
+      [rights]
+      type = owner_only
+
       [logging]
-      level = info
-    '';
+      level = debug
 
-    mkUsersFile = pkgs: pkgs.writeText "users" ''
-      # Generate with: htpasswd -nB username
-      # diego:$2y$05$CHANGE_ME_BCRYPT_HASH
-    '';
-
-    mkCaddyFile = pkgs: pkgs.writeText "Caddyfile" ''
-      cal.diegonmarcos.com {
-          reverse_proxy radicale:5232
-      }
+      [web]
+      type = internal
     '';
 
   in {
@@ -94,11 +71,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "radicale-configs" {} ''
-        mkdir -p $out
-        cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         mkdir -p $out/config
-        cp ${./config/config} $out/config/config
-        cp ${./Caddyfile} $out/Caddyfile
+        cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkRadicaleConfig pkgs} $out/config/config
       '';
     });
   };

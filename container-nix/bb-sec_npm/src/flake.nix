@@ -18,15 +18,13 @@
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      
-
       services:
         npm:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: always
           environment:
-            TZ: ${config.timezone}
+            DISABLE_IPV6: "true"
           ports:
             - "${toString config.http_port}:80"
             - "${toString config.https_port}:443"
@@ -35,11 +33,11 @@
             - ./data:/data
             - ./letsencrypt:/etc/letsencrypt
           networks:
-            - proxy
+            - npm_default
 
       networks:
-        proxy:
-          name: proxy
+        npm_default:
+          name: npm_default
           driver: bridge
     '';
 

@@ -119,19 +119,46 @@ def _get_timestamp(alert):
 
 @alerts_bp.route('/ingest', methods=['POST'])
 def ingest_alert():
-    """
-    Receive alert from VM collector
-
-    Expected JSON:
-    {
-        "vm": "oci-micro-1",
-        "category": "auth|sauron|system|github",
-        "severity": "emergency|alert|critical|error|warning|notice|info",
-        "title": "Short title",
-        "message": "Full message",
-        "source": "journald|sauron|github",
-        "metadata": {}
-    }
+    """Receive alert from VM collector and push to ntfy.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - vm
+            - category
+            - title
+            - message
+          properties:
+            vm:
+              type: string
+              example: oci-micro-1
+            category:
+              type: string
+              enum: [auth, sauron, system, github, docker, ops, cron, backup, security, deploy]
+            severity:
+              type: string
+              enum: [emergency, alert, critical, error, warning, notice, info, debug]
+            title:
+              type: string
+            message:
+              type: string
+            source:
+              type: string
+            metadata:
+              type: object
+    responses:
+      200:
+        description: Alert ingested and pushed (or duplicate)
+      400:
+        description: Missing required fields
+      500:
+        description: Failed to push to ntfy
     """
     data = request.get_json()
     if not data:
@@ -208,7 +235,29 @@ def ingest_alert():
 
 @alerts_bp.route('/list', methods=['GET'])
 def list_alerts():
-    """List recent alerts"""
+    """List recent alerts.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+      - name: vm
+        in: query
+        type: string
+        required: false
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Max 500
+    responses:
+      200:
+        description: List of recent alerts
+    """
     category = request.args.get('category')
     vm = request.args.get('vm')
     limit = min(int(request.args.get('limit', 50)), 500)
@@ -236,7 +285,14 @@ def list_alerts():
 
 @alerts_bp.route('/stats', methods=['GET'])
 def alert_stats():
-    """Get alert statistics"""
+    """Get alert statistics.
+    ---
+    tags:
+      - alerts
+    responses:
+      200:
+        description: Alert counts by category, VM, and severity
+    """
     cleanup_history()
 
     stats = {
@@ -260,7 +316,14 @@ def alert_stats():
 
 @alerts_bp.route('/channels', methods=['GET'])
 def list_channels():
-    """List available notification channels/topics"""
+    """List available notification channels/topics.
+    ---
+    tags:
+      - alerts
+    responses:
+      200:
+        description: Available ntfy notification channels
+    """
     return jsonify({
         'channels': [
             {'id': 'github', 'name': 'GitHub', 'icon': '', 'color': '#238636', 'description': 'Repository activity', 'rss_url': 'https://rss.diegonmarcos.com/github/json?poll=1'},
@@ -279,7 +342,20 @@ def list_channels():
 
 @alerts_bp.route('/test', methods=['POST'])
 def test_alert():
-    """Send a test alert"""
+    """Send a test alert.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: topic
+        in: query
+        type: string
+        required: false
+        default: system
+    responses:
+      200:
+        description: Test alert sent
+    """
     topic = request.args.get('topic', 'system')
     success = push_to_ntfy(
         topic=topic,

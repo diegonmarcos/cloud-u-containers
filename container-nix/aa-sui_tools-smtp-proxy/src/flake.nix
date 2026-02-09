@@ -10,7 +10,7 @@
 
     config = {
       container_name = "smtp-proxy";
-      port = 8025;
+      port = 8080;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -20,20 +20,17 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port}:8025"
+            - "${toString config.port}:8080"
           environment:
-            - SMTP_HOST=stalwart-mail
+            - SMTP_HOST=front
             - SMTP_PORT=25
-            - SMTP_USER=me@diegonmarcos.com
-            - SMTP_PASS=''${SMTP_PASS}
-            - API_KEY=''${API_KEY}
-            - LISTEN_PORT=8025
-            - HELO_DOMAIN=smtp-proxy.diegonmarcos.com
+            - API_KEY=stalwart-proxy-key-2025
+            - LISTEN_PORT=8080
           networks:
-            - mail_network
+            - mailu_default
 
       networks:
-        mail_network:
+        mailu_default:
           external: true
     '';
 

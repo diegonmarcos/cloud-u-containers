@@ -9,25 +9,25 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      version: "3.8"
+
       services:
         sauron:
           container_name: sauron
+          image: sauron-sauron:latest
           restart: unless-stopped
-          build:
-            context: .
-            dockerfile: Dockerfile.sauron
-          cpus: "0.25"
-          mem_limit: 256m
           volumes:
             - /etc:/watch/etc:ro
+            - /home:/watch/home:ro
+            - /var/www:/watch/www:ro
             - /var/lib/docker/volumes:/watch/docker-volumes:ro
             - ./yara-rules:/etc/sauron/yara-rules:ro
             - ./entrypoint.sh:/entrypoint.sh:ro
+            - sauron-logs:/var/log/sauron
           environment:
-            - RULES_DIR=/etc/sauron/yara-rules/custom
+            - RULES_DIR=/etc/sauron/yara-rules
             - WATCH_DIR=/watch
-            - SCAN_INTERVAL=3600
-            - WORKERS=1
+            - OUTPUT_FILE=/var/log/sauron/alerts.jsonl
           logging:
             driver: "json-file"
             options:
@@ -36,30 +36,26 @@
           networks:
             - security
 
-        collector:
-          container_name: collector
-          build:
-            context: ./collector
-            dockerfile: Dockerfile
+        syslog-forwarder:
+          image: balabit/syslog-ng:4.4.0
+          container_name: syslog-forwarder
           restart: unless-stopped
-          cpus: "0.05"
-          mem_limit: 32m
           volumes:
-            - /var/log/journal:/var/log/journal:ro
-            - /run/log/journal:/run/log/journal:ro
-            - /etc/machine-id:/etc/machine-id:ro
-            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - ./config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
+            - sauron-logs:/var/log/sauron:ro
+            - syslog-cache:/var/cache/syslog-ng
           environment:
-            - API_URL=https://alerts.diegonmarcos.com
-            - NTFY_URL=https://rss.diegonmarcos.com
-            - VM_NAME=''${VM_NAME:-oci-flex}
-            - CHECK_INTERVAL=30
+            - CENTRAL_HOST=''${CENTRAL_HOST:-34.55.55.234}
+            - CENTRAL_PORT=''${CENTRAL_PORT:-5514}
+            - VM_NAME=''${VM_NAME:-unknown}
           depends_on:
             - sauron
-          network_mode: host
+          networks:
+            - security
 
       volumes:
         sauron-logs:
+        syslog-cache:
 
       networks:
         security:
