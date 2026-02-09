@@ -1,0 +1,9 @@
+{
+  "name": "code-server",
+  "description": "VS Code IDE (ide.diegonmarcos.com)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/code-server"
+  }
+}
