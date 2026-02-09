@@ -24,6 +24,10 @@ result-*
 *.tfvars
 !*.tfvars.template
 
+# Node
+node_modules/
+package-lock.json
+
 # Editor
 .idea/
 .vscode/
