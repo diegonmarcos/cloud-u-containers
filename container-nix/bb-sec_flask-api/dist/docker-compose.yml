@@ -17,6 +17,7 @@ services:
       - OCI_CONFIG_FILE=/app/config/oci_config
       - OCI_KEY_FILE=/app/config/oci_api_key.pem
       - OCI_WAKE_INSTANCE_ID=${OCI_WAKE_INSTANCE_ID}
+      - CORS_ORIGINS=https://api.diegonmarcos.com,https://diegonmarcos.github.io,http://localhost:*,http://127.0.0.1:*
       - NTFY_URL=http://ntfy:80
       - NTFY_TOKEN=${NTFY_TOKEN}
     networks:
@@ -27,28 +28,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    depends_on:
-      - c3-collector
-
-  c3-collector:
-    build: ./c3-collector
-    container_name: c3-collector
-    restart: unless-stopped
-    volumes:
-      - c3-data:/app/4.jsons
-      - c3-raw:/app/2.raw
-      - ~/.ssh:/root/.ssh:ro
-      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
-    environment:
-      - TZ=UTC
-    networks:
-      - npm_default
 
 volumes:
   c3-data:
     name: c3-data
-  c3-raw:
-    name: c3-raw
 
 networks:
   npm_default:

@@ -21,4 +21,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:4182/health || exit 1
 
 # Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:4182", "--workers", "2", "--threads", "2", "main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:4182", "--workers", "1", "--threads", "1", "--timeout", "120", "main:app"]

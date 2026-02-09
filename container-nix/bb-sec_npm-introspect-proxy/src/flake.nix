@@ -15,9 +15,10 @@
       timezone = "Europe/Madrid";
 
       # Authelia OIDC config
-      introspect_url = "https://auth.diegonmarcos.com/api/oidc/introspection";
+      introspect_url = "http://authelia:9091/authelia/api/oidc/introspection";
       client_id = "cli";
-      client_secret = "CHANGE_ME_CLIENT_SECRET";
+      # CLIENT_SECRET read from .env via docker-compose env_file
+      client_secret_env = "AUTHELIA_CLI_SECRET";
     };
 
     # Dockerfile for building the proxy
@@ -32,7 +33,7 @@
 
       EXPOSE 4182
 
-      CMD ["gunicorn", "-b", "0.0.0.0:4182", "-w", "2", "app:app"]
+      CMD ["gunicorn", "-b", "0.0.0.0:4182", "-w", "1", "--timeout", "120", "app:app"]
     '';
 
     # Simple Flask proxy app
@@ -101,30 +102,30 @@
     '';
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      
-
       services:
         introspect-proxy:
           build: .
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           ports:
             - "127.0.0.1:${toString config.port}:4182"
           environment:
             TZ: ${config.timezone}
             INTROSPECT_URL: ${config.introspect_url}
             CLIENT_ID: ${config.client_id}
-            CLIENT_SECRET: ${config.client_secret}
+            CLIENT_SECRET: ''\${${config.client_secret_env}}
             DEBUG: "false"
           networks:
-            - proxy
+            - npm_default
           deploy:
             resources:
               limits:
-                memory: 64M
+                memory: 96M
               reservations:
-                memory: 32M
+                memory: 48M
           healthcheck:
             test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4182/health"]
             interval: 30s
@@ -133,7 +134,7 @@
             start_period: 10s
 
       networks:
-        proxy:
+        npm_default:
           external: true
     '';
 

@@ -31,7 +31,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default age key location (symlinked from ~/.config/sops/age/keys.txt)
-DEFAULT_AGE_KEY="/home/diego/Mounts/Git/vault/A0_keys/system/oauth/age_keys.txt"
+DEFAULT_AGE_KEY="/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.txt"
 
 # Script directory (where secrets live)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

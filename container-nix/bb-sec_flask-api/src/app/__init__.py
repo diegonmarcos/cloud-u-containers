@@ -10,7 +10,8 @@ from flask_cors import CORS
 def create_app():
     """Application factory."""
     app = Flask(__name__, template_folder='../templates')
-    CORS(app, supports_credentials=True)
+    allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    CORS(app, origins=allowed_origins, supports_credentials=True)
 
     # Load config
     app.config.from_mapping(
