@@ -1,0 +1,9 @@
+{
+  "name": "flask-api",
+  "description": "Cloud API (api.diegonmarcos.com)",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/flask-api"
+  }
+}

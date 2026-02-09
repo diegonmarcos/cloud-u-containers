@@ -9,8 +9,21 @@ services:
       TZ: Europe/Madrid
     volumes:
       - ./config:/config
+    entrypoint: /config/init.sh
     ports:
       - "9091:9091"
+    networks:
+      - proxy
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-bookworm
+    container_name: authelia-redis
+    command: redis-server --requirepass ${AUTHELIA_REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
     networks:
       - proxy
 

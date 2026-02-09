@@ -1,27 +1,27 @@
-
-
 services:
   introspect-proxy:
     build: .
     image: introspect-proxy:latest
     container_name: introspect-proxy
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "127.0.0.1:4182:4182"
     environment:
       TZ: Europe/Madrid
       INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
       CLIENT_ID: cli
-      CLIENT_SECRET: CHANGE_ME_CLIENT_SECRET
+      CLIENT_SECRET: ${AUTHELIA_CLI_SECRET}
       DEBUG: "false"
     networks:
-      - proxy
+      - npm_default
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 96M
         reservations:
-          memory: 32M
+          memory: 48M
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4182/health"]
       interval: 30s
@@ -30,5 +30,5 @@ services:
       start_period: 10s
 
 networks:
-  proxy:
+  npm_default:
     external: true
