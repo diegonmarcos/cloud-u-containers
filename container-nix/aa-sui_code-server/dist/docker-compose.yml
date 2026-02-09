@@ -3,21 +3,19 @@ services:
     image: linuxserver/code-server:latest
     container_name: code-server
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       TZ: Europe/Madrid
       PUID: 1000
       PGID: 1000
-      PROXY_DOMAIN: ide.diegonmarcos.com
+      DEFAULT_WORKSPACE: /workspace
     ports:
       - "8443:8443"
     volumes:
       - ./config:/config
-      - ./workspace:/workspace
+      - /home/ubuntu/workspace:/workspace
     networks:
-      - proxy
+      - dev_network
 
 networks:
-  proxy:
+  dev_network:
     external: true

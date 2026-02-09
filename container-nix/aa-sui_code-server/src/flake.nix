@@ -22,23 +22,21 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          env_file:
-            - .env
           environment:
             TZ: ${config.timezone}
             PUID: 1000
             PGID: 1000
-            PROXY_DOMAIN: ${config.domain}
+            DEFAULT_WORKSPACE: /workspace
           ports:
             - "${toString config.port}:8443"
           volumes:
             - ./config:/config
-            - ./workspace:/workspace
+            - /home/ubuntu/workspace:/workspace
           networks:
-            - proxy
+            - dev_network
 
       networks:
-        proxy:
+        dev_network:
           external: true
     '';
 

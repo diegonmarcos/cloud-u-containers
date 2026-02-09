@@ -1,0 +1,9 @@
+{
+  "name": "rust-api",
+  "description": "Cloud Rust API (api.diegonmarcos.com/rust/)",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/rust-api"
+  }
+}
