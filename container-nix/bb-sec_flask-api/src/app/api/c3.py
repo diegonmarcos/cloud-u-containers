@@ -30,13 +30,27 @@ def load_c3_json(filename: str) -> dict:
 
 @c3_bp.route('/dashboard', methods=['GET'])
 def get_dashboard():
-    """Get combined dashboard data with all alerts."""
+    """Get combined dashboard data with all alerts.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Combined C3 dashboard data
+    """
     return jsonify(load_c3_json("dashboard.json"))
 
 
 @c3_bp.route('/alerts', methods=['GET'])
 def get_alerts():
-    """Get all alerts from all categories."""
+    """Get all alerts from all categories.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Alerts and status from dashboard
+    """
     dashboard = load_c3_json("dashboard.json")
     return jsonify({
         "alerts": dashboard.get("alerts", []),
@@ -50,13 +64,27 @@ def get_alerts():
 
 @c3_bp.route('/security', methods=['GET'])
 def get_security():
-    """Get full security data."""
+    """Get full security data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full security scan results
+    """
     return jsonify(load_c3_json("security.json"))
 
 
 @c3_bp.route('/security/summary', methods=['GET'])
 def get_security_summary():
-    """Get security summary only."""
+    """Get security summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Security summary and alerts
+    """
     data = load_c3_json("security.json")
     return jsonify({
         "date": data.get("date"),
@@ -67,7 +95,21 @@ def get_security_summary():
 
 @c3_bp.route('/security/vms/<vm_name>', methods=['GET'])
 def get_security_vm(vm_name: str):
-    """Get security data for specific VM."""
+    """Get security data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM security data
+      404:
+        description: VM not found
+    """
     data = load_c3_json("security.json")
     vm_data = data.get("vms", {}).get(vm_name)
     if vm_data:
@@ -77,7 +119,14 @@ def get_security_vm(vm_name: str):
 
 @c3_bp.route('/security/failed-ssh', methods=['GET'])
 def get_failed_ssh():
-    """Get failed SSH attempts across all VMs."""
+    """Get failed SSH attempts across all VMs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Failed SSH attempts sorted by count
+    """
     data = load_c3_json("security.json")
     all_failed = []
     for vm_name, vm_data in data.get("vms", {}).items():
@@ -96,13 +145,27 @@ def get_failed_ssh():
 
 @c3_bp.route('/performance', methods=['GET'])
 def get_performance():
-    """Get full performance data."""
+    """Get full performance data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full performance metrics
+    """
     return jsonify(load_c3_json("performance.json"))
 
 
 @c3_bp.route('/performance/summary', methods=['GET'])
 def get_performance_summary():
-    """Get performance summary only."""
+    """Get performance summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Performance summary and alerts
+    """
     data = load_c3_json("performance.json")
     return jsonify({
         "date": data.get("date"),
@@ -113,7 +176,21 @@ def get_performance_summary():
 
 @c3_bp.route('/performance/vms/<vm_name>', methods=['GET'])
 def get_performance_vm(vm_name: str):
-    """Get performance data for specific VM."""
+    """Get performance data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM performance data
+      404:
+        description: VM not found
+    """
     data = load_c3_json("performance.json")
     vm_data = data.get("vms", {}).get(vm_name)
     if vm_data:
@@ -123,7 +200,14 @@ def get_performance_vm(vm_name: str):
 
 @c3_bp.route('/performance/docker', methods=['GET'])
 def get_docker_stats():
-    """Get Docker stats across all VMs."""
+    """Get Docker stats across all VMs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Docker container stats from all VMs
+    """
     data = load_c3_json("performance.json")
     all_containers = []
     for vm_name, vm_data in data.get("vms", {}).items():
@@ -138,13 +222,34 @@ def get_docker_stats():
 
 @c3_bp.route('/docker', methods=['GET'])
 def get_docker():
-    """Get full docker data."""
+    """Get full docker data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full Docker inventory and status
+    """
     return jsonify(load_c3_json("docker.json"))
 
 
 @c3_bp.route('/docker/vms/<vm_name>', methods=['GET'])
 def get_docker_vm(vm_name: str):
-    """Get docker data for specific VM."""
+    """Get docker data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Docker data for VM
+      404:
+        description: VM not found
+    """
     data = load_c3_json("docker.json")
     vm_data = data.get("vms", {}).get(vm_name)
     if vm_data:
@@ -158,13 +263,27 @@ def get_docker_vm(vm_name: str):
 
 @c3_bp.route('/web', methods=['GET'])
 def get_web():
-    """Get full web/HTTP data."""
+    """Get full web/HTTP data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full web/HTTP analytics
+    """
     return jsonify(load_c3_json("web.json"))
 
 
 @c3_bp.route('/web/summary', methods=['GET'])
 def get_web_summary():
-    """Get web summary only."""
+    """Get web summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Web summary and alerts
+    """
     data = load_c3_json("web.json")
     return jsonify({
         "date": data.get("date"),
@@ -175,7 +294,14 @@ def get_web_summary():
 
 @c3_bp.route('/web/threats', methods=['GET'])
 def get_web_threats():
-    """Get web security threats (suspicious requests, scanners)."""
+    """Get web security threats (suspicious requests, scanners).
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Suspicious requests, scanner activity, top error IPs
+    """
     data = load_c3_json("web.json")
     threats = {
         "suspicious_requests": [],
@@ -194,7 +320,14 @@ def get_web_threats():
 
 @c3_bp.route('/web/top-ips', methods=['GET'])
 def get_top_ips():
-    """Get top requesting IPs."""
+    """Get top requesting IPs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Top 30 requesting IPs across all VMs
+    """
     data = load_c3_json("web.json")
     all_ips = []
     for vm_name, vm_data in data.get("vms", {}).items():
@@ -210,13 +343,27 @@ def get_top_ips():
 
 @c3_bp.route('/availability', methods=['GET'])
 def get_availability():
-    """Get full availability data."""
+    """Get full availability data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full availability report
+    """
     return jsonify(load_c3_json("availability.json"))
 
 
 @c3_bp.route('/availability/status', methods=['GET'])
 def get_availability_status():
-    """Get current availability status."""
+    """Get current availability status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Current availability status, summary, and alerts
+    """
     data = load_c3_json("availability.json")
     return jsonify({
         "date": data.get("date"),
@@ -228,7 +375,14 @@ def get_availability_status():
 
 @c3_bp.route('/availability/endpoints', methods=['GET'])
 def get_endpoints_status():
-    """Get endpoint status."""
+    """Get endpoint status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Endpoint up/down status
+    """
     data = load_c3_json("availability.json")
     return jsonify({
         "endpoints": data.get("current_status", {}).get("endpoints", []),
@@ -239,7 +393,14 @@ def get_endpoints_status():
 
 @c3_bp.route('/availability/ssl', methods=['GET'])
 def get_ssl_status():
-    """Get SSL certificate status."""
+    """Get SSL certificate status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: SSL certificate status (ok, warning, critical)
+    """
     data = load_c3_json("availability.json")
     return jsonify({
         "certificates": data.get("current_status", {}).get("ssl", []),
@@ -251,7 +412,14 @@ def get_ssl_status():
 
 @c3_bp.route('/availability/vms', methods=['GET'])
 def get_vms_connectivity():
-    """Get VM connectivity status."""
+    """Get VM connectivity status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: VM reachability status
+    """
     data = load_c3_json("availability.json")
     return jsonify({
         "vms": data.get("current_status", {}).get("vms", []),
@@ -266,13 +434,27 @@ def get_vms_connectivity():
 
 @c3_bp.route('/costs', methods=['GET'])
 def get_costs():
-    """Get full costs data."""
+    """Get full costs data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full cost breakdown
+    """
     return jsonify(load_c3_json("costs.json"))
 
 
 @c3_bp.route('/costs/infra', methods=['GET'])
 def get_costs_infra():
-    """Get infrastructure costs."""
+    """Get infrastructure costs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: GCP, OCI, and resource costs
+    """
     data = load_c3_json("costs.json")
     return jsonify({
         "gcp": data.get("gcp", {}),
@@ -284,7 +466,14 @@ def get_costs_infra():
 
 @c3_bp.route('/costs/ai', methods=['GET'])
 def get_costs_ai():
-    """Get AI/Claude costs."""
+    """Get AI/Claude costs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Claude API usage and cost
+    """
     data = load_c3_json("costs.json")
     return jsonify({
         "claude": data.get("claude", {}),
@@ -300,5 +489,12 @@ def get_costs_ai():
 
 @c3_bp.route('/architecture', methods=['GET'])
 def get_architecture():
-    """Get full architecture data."""
+    """Get full architecture data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full architecture topology
+    """
     return jsonify(load_c3_json("architecture.json"))

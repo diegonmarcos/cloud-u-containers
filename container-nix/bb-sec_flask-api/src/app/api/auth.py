@@ -81,7 +81,22 @@ def require_auth(f):
 
 @auth_bp.route('/github', methods=['GET'])
 def github_login():
-    """Initiate GitHub OAuth flow."""
+    """Initiate GitHub OAuth flow.
+    ---
+    tags:
+      - auth
+    responses:
+      200:
+        description: Returns GitHub authorization URL
+        schema:
+          properties:
+            auth_url:
+              type: string
+            state:
+              type: string
+      500:
+        description: GitHub OAuth not configured
+    """
     if not GITHUB_CLIENT_ID:
         return jsonify({'error': 'GitHub OAuth not configured'}), 500
 
@@ -109,7 +124,16 @@ def github_login():
 
 @auth_bp.route('/github/redirect', methods=['GET'])
 def github_redirect():
-    """Redirect to GitHub OAuth (for browser-based flow)."""
+    """Redirect to GitHub OAuth (for browser-based flow).
+    ---
+    tags:
+      - auth
+    responses:
+      302:
+        description: Redirects to GitHub authorization page
+      500:
+        description: GitHub OAuth not configured
+    """
     if not GITHUB_CLIENT_ID:
         return jsonify({'error': 'GitHub OAuth not configured'}), 500
 
@@ -129,7 +153,23 @@ def github_redirect():
 
 @auth_bp.route('/callback', methods=['GET'])
 def github_callback():
-    """Handle GitHub OAuth callback."""
+    """Handle GitHub OAuth callback.
+    ---
+    tags:
+      - auth
+    parameters:
+      - name: code
+        in: query
+        type: string
+        required: true
+      - name: state
+        in: query
+        type: string
+        required: true
+    responses:
+      302:
+        description: Redirects to frontend with JWT token or error
+    """
     code = request.args.get('code')
     state = request.args.get('state')
     error = request.args.get('error')
@@ -199,7 +239,18 @@ def github_callback():
 @auth_bp.route('/me', methods=['GET'])
 @require_auth
 def get_current_user():
-    """Get current authenticated user info."""
+    """Get current authenticated user info.
+    ---
+    tags:
+      - auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Current user info
+      401:
+        description: Unauthorized
+    """
     return jsonify({
         'username': request.current_user,
         'authorized': True
@@ -209,7 +260,18 @@ def get_current_user():
 @auth_bp.route('/logout', methods=['POST'])
 @require_auth
 def logout():
-    """Logout (client should discard token)."""
+    """Logout (client should discard token).
+    ---
+    tags:
+      - auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Logged out
+      401:
+        description: Unauthorized
+    """
     return jsonify({
         'status': 'ok',
         'message': 'Logged out successfully'
@@ -218,7 +280,25 @@ def logout():
 
 @auth_bp.route('/verify', methods=['POST'])
 def verify_token():
-    """Verify if a token is valid."""
+    """Verify if a token is valid.
+    ---
+    tags:
+      - auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+    responses:
+      200:
+        description: Token validity result
+      400:
+        description: No token provided
+    """
     data = request.get_json() or {}
     token = data.get('token')
 
