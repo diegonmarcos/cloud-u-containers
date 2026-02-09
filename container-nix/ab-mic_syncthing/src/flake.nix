@@ -18,31 +18,33 @@
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      
-
       services:
         syncthing:
           image: ${config.image}
           container_name: ${config.container_name}
+          hostname: web-server-1
           restart: unless-stopped
-          hostname: syncthing-server
           environment:
-            TZ: ${config.timezone}
-            PUID: 1000
-            PGID: 1000
+            - PUID=1000
+            - PGID=1000
+          volumes:
+            - /home/ubuntu/syncthing-config:/var/syncthing/config
+            - /home/ubuntu/sync:/var/syncthing/data
           ports:
             - "${toString config.web_port}:8384"
-            - "${toString config.sync_port}:22000/tcp"
-            - "${toString config.sync_port}:22000/udp"
+            - "${toString config.sync_port}:22000"
             - "${toString config.discovery_port}:21027/udp"
-          volumes:
-            - ./config:/var/syncthing/config
-            - ./data:/var/syncthing/data
           networks:
-            - proxy
+            - matomo_default
+          deploy:
+            resources:
+              limits:
+                memory: 150M
+              reservations:
+                memory: 50M
 
       networks:
-        proxy:
+        matomo_default:
           external: true
     '';
 

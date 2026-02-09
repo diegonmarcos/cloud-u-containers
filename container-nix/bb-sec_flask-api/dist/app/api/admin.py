@@ -41,7 +41,29 @@ def log_admin_action(user: str, action: str, target: str, result: str):
 @admin_bp.route('/vms/<vm_id>/reboot', methods=['POST'])
 @require_auth
 def reboot_vm(vm_id: str):
-    """Reboot a VM via SSH."""
+    """Reboot a VM via SSH.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Reboot command sent
+      400:
+        description: VM has no public IP
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -68,7 +90,27 @@ def reboot_vm(vm_id: str):
 @admin_bp.route('/vms/<vm_id>/containers', methods=['GET'])
 @require_auth
 def list_vm_containers(vm_id: str):
-    """List Docker containers on a VM."""
+    """List Docker containers on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of containers with name, status, image
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -98,7 +140,31 @@ def list_vm_containers(vm_id: str):
 @admin_bp.route('/vms/<vm_id>/containers/<container_name>/restart', methods=['POST'])
 @require_auth
 def restart_container(vm_id: str, container_name: str):
-    """Restart a Docker container on a VM."""
+    """Restart a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container restarted
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -121,7 +187,31 @@ def restart_container(vm_id: str, container_name: str):
 @admin_bp.route('/vms/<vm_id>/containers/<container_name>/stop', methods=['POST'])
 @require_auth
 def stop_container(vm_id: str, container_name: str):
-    """Stop a Docker container on a VM."""
+    """Stop a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container stopped
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -144,7 +234,31 @@ def stop_container(vm_id: str, container_name: str):
 @admin_bp.route('/vms/<vm_id>/containers/<container_name>/start', methods=['POST'])
 @require_auth
 def start_container(vm_id: str, container_name: str):
-    """Start a Docker container on a VM."""
+    """Start a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container started
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -167,7 +281,37 @@ def start_container(vm_id: str, container_name: str):
 @admin_bp.route('/vms/<vm_id>/containers/<container_name>/logs', methods=['GET'])
 @require_auth
 def get_container_logs(vm_id: str, container_name: str):
-    """Get logs from a Docker container."""
+    """Get logs from a Docker container.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+      - name: lines
+        in: query
+        type: integer
+        required: false
+        default: 100
+        description: Number of log lines (max 500)
+    responses:
+      200:
+        description: Container logs
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
     vm_data = get_vm(vm_id)
     if not vm_data:
         return jsonify({'error': f'VM not found: {vm_id}'}), 404
@@ -194,7 +338,29 @@ def get_container_logs(vm_id: str, container_name: str):
 @admin_bp.route('/services/<svc_id>/restart', methods=['POST'])
 @require_auth
 def restart_service(svc_id: str):
-    """Restart a service (its Docker container)."""
+    """Restart a service (its Docker container).
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service restarted
+      400:
+        description: Service has no VM or container info
+      401:
+        description: Unauthorized
+      404:
+        description: Service not found
+      503:
+        description: Failed to execute command
+    """
     svc_data = get_svc(svc_id)
     if not svc_data:
         return jsonify({'error': f'Service not found: {svc_id}'}), 404
@@ -227,7 +393,25 @@ def restart_service(svc_id: str):
 @admin_bp.route('/audit-log', methods=['GET'])
 @require_auth
 def get_audit_log():
-    """Get recent admin actions audit log."""
+    """Get recent admin actions audit log.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of entries (max 200)
+    responses:
+      200:
+        description: Audit log entries
+      401:
+        description: Unauthorized
+    """
     limit = request.args.get('limit', 50, type=int)
     limit = min(limit, 200)
 

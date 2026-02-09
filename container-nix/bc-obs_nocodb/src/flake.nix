@@ -12,7 +12,7 @@
       domain = "db.diegonmarcos.com";
       container_name = "nocodb";
       image = "nocodb/nocodb:latest";
-      port = 8080;
+      port = 8085;
       timezone = "Europe/Madrid";
     };
 
@@ -25,17 +25,67 @@
           env_file:
             - .env
           environment:
-            TZ: ${config.timezone}
+            NC_DB: "pg://nocodb-db:5432?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}
-          ports:
-            - "${toString config.port}:8080"
+            NC_DISABLE_TELE: "true"
+            NC_OIDC_ISSUER: https://auth.diegonmarcos.com
+            NC_OIDC_CLIENT_ID: nocodb
+            NC_OIDC_CLIENT_SECRET: ''${NC_OIDC_CLIENT_SECRET}
+            NC_OIDC_AUTHORIZATION_URL: https://auth.diegonmarcos.com/api/oidc/authorization
+            NC_OIDC_TOKEN_URL: https://auth.diegonmarcos.com/api/oidc/token
+            NC_OIDC_USERINFO_URL: https://auth.diegonmarcos.com/api/oidc/userinfo
+            NC_OIDC_SCOPE: openid profile email
           volumes:
-            - ./data:/usr/app/data
+            - nocodb_data:/usr/app/data
+            - /mnt/gcloud-sqlite:/sqlite:ro
+          ports:
+            - "0.0.0.0:${toString config.port}:8080"
           networks:
-            - proxy
+            - nocodb_network
+            - dev_network
+          depends_on:
+            nocodb-db:
+              condition: service_healthy
+          healthcheck:
+            test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/v1/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+
+        nocodb-db:
+          image: postgres:16-bookworm
+          container_name: nocodb-db
+          restart: unless-stopped
+          environment:
+            POSTGRES_DB: nocodb
+            POSTGRES_USER: nocodb
+            POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
+          volumes:
+            - nocodb_postgres:/var/lib/postgresql/data
+          networks:
+            - nocodb_network
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
+      volumes:
+        nocodb_data:
+          name: nocodb_data
+        nocodb_postgres:
+          name: nocodb_postgres
 
       networks:
-        proxy:
+        nocodb_network:
+          name: nocodb_network
+          driver: bridge
+          ipam:
+            config:
+              - subnet: 172.25.0.0/24
+        dev_network:
           external: true
     '';
 

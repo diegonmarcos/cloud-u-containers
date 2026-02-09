@@ -10,11 +10,7 @@
 
     config = {
       container_name = "redis";
-      image = "redis:7-bookworm";
-      port = 6379;
-      timezone = "Europe/Madrid";
-
-      # Memory settings
+      image = "redis:alpine";
       maxmemory = "128mb";
       maxmemory_policy = "allkeys-lru";
     };
@@ -25,39 +21,19 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "127.0.0.1:${toString config.port}:6379"
-          env_file:
-            - .env
-          command: >
-            sh -c "redis-server
-            --appendonly yes
-            --maxmemory ${config.maxmemory}
-            --maxmemory-policy ${config.maxmemory_policy}
-            --save 60 1
-            --loglevel warning
-            --requirepass $$REDIS_PASSWORD"
+          command: redis-server --appendonly yes --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy}
           volumes:
-            - ./data:/data
-          environment:
-            TZ: ${config.timezone}
-          networks:
-            - proxy
-          deploy:
-            resources:
-              limits:
-                memory: 256M
-              reservations:
-                memory: 64M
+            - /data/redis:/data
           healthcheck:
             test: ["CMD", "redis-cli", "ping"]
             interval: 30s
             timeout: 10s
             retries: 3
-            start_period: 10s
+          networks:
+            - dev_network
 
       networks:
-        proxy:
+        dev_network:
           external: true
     '';
 

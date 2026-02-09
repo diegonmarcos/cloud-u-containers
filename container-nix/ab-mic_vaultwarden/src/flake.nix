@@ -12,11 +12,9 @@
       domain = "vault.diegonmarcos.com";
       container_name = "vaultwarden";
       image = "vaultwarden/server:latest";
-      port = 8080;
       timezone = "Europe/Madrid";
 
-      # Non-secret settings
-      signups_allowed = "false";
+      signups_allowed = "true";
       invitations_allowed = "true";
       show_password_hint = "false";
     };
@@ -30,23 +28,26 @@
           env_file:
             - .env
           environment:
-            TZ: ${config.timezone}
             DOMAIN: https://${config.domain}
             SIGNUPS_ALLOWED: ${config.signups_allowed}
             INVITATIONS_ALLOWED: ${config.invitations_allowed}
             SHOW_PASSWORD_HINT: ${config.show_password_hint}
             WEBSOCKET_ENABLED: "true"
-            LOG_LEVEL: info
-          ports:
-            - "${toString config.port}:80"
-            - "3012:3012"
+            LOG_LEVEL: warn
+            SMTP_HOST: smtp.diegonmarcos.com
+            SMTP_FROM: noreply@diegonmarcos.com
+            SMTP_PORT: "465"
+            SMTP_SECURITY: force_tls
+            SMTP_USERNAME: noreply@diegonmarcos.com
+            SMTP_PASSWORD: ''${SMTP_PASSWORD}
+            ADMIN_TOKEN: ''${ADMIN_TOKEN}
           volumes:
             - ./data:/data
           networks:
-            - proxy
+            - npm_default
 
       networks:
-        proxy:
+        npm_default:
           external: true
     '';
 

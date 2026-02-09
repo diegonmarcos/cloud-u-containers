@@ -26,51 +26,45 @@
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # Gitea - Self-hosted Git server for code mirrors
+      # Deploy to: oci-p-flex_1
+
       services:
         gitea:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          env_file:
-            - .env
           environment:
-            TZ: ${config.timezone}
-            USER_UID: 1000
-            USER_GID: 1000
-            GITEA__database__DB_TYPE: ${config.db_type}
-            GITEA__database__PATH: /data/gitea/gitea.db
-            GITEA__server__DOMAIN: ${config.domain}
-            GITEA__server__ROOT_URL: https://${config.domain}/
-            GITEA__server__HTTP_PORT: ${toString config.http_port}
-            GITEA__server__SSH_DOMAIN: ${config.domain}
-            GITEA__server__SSH_PORT: ${toString config.ssh_port}
-            GITEA__server__SSH_LISTEN_PORT: 22
-            GITEA__server__DISABLE_SSH: "false"
-            GITEA__service__DISABLE_REGISTRATION: ${config.disable_registration}
-            GITEA__service__REQUIRE_SIGNIN_VIEW: ${config.require_signin_view}
-            GITEA__openid__ENABLE_OPENID_SIGNIN: "false"
-            GITEA__openid__ENABLE_OPENID_SIGNUP: "false"
-            GITEA__ui__DEFAULT_THEME: gitea-dark
-            GITEA__repository__DEFAULT_PRIVATE: "true"
+            - USER_UID=1000
+            - USER_GID=1000
+            - GITEA__database__DB_TYPE=${config.db_type}
+            - GITEA__database__PATH=/data/gitea/gitea.db
+            - GITEA__server__ROOT_URL=http://144.24.196.72:${toString config.http_port}
+            - GITEA__server__SSH_PORT=${toString config.ssh_port}
+            - GITEA__server__SSH_DOMAIN=144.24.196.72
+            - GITEA__mirror__ENABLED=true
+            - GITEA__mirror__DEFAULT_INTERVAL=1h
           volumes:
-            - ./data:/data
+            - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro
           ports:
             - "${toString config.http_port}:${toString config.http_port}"
             - "${toString config.ssh_port}:22"
           networks:
-            - proxy
-          healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:${toString config.http_port}/api/healthz"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 30s
+            - backup_network
+
+      volumes:
+        gitea_data:
+          driver: local
+          driver_opts:
+            type: none
+            o: bind
+            device: /backup/code/gitea-data
 
       networks:
-        proxy:
-          external: true
+        backup_network:
+          driver: bridge
     '';
 
   in {

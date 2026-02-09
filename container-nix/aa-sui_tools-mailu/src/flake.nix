@@ -25,6 +25,9 @@
       # Message size limit (50MB)
       message_size_limit = "50000000";
 
+      # Public IP (OCI micro)
+      public_ip = "130.110.251.193";
+
       # Oracle Email Delivery relay
       relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
       relay_port = "587";
@@ -33,192 +36,170 @@
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      
+      version: "3.8"
 
       services:
-        # Reverse proxy and HTTPS termination
+        resolver:
+          image: ghcr.io/mailu/unbound:2024.06
+          env_file: mailu.env
+          restart: always
+          networks:
+            default:
+              ipv4_address: 192.168.203.254
+
         front:
           image: ghcr.io/mailu/nginx:2024.06
-          container_name: mailu-front
-          restart: unless-stopped
           env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-front
+          restart: always
           ports:
             - "80:80"
             - "443:443"
             - "25:25"
             - "465:465"
+            - "587:587"
             - "993:993"
           volumes:
-            - ./certs:/certs
-            - ./overrides/nginx:/overrides:ro
-          networks:
-            - default
-            - proxy
+            - "./certs:/certs"
+            - "./overrides/nginx:/overrides:ro"
+          depends_on:
+            - resolver
+          dns:
+            - 192.168.203.254
 
-        # Admin interface
         admin:
           image: ghcr.io/mailu/admin:2024.06
-          container_name: mailu-admin
-          restart: unless-stopped
           env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-admin
+          restart: always
           volumes:
-            - ./data:/data
-            - ./dkim:/dkim
+            - "./data:/data"
+            - "./dkim:/dkim"
           depends_on:
+            - resolver
             - redis
-          networks:
-            - default
+          dns:
+            - 192.168.203.254
 
-        # IMAP server
         imap:
           image: ghcr.io/mailu/dovecot:2024.06
-          container_name: mailu-imap
-          restart: unless-stopped
           env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-imap
+          restart: always
           volumes:
-            - ./mail:/mail
-            - ./overrides/dovecot:/overrides:ro
+            - "./mail:/mail"
+            - "./overrides/dovecot:/overrides:ro"
           depends_on:
+            - resolver
             - front
-          networks:
-            - default
+          dns:
+            - 192.168.203.254
 
-        # SMTP server
         smtp:
           image: ghcr.io/mailu/postfix:2024.06
-          container_name: mailu-smtp
-          restart: unless-stopped
           env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-smtp
+          restart: always
           volumes:
-            - ./mailqueue:/queue
-            - ./overrides/postfix:/overrides:ro
+            - "./mailqueue:/queue"
+            - "./overrides/postfix:/overrides:ro"
           depends_on:
+            - resolver
             - front
-          networks:
-            - default
+          dns:
+            - 192.168.203.254
 
-        # Antispam
         antispam:
           image: ghcr.io/mailu/rspamd:2024.06
-          container_name: mailu-antispam
-          restart: unless-stopped
           env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-antispam
+          restart: always
           volumes:
-            - ./filter:/var/lib/rspamd
-            - ./overrides/rspamd:/overrides:ro
+            - "./filter:/var/lib/rspamd"
+            - "./overrides/rspamd:/overrides:ro"
           depends_on:
+            - resolver
             - front
-          networks:
-            - default
+          dns:
+            - 192.168.203.254
 
-        # Webmail (Roundcube)
-        webmail:
-          image: ghcr.io/mailu/webmail:2024.06
-          container_name: mailu-webmail
-          restart: unless-stopped
-          env_file: mailu.env
-          logging:
-            driver: journald
-            options:
-              tag: mailu-webmail
-          volumes:
-            - ./webmail:/data
-            - ./overrides/roundcube:/overrides:ro
-          depends_on:
-            - front
-          networks:
-            - default
-
-        # Redis for session storage
         redis:
           image: redis:7-bookworm
-          container_name: mailu-redis
-          restart: unless-stopped
+          restart: always
           volumes:
-            - ./redis:/data
-          networks:
-            - default
+            - "./redis:/data"
 
-        # DNS resolver
-        resolver:
-          image: ghcr.io/mailu/unbound:2024.06
-          container_name: mailu-resolver
-          restart: unless-stopped
+        webmail:
+          image: ghcr.io/mailu/webmail:2024.06
           env_file: mailu.env
-          networks:
-            default:
-              ipv4_address: 192.168.203.254
+          restart: always
+          volumes:
+            - "./webmail:/data"
+            - "./overrides/roundcube:/overrides:ro"
+          depends_on:
+            - resolver
+            - front
+            - imap
+          dns:
+            - 192.168.203.254
 
       networks:
         default:
           driver: bridge
           ipam:
+            driver: default
             config:
               - subnet: ${config.subnet}
-        proxy:
-          external: true
     '';
 
     mkMailuEnv = pkgs: pkgs.writeText "mailu.env" ''
-      # Mailu configuration
-      SECRET_KEY=${config.secret_key}
+      # Mailu main configuration file
       DOMAIN=${config.domain}
-      HOSTNAMES=${config.mail_domain}
-
-      # Postmaster
+      HOSTNAMES=imap.${config.domain},smtp.${config.domain}
       POSTMASTER=admin
 
-      # TLS
+      SECRET_KEY=${config.secret_key}
+      SUBNET=${config.subnet}
+
+      WEBMAIL=roundcube
+      WEB_ADMIN=/admin
+      WEB_WEBMAIL=/webmail
+
+      BIND_ADDRESS4=0.0.0.0
+      HTTP_PORT=80
+      HTTPS_PORT=443
+      SMTP_PORT=25
+      IMAP_PORT=993
+      SUBMISSION_PORT=587
+
       TLS_FLAVOR=letsencrypt
 
-      # Authentication
       AUTH_RATELIMIT_IP=60/hour
       AUTH_RATELIMIT_USER=100/day
 
-      # Admin
+      ANTIVIRUS=none
+      ANTISPAM=rspamd
       ADMIN=true
-      WEBMAIL=roundcube
+      WEBDAV=none
+      FETCHMAIL=false
 
-      # Limits
+      RELAYHOST=[${config.relay_host}]:${config.relay_port}
+      RELAYUSER=${config.relay_user}
+      RELAYPASSWORD=${config.relay_password}
+
       MESSAGE_SIZE_LIMIT=${config.message_size_limit}
 
-      # Logging
+      INITIAL_ADMIN_ACCOUNT=admin
+      INITIAL_ADMIN_DOMAIN=${config.domain}
+      INITIAL_ADMIN_PW=${config.admin_password}
+
+      SITENAME=Diego Mail
+      WEBSITE=https://${config.mail_domain}
+
+      DB_FLAVOR=sqlite
       LOG_LEVEL=INFO
+      CREDENTIAL_ROUNDS=12
 
-      # Network
-      SUBNET=${config.subnet}
+      PUBLICIP=${config.public_ip}
 
-      # Relay (Oracle Email Delivery)
-      RELAYHOST=${config.relay_host}
-      RELAY_PORT=${config.relay_port}
-      RELAY_USER=${config.relay_user}
-      RELAY_PASSWORD=${config.relay_password}
-
-      # Timezone
-      TZ=${config.timezone}
-
-      # Resolver
-      RESOLVER=192.168.203.254
+      PROXY_AUTH_WHITELIST=35.226.147.64
+      PROXY_AUTH_HEADER=X-Forwarded-User
+      PROXY_AUTH_CREATE=False
     '';
 
   in {
@@ -226,10 +207,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "mailu-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/overrides/dovecot $out/overrides/roundcube $out/overrides/nginx $out/overrides/postfix $out/overrides/rspamd
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        mkdir -p $out/overrides/dovecot
-        mkdir -p $out/overrides/roundcube
+        cp ${mkMailuEnv pkgs} $out/mailu.env
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
       '';
