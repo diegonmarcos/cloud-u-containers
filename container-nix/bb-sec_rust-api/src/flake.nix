@@ -39,8 +39,8 @@
             - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
             - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
             - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
-            - SSH_KEY_PATH=/app/config/id_rsa
-            - GCP_SSH_KEY_PATH=/app/config/gcp_key
+            - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
+            - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
           networks:
             - npm_default
           healthcheck:
