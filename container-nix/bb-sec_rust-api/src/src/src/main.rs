@@ -15,6 +15,7 @@ use config::AppConfig;
 pub struct AppState {
     pub config: AppConfig,
     pub http: reqwest::Client,
+    pub gcp_token_cache: services::gcp::TokenCache,
 }
 
 #[derive(OpenApi)]
@@ -23,6 +24,7 @@ pub struct AppState {
         routes::health::health,
         routes::ondemand::status_flex1,
         routes::ondemand::status_all,
+        // Legacy flex-shortcut endpoints
         routes::ondemand::ondemand_vm_health,
         routes::ondemand::ondemand_vm_start,
         routes::ondemand::ondemand_vm_stop,
@@ -33,6 +35,17 @@ pub struct AppState {
         routes::ondemand::ondemand_container_restart,
         routes::ondemand::ondemand_service_start,
         routes::ondemand::ondemand_service_stop,
+        // Generalized per-VM endpoints
+        routes::ondemand::vm_health,
+        routes::ondemand::vm_start,
+        routes::ondemand::vm_stop,
+        routes::ondemand::vm_reset,
+        routes::ondemand::vm_container_status,
+        routes::ondemand::vm_container_start,
+        routes::ondemand::vm_container_stop,
+        routes::ondemand::vm_container_restart,
+        routes::ondemand::vm_service_start,
+        routes::ondemand::vm_service_stop,
     ),
     components(schemas(
         models::api_response::ApiResponse,
@@ -57,6 +70,7 @@ async fn main() {
     let state = Arc::new(AppState {
         config,
         http: reqwest::Client::new(),
+        gcp_token_cache: services::gcp::new_token_cache(),
     });
 
     let cors = CorsLayer::new()
