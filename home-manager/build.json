@@ -1,0 +1,27 @@
+{
+  "name": "home-manager",
+  "description": "Home Manager configurations for all 4 VMs",
+
+  "vms": {
+    "gcp-proxy": {
+      "user": "diego",
+      "arch": "x86_64-linux",
+      "config": "diego@gcp-proxy"
+    },
+    "oci-flex": {
+      "user": "ubuntu",
+      "arch": "aarch64-linux",
+      "config": "ubuntu@oci-flex"
+    },
+    "oci-mail": {
+      "user": "ubuntu",
+      "arch": "aarch64-linux",
+      "config": "ubuntu@oci-mail"
+    },
+    "oci-analytics": {
+      "user": "ubuntu",
+      "arch": "x86_64-linux",
+      "config": "ubuntu@oci-analytics"
+    }
+  }
+}
