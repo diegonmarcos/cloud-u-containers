@@ -14,7 +14,8 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/rust/status", get(ondemand_status))
+        .route("/rust/status/flex1", get(status_flex1))
+        .route("/rust/status/all", get(status_all))
         .route("/rust/vm/health", get(ondemand_vm_health))
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
@@ -27,15 +28,14 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
 }
 
-const VALID_SERVICES: &[&str] = &["sync", "photos", "calendar", "cache"];
-
-fn validate_service(service: &str) -> Result<(), AppError> {
-    if VALID_SERVICES.contains(&service) {
+fn validate_service(service: &str, state: &AppState) -> Result<(), AppError> {
+    if state.config.flex_services.contains_key(service) {
         Ok(())
     } else {
+        let valid: Vec<String> = state.config.flex_services.keys().cloned().collect();
         Err(AppError::not_found(format!(
             "Unknown service: {service}. Valid: {}",
-            VALID_SERVICES.join(", ")
+            valid.join(", ")
         )))
     }
 }
@@ -123,9 +123,8 @@ async fn get_vm_state(state: &AppState) -> Result<String, AppError> {
 }
 
 /// Batch-fetch all container states via a single SSH call.
-async fn batch_container_statuses(state: &AppState) -> Vec<(String, String, String)> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = match state.config.vm_ssh.get(flex_vm_id) {
+async fn batch_container_statuses(state: &AppState, vm_id: &str) -> Vec<(String, String, String)> {
+    let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
         Some(cfg) => cfg,
         None => return vec![],
     };
@@ -190,14 +189,14 @@ fn compute_service_status(containers: &[String], all_statuses: &[(String, String
 
 #[utoipa::path(
     get,
-    path = "/rust/status",
+    path = "/rust/status/flex1",
     tag = "ondemand",
     responses(
-        (status = 200, description = "Consolidated on-demand status", body = Value),
+        (status = 200, description = "Flex VM (oci-p-flex_1) status with all services", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
-pub async fn ondemand_status(
+pub async fn status_flex1(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
@@ -215,7 +214,7 @@ pub async fn ondemand_status(
             Some(cfg) => ssh::check_ssh(cfg).await,
             None => false,
         };
-        let data = batch_container_statuses(&state).await;
+        let data = batch_container_statuses(&state, flex_vm_id).await;
         (ping, ssh_ok, data)
     } else {
         (false, false, vec![])
@@ -273,6 +272,137 @@ pub async fn ondemand_status(
             "services_partial": services_partial,
             "containers_running": containers_running,
             "containers_total": containers_total,
+        }
+    })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/rust/status/all",
+    tag = "ondemand",
+    responses(
+        (status = 200, description = "Status of all 4 VMs with services and containers", body = Value),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn status_all(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut vms = serde_json::Map::new();
+    let mut global_services_up = 0u32;
+    let mut global_services_down = 0u32;
+    let mut global_services_partial = 0u32;
+    let mut global_containers_running = 0u32;
+    let mut global_containers_total = 0u32;
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        // Get VM instance info
+        let vm_instance = state.config.vm_instances.get(vm_id);
+
+        // Get provider state (only for OCI VMs)
+        let provider_state = if let Some(vm) = vm_instance {
+            match vm.provider {
+                VmProvider::Oci => {
+                    oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
+                        .await
+                        .unwrap_or_else(|_| "unknown".into())
+                }
+                VmProvider::Gcp => "N/A".into(),
+            }
+        } else {
+            "not_configured".into()
+        };
+
+        // Get SSH config
+        let ssh_cfg = state.config.vm_ssh.get(vm_id);
+        let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
+
+        // Check connectivity if VM appears running or for GCP (always try)
+        let (ping, ssh_ok, container_data) = if provider_state == "RUNNING" || provider_state == "N/A" {
+            let p = ssh::check_ping(host).await;
+            let s = match ssh_cfg {
+                Some(cfg) => ssh::check_ssh(cfg).await,
+                None => false,
+            };
+            let data = if s {
+                batch_container_statuses(&state, vm_id).await
+            } else {
+                vec![]
+            };
+            (p, s, data)
+        } else {
+            (false, false, vec![])
+        };
+
+        // Determine overall health
+        let health = if (provider_state == "RUNNING" || provider_state == "N/A") && ssh_ok {
+            "online"
+        } else if provider_state == "RUNNING" || provider_state == "N/A" {
+            "degraded"
+        } else if provider_state == "STOPPED" {
+            "offline"
+        } else {
+            "unknown"
+        };
+
+        // Build per-service status for this VM
+        let mut services = serde_json::Map::new();
+        let mut vm_services_up = 0u32;
+        let mut vm_services_down = 0u32;
+        let mut vm_services_partial = 0u32;
+        let mut vm_containers_running = 0u32;
+        let mut vm_containers_total = 0u32;
+
+        for (svc_name, containers) in &vm_map.services {
+            let svc_status = compute_service_status(containers, &container_data);
+            let status_str = svc_status["status"].as_str().unwrap_or("down");
+            match status_str {
+                "up" => vm_services_up += 1,
+                "partial" => vm_services_partial += 1,
+                _ => vm_services_down += 1,
+            }
+            if let Some(ctrs) = svc_status["containers"].as_array() {
+                for c in ctrs {
+                    vm_containers_total += 1;
+                    if c["state"].as_str() == Some("running") {
+                        vm_containers_running += 1;
+                    }
+                }
+            }
+            services.insert(svc_name.clone(), svc_status);
+        }
+
+        global_services_up += vm_services_up;
+        global_services_down += vm_services_down;
+        global_services_partial += vm_services_partial;
+        global_containers_running += vm_containers_running;
+        global_containers_total += vm_containers_total;
+
+        vms.insert(vm_id.clone(), json!({
+            "label": vm_map.label,
+            "provider_state": provider_state,
+            "ssh": ssh_ok,
+            "ping": ping,
+            "health": health,
+            "services": services,
+            "summary": {
+                "services_up": vm_services_up,
+                "services_down": vm_services_down,
+                "services_partial": vm_services_partial,
+                "containers_running": vm_containers_running,
+                "containers_total": vm_containers_total,
+            }
+        }));
+    }
+
+    Ok(Json(json!({
+        "vms": vms,
+        "global_summary": {
+            "services_up": global_services_up,
+            "services_down": global_services_down,
+            "services_partial": global_services_partial,
+            "containers_running": global_containers_running,
+            "containers_total": global_containers_total,
         }
     })))
 }
@@ -581,7 +711,7 @@ pub async fn ondemand_service_start(
     State(state): State<Arc<AppState>>,
     Path(service): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    validate_service(&service)?;
+    validate_service(&service, &state)?;
 
     let flex_svc = state.config.flex_services.get(&service)
         .ok_or_else(|| AppError::not_found(format!("Service config not found: {service}")))?;
@@ -622,7 +752,7 @@ pub async fn ondemand_service_stop(
     State(state): State<Arc<AppState>>,
     Path(service): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    validate_service(&service)?;
+    validate_service(&service, &state)?;
 
     let flex_svc = state.config.flex_services.get(&service)
         .ok_or_else(|| AppError::not_found(format!("Service config not found: {service}")))?;
