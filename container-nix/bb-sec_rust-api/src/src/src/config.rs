@@ -13,6 +13,7 @@ pub struct AppConfig {
     pub oci_key_file: String,
     pub flex_vm_id: String,
     pub flex_services: HashMap<String, FlexService>,
+    pub all_vm_services: HashMap<String, VmServiceMap>,
 }
 
 #[derive(Clone, Debug)]
@@ -43,6 +44,12 @@ pub struct SshConfig {
 #[derive(Clone, Debug)]
 pub struct FlexService {
     pub containers: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct VmServiceMap {
+    pub label: String,
+    pub services: HashMap<String, Vec<String>>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -193,20 +200,78 @@ impl AppConfig {
             }
         }
 
-        // Flex services (containers on oci-p-flex_1)
-        let mut flex_services = HashMap::new();
-        flex_services.insert("sync".to_string(), FlexService {
-            containers: vec!["syncthing".to_string()],
+        // All VM service maps
+        let mut all_vm_services = HashMap::new();
+
+        // oci-p-flex_1 (oci-flex)
+        let mut flex_svc = HashMap::new();
+        flex_svc.insert("photos".into(), vec!["photoprism_app".into(), "photoprism_mariadb".into()]);
+        flex_svc.insert("calendar".into(), vec!["radicale".into()]);
+        flex_svc.insert("hedgedoc".into(), vec!["hedgedoc_app".into(), "hedgedoc_postgres".into()]);
+        flex_svc.insert("etherpad".into(), vec!["etherpad_app".into(), "etherpad_postgres".into()]);
+        flex_svc.insert("grist".into(), vec!["grist_app".into()]);
+        flex_svc.insert("files".into(), vec!["filebrowser_app".into()]);
+        flex_svc.insert("slides".into(), vec!["revealmd_app".into()]);
+        flex_svc.insert("code".into(), vec!["code-server".into()]);
+        flex_svc.insert("nocodb".into(), vec!["nocodb_app".into(), "nocodb_postgres".into()]);
+        flex_svc.insert("monitoring".into(), vec!["lgtm_grafana".into(), "lgtm_loki".into(), "lgtm_mimir".into(), "lgtm_tempo".into()]);
+        flex_svc.insert("git".into(), vec!["gitea".into()]);
+        flex_svc.insert("cache".into(), vec!["redis".into()]);
+        flex_svc.insert("security".into(), vec!["sauron".into()]);
+        flex_svc.insert("logs".into(), vec!["fluent-bit".into()]);
+        all_vm_services.insert("oci-p-flex_1".into(), VmServiceMap {
+            label: "oci-flex".into(),
+            services: flex_svc,
         });
-        flex_services.insert("photos".to_string(), FlexService {
-            containers: vec!["photoprism-app".to_string(), "photos-db".to_string()],
+
+        // gcp-f-micro_1 (gcp-proxy)
+        let mut gcp_svc = HashMap::new();
+        gcp_svc.insert("proxy".into(), vec!["npm".into(), "introspect-proxy".into()]);
+        gcp_svc.insert("auth".into(), vec!["authelia".into(), "authelia-redis".into()]);
+        gcp_svc.insert("api".into(), vec!["flask-api".into()]);
+        gcp_svc.insert("notifications".into(), vec!["ntfy".into()]);
+        gcp_svc.insert("passwords".into(), vec!["vaultwarden".into()]);
+        gcp_svc.insert("logs".into(), vec!["fluent-bit".into()]);
+        all_vm_services.insert("gcp-f-micro_1".into(), VmServiceMap {
+            label: "gcp-proxy".into(),
+            services: gcp_svc,
         });
-        flex_services.insert("calendar".to_string(), FlexService {
-            containers: vec!["radicale-app".to_string()],
+
+        // oci-f-micro_1 (oci-mail)
+        let mut mail_svc = HashMap::new();
+        mail_svc.insert("mail".into(), vec![
+            "mailu-front-1".into(), "mailu-admin-1".into(), "mailu-imap-1".into(),
+            "mailu-smtp-1".into(), "mailu-antispam-1".into(), "mailu-webmail-1".into(),
+            "mailu-redis-1".into(), "mailu-resolver-1".into(),
+        ]);
+        mail_svc.insert("calendar".into(), vec!["radicale".into()]);
+        mail_svc.insert("smtp_proxy".into(), vec!["smtp-proxy".into()]);
+        mail_svc.insert("sync".into(), vec!["syncthing".into()]);
+        mail_svc.insert("analytics".into(), vec!["matomo-app".into(), "matomo-db".into()]);
+        mail_svc.insert("proxy".into(), vec!["nginx-proxy".into()]);
+        mail_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
+        all_vm_services.insert("oci-f-micro_1".into(), VmServiceMap {
+            label: "oci-mail".into(),
+            services: mail_svc,
         });
-        flex_services.insert("cache".to_string(), FlexService {
-            containers: vec!["cache-app".to_string()],
+
+        // oci-f-micro_2 (oci-analytics)
+        let mut analytics_svc = HashMap::new();
+        analytics_svc.insert("analytics".into(), vec!["matomo-hybrid".into()]);
+        analytics_svc.insert("security".into(), vec!["sauron".into(), "sauron-forwarder".into()]);
+        analytics_svc.insert("automation".into(), vec!["windmill-server".into(), "windmill-worker".into(), "windmill-db".into()]);
+        analytics_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
+        all_vm_services.insert("oci-f-micro_2".into(), VmServiceMap {
+            label: "oci-analytics".into(),
+            services: analytics_svc,
         });
+
+        // Derive flex_services from oci-p-flex_1
+        let flex_services: HashMap<String, FlexService> = all_vm_services["oci-p-flex_1"]
+            .services
+            .iter()
+            .map(|(k, v)| (k.clone(), FlexService { containers: v.clone() }))
+            .collect();
 
         AppConfig {
             port,
@@ -220,6 +285,7 @@ impl AppConfig {
                 .unwrap_or_else(|_| "/app/config/oci_api_key.pem".into()),
             flex_vm_id: "oci-p-flex_1".to_string(),
             flex_services,
+            all_vm_services,
         }
     }
 }

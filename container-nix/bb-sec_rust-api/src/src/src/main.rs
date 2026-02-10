@@ -21,7 +21,8 @@ pub struct AppState {
 #[openapi(
     paths(
         routes::health::health,
-        routes::ondemand::ondemand_status,
+        routes::ondemand::status_flex1,
+        routes::ondemand::status_all,
         routes::ondemand::ondemand_vm_health,
         routes::ondemand::ondemand_vm_start,
         routes::ondemand::ondemand_vm_stop,
