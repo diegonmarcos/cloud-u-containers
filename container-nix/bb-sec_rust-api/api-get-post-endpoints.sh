@@ -3,7 +3,7 @@
 set -euo pipefail
 
 API="https://api.diegonmarcos.com/rust"
-OUT="test_results/$(date +%Y%m%d_%H%M%S)"
+OUT="output-jsons/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUT"
 
 VMS=("oci-p-flex_1" "oci-f-micro_1" "oci-f-micro_2" "gcp-f-micro_1")
