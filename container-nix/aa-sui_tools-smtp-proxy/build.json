@@ -1,0 +1,7 @@
+{
+  "name": "smtp-proxy",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/smtp-proxy"
+  }
+}

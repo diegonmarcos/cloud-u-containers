@@ -1,0 +1,9 @@
+{
+  "name": "mailu",
+  "description": "Mailu mail server stack (mail.diegonmarcos.com)",
+
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/mailu"
+  }
+}

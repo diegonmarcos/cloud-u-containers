@@ -1,0 +1,9 @@
+{
+  "name": "hedgedoc",
+  "description": "Collaborative markdown editor",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/hedgedoc"
+  }
+}

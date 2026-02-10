@@ -1,0 +1,9 @@
+{
+  "name": "nocodb",
+  "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/home/ubuntu/nocodb"
+  }
+}

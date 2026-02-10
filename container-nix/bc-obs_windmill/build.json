@@ -1,0 +1,9 @@
+{
+  "name": "windmill",
+  "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/home/ubuntu/windmill"
+  }
+}

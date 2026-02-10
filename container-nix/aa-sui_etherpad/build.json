@@ -1,0 +1,9 @@
+{
+  "name": "etherpad",
+  "description": "Etherpad collaborative editor (NEW - not deployed yet)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/etherpad"
+  }
+}

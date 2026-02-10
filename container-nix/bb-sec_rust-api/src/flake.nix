@@ -27,6 +27,7 @@
             - ~/.ssh:/home/appuser/.ssh:ro
             - /home/diego/cloud/oci_config:/app/config/oci_config:ro
             - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+            - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
           environment:
             - RUST_API_PORT=8080
             - RUST_LOG=rust_api=info
@@ -36,6 +37,8 @@
             - OCI_FLEX1_INSTANCE_ID=''${OCI_FLEX1_INSTANCE_ID}
             - OCI_MICRO1_INSTANCE_ID=''${OCI_MICRO1_INSTANCE_ID}
             - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
+            - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+            - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
             - SSH_KEY_PATH=/app/config/id_rsa
             - GCP_SSH_KEY_PATH=/app/config/gcp_key
           networks:

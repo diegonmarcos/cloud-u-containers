@@ -1,0 +1,9 @@
+{
+  "name": "lgtm",
+  "description": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/lgtm"
+  }
+}
