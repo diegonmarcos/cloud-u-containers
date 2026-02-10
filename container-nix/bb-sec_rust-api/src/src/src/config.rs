@@ -11,8 +11,6 @@ pub struct AppConfig {
     pub vm_ssh: HashMap<String, SshConfig>,
     pub oci_config_file: String,
     pub oci_key_file: String,
-    pub cf_api_token: String,
-    pub cf_zone_id: String,
     pub flex_vm_id: String,
     pub flex_services: HashMap<String, FlexService>,
 }
@@ -220,8 +218,6 @@ impl AppConfig {
                 .unwrap_or_else(|_| "/app/config/oci_config".into()),
             oci_key_file: std::env::var("OCI_KEY_FILE")
                 .unwrap_or_else(|_| "/app/config/oci_api_key.pem".into()),
-            cf_api_token: std::env::var("CF_API_TOKEN").unwrap_or_default(),
-            cf_zone_id: std::env::var("CF_ZONE_ID").unwrap_or_default(),
             flex_vm_id: "oci-p-flex_1".to_string(),
             flex_services,
         }

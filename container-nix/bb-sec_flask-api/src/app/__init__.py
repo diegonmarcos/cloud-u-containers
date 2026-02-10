@@ -35,12 +35,14 @@ def create_app():
     from app.api.admin import admin_bp
     from app.api.c3 import c3_bp
     from app.api.alerts import alerts_bp
+    from app.api.cloudflare import cloudflare_bp
 
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(c3_bp, url_prefix='/api/c3')
     app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
+    app.register_blueprint(cloudflare_bp, url_prefix='/api/cloudflare')
     app.register_blueprint(web_bp)  # Serves at / for HTML dashboard
 
     # Initialize Swagger (auto-generates OpenAPI spec from docstrings)

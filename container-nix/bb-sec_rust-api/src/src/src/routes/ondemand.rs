@@ -9,22 +9,22 @@ use std::sync::Arc;
 use crate::config::VmProvider;
 use crate::error::AppError;
 use crate::models::vm::validate_container_name;
-use crate::routes::flex;
 use crate::services::{oci, ssh};
 use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/rust/ondemand/status", get(ondemand_status))
-        .route("/rust/ondemand/vm/health", get(ondemand_vm_health))
-        .route("/rust/ondemand/vm/start", post(ondemand_vm_start))
-        .route("/rust/ondemand/vm/stop", post(ondemand_vm_stop))
-        .route("/rust/ondemand/vm/reset", post(ondemand_vm_reset))
-        .route("/rust/ondemand/containers/{name}/status", get(ondemand_container_status))
-        .route("/rust/ondemand/containers/{name}/start", post(ondemand_container_start))
-        .route("/rust/ondemand/containers/{name}/stop", post(ondemand_container_stop))
-        .route("/rust/ondemand/services/{service}/start", post(ondemand_service_start))
-        .route("/rust/ondemand/services/{service}/stop", post(ondemand_service_stop))
+        .route("/rust/status", get(ondemand_status))
+        .route("/rust/vm/health", get(ondemand_vm_health))
+        .route("/rust/vm/start", post(ondemand_vm_start))
+        .route("/rust/vm/stop", post(ondemand_vm_stop))
+        .route("/rust/vm/reset", post(ondemand_vm_reset))
+        .route("/rust/containers/{name}/status", get(ondemand_container_status))
+        .route("/rust/containers/{name}/start", post(ondemand_container_start))
+        .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
+        .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
+        .route("/rust/services/{service}/start", post(ondemand_service_start))
+        .route("/rust/services/{service}/stop", post(ondemand_service_stop))
 }
 
 const VALID_SERVICES: &[&str] = &["sync", "photos", "calendar", "cache"];
@@ -38,6 +38,75 @@ fn validate_service(service: &str) -> Result<(), AppError> {
             VALID_SERVICES.join(", ")
         )))
     }
+}
+
+/// Ensure the flex VM is running. Returns the current state.
+async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
+    let flex_vm_id = &state.config.flex_vm_id;
+    let vm = state
+        .config
+        .vm_instances
+        .get(flex_vm_id)
+        .ok_or_else(|| AppError::service_unavailable("Flex VM not configured"))?;
+
+    match vm.provider {
+        VmProvider::Oci => {
+            let current = oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
+                .await
+                .map_err(|e| AppError::internal(e))?;
+
+            if current == "RUNNING" {
+                return Ok(current);
+            }
+
+            if current == "STOPPED" {
+                oci::instance_action(&state.http, &state.config, &vm.instance_id, "START")
+                    .await
+                    .map_err(|e| AppError::internal(e))?;
+
+                // Poll until running (max 5 minutes)
+                for _ in 0..60 {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    let state_now = oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
+                        .await
+                        .unwrap_or_else(|_| "UNKNOWN".into());
+                    if state_now == "RUNNING" {
+                        // Wait a bit more for SSH to be ready
+                        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                        return Ok("RUNNING".into());
+                    }
+                }
+                return Err(AppError::internal("Timeout waiting for VM to start"));
+            }
+
+            Ok(current)
+        }
+        VmProvider::Gcp => Ok("UNSUPPORTED".into()),
+    }
+}
+
+/// Get container statuses on the flex VM.
+async fn get_container_statuses(state: &AppState, containers: &[String]) -> Vec<Value> {
+    let flex_vm_id = &state.config.flex_vm_id;
+    let ssh_cfg = match state.config.vm_ssh.get(flex_vm_id) {
+        Some(cfg) => cfg,
+        None => return vec![],
+    };
+
+    let mut statuses = vec![];
+    for name in containers {
+        let result = ssh::ssh_command(
+            ssh_cfg,
+            &format!("docker inspect --format '{{{{.State.Status}}}}' {name} 2>/dev/null || echo 'not_found'"),
+        )
+        .await;
+
+        statuses.push(json!({
+            "name": name,
+            "status": if result.success { result.output } else { "unknown".into() }
+        }));
+    }
+    statuses
 }
 
 /// Get the flex VM's provider state.
@@ -54,7 +123,6 @@ async fn get_vm_state(state: &AppState) -> Result<String, AppError> {
 }
 
 /// Batch-fetch all container states via a single SSH call.
-/// Returns a vec of (name, state, ports) tuples.
 async fn batch_container_statuses(state: &AppState) -> Vec<(String, String, String)> {
     let flex_vm_id = &state.config.flex_vm_id;
     let ssh_cfg = match state.config.vm_ssh.get(flex_vm_id) {
@@ -122,7 +190,7 @@ fn compute_service_status(containers: &[String], all_statuses: &[(String, String
 
 #[utoipa::path(
     get,
-    path = "/rust/ondemand/status",
+    path = "/rust/status",
     tag = "ondemand",
     responses(
         (status = 200, description = "Consolidated on-demand status", body = Value),
@@ -211,7 +279,7 @@ pub async fn ondemand_status(
 
 #[utoipa::path(
     get,
-    path = "/rust/ondemand/vm/health",
+    path = "/rust/vm/health",
     tag = "ondemand",
     responses(
         (status = 200, description = "Flex VM health check", body = Value),
@@ -259,7 +327,7 @@ pub async fn ondemand_vm_health(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/vm/start",
+    path = "/rust/vm/start",
     tag = "ondemand",
     responses(
         (status = 200, description = "VM started", body = Value),
@@ -269,7 +337,7 @@ pub async fn ondemand_vm_health(
 pub async fn ondemand_vm_start(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let vm_state = flex::ensure_vm_running(&state).await?;
+    let vm_state = ensure_vm_running(&state).await?;
     Ok(Json(json!({
         "status": "ok",
         "vm_state": vm_state,
@@ -278,7 +346,7 @@ pub async fn ondemand_vm_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/vm/stop",
+    path = "/rust/vm/stop",
     tag = "ondemand",
     responses(
         (status = 200, description = "VM stopped gracefully", body = Value),
@@ -324,7 +392,7 @@ pub async fn ondemand_vm_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/vm/reset",
+    path = "/rust/vm/reset",
     tag = "ondemand",
     responses(
         (status = 200, description = "VM reset/started", body = Value),
@@ -360,7 +428,7 @@ pub async fn ondemand_vm_reset(
 
 #[utoipa::path(
     get,
-    path = "/rust/ondemand/containers/{name}/status",
+    path = "/rust/containers/{name}/status",
     tag = "ondemand",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -377,7 +445,7 @@ pub async fn ondemand_container_status(
         return Err(AppError::bad_request("Invalid container name"));
     }
 
-    let statuses = flex::get_container_statuses(&state, &[name.clone()]).await;
+    let statuses = get_container_statuses(&state, &[name.clone()]).await;
     let status = statuses.into_iter().next().unwrap_or_else(|| json!({"name": name, "status": "unknown"}));
 
     Ok(Json(status))
@@ -385,7 +453,7 @@ pub async fn ondemand_container_status(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/containers/{name}/start",
+    path = "/rust/containers/{name}/start",
     tag = "ondemand",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -403,7 +471,7 @@ pub async fn ondemand_container_start(
     }
 
     // Auto-start VM if needed
-    let vm_state = flex::ensure_vm_running(&state).await?;
+    let vm_state = ensure_vm_running(&state).await?;
 
     let flex_vm_id = &state.config.flex_vm_id;
     let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
@@ -414,7 +482,7 @@ pub async fn ondemand_container_start(
         return Err(AppError::internal(format!("Failed to start container: {}", result.output)));
     }
 
-    let statuses = flex::get_container_statuses(&state, &[name.clone()]).await;
+    let statuses = get_container_statuses(&state, &[name.clone()]).await;
 
     Ok(Json(json!({
         "status": "ok",
@@ -425,7 +493,7 @@ pub async fn ondemand_container_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/containers/{name}/stop",
+    path = "/rust/containers/{name}/stop",
     tag = "ondemand",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -460,7 +528,47 @@ pub async fn ondemand_container_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/services/{service}/start",
+    path = "/rust/containers/{name}/restart",
+    tag = "ondemand",
+    params(("name" = String, Path, description = "Container name")),
+    responses(
+        (status = 200, description = "Container restarted", body = Value),
+        (status = 400, description = "Invalid container name"),
+        (status = 500, description = "Failed to restart container")
+    )
+)]
+pub async fn ondemand_container_restart(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+
+    // Auto-start VM if needed
+    let vm_state = ensure_vm_running(&state).await?;
+
+    let flex_vm_id = &state.config.flex_vm_id;
+    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
+        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
+
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to restart container: {}", result.output)));
+    }
+
+    let statuses = get_container_statuses(&state, &[name.clone()]).await;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_state": vm_state,
+        "container": statuses.into_iter().next(),
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/services/{service}/start",
     tag = "ondemand",
     params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
     responses(
@@ -480,7 +588,7 @@ pub async fn ondemand_service_start(
     let containers = flex_svc.containers.clone();
 
     // Auto-start VM if needed
-    let vm_state = flex::ensure_vm_running(&state).await?;
+    let vm_state = ensure_vm_running(&state).await?;
 
     let flex_vm_id = &state.config.flex_vm_id;
     let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
@@ -489,7 +597,7 @@ pub async fn ondemand_service_start(
     let containers_str = containers.join(" ");
     let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
 
-    let statuses = flex::get_container_statuses(&state, &containers).await;
+    let statuses = get_container_statuses(&state, &containers).await;
 
     Ok(Json(json!({
         "status": if result.success { "ok" } else { "partial" },
@@ -501,7 +609,7 @@ pub async fn ondemand_service_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/ondemand/services/{service}/stop",
+    path = "/rust/services/{service}/stop",
     tag = "ondemand",
     params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
     responses(
