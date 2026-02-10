@@ -15,7 +15,7 @@
     },
     "oci-mail": {
       "user": "ubuntu",
-      "arch": "aarch64-linux",
+      "arch": "x86_64-linux",
       "config": "ubuntu@oci-mail"
     },
     "oci-analytics": {

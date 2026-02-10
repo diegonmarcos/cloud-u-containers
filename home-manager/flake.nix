@@ -22,9 +22,9 @@
       modules = [ ./oci-flex.nix ];
     };
 
-    # oci-mail (130.110.251.193) - Ampere ARM, 24GB RAM, Ubuntu
+    # oci-mail (130.110.251.193) - x86_64, 1GB RAM, Ubuntu
     homeConfigurations."ubuntu@oci-mail" = home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.aarch64-linux;
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
       modules = [ ./oci-mail.nix ];
     };
 
