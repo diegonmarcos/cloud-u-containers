@@ -57,12 +57,6 @@ pub struct VmServiceMap {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Architecture {
-    #[serde(rename = "partII_infrastructure")]
-    pub infrastructure: Option<InfraSection>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct InfraSection {
     #[serde(rename = "virtualMachines")]
     pub virtual_machines: Option<HashMap<String, VmData>>,
 }
@@ -132,22 +126,20 @@ impl AppConfig {
 
         // Also try to load from architecture.json
         if let Some(arch) = &architecture {
-            if let Some(infra) = &arch.infrastructure {
-                if let Some(vms) = &infra.virtual_machines {
-                    for (vm_id, data) in vms {
-                        if vm_instances.contains_key(vm_id) {
-                            continue; // env vars take precedence
-                        }
-                        if let Some(oci_id) = &data.oci_instance_id {
-                            let provider = match data.provider.as_deref() {
-                                Some("gcloud") => VmProvider::Gcp,
-                                _ => VmProvider::Oci,
-                            };
-                            vm_instances.insert(vm_id.clone(), VmInstance {
-                                instance_id: oci_id.clone(),
-                                provider,
-                            });
-                        }
+            if let Some(vms) = &arch.virtual_machines {
+                for (vm_id, data) in vms {
+                    if vm_instances.contains_key(vm_id) {
+                        continue; // env vars take precedence
+                    }
+                    if let Some(oci_id) = &data.oci_instance_id {
+                        let provider = match data.provider.as_deref() {
+                            Some("gcloud") => VmProvider::Gcp,
+                            _ => VmProvider::Oci,
+                        };
+                        vm_instances.insert(vm_id.clone(), VmInstance {
+                            instance_id: oci_id.clone(),
+                            provider,
+                        });
                     }
                 }
             }
@@ -182,10 +174,10 @@ impl AppConfig {
             .unwrap_or_else(|_| "/app/config/gcp_key".into());
 
         let default_ssh = vec![
-            ("oci-p-flex_1", "84.235.234.87", "ubuntu", ssh_key.as_str()),
-            ("oci-f-micro_1", "130.110.251.193", "ubuntu", ssh_key.as_str()),
-            ("oci-f-micro_2", "129.151.228.66", "ubuntu", ssh_key.as_str()),
-            ("gcp-f-micro_1", "34.55.55.234", "diego", gcp_key.as_str()),
+            ("oci-p-flex_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
+            ("oci-f-micro_1", "10.0.0.3", "ubuntu", ssh_key.as_str()),
+            ("oci-f-micro_2", "10.0.0.4", "ubuntu", ssh_key.as_str()),
+            ("gcp-f-micro_1", "10.0.0.1", "diego", gcp_key.as_str()),
         ];
 
         for (vm_id, host, user, key) in &default_ssh {
@@ -198,18 +190,22 @@ impl AppConfig {
 
         // Override from architecture.json if available
         if let Some(arch) = &architecture {
-            if let Some(infra) = &arch.infrastructure {
-                if let Some(vms) = &infra.virtual_machines {
-                    for (vm_id, data) in vms {
-                        if let (Some(network), Some(ssh)) = (&data.network, &data.ssh) {
-                            if let Some(ip) = &network.public_ip {
-                                if ip != "pending" {
-                                    vm_ssh.insert(vm_id.clone(), SshConfig {
-                                        host: ip.clone(),
-                                        user: ssh.user.clone().unwrap_or_else(|| "ubuntu".into()),
-                                        key_path: ssh_key.clone(),
-                                    });
-                                }
+            if let Some(vms) = &arch.virtual_machines {
+                for (vm_id, data) in vms {
+                    if let (Some(network), Some(ssh)) = (&data.network, &data.ssh) {
+                        if let Some(ip) = &network.public_ip {
+                            if ip != "pending" {
+                                // Use GCP key for gcp VMs, OCI key for others
+                                let key = if vm_id.starts_with("gcp-") {
+                                    gcp_key.clone()
+                                } else {
+                                    ssh_key.clone()
+                                };
+                                vm_ssh.insert(vm_id.clone(), SshConfig {
+                                    host: ip.clone(),
+                                    user: ssh.user.clone().unwrap_or_else(|| "ubuntu".into()),
+                                    key_path: key,
+                                });
                             }
                         }
                     }
