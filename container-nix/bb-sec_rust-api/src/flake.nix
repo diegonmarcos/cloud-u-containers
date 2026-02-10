@@ -36,8 +36,6 @@
             - OCI_FLEX1_INSTANCE_ID=''${OCI_FLEX1_INSTANCE_ID}
             - OCI_MICRO1_INSTANCE_ID=''${OCI_MICRO1_INSTANCE_ID}
             - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
-            - CF_API_TOKEN=''${CF_API_TOKEN}
-            - CF_ZONE_ID=''${CF_ZONE_ID}
             - SSH_KEY_PATH=/app/config/id_rsa
             - GCP_SSH_KEY_PATH=/app/config/gcp_key
           networks:

@@ -35,6 +35,8 @@
             - OCI_KEY_FILE=/app/config/oci_api_key.pem
             - OCI_WAKE_INSTANCE_ID=''${OCI_WAKE_INSTANCE_ID}
             - CORS_ORIGINS=https://api.diegonmarcos.com,https://diegonmarcos.github.io,http://localhost:*,http://127.0.0.1:*
+            - CF_API_TOKEN=''${CF_API_TOKEN}
+            - CF_ZONE_ID=''${CF_ZONE_ID}
             - NTFY_URL=http://ntfy:80
             - NTFY_TOKEN=''${NTFY_TOKEN}
           networks:
@@ -74,6 +76,7 @@
         cp ${./app/api/auth.py} $out/app/api/auth.py
         cp ${./app/api/c3.py} $out/app/api/c3.py
         cp ${./app/api/routes.py} $out/app/api/routes.py
+        cp ${./app/api/cloudflare.py} $out/app/api/cloudflare.py
         cp ${./app/api/web.py} $out/app/api/web.py
         cp ${./app/data/cloud_architecture.json} $out/app/data/cloud_architecture.json
         cp ${./app/data/cloud_control.json} $out/app/data/cloud_control.json
