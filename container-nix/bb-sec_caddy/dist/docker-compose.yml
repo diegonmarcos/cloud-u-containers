@@ -1,0 +1,45 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "8880:8880"
+      - "8443:8443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      introspect-proxy:
+        condition: service_healthy
+
+  introspect-proxy:
+    build: ./introspect-proxy
+    image: introspect-proxy:latest
+    container_name: introspect-proxy
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
+      CLIENT_ID: cli
+      CLIENT_SECRET: ${AUTHELIA_CLI_SECRET}
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+        reservations:
+          memory: 48M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

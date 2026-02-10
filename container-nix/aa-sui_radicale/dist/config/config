@@ -2,10 +2,9 @@
 hosts = 0.0.0.0:5232
 
 [auth]
-type = htpasswd
-htpasswd_filename = /config/users
-htpasswd_encryption = plain
-urldecode_username = true
+type = imap
+imap_host = imap:143
+imap_security = none
 
 [storage]
 filesystem_folder = /data/collections
@@ -14,7 +13,7 @@ filesystem_folder = /data/collections
 type = owner_only
 
 [logging]
-level = info
+level = debug
 
 [web]
 type = internal

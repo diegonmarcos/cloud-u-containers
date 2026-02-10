@@ -1,0 +1,211 @@
+{
+  http_port 8880
+  https_port 8443
+  admin localhost:2019
+  auto_https disable_redirects
+}
+
+:8880 {
+  respond "Caddy is running" 200
+}
+
+# ── Authelia-protected (with bearer token bypass) ──────────────────
+http://photos.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:2342
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:2342
+  }
+}
+
+http://sync.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8384
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8384
+  }
+}
+
+http://proxy.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy localhost:2019
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy localhost:2019
+  }
+}
+
+http://photos.app.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3013
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3013
+  }
+}
+
+http://mail.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy https://10.0.0.3:443 {
+      transport http {
+        tls_insecure_skip_verify
+      }
+    }
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy https://10.0.0.3:443 {
+      transport http {
+        tls_insecure_skip_verify
+      }
+    }
+  }
+}
+
+http://ide.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:8443
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:8443
+  }
+}
+
+http://db.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:8085
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:8085
+  }
+}
+
+http://analytics.diegonmarcos.com:8880 {
+  @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8081
+  }
+  handle {
+forward_auth https://auth.diegonmarcos.com {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8081
+  }
+}
+
+# vault — vaultwarden port not exposed on gcp-proxy host
+# rss — ntfy bound to localhost:8090 on gcp-proxy
+# logs — dozzle not running
+# docker — portainer not running
+
+# ── n8n (webhook bypass, no auth on webhooks) ──────────────────────
+http://n8n.diegonmarcos.com:8880 {
+  @webhooks path /webhook/* /webhook-test/*
+  handle @webhooks {
+    reverse_proxy 84.235.234.87:5678
+  }
+  handle {
+    reverse_proxy 84.235.234.87:5678
+  }
+}
+
+http://app.gallery.diegonmarcos.com:8880 {
+  reverse_proxy 10.0.0.2:2342
+}
+
+# ── Public ─────────────────────────────────────────────────────────
+http://api.diegonmarcos.com:8880 {
+  handle /rust/* {
+    reverse_proxy 10.0.0.1:8080
+  }
+  handle {
+    reverse_proxy 10.0.0.1:5000
+  }
+}
+
+http://cal.diegonmarcos.com:8880 {
+  reverse_proxy 10.0.0.2:5232
+}
+
+http://drive-notes-affine.diegonmarcos.com:8880 {
+  request_body {
+    max_size 100MB
+  }
+  reverse_proxy 10.0.0.2:3010 {
+    transport http {
+      read_timeout 3600s
+      write_timeout 3600s
+    }
+  }
+}
+
+# disabled: vault, rss, logs, docker (see comments above)

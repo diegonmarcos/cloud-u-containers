@@ -18,6 +18,8 @@ services:
       - OCI_KEY_FILE=/app/config/oci_api_key.pem
       - OCI_WAKE_INSTANCE_ID=${OCI_WAKE_INSTANCE_ID}
       - CORS_ORIGINS=https://api.diegonmarcos.com,https://diegonmarcos.github.io,http://localhost:*,http://127.0.0.1:*
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
       - NTFY_URL=http://ntfy:80
       - NTFY_TOKEN=${NTFY_TOKEN}
     networks:

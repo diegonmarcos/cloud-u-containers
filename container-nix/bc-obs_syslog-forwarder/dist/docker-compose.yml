@@ -1,0 +1,27 @@
+services:
+  syslog-forwarder:
+    image: balabit/syslog-ng:4.4.0
+    container_name: syslog-forwarder
+    restart: unless-stopped
+    environment:
+      - VM_NAME=${VM_NAME:-unknown}
+      - CENTRAL_HOST=${CENTRAL_HOST}
+      - CENTRAL_PORT=${CENTRAL_PORT:-5514}
+    volumes:
+      - /opt/sauron/config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
+      - sauron-logs:/var/log/sauron:ro
+      - syslog-cache:/var/cache/syslog-ng
+    networks:
+      - security
+
+networks:
+  security:
+    name: sauron_security
+    external: true
+
+volumes:
+  sauron-logs:
+    name: sauron_sauron-logs
+    external: true
+  syslog-cache:
+    driver: local

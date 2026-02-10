@@ -3,42 +3,24 @@ services:
     image: tomsquest/docker-radicale:latest
     container_name: radicale
     restart: unless-stopped
-    expose:
-      - "5232"
+    ports:
+      - "5232:5232"
     volumes:
       - ./data:/data
       - ./config:/config:ro
     environment:
-      - RADICALE_CONFIG=/config/config
-    networks:
-      - calendar_net
+      - TAKE_FILE_OWNERSHIP=true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5232/.web/"]
+      test: curl -f http://localhost:5232/.web/ || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
-
-  caddy:
-    image: caddy:alpine
-    container_name: caddy-calendar
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
     networks:
-      - calendar_net
-    depends_on:
-      - radicale
+      - mail_network
+      - mailu_default
 
 networks:
-  calendar_net:
-    driver: bridge
-
-volumes:
-  caddy_data:
-  caddy_config:
+  mail_network:
+    external: true
+  mailu_default:
+    external: true
