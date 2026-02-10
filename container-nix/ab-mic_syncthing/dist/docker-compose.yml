@@ -1,26 +1,28 @@
-
-
 services:
   syncthing:
     image: syncthing/syncthing:latest
     container_name: syncthing
+    hostname: web-server-1
     restart: unless-stopped
-    hostname: syncthing-server
     environment:
-      TZ: Europe/Madrid
-      PUID: 1000
-      PGID: 1000
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /home/ubuntu/syncthing-config:/var/syncthing/config
+      - /home/ubuntu/sync:/var/syncthing/data
     ports:
       - "8384:8384"
-      - "22000:22000/tcp"
-      - "22000:22000/udp"
+      - "22000:22000"
       - "21027:21027/udp"
-    volumes:
-      - ./config:/var/syncthing/config
-      - ./data:/var/syncthing/data
     networks:
-      - proxy
+      - matomo_default
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+        reservations:
+          memory: 50M
 
 networks:
-  proxy:
+  matomo_default:
     external: true

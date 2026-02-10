@@ -1,144 +1,109 @@
-
+version: "3.8"
 
 services:
-  # Reverse proxy and HTTPS termination
+  resolver:
+    image: ghcr.io/mailu/unbound:2024.06
+    env_file: mailu.env
+    restart: always
+    networks:
+      default:
+        ipv4_address: 192.168.203.254
+
   front:
     image: ghcr.io/mailu/nginx:2024.06
-    container_name: mailu-front
-    restart: unless-stopped
     env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-front
+    restart: always
     ports:
       - "80:80"
       - "443:443"
       - "25:25"
       - "465:465"
+      - "587:587"
       - "993:993"
     volumes:
-      - ./certs:/certs
-      - ./overrides/nginx:/overrides:ro
-    networks:
-      - default
-      - proxy
+      - "./certs:/certs"
+      - "./overrides/nginx:/overrides:ro"
+    depends_on:
+      - resolver
+    dns:
+      - 192.168.203.254
 
-  # Admin interface
   admin:
     image: ghcr.io/mailu/admin:2024.06
-    container_name: mailu-admin
-    restart: unless-stopped
     env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-admin
+    restart: always
     volumes:
-      - ./data:/data
-      - ./dkim:/dkim
+      - "./data:/data"
+      - "./dkim:/dkim"
     depends_on:
+      - resolver
       - redis
-    networks:
-      - default
+    dns:
+      - 192.168.203.254
 
-  # IMAP server
   imap:
     image: ghcr.io/mailu/dovecot:2024.06
-    container_name: mailu-imap
-    restart: unless-stopped
     env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-imap
+    restart: always
     volumes:
-      - ./mail:/mail
-      - ./overrides/dovecot:/overrides:ro
+      - "./mail:/mail"
+      - "./overrides/dovecot:/overrides:ro"
     depends_on:
+      - resolver
       - front
-    networks:
-      - default
+    dns:
+      - 192.168.203.254
 
-  # SMTP server
   smtp:
     image: ghcr.io/mailu/postfix:2024.06
-    container_name: mailu-smtp
-    restart: unless-stopped
     env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-smtp
+    restart: always
     volumes:
-      - ./mailqueue:/queue
-      - ./overrides/postfix:/overrides:ro
+      - "./mailqueue:/queue"
+      - "./overrides/postfix:/overrides:ro"
     depends_on:
+      - resolver
       - front
-    networks:
-      - default
+    dns:
+      - 192.168.203.254
 
-  # Antispam
   antispam:
     image: ghcr.io/mailu/rspamd:2024.06
-    container_name: mailu-antispam
-    restart: unless-stopped
     env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-antispam
+    restart: always
     volumes:
-      - ./filter:/var/lib/rspamd
-      - ./overrides/rspamd:/overrides:ro
+      - "./filter:/var/lib/rspamd"
+      - "./overrides/rspamd:/overrides:ro"
     depends_on:
+      - resolver
       - front
-    networks:
-      - default
+    dns:
+      - 192.168.203.254
 
-  # Webmail (Roundcube)
-  webmail:
-    image: ghcr.io/mailu/webmail:2024.06
-    container_name: mailu-webmail
-    restart: unless-stopped
-    env_file: mailu.env
-    logging:
-      driver: journald
-      options:
-        tag: mailu-webmail
-    volumes:
-      - ./webmail:/data
-      - ./overrides/roundcube:/overrides:ro
-    depends_on:
-      - front
-    networks:
-      - default
-
-  # Redis for session storage
   redis:
     image: redis:7-bookworm
-    container_name: mailu-redis
-    restart: unless-stopped
+    restart: always
     volumes:
-      - ./redis:/data
-    networks:
-      - default
+      - "./redis:/data"
 
-  # DNS resolver
-  resolver:
-    image: ghcr.io/mailu/unbound:2024.06
-    container_name: mailu-resolver
-    restart: unless-stopped
+  webmail:
+    image: ghcr.io/mailu/webmail:2024.06
     env_file: mailu.env
-    networks:
-      default:
-        ipv4_address: 192.168.203.254
+    restart: always
+    volumes:
+      - "./webmail:/data"
+      - "./overrides/roundcube:/overrides:ro"
+    depends_on:
+      - resolver
+      - front
+      - imap
+    dns:
+      - 192.168.203.254
 
 networks:
   default:
     driver: bridge
     ipam:
+      driver: default
       config:
         - subnet: 192.168.203.0/24
-  proxy:
-    external: true

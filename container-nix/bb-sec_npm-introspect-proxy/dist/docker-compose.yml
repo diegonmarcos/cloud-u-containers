@@ -10,7 +10,7 @@ services:
       - "127.0.0.1:4182:4182"
     environment:
       TZ: Europe/Madrid
-      INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
+      INTROSPECT_URL: http://authelia:9091/authelia/api/oidc/introspection
       CLIENT_ID: cli
       CLIENT_SECRET: ${AUTHELIA_CLI_SECRET}
       DEBUG: "false"

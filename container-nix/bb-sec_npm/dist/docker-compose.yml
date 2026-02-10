@@ -1,12 +1,10 @@
-
-
 services:
   npm:
     image: jc21/nginx-proxy-manager:latest
     container_name: npm
-    restart: unless-stopped
+    restart: always
     environment:
-      TZ: Europe/Madrid
+      DISABLE_IPV6: "true"
     ports:
       - "80:80"
       - "443:443"
@@ -15,9 +13,9 @@ services:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
     networks:
-      - proxy
+      - npm_default
 
 networks:
-  proxy:
-    name: proxy
+  npm_default:
+    name: npm_default
     driver: bridge

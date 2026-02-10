@@ -1,0 +1,21 @@
+services:
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    container_name: fluent-bit
+    restart: unless-stopped
+    volumes:
+      - /opt/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - /opt/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+      - fluent-bit-db:/fluent-bit/db
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    external: true
+
+volumes:
+  fluent-bit-db:
+    driver: local

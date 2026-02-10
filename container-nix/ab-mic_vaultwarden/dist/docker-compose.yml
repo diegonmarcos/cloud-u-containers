@@ -6,21 +6,24 @@ services:
     env_file:
       - .env
     environment:
-      TZ: Europe/Madrid
       DOMAIN: https://vault.diegonmarcos.com
-      SIGNUPS_ALLOWED: false
+      SIGNUPS_ALLOWED: true
       INVITATIONS_ALLOWED: true
       SHOW_PASSWORD_HINT: false
       WEBSOCKET_ENABLED: "true"
-      LOG_LEVEL: info
-    ports:
-      - "8080:80"
-      - "3012:3012"
+      LOG_LEVEL: warn
+      SMTP_HOST: smtp.diegonmarcos.com
+      SMTP_FROM: noreply@diegonmarcos.com
+      SMTP_PORT: "465"
+      SMTP_SECURITY: force_tls
+      SMTP_USERNAME: noreply@diegonmarcos.com
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
     volumes:
       - ./data:/data
     networks:
-      - proxy
+      - npm_default
 
 networks:
-  proxy:
+  npm_default:
     external: true

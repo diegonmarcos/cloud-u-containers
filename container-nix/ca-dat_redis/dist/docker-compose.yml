@@ -1,39 +1,19 @@
 services:
   redis:
-    image: redis:7-bookworm
+    image: redis:alpine
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    env_file:
-      - .env
-    command: >
-      sh -c "redis-server
-      --appendonly yes
-      --maxmemory 128mb
-      --maxmemory-policy allkeys-lru
-      --save 60 1
-      --loglevel warning
-      --requirepass $$REDIS_PASSWORD"
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
-      - ./data:/data
-    environment:
-      TZ: Europe/Madrid
-    networks:
-      - proxy
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 64M
+      - /data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+    networks:
+      - dev_network
 
 networks:
-  proxy:
+  dev_network:
     external: true
