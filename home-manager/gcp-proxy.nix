@@ -98,7 +98,7 @@
     bashrcExtra = ''
       # Block imperative package managers — use declarative Nix Home Manager
       _nix_block() {
-        echo -e '\033[1;31m[BLOCKED]\033[0m "$1" is disabled on this VM.'
+        echo -e "\033[1;31m[BLOCKED]\033[0m \"$1\" is disabled on this VM."
         echo '  This environment is managed declaratively with Nix Home Manager.'
         echo '  Flake: git/cloud/a_solutions/home-manager/'
         echo '  To add packages: edit the .nix file, then deploy with:'
