@@ -190,7 +190,7 @@ fn compute_service_status(containers: &[String], all_statuses: &[(String, String
 #[utoipa::path(
     get,
     path = "/rust/status/flex1",
-    tag = "ondemand",
+    tag = "status",
     responses(
         (status = 200, description = "Flex VM (oci-p-flex_1) status with all services", body = Value),
         (status = 500, description = "Internal error")
@@ -279,7 +279,7 @@ pub async fn status_flex1(
 #[utoipa::path(
     get,
     path = "/rust/status/all",
-    tag = "ondemand",
+    tag = "status",
     responses(
         (status = 200, description = "Status of all 4 VMs with services and containers", body = Value),
         (status = 500, description = "Internal error")
@@ -410,7 +410,7 @@ pub async fn status_all(
 #[utoipa::path(
     get,
     path = "/rust/vm/health",
-    tag = "ondemand",
+    tag = "vm",
     responses(
         (status = 200, description = "Flex VM health check", body = Value),
         (status = 500, description = "Internal error")
@@ -458,7 +458,7 @@ pub async fn ondemand_vm_health(
 #[utoipa::path(
     post,
     path = "/rust/vm/start",
-    tag = "ondemand",
+    tag = "vm",
     responses(
         (status = 200, description = "VM started", body = Value),
         (status = 500, description = "Failed to start VM")
@@ -477,7 +477,7 @@ pub async fn ondemand_vm_start(
 #[utoipa::path(
     post,
     path = "/rust/vm/stop",
-    tag = "ondemand",
+    tag = "vm",
     responses(
         (status = 200, description = "VM stopped gracefully", body = Value),
         (status = 500, description = "Failed to stop VM")
@@ -523,7 +523,7 @@ pub async fn ondemand_vm_stop(
 #[utoipa::path(
     post,
     path = "/rust/vm/reset",
-    tag = "ondemand",
+    tag = "vm",
     responses(
         (status = 200, description = "VM reset/started", body = Value),
         (status = 500, description = "Failed to reset VM")
@@ -559,7 +559,7 @@ pub async fn ondemand_vm_reset(
 #[utoipa::path(
     get,
     path = "/rust/containers/{name}/status",
-    tag = "ondemand",
+    tag = "containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container status", body = Value),
@@ -584,7 +584,7 @@ pub async fn ondemand_container_status(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/start",
-    tag = "ondemand",
+    tag = "containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container started", body = Value),
@@ -624,7 +624,7 @@ pub async fn ondemand_container_start(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/stop",
-    tag = "ondemand",
+    tag = "containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container stopped", body = Value),
@@ -659,7 +659,7 @@ pub async fn ondemand_container_stop(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/restart",
-    tag = "ondemand",
+    tag = "containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container restarted", body = Value),
@@ -699,7 +699,7 @@ pub async fn ondemand_container_restart(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/start",
-    tag = "ondemand",
+    tag = "services",
     params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
     responses(
         (status = 200, description = "Service started", body = Value),
@@ -740,7 +740,7 @@ pub async fn ondemand_service_start(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/stop",
-    tag = "ondemand",
+    tag = "services",
     params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
     responses(
         (status = 200, description = "Service stopped", body = Value),
