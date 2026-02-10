@@ -369,7 +369,7 @@ pub async fn status_all(
     for (vm_id, vm_map) in &state.config.all_vm_services {
         let provider_state = get_vm_state_by_id(&state, vm_id)
             .await
-            .unwrap_or_else(|_| "not_configured".into());
+            .unwrap_or_else(|_| "unknown".into());
 
         let ssh_cfg = state.config.vm_ssh.get(vm_id);
         let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
