@@ -64,13 +64,19 @@ deploy_single_vm() {
     log "  Copying flake to $vm:~/.config/home-manager/"
     ssh "$vm" "mkdir -p ~/.config/home-manager"
 
-    rsync -avz --delete \
-        --include="flake.nix" \
-        --include="flake.lock" \
-        --include="${vm}.nix" \
-        --include="*.nix" \
-        --exclude="*" \
-        "$SERVICE_DIR/" "$vm:~/.config/home-manager/" 2>&1 | grep -v "^sending\|^sent\|^total"
+    # Use scp as fallback if rsync not available
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -avz --delete \
+            --include="flake.nix" \
+            --include="flake.lock" \
+            --include="${vm}.nix" \
+            --include="*.nix" \
+            --exclude="*" \
+            "$SERVICE_DIR/" "$vm:~/.config/home-manager/" 2>&1 | grep -v "^sending\|^sent\|^total"
+    else
+        # Fallback: use scp for individual files
+        scp "$SERVICE_DIR/flake.nix" "$SERVICE_DIR/flake.lock" "$SERVICE_DIR/${vm}.nix" "$vm:~/.config/home-manager/" 2>&1 | tail -1
+    fi
 
     log "  ✓ Files copied to $vm"
 }
@@ -94,8 +100,8 @@ activate_single_vm() {
 
     log "Activating home-manager on $vm..."
 
-    # Run home-manager switch on VM
-    ssh "$vm" "cd ~/.config/home-manager && nix run home-manager/release-24.11 -- switch --flake .#$config" 2>&1 | tail -5
+    # Run home-manager switch on VM with backup
+    ssh "$vm" "cd ~/.config/home-manager && nix run home-manager/release-24.11 -- switch --flake .#$config -b backup" 2>&1 | tail -10
 
     log "  ✓ $vm activated"
 }
