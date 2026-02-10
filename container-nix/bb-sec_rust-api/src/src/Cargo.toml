@@ -21,5 +21,6 @@ sha2 = "0.10"
 
 [profile.release]
 opt-level = "s"
-lto = true
+lto = false
 strip = true
+codegen-units = 8

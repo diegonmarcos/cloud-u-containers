@@ -1,0 +1,9 @@
+{
+  "name": "caddy",
+  "description": "Caddy reverse proxy (oci-mail)",
+
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/caddy"
+  }
+}
