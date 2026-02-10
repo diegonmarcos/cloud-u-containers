@@ -48,6 +48,8 @@
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-server
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
             - MODE=server
@@ -63,8 +65,6 @@
             - SMTP_FROM=''${SMTP_FROM:-}
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
-          env_file:
-            - ./env/windmill.env
           secrets:
             - db_password
           ports:
@@ -95,6 +95,8 @@
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-worker
           restart: unless-stopped
+          env_file:
+            - .env
           environment:
             - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
             - MODE=worker
@@ -103,8 +105,6 @@
             - DISABLE_NUSER=true
             - KEEP_JOB_DIR=false
             - METRICS_ENABLED=false
-          env_file:
-            - ./env/windmill.env
           secrets:
             - db_password
           depends_on:

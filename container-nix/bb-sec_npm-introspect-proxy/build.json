@@ -1,0 +1,9 @@
+{
+  "name": "npm-introspect-proxy",
+  "description": "Token introspection proxy for NPM",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/introspect-proxy"
+  }
+}

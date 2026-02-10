@@ -1,0 +1,9 @@
+{
+  "name": "authelia",
+  "description": "SSO and 2FA authentication portal",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/authelia"
+  }
+}

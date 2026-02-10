@@ -34,6 +34,7 @@
     sauron.url = "path:./bb-sec_sauron";
     sauron-central.url = "path:./bb-sec_sauron-central";
     sauron-lite.url = "path:./bc-obs_sauron-lite";
+    rust-api.url = "path:./bb-sec_rust-api";
     wireguard.url = "path:./bb-sec_wireguard";
 
     # Observability (bc-obs_)
@@ -81,7 +82,7 @@
       gcp-f-micro_1 = {
         ip = "35.226.147.64";
         services = [
-          "npm" "authelia" "flask-api" "vaultwarden" "ntfy"
+          "npm" "authelia" "flask-api" "rust-api" "vaultwarden" "ntfy"
           "syslog-central" "c3-collector" "collector-events"
           "github-rss" "palantir-cron" "alerts-api"
           "npm-introspect-proxy" "sauron-lite" "sauron-central"
@@ -131,6 +132,7 @@
       flask-api = inputs.flask-api.packages.${system}.default;
       npm = inputs.npm.packages.${system}.default;
       npm-introspect-proxy = inputs.npm-introspect-proxy.packages.${system}.default;
+      rust-api = inputs.rust-api.packages.${system}.default;
       sauron = inputs.sauron.packages.${system}.default;
       sauron-central = inputs.sauron-central.packages.${system}.default;
       sauron-lite = inputs.sauron-lite.packages.${system}.default;
@@ -189,6 +191,7 @@
         ln -s ${inputs.flask-api.packages.${system}.default} $out/bb-sec/flask-api
         ln -s ${inputs.npm.packages.${system}.default} $out/bb-sec/npm
         ln -s ${inputs.npm-introspect-proxy.packages.${system}.default} $out/bb-sec/npm-introspect-proxy
+        ln -s ${inputs.rust-api.packages.${system}.default} $out/bb-sec/rust-api
         ln -s ${inputs.sauron.packages.${system}.default} $out/bb-sec/sauron
         ln -s ${inputs.sauron-central.packages.${system}.default} $out/bb-sec/sauron-central
         ln -s ${inputs.sauron-lite.packages.${system}.default} $out/bb-sec/sauron-lite
@@ -224,7 +227,7 @@
         SUITE_SERVICES="affine code-server etherpad filebrowser grist mailu photoprism photos-webhook radicale revealmd smtp-proxy"
         MISC_SERVICES="syncthing vaultwarden"
         CLOUD_SERVICES="cloudflare gcloud oci"
-        SEC_SERVICES="authelia flask-api npm npm-introspect-proxy sauron sauron-central sauron-lite wireguard"
+        SEC_SERVICES="authelia flask-api npm npm-introspect-proxy rust-api sauron sauron-central sauron-lite wireguard"
         OBS_SERVICES="alerts-api c3-collector collector-events dozzle github-rss lgtm matomo nocodb ntfy palantir-cron syslog windmill"
         DATA_SERVICES="backup-borg backup-bup backup-gitea db-agent postlite redis"
 
@@ -238,7 +241,7 @@
             echo "  result/aa-sui/ - Suite services (11)"
             echo "  result/ab-mic/ - Misc tools (2)"
             echo "  result/ba-clo/ - Cloud providers (3 - Terraform)"
-            echo "  result/bb-sec/ - Security services (8)"
+            echo "  result/bb-sec/ - Security services (9)"
             echo "  result/bc-obs/ - Observability (12)"
             echo "  result/ca-dat/ - Databases & Backups (6)"
             ;;
@@ -261,7 +264,7 @@
             echo "Databases & Backups (ca-dat_):"
             for s in $DATA_SERVICES; do echo "  - $s"; done
             echo ""
-            echo "Total: 42 services"
+            echo "Total: 43 services"
             ;;
           *)
             echo "Usage: deploy-cloud [build|list]"

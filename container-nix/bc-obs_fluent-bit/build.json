@@ -1,0 +1,9 @@
+{
+  "name": "fluent-bit",
+  "description": "Log processor and forwarder",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/fluent-bit"
+  }
+}

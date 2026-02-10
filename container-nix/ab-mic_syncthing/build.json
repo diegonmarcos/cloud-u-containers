@@ -1,0 +1,7 @@
+{
+  "name": "syncthing",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/syncthing"
+  }
+}

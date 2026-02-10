@@ -1,0 +1,7 @@
+{
+  "name": "syslog-forwarder",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/syslog-forwarder"
+  }
+}

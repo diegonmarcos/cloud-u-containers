@@ -1,0 +1,9 @@
+{
+  "name": "filebrowser",
+  "description": "FileBrowser web file manager (NEW - not deployed yet)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/filebrowser"
+  }
+}

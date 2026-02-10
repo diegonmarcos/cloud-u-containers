@@ -1,0 +1,9 @@
+{
+  "name": "ntfy",
+  "description": "Push notification server",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/ntfy"
+  }
+}

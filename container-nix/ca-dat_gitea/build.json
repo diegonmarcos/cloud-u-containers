@@ -1,0 +1,9 @@
+{
+  "name": "gitea",
+  "description": "Self-hosted Git service",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/gitea"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "grist",
+  "description": "Grist spreadsheet/database (NEW - not deployed yet)",
+
+  "deploy": {
+    "host": "oci-flex",
+    "remote_path": "/opt/containers/grist"
+  }
+}

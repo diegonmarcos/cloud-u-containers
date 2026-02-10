@@ -1,0 +1,9 @@
+{
+  "name": "vaultwarden",
+  "description": "Bitwarden password manager",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/vaultwarden"
+  }
+}
