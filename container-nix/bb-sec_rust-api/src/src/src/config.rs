@@ -11,6 +11,8 @@ pub struct AppConfig {
     pub vm_ssh: HashMap<String, SshConfig>,
     pub oci_config_file: String,
     pub oci_key_file: String,
+    pub gcp_service_account_file: String,
+    pub gcp_project_id: String,
     pub flex_vm_id: String,
     pub flex_services: HashMap<String, FlexService>,
     pub all_vm_services: HashMap<String, VmServiceMap>,
@@ -32,6 +34,7 @@ pub enum VmProvider {
 pub struct GcpVm {
     pub name: String,
     pub zone: String,
+    pub project_id: String,
 }
 
 #[derive(Clone, Debug)]
@@ -150,12 +153,26 @@ impl AppConfig {
             }
         }
 
+        // GCP config
+        let gcp_service_account_file = std::env::var("GCP_SERVICE_ACCOUNT_FILE")
+            .unwrap_or_else(|_| "/app/config/gcp_key.json".into());
+        let gcp_project_id = std::env::var("GCP_PROJECT_ID").unwrap_or_default();
+
         // GCP VMs
         let mut gcp_vms = HashMap::new();
         gcp_vms.insert("gcp-f-micro_1".to_string(), GcpVm {
             name: "arch-1".to_string(),
             zone: "us-central1-a".to_string(),
+            project_id: gcp_project_id.clone(),
         });
+
+        // Ensure GCP VMs are in vm_instances for provider dispatch
+        for (vm_id, gcp_vm) in &gcp_vms {
+            vm_instances.entry(vm_id.clone()).or_insert_with(|| VmInstance {
+                instance_id: gcp_vm.name.clone(),
+                provider: VmProvider::Gcp,
+            });
+        }
 
         // SSH configs from env or architecture.json
         let mut vm_ssh = HashMap::new();
@@ -283,6 +300,8 @@ impl AppConfig {
                 .unwrap_or_else(|_| "/app/config/oci_config".into()),
             oci_key_file: std::env::var("OCI_KEY_FILE")
                 .unwrap_or_else(|_| "/app/config/oci_api_key.pem".into()),
+            gcp_service_account_file,
+            gcp_project_id,
             flex_vm_id: "oci-p-flex_1".to_string(),
             flex_services,
             all_vm_services,

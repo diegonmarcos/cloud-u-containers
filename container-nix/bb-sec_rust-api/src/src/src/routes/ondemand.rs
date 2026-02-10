@@ -8,14 +8,16 @@ use std::sync::Arc;
 
 use crate::config::VmProvider;
 use crate::error::AppError;
-use crate::models::vm::validate_container_name;
-use crate::services::{oci, ssh};
+use crate::models::vm::{validate_container_name, validate_vm_id};
+use crate::services::{gcp, oci, ssh};
 use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
+        // Status
         .route("/rust/status/flex1", get(status_flex1))
         .route("/rust/status/all", get(status_all))
+        // Legacy flex-shortcut routes (backward compat)
         .route("/rust/vm/health", get(ondemand_vm_health))
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
@@ -26,28 +28,67 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
         .route("/rust/services/{service}/start", post(ondemand_service_start))
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
+        // Generalized per-VM routes
+        .route("/rust/vms/{vm_id}/health", get(vm_health))
+        .route("/rust/vms/{vm_id}/start", post(vm_start))
+        .route("/rust/vms/{vm_id}/stop", post(vm_stop))
+        .route("/rust/vms/{vm_id}/reset", post(vm_reset))
+        .route("/rust/vms/{vm_id}/containers/{name}/status", get(vm_container_status))
+        .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
+        .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
+        .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
+        .route("/rust/vms/{vm_id}/services/{service}/start", post(vm_service_start))
+        .route("/rust/vms/{vm_id}/services/{service}/stop", post(vm_service_stop))
 }
 
-fn validate_service(service: &str, state: &AppState) -> Result<(), AppError> {
-    if state.config.flex_services.contains_key(service) {
-        Ok(())
-    } else {
-        let valid: Vec<String> = state.config.flex_services.keys().cloned().collect();
-        Err(AppError::not_found(format!(
-            "Unknown service: {service}. Valid: {}",
-            valid.join(", ")
-        )))
+// ---------------------------------------------------------------------------
+// Helpers — generalized to accept vm_id
+// ---------------------------------------------------------------------------
+
+fn validate_service_for_vm(service: &str, vm_id: &str, state: &AppState) -> Result<Vec<String>, AppError> {
+    let vm_map = state.config.all_vm_services.get(vm_id)
+        .ok_or_else(|| AppError::not_found(format!("Unknown VM: {vm_id}")))?;
+    let containers = vm_map.services.get(service)
+        .ok_or_else(|| {
+            let valid: Vec<&String> = vm_map.services.keys().collect();
+            AppError::not_found(format!(
+                "Unknown service '{service}' on {vm_id}. Valid: {}",
+                valid.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+            ))
+        })?;
+    Ok(containers.clone())
+}
+
+/// Load GCP service account config (best-effort, cached at process level would be ideal but
+/// re-reading from disk is fine for the call frequency here).
+fn load_gcp_sa(state: &AppState) -> Result<gcp::ServiceAccountConfig, String> {
+    gcp::parse_service_account(&state.config.gcp_service_account_file)
+}
+
+/// Get the provider state for any VM.
+async fn get_vm_state_by_id(state: &AppState, vm_id: &str) -> Result<String, AppError> {
+    let vm = state.config.vm_instances.get(vm_id)
+        .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
+    match vm.provider {
+        VmProvider::Oci => oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
+            .await
+            .map_err(|e| AppError::internal(e)),
+        VmProvider::Gcp => {
+            let gcp_vm = state.config.gcp_vms.get(vm_id)
+                .ok_or_else(|| AppError::internal(format!("GCP VM config not found for {vm_id}")))?;
+            let sa = load_gcp_sa(state).map_err(AppError::internal)?;
+            gcp::get_instance_state(
+                &state.http, &sa, &state.gcp_token_cache,
+                &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name,
+            ).await.map_err(|e| AppError::internal(e))
+        }
     }
 }
 
-/// Ensure the flex VM is running. Returns the current state.
-async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let vm = state
-        .config
-        .vm_instances
-        .get(flex_vm_id)
-        .ok_or_else(|| AppError::service_unavailable("Flex VM not configured"))?;
+/// Ensure a VM is running. Starts it and polls if stopped. Returns current state.
+async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String, AppError> {
+    let vm = state.config.vm_instances.get(vm_id)
+        .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
 
     match vm.provider {
         VmProvider::Oci => {
@@ -64,14 +105,12 @@ async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
                     .await
                     .map_err(|e| AppError::internal(e))?;
 
-                // Poll until running (max 5 minutes)
                 for _ in 0..60 {
                     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
                     let state_now = oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
                         .await
                         .unwrap_or_else(|_| "UNKNOWN".into());
                     if state_now == "RUNNING" {
-                        // Wait a bit more for SSH to be ready
                         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
                         return Ok("RUNNING".into());
                     }
@@ -81,14 +120,48 @@ async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
 
             Ok(current)
         }
-        VmProvider::Gcp => Ok("UNSUPPORTED".into()),
+        VmProvider::Gcp => {
+            let gcp_vm = state.config.gcp_vms.get(vm_id)
+                .ok_or_else(|| AppError::internal(format!("GCP VM config not found for {vm_id}")))?;
+            let sa = load_gcp_sa(state).map_err(AppError::internal)?;
+
+            let current = gcp::get_instance_state(
+                &state.http, &sa, &state.gcp_token_cache,
+                &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name,
+            ).await.map_err(|e| AppError::internal(e))?;
+
+            if current == "RUNNING" {
+                return Ok(current);
+            }
+
+            if current == "TERMINATED" || current == "STOPPED" {
+                gcp::instance_action(
+                    &state.http, &sa, &state.gcp_token_cache,
+                    &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name, "start",
+                ).await.map_err(|e| AppError::internal(e))?;
+
+                for _ in 0..60 {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    let state_now = gcp::get_instance_state(
+                        &state.http, &sa, &state.gcp_token_cache,
+                        &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name,
+                    ).await.unwrap_or_else(|_| "UNKNOWN".into());
+                    if state_now == "RUNNING" {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                        return Ok("RUNNING".into());
+                    }
+                }
+                return Err(AppError::internal("Timeout waiting for GCP VM to start"));
+            }
+
+            Ok(current)
+        }
     }
 }
 
-/// Get container statuses on the flex VM.
-async fn get_container_statuses(state: &AppState, containers: &[String]) -> Vec<Value> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = match state.config.vm_ssh.get(flex_vm_id) {
+/// Get container statuses on a specific VM.
+async fn get_container_statuses(state: &AppState, vm_id: &str, containers: &[String]) -> Vec<Value> {
+    let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
         Some(cfg) => cfg,
         None => return vec![],
     };
@@ -107,19 +180,6 @@ async fn get_container_statuses(state: &AppState, containers: &[String]) -> Vec<
         }));
     }
     statuses
-}
-
-/// Get the flex VM's provider state.
-async fn get_vm_state(state: &AppState) -> Result<String, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let vm = state.config.vm_instances.get(flex_vm_id)
-        .ok_or_else(|| AppError::service_unavailable("Flex VM not configured"))?;
-    match vm.provider {
-        VmProvider::Oci => oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
-            .await
-            .map_err(|e| AppError::internal(e)),
-        VmProvider::Gcp => Ok("UNSUPPORTED".into()),
-    }
 }
 
 /// Batch-fetch all container states via a single SSH call.
@@ -187,6 +247,28 @@ fn compute_service_status(containers: &[String], all_statuses: &[(String, String
     })
 }
 
+/// Determine health string from provider state and SSH connectivity.
+fn compute_health(provider_state: &str, ssh_ok: bool) -> &'static str {
+    if (provider_state == "RUNNING" || provider_state == "N/A") && ssh_ok {
+        "online"
+    } else if provider_state == "RUNNING" || provider_state == "N/A" {
+        "degraded"
+    } else if provider_state == "STOPPED" || provider_state == "TERMINATED" {
+        "offline"
+    } else {
+        "unknown"
+    }
+}
+
+/// Check if we should attempt SSH/ping probes for this provider state.
+fn should_probe(provider_state: &str) -> bool {
+    matches!(provider_state, "RUNNING" | "N/A")
+}
+
+// ---------------------------------------------------------------------------
+// Status endpoints
+// ---------------------------------------------------------------------------
+
 #[utoipa::path(
     get,
     path = "/rust/status/flex1",
@@ -201,11 +283,9 @@ pub async fn status_flex1(
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
 
-    // Get VM provider state
-    let provider_state = get_vm_state(&state).await.unwrap_or_else(|_| "unknown".into());
+    let provider_state = get_vm_state_by_id(&state, flex_vm_id).await.unwrap_or_else(|_| "unknown".into());
 
-    // Only attempt SSH/ping if VM appears to be running
-    let (ping, ssh_ok, container_data) = if provider_state == "RUNNING" {
+    let (ping, ssh_ok, container_data) = if should_probe(&provider_state) {
         let ssh_cfg = state.config.vm_ssh.get(flex_vm_id);
         let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
 
@@ -220,17 +300,8 @@ pub async fn status_flex1(
         (false, false, vec![])
     };
 
-    let health = if provider_state == "RUNNING" && ssh_ok {
-        "online"
-    } else if provider_state == "RUNNING" {
-        "degraded"
-    } else if provider_state == "STOPPED" {
-        "offline"
-    } else {
-        "unknown"
-    };
+    let health = compute_health(&provider_state, ssh_ok);
 
-    // Build per-service status
     let mut services = serde_json::Map::new();
     let mut services_up = 0u32;
     let mut services_down = 0u32;
@@ -281,7 +352,7 @@ pub async fn status_flex1(
     path = "/rust/status/all",
     tag = "status",
     responses(
-        (status = 200, description = "Status of all 4 VMs with services and containers", body = Value),
+        (status = 200, description = "Status of all VMs with services and containers", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
@@ -296,29 +367,14 @@ pub async fn status_all(
     let mut global_containers_total = 0u32;
 
     for (vm_id, vm_map) in &state.config.all_vm_services {
-        // Get VM instance info
-        let vm_instance = state.config.vm_instances.get(vm_id);
+        let provider_state = get_vm_state_by_id(&state, vm_id)
+            .await
+            .unwrap_or_else(|_| "not_configured".into());
 
-        // Get provider state (only for OCI VMs)
-        let provider_state = if let Some(vm) = vm_instance {
-            match vm.provider {
-                VmProvider::Oci => {
-                    oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
-                        .await
-                        .unwrap_or_else(|_| "unknown".into())
-                }
-                VmProvider::Gcp => "N/A".into(),
-            }
-        } else {
-            "not_configured".into()
-        };
-
-        // Get SSH config
         let ssh_cfg = state.config.vm_ssh.get(vm_id);
         let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
 
-        // Check connectivity if VM appears running or for GCP (always try)
-        let (ping, ssh_ok, container_data) = if provider_state == "RUNNING" || provider_state == "N/A" {
+        let (ping, ssh_ok, container_data) = if should_probe(&provider_state) {
             let p = ssh::check_ping(host).await;
             let s = match ssh_cfg {
                 Some(cfg) => ssh::check_ssh(cfg).await,
@@ -334,18 +390,8 @@ pub async fn status_all(
             (false, false, vec![])
         };
 
-        // Determine overall health
-        let health = if (provider_state == "RUNNING" || provider_state == "N/A") && ssh_ok {
-            "online"
-        } else if provider_state == "RUNNING" || provider_state == "N/A" {
-            "degraded"
-        } else if provider_state == "STOPPED" {
-            "offline"
-        } else {
-            "unknown"
-        };
+        let health = compute_health(&provider_state, ssh_ok);
 
-        // Build per-service status for this VM
         let mut services = serde_json::Map::new();
         let mut vm_services_up = 0u32;
         let mut vm_services_down = 0u32;
@@ -407,6 +453,456 @@ pub async fn status_all(
     })))
 }
 
+// ---------------------------------------------------------------------------
+// Generalized per-VM endpoints
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/rust/vms/{vm_id}/health",
+    tag = "vm",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "VM health check", body = Value),
+        (status = 404, description = "Unknown VM"),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn vm_health(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !state.config.vm_ssh.contains_key(&vm_id) {
+        return Err(AppError::not_found(format!("Unknown VM: {vm_id}")));
+    }
+
+    let provider_state = get_vm_state_by_id(&state, &vm_id).await.unwrap_or_else(|_| "unknown".into());
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id);
+    let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
+
+    let (ping, ssh_ok) = if should_probe(&provider_state) {
+        let p = ssh::check_ping(host).await;
+        let s = match ssh_cfg {
+            Some(cfg) => ssh::check_ssh(cfg).await,
+            None => false,
+        };
+        (p, s)
+    } else {
+        (false, false)
+    };
+
+    let health = compute_health(&provider_state, ssh_ok);
+
+    Ok(Json(json!({
+        "id": vm_id,
+        "provider_state": provider_state,
+        "ssh": ssh_ok,
+        "ping": ping,
+        "health": health,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/start",
+    tag = "vm",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "VM started", body = Value),
+        (status = 404, description = "Unknown VM"),
+        (status = 500, description = "Failed to start VM")
+    )
+)]
+pub async fn vm_start(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_id": vm_id,
+        "vm_state": vm_state,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/stop",
+    tag = "vm",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "VM stopped", body = Value),
+        (status = 404, description = "Unknown VM"),
+        (status = 500, description = "Failed to stop VM")
+    )
+)]
+pub async fn vm_stop(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+
+    // Best-effort: stop containers via SSH first
+    if let Some(vm_map) = state.config.all_vm_services.get(&vm_id) {
+        if let Some(ssh_cfg) = state.config.vm_ssh.get(&vm_id) {
+            let all_containers: Vec<String> = vm_map.services
+                .values()
+                .flat_map(|c| c.clone())
+                .collect();
+            if !all_containers.is_empty() {
+                let containers_str = all_containers.join(" ");
+                let _ = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
+            }
+        }
+    }
+
+    let vm = state.config.vm_instances.get(&vm_id)
+        .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
+
+    match vm.provider {
+        VmProvider::Oci => {
+            oci::instance_action(&state.http, &state.config, &vm.instance_id, "STOP")
+                .await
+                .map_err(|e| AppError::internal(e))?;
+        }
+        VmProvider::Gcp => {
+            let gcp_vm = state.config.gcp_vms.get(&vm_id)
+                .ok_or_else(|| AppError::internal(format!("GCP VM config not found for {vm_id}")))?;
+            let sa = load_gcp_sa(&state).map_err(AppError::internal)?;
+            gcp::instance_action(
+                &state.http, &sa, &state.gcp_token_cache,
+                &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name, "stop",
+            ).await.map_err(|e| AppError::internal(e))?;
+        }
+    }
+
+    Ok(Json(json!({
+        "status": "ok",
+        "action": "stop",
+        "vm_id": vm_id,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/reset",
+    tag = "vm",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "VM reset/started", body = Value),
+        (status = 404, description = "Unknown VM"),
+        (status = 500, description = "Failed to reset VM")
+    )
+)]
+pub async fn vm_reset(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let vm = state.config.vm_instances.get(&vm_id)
+        .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
+
+    match vm.provider {
+        VmProvider::Oci => {
+            let current = oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
+                .await
+                .map_err(|e| AppError::internal(e))?;
+            let action = if current == "RUNNING" { "SOFTRESET" } else { "START" };
+            oci::instance_action(&state.http, &state.config, &vm.instance_id, action)
+                .await
+                .map_err(|e| AppError::internal(e))?;
+            Ok(Json(json!({
+                "status": "ok",
+                "previous_state": current,
+                "action": action,
+                "vm_id": vm_id,
+            })))
+        }
+        VmProvider::Gcp => {
+            let gcp_vm = state.config.gcp_vms.get(&vm_id)
+                .ok_or_else(|| AppError::internal(format!("GCP VM config not found for {vm_id}")))?;
+            let sa = load_gcp_sa(&state).map_err(AppError::internal)?;
+            let current = gcp::get_instance_state(
+                &state.http, &sa, &state.gcp_token_cache,
+                &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name,
+            ).await.map_err(|e| AppError::internal(e))?;
+
+            let action = if current == "RUNNING" { "reset" } else { "start" };
+            gcp::instance_action(
+                &state.http, &sa, &state.gcp_token_cache,
+                &gcp_vm.project_id, &gcp_vm.zone, &gcp_vm.name, action,
+            ).await.map_err(|e| AppError::internal(e))?;
+
+            Ok(Json(json!({
+                "status": "ok",
+                "previous_state": current,
+                "action": action,
+                "vm_id": vm_id,
+            })))
+        }
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/rust/vms/{vm_id}/containers/{name}/status",
+    tag = "containers",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container status", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn vm_container_status(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+
+    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
+    let status = statuses.into_iter().next().unwrap_or_else(|| json!({"name": name, "status": "unknown"}));
+    Ok(Json(status))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/start",
+    tag = "containers",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container started", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to start container")
+    )
+)]
+pub async fn vm_container_start(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to start container: {}", result.output)));
+    }
+
+    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_id": vm_id,
+        "vm_state": vm_state,
+        "container": statuses.into_iter().next(),
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/stop",
+    tag = "containers",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container stopped", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to stop container")
+    )
+)]
+pub async fn vm_container_stop(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to stop container: {}", result.output)));
+    }
+
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_id": vm_id,
+        "container": name,
+        "action": "stopped",
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/restart",
+    tag = "containers",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container restarted", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to restart container")
+    )
+)]
+pub async fn vm_container_restart(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to restart container: {}", result.output)));
+    }
+
+    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
+
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_id": vm_id,
+        "vm_state": vm_state,
+        "container": statuses.into_iter().next(),
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/services/{service}/start",
+    tag = "services",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("service" = String, Path, description = "Service name"),
+    ),
+    responses(
+        (status = 200, description = "Service started", body = Value),
+        (status = 404, description = "Unknown service or VM"),
+        (status = 500, description = "Failed to start service")
+    )
+)]
+pub async fn vm_service_start(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, service)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
+
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+
+    let containers_str = containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
+
+    let statuses = get_container_statuses(&state, &vm_id, &containers).await;
+
+    Ok(Json(json!({
+        "status": if result.success { "ok" } else { "partial" },
+        "vm_id": vm_id,
+        "service": service,
+        "vm_state": vm_state,
+        "containers": statuses,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/services/{service}/stop",
+    tag = "services",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("service" = String, Path, description = "Service name"),
+    ),
+    responses(
+        (status = 200, description = "Service stopped", body = Value),
+        (status = 404, description = "Unknown service or VM"),
+        (status = 500, description = "Failed to stop service")
+    )
+)]
+pub async fn vm_service_stop(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, service)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
+
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+
+    let containers_str = containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
+
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to stop containers: {}", result.output)));
+    }
+
+    Ok(Json(json!({
+        "status": "ok",
+        "vm_id": vm_id,
+        "service": service,
+        "action": "stopped",
+        "containers": containers,
+    })))
+}
+
+// ---------------------------------------------------------------------------
+// Legacy flex-shortcut endpoints (delegate to generalized helpers)
+// ---------------------------------------------------------------------------
+
 #[utoipa::path(
     get,
     path = "/rust/vm/health",
@@ -419,40 +915,8 @@ pub async fn status_all(
 pub async fn ondemand_vm_health(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let provider_state = get_vm_state(&state).await.unwrap_or_else(|_| "unknown".into());
-
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id);
-    let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
-
-    let (ping, ssh_ok) = if provider_state == "RUNNING" {
-        let p = ssh::check_ping(host).await;
-        let s = match ssh_cfg {
-            Some(cfg) => ssh::check_ssh(cfg).await,
-            None => false,
-        };
-        (p, s)
-    } else {
-        (false, false)
-    };
-
-    let health = if provider_state == "RUNNING" && ssh_ok {
-        "online"
-    } else if provider_state == "RUNNING" {
-        "degraded"
-    } else if provider_state == "STOPPED" {
-        "offline"
-    } else {
-        "unknown"
-    };
-
-    Ok(Json(json!({
-        "id": flex_vm_id,
-        "provider_state": provider_state,
-        "ssh": ssh_ok,
-        "ping": ping,
-        "health": health,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_health(State(state), Path(flex_vm_id)).await
 }
 
 #[utoipa::path(
@@ -467,11 +931,8 @@ pub async fn ondemand_vm_health(
 pub async fn ondemand_vm_start(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let vm_state = ensure_vm_running(&state).await?;
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_state": vm_state,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_start(State(state), Path(flex_vm_id)).await
 }
 
 #[utoipa::path(
@@ -486,38 +947,8 @@ pub async fn ondemand_vm_start(
 pub async fn ondemand_vm_stop(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-
-    // Stop all containers first via SSH (best-effort)
-    if let Some(ssh_cfg) = state.config.vm_ssh.get(flex_vm_id) {
-        let all_containers: Vec<String> = state.config.flex_services
-            .values()
-            .flat_map(|svc| svc.containers.clone())
-            .collect();
-        if !all_containers.is_empty() {
-            let containers_str = all_containers.join(" ");
-            let _ = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
-        }
-    }
-
-    // Stop VM
-    let vm = state.config.vm_instances.get(flex_vm_id)
-        .ok_or_else(|| AppError::service_unavailable("Flex VM not configured"))?;
-
-    match vm.provider {
-        VmProvider::Oci => {
-            oci::instance_action(&state.http, &state.config, &vm.instance_id, "STOP")
-                .await
-                .map_err(|e| AppError::internal(e))?;
-        }
-        VmProvider::Gcp => {}
-    }
-
-    Ok(Json(json!({
-        "status": "ok",
-        "action": "stop",
-        "vm_id": flex_vm_id,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_stop(State(state), Path(flex_vm_id)).await
 }
 
 #[utoipa::path(
@@ -532,28 +963,8 @@ pub async fn ondemand_vm_stop(
 pub async fn ondemand_vm_reset(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-    let vm = state.config.vm_instances.get(flex_vm_id)
-        .ok_or_else(|| AppError::service_unavailable("Flex VM not configured"))?;
-
-    let current = match vm.provider {
-        VmProvider::Oci => oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
-            .await
-            .map_err(|e| AppError::internal(e))?,
-        VmProvider::Gcp => return Err(AppError::bad_request("GCP not supported for reset")),
-    };
-
-    let action = if current == "RUNNING" { "SOFTRESET" } else { "START" };
-    oci::instance_action(&state.http, &state.config, &vm.instance_id, action)
-        .await
-        .map_err(|e| AppError::internal(e))?;
-
-    Ok(Json(json!({
-        "status": "ok",
-        "previous_state": current,
-        "action": action,
-        "vm_id": flex_vm_id,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_reset(State(state), Path(flex_vm_id)).await
 }
 
 #[utoipa::path(
@@ -571,14 +982,8 @@ pub async fn ondemand_container_status(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let statuses = get_container_statuses(&state, &[name.clone()]).await;
-    let status = statuses.into_iter().next().unwrap_or_else(|| json!({"name": name, "status": "unknown"}));
-
-    Ok(Json(status))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_container_status(State(state), Path((flex_vm_id, name))).await
 }
 
 #[utoipa::path(
@@ -596,29 +1001,8 @@ pub async fn ondemand_container_start(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    // Auto-start VM if needed
-    let vm_state = ensure_vm_running(&state).await?;
-
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
-        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to start container: {}", result.output)));
-    }
-
-    let statuses = get_container_statuses(&state, &[name.clone()]).await;
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_state": vm_state,
-        "container": statuses.into_iter().next(),
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_container_start(State(state), Path((flex_vm_id, name))).await
 }
 
 #[utoipa::path(
@@ -636,24 +1020,8 @@ pub async fn ondemand_container_stop(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
-        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to stop container: {}", result.output)));
-    }
-
-    Ok(Json(json!({
-        "status": "ok",
-        "container": name,
-        "action": "stopped",
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_container_stop(State(state), Path((flex_vm_id, name))).await
 }
 
 #[utoipa::path(
@@ -671,36 +1039,15 @@ pub async fn ondemand_container_restart(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    // Auto-start VM if needed
-    let vm_state = ensure_vm_running(&state).await?;
-
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
-        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to restart container: {}", result.output)));
-    }
-
-    let statuses = get_container_statuses(&state, &[name.clone()]).await;
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_state": vm_state,
-        "container": statuses.into_iter().next(),
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_container_restart(State(state), Path((flex_vm_id, name))).await
 }
 
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/start",
     tag = "services",
-    params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
+    params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service started", body = Value),
         (status = 404, description = "Unknown service"),
@@ -711,37 +1058,15 @@ pub async fn ondemand_service_start(
     State(state): State<Arc<AppState>>,
     Path(service): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    validate_service(&service, &state)?;
-
-    let flex_svc = state.config.flex_services.get(&service)
-        .ok_or_else(|| AppError::not_found(format!("Service config not found: {service}")))?;
-    let containers = flex_svc.containers.clone();
-
-    // Auto-start VM if needed
-    let vm_state = ensure_vm_running(&state).await?;
-
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
-        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
-
-    let containers_str = containers.join(" ");
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
-
-    let statuses = get_container_statuses(&state, &containers).await;
-
-    Ok(Json(json!({
-        "status": if result.success { "ok" } else { "partial" },
-        "service": service,
-        "vm_state": vm_state,
-        "containers": statuses,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_service_start(State(state), Path((flex_vm_id, service))).await
 }
 
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/stop",
     tag = "services",
-    params(("service" = String, Path, description = "Service name (sync, photos, calendar, cache)")),
+    params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service stopped", body = Value),
         (status = 404, description = "Unknown service"),
@@ -752,27 +1077,6 @@ pub async fn ondemand_service_stop(
     State(state): State<Arc<AppState>>,
     Path(service): Path<String>,
 ) -> Result<Json<Value>, AppError> {
-    validate_service(&service, &state)?;
-
-    let flex_svc = state.config.flex_services.get(&service)
-        .ok_or_else(|| AppError::not_found(format!("Service config not found: {service}")))?;
-    let containers = flex_svc.containers.clone();
-
-    let flex_vm_id = &state.config.flex_vm_id;
-    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
-        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
-
-    let containers_str = containers.join(" ");
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
-
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to stop containers: {}", result.output)));
-    }
-
-    Ok(Json(json!({
-        "status": "ok",
-        "service": service,
-        "action": "stopped",
-        "containers": containers,
-    })))
+    let flex_vm_id = state.config.flex_vm_id.clone();
+    vm_service_stop(State(state), Path((flex_vm_id, service))).await
 }
