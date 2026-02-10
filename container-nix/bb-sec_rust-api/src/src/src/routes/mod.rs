@@ -7,6 +7,7 @@ pub mod cloudflare;
 pub mod containers;
 pub mod flex;
 pub mod health;
+pub mod ondemand;
 pub mod vm_control;
 pub mod vm_status;
 pub mod wake;
@@ -19,5 +20,6 @@ pub fn router() -> Router<Arc<AppState>> {
         .merge(wake::routes())
         .merge(containers::routes())
         .merge(flex::routes())
+        .merge(ondemand::routes())
         .merge(cloudflare::routes())
 }

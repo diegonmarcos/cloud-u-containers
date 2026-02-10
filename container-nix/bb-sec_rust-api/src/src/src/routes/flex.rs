@@ -35,7 +35,7 @@ fn validate_service(service: &str) -> Result<(), AppError> {
 }
 
 /// Ensure the flex VM is running. Returns the current state.
-async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
+pub async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
     let vm = state
         .config
@@ -80,7 +80,7 @@ async fn ensure_vm_running(state: &AppState) -> Result<String, AppError> {
 }
 
 /// Get container statuses on the flex VM.
-async fn get_container_statuses(state: &AppState, containers: &[String]) -> Vec<Value> {
+pub async fn get_container_statuses(state: &AppState, containers: &[String]) -> Vec<Value> {
     let flex_vm_id = &state.config.flex_vm_id;
     let ssh_cfg = match state.config.vm_ssh.get(flex_vm_id) {
         Some(cfg) => cfg,
