@@ -20,7 +20,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/vms/{vm_id}/containers/{name}/restart", post(restart_container))
 }
 
-fn get_ssh_config(state: &crate::AppState, vm_id: &str) -> Result<&crate::config::SshConfig, AppError> {
+fn get_ssh_config<'a>(state: &'a crate::AppState, vm_id: &str) -> Result<&'a crate::config::SshConfig, AppError> {
     state
         .config
         .vm_ssh

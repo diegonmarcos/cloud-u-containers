@@ -91,7 +91,7 @@ impl AppConfig {
         let arch_path = std::env::var("CLOUD_CONFIG_PATH")
             .unwrap_or_else(|_| "/app/config/architecture.json".into());
 
-        let architecture = if Path::new(&arch_path).exists() {
+        let architecture: Option<Architecture> = if Path::new(&arch_path).exists() {
             match std::fs::read_to_string(&arch_path) {
                 Ok(content) => serde_json::from_str(&content).ok(),
                 Err(e) => {
