@@ -17,7 +17,7 @@
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
         rust-api:
-          build: .
+          image: ghcr.io/diegonmarcos/rust-api:latest
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
@@ -59,35 +59,8 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "rust-api-configs" {} ''
-        mkdir -p $out/src/src $out/src/src/routes $out/src/src/services $out/src/src/models
+        mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        cp ${./Dockerfile} $out/Dockerfile
-        # Cargo project
-        cp ${./src/Cargo.toml} $out/src/Cargo.toml
-        # Source files
-        cp ${./src/src/main.rs} $out/src/src/main.rs
-        cp ${./src/src/config.rs} $out/src/src/config.rs
-        cp ${./src/src/error.rs} $out/src/src/error.rs
-        # Models
-        cp ${./src/src/models/mod.rs} $out/src/src/models/mod.rs
-        cp ${./src/src/models/vm.rs} $out/src/src/models/vm.rs
-        cp ${./src/src/models/wake.rs} $out/src/src/models/wake.rs
-        cp ${./src/src/models/api_response.rs} $out/src/src/models/api_response.rs
-        # Services
-        cp ${./src/src/services/mod.rs} $out/src/src/services/mod.rs
-        cp ${./src/src/services/oci.rs} $out/src/src/services/oci.rs
-        cp ${./src/src/services/gcp.rs} $out/src/src/services/gcp.rs
-        cp ${./src/src/services/ssh.rs} $out/src/src/services/ssh.rs
-        cp ${./src/src/services/cloudflare.rs} $out/src/src/services/cloudflare.rs
-        # Routes
-        cp ${./src/src/routes/mod.rs} $out/src/src/routes/mod.rs
-        cp ${./src/src/routes/health.rs} $out/src/src/routes/health.rs
-        cp ${./src/src/routes/vm_control.rs} $out/src/src/routes/vm_control.rs
-        cp ${./src/src/routes/vm_status.rs} $out/src/src/routes/vm_status.rs
-        cp ${./src/src/routes/wake.rs} $out/src/src/routes/wake.rs
-        cp ${./src/src/routes/containers.rs} $out/src/src/routes/containers.rs
-        cp ${./src/src/routes/flex.rs} $out/src/src/routes/flex.rs
-        cp ${./src/src/routes/cloudflare.rs} $out/src/src/routes/cloudflare.rs
       '';
     });
   };
