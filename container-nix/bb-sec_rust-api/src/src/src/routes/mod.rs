@@ -8,6 +8,5 @@ pub mod ondemand;
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
-        .merge(health::routes())
         .merge(ondemand::routes())
 }

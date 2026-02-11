@@ -15,13 +15,11 @@ use crate::AppState;
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
         // Health
-        .route("/rust/health/flex1", get(health_flex1))
         .route("/rust/health/all", get(health_all))
         .route("/rust/health/containers-by-vm", get(health_containers_by_vm))
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
         // Legacy flex-shortcut routes (backward compat)
-        .route("/rust/vm/health", get(ondemand_vm_health))
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
         .route("/rust/vm/reset", post(ondemand_vm_reset))
@@ -271,84 +269,6 @@ fn should_probe(provider_state: &str) -> bool {
 // ---------------------------------------------------------------------------
 // Status endpoints
 // ---------------------------------------------------------------------------
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/flex1",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Flex VM (oci-p-flex_1) health with all services", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_flex1(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = &state.config.flex_vm_id;
-
-    let provider_state = get_vm_state_by_id(&state, flex_vm_id).await.unwrap_or_else(|_| "unknown".into());
-
-    let (ping, ssh_ok, container_data) = if should_probe(&provider_state) {
-        let ssh_cfg = state.config.vm_ssh.get(flex_vm_id);
-        let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
-
-        let ping = ssh::check_ping(host).await;
-        let ssh_ok = match ssh_cfg {
-            Some(cfg) => ssh::check_ssh(cfg).await,
-            None => false,
-        };
-        let data = batch_container_statuses(&state, flex_vm_id).await;
-        (ping, ssh_ok, data)
-    } else {
-        (false, false, vec![])
-    };
-
-    let health = compute_health(&provider_state, ssh_ok);
-
-    let mut services = serde_json::Map::new();
-    let mut services_up = 0u32;
-    let mut services_down = 0u32;
-    let mut services_partial = 0u32;
-    let mut containers_running = 0u32;
-    let mut containers_total = 0u32;
-
-    for (svc_name, svc) in &state.config.flex_services {
-        let svc_status = compute_service_status(&svc.containers, &container_data);
-        let status_str = svc_status["status"].as_str().unwrap_or("down");
-        match status_str {
-            "up" => services_up += 1,
-            "partial" => services_partial += 1,
-            _ => services_down += 1,
-        }
-        if let Some(ctrs) = svc_status["containers"].as_array() {
-            for c in ctrs {
-                containers_total += 1;
-                if c["state"].as_str() == Some("running") {
-                    containers_running += 1;
-                }
-            }
-        }
-        services.insert(svc_name.clone(), svc_status);
-    }
-
-    Ok(Json(json!({
-        "vm": {
-            "id": flex_vm_id,
-            "provider_state": provider_state,
-            "ssh": ssh_ok,
-            "ping": ping,
-            "health": health,
-        },
-        "services": services,
-        "summary": {
-            "services_up": services_up,
-            "services_down": services_down,
-            "services_partial": services_partial,
-            "containers_running": containers_running,
-            "containers_total": containers_total,
-        }
-    })))
-}
 
 #[utoipa::path(
     get,
@@ -1250,22 +1170,6 @@ pub async fn vm_service_stop(
 // ---------------------------------------------------------------------------
 // Legacy flex-shortcut endpoints (delegate to generalized helpers)
 // ---------------------------------------------------------------------------
-
-#[utoipa::path(
-    get,
-    path = "/rust/vm/health",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Flex VM health check", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn ondemand_vm_health(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = state.config.flex_vm_id.clone();
-    vm_health(State(state), Path(flex_vm_id)).await
-}
 
 #[utoipa::path(
     post,
