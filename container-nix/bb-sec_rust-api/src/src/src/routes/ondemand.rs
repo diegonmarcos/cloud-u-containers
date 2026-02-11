@@ -916,18 +916,20 @@ pub async fn health_resources_all(
         Err(_) => json!({"error": "task failed"}),
     };
 
-    Ok(Json(json!({
-        "vms": vms,
-        "object_storage": object_storage,
-        "summary": {
-            "vm_count": vm_count,
-            "total_cpu_cores": total_cores,
-            "total_ram_mb": total_ram_mb,
-            "total_disk_gb": round1(total_disk_gb),
-            "avg_cpu_pct": round1(avg_cpu_pct),
-            "avg_mem_pct": round1(avg_mem_pct),
-        }
-    })))
+    // Build ordered response: summary → vms → object_storage
+    let mut resp = serde_json::Map::new();
+    resp.insert("summary".into(), json!({
+        "vm_count": vm_count,
+        "total_cpu_cores": total_cores,
+        "total_ram_mb": total_ram_mb,
+        "total_disk_gb": round1(total_disk_gb),
+        "avg_cpu_pct": round1(avg_cpu_pct),
+        "avg_mem_pct": round1(avg_mem_pct),
+    }));
+    resp.insert("vms".into(), json!(vms));
+    resp.insert("object_storage".into(), object_storage);
+
+    Ok(Json(Value::Object(resp)))
 }
 
 // ---------------------------------------------------------------------------
