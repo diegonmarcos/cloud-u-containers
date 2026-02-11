@@ -26,10 +26,15 @@ pub struct AppState {
         routes::ondemand::health_containers_by_service,
         routes::ondemand::health_proxied_by_services,
         routes::ondemand::health_resources_all,
-        // Legacy flex-shortcut endpoints
-        routes::ondemand::ondemand_vm_start,
-        routes::ondemand::ondemand_vm_stop,
-        routes::ondemand::ondemand_vm_reset,
+        // VM actions by label (all 4 VMs)
+        routes::ondemand::vm_label_start,
+        routes::ondemand::vm_label_stop,
+        routes::ondemand::vm_label_reset,
+        // Bulk on-demand container ops (oci-flex)
+        routes::ondemand::ondemand_containers_start_all,
+        routes::ondemand::ondemand_containers_stop_all,
+        routes::ondemand::ondemand_containers_restart_all,
+        // Legacy flex-shortcut container/service endpoints
         routes::ondemand::ondemand_container_start,
         routes::ondemand::ondemand_container_stop,
         routes::ondemand::ondemand_container_restart,
