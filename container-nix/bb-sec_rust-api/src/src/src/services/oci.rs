@@ -216,6 +216,7 @@ pub async fn instance_action(
 pub async fn get_object_storage_info(
     http: &reqwest::Client,
     config: &AppConfig,
+    quota_gb: f64,
 ) -> Result<serde_json::Value, String> {
     let oci_cfg = parse_oci_config(&config.oci_config_file)
         .ok_or("OCI config not found")?;
@@ -287,6 +288,10 @@ pub async fn get_object_storage_info(
         .filter_map(|b| b["used_gb"].as_f64()).sum();
     let total_objects: i64 = bucket_details.iter()
         .filter_map(|b| b["object_count"].as_i64()).sum();
+    let available_gb = (quota_gb - total_used_gb).max(0.0);
+    let usage_pct = if quota_gb > 0.0 {
+        ((total_used_gb / quota_gb * 1000.0).round()) / 10.0
+    } else { 0.0 };
 
     Ok(serde_json::json!({
         "provider": "oci",
@@ -297,6 +302,9 @@ pub async fn get_object_storage_info(
             "bucket_count": bucket_details.len(),
             "total_used_bytes": total_used_bytes,
             "total_used_gb": total_used_gb,
+            "total_gb": quota_gb,
+            "available_gb": available_gb,
+            "usage_pct": usage_pct,
             "total_objects": total_objects,
         }
     }))
