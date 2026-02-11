@@ -211,3 +211,90 @@ pub async fn instance_action(
 
     Ok(format!("{action} command sent"))
 }
+
+/// Query OCI Object Storage: list buckets and get approximate size/count.
+pub async fn get_object_storage_info(
+    http: &reqwest::Client,
+    config: &AppConfig,
+) -> Result<serde_json::Value, String> {
+    let oci_cfg = parse_oci_config(&config.oci_config_file)
+        .ok_or("OCI config not found")?;
+
+    let namespace = &config.oci_namespace;
+    if namespace.is_empty() {
+        return Err("OCI namespace not configured".into());
+    }
+
+    let host = format!("objectstorage.{}.oraclecloud.com", oci_cfg.region);
+
+    // List buckets in compartment (tenancy = default compartment)
+    let path = format!("/n/{namespace}/b/?compartmentId={}", oci_cfg.tenancy);
+    let url = format!("https://{host}{path}");
+
+    let headers = sign_request(&oci_cfg, "GET", &path, &host, None)?;
+    let mut req = http.get(&url);
+    for (k, v) in headers {
+        req = req.header(&k, &v);
+    }
+
+    let resp = req.send().await.map_err(|e| format!("OCI ObjectStorage error: {e}"))?;
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("OCI ObjectStorage API {status}: {body}"));
+    }
+
+    let buckets: Vec<serde_json::Value> = resp.json().await
+        .map_err(|e| format!("Parse error: {e}"))?;
+
+    let mut bucket_details = Vec::new();
+    for bucket in &buckets {
+        if let Some(name) = bucket["name"].as_str() {
+            let detail_path = format!(
+                "/n/{namespace}/b/{name}?fields=approximateSize,approximateCount"
+            );
+            let detail_url = format!("https://{host}{detail_path}");
+
+            let hdrs = sign_request(&oci_cfg, "GET", &detail_path, &host, None)?;
+            let mut req = http.get(&detail_url);
+            for (k, v) in hdrs {
+                req = req.header(&k, &v);
+            }
+
+            if let Ok(resp) = req.send().await {
+                if resp.status().is_success() {
+                    if let Ok(detail) = resp.json::<serde_json::Value>().await {
+                        let approx_size = detail["approximateSize"].as_i64().unwrap_or(0);
+                        let approx_count = detail["approximateCount"].as_i64().unwrap_or(0);
+                        let size_gb = (approx_size as f64 / 1_073_741_824.0 * 100.0).round() / 100.0;
+
+                        bucket_details.push(serde_json::json!({
+                            "name": name,
+                            "size_bytes": approx_size,
+                            "size_gb": size_gb,
+                            "object_count": approx_count,
+                            "storage_tier": detail["storageTier"].as_str().unwrap_or("Standard"),
+                        }));
+                    }
+                }
+            }
+        }
+    }
+
+    let total_size_gb: f64 = bucket_details.iter()
+        .filter_map(|b| b["size_gb"].as_f64()).sum();
+    let total_objects: i64 = bucket_details.iter()
+        .filter_map(|b| b["object_count"].as_i64()).sum();
+
+    Ok(serde_json::json!({
+        "provider": "oci",
+        "region": oci_cfg.region,
+        "namespace": namespace,
+        "buckets": bucket_details,
+        "summary": {
+            "bucket_count": bucket_details.len(),
+            "total_size_gb": total_size_gb,
+            "total_objects": total_objects,
+        }
+    }))
+}

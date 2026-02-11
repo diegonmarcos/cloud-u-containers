@@ -873,6 +873,12 @@ pub async fn health_resources_all(
         });
     }
 
+    // OCI Object Storage query in parallel with VM resource gathering
+    let storage_state = Arc::clone(&state);
+    let storage_handle = tokio::spawn(async move {
+        crate::services::oci::get_object_storage_info(&storage_state.http, &storage_state.config).await
+    });
+
     let mut vms = serde_json::Map::new();
     let mut total_cores = 0u32;
     let mut total_ram_mb = 0u64;
@@ -903,8 +909,16 @@ pub async fn health_resources_all(
     let avg_cpu_pct = if vm_count > 0 { sum_cpu_pct / vm_count as f64 } else { 0.0 };
     let avg_mem_pct = if vm_count > 0 { sum_mem_pct / vm_count as f64 } else { 0.0 };
 
+    // Collect Object Storage result
+    let object_storage = match storage_handle.await {
+        Ok(Ok(data)) => data,
+        Ok(Err(e)) => json!({"error": e}),
+        Err(_) => json!({"error": "task failed"}),
+    };
+
     Ok(Json(json!({
         "vms": vms,
+        "object_storage": object_storage,
         "summary": {
             "vm_count": vm_count,
             "total_cpu_cores": total_cores,
