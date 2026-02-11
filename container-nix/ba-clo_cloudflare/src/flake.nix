@@ -282,7 +282,7 @@
         zone_id = var.cloudflare_zone_id
 
         settings {
-          ssl                      = "full_strict"
+          ssl                      = "full"
           always_use_https         = "on"
           min_tls_version          = "1.2"
           automatic_https_rewrites = "on"

@@ -75,8 +75,6 @@ All running containers across all VMs and their corresponding flake.
 |-----------|-------|
 | `fluent-bit` | `bc-obs_fluent-bit` |
 | `matomo-hybrid` | `bc-obs_matomo` |
-| `sauron` | `bb-sec_sauron` |
-| `sauron-forwarder` | `bc-obs_sauron-forwarder` |
 | `syslog-forwarder` | `bc-obs_syslog-forwarder` |
 | `windmill-db` | `bc-obs_windmill` |
 | `windmill-server` | `bc-obs_windmill` |

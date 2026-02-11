@@ -2,7 +2,7 @@ services:
   syslog-forwarder:
     image: balabit/syslog-ng:4.4.0
     container_name: syslog-forwarder
-    restart: unless-stopped
+    restart: always
     environment:
       - VM_NAME=${VM_NAME:-unknown}
       - CENTRAL_HOST=${CENTRAL_HOST}

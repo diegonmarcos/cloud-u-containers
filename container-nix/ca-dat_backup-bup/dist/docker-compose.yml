@@ -6,7 +6,7 @@ services:
   bup:
     image: alpine:3.19
     container_name: bup-server
-    restart: unless-stopped
+    restart: always
     command: >
       sh -c "
         apk add --no-cache bup openssh-server &&

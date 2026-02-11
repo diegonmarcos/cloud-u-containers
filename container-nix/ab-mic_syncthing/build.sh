@@ -119,9 +119,8 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    # Try docker compose (v2) first, fallback to docker-compose (v1)
     # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && (docker compose up -d --force-recreate 2>/dev/null || docker-compose up -d --force-recreate)"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 

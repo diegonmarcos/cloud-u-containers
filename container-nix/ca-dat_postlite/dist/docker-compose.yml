@@ -6,7 +6,7 @@ services:
   sqlite-npm:
     image: germanorizzo/ws4sqlite:latest
     container_name: sqlite-npm
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:8880:12321"
     volumes:
@@ -16,7 +16,7 @@ services:
   sqlite-vaultwarden:
     image: germanorizzo/ws4sqlite:latest
     container_name: sqlite-vaultwarden
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:8881:12321"
     volumes:
@@ -26,7 +26,7 @@ services:
   sqlite-ntfy:
     image: germanorizzo/ws4sqlite:latest
     container_name: sqlite-ntfy
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:8882:12321"
     volumes:
@@ -36,7 +36,7 @@ services:
   sqlite-authelia:
     image: germanorizzo/ws4sqlite:latest
     container_name: sqlite-authelia
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:8883:12321"
     volumes:
@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile
     image: postlite:latest
     container_name: postlite-npm
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:5433:5432"
     volumes:
@@ -59,7 +59,7 @@ services:
   postlite-vaultwarden:
     image: postlite:latest
     container_name: postlite-vaultwarden
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:5434:5432"
     volumes:
@@ -69,7 +69,7 @@ services:
   postlite-ntfy:
     image: postlite:latest
     container_name: postlite-ntfy
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:5435:5432"
     volumes:
@@ -79,7 +79,7 @@ services:
   postlite-authelia:
     image: postlite:latest
     container_name: postlite-authelia
-    restart: unless-stopped
+    restart: always
     ports:
       - "10.0.0.1:5436:5432"
     volumes:

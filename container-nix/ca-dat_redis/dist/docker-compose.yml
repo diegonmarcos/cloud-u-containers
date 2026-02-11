@@ -2,7 +2,7 @@ services:
   redis:
     image: redis:alpine
     container_name: redis
-    restart: unless-stopped
+    restart: always
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:
       - /data/redis:/data

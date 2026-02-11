@@ -7,7 +7,7 @@ services:
   analytics-app:
     image: matomo:fpm-alpine
     container_name: analytics-app
-    restart: unless-stopped
+    restart: always
     depends_on:
       - analytics-db
     environment:
@@ -31,7 +31,7 @@ services:
   analytics-web:
     image: nginx:alpine
     container_name: analytics-web
-    restart: unless-stopped
+    restart: always
     depends_on:
       - analytics-app
     ports:

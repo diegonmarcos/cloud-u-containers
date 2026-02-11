@@ -2,7 +2,7 @@ services:
   gitea:
     image: gitea/gitea:latest
     container_name: gitea
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:

@@ -66,12 +66,6 @@
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
         admin localhost:${toString config.admin_port}
-        auto_https off
-      }
-
-      # ── Health check ─────────────────────────────────────────────
-      :80 {
-        respond "Caddy is running" 200
       }
 
       # ════════════════════════════════════════════════════════════
@@ -79,12 +73,12 @@
       # ════════════════════════════════════════════════════════════
 
       # Authelia itself — must be public (bypass policy in Authelia config)
-      http://auth.diegonmarcos.com {
+      auth.diegonmarcos.com {
         reverse_proxy authelia:9091
       }
 
       # API — Flask + Rust backends
-      http://api.diegonmarcos.com {
+      api.diegonmarcos.com {
         handle /rust/* {
           reverse_proxy ${gcp}:8080
         }
@@ -94,12 +88,12 @@
       }
 
       # Radicale CalDAV/CardDAV
-      http://cal.diegonmarcos.com {
+      cal.diegonmarcos.com {
         reverse_proxy ${flex}:5232
       }
 
       # Affine collaborative docs (100MB uploads, long timeouts)
-      http://drive-notes-affine.diegonmarcos.com {
+      drive-notes-affine.diegonmarcos.com {
         request_body {
           max_size 100MB
         }
@@ -115,7 +109,7 @@
       # ANALYTICS — Matomo (public tracking + protected admin)
       # ════════════════════════════════════════════════════════════
 
-      http://analytics.diegonmarcos.com {
+      analytics.diegonmarcos.com {
         # Public tracking endpoints (no auth — called by portfolio sites)
         @tracking {
           path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
@@ -134,17 +128,24 @@
       # ════════════════════════════════════════════════════════════
 
       # PhotoPrism
-      http://photos.diegonmarcos.com {
-        ${mkProtected "${flex}:2342"}
+      photos.diegonmarcos.com {
+        # Root path → landing page (replaces Cloudflare redirect rule)
+        @root path /
+        handle @root {
+          redir https://diegonmarcos.github.io/myphotos/ permanent
+        }
+
+        # All other paths → auth + PhotoPrism
+        ${mkProtected "${flex}:3013"}
       }
 
       # Syncthing
-      http://sync.diegonmarcos.com {
+      sync.diegonmarcos.com {
         ${mkProtected "${mail}:8384"}
       }
 
       # Mailu webmail (upstream is HTTPS with self-signed cert)
-      http://mail.diegonmarcos.com {
+      mail.diegonmarcos.com {
         ${mkProtectedCustom ''reverse_proxy https://${mail}:8444 {
           transport http {
             tls_insecure_skip_verify
@@ -153,28 +154,28 @@
       }
 
       # Code Server IDE (WebSocket support is automatic in Caddy)
-      http://ide.diegonmarcos.com {
+      ide.diegonmarcos.com {
         ${mkProtected "${flex}:8443"}
       }
 
       # NocoDB
-      http://db.diegonmarcos.com {
+      db.diegonmarcos.com {
         ${mkProtected "${flex}:8085"}
       }
 
       # Caddy admin API
-      http://proxy.diegonmarcos.com {
+      proxy.diegonmarcos.com {
         ${mkProtected "localhost:${toString config.admin_port}"}
       }
 
       # Vaultwarden — reachable via npm_default docker network
       # Authelia access_control handles: API/identity/icons bypass, admin two_factor
-      http://vault.diegonmarcos.com {
+      vault.diegonmarcos.com {
         ${mkProtected "vaultwarden:80"}
       }
 
       # ntfy notifications
-      http://rss.diegonmarcos.com {
+      rss.diegonmarcos.com {
         ${mkProtected "${gcp}:8090"}
       }
 
@@ -189,8 +190,7 @@
           ports:
             - "${toString config.http_port}:80"
             - "${toString config.https_port}:443"
-            - "8880:80"
-            - "8443:443"
+            - "${toString config.https_port}:443/udp"
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - caddy_data:/data

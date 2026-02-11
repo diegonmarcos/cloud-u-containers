@@ -2,7 +2,7 @@ services:
   flask-api:
     build: .
     container_name: flask-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "5000:5000"
     volumes:

@@ -119,10 +119,39 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    # Try docker compose (v2) first, fallback to docker-compose (v1)
     # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && (docker compose up -d --force-recreate 2>/dev/null || docker-compose up -d --force-recreate)"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose up -d --force-recreate"
     log "Containers rebuilt and running"
+}
+
+MATOMO_CONTAINER="matomo-hybrid"
+
+# ── Start: Sleep matomo + start windmill ───────────────────────────────
+cmd_start() {
+    [ -z "$DEPLOY_HOST" ] && { log "ERROR: deploy.host not set in build.json"; return 1; }
+
+    log "Putting matomo to sleep to free RAM..."
+    ssh "$DEPLOY_HOST" "docker exec $MATOMO_CONTAINER /scripts/matomo-sleep.sh" || true
+
+    log "Starting windmill..."
+    ssh "$DEPLOY_HOST" "docker-compose -f $DEPLOY_PATH/docker-compose.yml start"
+
+    log "Windmill running, matomo sleeping"
+    ssh "$DEPLOY_HOST" "free -h && echo '---' && docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}'"
+}
+
+# ── Stop: Stop windmill + wake matomo ──────────────────────────────────
+cmd_stop() {
+    [ -z "$DEPLOY_HOST" ] && { log "ERROR: deploy.host not set in build.json"; return 1; }
+
+    log "Stopping windmill..."
+    ssh "$DEPLOY_HOST" "docker-compose -f $DEPLOY_PATH/docker-compose.yml stop"
+
+    log "Waking matomo..."
+    ssh "$DEPLOY_HOST" "docker exec $MATOMO_CONTAINER /scripts/matomo-wake.sh" || true
+
+    log "Windmill stopped, matomo awake"
+    ssh "$DEPLOY_HOST" "free -h && echo '---' && docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}'"
 }
 
 # ── Main ────────────────────────────────────────────────────────────────
@@ -137,15 +166,19 @@ case "${1:-all}" in
     compose)  step_compose ;;
     all)      step_build; step_secrets ;;
     ship)     step_build; step_secrets; step_deploy; step_compose ;;
+    start)    cmd_start ;;
+    stop)     cmd_stop ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; log "Cleaned" ;;
     *)
-        echo "Usage: $0 [build|secrets|deploy|compose|all|ship|clean]"
+        echo "Usage: $0 [build|secrets|deploy|compose|all|ship|start|stop|clean]"
         echo "  build    Build nix flake → dist/"
         echo "  secrets  Decrypt secrets → dist/.env"
         echo "  deploy   Rsync dist/ → VM"
         echo "  compose  Docker compose up --build on VM"
         echo "  all      build + secrets (default)"
         echo "  ship     build + secrets + deploy + compose"
+        echo "  start    Sleep matomo + start windmill"
+        echo "  stop     Stop windmill + wake matomo"
         echo "  clean    Remove dist/"
         ;;
 esac

@@ -2,7 +2,7 @@ services:
   rust-api:
     image: ghcr.io/diegonmarcos/rust-api:latest
     container_name: rust-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "8080:8080"
     volumes:
@@ -25,7 +25,6 @@ services:
       - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
       - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
       - AUTHELIA_BEARER_TOKEN=${AUTHELIA_BEARER_TOKEN:-}
-      - OCI_NAMESPACE=${OCI_NAMESPACE:-axpmn3qtq4ig}
     networks:
       - npm_default
     healthcheck:

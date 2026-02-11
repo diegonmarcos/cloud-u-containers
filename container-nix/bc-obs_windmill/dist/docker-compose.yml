@@ -6,7 +6,7 @@ services:
   windmill-db:
     image: postgres:16-alpine
     container_name: windmill-db
-    restart: unless-stopped
+    restart: always
     environment:
       - POSTGRES_DB=windmill
       - POSTGRES_USER=windmill
@@ -32,7 +32,7 @@ services:
   windmill-server:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-server
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:
@@ -79,7 +79,7 @@ services:
   windmill-worker:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-worker
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:
