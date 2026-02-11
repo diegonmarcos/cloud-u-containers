@@ -106,6 +106,48 @@ activate_single_vm() {
     log "  ✓ $vm activated"
 }
 
+# ── Step: WireGuard status ─────────────────────────────────────────────
+step_status() {
+    local target_vm="${1:-all}"
+    local vms
+    if [ "$target_vm" = "all" ]; then
+        vms=$(get_vms)
+    else
+        vms="$target_vm"
+    fi
+
+    for vm in $vms; do
+        echo "── $vm ──────────────────────────────"
+        ssh "$vm" "sudo wg show wg0" 2>&1 || echo "  (unreachable)"
+        echo ""
+    done
+}
+
+# ── Step: WireGuard diff ──────────────────────────────────────────────
+# Shows remote wg0.conf with keys redacted
+step_diff() {
+    local target_vm="${1:-all}"
+    local vms
+    if [ "$target_vm" = "all" ]; then
+        vms=$(get_vms)
+    else
+        vms="$target_vm"
+    fi
+
+    for vm in $vms; do
+        echo "── $vm ──────────────────────────────"
+
+        local remote_conf
+        remote_conf="$(ssh "$vm" "sudo cat /etc/wireguard/wg0.conf" 2>/dev/null)" || {
+            log "  (unreachable)"
+            continue
+        }
+
+        echo "$remote_conf" | sed 's/PrivateKey = .*/PrivateKey = [REDACTED]/'
+        echo ""
+    done
+}
+
 # ── Main ────────────────────────────────────────────────────────────────
 echo "╔════════════════════════════════════════╗"
 echo "║  Home Manager Deployment"
@@ -126,6 +168,12 @@ case "${1:-help}" in
         step_deploy "${2:-all}"
         step_compose "${2:-all}"
         ;;
+    status)
+        step_status "${2:-all}"
+        ;;
+    diff)
+        step_diff "${2:-all}"
+        ;;
     check)
         nix flake check
         ;;
@@ -138,13 +186,15 @@ case "${1:-help}" in
         log "Nothing to clean (no dist/ directory)"
         ;;
     *)
-        echo "Usage: $0 [build|deploy|compose|ship|check|update|clean] [vm]"
+        echo "Usage: $0 [build|deploy|compose|ship|status|diff|check|update|clean] [vm]"
         echo ""
         echo "Commands:"
         echo "  build     Validate flake configurations"
         echo "  deploy    Copy flake files to VM(s)"
         echo "  compose   Activate home-manager on VM(s)"
         echo "  ship      build + deploy + compose (default: all VMs)"
+        echo "  status    Show wg show wg0 on VM(s)"
+        echo "  diff      Show remote wg0.conf (keys redacted)"
         echo "  check     Run nix flake check"
         echo "  update    Update flake inputs"
         echo "  clean     No-op (for consistency)"
@@ -155,6 +205,8 @@ case "${1:-help}" in
         echo "  $0 ship              # Deploy to all VMs"
         echo "  $0 ship oci-flex     # Deploy to oci-flex only"
         echo "  $0 deploy gcp-proxy  # Copy files to gcp-proxy"
+        echo "  $0 status            # WireGuard status on all VMs"
+        echo "  $0 diff oci-flex     # Show remote config (redacted)"
         ;;
 esac
 
