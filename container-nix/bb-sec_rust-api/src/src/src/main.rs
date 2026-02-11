@@ -21,6 +21,7 @@ pub struct AppState {
 #[derive(OpenApi)]
 #[openapi(
     paths(
+        routes::ondemand::health_alive,
         routes::ondemand::health_all,
         routes::ondemand::health_containers_by_vm,
         routes::ondemand::health_containers_by_service,

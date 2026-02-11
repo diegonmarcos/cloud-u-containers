@@ -19,6 +19,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/containers-by-vm", get(health_containers_by_vm))
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
+        .route("/rust/health", get(health_alive))
         .route("/rust/health/resources-all", get(health_resources_all))
         .route("/rust/health/ids", get(health_ids))
         // VM actions — oci-flex
@@ -330,8 +331,20 @@ async fn probe_vm(state: &AppState, vm_id: &str) -> VmProbe {
 }
 
 // ---------------------------------------------------------------------------
-// Status endpoints
+// Health endpoints
 // ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/rust/health",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "API alive check", body = Value),
+    )
+)]
+pub async fn health_alive() -> Json<Value> {
+    Json(json!({ "status": "ok" }))
+}
 
 #[utoipa::path(
     get,
