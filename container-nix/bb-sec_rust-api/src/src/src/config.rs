@@ -11,6 +11,7 @@ pub struct AppConfig {
     pub vm_ssh: HashMap<String, SshConfig>,
     pub oci_config_file: String,
     pub oci_key_file: String,
+    pub oci_namespace: String,
     pub gcp_service_account_file: String,
     pub gcp_project_id: String,
     pub flex_vm_id: String,
@@ -317,6 +318,8 @@ impl AppConfig {
                 .unwrap_or_else(|_| "/app/config/oci_config".into()),
             oci_key_file: std::env::var("OCI_KEY_FILE")
                 .unwrap_or_else(|_| "/app/config/oci_api_key.pem".into()),
+            oci_namespace: std::env::var("OCI_NAMESPACE")
+                .unwrap_or_else(|_| "axpmn3qtq4ig".into()),
             gcp_service_account_file,
             gcp_project_id,
             flex_vm_id: "oci-p-flex_1".to_string(),
