@@ -43,7 +43,12 @@ pub struct AppState {
         routes::ondemand::ondemand_containers_start_all,
         routes::ondemand::ondemand_containers_stop_all,
         routes::ondemand::ondemand_containers_restart_all,
-        // Legacy flex-shortcut container/service endpoints (Post-Containers)
+        // Matomo / Windmill toggle (Post-Containers)
+        routes::ondemand::windmill_start,
+        routes::ondemand::windmill_stop,
+        routes::ondemand::matomo_wake,
+        routes::ondemand::matomo_sleep,
+        // Legacy flex-shortcut container/service endpoints (Post-Engines)
         routes::ondemand::ondemand_container_start,
         routes::ondemand::ondemand_container_stop,
         routes::ondemand::ondemand_container_restart,
