@@ -48,7 +48,6 @@ All running containers across all VMs and their corresponding flake.
 | `radicale` | `aa-sui_radicale` |
 | `redis` | `ca-dat_redis` |
 | `revealmd_app` | `aa-sui_revealmd` |
-| `sauron` | `bb-sec_sauron` |
 
 ### oci-mail
 
@@ -150,7 +149,6 @@ All running containers across all VMs and their corresponding flake.
 | `bb-sec_flask-api` | Flask API for cloud automation |
 | `bb-sec_mcp-server-skills` | MCP server for Claude |
 | `bb-sec_rust-api` | Rust cloud API (flask-api replacement) |
-| `bb-sec_sauron` | Log monitoring and alerting |
 | `bb-sec_sauron-central` | Central monitoring aggregator |
 | `bb-sec_wireguard` | WireGuard VPN mesh across all 4 VMs |
 
@@ -189,3 +187,4 @@ All running containers across all VMs and their corresponding flake.
 | `bb-sec_npm` | `bb-sec_caddy` |
 | `bb-sec_npm-introspect-proxy-standalone` | `bb-sec_caddy` (introspect-proxy sidecar) |
 | `bb-sec_npm-mail` | `bb-sec_caddy` (mail routes via WireGuard) |
+| `bb-sec_sauron` | `bc-obs_sauron-lite` / removed |
