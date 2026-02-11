@@ -20,10 +20,15 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
         .route("/rust/health/resources-all", get(health_resources_all))
-        // Legacy flex-shortcut routes (backward compat)
-        .route("/rust/vm/start", post(ondemand_vm_start))
-        .route("/rust/vm/stop", post(ondemand_vm_stop))
-        .route("/rust/vm/reset", post(ondemand_vm_reset))
+        // VM actions by label (all 4 VMs)
+        .route("/rust/vm/{label}/start", post(vm_label_start))
+        .route("/rust/vm/{label}/stop", post(vm_label_stop))
+        .route("/rust/vm/{label}/reset", post(vm_label_reset))
+        // Bulk on-demand container ops (oci-flex)
+        .route("/rust/containers/on-demand/start-all", post(ondemand_containers_start_all))
+        .route("/rust/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
+        .route("/rust/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
+        // Legacy flex-shortcut container/service routes
         .route("/rust/containers/{name}/start", post(ondemand_container_start))
         .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
         .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
@@ -1345,55 +1350,192 @@ pub async fn vm_service_stop(
 }
 
 // ---------------------------------------------------------------------------
-// Legacy flex-shortcut endpoints (delegate to generalized helpers)
+// VM actions by label (oci-flex, gcp-proxy, oci-mail, oci-analytics)
+// ---------------------------------------------------------------------------
+
+fn resolve_vm_by_label<'a>(state: &'a AppState, label: &str) -> Result<String, AppError> {
+    state.config.all_vm_services.iter()
+        .find(|(_, vm_map)| vm_map.label == label)
+        .map(|(vm_id, _)| vm_id.clone())
+        .ok_or_else(|| {
+            let valid: Vec<&str> = state.config.all_vm_services.values()
+                .map(|v| v.label.as_str()).collect();
+            AppError::not_found(format!(
+                "Unknown VM label '{label}'. Valid: {}", valid.join(", ")
+            ))
+        })
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vm/{label}/start",
+    tag = "Post-VMs",
+    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
+    responses(
+        (status = 200, description = "VM started", body = Value),
+        (status = 404, description = "Unknown VM label"),
+        (status = 500, description = "Failed to start VM")
+    )
+)]
+pub async fn vm_label_start(
+    State(state): State<Arc<AppState>>,
+    Path(label): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    let vm_id = resolve_vm_by_label(&state, &label)?;
+    vm_start(State(state), Path(vm_id)).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vm/{label}/stop",
+    tag = "Post-VMs",
+    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
+    responses(
+        (status = 200, description = "VM stopped gracefully", body = Value),
+        (status = 404, description = "Unknown VM label"),
+        (status = 500, description = "Failed to stop VM")
+    )
+)]
+pub async fn vm_label_stop(
+    State(state): State<Arc<AppState>>,
+    Path(label): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    let vm_id = resolve_vm_by_label(&state, &label)?;
+    vm_stop(State(state), Path(vm_id)).await
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vm/{label}/reset",
+    tag = "Post-VMs",
+    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
+    responses(
+        (status = 200, description = "VM reset/started", body = Value),
+        (status = 404, description = "Unknown VM label"),
+        (status = 500, description = "Failed to reset VM")
+    )
+)]
+pub async fn vm_label_reset(
+    State(state): State<Arc<AppState>>,
+    Path(label): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    let vm_id = resolve_vm_by_label(&state, &label)?;
+    vm_reset(State(state), Path(vm_id)).await
+}
+
+// ---------------------------------------------------------------------------
+// Bulk on-demand container ops (oci-flex)
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(
     post,
-    path = "/rust/vm/start",
-    tag = "Post-VMs",
+    path = "/rust/containers/on-demand/start-all",
+    tag = "Post-Containers",
     responses(
-        (status = 200, description = "VM started", body = Value),
-        (status = 500, description = "Failed to start VM")
+        (status = 200, description = "All on-demand containers started", body = Value),
+        (status = 500, description = "Failed to start containers")
     )
 )]
-pub async fn ondemand_vm_start(
+pub async fn ondemand_containers_start_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = state.config.flex_vm_id.clone();
-    vm_start(State(state), Path(flex_vm_id)).await
+    let flex_vm_id = &state.config.flex_vm_id;
+    let vm_state = ensure_vm_running_by_id(&state, flex_vm_id).await?;
+
+    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
+        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
+
+    let all_containers: Vec<String> = state.config.all_vm_services
+        .get(flex_vm_id)
+        .map(|vm_map| vm_map.services.values().flat_map(|c| c.clone()).collect())
+        .unwrap_or_default();
+
+    let containers_str = all_containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
+
+    let statuses = batch_container_statuses(&state, flex_vm_id).await;
+    let running = statuses.iter().filter(|(_, s, _)| s == "running").count();
+
+    Ok(Json(json!({
+        "status": if result.success { "ok" } else { "partial" },
+        "vm_id": flex_vm_id,
+        "vm_state": vm_state,
+        "action": "start-all",
+        "containers_running": running,
+        "containers_total": all_containers.len(),
+    })))
 }
 
 #[utoipa::path(
     post,
-    path = "/rust/vm/stop",
-    tag = "Post-VMs",
+    path = "/rust/containers/on-demand/stop-all",
+    tag = "Post-Containers",
     responses(
-        (status = 200, description = "VM stopped gracefully", body = Value),
-        (status = 500, description = "Failed to stop VM")
+        (status = 200, description = "All on-demand containers stopped", body = Value),
+        (status = 500, description = "Failed to stop containers")
     )
 )]
-pub async fn ondemand_vm_stop(
+pub async fn ondemand_containers_stop_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = state.config.flex_vm_id.clone();
-    vm_stop(State(state), Path(flex_vm_id)).await
+    let flex_vm_id = &state.config.flex_vm_id;
+
+    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
+        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
+
+    let all_containers: Vec<String> = state.config.all_vm_services
+        .get(flex_vm_id)
+        .map(|vm_map| vm_map.services.values().flat_map(|c| c.clone()).collect())
+        .unwrap_or_default();
+
+    let containers_str = all_containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
+
+    Ok(Json(json!({
+        "status": if result.success { "ok" } else { "partial" },
+        "vm_id": flex_vm_id,
+        "action": "stop-all",
+        "containers_total": all_containers.len(),
+    })))
 }
 
 #[utoipa::path(
     post,
-    path = "/rust/vm/reset",
-    tag = "Post-VMs",
+    path = "/rust/containers/on-demand/restart-all",
+    tag = "Post-Containers",
     responses(
-        (status = 200, description = "VM reset/started", body = Value),
-        (status = 500, description = "Failed to reset VM")
+        (status = 200, description = "All on-demand containers restarted", body = Value),
+        (status = 500, description = "Failed to restart containers")
     )
 )]
-pub async fn ondemand_vm_reset(
+pub async fn ondemand_containers_restart_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = state.config.flex_vm_id.clone();
-    vm_reset(State(state), Path(flex_vm_id)).await
+    let flex_vm_id = &state.config.flex_vm_id;
+    let vm_state = ensure_vm_running_by_id(&state, flex_vm_id).await?;
+
+    let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
+        .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
+
+    let all_containers: Vec<String> = state.config.all_vm_services
+        .get(flex_vm_id)
+        .map(|vm_map| vm_map.services.values().flat_map(|c| c.clone()).collect())
+        .unwrap_or_default();
+
+    let containers_str = all_containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {containers_str}")).await;
+
+    let statuses = batch_container_statuses(&state, flex_vm_id).await;
+    let running = statuses.iter().filter(|(_, s, _)| s == "running").count();
+
+    Ok(Json(json!({
+        "status": if result.success { "ok" } else { "partial" },
+        "vm_id": flex_vm_id,
+        "vm_state": vm_state,
+        "action": "restart-all",
+        "containers_running": running,
+        "containers_total": all_containers.len(),
+    })))
 }
 
 #[utoipa::path(
