@@ -4,12 +4,16 @@ services:
     container_name: caddy
     restart: unless-stopped
     ports:
-      - "8880:8880"
-      - "8443:8443"
+      - "80:80"
+      - "443:443"
+      - "8880:80"
+      - "8443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - npm_default
     depends_on:
       introspect-proxy:
         condition: service_healthy
@@ -25,6 +29,8 @@ services:
       INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
       CLIENT_ID: cli
       CLIENT_SECRET: ${AUTHELIA_CLI_SECRET}
+    networks:
+      - npm_default
     deploy:
       resources:
         limits:
@@ -43,3 +49,7 @@ volumes:
     driver: local
   caddy_config:
     driver: local
+
+networks:
+  npm_default:
+    external: true

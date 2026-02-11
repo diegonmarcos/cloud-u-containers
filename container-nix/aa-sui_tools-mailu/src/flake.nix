@@ -52,8 +52,7 @@
           env_file: mailu.env
           restart: always
           ports:
-            - "80:80"
-            - "443:443"
+            - "8444:443"
             - "25:25"
             - "465:465"
             - "587:587"
@@ -167,7 +166,7 @@
       IMAP_PORT=993
       SUBMISSION_PORT=587
 
-      TLS_FLAVOR=letsencrypt
+      TLS_FLAVOR=cert
 
       AUTH_RATELIMIT_IP=60/hour
       AUTH_RATELIMIT_USER=100/day

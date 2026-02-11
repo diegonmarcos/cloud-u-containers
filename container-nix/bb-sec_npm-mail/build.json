@@ -1,7 +1,0 @@
-{
-  "name": "npm-mail",
-  "deploy": {
-    "host": "oci-mail",
-    "remote_path": "/opt/containers/npm"
-  }
-}

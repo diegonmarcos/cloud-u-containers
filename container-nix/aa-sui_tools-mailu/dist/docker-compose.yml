@@ -14,8 +14,7 @@ services:
     env_file: mailu.env
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "8444:443"
       - "25:25"
       - "465:465"
       - "587:587"
