@@ -264,14 +264,14 @@ pub async fn get_object_storage_info(
             if let Ok(resp) = req.send().await {
                 if resp.status().is_success() {
                     if let Ok(detail) = resp.json::<serde_json::Value>().await {
-                        let approx_size = detail["approximateSize"].as_i64().unwrap_or(0);
+                        let used_bytes = detail["approximateSize"].as_i64().unwrap_or(0);
                         let approx_count = detail["approximateCount"].as_i64().unwrap_or(0);
-                        let size_gb = (approx_size as f64 / 1_073_741_824.0 * 100.0).round() / 100.0;
+                        let used_gb = (used_bytes as f64 / 1_073_741_824.0 * 100.0).round() / 100.0;
 
                         bucket_details.push(serde_json::json!({
                             "name": name,
-                            "size_bytes": approx_size,
-                            "size_gb": size_gb,
+                            "used_bytes": used_bytes,
+                            "used_gb": used_gb,
                             "object_count": approx_count,
                             "storage_tier": detail["storageTier"].as_str().unwrap_or("Standard"),
                         }));
@@ -281,8 +281,10 @@ pub async fn get_object_storage_info(
         }
     }
 
-    let total_size_gb: f64 = bucket_details.iter()
-        .filter_map(|b| b["size_gb"].as_f64()).sum();
+    let total_used_bytes: i64 = bucket_details.iter()
+        .filter_map(|b| b["used_bytes"].as_i64()).sum();
+    let total_used_gb: f64 = bucket_details.iter()
+        .filter_map(|b| b["used_gb"].as_f64()).sum();
     let total_objects: i64 = bucket_details.iter()
         .filter_map(|b| b["object_count"].as_i64()).sum();
 
@@ -293,7 +295,8 @@ pub async fn get_object_storage_info(
         "buckets": bucket_details,
         "summary": {
             "bucket_count": bucket_details.len(),
-            "total_size_gb": total_size_gb,
+            "total_used_bytes": total_used_bytes,
+            "total_used_gb": total_used_gb,
             "total_objects": total_objects,
         }
     }))
