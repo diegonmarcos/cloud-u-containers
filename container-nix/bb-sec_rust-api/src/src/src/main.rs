@@ -26,15 +26,24 @@ pub struct AppState {
         routes::ondemand::health_containers_by_service,
         routes::ondemand::health_proxied_by_services,
         routes::ondemand::health_resources_all,
-        // VM actions by label (all 4 VMs)
-        routes::ondemand::vm_label_start,
-        routes::ondemand::vm_label_stop,
-        routes::ondemand::vm_label_reset,
-        // Bulk on-demand container ops (oci-flex)
+        // Explicit per-VM actions (Post-VMs)
+        routes::ondemand::vm_oci_flex_start,
+        routes::ondemand::vm_oci_flex_stop,
+        routes::ondemand::vm_oci_flex_reset,
+        routes::ondemand::vm_gcp_proxy_start,
+        routes::ondemand::vm_gcp_proxy_stop,
+        routes::ondemand::vm_gcp_proxy_reset,
+        routes::ondemand::vm_oci_mail_start,
+        routes::ondemand::vm_oci_mail_stop,
+        routes::ondemand::vm_oci_mail_reset,
+        routes::ondemand::vm_oci_analytics_start,
+        routes::ondemand::vm_oci_analytics_stop,
+        routes::ondemand::vm_oci_analytics_reset,
+        // Bulk on-demand container ops (Post-Containers)
         routes::ondemand::ondemand_containers_start_all,
         routes::ondemand::ondemand_containers_stop_all,
         routes::ondemand::ondemand_containers_restart_all,
-        // Legacy flex-shortcut container/service endpoints
+        // Legacy flex-shortcut container/service endpoints (Post-Containers)
         routes::ondemand::ondemand_container_start,
         routes::ondemand::ondemand_container_stop,
         routes::ondemand::ondemand_container_restart,
@@ -46,11 +55,6 @@ pub struct AppState {
         routes::ondemand::vm_stop,
         routes::ondemand::vm_reset,
         routes::ondemand::vm_container_status,
-        routes::ondemand::vm_container_start,
-        routes::ondemand::vm_container_stop,
-        routes::ondemand::vm_container_restart,
-        routes::ondemand::vm_service_start,
-        routes::ondemand::vm_service_stop,
     ),
     components(schemas(
         models::api_response::ApiResponse,
