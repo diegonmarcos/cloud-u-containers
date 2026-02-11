@@ -21,14 +21,11 @@ pub struct AppState {
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        routes::health::health,
-        routes::ondemand::health_flex1,
         routes::ondemand::health_all,
         routes::ondemand::health_containers_by_vm,
         routes::ondemand::health_containers_by_service,
         routes::ondemand::health_proxied_by_services,
         // Legacy flex-shortcut endpoints
-        routes::ondemand::ondemand_vm_health,
         routes::ondemand::ondemand_vm_start,
         routes::ondemand::ondemand_vm_stop,
         routes::ondemand::ondemand_vm_reset,
