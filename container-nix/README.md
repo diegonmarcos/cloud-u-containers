@@ -13,10 +13,10 @@ All running containers across all VMs and their corresponding flake.
 |-----------|-------|
 | `authelia` | `bb-sec_authelia` |
 | `authelia-redis` | `ca-dat_redis` |
+| `caddy` | `bb-sec_caddy` |
 | `flask-api` | `bb-sec_flask-api` |
 | `fluent-bit` | `bc-obs_fluent-bit` |
-| `introspect-proxy` | `bb-sec_npm-introspect-proxy` |
-| `npm` | `bb-sec_npm` |
+| `introspect-proxy` | `bb-sec_caddy` |
 | `ntfy` | `bc-obs_ntfy` |
 | `vaultwarden` | `ab-mic_vaultwarden` |
 
@@ -65,7 +65,6 @@ All running containers across all VMs and their corresponding flake.
 | `mailu-webmail-1` | `aa-sui_tools-mailu` |
 | `matomo-app` | `bc-obs_matomo` |
 | `matomo-db` | `bc-obs_matomo` |
-| `nginx-proxy` | `bb-sec_npm-mail` |
 | `radicale` | `aa-sui_radicale` |
 | `smtp-proxy` | `aa-sui_tools-smtp-proxy` |
 | `syncthing` | `ab-mic_syncthing` |
@@ -91,13 +90,13 @@ All running containers across all VMs and their corresponding flake.
 |-------|----------|
 | `aa-sui_affine` | Collaborative workspace (Notion alternative) |
 | `aa-sui_photos-webhook` | Photo sync webhook |
-| `ba-clo_cloudflare` | Cloudflare tunnel / DNS CLI |
+| `ba-clo_cloudflare` | Cloudflare DNS / Terraform |
 | `ba-clo_gcloud` | Google Cloud SDK |
 | `ba-clo_oci` | Oracle Cloud CLI |
 | `bb-sec_mcp-server-skills` | MCP server for Claude |
 | `bb-sec_rust-api` | Rust cloud API (replacement for flask-api) |
 | `bb-sec_sauron-central` | Central monitoring aggregator |
-| `bb-sec_wireguard` | VPN server |
+| `bb-sec_wireguard` | WireGuard VPN mesh (4 VMs) |
 | `bc-obs_alerts-api` | Alert routing API |
 | `bc-obs_dozzle` | Docker log viewer |
 | `bc-obs_sauron-lite` | Lightweight log aggregation |
@@ -138,7 +137,7 @@ All running containers across all VMs and their corresponding flake.
 
 | Flake | Description |
 |-------|-------------|
-| `ba-clo_cloudflare` | Cloudflare tunnel and DNS management |
+| `ba-clo_cloudflare` | Cloudflare DNS Terraform configuration |
 | `ba-clo_gcloud` | Google Cloud SDK and tools |
 | `ba-clo_oci` | Oracle Cloud Infrastructure CLI |
 
@@ -147,15 +146,13 @@ All running containers across all VMs and their corresponding flake.
 | Flake | Description |
 |-------|-------------|
 | `bb-sec_authelia` | SSO and 2FA authentication portal |
+| `bb-sec_caddy` | Caddy reverse proxy + introspect-proxy sidecar (replaces NPM) |
 | `bb-sec_flask-api` | Flask API for cloud automation |
 | `bb-sec_mcp-server-skills` | MCP server for Claude |
-| `bb-sec_npm` | Nginx Proxy Manager reverse proxy |
-| `bb-sec_npm-introspect-proxy` | Token introspection proxy for NPM |
-| `bb-sec_npm-mail` | Nginx Proxy Manager for oci-mail |
 | `bb-sec_rust-api` | Rust cloud API (flask-api replacement) |
 | `bb-sec_sauron` | Log monitoring and alerting |
 | `bb-sec_sauron-central` | Central monitoring aggregator |
-| `bb-sec_wireguard` | VPN server for secure remote access |
+| `bb-sec_wireguard` | WireGuard VPN mesh across all 4 VMs |
 
 ### Observability (bc-obs_*)
 
@@ -184,3 +181,11 @@ All running containers across all VMs and their corresponding flake.
 | `ca-dat_gitea` | Self-hosted Git service |
 | `ca-dat_postlite` | SQLite-based data store |
 | `ca-dat_redis` | In-memory data store for caching |
+
+### Archived (z_archive/)
+
+| Flake | Replaced by |
+|-------|-------------|
+| `bb-sec_npm` | `bb-sec_caddy` |
+| `bb-sec_npm-introspect-proxy-standalone` | `bb-sec_caddy` (introspect-proxy sidecar) |
+| `bb-sec_npm-mail` | `bb-sec_caddy` (mail routes via WireGuard) |
