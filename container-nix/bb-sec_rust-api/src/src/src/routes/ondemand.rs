@@ -40,6 +40,11 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/containers/on-demand/start-all", post(ondemand_containers_start_all))
         .route("/rust/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
         .route("/rust/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
+        // Matomo / Windmill toggle (oci-analytics)
+        .route("/rust/containers/windmill/start", post(windmill_start))
+        .route("/rust/containers/windmill/stop", post(windmill_stop))
+        .route("/rust/containers/matomo/wake", post(matomo_wake))
+        .route("/rust/containers/matomo/sleep", post(matomo_sleep))
         // Legacy flex-shortcut container/service routes
         .route("/rust/containers/{name}/start", post(ondemand_container_start))
         .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
@@ -1494,6 +1499,134 @@ pub async fn ondemand_containers_restart_all(
         "action": "restart-all",
         "containers_running": running,
         "containers_total": all_containers.len(),
+    })))
+}
+
+// ---------------------------------------------------------------------------
+// Matomo / Windmill toggle (oci-analytics — shared 956MB RAM)
+// ---------------------------------------------------------------------------
+
+const ANALYTICS_VM_ID: &str = "oci-f-micro_2";
+const WINDMILL_COMPOSE: &str = "/home/ubuntu/windmill/docker-compose.yml";
+const MATOMO_CONTAINER: &str = "matomo-hybrid";
+
+#[utoipa::path(
+    post,
+    path = "/rust/containers/windmill/start",
+    tag = "Post-Containers",
+    responses(
+        (status = 200, description = "Windmill started (matomo sleeping)", body = Value),
+        (status = 500, description = "Failed")
+    )
+)]
+pub async fn windmill_start(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
+        .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
+
+    // Sleep matomo first, then start windmill
+    let sleep = ssh::ssh_command(ssh_cfg,
+        &format!("docker exec {MATOMO_CONTAINER} /scripts/matomo-sleep.sh")).await;
+    let start = ssh::ssh_command(ssh_cfg,
+        &format!("docker-compose -f {WINDMILL_COMPOSE} start")).await;
+
+    Ok(Json(json!({
+        "status": if start.success { "ok" } else { "partial" },
+        "vm_id": ANALYTICS_VM_ID,
+        "action": "windmill-start",
+        "matomo_sleep": sleep.success,
+        "windmill_start": start.success,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/containers/windmill/stop",
+    tag = "Post-Containers",
+    responses(
+        (status = 200, description = "Windmill stopped (matomo waking)", body = Value),
+        (status = 500, description = "Failed")
+    )
+)]
+pub async fn windmill_stop(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
+        .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
+
+    // Stop windmill first, then wake matomo
+    let stop = ssh::ssh_command(ssh_cfg,
+        &format!("docker-compose -f {WINDMILL_COMPOSE} stop")).await;
+    let wake = ssh::ssh_command(ssh_cfg,
+        &format!("docker exec {MATOMO_CONTAINER} /scripts/matomo-wake.sh")).await;
+
+    Ok(Json(json!({
+        "status": if stop.success { "ok" } else { "partial" },
+        "vm_id": ANALYTICS_VM_ID,
+        "action": "windmill-stop",
+        "windmill_stop": stop.success,
+        "matomo_wake": wake.success,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/containers/matomo/wake",
+    tag = "Post-Containers",
+    responses(
+        (status = 200, description = "Matomo waking (windmill stopped)", body = Value),
+        (status = 500, description = "Failed")
+    )
+)]
+pub async fn matomo_wake(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
+        .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
+
+    // Stop windmill first, then wake matomo
+    let stop = ssh::ssh_command(ssh_cfg,
+        &format!("docker-compose -f {WINDMILL_COMPOSE} stop")).await;
+    let wake = ssh::ssh_command(ssh_cfg,
+        &format!("docker exec {MATOMO_CONTAINER} /scripts/matomo-wake.sh")).await;
+
+    Ok(Json(json!({
+        "status": if wake.success { "ok" } else { "partial" },
+        "vm_id": ANALYTICS_VM_ID,
+        "action": "matomo-wake",
+        "windmill_stop": stop.success,
+        "matomo_wake": wake.success,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/containers/matomo/sleep",
+    tag = "Post-Containers",
+    responses(
+        (status = 200, description = "Matomo sleeping (windmill started)", body = Value),
+        (status = 500, description = "Failed")
+    )
+)]
+pub async fn matomo_sleep(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
+        .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
+
+    // Sleep matomo first, then start windmill
+    let sleep = ssh::ssh_command(ssh_cfg,
+        &format!("docker exec {MATOMO_CONTAINER} /scripts/matomo-sleep.sh")).await;
+    let start = ssh::ssh_command(ssh_cfg,
+        &format!("docker-compose -f {WINDMILL_COMPOSE} start")).await;
+
+    Ok(Json(json!({
+        "status": if sleep.success { "ok" } else { "partial" },
+        "vm_id": ANALYTICS_VM_ID,
+        "action": "matomo-sleep",
+        "matomo_sleep": sleep.success,
+        "windmill_start": start.success,
     })))
 }
 
