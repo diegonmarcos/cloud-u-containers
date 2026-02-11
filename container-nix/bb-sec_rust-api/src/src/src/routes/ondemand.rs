@@ -24,18 +24,17 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
         .route("/rust/vm/reset", post(ondemand_vm_reset))
-        .route("/rust/health/containers/{name}", get(ondemand_container_status))
         .route("/rust/containers/{name}/start", post(ondemand_container_start))
         .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
         .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
         .route("/rust/services/{service}/start", post(ondemand_service_start))
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
         // Generalized per-VM routes
-        .route("/rust/health/vms/{vm_id}", get(vm_health))
+        .route("/rust/health/{vm_id}", get(vm_health))
         .route("/rust/vms/{vm_id}/start", post(vm_start))
         .route("/rust/vms/{vm_id}/stop", post(vm_stop))
         .route("/rust/vms/{vm_id}/reset", post(vm_reset))
-        .route("/rust/health/vms/{vm_id}/containers/{name}", get(vm_container_status))
+        .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
         .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
         .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
         .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
@@ -905,7 +904,7 @@ pub async fn health_resources_all(
 
 #[utoipa::path(
     get,
-    path = "/rust/health/vms/{vm_id}",
+    path = "/rust/health/{vm_id}",
     tag = "Get-Health",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
@@ -1102,11 +1101,11 @@ pub async fn vm_reset(
 
 #[utoipa::path(
     get,
-    path = "/rust/health/vms/{vm_id}/containers/{name}",
+    path = "/rust/health/{vm_id}/{container_name}",
     tag = "Get-Health",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
-        ("name" = String, Path, description = "Container name"),
+        ("container_name" = String, Path, description = "Container name"),
     ),
     responses(
         (status = 200, description = "Container status", body = Value),
@@ -1395,25 +1394,6 @@ pub async fn ondemand_vm_reset(
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = state.config.flex_vm_id.clone();
     vm_reset(State(state), Path(flex_vm_id)).await
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/containers/{name}",
-    tag = "Get-Health",
-    params(("name" = String, Path, description = "Container name")),
-    responses(
-        (status = 200, description = "Container status", body = Value),
-        (status = 400, description = "Invalid container name"),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn ondemand_container_status(
-    State(state): State<Arc<AppState>>,
-    Path(name): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let flex_vm_id = state.config.flex_vm_id.clone();
-    vm_container_status(State(state), Path((flex_vm_id, name))).await
 }
 
 #[utoipa::path(
