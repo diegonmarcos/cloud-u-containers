@@ -881,7 +881,8 @@ pub async fn health_resources_all(
     // OCI Object Storage query in parallel with VM resource gathering
     let storage_state = Arc::clone(&state);
     let storage_handle = tokio::spawn(async move {
-        crate::services::oci::get_object_storage_info(&storage_state.http, &storage_state.config).await
+        let quota = storage_state.config.oci_storage_quota_gb;
+        crate::services::oci::get_object_storage_info(&storage_state.http, &storage_state.config, quota).await
     });
 
     let mut vms = serde_json::Map::new();

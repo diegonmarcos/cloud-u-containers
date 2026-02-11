@@ -12,6 +12,7 @@ pub struct AppConfig {
     pub oci_config_file: String,
     pub oci_key_file: String,
     pub oci_namespace: String,
+    pub oci_storage_quota_gb: f64,
     pub gcp_service_account_file: String,
     pub gcp_project_id: String,
     pub flex_vm_id: String,
@@ -320,6 +321,8 @@ impl AppConfig {
                 .unwrap_or_else(|_| "/app/config/oci_api_key.pem".into()),
             oci_namespace: std::env::var("OCI_NAMESPACE")
                 .unwrap_or_else(|_| "axpmn3qtq4ig".into()),
+            oci_storage_quota_gb: std::env::var("OCI_STORAGE_QUOTA_GB")
+                .ok().and_then(|s| s.parse().ok()).unwrap_or(10240.0),
             gcp_service_account_file,
             gcp_project_id,
             flex_vm_id: "oci-p-flex_1".to_string(),
