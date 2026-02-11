@@ -57,6 +57,11 @@ for vm in "${VMS[@]}"; do
 done
 
 echo
+echo "--- Health Checks ---"
+fetch GET "/health/containers" "health_containers.json"
+fetch GET "/health/routes" "health_routes.json"
+
+echo
 echo "--- Legacy VM endpoints ---"
 fetch GET "/vm/health" "legacy_vm_health.json"
 

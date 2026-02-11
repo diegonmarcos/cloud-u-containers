@@ -41,6 +41,7 @@
             - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
             - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
             - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
+            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN:-}
           networks:
             - npm_default
           healthcheck:

@@ -11,7 +11,7 @@ pub fn routes() -> Router<Arc<AppState>> {
 #[utoipa::path(
     get,
     path = "/rust/health",
-    tag = "health",
+    tag = "Get-Health",
     responses(
         (status = 200, description = "Health check", body = Value)
     )

@@ -16,6 +16,14 @@ pub struct AppConfig {
     pub flex_vm_id: String,
     pub flex_services: HashMap<String, FlexService>,
     pub all_vm_services: HashMap<String, VmServiceMap>,
+    pub route_check_domains: Vec<RouteCheckDomain>,
+    pub authelia_bearer_token: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RouteCheckDomain {
+    pub domain: String,
+    pub label: String,
 }
 
 #[derive(Clone, Debug)]
@@ -286,6 +294,19 @@ impl AppConfig {
             .map(|(k, v)| (k.clone(), FlexService { containers: v.clone() }))
             .collect();
 
+        let route_check_domains = vec![
+            RouteCheckDomain { domain: "analytics.diegonmarcos.com".into(), label: "analytics".into() },
+            RouteCheckDomain { domain: "db.diegonmarcos.com".into(), label: "db".into() },
+            RouteCheckDomain { domain: "ide.diegonmarcos.com".into(), label: "ide".into() },
+            RouteCheckDomain { domain: "auth.diegonmarcos.com".into(), label: "auth".into() },
+            RouteCheckDomain { domain: "photos.diegonmarcos.com".into(), label: "photos".into() },
+            RouteCheckDomain { domain: "cal.diegonmarcos.com".into(), label: "cal".into() },
+            RouteCheckDomain { domain: "api.diegonmarcos.com".into(), label: "api".into() },
+        ];
+
+        let authelia_bearer_token = std::env::var("AUTHELIA_BEARER_TOKEN").ok()
+            .filter(|s| !s.is_empty());
+
         AppConfig {
             port,
             architecture,
@@ -301,6 +322,8 @@ impl AppConfig {
             flex_vm_id: "oci-p-flex_1".to_string(),
             flex_services,
             all_vm_services,
+            route_check_domains,
+            authelia_bearer_token,
         }
     }
 }

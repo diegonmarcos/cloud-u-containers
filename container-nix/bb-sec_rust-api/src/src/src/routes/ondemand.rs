@@ -14,9 +14,11 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        // Status
+        // Status & health
         .route("/rust/status/flex1", get(status_flex1))
         .route("/rust/status/all", get(status_all))
+        .route("/rust/health/containers", get(health_containers))
+        .route("/rust/health/routes", get(health_routes))
         // Legacy flex-shortcut routes (backward compat)
         .route("/rust/vm/health", get(ondemand_vm_health))
         .route("/rust/vm/start", post(ondemand_vm_start))
@@ -272,7 +274,7 @@ fn should_probe(provider_state: &str) -> bool {
 #[utoipa::path(
     get,
     path = "/rust/status/flex1",
-    tag = "status",
+    tag = "Get-Health",
     responses(
         (status = 200, description = "Flex VM (oci-p-flex_1) status with all services", body = Value),
         (status = 500, description = "Internal error")
@@ -350,7 +352,7 @@ pub async fn status_flex1(
 #[utoipa::path(
     get,
     path = "/rust/status/all",
-    tag = "status",
+    tag = "Get-Health",
     responses(
         (status = 200, description = "Status of all VMs with services and containers", body = Value),
         (status = 500, description = "Internal error")
@@ -454,13 +456,191 @@ pub async fn status_all(
 }
 
 // ---------------------------------------------------------------------------
+// Health check endpoints
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/rust/health/containers",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "Container health across all VMs", body = Value),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn health_containers(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut set = tokio::task::JoinSet::new();
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        let vm_id = vm_id.clone();
+        let label = vm_map.label.clone();
+        let state = Arc::clone(&state);
+        set.spawn(async move {
+            let containers = batch_container_statuses(&state, &vm_id).await;
+            (vm_id, label, containers)
+        });
+    }
+
+    let mut vms = serde_json::Map::new();
+    let mut global_running = 0u32;
+    let mut global_total = 0u32;
+
+    while let Some(result) = set.join_next().await {
+        let (vm_id, label, containers) = match result {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        let mut running = 0u32;
+        let details: Vec<Value> = containers.iter().map(|(name, st, ports)| {
+            if st == "running" { running += 1; }
+            global_total += 1;
+            json!({ "name": name, "state": st, "ports": ports })
+        }).collect();
+        global_running += running;
+
+        vms.insert(vm_id, json!({
+            "label": label,
+            "containers": details,
+            "running": running,
+            "total": details.len(),
+        }));
+    }
+
+    Ok(Json(json!({
+        "vms": vms,
+        "summary": {
+            "containers_running": global_running,
+            "containers_total": global_total,
+        }
+    })))
+}
+
+async fn check_domain_route(
+    http: &reqwest::Client,
+    domain: &str,
+    label: &str,
+    bearer_token: Option<&str>,
+) -> Value {
+    let url = format!("https://{domain}");
+    let start = std::time::Instant::now();
+
+    // No-redirect probe to detect 302→authelia
+    let no_redirect_client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(std::time::Duration::from_secs(10))
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap_or_else(|_| http.clone());
+
+    let probe = no_redirect_client.get(&url).send().await;
+    let elapsed = start.elapsed().as_millis() as u64;
+
+    let (status_code, auth_required) = match &probe {
+        Ok(resp) => {
+            let code = resp.status().as_u16();
+            let is_redirect = (300..400).contains(&code);
+            let to_auth = resp.headers().get("location")
+                .and_then(|v| v.to_str().ok())
+                .map(|loc| loc.contains("auth"))
+                .unwrap_or(false);
+            (code, is_redirect && to_auth)
+        }
+        Err(_) => (0, false),
+    };
+
+    let mut result = json!({
+        "domain": domain,
+        "label": label,
+        "status_code": status_code,
+        "auth_required": auth_required,
+        "response_time_ms": elapsed,
+        "healthy": status_code > 0 && status_code < 500,
+    });
+
+    // If auth required and we have a bearer token, do an authenticated probe
+    if auth_required {
+        if let Some(token) = bearer_token {
+            let auth_start = std::time::Instant::now();
+            let auth_resp = http.get(&url)
+                .header("Authorization", format!("Bearer {token}"))
+                .timeout(std::time::Duration::from_secs(10))
+                .send()
+                .await;
+            let auth_elapsed = auth_start.elapsed().as_millis() as u64;
+            let auth_status = auth_resp.as_ref().map(|r| r.status().as_u16()).unwrap_or(0);
+            result["authenticated_status"] = json!(auth_status);
+            result["authenticated_response_time_ms"] = json!(auth_elapsed);
+            result["healthy"] = json!(auth_status > 0 && auth_status < 500);
+        }
+    }
+
+    result
+}
+
+#[utoipa::path(
+    get,
+    path = "/rust/health/routes",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "Public route health probes", body = Value),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn health_routes(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut set = tokio::task::JoinSet::new();
+    let bearer = state.config.authelia_bearer_token.clone();
+
+    for entry in &state.config.route_check_domains {
+        let http = state.http.clone();
+        let domain = entry.domain.clone();
+        let label = entry.label.clone();
+        let token = bearer.clone();
+        set.spawn(async move {
+            check_domain_route(&http, &domain, &label, token.as_deref()).await
+        });
+    }
+
+    let mut routes = vec![];
+    let mut healthy_count = 0u32;
+    let mut total = 0u32;
+
+    while let Some(result) = set.join_next().await {
+        if let Ok(val) = result {
+            total += 1;
+            if val["healthy"].as_bool() == Some(true) {
+                healthy_count += 1;
+            }
+            routes.push(val);
+        }
+    }
+
+    // Sort by label for consistent output
+    routes.sort_by(|a, b| {
+        a["label"].as_str().unwrap_or("").cmp(b["label"].as_str().unwrap_or(""))
+    });
+
+    Ok(Json(json!({
+        "routes": routes,
+        "summary": {
+            "healthy": healthy_count,
+            "total": total,
+        }
+    })))
+}
+
+// ---------------------------------------------------------------------------
 // Generalized per-VM endpoints
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(
     get,
     path = "/rust/vms/{vm_id}/health",
-    tag = "vm",
+    tag = "Get-Health",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM health check", body = Value),
@@ -509,7 +689,7 @@ pub async fn vm_health(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/start",
-    tag = "vm",
+    tag = "Post-VMs",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM started", body = Value),
@@ -535,7 +715,7 @@ pub async fn vm_start(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/stop",
-    tag = "vm",
+    tag = "Post-VMs",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM stopped", body = Value),
@@ -595,7 +775,7 @@ pub async fn vm_stop(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/reset",
-    tag = "vm",
+    tag = "Post-VMs",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM reset/started", body = Value),
@@ -657,7 +837,7 @@ pub async fn vm_reset(
 #[utoipa::path(
     get,
     path = "/rust/vms/{vm_id}/containers/{name}/status",
-    tag = "containers",
+    tag = "Get-Health",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("name" = String, Path, description = "Container name"),
@@ -687,7 +867,7 @@ pub async fn vm_container_status(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/containers/{name}/start",
-    tag = "containers",
+    tag = "Post-Containers",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("name" = String, Path, description = "Container name"),
@@ -732,7 +912,7 @@ pub async fn vm_container_start(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/containers/{name}/stop",
-    tag = "containers",
+    tag = "Post-Containers",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("name" = String, Path, description = "Container name"),
@@ -773,7 +953,7 @@ pub async fn vm_container_stop(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/containers/{name}/restart",
-    tag = "containers",
+    tag = "Post-Containers",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("name" = String, Path, description = "Container name"),
@@ -818,7 +998,7 @@ pub async fn vm_container_restart(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/services/{service}/start",
-    tag = "services",
+    tag = "Post-Containers",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("service" = String, Path, description = "Service name"),
@@ -860,7 +1040,7 @@ pub async fn vm_service_start(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/services/{service}/stop",
-    tag = "services",
+    tag = "Post-Containers",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("service" = String, Path, description = "Service name"),
@@ -906,7 +1086,7 @@ pub async fn vm_service_stop(
 #[utoipa::path(
     get,
     path = "/rust/vm/health",
-    tag = "vm",
+    tag = "Get-Health",
     responses(
         (status = 200, description = "Flex VM health check", body = Value),
         (status = 500, description = "Internal error")
@@ -922,7 +1102,7 @@ pub async fn ondemand_vm_health(
 #[utoipa::path(
     post,
     path = "/rust/vm/start",
-    tag = "vm",
+    tag = "Post-VMs",
     responses(
         (status = 200, description = "VM started", body = Value),
         (status = 500, description = "Failed to start VM")
@@ -938,7 +1118,7 @@ pub async fn ondemand_vm_start(
 #[utoipa::path(
     post,
     path = "/rust/vm/stop",
-    tag = "vm",
+    tag = "Post-VMs",
     responses(
         (status = 200, description = "VM stopped gracefully", body = Value),
         (status = 500, description = "Failed to stop VM")
@@ -954,7 +1134,7 @@ pub async fn ondemand_vm_stop(
 #[utoipa::path(
     post,
     path = "/rust/vm/reset",
-    tag = "vm",
+    tag = "Post-VMs",
     responses(
         (status = 200, description = "VM reset/started", body = Value),
         (status = 500, description = "Failed to reset VM")
@@ -970,7 +1150,7 @@ pub async fn ondemand_vm_reset(
 #[utoipa::path(
     get,
     path = "/rust/containers/{name}/status",
-    tag = "containers",
+    tag = "Get-Health",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container status", body = Value),
@@ -989,7 +1169,7 @@ pub async fn ondemand_container_status(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/start",
-    tag = "containers",
+    tag = "Post-Containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container started", body = Value),
@@ -1008,7 +1188,7 @@ pub async fn ondemand_container_start(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/stop",
-    tag = "containers",
+    tag = "Post-Containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container stopped", body = Value),
@@ -1027,7 +1207,7 @@ pub async fn ondemand_container_stop(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/restart",
-    tag = "containers",
+    tag = "Post-Containers",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container restarted", body = Value),
@@ -1046,7 +1226,7 @@ pub async fn ondemand_container_restart(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/start",
-    tag = "services",
+    tag = "Post-Containers",
     params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service started", body = Value),
@@ -1065,7 +1245,7 @@ pub async fn ondemand_service_start(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/stop",
-    tag = "services",
+    tag = "Post-Containers",
     params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service stopped", body = Value),
