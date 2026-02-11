@@ -26,6 +26,7 @@ pub struct AppState {
         routes::ondemand::health_containers_by_service,
         routes::ondemand::health_proxied_by_services,
         routes::ondemand::health_resources_all,
+        routes::ondemand::health_ids,
         // Explicit per-VM actions (Post-VMs)
         routes::ondemand::vm_oci_flex_start,
         routes::ondemand::vm_oci_flex_stop,

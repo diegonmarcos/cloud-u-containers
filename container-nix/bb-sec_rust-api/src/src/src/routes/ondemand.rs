@@ -20,6 +20,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
         .route("/rust/health/resources-all", get(health_resources_all))
+        .route("/rust/health/ids", get(health_ids))
         // VM actions — oci-flex
         .route("/rust/vm/oci-flex/start", post(vm_oci_flex_start))
         .route("/rust/vm/oci-flex/stop", post(vm_oci_flex_stop))
@@ -290,6 +291,44 @@ fn should_probe(provider_state: &str) -> bool {
     matches!(provider_state, "RUNNING" | "N/A")
 }
 
+/// Result of probing a VM's connectivity.
+struct VmProbe {
+    provider_state: String,
+    ping: bool,
+    ssh: bool,
+    health: &'static str,
+    container_data: Vec<(String, String, String)>,
+}
+
+/// Probe a VM: get provider state, ping, SSH, batch container statuses.
+async fn probe_vm(state: &AppState, vm_id: &str) -> VmProbe {
+    let provider_state = get_vm_state_by_id(state, vm_id)
+        .await
+        .unwrap_or_else(|_| "unknown".into());
+
+    let ssh_cfg = state.config.vm_ssh.get(vm_id);
+    let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
+
+    let (ping, ssh_ok, container_data) = if should_probe(&provider_state) {
+        let p = ssh::check_ping(host).await;
+        let s = match ssh_cfg {
+            Some(cfg) => ssh::check_ssh(cfg).await,
+            None => false,
+        };
+        let data = if s {
+            batch_container_statuses(state, vm_id).await
+        } else {
+            vec![]
+        };
+        (p, s, data)
+    } else {
+        (false, false, vec![])
+    };
+
+    let health = compute_health(&provider_state, ssh_ok);
+    VmProbe { provider_state, ping, ssh: ssh_ok, health, container_data }
+}
+
 // ---------------------------------------------------------------------------
 // Status endpoints
 // ---------------------------------------------------------------------------
@@ -314,30 +353,7 @@ pub async fn health_all(
     let mut global_containers_total = 0u32;
 
     for (vm_id, vm_map) in &state.config.all_vm_services {
-        let provider_state = get_vm_state_by_id(&state, vm_id)
-            .await
-            .unwrap_or_else(|_| "unknown".into());
-
-        let ssh_cfg = state.config.vm_ssh.get(vm_id);
-        let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
-
-        let (ping, ssh_ok, container_data) = if should_probe(&provider_state) {
-            let p = ssh::check_ping(host).await;
-            let s = match ssh_cfg {
-                Some(cfg) => ssh::check_ssh(cfg).await,
-                None => false,
-            };
-            let data = if s {
-                batch_container_statuses(&state, vm_id).await
-            } else {
-                vec![]
-            };
-            (p, s, data)
-        } else {
-            (false, false, vec![])
-        };
-
-        let health = compute_health(&provider_state, ssh_ok);
+        let probe = probe_vm(&state, vm_id).await;
 
         let mut services = serde_json::Map::new();
         let mut vm_services_up = 0u32;
@@ -347,7 +363,7 @@ pub async fn health_all(
         let mut vm_containers_total = 0u32;
 
         for (svc_name, containers) in &vm_map.services {
-            let svc_status = compute_service_status(containers, &container_data);
+            let svc_status = compute_service_status(containers, &probe.container_data);
             let status_str = svc_status["status"].as_str().unwrap_or("down");
             match status_str {
                 "up" => vm_services_up += 1,
@@ -373,10 +389,10 @@ pub async fn health_all(
 
         vms.insert(vm_id.clone(), json!({
             "label": vm_map.label,
-            "provider_state": provider_state,
-            "ssh": ssh_ok,
-            "ping": ping,
-            "health": health,
+            "provider_state": probe.provider_state,
+            "ssh": probe.ssh,
+            "ping": probe.ping,
+            "health": probe.health,
             "services": services,
             "summary": {
                 "services_up": vm_services_up,
@@ -939,6 +955,53 @@ pub async fn health_resources_all(
     Ok(Json(Value::Object(resp)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/rust/health/ids",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "All valid variable IDs: vm_ids, labels, services, containers", body = Value),
+    )
+)]
+pub async fn health_ids(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut vms = serde_json::Map::new();
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        let mut services_map = serde_json::Map::new();
+        for (svc_name, containers) in &vm_map.services {
+            services_map.insert(svc_name.clone(), json!(containers));
+        }
+        vms.insert(vm_id.clone(), json!({
+            "label": vm_map.label,
+            "services": services_map,
+        }));
+    }
+
+    let vm_ids: Vec<&String> = state.config.all_vm_services.keys().collect();
+    let labels: Vec<&str> = state.config.all_vm_services.values()
+        .map(|v| v.label.as_str()).collect();
+
+    let mut all_services: Vec<&String> = state.config.all_vm_services.values()
+        .flat_map(|v| v.services.keys()).collect();
+    all_services.sort();
+    all_services.dedup();
+
+    let mut all_containers: Vec<&String> = state.config.all_vm_services.values()
+        .flat_map(|v| v.services.values().flat_map(|c| c.iter())).collect();
+    all_containers.sort();
+    all_containers.dedup();
+
+    Ok(Json(json!({
+        "vm_ids": vm_ids,
+        "labels": labels,
+        "services": all_services,
+        "containers": all_containers,
+        "vms": vms,
+    })))
+}
+
 // ---------------------------------------------------------------------------
 // Generalized per-VM endpoints
 // ---------------------------------------------------------------------------
@@ -965,30 +1028,14 @@ pub async fn vm_health(
         return Err(AppError::not_found(format!("Unknown VM: {vm_id}")));
     }
 
-    let provider_state = get_vm_state_by_id(&state, &vm_id).await.unwrap_or_else(|_| "unknown".into());
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id);
-    let host = ssh_cfg.map(|c| c.host.as_str()).unwrap_or("");
-
-    let (ping, ssh_ok) = if should_probe(&provider_state) {
-        let p = ssh::check_ping(host).await;
-        let s = match ssh_cfg {
-            Some(cfg) => ssh::check_ssh(cfg).await,
-            None => false,
-        };
-        (p, s)
-    } else {
-        (false, false)
-    };
-
-    let health = compute_health(&provider_state, ssh_ok);
+    let probe = probe_vm(&state, &vm_id).await;
 
     Ok(Json(json!({
         "id": vm_id,
-        "provider_state": provider_state,
-        "ssh": ssh_ok,
-        "ping": ping,
-        "health": health,
+        "provider_state": probe.provider_state,
+        "ssh": probe.ssh,
+        "ping": probe.ping,
+        "health": probe.health,
     })))
 }
 
