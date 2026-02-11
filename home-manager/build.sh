@@ -75,7 +75,7 @@ deploy_single_vm() {
             "$SERVICE_DIR/" "$vm:~/.config/home-manager/" 2>&1 | grep -v "^sending\|^sent\|^total"
     else
         # Fallback: use scp for individual files
-        scp "$SERVICE_DIR/flake.nix" "$SERVICE_DIR/flake.lock" "$SERVICE_DIR/${vm}.nix" "$vm:~/.config/home-manager/" 2>&1 | tail -1
+        scp "$SERVICE_DIR"/*.nix "$SERVICE_DIR/flake.lock" "$vm:~/.config/home-manager/" 2>&1 | tail -1
     fi
 
     log "  ✓ Files copied to $vm"
