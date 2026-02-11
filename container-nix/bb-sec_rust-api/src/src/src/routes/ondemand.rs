@@ -24,18 +24,18 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
         .route("/rust/vm/reset", post(ondemand_vm_reset))
-        .route("/rust/containers/{name}/status", get(ondemand_container_status))
+        .route("/rust/health/containers/{name}", get(ondemand_container_status))
         .route("/rust/containers/{name}/start", post(ondemand_container_start))
         .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
         .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
         .route("/rust/services/{service}/start", post(ondemand_service_start))
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
         // Generalized per-VM routes
-        .route("/rust/vms/{vm_id}/health", get(vm_health))
+        .route("/rust/health/vms/{vm_id}", get(vm_health))
         .route("/rust/vms/{vm_id}/start", post(vm_start))
         .route("/rust/vms/{vm_id}/stop", post(vm_stop))
         .route("/rust/vms/{vm_id}/reset", post(vm_reset))
-        .route("/rust/vms/{vm_id}/containers/{name}/status", get(vm_container_status))
+        .route("/rust/health/vms/{vm_id}/containers/{name}", get(vm_container_status))
         .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
         .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
         .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
@@ -905,7 +905,7 @@ pub async fn health_resources_all(
 
 #[utoipa::path(
     get,
-    path = "/rust/vms/{vm_id}/health",
+    path = "/rust/health/vms/{vm_id}",
     tag = "Get-Health",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
@@ -1102,7 +1102,7 @@ pub async fn vm_reset(
 
 #[utoipa::path(
     get,
-    path = "/rust/vms/{vm_id}/containers/{name}/status",
+    path = "/rust/health/vms/{vm_id}/containers/{name}",
     tag = "Get-Health",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1399,7 +1399,7 @@ pub async fn ondemand_vm_reset(
 
 #[utoipa::path(
     get,
-    path = "/rust/containers/{name}/status",
+    path = "/rust/health/containers/{name}",
     tag = "Get-Health",
     params(("name" = String, Path, description = "Container name")),
     responses(
