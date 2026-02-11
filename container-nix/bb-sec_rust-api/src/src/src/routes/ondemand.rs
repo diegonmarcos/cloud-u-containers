@@ -20,10 +20,22 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
         .route("/rust/health/resources-all", get(health_resources_all))
-        // VM actions by label (all 4 VMs)
-        .route("/rust/vm/{label}/start", post(vm_label_start))
-        .route("/rust/vm/{label}/stop", post(vm_label_stop))
-        .route("/rust/vm/{label}/reset", post(vm_label_reset))
+        // VM actions — oci-flex
+        .route("/rust/vm/oci-flex/start", post(vm_oci_flex_start))
+        .route("/rust/vm/oci-flex/stop", post(vm_oci_flex_stop))
+        .route("/rust/vm/oci-flex/reset", post(vm_oci_flex_reset))
+        // VM actions — gcp-proxy
+        .route("/rust/vm/gcp-proxy/start", post(vm_gcp_proxy_start))
+        .route("/rust/vm/gcp-proxy/stop", post(vm_gcp_proxy_stop))
+        .route("/rust/vm/gcp-proxy/reset", post(vm_gcp_proxy_reset))
+        // VM actions — oci-mail
+        .route("/rust/vm/oci-mail/start", post(vm_oci_mail_start))
+        .route("/rust/vm/oci-mail/stop", post(vm_oci_mail_stop))
+        .route("/rust/vm/oci-mail/reset", post(vm_oci_mail_reset))
+        // VM actions — oci-analytics
+        .route("/rust/vm/oci-analytics/start", post(vm_oci_analytics_start))
+        .route("/rust/vm/oci-analytics/stop", post(vm_oci_analytics_stop))
+        .route("/rust/vm/oci-analytics/reset", post(vm_oci_analytics_reset))
         // Bulk on-demand container ops (oci-flex)
         .route("/rust/containers/on-demand/start-all", post(ondemand_containers_start_all))
         .route("/rust/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
@@ -34,17 +46,13 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
         .route("/rust/services/{service}/start", post(ondemand_service_start))
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
-        // Generalized per-VM routes
+        // Generalized per-VM health routes
         .route("/rust/health/{vm_id}", get(vm_health))
+        .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
+        // Generalized per-VM POST routes
         .route("/rust/vms/{vm_id}/start", post(vm_start))
         .route("/rust/vms/{vm_id}/stop", post(vm_stop))
         .route("/rust/vms/{vm_id}/reset", post(vm_reset))
-        .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
-        .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
-        .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
-        .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
-        .route("/rust/vms/{vm_id}/services/{service}/start", post(vm_service_start))
-        .route("/rust/vms/{vm_id}/services/{service}/stop", post(vm_service_stop))
 }
 
 // ---------------------------------------------------------------------------
@@ -1134,294 +1142,39 @@ pub async fn vm_container_status(
     Ok(Json(status))
 }
 
-#[utoipa::path(
-    post,
-    path = "/rust/vms/{vm_id}/containers/{name}/start",
-    tag = "Post-Containers",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("name" = String, Path, description = "Container name"),
-    ),
-    responses(
-        (status = 200, description = "Container started", body = Value),
-        (status = 400, description = "Invalid input"),
-        (status = 500, description = "Failed to start container")
-    )
-)]
-pub async fn vm_container_start(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, name)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
-        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to start container: {}", result.output)));
-    }
-
-    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_id": vm_id,
-        "vm_state": vm_state,
-        "container": statuses.into_iter().next(),
-    })))
-}
-
-#[utoipa::path(
-    post,
-    path = "/rust/vms/{vm_id}/containers/{name}/stop",
-    tag = "Post-Containers",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("name" = String, Path, description = "Container name"),
-    ),
-    responses(
-        (status = 200, description = "Container stopped", body = Value),
-        (status = 400, description = "Invalid input"),
-        (status = 500, description = "Failed to stop container")
-    )
-)]
-pub async fn vm_container_stop(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, name)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
-        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to stop container: {}", result.output)));
-    }
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_id": vm_id,
-        "container": name,
-        "action": "stopped",
-    })))
-}
-
-#[utoipa::path(
-    post,
-    path = "/rust/vms/{vm_id}/containers/{name}/restart",
-    tag = "Post-Containers",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("name" = String, Path, description = "Container name"),
-    ),
-    responses(
-        (status = 200, description = "Container restarted", body = Value),
-        (status = 400, description = "Invalid input"),
-        (status = 500, description = "Failed to restart container")
-    )
-)]
-pub async fn vm_container_restart(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, name)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
-        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
-
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to restart container: {}", result.output)));
-    }
-
-    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_id": vm_id,
-        "vm_state": vm_state,
-        "container": statuses.into_iter().next(),
-    })))
-}
-
-#[utoipa::path(
-    post,
-    path = "/rust/vms/{vm_id}/services/{service}/start",
-    tag = "Post-Containers",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("service" = String, Path, description = "Service name"),
-    ),
-    responses(
-        (status = 200, description = "Service started", body = Value),
-        (status = 404, description = "Unknown service or VM"),
-        (status = 500, description = "Failed to start service")
-    )
-)]
-pub async fn vm_service_start(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, service)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
-
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
-        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
-
-    let containers_str = containers.join(" ");
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
-
-    let statuses = get_container_statuses(&state, &vm_id, &containers).await;
-
-    Ok(Json(json!({
-        "status": if result.success { "ok" } else { "partial" },
-        "vm_id": vm_id,
-        "service": service,
-        "vm_state": vm_state,
-        "containers": statuses,
-    })))
-}
-
-#[utoipa::path(
-    post,
-    path = "/rust/vms/{vm_id}/services/{service}/stop",
-    tag = "Post-Containers",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("service" = String, Path, description = "Service name"),
-    ),
-    responses(
-        (status = 200, description = "Service stopped", body = Value),
-        (status = 404, description = "Unknown service or VM"),
-        (status = 500, description = "Failed to stop service")
-    )
-)]
-pub async fn vm_service_stop(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, service)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
-
-    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
-        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
-
-    let containers_str = containers.join(" ");
-    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
-
-    if !result.success {
-        return Err(AppError::internal(format!("Failed to stop containers: {}", result.output)));
-    }
-
-    Ok(Json(json!({
-        "status": "ok",
-        "vm_id": vm_id,
-        "service": service,
-        "action": "stopped",
-        "containers": containers,
-    })))
-}
 
 // ---------------------------------------------------------------------------
-// VM actions by label (oci-flex, gcp-proxy, oci-mail, oci-analytics)
+// Explicit per-VM actions (12 routes)
 // ---------------------------------------------------------------------------
 
-fn resolve_vm_by_label<'a>(state: &'a AppState, label: &str) -> Result<String, AppError> {
-    state.config.all_vm_services.iter()
-        .find(|(_, vm_map)| vm_map.label == label)
-        .map(|(vm_id, _)| vm_id.clone())
-        .ok_or_else(|| {
-            let valid: Vec<&str> = state.config.all_vm_services.values()
-                .map(|v| v.label.as_str()).collect();
-            AppError::not_found(format!(
-                "Unknown VM label '{label}'. Valid: {}", valid.join(", ")
-            ))
-        })
+macro_rules! vm_action_handler {
+    ($fn_name:ident, $path:literal, $vm_id:literal, $action:ident, $desc:literal) => {
+        #[utoipa::path(post, path = $path, tag = "Post-VMs",
+            responses((status = 200, description = $desc, body = Value),
+                      (status = 500, description = "Failed")))]
+        pub async fn $fn_name(
+            State(state): State<Arc<AppState>>,
+        ) -> Result<Json<Value>, AppError> {
+            $action(State(state), Path($vm_id.to_string())).await
+        }
+    };
 }
 
-#[utoipa::path(
-    post,
-    path = "/rust/vm/{label}/start",
-    tag = "Post-VMs",
-    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
-    responses(
-        (status = 200, description = "VM started", body = Value),
-        (status = 404, description = "Unknown VM label"),
-        (status = 500, description = "Failed to start VM")
-    )
-)]
-pub async fn vm_label_start(
-    State(state): State<Arc<AppState>>,
-    Path(label): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let vm_id = resolve_vm_by_label(&state, &label)?;
-    vm_start(State(state), Path(vm_id)).await
-}
+vm_action_handler!(vm_oci_flex_start, "/rust/vm/oci-flex/start", "oci-p-flex_1", vm_start, "Start oci-flex");
+vm_action_handler!(vm_oci_flex_stop, "/rust/vm/oci-flex/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex");
+vm_action_handler!(vm_oci_flex_reset, "/rust/vm/oci-flex/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex");
 
-#[utoipa::path(
-    post,
-    path = "/rust/vm/{label}/stop",
-    tag = "Post-VMs",
-    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
-    responses(
-        (status = 200, description = "VM stopped gracefully", body = Value),
-        (status = 404, description = "Unknown VM label"),
-        (status = 500, description = "Failed to stop VM")
-    )
-)]
-pub async fn vm_label_stop(
-    State(state): State<Arc<AppState>>,
-    Path(label): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let vm_id = resolve_vm_by_label(&state, &label)?;
-    vm_stop(State(state), Path(vm_id)).await
-}
+vm_action_handler!(vm_gcp_proxy_start, "/rust/vm/gcp-proxy/start", "gcp-f-micro_1", vm_start, "Start gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_stop, "/rust/vm/gcp-proxy/stop", "gcp-f-micro_1", vm_stop, "Stop gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_reset, "/rust/vm/gcp-proxy/reset", "gcp-f-micro_1", vm_reset, "Reset gcp-proxy");
 
-#[utoipa::path(
-    post,
-    path = "/rust/vm/{label}/reset",
-    tag = "Post-VMs",
-    params(("label" = String, Path, description = "VM label (oci-flex, gcp-proxy, oci-mail, oci-analytics)")),
-    responses(
-        (status = 200, description = "VM reset/started", body = Value),
-        (status = 404, description = "Unknown VM label"),
-        (status = 500, description = "Failed to reset VM")
-    )
-)]
-pub async fn vm_label_reset(
-    State(state): State<Arc<AppState>>,
-    Path(label): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let vm_id = resolve_vm_by_label(&state, &label)?;
-    vm_reset(State(state), Path(vm_id)).await
-}
+vm_action_handler!(vm_oci_mail_start, "/rust/vm/oci-mail/start", "oci-f-micro_1", vm_start, "Start oci-mail");
+vm_action_handler!(vm_oci_mail_stop, "/rust/vm/oci-mail/stop", "oci-f-micro_1", vm_stop, "Stop oci-mail");
+vm_action_handler!(vm_oci_mail_reset, "/rust/vm/oci-mail/reset", "oci-f-micro_1", vm_reset, "Reset oci-mail");
+
+vm_action_handler!(vm_oci_analytics_start, "/rust/vm/oci-analytics/start", "oci-f-micro_2", vm_start, "Start oci-analytics");
+vm_action_handler!(vm_oci_analytics_stop, "/rust/vm/oci-analytics/stop", "oci-f-micro_2", vm_stop, "Stop oci-analytics");
+vm_action_handler!(vm_oci_analytics_reset, "/rust/vm/oci-analytics/reset", "oci-f-micro_2", vm_reset, "Reset oci-analytics");
 
 // ---------------------------------------------------------------------------
 // Bulk on-demand container ops (oci-flex)
