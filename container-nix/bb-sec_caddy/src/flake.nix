@@ -1,5 +1,5 @@
 {
-  description = "Caddy - Declarative reverse proxy with automatic HTTPS";
+  description = "Caddy - Declarative reverse proxy with automatic HTTPS (replaces NPM on gcp-proxy + oci-mail)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -11,22 +11,21 @@
     config = {
       container_name = "caddy";
       image = "caddy:2-alpine";
-      http_port = 8880;
-      https_port = 8443;
+      http_port = 80;
+      https_port = 443;
       admin_port = 2019;
     };
 
-    p = toString config.http_port;
-
     # WireGuard IPs
-    gcp = "10.0.0.1";    # gcp-proxy
-    flex = "10.0.0.2";   # oci-flex (on-demand)
-    mail = "10.0.0.3";   # oci-mail
+    gcp = "10.0.0.1";       # gcp-proxy
+    flex = "10.0.0.2";      # oci-flex (on-demand)
+    mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
 
-    # Authelia forward_auth via public endpoint (cookie-based, reachable from any VM)
+    # ── Auth snippets ────────────────────────────────────────────
+    # Authelia forward_auth (cookie-based, for browser sessions)
     authelia = ''
-        forward_auth https://auth.diegonmarcos.com {
+        forward_auth authelia:9091 {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
         }'';
@@ -38,145 +37,53 @@
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
         }'';
 
+    # Reusable protected block: bearer token → introspect-proxy, cookie → authelia
+    mkProtected = upstream: ''
+      @bearer header Authorization Bearer*
+      handle @bearer {
+    ${bearer}
+        reverse_proxy ${upstream}
+      }
+      handle {
+    ${authelia}
+        reverse_proxy ${upstream}
+      }
+    '';
+
+    # Same but with custom reverse_proxy block (for tls_insecure_skip_verify etc.)
+    mkProtectedCustom = upstreamBlock: ''
+      @bearer header Authorization Bearer*
+      handle @bearer {
+    ${bearer}
+        ${upstreamBlock}
+      }
+      handle {
+    ${authelia}
+        ${upstreamBlock}
+      }
+    '';
+
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
-        http_port ${p}
-        https_port ${toString config.https_port}
         admin localhost:${toString config.admin_port}
-        auto_https disable_redirects
       }
 
-      :${p} {
+      # ── Health check ─────────────────────────────────────────────
+      :80 {
         respond "Caddy is running" 200
       }
 
-      # ── Authelia-protected (with bearer token bypass) ──────────────────
-      http://photos.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${flex}:2342
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${flex}:2342
-        }
+      # ════════════════════════════════════════════════════════════
+      # PUBLIC / BYPASS (no auth)
+      # ════════════════════════════════════════════════════════════
+
+      # Authelia itself — must be public (bypass policy in Authelia config)
+      auth.diegonmarcos.com {
+        reverse_proxy authelia:9091
       }
 
-      http://sync.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${mail}:8384
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${mail}:8384
-        }
-      }
-
-      http://proxy.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy localhost:${toString config.admin_port}
-        }
-        handle {
-      ${authelia}
-          reverse_proxy localhost:${toString config.admin_port}
-        }
-      }
-
-      http://photos.app.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${flex}:3013
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${flex}:3013
-        }
-      }
-
-      http://mail.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy https://${mail}:443 {
-            transport http {
-              tls_insecure_skip_verify
-            }
-          }
-        }
-        handle {
-      ${authelia}
-          reverse_proxy https://${mail}:443 {
-            transport http {
-              tls_insecure_skip_verify
-            }
-          }
-        }
-      }
-
-      http://ide.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${flex}:8443
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${flex}:8443
-        }
-      }
-
-      http://db.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${flex}:8085
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${flex}:8085
-        }
-      }
-
-      http://analytics.diegonmarcos.com:${p} {
-        @bearer header Authorization Bearer*
-        handle @bearer {
-      ${bearer}
-          reverse_proxy ${mail}:8081
-        }
-        handle {
-      ${authelia}
-          reverse_proxy ${mail}:8081
-        }
-      }
-
-      # vault — vaultwarden port not exposed on gcp-proxy host
-      # rss — ntfy bound to localhost:8090 on gcp-proxy
-      # logs — dozzle not running
-      # docker — portainer not running
-
-      # ── n8n (webhook bypass, no auth on webhooks) ──────────────────────
-      http://n8n.diegonmarcos.com:${p} {
-        @webhooks path /webhook/* /webhook-test/*
-        handle @webhooks {
-          reverse_proxy 84.235.234.87:5678
-        }
-        handle {
-          reverse_proxy 84.235.234.87:5678
-        }
-      }
-
-      http://app.gallery.diegonmarcos.com:${p} {
-        reverse_proxy ${flex}:2342
-      }
-
-      # ── Public ─────────────────────────────────────────────────────────
-      http://api.diegonmarcos.com:${p} {
+      # API — Flask + Rust backends
+      api.diegonmarcos.com {
         handle /rust/* {
           reverse_proxy ${gcp}:8080
         }
@@ -185,11 +92,13 @@
         }
       }
 
-      http://cal.diegonmarcos.com:${p} {
+      # Radicale CalDAV/CardDAV
+      cal.diegonmarcos.com {
         reverse_proxy ${flex}:5232
       }
 
-      http://drive-notes-affine.diegonmarcos.com:${p} {
+      # Affine collaborative docs (100MB uploads, long timeouts)
+      drive-notes-affine.diegonmarcos.com {
         request_body {
           max_size 100MB
         }
@@ -201,7 +110,93 @@
         }
       }
 
-      # disabled: vault, rss, logs, docker (see comments above)
+      # PhotoPrism public gallery (no auth)
+      app.gallery.diegonmarcos.com {
+        reverse_proxy ${flex}:2342
+      }
+
+      # ════════════════════════════════════════════════════════════
+      # ANALYTICS — Matomo (public tracking + protected admin)
+      # ════════════════════════════════════════════════════════════
+
+      analytics.diegonmarcos.com {
+        # Public tracking endpoints (no auth — called by portfolio sites)
+        @tracking {
+          path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
+          path /js/*
+        }
+        handle @tracking {
+          reverse_proxy ${analytics}:8080
+        }
+
+        # Protected admin dashboard
+        ${mkProtected "${analytics}:8080"}
+      }
+
+      # ════════════════════════════════════════════════════════════
+      # AUTHELIA-PROTECTED (bearer token bypass for CLI/API)
+      # ════════════════════════════════════════════════════════════
+
+      # PhotoPrism
+      photos.diegonmarcos.com {
+        ${mkProtected "${flex}:2342"}
+      }
+
+      # PhotoPrism App
+      photos.app.diegonmarcos.com {
+        ${mkProtected "${flex}:3013"}
+      }
+
+      # Syncthing
+      sync.diegonmarcos.com {
+        ${mkProtected "${mail}:8384"}
+      }
+
+      # Mailu webmail (upstream is HTTPS with self-signed cert)
+      mail.diegonmarcos.com {
+        ${mkProtectedCustom ''reverse_proxy https://${mail}:8444 {
+          transport http {
+            tls_insecure_skip_verify
+          }
+        }''}
+      }
+
+      # Code Server IDE (WebSocket support is automatic in Caddy)
+      ide.diegonmarcos.com {
+        ${mkProtected "${flex}:8443"}
+      }
+
+      # NocoDB
+      db.diegonmarcos.com {
+        ${mkProtected "${flex}:8085"}
+      }
+
+      # Caddy admin API
+      proxy.diegonmarcos.com {
+        ${mkProtected "localhost:${toString config.admin_port}"}
+      }
+
+      # Vaultwarden — reachable via npm_default docker network
+      # Authelia access_control handles: API/identity/icons bypass, admin two_factor
+      vault.diegonmarcos.com {
+        ${mkProtected "vaultwarden:80"}
+      }
+
+      # ntfy notifications
+      rss.diegonmarcos.com {
+        ${mkProtected "${gcp}:8090"}
+      }
+
+      # ── n8n (webhook bypass — no auth on webhook paths) ────────
+      n8n.diegonmarcos.com {
+        @webhooks path /webhook/* /webhook-test/*
+        handle @webhooks {
+          reverse_proxy 84.235.234.87:5678
+        }
+        handle {
+          reverse_proxy 84.235.234.87:5678
+        }
+      }
     '';
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -211,12 +206,16 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.http_port}:${toString config.http_port}"
-            - "${toString config.https_port}:${toString config.https_port}"
+            - "${toString config.http_port}:80"
+            - "${toString config.https_port}:443"
+            - "8880:80"
+            - "8443:443"
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - caddy_data:/data
             - caddy_config:/config
+          networks:
+            - npm_default
           depends_on:
             introspect-proxy:
               condition: service_healthy
@@ -232,6 +231,8 @@
             INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
             CLIENT_ID: cli
             CLIENT_SECRET: ''${AUTHELIA_CLI_SECRET}
+          networks:
+            - npm_default
           deploy:
             resources:
               limits:
@@ -250,6 +251,10 @@
           driver: local
         caddy_config:
           driver: local
+
+      networks:
+        npm_default:
+          external: true
     '';
 
   in {
