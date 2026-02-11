@@ -14,11 +14,12 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        // Status & health
-        .route("/rust/status/flex1", get(status_flex1))
-        .route("/rust/status/all", get(status_all))
-        .route("/rust/health/containers", get(health_containers))
-        .route("/rust/health/routes", get(health_routes))
+        // Health
+        .route("/rust/health/flex1", get(health_flex1))
+        .route("/rust/health/all", get(health_all))
+        .route("/rust/health/containers-by-vm", get(health_containers_by_vm))
+        .route("/rust/health/containers-by-service", get(health_containers_by_service))
+        .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
         // Legacy flex-shortcut routes (backward compat)
         .route("/rust/vm/health", get(ondemand_vm_health))
         .route("/rust/vm/start", post(ondemand_vm_start))
@@ -273,14 +274,14 @@ fn should_probe(provider_state: &str) -> bool {
 
 #[utoipa::path(
     get,
-    path = "/rust/status/flex1",
+    path = "/rust/health/flex1",
     tag = "Get-Health",
     responses(
-        (status = 200, description = "Flex VM (oci-p-flex_1) status with all services", body = Value),
+        (status = 200, description = "Flex VM (oci-p-flex_1) health with all services", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
-pub async fn status_flex1(
+pub async fn health_flex1(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
@@ -351,14 +352,14 @@ pub async fn status_flex1(
 
 #[utoipa::path(
     get,
-    path = "/rust/status/all",
+    path = "/rust/health/all",
     tag = "Get-Health",
     responses(
-        (status = 200, description = "Status of all VMs with services and containers", body = Value),
+        (status = 200, description = "Health of all VMs with services and containers", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
-pub async fn status_all(
+pub async fn health_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let mut vms = serde_json::Map::new();
@@ -461,14 +462,14 @@ pub async fn status_all(
 
 #[utoipa::path(
     get,
-    path = "/rust/health/containers",
+    path = "/rust/health/containers-by-vm",
     tag = "Get-Health",
     responses(
-        (status = 200, description = "Container health across all VMs", body = Value),
+        (status = 200, description = "Container health across all VMs grouped by VM", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
-pub async fn health_containers(
+pub async fn health_containers_by_vm(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let mut set = tokio::task::JoinSet::new();
@@ -518,16 +519,126 @@ pub async fn health_containers(
     })))
 }
 
-async fn check_domain_route(
+#[utoipa::path(
+    get,
+    path = "/rust/health/containers-by-service",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "Container health grouped by service across VMs", body = Value),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn health_containers_by_service(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut set = tokio::task::JoinSet::new();
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        let vm_id = vm_id.clone();
+        let label = vm_map.label.clone();
+        let state = Arc::clone(&state);
+        set.spawn(async move {
+            let containers = batch_container_statuses(&state, &vm_id).await;
+            (vm_id, label, containers)
+        });
+    }
+
+    let mut vm_results: Vec<(String, String, Vec<(String, String, String)>)> = vec![];
+    while let Some(result) = set.join_next().await {
+        if let Ok(v) = result {
+            vm_results.push(v);
+        }
+    }
+
+    // Pivot: group by service across VMs
+    let mut services_map = serde_json::Map::new();
+    let mut global_running = 0u32;
+    let mut global_total = 0u32;
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        let vm_containers = vm_results.iter()
+            .find(|(id, _, _)| id == vm_id)
+            .map(|(_, _, c)| c.as_slice())
+            .unwrap_or(&[]);
+
+        for (svc_name, svc_containers) in &vm_map.services {
+            let mut running = 0u32;
+            let details: Vec<Value> = svc_containers.iter().map(|name| {
+                let (st, ports) = vm_containers.iter()
+                    .find(|(n, _, _)| n == name)
+                    .map(|(_, s, p)| (s.clone(), p.clone()))
+                    .unwrap_or_else(|| ("not_found".into(), String::new()));
+                if st == "running" { running += 1; }
+                global_total += 1;
+                json!({ "name": name, "state": st, "ports": ports })
+            }).collect();
+            global_running += running;
+            let total = details.len() as u32;
+
+            let entry = services_map.entry(svc_name.clone())
+                .or_insert_with(|| json!({ "vms": {} }));
+            entry["vms"][vm_id] = json!({
+                "label": vm_map.label,
+                "containers": details,
+                "running": running,
+                "total": total,
+            });
+        }
+    }
+
+    // Compute per-service status
+    let mut services_up = 0u32;
+    let mut services_partial = 0u32;
+    let mut services_down = 0u32;
+
+    for (_svc_name, svc_val) in services_map.iter_mut() {
+        let mut svc_running = 0u32;
+        let mut svc_total = 0u32;
+        if let Some(vms_obj) = svc_val["vms"].as_object() {
+            for (_vm_id, vm_data) in vms_obj {
+                svc_running += vm_data["running"].as_u64().unwrap_or(0) as u32;
+                svc_total += vm_data["total"].as_u64().unwrap_or(0) as u32;
+            }
+        }
+        let status = if svc_total == 0 {
+            "down"
+        } else if svc_running == svc_total {
+            "up"
+        } else if svc_running == 0 {
+            "down"
+        } else {
+            "partial"
+        };
+        match status {
+            "up" => services_up += 1,
+            "partial" => services_partial += 1,
+            _ => services_down += 1,
+        }
+        svc_val["status"] = json!(status);
+    }
+
+    Ok(Json(json!({
+        "services": services_map,
+        "summary": {
+            "services_up": services_up,
+            "services_partial": services_partial,
+            "services_down": services_down,
+            "containers_running": global_running,
+            "containers_total": global_total,
+        }
+    })))
+}
+
+async fn probe_domain_chain(
     http: &reqwest::Client,
     domain: &str,
-    label: &str,
+    service: &str,
     bearer_token: Option<&str>,
 ) -> Value {
     let url = format!("https://{domain}");
-    let start = std::time::Instant::now();
+    let total_start = std::time::Instant::now();
+    let mut hops = vec![];
 
-    // No-redirect probe to detect 302→authelia
     let no_redirect_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(std::time::Duration::from_secs(10))
@@ -535,61 +646,118 @@ async fn check_domain_route(
         .build()
         .unwrap_or_else(|_| http.clone());
 
+    // Hop 1: initial no-redirect probe
+    let hop1_start = std::time::Instant::now();
     let probe = no_redirect_client.get(&url).send().await;
-    let elapsed = start.elapsed().as_millis() as u64;
+    let hop1_ms = hop1_start.elapsed().as_millis() as u64;
 
-    let (status_code, auth_required) = match &probe {
+    let (status_code, redirect_to, auth_required) = match &probe {
         Ok(resp) => {
             let code = resp.status().as_u16();
-            let is_redirect = (300..400).contains(&code);
-            let to_auth = resp.headers().get("location")
+            let location = resp.headers().get("location")
                 .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string());
+            let is_redirect = (300..400).contains(&code);
+            let to_auth = location.as_deref()
                 .map(|loc| loc.contains("auth"))
                 .unwrap_or(false);
-            (code, is_redirect && to_auth)
+            (code, location.filter(|_| is_redirect), is_redirect && to_auth)
         }
-        Err(_) => (0, false),
+        Err(_) => (0, None, false),
     };
 
-    let mut result = json!({
-        "domain": domain,
-        "label": label,
-        "status_code": status_code,
-        "auth_required": auth_required,
-        "response_time_ms": elapsed,
-        "healthy": status_code > 0 && status_code < 500,
+    let mut hop1 = json!({
+        "url": &url,
+        "status": status_code,
+        "time_ms": hop1_ms,
     });
+    if let Some(ref loc) = redirect_to {
+        hop1["redirect_to"] = json!(loc);
+    }
+    if auth_required {
+        hop1["note"] = json!("authelia redirect detected");
+    }
+    hops.push(hop1);
+
+    let mut final_status = status_code;
+    let mut authenticated = false;
 
     // If auth required and we have a bearer token, do an authenticated probe
     if auth_required {
         if let Some(token) = bearer_token {
-            let auth_start = std::time::Instant::now();
-            let auth_resp = http.get(&url)
+            let hop_start = std::time::Instant::now();
+            let auth_resp = no_redirect_client.get(&url)
                 .header("Authorization", format!("Bearer {token}"))
-                .timeout(std::time::Duration::from_secs(10))
                 .send()
                 .await;
-            let auth_elapsed = auth_start.elapsed().as_millis() as u64;
+            let hop_ms = hop_start.elapsed().as_millis() as u64;
             let auth_status = auth_resp.as_ref().map(|r| r.status().as_u16()).unwrap_or(0);
-            result["authenticated_status"] = json!(auth_status);
-            result["authenticated_response_time_ms"] = json!(auth_elapsed);
-            result["healthy"] = json!(auth_status > 0 && auth_status < 500);
+
+            let mut hop = json!({
+                "url": &url,
+                "status": auth_status,
+                "time_ms": hop_ms,
+                "note": "authenticated via bearer",
+            });
+
+            if let Ok(ref resp) = auth_resp {
+                if (300..400).contains(&resp.status().as_u16()) {
+                    if let Some(loc) = resp.headers().get("location").and_then(|v| v.to_str().ok()) {
+                        hop["redirect_to"] = json!(loc);
+                        let final_start = std::time::Instant::now();
+                        let final_resp = no_redirect_client.get(loc).send().await;
+                        let final_ms = final_start.elapsed().as_millis() as u64;
+                        let fs = final_resp.as_ref().map(|r| r.status().as_u16()).unwrap_or(0);
+                        hops.push(hop);
+                        hops.push(json!({
+                            "url": loc,
+                            "status": fs,
+                            "time_ms": final_ms,
+                            "note": "final redirect",
+                        }));
+                        final_status = fs;
+                        authenticated = true;
+                    } else {
+                        final_status = auth_status;
+                        authenticated = true;
+                        hops.push(hop);
+                    }
+                } else {
+                    final_status = auth_status;
+                    authenticated = true;
+                    hops.push(hop);
+                }
+            } else {
+                final_status = auth_status;
+                hops.push(hop);
+            }
         }
     }
 
-    result
+    let total_ms = total_start.elapsed().as_millis() as u64;
+
+    json!({
+        "domain": domain,
+        "service": service,
+        "hops": hops,
+        "auth_required": auth_required,
+        "authenticated": authenticated,
+        "final_status": final_status,
+        "healthy": final_status > 0 && final_status < 500,
+        "total_time_ms": total_ms,
+    })
 }
 
 #[utoipa::path(
     get,
-    path = "/rust/health/routes",
+    path = "/rust/health/proxied-by-services",
     tag = "Get-Health",
     responses(
-        (status = 200, description = "Public route health probes", body = Value),
+        (status = 200, description = "Public route health probes with redirect chain", body = Value),
         (status = 500, description = "Internal error")
     )
 )]
-pub async fn health_routes(
+pub async fn health_proxied_by_services(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let mut set = tokio::task::JoinSet::new();
@@ -598,10 +766,10 @@ pub async fn health_routes(
     for entry in &state.config.route_check_domains {
         let http = state.http.clone();
         let domain = entry.domain.clone();
-        let label = entry.label.clone();
+        let service = entry.service.clone();
         let token = bearer.clone();
         set.spawn(async move {
-            check_domain_route(&http, &domain, &label, token.as_deref()).await
+            probe_domain_chain(&http, &domain, &service, token.as_deref()).await
         });
     }
 
@@ -619,9 +787,9 @@ pub async fn health_routes(
         }
     }
 
-    // Sort by label for consistent output
+    // Sort by service for consistent output
     routes.sort_by(|a, b| {
-        a["label"].as_str().unwrap_or("").cmp(b["label"].as_str().unwrap_or(""))
+        a["service"].as_str().unwrap_or("").cmp(b["service"].as_str().unwrap_or(""))
     });
 
     Ok(Json(json!({

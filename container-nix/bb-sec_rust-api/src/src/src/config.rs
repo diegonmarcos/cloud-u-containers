@@ -23,7 +23,7 @@ pub struct AppConfig {
 #[derive(Clone, Debug)]
 pub struct RouteCheckDomain {
     pub domain: String,
-    pub label: String,
+    pub service: String,
 }
 
 #[derive(Clone, Debug)]
@@ -295,13 +295,13 @@ impl AppConfig {
             .collect();
 
         let route_check_domains = vec![
-            RouteCheckDomain { domain: "analytics.diegonmarcos.com".into(), label: "analytics".into() },
-            RouteCheckDomain { domain: "db.diegonmarcos.com".into(), label: "db".into() },
-            RouteCheckDomain { domain: "ide.diegonmarcos.com".into(), label: "ide".into() },
-            RouteCheckDomain { domain: "auth.diegonmarcos.com".into(), label: "auth".into() },
-            RouteCheckDomain { domain: "photos.diegonmarcos.com".into(), label: "photos".into() },
-            RouteCheckDomain { domain: "cal.diegonmarcos.com".into(), label: "cal".into() },
-            RouteCheckDomain { domain: "api.diegonmarcos.com".into(), label: "api".into() },
+            RouteCheckDomain { domain: "analytics.diegonmarcos.com".into(), service: "analytics".into() },
+            RouteCheckDomain { domain: "db.diegonmarcos.com".into(), service: "db".into() },
+            RouteCheckDomain { domain: "ide.diegonmarcos.com".into(), service: "ide".into() },
+            RouteCheckDomain { domain: "auth.diegonmarcos.com".into(), service: "auth".into() },
+            RouteCheckDomain { domain: "photos.diegonmarcos.com".into(), service: "photos".into() },
+            RouteCheckDomain { domain: "cal.diegonmarcos.com".into(), service: "cal".into() },
+            RouteCheckDomain { domain: "api.diegonmarcos.com".into(), service: "api".into() },
         ];
 
         let authelia_bearer_token = std::env::var("AUTHELIA_BEARER_TOKEN").ok()
