@@ -49,12 +49,17 @@ pub struct AppState {
         routes::ondemand::ondemand_container_restart,
         routes::ondemand::ondemand_service_start,
         routes::ondemand::ondemand_service_stop,
-        // Generalized per-VM endpoints
+        // Engine: generalized per-VM endpoints (Post-Engines)
         routes::ondemand::vm_health,
         routes::ondemand::vm_start,
         routes::ondemand::vm_stop,
         routes::ondemand::vm_reset,
         routes::ondemand::vm_container_status,
+        routes::ondemand::vm_container_start,
+        routes::ondemand::vm_container_stop,
+        routes::ondemand::vm_container_restart,
+        routes::ondemand::vm_service_start,
+        routes::ondemand::vm_service_stop,
     ),
     components(schemas(
         models::api_response::ApiResponse,
