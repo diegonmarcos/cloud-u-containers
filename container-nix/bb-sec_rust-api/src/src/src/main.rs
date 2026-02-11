@@ -24,6 +24,8 @@ pub struct AppState {
         routes::health::health,
         routes::ondemand::status_flex1,
         routes::ondemand::status_all,
+        routes::ondemand::health_containers,
+        routes::ondemand::health_routes,
         // Legacy flex-shortcut endpoints
         routes::ondemand::ondemand_vm_health,
         routes::ondemand::ondemand_vm_start,
