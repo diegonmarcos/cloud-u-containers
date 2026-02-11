@@ -13,7 +13,7 @@ services:
       - "5432:5432"
     networks:
       - photos_net
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U photos_user -d photos"]
       interval: 10s
@@ -45,7 +45,7 @@ services:
       - ./requirements.txt:/app/requirements.txt
     networks:
       - photos_net
-    restart: unless-stopped
+    restart: always
     command: python webhook.py flask
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/health"]

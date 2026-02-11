@@ -3,7 +3,7 @@ services:
     image: syncthing/syncthing:latest
     container_name: syncthing
     hostname: web-server-1
-    restart: unless-stopped
+    restart: always
     environment:
       - PUID=1000
       - PGID=1000

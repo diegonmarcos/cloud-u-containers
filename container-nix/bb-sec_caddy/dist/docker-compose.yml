@@ -2,12 +2,11 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: caddy
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
-      - "8880:80"
-      - "8443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -22,7 +21,7 @@ services:
     build: ./introspect-proxy
     image: introspect-proxy:latest
     container_name: introspect-proxy
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:

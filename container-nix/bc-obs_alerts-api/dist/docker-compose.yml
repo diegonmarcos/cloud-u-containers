@@ -2,7 +2,7 @@ services:
   alerts-api:
     container_name: alerts-api
     build: .
-    restart: unless-stopped
+    restart: always
     cpus: "0.1"
     mem_limit: 64m
     ports:

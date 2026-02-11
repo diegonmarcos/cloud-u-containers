@@ -3,7 +3,7 @@ services:
     build: .
     image: introspect-proxy:latest
     container_name: introspect-proxy
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     ports:

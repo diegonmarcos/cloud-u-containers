@@ -8,19 +8,15 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    # Non-secret configuration (secrets come from .env via envsubst)
     config = {
       domain = "diegonmarcos.com";
       mail_domain = "mail.diegonmarcos.com";
       hostname = "mail";
       timezone = "Europe/Madrid";
-      secret_key = "CHANGE_ME_SECRET_KEY";
 
       # Subnet for Mailu internal network
       subnet = "192.168.203.0/24";
-
-      # Admin
-      admin_email = "admin@diegonmarcos.com";
-      admin_password = "CHANGE_ME_ADMIN_PASSWORD";
 
       # Message size limit (50MB)
       message_size_limit = "50000000";
@@ -31,8 +27,6 @@
       # Oracle Email Delivery relay
       relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
       relay_port = "587";
-      relay_user = "CHANGE_ME_RELAY_USER";
-      relay_password = "CHANGE_ME_RELAY_PASSWORD";
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -146,13 +140,14 @@
               - subnet: ${config.subnet}
     '';
 
-    mkMailuEnv = pkgs: pkgs.writeText "mailu.env" ''
+    # Mailu env template — secrets use ''${VAR} placeholders, substituted by init.sh
+    mkMailuEnvTpl = pkgs: pkgs.writeText "mailu.env.tpl" ''
       # Mailu main configuration file
       DOMAIN=${config.domain}
       HOSTNAMES=imap.${config.domain},smtp.${config.domain}
       POSTMASTER=admin
 
-      SECRET_KEY=${config.secret_key}
+      SECRET_KEY=''\${SECRET_KEY}
       SUBNET=${config.subnet}
 
       WEBMAIL=roundcube
@@ -178,14 +173,14 @@
       FETCHMAIL=false
 
       RELAYHOST=[${config.relay_host}]:${config.relay_port}
-      RELAYUSER=${config.relay_user}
-      RELAYPASSWORD=${config.relay_password}
+      RELAYUSER=''\${RELAYUSER}
+      RELAYPASSWORD=''\${RELAYPASSWORD}
 
       MESSAGE_SIZE_LIMIT=${config.message_size_limit}
 
       INITIAL_ADMIN_ACCOUNT=admin
       INITIAL_ADMIN_DOMAIN=${config.domain}
-      INITIAL_ADMIN_PW=${config.admin_password}
+      INITIAL_ADMIN_PW=''\${INITIAL_ADMIN_PW}
 
       SITENAME=Diego Mail
       WEBSITE=https://${config.mail_domain}
@@ -201,16 +196,44 @@
       PROXY_AUTH_CREATE=False
     '';
 
+    # Init script: sources .env, runs envsubst on template, decodes DKIM key
+    mkInitSh = pkgs: pkgs.writeText "init.sh" ''
+      #!/bin/sh
+      set -e
+      cd "$(dirname "$0")"
+
+      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD'
+
+      echo "[init] Substituting secrets into mailu.env..."
+      set -a; . ./.env; set +a
+      envsubst "$ENV_VARS" < mailu.env.tpl > mailu.env
+
+      # Decode DKIM private key from base64 if present in .env
+      if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
+        echo "[init] Writing DKIM private key..."
+        mkdir -p dkim
+        echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > dkim/${config.domain}.dkim.key
+        chmod 600 dkim/${config.domain}.dkim.key
+      fi
+
+      echo "[init] Done."
+    '';
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "mailu-configs" {} ''
         mkdir -p $out/overrides/dovecot $out/overrides/roundcube $out/overrides/nginx $out/overrides/postfix $out/overrides/rspamd
+        mkdir -p $out/certs
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        cp ${mkMailuEnv pkgs} $out/mailu.env
+        cp ${mkMailuEnvTpl pkgs} $out/mailu.env.tpl
+        cp ${mkInitSh pkgs} $out/init.sh
+        chmod +x $out/init.sh
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
+        ln -s letsencrypt/live/mailu/fullchain.pem $out/certs/cert.pem
+        ln -s letsencrypt/live/mailu/privkey.pem $out/certs/key.pem
       '';
     });
   };

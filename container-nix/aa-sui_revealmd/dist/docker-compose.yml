@@ -5,7 +5,7 @@ services:
   revealmd:
     image: webpronl/reveal-md:latest
     container_name: revealmd_app
-    restart: "no"
+    restart: always
     ports:
       - "3014:1948"
     volumes:

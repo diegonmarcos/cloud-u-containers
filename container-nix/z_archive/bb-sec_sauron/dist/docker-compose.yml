@@ -4,7 +4,7 @@ services:
   sauron:
     container_name: sauron
     image: sauron-sauron:latest
-    restart: unless-stopped
+    restart: always
     volumes:
       - /etc:/watch/etc:ro
       - /home:/watch/home:ro
@@ -28,7 +28,7 @@ services:
   syslog-forwarder:
     image: balabit/syslog-ng:4.4.0
     container_name: syslog-forwarder
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
       - sauron-logs:/var/log/sauron:ro

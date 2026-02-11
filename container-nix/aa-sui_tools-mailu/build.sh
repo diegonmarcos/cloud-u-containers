@@ -40,12 +40,12 @@ step_build() {
 
     rm -rf "$DIST_DIR"
     mkdir -p "$DIST_DIR"
-    cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
+    cp -ra "$SERVICE_DIR/.result/"* "$DIST_DIR/"
     chmod -R u+w "$DIST_DIR"
     rm -f "$SERVICE_DIR/.result"
 
     log "Built files:"
-    find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
+    find "$DIST_DIR" -type f -o -type l | sed "s|$DIST_DIR/|  |"
 }
 
 # ── Step 2: Decrypt secrets → .env ─────────────────────────────────────
@@ -119,9 +119,8 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    # Try docker compose (v2) first, fallback to docker-compose (v1)
-    # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && (docker compose up -d --force-recreate 2>/dev/null || docker-compose up -d --force-recreate)"
+    # Run init.sh to generate mailu.env from template + secrets, then start containers
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x init.sh && ./init.sh && docker-compose up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 

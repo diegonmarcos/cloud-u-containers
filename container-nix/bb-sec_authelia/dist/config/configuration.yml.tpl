@@ -186,7 +186,7 @@ identity_providers:
           - https://cal.diegonmarcos.com/
           - https://ide.diegonmarcos.com/
           - https://mail.diegonmarcos.com/
-          - https://photos.app.diegonmarcos.com/
+          - https://photos.diegonmarcos.com/
           - https://proxy.diegonmarcos.com/
           - https://rss.diegonmarcos.com/
           - https://sync.diegonmarcos.com/

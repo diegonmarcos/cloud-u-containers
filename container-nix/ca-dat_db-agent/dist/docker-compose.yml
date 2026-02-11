@@ -6,7 +6,7 @@ services:
   db-agent:
     build: .
     container_name: db-agent
-    restart: unless-stopped
+    restart: always
     mem_limit: 64m
     cpus: 0.1
     environment:

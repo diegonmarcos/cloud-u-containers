@@ -235,8 +235,8 @@ cmd_compose() {
     if [ -n "$service" ]; then
         vm=$(get_svc_prop "$service" "vm")
         remote_path="$remote_base/$service"
-        log "docker compose up on $vm:$remote_path"
-        ssh_cmd "$vm" "cd $remote_path && docker compose down 2>/dev/null; docker compose up -d"
+        log "docker-compose up on $vm:$remote_path"
+        ssh_cmd "$vm" "cd $remote_path && docker-compose down 2>/dev/null; docker-compose up -d"
     else
         log_error "Service name required for compose"
         exit 1
@@ -299,7 +299,7 @@ cmd_restart() {
     vm=$(get_svc_prop "$service" "vm")
     remote_base=$(jq -r '.remote_base' "$CONFIG_FILE")
     log "Restarting $service on $vm..."
-    ssh_cmd "$vm" "cd $remote_base/$service && docker compose down && docker compose up -d"
+    ssh_cmd "$vm" "cd $remote_base/$service && docker-compose down && docker-compose up -d"
     log "Restarted $service"
 }
 
@@ -368,14 +368,14 @@ USAGE:  ./build.sh <command> [service]
 COMMANDS:
     build [service]     Build nix flakes -> dist/ (all or single)
     deploy [service]    Build + deploy dist/ to VM
-    compose <service>   Run docker compose up on VM
+    compose <service>   Run docker-compose up on VM
     clean               Remove all dist/ folders
 
     list                List all services with VM mappings
     vms                 List VMs with connection info
     ssh <vm>            SSH into a VM
     status <vm>         Docker container status on VM
-    restart <service>   Restart service (docker compose down/up)
+    restart <service>   Restart service (docker-compose down/up)
 
     secrets             List services with secrets
     secrets <s> edit    Edit encrypted secrets

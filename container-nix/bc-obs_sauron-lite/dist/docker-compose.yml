@@ -4,7 +4,7 @@ services:
   sauron:
     build: .
     container_name: sauron
-    restart: unless-stopped
+    restart: always
     volumes:
       # Watch paths (read-only)
       - /etc:/watch/etc:ro
@@ -40,7 +40,7 @@ services:
   forwarder:
     image: debian:bookworm-slim
     container_name: sauron-forwarder
-    restart: unless-stopped
+    restart: always
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |

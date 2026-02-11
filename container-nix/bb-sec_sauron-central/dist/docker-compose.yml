@@ -5,7 +5,7 @@ services:
   syslog-central:
     image: balabit/syslog-ng:4.4.0
     container_name: syslog-central
-    restart: unless-stopped
+    restart: always
     ports:
       - "5514:5514/tcp"
     volumes:
@@ -17,7 +17,7 @@ services:
   siem-api:
     image: python:3.11-slim
     container_name: siem-api
-    restart: unless-stopped
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile.api
