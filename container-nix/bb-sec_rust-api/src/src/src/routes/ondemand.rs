@@ -109,8 +109,9 @@ async fn get_vm_state_by_id(state: &AppState, vm_id: &str) -> Result<String, App
     }
 }
 
-/// Ensure a VM is running. Starts it and polls if stopped. Returns current state.
-async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String, AppError> {
+/// Ensure a VM is running. Starts it and polls if stopped.
+/// Returns (current_state, was_awakened) — was_awakened=true means VM was offline and had to be started.
+async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<(String, bool), AppError> {
     let vm = state.config.vm_instances.get(vm_id)
         .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
 
@@ -121,7 +122,7 @@ async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String
                 .map_err(|e| AppError::internal(e))?;
 
             if current == "RUNNING" {
-                return Ok(current);
+                return Ok((current, false));
             }
 
             if current == "STOPPED" {
@@ -136,13 +137,13 @@ async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String
                         .unwrap_or_else(|_| "UNKNOWN".into());
                     if state_now == "RUNNING" {
                         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
-                        return Ok("RUNNING".into());
+                        return Ok(("RUNNING".into(), true));
                     }
                 }
                 return Err(AppError::internal("Timeout waiting for VM to start"));
             }
 
-            Ok(current)
+            Ok((current, false))
         }
         VmProvider::Gcp => {
             let gcp_vm = state.config.gcp_vms.get(vm_id)
@@ -155,7 +156,7 @@ async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String
             ).await.map_err(|e| AppError::internal(e))?;
 
             if current == "RUNNING" {
-                return Ok(current);
+                return Ok((current, false));
             }
 
             if current == "TERMINATED" || current == "STOPPED" {
@@ -172,13 +173,13 @@ async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<String
                     ).await.unwrap_or_else(|_| "UNKNOWN".into());
                     if state_now == "RUNNING" {
                         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
-                        return Ok("RUNNING".into());
+                        return Ok(("RUNNING".into(), true));
                     }
                 }
                 return Err(AppError::internal("Timeout waiting for GCP VM to start"));
             }
 
-            Ok(current)
+            Ok((current, false))
         }
     }
 }
@@ -1009,11 +1010,12 @@ pub async fn vm_start(
     if !validate_vm_id(&vm_id) {
         return Err(AppError::bad_request("Invalid VM ID"));
     }
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, &vm_id).await?;
     Ok(Json(json!({
         "status": "ok",
         "vm_id": vm_id,
         "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
     })))
 }
 
@@ -1198,7 +1200,7 @@ pub async fn vm_container_start(
     if !validate_container_name(&name) {
         return Err(AppError::bad_request("Invalid container name"));
     }
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, &vm_id).await?;
     let ssh_cfg = state.config.vm_ssh.get(&vm_id)
         .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
     let result = ssh::ssh_command(ssh_cfg, &format!("docker start {name}")).await;
@@ -1208,6 +1210,7 @@ pub async fn vm_container_start(
     let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
     Ok(Json(json!({
         "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "container": statuses.into_iter().next(),
     })))
 }
@@ -1236,6 +1239,14 @@ pub async fn vm_container_stop(
     if !validate_container_name(&name) {
         return Err(AppError::bad_request("Invalid container name"));
     }
+    let vm_state = get_vm_state_by_id(&state, &vm_id).await.unwrap_or_else(|_| "unknown".into());
+    if vm_state == "STOPPED" || vm_state == "TERMINATED" {
+        return Ok(Json(json!({
+            "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+            "container": name, "action": "already_offline",
+            "message": "VM is offline — containers are implicitly stopped",
+        })));
+    }
     let ssh_cfg = state.config.vm_ssh.get(&vm_id)
         .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
     let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {name}")).await;
@@ -1243,7 +1254,8 @@ pub async fn vm_container_stop(
         return Err(AppError::internal(format!("Failed to stop container: {}", result.output)));
     }
     Ok(Json(json!({
-        "status": "ok", "vm_id": vm_id, "container": name, "action": "stopped",
+        "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "container": name, "action": "stopped",
     })))
 }
 
@@ -1271,7 +1283,7 @@ pub async fn vm_container_restart(
     if !validate_container_name(&name) {
         return Err(AppError::bad_request("Invalid container name"));
     }
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, &vm_id).await?;
     let ssh_cfg = state.config.vm_ssh.get(&vm_id)
         .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
     let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
@@ -1281,6 +1293,7 @@ pub async fn vm_container_restart(
     let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
     Ok(Json(json!({
         "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "container": statuses.into_iter().next(),
     })))
 }
@@ -1307,7 +1320,7 @@ pub async fn vm_service_start(
         return Err(AppError::bad_request("Invalid VM ID"));
     }
     let containers = validate_service_for_vm(&service, &vm_id, &state)?;
-    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, &vm_id).await?;
     let ssh_cfg = state.config.vm_ssh.get(&vm_id)
         .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
     let containers_str = containers.join(" ");
@@ -1316,6 +1329,7 @@ pub async fn vm_service_start(
     Ok(Json(json!({
         "status": if result.success { "ok" } else { "partial" },
         "vm_id": vm_id, "service": service, "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "containers": statuses,
     })))
 }
@@ -1342,6 +1356,14 @@ pub async fn vm_service_stop(
         return Err(AppError::bad_request("Invalid VM ID"));
     }
     let containers = validate_service_for_vm(&service, &vm_id, &state)?;
+    let vm_state = get_vm_state_by_id(&state, &vm_id).await.unwrap_or_else(|_| "unknown".into());
+    if vm_state == "STOPPED" || vm_state == "TERMINATED" {
+        return Ok(Json(json!({
+            "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+            "service": service, "action": "already_offline",
+            "message": "VM is offline — containers are implicitly stopped",
+        })));
+    }
     let ssh_cfg = state.config.vm_ssh.get(&vm_id)
         .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
     let containers_str = containers.join(" ");
@@ -1350,8 +1372,8 @@ pub async fn vm_service_stop(
         return Err(AppError::internal(format!("Failed to stop containers: {}", result.output)));
     }
     Ok(Json(json!({
-        "status": "ok", "vm_id": vm_id, "service": service,
-        "action": "stopped", "containers": containers,
+        "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "service": service, "action": "stopped", "containers": containers,
     })))
 }
 
@@ -1405,7 +1427,7 @@ pub async fn ondemand_containers_start_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
-    let vm_state = ensure_vm_running_by_id(&state, flex_vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, flex_vm_id).await?;
 
     let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
         .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
@@ -1425,6 +1447,7 @@ pub async fn ondemand_containers_start_all(
         "status": if result.success { "ok" } else { "partial" },
         "vm_id": flex_vm_id,
         "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "start-all",
         "containers_running": running,
         "containers_total": all_containers.len(),
@@ -1444,6 +1467,15 @@ pub async fn ondemand_containers_stop_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
+    let vm_state = get_vm_state_by_id(&state, flex_vm_id).await.unwrap_or_else(|_| "unknown".into());
+
+    if vm_state == "STOPPED" || vm_state == "TERMINATED" {
+        return Ok(Json(json!({
+            "status": "ok", "vm_id": flex_vm_id, "vm_state": vm_state,
+            "action": "already_offline",
+            "message": "VM is offline — containers are implicitly stopped",
+        })));
+    }
 
     let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
         .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
@@ -1459,6 +1491,7 @@ pub async fn ondemand_containers_stop_all(
     Ok(Json(json!({
         "status": if result.success { "ok" } else { "partial" },
         "vm_id": flex_vm_id,
+        "vm_state": vm_state,
         "action": "stop-all",
         "containers_total": all_containers.len(),
     })))
@@ -1477,7 +1510,7 @@ pub async fn ondemand_containers_restart_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
     let flex_vm_id = &state.config.flex_vm_id;
-    let vm_state = ensure_vm_running_by_id(&state, flex_vm_id).await?;
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, flex_vm_id).await?;
 
     let ssh_cfg = state.config.vm_ssh.get(flex_vm_id)
         .ok_or_else(|| AppError::internal("SSH config not found for flex VM"))?;
@@ -1497,6 +1530,7 @@ pub async fn ondemand_containers_restart_all(
         "status": if result.success { "ok" } else { "partial" },
         "vm_id": flex_vm_id,
         "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "restart-all",
         "containers_running": running,
         "containers_total": all_containers.len(),
@@ -1523,6 +1557,7 @@ const MATOMO_CONTAINER: &str = "matomo-hybrid";
 pub async fn windmill_start(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, ANALYTICS_VM_ID).await?;
     let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
         .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
 
@@ -1535,6 +1570,8 @@ pub async fn windmill_start(
     Ok(Json(json!({
         "status": if start.success { "ok" } else { "partial" },
         "vm_id": ANALYTICS_VM_ID,
+        "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "windmill-start",
         "matomo_sleep": sleep.success,
         "windmill_start": start.success,
@@ -1553,6 +1590,7 @@ pub async fn windmill_start(
 pub async fn windmill_stop(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, ANALYTICS_VM_ID).await?;
     let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
         .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
 
@@ -1565,6 +1603,8 @@ pub async fn windmill_stop(
     Ok(Json(json!({
         "status": if stop.success { "ok" } else { "partial" },
         "vm_id": ANALYTICS_VM_ID,
+        "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "windmill-stop",
         "windmill_stop": stop.success,
         "matomo_wake": wake.success,
@@ -1583,6 +1623,7 @@ pub async fn windmill_stop(
 pub async fn matomo_wake(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, ANALYTICS_VM_ID).await?;
     let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
         .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
 
@@ -1595,6 +1636,8 @@ pub async fn matomo_wake(
     Ok(Json(json!({
         "status": if wake.success { "ok" } else { "partial" },
         "vm_id": ANALYTICS_VM_ID,
+        "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "matomo-wake",
         "windmill_stop": stop.success,
         "matomo_wake": wake.success,
@@ -1613,6 +1656,7 @@ pub async fn matomo_wake(
 pub async fn matomo_sleep(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<Value>, AppError> {
+    let (vm_state, vm_awakened) = ensure_vm_running_by_id(&state, ANALYTICS_VM_ID).await?;
     let ssh_cfg = state.config.vm_ssh.get(ANALYTICS_VM_ID)
         .ok_or_else(|| AppError::internal("SSH config not found for oci-analytics"))?;
 
@@ -1625,6 +1669,8 @@ pub async fn matomo_sleep(
     Ok(Json(json!({
         "status": if sleep.success { "ok" } else { "partial" },
         "vm_id": ANALYTICS_VM_ID,
+        "vm_state": vm_state,
+        "vm_awakened": vm_awakened,
         "action": "matomo-sleep",
         "matomo_sleep": sleep.success,
         "windmill_start": start.success,
