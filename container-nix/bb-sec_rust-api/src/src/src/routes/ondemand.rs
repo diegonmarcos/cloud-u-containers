@@ -923,7 +923,7 @@ pub async fn health_resources_all(
 #[utoipa::path(
     get,
     path = "/rust/health/{vm_id}",
-    tag = "Get-Health",
+    tag = "Get-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM health check", body = Value),
@@ -1120,7 +1120,7 @@ pub async fn vm_reset(
 #[utoipa::path(
     get,
     path = "/rust/health/{vm_id}/{container_name}",
-    tag = "Get-Health",
+    tag = "Get-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
         ("container_name" = String, Path, description = "Container name"),
@@ -1484,7 +1484,7 @@ pub async fn ondemand_containers_restart_all(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/start",
-    tag = "Post-Containers",
+    tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container started", body = Value),
@@ -1503,7 +1503,7 @@ pub async fn ondemand_container_start(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/stop",
-    tag = "Post-Containers",
+    tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container stopped", body = Value),
@@ -1522,7 +1522,7 @@ pub async fn ondemand_container_stop(
 #[utoipa::path(
     post,
     path = "/rust/containers/{name}/restart",
-    tag = "Post-Containers",
+    tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
         (status = 200, description = "Container restarted", body = Value),
@@ -1541,7 +1541,7 @@ pub async fn ondemand_container_restart(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/start",
-    tag = "Post-Containers",
+    tag = "Post-Engines",
     params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service started", body = Value),
@@ -1560,7 +1560,7 @@ pub async fn ondemand_service_start(
 #[utoipa::path(
     post,
     path = "/rust/services/{service}/stop",
-    tag = "Post-Containers",
+    tag = "Post-Engines",
     params(("service" = String, Path, description = "Service name")),
     responses(
         (status = 200, description = "Service stopped", body = Value),
