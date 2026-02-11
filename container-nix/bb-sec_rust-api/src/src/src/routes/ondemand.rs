@@ -49,10 +49,15 @@ pub fn routes() -> Router<Arc<AppState>> {
         // Generalized per-VM health routes
         .route("/rust/health/{vm_id}", get(vm_health))
         .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
-        // Generalized per-VM POST routes
+        // Engine: generalized per-VM POST routes
         .route("/rust/vms/{vm_id}/start", post(vm_start))
         .route("/rust/vms/{vm_id}/stop", post(vm_stop))
         .route("/rust/vms/{vm_id}/reset", post(vm_reset))
+        .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
+        .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
+        .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
+        .route("/rust/vms/{vm_id}/services/{service}/start", post(vm_service_start))
+        .route("/rust/vms/{vm_id}/services/{service}/stop", post(vm_service_stop))
 }
 
 // ---------------------------------------------------------------------------
@@ -967,7 +972,7 @@ pub async fn vm_health(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/start",
-    tag = "Post-VMs",
+    tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM started", body = Value),
@@ -993,7 +998,7 @@ pub async fn vm_start(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/stop",
-    tag = "Post-VMs",
+    tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM stopped", body = Value),
@@ -1053,7 +1058,7 @@ pub async fn vm_stop(
 #[utoipa::path(
     post,
     path = "/rust/vms/{vm_id}/reset",
-    tag = "Post-VMs",
+    tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
         (status = 200, description = "VM reset/started", body = Value),
@@ -1142,6 +1147,191 @@ pub async fn vm_container_status(
     Ok(Json(status))
 }
 
+
+// ---------------------------------------------------------------------------
+// Engine: generalized per-VM container/service actions (Post-Engines)
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/start",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container started", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to start container")
+    )
+)]
+pub async fn vm_container_start(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to start container: {}", result.output)));
+    }
+    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
+    Ok(Json(json!({
+        "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "container": statuses.into_iter().next(),
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/stop",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container stopped", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to stop container")
+    )
+)]
+pub async fn vm_container_stop(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to stop container: {}", result.output)));
+    }
+    Ok(Json(json!({
+        "status": "ok", "vm_id": vm_id, "container": name, "action": "stopped",
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/containers/{name}/restart",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("name" = String, Path, description = "Container name"),
+    ),
+    responses(
+        (status = 200, description = "Container restarted", body = Value),
+        (status = 400, description = "Invalid input"),
+        (status = 500, description = "Failed to restart container")
+    )
+)]
+pub async fn vm_container_restart(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, name)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    if !validate_container_name(&name) {
+        return Err(AppError::bad_request("Invalid container name"));
+    }
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker restart {name}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to restart container: {}", result.output)));
+    }
+    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
+    Ok(Json(json!({
+        "status": "ok", "vm_id": vm_id, "vm_state": vm_state,
+        "container": statuses.into_iter().next(),
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/services/{service}/start",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("service" = String, Path, description = "Service name"),
+    ),
+    responses(
+        (status = 200, description = "Service started", body = Value),
+        (status = 404, description = "Unknown service or VM"),
+        (status = 500, description = "Failed to start service")
+    )
+)]
+pub async fn vm_service_start(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, service)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
+    let vm_state = ensure_vm_running_by_id(&state, &vm_id).await?;
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+    let containers_str = containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker start {containers_str}")).await;
+    let statuses = get_container_statuses(&state, &vm_id, &containers).await;
+    Ok(Json(json!({
+        "status": if result.success { "ok" } else { "partial" },
+        "vm_id": vm_id, "service": service, "vm_state": vm_state,
+        "containers": statuses,
+    })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rust/vms/{vm_id}/services/{service}/stop",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier"),
+        ("service" = String, Path, description = "Service name"),
+    ),
+    responses(
+        (status = 200, description = "Service stopped", body = Value),
+        (status = 404, description = "Unknown service or VM"),
+        (status = 500, description = "Failed to stop service")
+    )
+)]
+pub async fn vm_service_stop(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, service)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let containers = validate_service_for_vm(&service, &vm_id, &state)?;
+    let ssh_cfg = state.config.vm_ssh.get(&vm_id)
+        .ok_or_else(|| AppError::internal(format!("SSH config not found for {vm_id}")))?;
+    let containers_str = containers.join(" ");
+    let result = ssh::ssh_command(ssh_cfg, &format!("docker stop {containers_str}")).await;
+    if !result.success {
+        return Err(AppError::internal(format!("Failed to stop containers: {}", result.output)));
+    }
+    Ok(Json(json!({
+        "status": "ok", "vm_id": vm_id, "service": service,
+        "action": "stopped", "containers": containers,
+    })))
+}
 
 // ---------------------------------------------------------------------------
 // Explicit per-VM actions (12 routes)
