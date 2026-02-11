@@ -19,6 +19,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/containers-by-vm", get(health_containers_by_vm))
         .route("/rust/health/containers-by-service", get(health_containers_by_service))
         .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
+        .route("/rust/health/resources-all", get(health_resources_all))
         // Legacy flex-shortcut routes (backward compat)
         .route("/rust/vm/start", post(ondemand_vm_start))
         .route("/rust/vm/stop", post(ondemand_vm_stop))
@@ -717,6 +718,183 @@ pub async fn health_proxied_by_services(
         "summary": {
             "healthy": healthy_count,
             "total": total,
+        }
+    })))
+}
+
+fn round1(v: f64) -> f64 {
+    (v * 10.0).round() / 10.0
+}
+
+/// Gather system resources, specs, and info from a VM via SSH.
+async fn gather_vm_resources(state: &AppState, vm_id: &str) -> Value {
+    let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
+        Some(cfg) => cfg,
+        None => return json!({"error": "no SSH config"}),
+    };
+
+    let cmd = concat!(
+        "echo CPUMODEL:$(lscpu 2>/dev/null | grep -m1 'Model name' | sed 's/.*:[[:space:]]*//' || echo unknown);",
+        "echo CORES:$(nproc 2>/dev/null || echo 0);",
+        "echo LOAD:$(cat /proc/loadavg 2>/dev/null || echo '0 0 0 0/0 0');",
+        "echo MEMLINE:$(free -m 2>/dev/null | grep '^Mem:' || echo 'Mem: 0 0 0 0 0 0');",
+        "echo SWAPLINE:$(free -m 2>/dev/null | grep '^Swap:' || echo 'Swap: 0 0 0');",
+        "echo DISKLINE:$(df / 2>/dev/null | tail -1 || echo '/ 0 0 0 0% /');",
+        "echo ARCH:$(uname -m 2>/dev/null || echo unknown);",
+        "echo KERNEL:$(uname -r 2>/dev/null || echo unknown);",
+        "echo OS:$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d= -f2 | tr -d '\"' || echo unknown);",
+        "echo HOSTNAME:$(hostname 2>/dev/null || echo unknown);",
+        "echo UPTIME:$(uptime -p 2>/dev/null || uptime 2>/dev/null || echo unknown);",
+        "echo GPU:$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo N/A);",
+        "echo DOCKERINFO:$(docker info --format '{{.ContainersRunning}}/{{.Containers}}' 2>/dev/null || echo unknown)",
+    );
+
+    let result = ssh::ssh_command(ssh_cfg, cmd).await;
+    if !result.success {
+        return json!({"error": "SSH failed"});
+    }
+
+    let output = &result.output;
+    let field = |prefix: &str| -> String {
+        output.lines()
+            .find(|l| l.starts_with(prefix))
+            .map(|l| l[prefix.len()..].trim().to_string())
+            .unwrap_or_default()
+    };
+
+    // CPU
+    let cores: u32 = field("CORES:").parse().unwrap_or(0);
+    let load_parts: Vec<f64> = field("LOAD:")
+        .split_whitespace().take(3)
+        .filter_map(|s| s.parse().ok()).collect();
+    let load_1m = load_parts.first().copied().unwrap_or(0.0);
+    let load_5m = load_parts.get(1).copied().unwrap_or(0.0);
+    let load_15m = load_parts.get(2).copied().unwrap_or(0.0);
+    let cpu_pct = if cores > 0 { (load_1m / cores as f64 * 100.0).min(100.0) } else { 0.0 };
+
+    // Memory (free -m: total used free shared buff/cache available)
+    let mem_vals: Vec<u64> = field("MEMLINE:")
+        .split_whitespace().skip(1)
+        .filter_map(|s| s.parse().ok()).collect();
+    let mem_total = mem_vals.first().copied().unwrap_or(0);
+    let mem_used = mem_vals.get(1).copied().unwrap_or(0);
+    let mem_available = mem_vals.get(5).copied().unwrap_or(0);
+    let mem_pct = if mem_total > 0 { mem_used as f64 / mem_total as f64 * 100.0 } else { 0.0 };
+
+    // Swap
+    let swap_vals: Vec<u64> = field("SWAPLINE:")
+        .split_whitespace().skip(1)
+        .filter_map(|s| s.parse().ok()).collect();
+    let swap_total = swap_vals.first().copied().unwrap_or(0);
+    let swap_used = swap_vals.get(1).copied().unwrap_or(0);
+    let swap_free = swap_vals.get(2).copied().unwrap_or(0);
+    let swap_pct = if swap_total > 0 { swap_used as f64 / swap_total as f64 * 100.0 } else { 0.0 };
+
+    // Disk (df: filesystem 1K-blocks used available use% mounted)
+    let disk_line = field("DISKLINE:");
+    let disk_parts: Vec<&str> = disk_line.split_whitespace().collect();
+    let disk_total_kb: u64 = disk_parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let disk_used_kb: u64 = disk_parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let disk_avail_kb: u64 = disk_parts.get(3).and_then(|s| s.parse().ok()).unwrap_or(0);
+    let disk_pct: f64 = disk_parts.get(4)
+        .and_then(|s| s.trim_end_matches('%').parse().ok()).unwrap_or(0.0);
+    let to_gb = |kb: u64| (kb as f64 / 1048576.0 * 10.0).round() / 10.0;
+
+    // Provider from config
+    let provider = state.config.vm_instances.get(vm_id)
+        .map(|vm| match vm.provider { VmProvider::Oci => "oci", VmProvider::Gcp => "gcp" })
+        .unwrap_or("unknown");
+
+    json!({
+        "resources": {
+            "cpu": { "load_1m": round1(load_1m), "load_5m": round1(load_5m), "load_15m": round1(load_15m), "cores": cores, "usage_pct": round1(cpu_pct) },
+            "memory": { "total_mb": mem_total, "used_mb": mem_used, "available_mb": mem_available, "usage_pct": round1(mem_pct) },
+            "swap": { "total_mb": swap_total, "used_mb": swap_used, "free_mb": swap_free, "usage_pct": round1(swap_pct) },
+            "disk": { "total_gb": to_gb(disk_total_kb), "used_gb": to_gb(disk_used_kb), "available_gb": to_gb(disk_avail_kb), "usage_pct": disk_pct },
+            "gpu": field("GPU:"),
+        },
+        "specs": {
+            "cpu_model": field("CPUMODEL:"),
+            "cpu_cores": cores,
+            "ram_total_mb": mem_total,
+            "disk_total_gb": to_gb(disk_total_kb),
+            "arch": field("ARCH:"),
+            "kernel": field("KERNEL:"),
+            "os": field("OS:"),
+        },
+        "info": {
+            "hostname": field("HOSTNAME:"),
+            "uptime": field("UPTIME:"),
+            "provider": provider,
+            "wireguard_ip": &ssh_cfg.host,
+            "docker_containers": field("DOCKERINFO:"),
+        }
+    })
+}
+
+#[utoipa::path(
+    get,
+    path = "/rust/health/resources-all",
+    tag = "Get-Health",
+    responses(
+        (status = 200, description = "System resources, specs, and info for all VMs", body = Value),
+        (status = 500, description = "Internal error")
+    )
+)]
+pub async fn health_resources_all(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Value>, AppError> {
+    let mut set = tokio::task::JoinSet::new();
+
+    for (vm_id, vm_map) in &state.config.all_vm_services {
+        let vm_id = vm_id.clone();
+        let label = vm_map.label.clone();
+        let state = Arc::clone(&state);
+        set.spawn(async move {
+            let data = gather_vm_resources(&state, &vm_id).await;
+            (vm_id, label, data)
+        });
+    }
+
+    let mut vms = serde_json::Map::new();
+    let mut total_cores = 0u32;
+    let mut total_ram_mb = 0u64;
+    let mut total_disk_gb = 0.0f64;
+    let mut sum_cpu_pct = 0.0f64;
+    let mut sum_mem_pct = 0.0f64;
+    let mut vm_count = 0u32;
+
+    while let Some(result) = set.join_next().await {
+        let (vm_id, label, mut data) = match result {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        if data.get("error").is_none() {
+            total_cores += data["resources"]["cpu"]["cores"].as_u64().unwrap_or(0) as u32;
+            total_ram_mb += data["resources"]["memory"]["total_mb"].as_u64().unwrap_or(0);
+            total_disk_gb += data["resources"]["disk"]["total_gb"].as_f64().unwrap_or(0.0);
+            sum_cpu_pct += data["resources"]["cpu"]["usage_pct"].as_f64().unwrap_or(0.0);
+            sum_mem_pct += data["resources"]["memory"]["usage_pct"].as_f64().unwrap_or(0.0);
+            vm_count += 1;
+        }
+
+        data["label"] = json!(label);
+        vms.insert(vm_id, data);
+    }
+
+    let avg_cpu_pct = if vm_count > 0 { sum_cpu_pct / vm_count as f64 } else { 0.0 };
+    let avg_mem_pct = if vm_count > 0 { sum_mem_pct / vm_count as f64 } else { 0.0 };
+
+    Ok(Json(json!({
+        "vms": vms,
+        "summary": {
+            "vm_count": vm_count,
+            "total_cpu_cores": total_cores,
+            "total_ram_mb": total_ram_mb,
+            "total_disk_gb": round1(total_disk_gb),
+            "avg_cpu_pct": round1(avg_cpu_pct),
+            "avg_mem_pct": round1(avg_mem_pct),
         }
     })))
 }
