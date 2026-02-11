@@ -1,0 +1,9 @@
+# Cloudflare Configuration
+# Get API token from: https://dash.cloudflare.com/profile/api-tokens
+# Required permissions: Zone:DNS:Edit, Zone:Settings:Edit
+
+cloudflare_api_token = "CHANGE_ME_API_TOKEN"
+cloudflare_zone_id   = "CHANGE_ME_ZONE_ID"
+
+# DKIM key from Mailu: cat /opt/mailu/dkim/diegonmarcos.com.dkim.key
+dkim_public_key = "v=DKIM1; k=rsa; p=CHANGE_ME_DKIM_KEY"

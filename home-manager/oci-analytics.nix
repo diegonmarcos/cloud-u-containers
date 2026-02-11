@@ -1,6 +1,7 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
+  imports = [ (import ./wireguard.nix { vmName = "oci-analytics"; }) ];
   home.username = "ubuntu";
   home.homeDirectory = "/home/ubuntu";
   home.stateVersion = "24.11";
@@ -112,9 +113,6 @@
 
       # Age key for sops
       [ -f "$HOME/.config/sops/age/keys.txt" ] && export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/keys.txt"
-
-      # WireGuard mesh IP
-      export WIREGUARD_IP="10.0.0.4"
     '';
   };
 

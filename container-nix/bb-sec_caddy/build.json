@@ -1,9 +1,9 @@
 {
   "name": "caddy",
-  "description": "Caddy reverse proxy (oci-mail)",
+  "description": "Caddy reverse proxy (replaces NPM on gcp-proxy + oci-mail)",
 
   "deploy": {
-    "host": "oci-mail",
+    "host": "gcp-proxy",
     "remote_path": "/opt/containers/caddy"
   }
 }

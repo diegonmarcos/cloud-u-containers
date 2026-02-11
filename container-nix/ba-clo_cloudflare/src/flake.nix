@@ -12,7 +12,7 @@
       domain = "diegonmarcos.com";
       # IPs from cloud_architecture.json
       ips = {
-        gcp-f-micro_1 = "35.226.147.64";      # Central NPM Proxy
+        gcp-f-micro_1 = "35.226.147.64";      # Central Caddy Proxy
         oci-f-micro_1 = "130.110.251.193";    # Mail Server
         oci-f-micro_2 = "129.151.228.66";     # Analytics
         oci-p-flex_1 = "144.24.196.72";       # Dev Server
@@ -46,10 +46,10 @@
       }
 
       # =============================================================================
-      # DNS Records - All traffic routes through GCP Central Proxy (NPM)
+      # DNS Records - All HTTP traffic routes through GCP Caddy Proxy
       # =============================================================================
 
-      # Root domain -> GCP NPM
+      # Root domain -> GCP Caddy
       resource "cloudflare_record" "root" {
         zone_id = var.cloudflare_zone_id
         name    = "@"
@@ -59,7 +59,7 @@
         ttl     = 1  # Auto when proxied
       }
 
-      # www -> GCP NPM
+      # www -> GCP Caddy
       resource "cloudflare_record" "www" {
         zone_id = var.cloudflare_zone_id
         name    = "www"
@@ -70,10 +70,10 @@
       }
 
       # =============================================================================
-      # Service Subdomains - All proxied through GCP NPM
+      # Service Subdomains - All proxied through GCP Caddy
       # =============================================================================
 
-      # Authentication
+      # Authentication (Authelia)
       resource "cloudflare_record" "auth" {
         zone_id = var.cloudflare_zone_id
         name    = "auth"
@@ -84,7 +84,7 @@
         comment = "Authelia 2FA - direct on GCP"
       }
 
-      # Analytics (Matomo) - via NPM
+      # Analytics (Matomo) - via Caddy to oci-analytics
       resource "cloudflare_record" "analytics" {
         zone_id = var.cloudflare_zone_id
         name    = "analytics"
@@ -92,10 +92,10 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Matomo Analytics - proxied via NPM to OCI Micro 2"
+        comment = "Matomo Analytics - via Caddy to oci-analytics"
       }
 
-      # Photos (Photoprism) - via NPM
+      # PhotoPrism - via Caddy to oci-flex
       resource "cloudflare_record" "photos" {
         zone_id = var.cloudflare_zone_id
         name    = "photos"
@@ -103,10 +103,21 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Photoprism - proxied via NPM to OCI Flex"
+        comment = "PhotoPrism - via Caddy to oci-flex"
       }
 
-      # Calendar (Radicale) - via NPM
+      # Syncthing - via Caddy to oci-mail
+      resource "cloudflare_record" "sync" {
+        zone_id = var.cloudflare_zone_id
+        name    = "sync"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Syncthing - via Caddy to oci-mail"
+      }
+
+      # Calendar (Radicale) - via Caddy to oci-flex
       resource "cloudflare_record" "cal" {
         zone_id = var.cloudflare_zone_id
         name    = "cal"
@@ -114,10 +125,10 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Radicale Calendar - proxied via NPM to OCI Flex"
+        comment = "Radicale Calendar - via Caddy to oci-flex"
       }
 
-      # Web IDE (Code Server) - via NPM
+      # Code Server IDE - via Caddy to oci-flex
       resource "cloudflare_record" "ide" {
         zone_id = var.cloudflare_zone_id
         name    = "ide"
@@ -125,10 +136,10 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Code Server IDE - proxied via NPM to OCI Flex"
+        comment = "Code Server IDE - via Caddy to oci-flex"
       }
 
-      # NocoDB - via NPM
+      # NocoDB - via Caddy to oci-flex
       resource "cloudflare_record" "db" {
         zone_id = var.cloudflare_zone_id
         name    = "db"
@@ -136,10 +147,10 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "NocoDB - proxied via NPM to OCI Flex"
+        comment = "NocoDB - via Caddy to oci-flex"
       }
 
-      # Ntfy Push Notifications - via NPM
+      # Ntfy Push Notifications - via Caddy on GCP
       resource "cloudflare_record" "rss" {
         zone_id = var.cloudflare_zone_id
         name    = "rss"
@@ -147,10 +158,10 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Ntfy push notifications"
+        comment = "Ntfy push notifications - via Caddy on GCP"
       }
 
-      # NPM Admin Proxy
+      # Caddy Admin Proxy
       resource "cloudflare_record" "proxy" {
         zone_id = var.cloudflare_zone_id
         name    = "proxy"
@@ -158,25 +169,47 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "NPM Admin UI"
+        comment = "Caddy admin UI"
       }
 
-      # AFFiNE Drive - via NPM
-      resource "cloudflare_record" "drive" {
+      # Vaultwarden - via Caddy on GCP
+      resource "cloudflare_record" "vault" {
         zone_id = var.cloudflare_zone_id
-        name    = "drive"
+        name    = "vault"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "AFFiNE workspace - proxied via NPM to OCI Flex"
+        comment = "Vaultwarden password manager - via Caddy on GCP"
+      }
+
+      # AFFiNE Drive - via Caddy to oci-flex
+      resource "cloudflare_record" "drive_notes_affine" {
+        zone_id = var.cloudflare_zone_id
+        name    = "drive-notes-affine"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "AFFiNE workspace - via Caddy to oci-flex"
+      }
+
+      # API - Flask + Rust on GCP
+      resource "cloudflare_record" "api" {
+        zone_id = var.cloudflare_zone_id
+        name    = "api"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Flask + Rust API - via Caddy on GCP"
       }
 
       # =============================================================================
       # Mail Records - Direct to OCI Micro 1 (not proxied for SMTP)
       # =============================================================================
 
-      # Mail webmail interface - via NPM
+      # Mail webmail interface - via Caddy to oci-mail
       resource "cloudflare_record" "mail" {
         zone_id = var.cloudflare_zone_id
         name    = "mail"
@@ -184,7 +217,7 @@
         content   = "${config.ips.gcp-f-micro_1}"
         proxied = true
         ttl     = 1
-        comment = "Mailu webmail - proxied via NPM"
+        comment = "Mailu webmail - via Caddy to oci-mail"
       }
 
       # SMTP direct (cannot be proxied)
@@ -281,7 +314,7 @@
       }
 
       output "dns_records_count" {
-        value = "14 DNS records configured"
+        value = "19 DNS records configured"
       }
     '';
 
@@ -304,7 +337,8 @@
     in {
       default = pkgs.runCommand "cloudflare-terraform" {} ''
         mkdir -p $out
-        cp ${dockerCompose} $out/docker-compose.yml
+        cp ${mkMainTf pkgs} $out/main.tf
+        cp ${mkTfvarsTemplate pkgs} $out/terraform.tfvars.template
       '';
     });
   };
