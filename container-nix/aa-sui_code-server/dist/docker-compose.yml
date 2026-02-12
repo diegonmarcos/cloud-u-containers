@@ -2,7 +2,7 @@ services:
   code-server:
     image: linuxserver/code-server:latest
     container_name: code-server
-    restart: always
+    restart: unless-stopped
     environment:
       TZ: Europe/Madrid
       PUID: 1000

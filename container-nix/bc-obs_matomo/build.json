@@ -1,0 +1,8 @@
+{
+  "name": "matomo",
+  "description": "Matomo hybrid analytics (oci-analytics)",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/matomo"
+  }
+}

@@ -5,7 +5,7 @@ services:
   filebrowser:
     image: filebrowser/filebrowser:latest
     container_name: filebrowser_app
-    restart: always
+    restart: "no"
     ports:
       - "3015:80"
     volumes:
