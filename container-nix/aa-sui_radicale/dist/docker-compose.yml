@@ -2,7 +2,7 @@ services:
   radicale:
     image: tomsquest/docker-radicale:latest
     container_name: radicale
-    restart: always
+    restart: unless-stopped
     ports:
       - "5232:5232"
     volumes:

@@ -2,7 +2,7 @@ services:
   fluent-bit:
     image: fluent/fluent-bit:latest
     container_name: fluent-bit
-    restart: always
+    restart: unless-stopped
     volumes:
       - /opt/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - /opt/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro

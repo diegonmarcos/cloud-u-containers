@@ -4,7 +4,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: lgtm_grafana
-    restart: always
+    restart: unless-stopped
     ports:
       - "3016:3000"
     volumes:
@@ -27,7 +27,7 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: lgtm_loki
-    restart: always
+    restart: unless-stopped
     ports:
       - "3017:3100"
     volumes:
@@ -44,7 +44,7 @@ services:
   tempo:
     image: grafana/tempo:latest
     container_name: lgtm_tempo
-    restart: always
+    restart: unless-stopped
     ports:
       - "3018:3200"
       - "4317:4317"
@@ -59,7 +59,7 @@ services:
   mimir:
     image: grafana/mimir:latest
     container_name: lgtm_mimir
-    restart: always
+    restart: unless-stopped
     ports:
       - "3019:8080"
     volumes:
