@@ -23,7 +23,7 @@
         grist:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: "no"
+          restart: always
           ports:
             - "${toString config.port}:8484"
           volumes:
