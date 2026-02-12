@@ -1,6 +1,6 @@
 {
   "name": "grist",
-  "description": "Grist spreadsheet/database (NEW - not deployed yet)",
+  "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
 
   "deploy": {
     "host": "oci-flex",

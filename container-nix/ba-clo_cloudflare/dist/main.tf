@@ -149,6 +149,17 @@ resource "cloudflare_record" "db" {
   comment = "NocoDB - via Caddy to oci-flex"
 }
 
+# Grist Spreadsheet - via Caddy to oci-flex
+resource "cloudflare_record" "sheets" {
+  zone_id = var.cloudflare_zone_id
+  name    = "sheets"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = true
+  ttl     = 1
+  comment = "Grist Spreadsheet - via Caddy to oci-flex"
+}
+
 # Ntfy Push Notifications - via Caddy on GCP
 resource "cloudflare_record" "rss" {
   zone_id = var.cloudflare_zone_id
