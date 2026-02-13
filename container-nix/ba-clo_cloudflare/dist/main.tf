@@ -32,6 +32,17 @@ variable "cloudflare_zone_id" {
 # DNS Records - All HTTP traffic routes through GCP Caddy Proxy
 # =============================================================================
 
+# Wildcard -> GCP Caddy (catch-all for any new subdomain)
+resource "cloudflare_record" "wildcard" {
+  zone_id = var.cloudflare_zone_id
+  name    = "*"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = false
+  ttl     = 1
+  comment = "Wildcard catch-all - routes any subdomain to Caddy"
+}
+
 # Root domain -> GCP Caddy
 resource "cloudflare_record" "root" {
   zone_id = var.cloudflare_zone_id
@@ -356,5 +367,5 @@ output "nameservers" {
 }
 
 output "dns_records_count" {
-  value = "24 DNS records configured"
+  value = "25 DNS records configured (includes wildcard)"
 }
