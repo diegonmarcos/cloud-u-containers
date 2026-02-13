@@ -250,12 +250,12 @@ function discoverVm(){
   return fetch(API+'/health/ids',{signal:AbortSignal.timeout(10000)})
     .then(function(r){return r.json()})
     .then(function(data){
-      var ids=data.vm_ids||data;
-      for(var id in ids){
-        if(ids[id]&&ids[id].label===VM_LABEL){vmId=id;break}
+      var vms=data.vms||{};
+      for(var id in vms){
+        if(vms[id]&&vms[id].label===VM_LABEL){vmId=id;break}
       }
       if(!vmId){
-        for(var id2 in ids){
+        for(var id2 in vms){
           if(id2.indexOf('flex')!==-1){vmId=id2;break}
         }
       }
