@@ -144,7 +144,7 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Pulling and starting $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose pull && docker-compose up -d --no-deps $SERVICE_NAME"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull && docker compose up -d --no-deps $SERVICE_NAME"
     log "Container pulled and running"
 }
 
