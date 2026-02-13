@@ -391,9 +391,11 @@
       # CATCH-ALL — Custom error page for unknown/unconfigured domains
       # ════════════════════════════════════════════════════════════
 
-      :443 {
+      *.diegonmarcos.com {
     ${secNoLimit}
-        tls internal
+        tls {
+          dns cloudflare {env.CF_API_TOKEN}
+        }
         root * /srv
         rewrite * /error.html
         file_server
@@ -407,6 +409,8 @@
           image: ghcr.io/diegonmarcos/caddy-custom:latest
           container_name: ${config.container_name}
           restart: unless-stopped
+          env_file:
+            - .env
           ports:
             - "${toString config.http_port}:80"
             - "${toString config.https_port}:443"
