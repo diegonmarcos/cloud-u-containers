@@ -1,60 +1,265 @@
-{
-  admin localhost:2019
-}
-
-# ════════════════════════════════════════════════════════════
-# PUBLIC / BYPASS (no auth)
-# ════════════════════════════════════════════════════════════
-
-# Authelia itself — must be public (bypass policy in Authelia config)
-auth.diegonmarcos.com {
-  reverse_proxy authelia:9091
-}
-
-# API — Flask + Rust backends
-api.diegonmarcos.com {
-  handle /rust/* {
-    reverse_proxy 10.0.0.1:8080
+  {
+    admin localhost:2019
+    order respond before handle
   }
-  handle {
-    reverse_proxy 10.0.0.1:5000
+
+  # ════════════════════════════════════════════════════════════
+  # SECURITY SNIPPETS
+  # ════════════════════════════════════════════════════════════
+
+  (security_headers) {
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
   }
 }
 
-# Radicale CalDAV/CardDAV
-cal.diegonmarcos.com {
-  reverse_proxy 10.0.0.2:5232
-}
-
-# Affine collaborative docs (100MB uploads, long timeouts)
-drive-notes-affine.diegonmarcos.com {
-  request_body {
-    max_size 100MB
-  }
-  reverse_proxy 10.0.0.2:3010 {
-    transport http {
-      read_timeout 3600s
-      write_timeout 3600s
+  (rate_limiting) {
+  rate_limit {
+    zone global {
+      key    {remote_host}
+      events 100
+      window 1m
     }
   }
 }
 
-# ════════════════════════════════════════════════════════════
-# ANALYTICS — Matomo (public tracking + protected admin)
-# ════════════════════════════════════════════════════════════
+  (block_bots) {
+  @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
+  respond @bad_bots 403
+}
 
-analytics.diegonmarcos.com {
-  # Public tracking endpoints (no auth — called by portfolio sites)
-  @tracking {
-    path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
-    path /js/*
+  (block_scanners) {
+  @blocked_paths path /wp-admin* /wp-login* /xmlrpc.php /.env /.git* /phpmyadmin* /actuator* /solr* /console* /.aws* /cgi-bin/*
+  respond @blocked_paths 404
+}
+
+  (request_limits) {
+  request_body {
+    max_size 10MB
   }
-  handle @tracking {
-    reverse_proxy 10.0.0.4:8080
+}
+
+  (ip_block) {
+  # @blocked_ips remote_ip 192.0.2.0/24
+  # respond @blocked_ips 403
+}
+
+  (access_log) {
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size 10mb
+      roll_keep 5
+    }
+    format json
+  }
+}
+
+  (security) {
+  import security_headers
+  import block_bots
+  import block_scanners
+  import rate_limiting
+  import ip_block
+  import access_log
+}
+
+
+  # ════════════════════════════════════════════════════════════
+  # PUBLIC / BYPASS (no auth)
+  # ════════════════════════════════════════════════════════════
+
+  # Authelia itself — must be public (bypass policy in Authelia config)
+  auth.diegonmarcos.com {
+import security
+import request_limits
+    reverse_proxy authelia:9091
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
   }
 
-  # Protected admin dashboard
-    @bearer header Authorization Bearer*
+  # API — Flask + Rust backends
+  api.diegonmarcos.com {
+import security
+import request_limits
+    handle /rust/* {
+      reverse_proxy 10.0.0.1:8080
+    }
+    handle {
+      reverse_proxy 10.0.0.1:5000
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Radicale CalDAV/CardDAV
+  cal.diegonmarcos.com {
+import security
+import request_limits
+    reverse_proxy 10.0.0.2:5232
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Affine collaborative docs (100MB uploads, long timeouts)
+  drive-notes-affine.diegonmarcos.com {
+import security
+    request_body {
+      max_size 100MB
+    }
+    reverse_proxy 10.0.0.2:3010 {
+      transport http {
+        read_timeout 3600s
+        write_timeout 3600s
+      }
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # ── GitHub Pages reverse proxies (URL stays as subdomain) ──
+
+  # Landing page
+  diegonmarcos.com, www.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /landpage{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Linktree
+  linktree.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /linktree{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Cloud dashboard
+  cloud.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /cloud{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Nexus
+  nexus.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /nexus{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Suite apps dashboard
+  suite.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /suite{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # ════════════════════════════════════════════════════════════
+  # ANALYTICS — Matomo (public tracking + protected admin)
+  # ════════════════════════════════════════════════════════════
+
+  analytics.diegonmarcos.com {
+import security
+import request_limits
+    # Public tracking endpoints (no auth — called by portfolio sites)
+    @tracking {
+      path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
+      path /js/*
+    }
+    handle @tracking {
+      reverse_proxy 10.0.0.4:8080
+    }
+
+    # Protected admin dashboard
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -70,22 +275,33 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.4:8080
   }
 
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
-
-# ════════════════════════════════════════════════════════════
-# AUTHELIA-PROTECTED (bearer token bypass for CLI/API)
-# ════════════════════════════════════════════════════════════
-
-# PhotoPrism
-photos.diegonmarcos.com {
-  # Root path → landing page (replaces Cloudflare redirect rule)
-  @root path /
-  handle @root {
-    redir https://diegonmarcos.github.io/myphotos/ permanent
   }
 
-  # All other paths → auth + PhotoPrism
-  @bearer header Authorization Bearer*
+  # ════════════════════════════════════════════════════════════
+  # AUTHELIA-PROTECTED (bearer token bypass for CLI/API)
+  # ════════════════════════════════════════════════════════════
+
+  # PhotoPrism
+  photos.diegonmarcos.com {
+import security
+import request_limits
+    # Root path → landing page (replaces Cloudflare redirect rule)
+    @root path /
+    handle @root {
+      redir https://diegonmarcos.github.io/myphotos/ permanent
+    }
+
+    # All other paths → auth + PhotoPrism
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -101,11 +317,21 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.2:3013
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Syncthing
-sync.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Syncthing
+  sync.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -121,21 +347,38 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.3:8384
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Mailu webmail (upstream is HTTPS with self-signed cert)
-mail.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Mailu webmail (upstream is HTTPS with self-signed cert)
+  mail.diegonmarcos.com {
+import security
+import request_limits
+    # Root path → landing page (replaces Cloudflare redirect rule)
+    @root path /
+    handle @root {
+      redir https://diegonmarcos.github.io/mymail/ permanent
+    }
+
+    # All other paths → auth + Mailu
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
     reverse_proxy https://10.0.0.3:8444 {
-          transport http {
-            tls_insecure_skip_verify
-          }
-        }
+      transport http {
+  tls_insecure_skip_verify
+}
+    }
   }
   handle {
 forward_auth authelia:9091 {
@@ -143,17 +386,27 @@ forward_auth authelia:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy https://10.0.0.3:8444 {
-          transport http {
-            tls_insecure_skip_verify
-          }
-        }
+      transport http {
+  tls_insecure_skip_verify
+}
+    }
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Code Server IDE (WebSocket support is automatic in Caddy)
-ide.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Code Server IDE (WebSocket support is automatic in Caddy)
+  ide.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -169,11 +422,21 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.2:8443
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# NocoDB
-db.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # NocoDB
+  db.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -189,11 +452,21 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.2:8085
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Grist - Collaborative Spreadsheet
-sheets.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Grist Sheets
+  sheets.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -209,11 +482,21 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.2:3011
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Caddy admin API
-proxy.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Caddy admin API
+  proxy.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -229,12 +512,22 @@ forward_auth authelia:9091 {
     reverse_proxy localhost:2019
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# Vaultwarden — reachable via npm_default docker network
-# Authelia access_control handles: API/identity/icons bypass, admin two_factor
-vault.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # Vaultwarden — reachable via npm_default docker network
+  # Authelia access_control handles: API/identity/icons bypass, admin two_factor
+  vault.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -250,11 +543,21 @@ forward_auth authelia:9091 {
     reverse_proxy vaultwarden:80
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
 
-# ntfy notifications
-rss.diegonmarcos.com {
-    @bearer header Authorization Bearer*
+  # ntfy notifications
+  rss.diegonmarcos.com {
+import security
+import request_limits
+      @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
@@ -270,5 +573,25 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.1:8090
   }
 
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 }
+  }
+
+  # ════════════════════════════════════════════════════════════
+  # CATCH-ALL — Custom error page for unknown/unconfigured domains
+  # ════════════════════════════════════════════════════════════
+
+  :443 {
+import security
+    tls internal
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
 

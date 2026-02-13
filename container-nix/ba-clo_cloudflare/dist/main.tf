@@ -8,13 +8,19 @@ terraform {
 }
 
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+  api_key = var.cloudflare_api_key
+  email   = var.cloudflare_email
 }
 
-variable "cloudflare_api_token" {
-  description = "Cloudflare API token with Zone:Edit permissions"
+variable "cloudflare_api_key" {
+  description = "Cloudflare Global API Key"
   type        = string
   sensitive   = true
+}
+
+variable "cloudflare_email" {
+  description = "Cloudflare account email"
+  type        = string
 }
 
 variable "cloudflare_zone_id" {
@@ -32,8 +38,8 @@ resource "cloudflare_record" "root" {
   name    = "@"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1  # Auto when proxied
+  proxied = false
+  ttl     = 300  # Auto when proxied
 }
 
 # www -> GCP Caddy
@@ -42,8 +48,8 @@ resource "cloudflare_record" "www" {
   name    = "www"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
 }
 
 # =============================================================================
@@ -56,8 +62,8 @@ resource "cloudflare_record" "auth" {
   name    = "auth"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Authelia 2FA - direct on GCP"
 }
 
@@ -67,8 +73,8 @@ resource "cloudflare_record" "analytics" {
   name    = "analytics"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Matomo Analytics - via Caddy to oci-analytics"
 }
 
@@ -78,31 +84,9 @@ resource "cloudflare_record" "photos" {
   name    = "photos"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "PhotoPrism - via Caddy to oci-flex"
-}
-
-# PhotoPrism App Gallery - via Caddy to oci-flex
-resource "cloudflare_record" "photos_app" {
-  zone_id = var.cloudflare_zone_id
-  name    = "photos.app"
-  type    = "A"
-  content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
-  comment = "PhotoPrism App - via Caddy to oci-flex"
-}
-
-# PhotoPrism public gallery (no auth) - via Caddy to oci-flex
-resource "cloudflare_record" "app_gallery" {
-  zone_id = var.cloudflare_zone_id
-  name    = "app.gallery"
-  type    = "A"
-  content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
-  comment = "PhotoPrism public gallery - via Caddy to oci-flex"
 }
 
 # Syncthing - via Caddy to oci-mail
@@ -111,8 +95,8 @@ resource "cloudflare_record" "sync" {
   name    = "sync"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Syncthing - via Caddy to oci-mail"
 }
 
@@ -122,8 +106,8 @@ resource "cloudflare_record" "cal" {
   name    = "cal"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Radicale Calendar - via Caddy to oci-flex"
 }
 
@@ -133,8 +117,8 @@ resource "cloudflare_record" "ide" {
   name    = "ide"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Code Server IDE - via Caddy to oci-flex"
 }
 
@@ -144,20 +128,9 @@ resource "cloudflare_record" "db" {
   name    = "db"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "NocoDB - via Caddy to oci-flex"
-}
-
-# Grist Spreadsheet - via Caddy to oci-flex
-resource "cloudflare_record" "sheets" {
-  zone_id = var.cloudflare_zone_id
-  name    = "sheets"
-  type    = "A"
-  content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
-  comment = "Grist Spreadsheet - via Caddy to oci-flex"
 }
 
 # Ntfy Push Notifications - via Caddy on GCP
@@ -166,8 +139,8 @@ resource "cloudflare_record" "rss" {
   name    = "rss"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Ntfy push notifications - via Caddy on GCP"
 }
 
@@ -177,8 +150,8 @@ resource "cloudflare_record" "proxy" {
   name    = "proxy"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Caddy admin UI"
 }
 
@@ -188,9 +161,20 @@ resource "cloudflare_record" "vault" {
   name    = "vault"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Vaultwarden password manager - via Caddy on GCP"
+}
+
+# Grist Sheets - via Caddy to oci-flex
+resource "cloudflare_record" "sheets" {
+  zone_id = var.cloudflare_zone_id
+  name    = "sheets"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Grist Sheets - via Caddy to oci-flex"
 }
 
 # AFFiNE Drive - via Caddy to oci-flex
@@ -199,20 +183,57 @@ resource "cloudflare_record" "drive_notes_affine" {
   name    = "drive-notes-affine"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "AFFiNE workspace - via Caddy to oci-flex"
 }
 
-# n8n Workflow Automation - via Caddy to external
-resource "cloudflare_record" "n8n" {
+# Suite - static site via Caddy to GitHub Pages
+resource "cloudflare_record" "suite" {
   zone_id = var.cloudflare_zone_id
-  name    = "n8n"
+  name    = "suite"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
-  comment = "n8n workflow automation - via Caddy"
+  proxied = false
+  ttl     = 300
+  comment = "Suite landing - via Caddy to GitHub Pages"
+}
+
+# =============================================================================
+# Front-end Subdomains - Static sites via Caddy to GitHub Pages
+# =============================================================================
+
+# Linktree - via Caddy to GitHub Pages
+resource "cloudflare_record" "linktree" {
+  zone_id = var.cloudflare_zone_id
+  name    = "linktree"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Linktree - via Caddy to GitHub Pages"
+}
+
+# Cloud dashboard - via Caddy to GitHub Pages
+resource "cloudflare_record" "cloud" {
+  zone_id = var.cloudflare_zone_id
+  name    = "cloud"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Cloud dashboard - via Caddy to GitHub Pages"
+}
+
+# Nexus - via Caddy to GitHub Pages
+resource "cloudflare_record" "nexus" {
+  zone_id = var.cloudflare_zone_id
+  name    = "nexus"
+  type    = "A"
+  content   = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Nexus - via Caddy to GitHub Pages"
 }
 
 # API - Flask + Rust on GCP
@@ -221,8 +242,8 @@ resource "cloudflare_record" "api" {
   name    = "api"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Flask + Rust API - via Caddy on GCP"
 }
 
@@ -236,8 +257,8 @@ resource "cloudflare_record" "mail" {
   name    = "mail"
   type    = "A"
   content   = "35.226.147.64"
-  proxied = true
-  ttl     = 1
+  proxied = false
+  ttl     = 300
   comment = "Mailu webmail - via Caddy to oci-mail"
 }
 
@@ -303,7 +324,7 @@ resource "cloudflare_zone_settings_override" "ssl_settings" {
   zone_id = var.cloudflare_zone_id
 
   settings {
-    ssl                      = "full_strict"
+    ssl                      = "full"
     always_use_https         = "on"
     min_tls_version          = "1.2"
     automatic_https_rewrites = "on"
@@ -335,5 +356,5 @@ output "nameservers" {
 }
 
 output "dns_records_count" {
-  value = "22 DNS records configured"
+  value = "24 DNS records configured"
 }

@@ -1,14 +1,19 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    image: caddy-custom:latest
     container_name: caddy
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./error.html:/srv/error.html:ro
+      - ./logs:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
     networks:
@@ -21,7 +26,7 @@ services:
     build: ./introspect-proxy
     image: introspect-proxy:latest
     container_name: introspect-proxy
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     environment:

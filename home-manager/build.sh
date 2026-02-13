@@ -104,6 +104,10 @@ activate_single_vm() {
     ssh "$vm" "cd ~/.config/home-manager && nix run home-manager/release-24.11 -- switch --flake .#$config -b backup" 2>&1 | tail -10
 
     log "  ✓ $vm activated"
+
+    # Trim to last 3 generations and GC on remote VM
+    ssh "$vm" "nix-env --delete-generations +3 && nix-collect-garbage" 2>&1 || true
+    log "  ✓ $vm generations trimmed"
 }
 
 # ── Step: WireGuard status ─────────────────────────────────────────────
