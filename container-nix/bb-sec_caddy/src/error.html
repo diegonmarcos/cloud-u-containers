@@ -14,8 +14,10 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:auto;
   position:relative;
+  padding:1rem 0;
 }
 .stars{
   position:fixed;
@@ -34,8 +36,9 @@ body{
   position:relative;
   z-index:1;
   text-align:center;
-  padding:2rem;
+  padding:2rem 1rem;
   max-width:600px;
+  width:100%;
 }
 .code{
   font-size:clamp(5rem,15vw,10rem);
@@ -57,11 +60,15 @@ body{
 }
 .ascii{
   color:#339af0;
-  font-size:clamp(.5rem,1.2vw,.8rem);
+  font-size:clamp(.45rem,1.2vw,.8rem);
   line-height:1.2;
   margin:1.5rem 0;
   opacity:.7;
   white-space:pre;
+  overflow-x:auto;
+}
+@media(max-width:400px){
+  .ascii{font-size:.4rem}
 }
 .msg{
   font-size:1.1rem;
@@ -136,11 +143,14 @@ a:hover{color:#845ef7;border-color:#845ef7}
   border-radius:3px;
   padding:.5rem;
   font-family:'Courier New',monospace;
-  font-size:.7rem;
+  font-size:.65rem;
   color:#868e96;
   white-space:pre-wrap;
   word-break:break-all;
+  overflow-x:hidden;
   min-height:1.5rem;
+  max-height:8rem;
+  overflow-y:auto;
   margin-bottom:.75rem;
 }
 .vm-actions{display:flex;gap:.5rem;flex-wrap:wrap}
