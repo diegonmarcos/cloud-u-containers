@@ -45,6 +45,20 @@ pub async fn check_ssh(config: &SshConfig) -> bool {
     ssh_command(config, "true").await.success
 }
 
+/// Fast SSH connectivity check with a short timeout (3s).
+pub async fn check_ssh_fast(config: &SshConfig) -> bool {
+    let result = Command::new("ssh")
+        .arg("-o").arg("StrictHostKeyChecking=no")
+        .arg("-o").arg("ConnectTimeout=3")
+        .arg("-o").arg("BatchMode=yes")
+        .arg("-i").arg(&config.key_path)
+        .arg(format!("{}@{}", config.user, config.host))
+        .arg("true")
+        .output()
+        .await;
+    matches!(result, Ok(o) if o.status.success())
+}
+
 /// Check if host responds to ping.
 pub async fn check_ping(host: &str) -> bool {
     let result = Command::new("ping")

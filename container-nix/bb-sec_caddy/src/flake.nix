@@ -50,6 +50,14 @@
       }
     '';
 
+    # GitHub Pages reverse proxy (keeps subdomain URL in browser)
+    mkGithubProxy = path: ''
+      rewrite * /${path}{uri}
+      reverse_proxy https://diegonmarcos.github.io {
+        header_up Host diegonmarcos.github.io
+      }
+    '';
+
     # Same but with custom reverse_proxy block (for tls_insecure_skip_verify etc.)
     mkProtectedCustom = upstreamBlock: ''
       @bearer header Authorization Bearer*
@@ -68,17 +76,26 @@
         admin localhost:${toString config.admin_port}
       }
 
+      # ── Snippet: custom error page for backend failures ──
+      (error_page) {
+        handle_errors {
+          respond "CADDY_CUSTOM_ERROR_{err.status_code}" {err.status_code}
+        }
+      }
+
       # ════════════════════════════════════════════════════════════
       # PUBLIC / BYPASS (no auth)
       # ════════════════════════════════════════════════════════════
 
       # Authelia itself — must be public (bypass policy in Authelia config)
       auth.diegonmarcos.com {
+        import error_page
         reverse_proxy authelia:9091
       }
 
       # API — Flask + Rust backends
       api.diegonmarcos.com {
+        import error_page
         handle /rust/* {
           reverse_proxy ${gcp}:8080
         }
@@ -89,11 +106,13 @@
 
       # Radicale CalDAV/CardDAV
       cal.diegonmarcos.com {
+        import error_page
         reverse_proxy ${flex}:5232
       }
 
       # Affine collaborative docs (100MB uploads, long timeouts)
       drive-notes-affine.diegonmarcos.com {
+        import error_page
         request_body {
           max_size 100MB
         }
@@ -105,11 +124,44 @@
         }
       }
 
+      # ── GitHub Pages reverse proxies (URL stays as subdomain) ──
+
+      # Landing page
+      diegonmarcos.com, www.diegonmarcos.com {
+        import error_page
+        ${mkGithubProxy "landpage"}
+      }
+
+      # Linktree
+      linktree.diegonmarcos.com {
+        import error_page
+        ${mkGithubProxy "linktree"}
+      }
+
+      # Cloud dashboard
+      cloud.diegonmarcos.com {
+        import error_page
+        ${mkGithubProxy "cloud"}
+      }
+
+      # Nexus
+      nexus.diegonmarcos.com {
+        import error_page
+        ${mkGithubProxy "nexus"}
+      }
+
+      # Suite apps dashboard
+      suite.diegonmarcos.com {
+        import error_page
+        ${mkGithubProxy "suite"}
+      }
+
       # ════════════════════════════════════════════════════════════
       # ANALYTICS — Matomo (public tracking + protected admin)
       # ════════════════════════════════════════════════════════════
 
       analytics.diegonmarcos.com {
+        import error_page
         # Public tracking endpoints (no auth — called by portfolio sites)
         @tracking {
           path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
@@ -129,6 +181,7 @@
 
       # PhotoPrism
       photos.diegonmarcos.com {
+        import error_page
         # Root path → landing page (replaces Cloudflare redirect rule)
         @root path /
         handle @root {
@@ -141,11 +194,20 @@
 
       # Syncthing
       sync.diegonmarcos.com {
+        import error_page
         ${mkProtected "${mail}:8384"}
       }
 
       # Mailu webmail (upstream is HTTPS with self-signed cert)
       mail.diegonmarcos.com {
+        import error_page
+        # Root path → landing page (replaces Cloudflare redirect rule)
+        @root path /
+        handle @root {
+          redir https://diegonmarcos.github.io/mymail/ permanent
+        }
+
+        # All other paths → auth + Mailu
         ${mkProtectedCustom ''reverse_proxy https://${mail}:8444 {
           transport http {
             tls_insecure_skip_verify
@@ -155,28 +217,50 @@
 
       # Code Server IDE (WebSocket support is automatic in Caddy)
       ide.diegonmarcos.com {
+        import error_page
         ${mkProtected "${flex}:8443"}
       }
 
       # NocoDB
       db.diegonmarcos.com {
+        import error_page
         ${mkProtected "${flex}:8085"}
+      }
+
+      # Grist Sheets
+      sheets.diegonmarcos.com {
+        import error_page
+        ${mkProtected "${flex}:3011"}
       }
 
       # Caddy admin API
       proxy.diegonmarcos.com {
+        import error_page
         ${mkProtected "localhost:${toString config.admin_port}"}
       }
 
       # Vaultwarden — reachable via npm_default docker network
       # Authelia access_control handles: API/identity/icons bypass, admin two_factor
       vault.diegonmarcos.com {
+        import error_page
         ${mkProtected "vaultwarden:80"}
       }
 
       # ntfy notifications
       rss.diegonmarcos.com {
+        import error_page
         ${mkProtected "${gcp}:8090"}
+      }
+
+      # ════════════════════════════════════════════════════════════
+      # CATCH-ALL — Custom error page for unknown/unconfigured domains
+      # ════════════════════════════════════════════════════════════
+
+      :443 {
+        tls internal
+        root * /srv
+        rewrite * /error.html
+        file_server
       }
 
     '';
@@ -193,6 +277,7 @@
             - "${toString config.https_port}:443/udp"
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
+            - ./error.html:/srv/error.html:ro
             - caddy_data:/data
             - caddy_config:/config
           networks:
@@ -246,6 +331,7 @@
         mkdir -p $out/introspect-proxy/app
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkCaddyfile pkgs} $out/Caddyfile
+        cp ${./error.html} $out/error.html
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
         cp ${./introspect-proxy/app/requirements.txt} $out/introspect-proxy/app/requirements.txt

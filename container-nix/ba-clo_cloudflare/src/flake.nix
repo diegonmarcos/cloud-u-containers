@@ -183,6 +183,17 @@
         comment = "Vaultwarden password manager - via Caddy on GCP"
       }
 
+      # Grist Sheets - via Caddy to oci-flex
+      resource "cloudflare_record" "sheets" {
+        zone_id = var.cloudflare_zone_id
+        name    = "sheets"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Grist Sheets - via Caddy to oci-flex"
+      }
+
       # AFFiNE Drive - via Caddy to oci-flex
       resource "cloudflare_record" "drive_notes_affine" {
         zone_id = var.cloudflare_zone_id
@@ -192,6 +203,54 @@
         proxied = true
         ttl     = 1
         comment = "AFFiNE workspace - via Caddy to oci-flex"
+      }
+
+      # Suite - static site via Caddy to GitHub Pages
+      resource "cloudflare_record" "suite" {
+        zone_id = var.cloudflare_zone_id
+        name    = "suite"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Suite landing - via Caddy to GitHub Pages"
+      }
+
+      # =============================================================================
+      # Front-end Subdomains - Static sites via Caddy to GitHub Pages
+      # =============================================================================
+
+      # Linktree - via Caddy to GitHub Pages
+      resource "cloudflare_record" "linktree" {
+        zone_id = var.cloudflare_zone_id
+        name    = "linktree"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Linktree - via Caddy to GitHub Pages"
+      }
+
+      # Cloud dashboard - via Caddy to GitHub Pages
+      resource "cloudflare_record" "cloud" {
+        zone_id = var.cloudflare_zone_id
+        name    = "cloud"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Cloud dashboard - via Caddy to GitHub Pages"
+      }
+
+      # Nexus - via Caddy to GitHub Pages
+      resource "cloudflare_record" "nexus" {
+        zone_id = var.cloudflare_zone_id
+        name    = "nexus"
+        type    = "A"
+        content   = "${config.ips.gcp-f-micro_1}"
+        proxied = true
+        ttl     = 1
+        comment = "Nexus - via Caddy to GitHub Pages"
       }
 
       # API - Flask + Rust on GCP
@@ -314,7 +373,7 @@
       }
 
       output "dns_records_count" {
-        value = "19 DNS records configured"
+        value = "24 DNS records configured"
       }
     '';
 
