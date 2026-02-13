@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Wrong Wormhole</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  position:relative;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding:2rem;
+  max-width:600px;
+}
+.code{
+  font-size:clamp(5rem,15vw,10rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#ff6b6b,#845ef7,#339af0);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1;
+  animation:glitch 4s ease-in-out infinite;
+  position:relative;
+}
+@keyframes glitch{
+  0%,90%,100%{transform:translate(0)}
+  92%{transform:translate(-3px,1px)}
+  94%{transform:translate(3px,-1px)}
+  96%{transform:translate(-1px,2px)}
+  98%{transform:translate(2px,-2px)}
+}
+.ascii{
+  color:#339af0;
+  font-size:clamp(.5rem,1.2vw,.8rem);
+  line-height:1.2;
+  margin:1.5rem 0;
+  opacity:.7;
+  white-space:pre;
+}
+.msg{
+  font-size:1.1rem;
+  color:#868e96;
+  margin:1rem 0;
+  line-height:1.6;
+}
+.msg em{
+  color:#ff6b6b;
+  font-style:normal;
+}
+.prompt{
+  margin-top:2rem;
+  font-size:.9rem;
+  color:#495057;
+}
+.prompt span{
+  color:#51cf66;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+.log{
+  margin-top:2.5rem;
+  text-align:left;
+  font-size:.75rem;
+  color:#495057;
+  line-height:1.8;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+}
+.log .ok{color:#51cf66}
+.log .warn{color:#fcc419}
+.log .err{color:#ff6b6b}
+.vm-panel{
+  margin-top:1.5rem;
+  text-align:left;
+  font-size:.75rem;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+}
+.vm-header{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin-bottom:.75rem;
+}
+.vm-indicator{
+  width:10px;height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.vm-indicator.green{background:#51cf66}
+.vm-indicator.red{background:#ff6b6b}
+.vm-indicator.yellow{background:#fcc419}
+.vm-indicator.blue{background:#339af0}
+.vm-name{color:#c0c0c0;font-weight:bold}
+.vm-health{color:#868e96;margin-left:auto;font-size:.7rem}
+.vm-status{
+  background:#08080d;
+  border:1px solid #1a1a2e;
+  border-radius:3px;
+  padding:.5rem;
+  font-family:'Courier New',monospace;
+  font-size:.7rem;
+  color:#868e96;
+  white-space:pre-wrap;
+  word-break:break-all;
+  min-height:1.5rem;
+  margin-bottom:.75rem;
+}
+.vm-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.vm-btn{
+  font-family:'Courier New',monospace;
+  font-size:.7rem;
+  padding:.35rem .75rem;
+  border:1px solid;
+  border-radius:3px;
+  background:transparent;
+  cursor:pointer;
+  transition:opacity .2s,background .2s;
+}
+.vm-btn.refresh{color:#339af0;border-color:#339af0}
+.vm-btn.refresh:hover{background:#339af01a}
+.vm-btn.start{color:#51cf66;border-color:#51cf66}
+.vm-btn.start:hover{background:#51cf661a}
+.vm-btn.stop{color:#ff6b6b;border-color:#ff6b6b}
+.vm-btn.stop:hover{background:#ff6b6b1a}
+.vm-btn.reset{color:#fcc419;border-color:#fcc419}
+.vm-btn.reset:hover{background:#fcc4191a}
+.vm-btn:active{opacity:.7}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="container">
+  <div class="code">404</div>
+  <pre class="ascii">
+    .  *  .    *    .  *
+  *    _____     .    *
+   .  /     \  *   .
+  *  | () () |    *   .
+   . |  ___  | .    *
+  *  |_|   |_|   .
+    /    ^    \  *   .
+   /   / | \   \
+  *   /  |  \   *  .
+  </pre>
+  <p class="msg">
+    You've taken a <em>wrong wormhole</em>.<br>
+    This domain exists, but the destination doesn't.
+  </p>
+  <p class="msg" style="font-size:.8rem;word-break:break-all">
+    <span style="color:#495057">requested:</span> <span id="req-url" style="color:#339af0"></span>
+  </p>
+  <div class="log">
+    <div><span class="ok">[OK]</span> DNS resolved &mdash; you found the server</div>
+    <div><span class="ok">[OK]</span> TLS handshake &mdash; encrypted tunnel up</div>
+    <div><span class="warn">[WARN]</span> Host header &mdash; no matching virtual host</div>
+    <div><span class="err">[ERR]</span> Route not found &mdash; nothing lives here (yet)</div>
+  </div>
+  <div class="vm-panel">
+    <div class="vm-header">
+      <span class="vm-indicator yellow" id="vm-light"></span>
+      <span class="vm-name">oci-flex</span>
+      <span class="vm-health" id="vm-health">checking...</span>
+    </div>
+    <div class="vm-status" id="vm-status"></div>
+    <div class="vm-actions">
+      <button class="vm-btn start" id="vm-start-btn">Start</button>
+      <button class="vm-btn stop" id="vm-stop-btn">Stop</button>
+      <button class="vm-btn reset" id="vm-reset-btn">Reset</button>
+      <button class="vm-btn refresh" id="vm-refresh-btn">Refresh</button>
+    </div>
+  </div>
+  <p class="prompt">
+    visitor@caddy:~$ <a href="https://linktree.diegonmarcos.com">cd /home</a><span>_</span>
+  </p>
+</div>
+<script>
+(function(){
+  document.getElementById('req-url').textContent=location.href;
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i<80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+})();
+
+var API='https://api.diegonmarcos.com/rust';
+var VM_LABEL='oci-flex';
+var vmId=null;
+var lightEl=document.getElementById('vm-light');
+var healthEl=document.getElementById('vm-health');
+var statusEl=document.getElementById('vm-status');
+
+function setIndicator(color,msg){
+  lightEl.className='vm-indicator '+color;
+  healthEl.textContent=msg;
+}
+
+function discoverVm(){
+  return fetch(API+'/health/ids',{signal:AbortSignal.timeout(10000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var ids=data.vm_ids||data;
+      for(var id in ids){
+        if(ids[id]&&ids[id].label===VM_LABEL){vmId=id;break}
+      }
+      if(!vmId){
+        for(var id2 in ids){
+          if(id2.indexOf('flex')!==-1){vmId=id2;break}
+        }
+      }
+      console.debug('[vm] discovered:',vmId);
+      return vmId;
+    });
+}
+
+function checkStatus(){
+  if(!vmId){
+    discoverVm().then(function(){if(vmId)checkStatus()}).catch(function(){
+      setIndicator('blue','discovery failed');
+    });
+    return;
+  }
+  setIndicator('yellow','checking...');
+  fetch(API+'/health/up/'+vmId,{signal:AbortSignal.timeout(10000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      console.debug('[vm] health:',data);
+      statusEl.textContent=JSON.stringify(data,null,2);
+      var h=data.health||'unknown';
+      if(h==='online') setIndicator('green','online');
+      else if(h==='offline') setIndicator('red','offline');
+      else setIndicator('blue',h);
+    })
+    .catch(function(e){
+      console.debug('[vm] health error:',e);
+      statusEl.textContent='Error: '+e.message;
+      setIndicator('blue','error');
+    });
+}
+
+function vmAction(action){
+  if(!vmId){
+    discoverVm().then(function(){if(vmId)vmAction(action)}).catch(function(){
+      setIndicator('blue','discovery failed');
+    });
+    return;
+  }
+  setIndicator('yellow','sending '+action+'...');
+  statusEl.textContent='';
+  fetch(API+'/vms/'+vmId+'/'+action,{method:'POST',signal:AbortSignal.timeout(30000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      console.debug('[vm] action:',action,data);
+      statusEl.textContent=JSON.stringify(data,null,2);
+      setIndicator('yellow',data.status||'pending');
+      setTimeout(checkStatus,3000);
+    })
+    .catch(function(e){
+      console.debug('[vm] action error:',e);
+      statusEl.textContent='Error: '+e.message;
+      setIndicator('blue','error');
+    });
+}
+
+document.getElementById('vm-start-btn').addEventListener('click',function(){vmAction('start')});
+document.getElementById('vm-stop-btn').addEventListener('click',function(){vmAction('stop')});
+document.getElementById('vm-reset-btn').addEventListener('click',function(){vmAction('reset')});
+document.getElementById('vm-refresh-btn').addEventListener('click',checkStatus);
+
+discoverVm().then(checkStatus).catch(function(){setIndicator('blue','discovery failed')});
+</script>
+</body>
+</html>

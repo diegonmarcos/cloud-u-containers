@@ -1,9 +1,6 @@
 services:
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-    image: caddy-custom:latest
+    image: ghcr.io/diegonmarcos/caddy-custom:latest
     container_name: caddy
     restart: unless-stopped
     ports:
