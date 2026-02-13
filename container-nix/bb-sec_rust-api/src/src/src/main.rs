@@ -57,6 +57,7 @@ pub struct AppState {
         routes::ondemand::ondemand_service_start,
         routes::ondemand::ondemand_service_stop,
         // Engine: generalized per-VM endpoints (Post-Engines)
+        routes::ondemand::vm_health_up,
         routes::ondemand::vm_health,
         routes::ondemand::vm_start,
         routes::ondemand::vm_stop,

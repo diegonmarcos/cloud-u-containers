@@ -54,6 +54,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/services/{service}/start", post(ondemand_service_start))
         .route("/rust/services/{service}/stop", post(ondemand_service_stop))
         // Generalized per-VM health routes
+        .route("/rust/health/up/{vm_id}", get(vm_health_up))
         .route("/rust/health/{vm_id}", get(vm_health))
         .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
         // Engine: generalized per-VM POST routes
@@ -1018,6 +1019,38 @@ pub async fn health_ids(
 // ---------------------------------------------------------------------------
 // Generalized per-VM endpoints
 // ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/rust/health/up/{vm_id}",
+    tag = "Get-Health",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "Fast VM up/down check (SSH only, ~3s)", body = Value),
+        (status = 404, description = "Unknown VM"),
+    )
+)]
+pub async fn vm_health_up(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let ssh_cfg = match state.config.vm_ssh.get(&vm_id) {
+        Some(cfg) => cfg,
+        None => return Err(AppError::not_found(format!("Unknown VM: {vm_id}"))),
+    };
+
+    let ssh_ok = ssh::check_ssh_fast(ssh_cfg).await;
+    let health = if ssh_ok { "online" } else { "offline" };
+
+    Ok(Json(json!({
+        "id": vm_id,
+        "ssh": ssh_ok,
+        "health": health,
+    })))
+}
 
 #[utoipa::path(
     get,

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Wrong Wormhole</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  position:relative;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding:2rem;
+  max-width:600px;
+}
+.code{
+  font-size:clamp(5rem,15vw,10rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#ff6b6b,#845ef7,#339af0);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1;
+  animation:glitch 4s ease-in-out infinite;
+  position:relative;
+}
+@keyframes glitch{
+  0%,90%,100%{transform:translate(0)}
+  92%{transform:translate(-3px,1px)}
+  94%{transform:translate(3px,-1px)}
+  96%{transform:translate(-1px,2px)}
+  98%{transform:translate(2px,-2px)}
+}
+.ascii{
+  color:#339af0;
+  font-size:clamp(.5rem,1.2vw,.8rem);
+  line-height:1.2;
+  margin:1.5rem 0;
+  opacity:.7;
+  white-space:pre;
+}
+.msg{
+  font-size:1.1rem;
+  color:#868e96;
+  margin:1rem 0;
+  line-height:1.6;
+}
+.msg em{
+  color:#ff6b6b;
+  font-style:normal;
+}
+.prompt{
+  margin-top:2rem;
+  font-size:.9rem;
+  color:#495057;
+}
+.prompt span{
+  color:#51cf66;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+.log{
+  margin-top:2.5rem;
+  text-align:left;
+  font-size:.75rem;
+  color:#495057;
+  line-height:1.8;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+}
+.log .ok{color:#51cf66}
+.log .warn{color:#fcc419}
+.log .err{color:#ff6b6b}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="container">
+  <div class="code">404</div>
+  <pre class="ascii">
+    .  *  .    *    .  *
+  *    _____     .    *
+   .  /     \  *   .
+  *  | () () |    *   .
+   . |  ___  | .    *
+  *  |_|   |_|   .
+    /    ^    \  *   .
+   /   / | \   \
+  *   /  |  \   *  .
+  </pre>
+  <p class="msg">
+    You've taken a <em>wrong wormhole</em>.<br>
+    This domain exists, but the destination doesn't.
+  </p>
+  <div class="log">
+    <div><span class="ok">[OK]</span> DNS resolved &mdash; you found the server</div>
+    <div><span class="ok">[OK]</span> TLS handshake &mdash; encrypted tunnel up</div>
+    <div><span class="warn">[WARN]</span> Host header &mdash; no matching virtual host</div>
+    <div><span class="err">[ERR]</span> Route not found &mdash; nothing lives here (yet)</div>
+  </div>
+  <p class="prompt">
+    visitor@caddy:~$ <a href="https://diegonmarcos.com">cd /home</a><span>_</span>
+  </p>
+</div>
+<script>
+(function(){
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i<80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+})();
+</script>
+</body>
+</html>
