@@ -2,6 +2,12 @@
   "name": "rust-api",
   "description": "Cloud Rust API (api.diegonmarcos.com/rust/)",
 
+  "docker": {
+    "registry": "ghcr.io",
+    "image": "diegonmarcos/rust-api",
+    "dockerfile": "Dockerfile"
+  },
+
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/rust-api"

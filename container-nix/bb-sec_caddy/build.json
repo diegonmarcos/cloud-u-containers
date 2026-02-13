@@ -2,6 +2,12 @@
   "name": "caddy",
   "description": "Caddy reverse proxy (replaces NPM on gcp-proxy + oci-mail)",
 
+  "docker": {
+    "registry": "ghcr.io",
+    "image": "diegonmarcos/caddy-custom",
+    "dockerfile": "Dockerfile.caddy"
+  },
+
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/caddy"
