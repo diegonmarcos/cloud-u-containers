@@ -29,7 +29,32 @@ elif [ -f "/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.
 fi
 export SOPS_AGE_KEY_FILE
 
+DOCKER_REGISTRY="$(get_config docker.registry)"
+DOCKER_IMAGE="$(get_config docker.image)"
+DOCKER_FILE="$(get_config docker.dockerfile)"
+
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
+
+# ── Step 0: Build and push Docker image ──────────────────────────────
+step_docker() {
+    [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json — skipping"; return 0; }
+
+    DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
+    FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
+    SHA_TAG="${GITHUB_SHA:-$(git -C "$SERVICE_DIR" rev-parse HEAD 2>/dev/null || echo local)}"
+
+    log "Building Docker image: $FULL_IMAGE"
+
+    docker buildx build \
+        --push \
+        --tag "$FULL_IMAGE:latest" \
+        --tag "$FULL_IMAGE:$SHA_TAG" \
+        --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
+        --file "$SRC_DIR/$DOCKERFILE" \
+        "$SRC_DIR/"
+
+    log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
+}
 
 # ── Step 1: Build nix flake ────────────────────────────────────────────
 step_build() {
@@ -129,21 +154,23 @@ echo "║  Build: $SERVICE_NAME"
 echo "╚════════════════════════════════════════╝"
 
 case "${1:-all}" in
+    docker)   step_docker ;;
     build)    step_build ;;
     secrets)  step_secrets ;;
     deploy)   step_deploy ;;
     compose)  step_compose ;;
     all)      step_build; step_secrets ;;
-    ship)     step_build; step_secrets; step_deploy; step_compose ;;
+    ship)     step_docker; step_build; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; log "Cleaned" ;;
     *)
-        echo "Usage: $0 [build|secrets|deploy|compose|all|ship|clean]"
+        echo "Usage: $0 [docker|build|secrets|deploy|compose|all|ship|clean]"
+        echo "  docker   Build + push Docker image"
         echo "  build    Build nix flake → dist/"
         echo "  secrets  Decrypt secrets → dist/.env"
         echo "  deploy   Rsync dist/ → VM"
         echo "  compose  Docker compose pull + up on VM"
         echo "  all      build + secrets (default)"
-        echo "  ship     build + secrets + deploy + compose"
+        echo "  ship     docker + build + secrets + deploy + compose"
         echo "  clean    Remove dist/"
         ;;
 esac
