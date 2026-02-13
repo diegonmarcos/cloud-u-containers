@@ -404,10 +404,7 @@
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
         caddy:
-          build:
-            context: .
-            dockerfile: Dockerfile.caddy
-          image: caddy-custom:latest
+          image: ghcr.io/diegonmarcos/caddy-custom:latest
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
@@ -471,7 +468,6 @@
         mkdir -p $out/introspect-proxy/app
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkCaddyfile pkgs} $out/Caddyfile
-        cp ${./Dockerfile.caddy} $out/Dockerfile.caddy
         cp ${./error.html} $out/error.html
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
