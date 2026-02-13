@@ -31,13 +31,19 @@
       }
 
       provider "cloudflare" {
-        api_token = var.cloudflare_api_token
+        api_key = var.cloudflare_api_key
+        email   = var.cloudflare_email
       }
 
-      variable "cloudflare_api_token" {
-        description = "Cloudflare API token with Zone:Edit permissions"
+      variable "cloudflare_api_key" {
+        description = "Cloudflare Global API Key"
         type        = string
         sensitive   = true
+      }
+
+      variable "cloudflare_email" {
+        description = "Cloudflare account email"
+        type        = string
       }
 
       variable "cloudflare_zone_id" {
@@ -55,8 +61,8 @@
         name    = "@"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1  # Auto when proxied
+        proxied = false
+        ttl     = 300  # Auto when proxied
       }
 
       # www -> GCP Caddy
@@ -65,8 +71,8 @@
         name    = "www"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
       }
 
       # =============================================================================
@@ -79,8 +85,8 @@
         name    = "auth"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Authelia 2FA - direct on GCP"
       }
 
@@ -90,8 +96,8 @@
         name    = "analytics"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Matomo Analytics - via Caddy to oci-analytics"
       }
 
@@ -101,8 +107,8 @@
         name    = "photos"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "PhotoPrism - via Caddy to oci-flex"
       }
 
@@ -112,8 +118,8 @@
         name    = "sync"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Syncthing - via Caddy to oci-mail"
       }
 
@@ -123,8 +129,8 @@
         name    = "cal"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Radicale Calendar - via Caddy to oci-flex"
       }
 
@@ -134,8 +140,8 @@
         name    = "ide"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Code Server IDE - via Caddy to oci-flex"
       }
 
@@ -145,8 +151,8 @@
         name    = "db"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "NocoDB - via Caddy to oci-flex"
       }
 
@@ -156,8 +162,8 @@
         name    = "rss"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Ntfy push notifications - via Caddy on GCP"
       }
 
@@ -167,8 +173,8 @@
         name    = "proxy"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Caddy admin UI"
       }
 
@@ -178,8 +184,8 @@
         name    = "vault"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Vaultwarden password manager - via Caddy on GCP"
       }
 
@@ -189,8 +195,8 @@
         name    = "sheets"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Grist Sheets - via Caddy to oci-flex"
       }
 
@@ -200,8 +206,8 @@
         name    = "drive-notes-affine"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "AFFiNE workspace - via Caddy to oci-flex"
       }
 
@@ -211,8 +217,8 @@
         name    = "suite"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Suite landing - via Caddy to GitHub Pages"
       }
 
@@ -226,8 +232,8 @@
         name    = "linktree"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Linktree - via Caddy to GitHub Pages"
       }
 
@@ -237,8 +243,8 @@
         name    = "cloud"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Cloud dashboard - via Caddy to GitHub Pages"
       }
 
@@ -248,8 +254,8 @@
         name    = "nexus"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Nexus - via Caddy to GitHub Pages"
       }
 
@@ -259,8 +265,8 @@
         name    = "api"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Flask + Rust API - via Caddy on GCP"
       }
 
@@ -274,8 +280,8 @@
         name    = "mail"
         type    = "A"
         content   = "${config.ips.gcp-f-micro_1}"
-        proxied = true
-        ttl     = 1
+        proxied = false
+        ttl     = 300
         comment = "Mailu webmail - via Caddy to oci-mail"
       }
 

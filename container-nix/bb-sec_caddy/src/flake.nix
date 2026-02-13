@@ -10,7 +10,6 @@
 
     config = {
       container_name = "caddy";
-      image = "caddy:2-alpine";
       http_port = 80;
       https_port = 443;
       admin_port = 2019;
@@ -21,6 +20,101 @@
     flex = "10.0.0.2";      # oci-flex (on-demand)
     mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
+
+    # ── Security snippets ─────────────────────────────────────────
+
+    # 1. Security headers (HSTS, anti-clickjacking, etc.)
+    securityHeaders = ''
+      (security_headers) {
+        header {
+          Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+          X-Content-Type-Options "nosniff"
+          X-Frame-Options "SAMEORIGIN"
+          Referrer-Policy "strict-origin-when-cross-origin"
+          Permissions-Policy "camera=(), microphone=(), geolocation=()"
+          -Server
+        }
+      }
+    '';
+
+    # 2. Rate limiting (100 req/min per IP — requires caddy-ratelimit plugin)
+    rateLimiting = ''
+      (rate_limiting) {
+        rate_limit {
+          zone global {
+            key    {remote_host}
+            events 100
+            window 1m
+          }
+        }
+      }
+    '';
+
+    # 3. Bot blocking (known malicious scanners only)
+    blockBots = ''
+      (block_bots) {
+        @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
+        respond @bad_bots 403
+      }
+    '';
+
+    # 4. Scanner path blocking (common exploit paths)
+    blockScanners = ''
+      (block_scanners) {
+        @blocked_paths path /wp-admin* /wp-login* /xmlrpc.php /.env /.git* /phpmyadmin* /actuator* /solr* /console* /.aws* /cgi-bin/*
+        respond @blocked_paths 404
+      }
+    '';
+
+    # 5. Request size limits (10MB default)
+    requestLimits = ''
+      (request_limits) {
+        request_body {
+          max_size 10MB
+        }
+      }
+    '';
+
+    # 6. IP blocking (placeholder — ready to activate)
+    ipBlock = ''
+      (ip_block) {
+        # @blocked_ips remote_ip 192.0.2.0/24
+        # respond @blocked_ips 403
+      }
+    '';
+
+    # 7. Access logging (JSON to mounted volume for fail2ban)
+    accessLog = ''
+      (access_log) {
+        log {
+          output file /var/log/caddy/access.log {
+            roll_size 10mb
+            roll_keep 5
+          }
+          format json
+        }
+      }
+    '';
+
+    # Combined security snippet (imports all layers)
+    securitySnippet = ''
+      (security) {
+        import security_headers
+        import block_bots
+        import block_scanners
+        import rate_limiting
+        import ip_block
+        import access_log
+      }
+    '';
+
+    # Per-site imports: sec = full security + size limit, secNoLimit = security only
+    sec = ''
+        import security
+        import request_limits'';
+
+    secNoLimit = ''
+        import security'';
 
     # ── Auth snippets ────────────────────────────────────────────
     # Authelia forward_auth (cookie-based, for browser sessions)
@@ -36,6 +130,17 @@
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
         }'';
+
+    # Site-level error handler for connection failures AND HTTP errors
+    handleErrors = ''
+      handle_errors {
+        @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+        handle @backend_error {
+          root * /srv
+          rewrite * /error.html
+          file_server
+        }
+      }'';
 
     # Reusable protected block: bearer token → introspect-proxy, cookie → authelia
     mkProtected = upstream: ''
@@ -59,29 +164,40 @@
     '';
 
     # Same but with custom reverse_proxy block (for tls_insecure_skip_verify etc.)
-    mkProtectedCustom = upstreamBlock: ''
+    mkProtectedCustom = upstreamUrl: transportBlock: ''
       @bearer header Authorization Bearer*
       handle @bearer {
     ${bearer}
-        ${upstreamBlock}
+        reverse_proxy ${upstreamUrl} {
+          ${transportBlock}
+        }
       }
       handle {
     ${authelia}
-        ${upstreamBlock}
+        reverse_proxy ${upstreamUrl} {
+          ${transportBlock}
+        }
       }
     '';
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
         admin localhost:${toString config.admin_port}
+        order respond before handle
       }
 
-      # ── Snippet: custom error page for backend failures ──
-      (error_page) {
-        handle_errors {
-          respond "CADDY_CUSTOM_ERROR_{err.status_code}" {err.status_code}
-        }
-      }
+      # ════════════════════════════════════════════════════════════
+      # SECURITY SNIPPETS
+      # ════════════════════════════════════════════════════════════
+
+      ${securityHeaders}
+      ${rateLimiting}
+      ${blockBots}
+      ${blockScanners}
+      ${requestLimits}
+      ${ipBlock}
+      ${accessLog}
+      ${securitySnippet}
 
       # ════════════════════════════════════════════════════════════
       # PUBLIC / BYPASS (no auth)
@@ -89,30 +205,33 @@
 
       # Authelia itself — must be public (bypass policy in Authelia config)
       auth.diegonmarcos.com {
-        import error_page
+    ${sec}
         reverse_proxy authelia:9091
+        ${handleErrors}
       }
 
       # API — Flask + Rust backends
       api.diegonmarcos.com {
-        import error_page
+    ${sec}
         handle /rust/* {
           reverse_proxy ${gcp}:8080
         }
         handle {
           reverse_proxy ${gcp}:5000
         }
+        ${handleErrors}
       }
 
       # Radicale CalDAV/CardDAV
       cal.diegonmarcos.com {
-        import error_page
+    ${sec}
         reverse_proxy ${flex}:5232
+        ${handleErrors}
       }
 
       # Affine collaborative docs (100MB uploads, long timeouts)
       drive-notes-affine.diegonmarcos.com {
-        import error_page
+    ${secNoLimit}
         request_body {
           max_size 100MB
         }
@@ -122,38 +241,44 @@
             write_timeout 3600s
           }
         }
+        ${handleErrors}
       }
 
       # ── GitHub Pages reverse proxies (URL stays as subdomain) ──
 
       # Landing page
       diegonmarcos.com, www.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkGithubProxy "landpage"}
+        ${handleErrors}
       }
 
       # Linktree
       linktree.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkGithubProxy "linktree"}
+        ${handleErrors}
       }
 
       # Cloud dashboard
       cloud.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkGithubProxy "cloud"}
+        ${handleErrors}
       }
 
       # Nexus
       nexus.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkGithubProxy "nexus"}
+        ${handleErrors}
       }
 
       # Suite apps dashboard
       suite.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkGithubProxy "suite"}
+        ${handleErrors}
       }
 
       # ════════════════════════════════════════════════════════════
@@ -161,7 +286,7 @@
       # ════════════════════════════════════════════════════════════
 
       analytics.diegonmarcos.com {
-        import error_page
+    ${sec}
         # Public tracking endpoints (no auth — called by portfolio sites)
         @tracking {
           path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php
@@ -173,6 +298,8 @@
 
         # Protected admin dashboard
         ${mkProtected "${analytics}:8080"}
+
+        ${handleErrors}
       }
 
       # ════════════════════════════════════════════════════════════
@@ -181,7 +308,7 @@
 
       # PhotoPrism
       photos.diegonmarcos.com {
-        import error_page
+    ${sec}
         # Root path → landing page (replaces Cloudflare redirect rule)
         @root path /
         handle @root {
@@ -190,17 +317,19 @@
 
         # All other paths → auth + PhotoPrism
         ${mkProtected "${flex}:3013"}
+        ${handleErrors}
       }
 
       # Syncthing
       sync.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "${mail}:8384"}
+        ${handleErrors}
       }
 
       # Mailu webmail (upstream is HTTPS with self-signed cert)
       mail.diegonmarcos.com {
-        import error_page
+    ${sec}
         # Root path → landing page (replaces Cloudflare redirect rule)
         @root path /
         handle @root {
@@ -208,48 +337,54 @@
         }
 
         # All other paths → auth + Mailu
-        ${mkProtectedCustom ''reverse_proxy https://${mail}:8444 {
+        ${mkProtectedCustom "https://${mail}:8444" ''
           transport http {
             tls_insecure_skip_verify
-          }
-        }''}
+          }''}
+        ${handleErrors}
       }
 
       # Code Server IDE (WebSocket support is automatic in Caddy)
       ide.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "${flex}:8443"}
+        ${handleErrors}
       }
 
       # NocoDB
       db.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "${flex}:8085"}
+        ${handleErrors}
       }
 
       # Grist Sheets
       sheets.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "${flex}:3011"}
+        ${handleErrors}
       }
 
       # Caddy admin API
       proxy.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "localhost:${toString config.admin_port}"}
+        ${handleErrors}
       }
 
       # Vaultwarden — reachable via npm_default docker network
       # Authelia access_control handles: API/identity/icons bypass, admin two_factor
       vault.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "vaultwarden:80"}
+        ${handleErrors}
       }
 
       # ntfy notifications
       rss.diegonmarcos.com {
-        import error_page
+    ${sec}
         ${mkProtected "${gcp}:8090"}
+        ${handleErrors}
       }
 
       # ════════════════════════════════════════════════════════════
@@ -257,6 +392,7 @@
       # ════════════════════════════════════════════════════════════
 
       :443 {
+    ${secNoLimit}
         tls internal
         root * /srv
         rewrite * /error.html
@@ -268,7 +404,10 @@
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
         caddy:
-          image: ${config.image}
+          build:
+            context: .
+            dockerfile: Dockerfile.caddy
+          image: caddy-custom:latest
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
@@ -278,6 +417,7 @@
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - ./error.html:/srv/error.html:ro
+            - ./logs:/var/log/caddy
             - caddy_data:/data
             - caddy_config:/config
           networks:
@@ -331,6 +471,7 @@
         mkdir -p $out/introspect-proxy/app
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkCaddyfile pkgs} $out/Caddyfile
+        cp ${./Dockerfile.caddy} $out/Dockerfile.caddy
         cp ${./error.html} $out/error.html
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py

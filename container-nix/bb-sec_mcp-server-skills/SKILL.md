@@ -72,7 +72,7 @@ You are a Cloud Infrastructure Architect and Full-Stack Engineer managing Diego'
 |----------|----------|
 | a_Portals | cloud, linktree, linktree_mindmap |
 | b_Work_Profiles | landpage, cv_web, cv_pdf, nexus, leafy |
-| b_Work_Tools | api, myanalytics, mydrive, mymail, mymaps, myphotos, skills_mcp |
+| b_Work_Tools | api, myanalytics, suite, mymail, mymaps, myphotos, skills_mcp |
 | c_Personal_Profiles | myprofile |
 | c_Personal_Tools | astro, carto, central_bank, feed_yourself, health_tracker, json-vision, market_watch, myfeed, mygames, mymaps, mymovies, mymusic, mytrips, others, maps |
 | c_root | Root landing page (Vue 3 + Vite, 50 fractal effects) |
