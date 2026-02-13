@@ -587,9 +587,11 @@ forward_auth authelia:9091 {
   # CATCH-ALL — Custom error page for unknown/unconfigured domains
   # ════════════════════════════════════════════════════════════
 
-  :443 {
+  *.diegonmarcos.com {
 import security
-    tls internal
+    tls {
+      dns cloudflare {env.CF_API_TOKEN}
+    }
     root * /srv
     rewrite * /error.html
     file_server
