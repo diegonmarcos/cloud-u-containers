@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Stage 1: Build
+# Stage 1: Build (v1.1)
 FROM rust:1.84-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
