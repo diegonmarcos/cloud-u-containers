@@ -503,6 +503,132 @@ forward_auth authelia:9091 {
   }
 
     }
+    handle_path /etherpad/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3012
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3012
+  }
+
+    }
+    handle_path /filebrowser/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3015
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3015
+  }
+
+    }
+    handle_path /hedgedoc/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3010
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3010
+  }
+
+    }
+    handle_path /revealmd/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3014
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3014
+  }
+
+    }
+    handle_path /dozzle/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.1:9999
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.1:9999
+  }
+
+    }
+    handle_path /grafana/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3016
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3016
+  }
+
+    }
+    handle_path /gitea/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.2:3000
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.2:3000
+  }
+
+    }
     handle {
       respond "Not Found" 404
     }
