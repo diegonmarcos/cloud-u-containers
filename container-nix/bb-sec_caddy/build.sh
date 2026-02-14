@@ -125,13 +125,15 @@ step_deploy() {
     ssh "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH"
 
     # Sync (rsync primary, rclone fallback)
+    # Exclude logs/ — managed by Docker container, not deployable
     if command -v rsync >/dev/null 2>&1; then
-        rsync -avz --delete "$DIST_DIR/" "$DEPLOY_HOST:$DEPLOY_PATH/"
+        rsync -avz --delete --exclude 'logs/' "$DIST_DIR/" "$DEPLOY_HOST:$DEPLOY_PATH/"
     elif command -v rclone >/dev/null 2>&1; then
         rclone sync "$DIST_DIR/" ":sftp:$DEPLOY_PATH/" \
             --sftp-host="$(ssh -G "$DEPLOY_HOST" | grep '^hostname ' | awk '{print $2}')" \
             --sftp-user="$(ssh -G "$DEPLOY_HOST" | grep '^user ' | awk '{print $2}')" \
             --sftp-key-file="$(ssh -G "$DEPLOY_HOST" | grep '^identityfile ' | head -1 | awk '{print $2}')" \
+            --exclude 'logs/**' \
             --transfers=4
     else
         log "ERROR: No rsync or rclone available"
