@@ -1,7 +1,7 @@
 use axum::extract::{Path, State};
 use axum::{Json, Router};
 use axum::routing::get;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -87,13 +87,10 @@ pub async fn profile_container(
     checks.push(check_to_result(ssh_result));
 
     // If SSH failed, skip SSH-dependent checks (3-7) but still run check 8
-    let mut published_ports: Vec<(u16, u16)> = Vec::new(); // (host_port, container_port)
-
     if ssh_ok {
         // --- Checks 3+4: Container status + Docker network (combined SSH call) ---
-        let (status_check, network_check, ports) =
+        let (status_check, network_check, published_ports) =
             check_container_and_network(ssh_config, &container).await;
-        published_ports = ports;
         checks.push(check_to_result(status_check));
         checks.push(check_to_result(network_check));
 
