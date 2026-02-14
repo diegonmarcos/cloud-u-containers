@@ -123,7 +123,7 @@ step_compose() {
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
     # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose down --remove-orphans 2>/dev/null; docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 

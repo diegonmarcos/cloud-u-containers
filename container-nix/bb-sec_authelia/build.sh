@@ -44,14 +44,6 @@ step_build() {
     chmod -R u+w "$DIST_DIR"
     rm -f "$SERVICE_DIR/.result"
 
-    # Decrypt JWKS key → config/oidc_jwks.pem
-    jwks_file="$SRC_DIR/jwks_key.yaml"
-    if [ -f "$jwks_file" ]; then
-        log "Decrypting JWKS key → dist/config/oidc_jwks.pem"
-        sops -d --extract '["key"]' "$jwks_file" > "$DIST_DIR/config/oidc_jwks.pem"
-        chmod 600 "$DIST_DIR/config/oidc_jwks.pem"
-    fi
-
     log "Built files:"
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
@@ -69,21 +61,18 @@ step_secrets() {
     mkdir -p "$DIST_DIR"
 
     if command -v yq >/dev/null 2>&1; then
-        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' > "$DIST_DIR/.secrets"
+        # Convert YAML to KEY=VALUE, keep only single-line entries (excludes multi-line JWKS PEM)
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' \
+            | grep '^[A-Z_]*=' | grep -v '^AUTHELIA_OIDC_JWKS_KEY=' > "$DIST_DIR/.secrets"
     elif command -v python3 >/dev/null 2>&1; then
         sops -d "$secrets_file" | python3 -c "
-import sys
-for line in sys.stdin:
-    line = line.strip()
-    if line.startswith('sops:'):
-        break
-    if not line or line.startswith('#'):
+import sys, yaml
+data = yaml.safe_load(sys.stdin)
+for k, v in data.items():
+    if k == 'sops' or k == 'AUTHELIA_OIDC_JWKS_KEY':
         continue
-    if ':' in line:
-        k, v = line.split(':', 1)
-        k, v = k.strip(), v.strip().strip('\"').strip(\"'\")
-        if v:
-            print(f'{k}={v}')
+    if isinstance(v, str):
+        print(f'{k}={v}')
 " > "$DIST_DIR/.secrets"
     else
         log "ERROR: No yq or python3 for YAML→env conversion"
@@ -92,6 +81,15 @@ for line in sys.stdin:
 
     # Escape $ as $$ for docker-compose env_file interpolation
     sed -i 's/[$]/&&/g' "$DIST_DIR/.secrets"
+
+    # Extract JWKS key as PEM file (multi-line value can't go in env_file)
+    jwks_file="$SRC_DIR/jwks_key.yaml"
+    if [ -f "$jwks_file" ]; then
+        mkdir -p "$DIST_DIR/config"
+        sops -d --extract '["key"]' "$jwks_file" > "$DIST_DIR/config/oidc_jwks.pem"
+        chmod 600 "$DIST_DIR/config/oidc_jwks.pem"
+        log "JWKS key → config/oidc_jwks.pem"
+    fi
 
     log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
 }
@@ -130,7 +128,7 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate --no-deps $SERVICE_NAME"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate --no-deps $SERVICE_NAME"
     log "Container rebuilt and running"
 }
 

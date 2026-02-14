@@ -84,8 +84,13 @@ storage:
     path: /config/db.sqlite3
 
 notifier:
-  filesystem:
-    filename: /config/notification.txt
+  smtp:
+    address: smtp://10.0.0.3:587
+    username: me@diegonmarcos.com
+    password: ${AUTHELIA_SMTP_PASSWORD}
+    sender: "Authelia <me@diegonmarcos.com>"
+    tls:
+      server_name: mail.diegonmarcos.com
 
 webauthn:
   disable: false
@@ -108,6 +113,7 @@ identity_providers:
       - key_id: main
         algorithm: RS256
         use: sig
+        key: __JWKS_KEY__
     cors:
       endpoints:
         - authorization
