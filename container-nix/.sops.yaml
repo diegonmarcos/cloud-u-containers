@@ -10,3 +10,8 @@ creation_rules:
     key_groups:
       - age:
           - *diego
+  # JWKS key files
+  - path_regex: .*/jwks_key\.yaml$
+    key_groups:
+      - age:
+          - *diego

@@ -410,7 +410,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           ports:
             - "${toString config.http_port}:80"
             - "${toString config.https_port}:443"
@@ -433,7 +433,7 @@
           container_name: introspect-proxy
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
             CLIENT_ID: cli

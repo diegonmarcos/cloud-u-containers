@@ -49,7 +49,7 @@
           container_name: windmill-server
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
             - MODE=server
@@ -96,7 +96,7 @@
           container_name: windmill-worker
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
             - MODE=worker

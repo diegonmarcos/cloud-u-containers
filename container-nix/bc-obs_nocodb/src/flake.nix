@@ -23,7 +23,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             NC_DB: "pg://nocodb-db:5432?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}

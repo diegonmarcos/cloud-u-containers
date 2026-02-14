@@ -4,9 +4,10 @@ services:
     container_name: authelia
     restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     environment:
       TZ: Europe/Madrid
+      AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE: /config/oidc_jwks.pem
     volumes:
       - ./config:/config
     entrypoint: ["sh", "/config/init.sh"]

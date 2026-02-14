@@ -8,7 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
-    # Non-secret configuration (secrets come from .env via envsubst)
+    # Non-secret configuration (secrets come from .secrets via envsubst)
     config = {
       domain = "diegonmarcos.com";
       mail_domain = "mail.diegonmarcos.com";
@@ -196,7 +196,7 @@
       PROXY_AUTH_CREATE=False
     '';
 
-    # Init script: sources .env, runs envsubst on template, decodes DKIM key
+    # Init script: sources .secrets, runs envsubst on template, decodes DKIM key
     mkInitSh = pkgs: pkgs.writeText "init.sh" ''
       #!/bin/sh
       set -e
@@ -205,10 +205,10 @@
       ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD'
 
       echo "[init] Substituting secrets into mailu.env..."
-      set -a; . ./.env; set +a
+      set -a; . ./.secrets; set +a
       envsubst "$ENV_VARS" < mailu.env.tpl > mailu.env
 
-      # Decode DKIM private key from base64 if present in .env
+      # Decode DKIM private key from base64 if present in .secrets
       if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
         echo "[init] Writing DKIM private key..."
         mkdir -p dkim

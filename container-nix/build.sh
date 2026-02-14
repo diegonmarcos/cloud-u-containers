@@ -236,7 +236,7 @@ cmd_compose() {
         vm=$(get_svc_prop "$service" "vm")
         remote_path="$remote_base/$service"
         log "docker-compose up on $vm:$remote_path"
-        ssh_cmd "$vm" "cd $remote_path && docker-compose down 2>/dev/null; docker-compose up -d"
+        ssh_cmd "$vm" "cd $remote_path && docker-compose down 2>/dev/null; docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d"
     else
         log_error "Service name required for compose"
         exit 1
@@ -299,7 +299,7 @@ cmd_restart() {
     vm=$(get_svc_prop "$service" "vm")
     remote_base=$(jq -r '.remote_base' "$CONFIG_FILE")
     log "Restarting $service on $vm..."
-    ssh_cmd "$vm" "cd $remote_base/$service && docker-compose down && docker-compose up -d"
+    ssh_cmd "$vm" "cd $remote_base/$service && docker-compose down && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d"
     log "Restarted $service"
 }
 
@@ -332,7 +332,7 @@ cmd_secrets() {
 
     case "$action" in
         encrypt) sops -e -i "$secrets_file"; log "Encrypted $secrets_file" ;;
-        decrypt) sh "$SCRIPT_DIR/$folder/build.sh" secrets; log "Decrypted to dist/.env" ;;
+        decrypt) sh "$SCRIPT_DIR/$folder/build.sh" secrets; log "Decrypted to dist/.secrets" ;;
         edit)    sops "$secrets_file" ;;
         show)    sops -d "$secrets_file" ;;
         *)       sops -d "$secrets_file" 2>/dev/null | grep -v "^#" | grep -v "^$" | cut -d: -f1 | sed 's/^/  /' ;;

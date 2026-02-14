@@ -10,13 +10,17 @@ result-*
 # Decrypted secrets (NEVER commit)
 # Security model:
 #   - secrets.yaml (encrypted with SOPS/age) → safe to commit
-#   - .env (plaintext, generated at deploy) → NEVER commit
+#   - .secrets (plaintext, generated at deploy) → NEVER commit
+#   - .env also ignored to prevent docker-compose auto-loading issues
 .env
 */.env
 **/.env
 .env.*
 **/.env.*
 *.env.deploy
+.secrets
+*/.secrets
+**/.secrets
 
 # Terraform state (contains secrets)
 *.tfstate

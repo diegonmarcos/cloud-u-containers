@@ -26,9 +26,10 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             TZ: ${config.timezone}
+            AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE: /config/oidc_jwks.pem
           volumes:
             - ./config:/config
           entrypoint: ["sh", "/config/init.sh"]
@@ -170,7 +171,6 @@
             - key_id: main
               algorithm: RS256
               use: sig
-              key_file: /config/oidc_jwks.pem
           cors:
             endpoints:
               - authorization
