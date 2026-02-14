@@ -219,6 +219,19 @@
       echo "[init] Done."
     '';
 
+    # Post-start setup: create aliases and users that must exist
+    mkSetupSh = pkgs: pkgs.writeText "setup.sh" ''
+      #!/bin/sh
+      set -e
+      echo "[setup] Waiting for admin container..."
+      sleep 5
+
+      echo "[setup] Creating no-reply alias..."
+      docker exec mailu-admin-1 flask mailu alias no-reply ${config.domain} me@${config.domain} 2>/dev/null || echo "[setup] Alias already exists"
+
+      echo "[setup] Done."
+    '';
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -230,6 +243,8 @@
         cp ${mkMailuEnvTpl pkgs} $out/mailu.env.tpl
         cp ${mkInitSh pkgs} $out/init.sh
         chmod +x $out/init.sh
+        cp ${mkSetupSh pkgs} $out/setup.sh
+        chmod +x $out/setup.sh
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
         ln -s letsencrypt/live/mailu/fullchain.pem $out/certs/cert.pem

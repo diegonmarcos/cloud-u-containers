@@ -242,6 +242,25 @@ reverse_proxy https://diegonmarcos.github.io {
 }
   }
 
+  # Maps
+  maps.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /mymaps{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
   # ════════════════════════════════════════════════════════════
   # ANALYTICS — Matomo (public tracking + protected admin)
   # ════════════════════════════════════════════════════════════
