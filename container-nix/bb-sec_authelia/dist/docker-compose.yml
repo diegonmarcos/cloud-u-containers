@@ -2,14 +2,14 @@ services:
   authelia:
     image: authelia/authelia:latest
     container_name: authelia
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     environment:
       TZ: Europe/Madrid
     volumes:
       - ./config:/config
-    entrypoint: /config/init.sh
+    entrypoint: ["sh", "/config/init.sh"]
     ports:
       - "9091:9091"
     networks:
@@ -24,7 +24,7 @@ services:
     command: redis-server --requirepass ${AUTHELIA_REDIS_PASSWORD}
     ports:
       - "127.0.0.1:6379:6379"
-    restart: always
+    restart: unless-stopped
     networks:
       - auth-net
 

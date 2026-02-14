@@ -75,7 +75,7 @@ for line in sys.stdin:
         k, v = line.split(':', 1)
         k, v = k.strip(), v.strip().strip('\"').strip(\"'\")
         if v:
-            print(f'{k}={v}')
+            print(f'{k}={v.replace(chr(36), chr(36)*2)}')
 " > "$DIST_DIR/.env"
     else
         log "ERROR: No yq or python3 for YAML→env conversion"
