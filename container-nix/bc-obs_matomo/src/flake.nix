@@ -81,6 +81,7 @@
         cp ${./matomo-hybrid/scripts/import-inbox.sh} $out/scripts/import-inbox.sh
         cp ${./matomo-hybrid/scripts/matomo-sleep.sh} $out/scripts/matomo-sleep.sh
         cp ${./matomo-hybrid/scripts/matomo-wake.sh} $out/scripts/matomo-wake.sh
+        cp ${./matomo-hybrid/scripts/matomo-archiver.sh} $out/scripts/matomo-archiver.sh
         # Management & receiver
         cp ${./matomo-hybrid/manage/matomo-manage.sh} $out/manage/matomo-manage.sh
         cp ${./matomo-hybrid/receiver/receive.php} $out/receiver/receive.php

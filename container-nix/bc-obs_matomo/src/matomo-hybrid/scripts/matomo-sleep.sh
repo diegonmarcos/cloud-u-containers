@@ -6,6 +6,9 @@ set -e
 echo "=== Putting Matomo to sleep ==="
 
 # Stop in reverse order of dependencies
+echo "[sleep] Stopping periodic archiver..."
+supervisorctl stop matomo-archiver 2>/dev/null || true
+
 echo "[sleep] Stopping Matomo Nginx..."
 supervisorctl stop matomo-nginx 2>/dev/null || true
 

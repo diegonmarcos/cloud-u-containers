@@ -23,6 +23,15 @@ for i in $(seq 1 30); do
     sleep 1
 done
 
+# ─── Run pending database migrations ──────────────────────────────────────
+
+echo "[wake] Checking for pending Matomo updates..."
+php -d memory_limit=512M \
+    /var/www/html/console core:update --yes 2>&1 || {
+    echo "[wake] No pending updates (or update had errors)"
+}
+chown -R www-data:www-data /var/www/html
+
 # ─── Start Matomo services ──────────────────────────────────────────────────
 
 echo "[wake] Starting Matomo PHP-FPM..."
@@ -50,12 +59,18 @@ else
     echo "[wake] No buffered payloads to import"
 fi
 
-# ─── Run archiving ──────────────────────────────────────────────────────────
+# ─── Run initial archiving ─────────────────────────────────────────────────
 
-echo "[wake] Running Matomo archiving..."
-php /var/www/html/console core:archive --force-all-websites 2>&1 || {
+echo "[wake] Running initial Matomo archiving..."
+php -d memory_limit=512M \
+    /var/www/html/console core:archive --force-all-websites 2>&1 || {
     echo "[wake] WARNING: Archiving had errors (non-fatal)"
 }
+
+# ─── Start periodic archiver ──────────────────────────────────────────────
+
+echo "[wake] Starting periodic archiver (every 30 min)..."
+supervisorctl start matomo-archiver
 
 # ─── Status ─────────────────────────────────────────────────────────────────
 

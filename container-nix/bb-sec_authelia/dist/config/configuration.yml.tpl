@@ -88,12 +88,12 @@ storage:
 notifier:
   disable_startup_check: true
   smtp:
-    address: smtp://10.0.0.3:587
-    username: me@diegonmarcos.com
+    address: submissions://10.0.0.3:465
+    username: no-reply@diegonmarcos.com
     password: ${AUTHELIA_SMTP_PASSWORD}
     sender: "Authelia <no-reply@diegonmarcos.com>"
     tls:
-      server_name: mail.diegonmarcos.com
+      server_name: smtp.diegonmarcos.com
 
 webauthn:
   disable: false
