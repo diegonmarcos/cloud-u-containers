@@ -73,7 +73,7 @@
     services = [
       { domain = "proxy.diegonmarcos.com";              name = "Dashboard";       vm = "gcp-proxy";     port = "—";   auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "auth.diegonmarcos.com";                name = "Authelia 2FA";    vm = "gcp-proxy";     port = "9091"; auth = "Public (bypass)";   avail = "24/7"; }
-      { domain = "api.diegonmarcos.com";                 name = "API (Flask+Rust)";vm = "gcp-proxy";     port = "5000/8080"; auth = "Public";       avail = "24/7"; }
+      { domain = "api.diegonmarcos.com";                 name = "API (Flask+Rust)";vm = "gcp-proxy";     port = "5000/8080"; auth = "Flask: Authelia + Bearer / Rust: Public"; avail = "24/7"; }
       { domain = "vault.diegonmarcos.com";               name = "Vaultwarden";     vm = "gcp-proxy";     port = "80";  auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "rss.diegonmarcos.com";                 name = "ntfy Push";       vm = "gcp-proxy";     port = "8090"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "mail.diegonmarcos.com";                name = "Mailu";           vm = "oci-mail";      port = "8444"; auth = "Authelia + Bearer"; avail = "24/7"; }
@@ -567,14 +567,14 @@ Internet
         ${handleErrors}
       }
 
-      # API — Flask + Rust backends
+      # API — Rust (public), Flask (protected)
       api.diegonmarcos.com {
     ${sec}
         handle /rust/* {
           reverse_proxy ${gcp}:8080
         }
         handle {
-          reverse_proxy ${gcp}:5000
+          ${mkProtected "${gcp}:5000"}
         }
         ${handleErrors}
       }
