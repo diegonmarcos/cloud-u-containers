@@ -68,11 +68,16 @@ pub struct AppState {
         routes::ondemand::vm_container_restart,
         routes::ondemand::vm_service_start,
         routes::ondemand::vm_service_stop,
+        // Profiling
+        routes::profiling::profile_container,
     ),
     components(schemas(
         models::api_response::ApiResponse,
         models::api_response::ContainerInfo,
         models::api_response::VmStatusResponse,
+        models::profiling::ProfilingResponse,
+        models::profiling::DiagnosticCheckResult,
+        models::profiling::ProfilingSummary,
     ))
 )]
 struct ApiDoc;
