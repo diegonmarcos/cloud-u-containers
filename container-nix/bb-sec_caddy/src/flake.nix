@@ -92,6 +92,13 @@
       { domain = "suite.diegonmarcos.com";               name = "Suite Apps";      vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "maps.diegonmarcos.com";                name = "Maps";            vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "app.diegonmarcos.com/windmill/";        name = "Windmill";        vm = "oci-analytics"; port = "8000"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "app.diegonmarcos.com/etherpad/";        name = "Etherpad";        vm = "oci-flex";      port = "3012"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/filebrowser/";     name = "FileBrowser";     vm = "oci-flex";      port = "3015"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/hedgedoc/";        name = "HedgeDoc";        vm = "oci-flex";      port = "3010"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/revealmd/";        name = "Reveal.md";       vm = "oci-flex";      port = "3014"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/dozzle/";          name = "Dozzle";          vm = "gcp-proxy";     port = "9999"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "app.diegonmarcos.com/grafana/";         name = "Grafana";         vm = "oci-flex";      port = "3016"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/gitea/";           name = "Gitea";           vm = "oci-flex";      port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
     ];
 
     securityLayers = [
@@ -720,6 +727,27 @@ Internet
     ${sec}
         handle_path /windmill/* {
           ${mkProtected "${analytics}:8000"}
+        }
+        handle_path /etherpad/* {
+          ${mkProtected "${flex}:3012"}
+        }
+        handle_path /filebrowser/* {
+          ${mkProtected "${flex}:3015"}
+        }
+        handle_path /hedgedoc/* {
+          ${mkProtected "${flex}:3010"}
+        }
+        handle_path /revealmd/* {
+          ${mkProtected "${flex}:3014"}
+        }
+        handle_path /dozzle/* {
+          ${mkProtected "${gcp}:9999"}
+        }
+        handle_path /grafana/* {
+          ${mkProtected "${flex}:3016"}
+        }
+        handle_path /gitea/* {
+          ${mkProtected "${flex}:3000"}
         }
         handle {
           respond "Not Found" 404
