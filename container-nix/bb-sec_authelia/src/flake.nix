@@ -29,7 +29,6 @@
             - .secrets
           environment:
             TZ: ${config.timezone}
-            AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE: /config/oidc_jwks.pem
           volumes:
             - ./config:/config
           entrypoint: ["sh", "/config/init.sh"]
@@ -147,8 +146,13 @@
           path: /config/db.sqlite3
 
       notifier:
-        filesystem:
-          filename: /config/notification.txt
+        smtp:
+          address: smtp://10.0.0.3:587
+          username: me@diegonmarcos.com
+          password: ''\${AUTHELIA_SMTP_PASSWORD}
+          sender: "Authelia <me@diegonmarcos.com>"
+          tls:
+            server_name: mail.diegonmarcos.com
 
       webauthn:
         disable: false
@@ -171,6 +175,7 @@
             - key_id: main
               algorithm: RS256
               use: sig
+              key: __JWKS_KEY__
           cors:
             endpoints:
               - authorization
@@ -283,17 +288,27 @@
         -e "s|\''${AUTHELIA_OIDC_CLIENT_CLI_SECRET}|$AUTHELIA_OIDC_CLIENT_CLI_SECRET|g" \
         -e "s|\''${AUTHELIA_OIDC_CLIENT_NPM_SECRET}|$AUTHELIA_OIDC_CLIENT_NPM_SECRET|g" \
         -e "s|\''${AUTHELIA_OIDC_CLIENT_NOCODB_SECRET}|$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET|g" \
+        -e "s|\''${AUTHELIA_SMTP_PASSWORD}|$AUTHELIA_SMTP_PASSWORD|g" \
         /config/configuration.yml.tpl > /config/configuration.yml
 
       sed \
         -e "s|\''${AUTHELIA_USER_DIEGO_HASH}|$AUTHELIA_USER_DIEGO_HASH|g" \
         /config/users_database.yml.tpl > /config/users_database.yml
 
-      # Write OIDC JWKS key file if env var is set
-      if [ -n "$AUTHELIA_OIDC_JWKS_KEY" ]; then
-        echo "[init] Writing OIDC JWKS key..."
-        printf '%s\n' "$AUTHELIA_OIDC_JWKS_KEY" > /config/oidc_jwks.pem
-        chmod 600 /config/oidc_jwks.pem
+      # Inject JWKS private key into configuration
+      if [ -f /config/oidc_jwks.pem ]; then
+        echo "[init] Injecting OIDC JWKS key into configuration..."
+        awk '
+          /key: __JWKS_KEY__/ {
+            match($0, /^[[:space:]]*/); ind = substr($0, 1, RLENGTH)
+            print ind "key: |"
+            while ((getline line < "/config/oidc_jwks.pem") > 0)
+              print ind "  " line
+            next
+          }
+          { print }
+        ' /config/configuration.yml > /config/configuration.yml.tmp
+        mv /config/configuration.yml.tmp /config/configuration.yml
       fi
 
       echo "[init] Starting Authelia..."

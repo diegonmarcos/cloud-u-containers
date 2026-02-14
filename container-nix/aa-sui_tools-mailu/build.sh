@@ -123,7 +123,7 @@ step_compose() {
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
     # Run init.sh to generate mailu.env from template + secrets, then start containers
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x init.sh && ./init.sh && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose down --remove-orphans 2>/dev/null; chmod +x init.sh && ./init.sh && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 

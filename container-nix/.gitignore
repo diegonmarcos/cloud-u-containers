@@ -22,6 +22,10 @@ result-*
 */.secrets
 **/.secrets
 
+# Private keys (decrypted from SOPS at deploy time)
+*.pem
+**/*.pem
+
 # Terraform state (contains secrets)
 *.tfstate
 *.tfstate.backup

@@ -122,7 +122,7 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --build --no-deps $SERVICE_NAME"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose down --remove-orphans 2>/dev/null; docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --build --no-deps $SERVICE_NAME"
     log "Container rebuilt and running"
 }
 

@@ -147,7 +147,7 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Pulling and starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --build"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose pull --ignore-buildable && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --build"
     log "Containers pulled and running"
 }
 
