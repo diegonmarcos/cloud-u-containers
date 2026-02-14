@@ -61,6 +61,8 @@
     # Secrets use ''${VAR} placeholders, substituted by init.sh via envsubst
     mkAutheliaConfig = pkgs: pkgs.writeText "configuration.yml.tpl" ''
       ---
+      theme: dark
+
       server:
         address: tcp://0.0.0.0:9091/authelia
         endpoints:
@@ -146,11 +148,12 @@
           path: /config/db.sqlite3
 
       notifier:
+        disable_startup_check: true
         smtp:
           address: smtp://10.0.0.3:587
           username: me@diegonmarcos.com
           password: ''\${AUTHELIA_SMTP_PASSWORD}
-          sender: "Authelia <me@diegonmarcos.com>"
+          sender: "Authelia <no-reply@diegonmarcos.com>"
           tls:
             server_name: mail.diegonmarcos.com
 
@@ -264,7 +267,7 @@
     mkUsersDatabase = pkgs: pkgs.writeText "users_database.yml.tpl" ''
       ---
       users:
-        diego:
+        me@diegonmarcos.com:
           displayname: "Diego"
           password: "''\${AUTHELIA_USER_DIEGO_HASH}"
           email: diego@diegonmarcos.com

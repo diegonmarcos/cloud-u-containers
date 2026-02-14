@@ -62,7 +62,7 @@ step_secrets() {
 
     if command -v yq >/dev/null 2>&1; then
         # Convert YAML to KEY=VALUE, keep only single-line entries (excludes multi-line JWKS PEM)
-        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' \
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)='"'"'\(.value)'"'"'"' \
             | grep '^[A-Z_]*=' | grep -v '^AUTHELIA_OIDC_JWKS_KEY=' > "$DIST_DIR/.secrets"
     elif command -v python3 >/dev/null 2>&1; then
         sops -d "$secrets_file" | python3 -c "
@@ -72,15 +72,13 @@ for k, v in data.items():
     if k == 'sops' or k == 'AUTHELIA_OIDC_JWKS_KEY':
         continue
     if isinstance(v, str):
-        print(f'{k}={v}')
+        print(f"{k}='{v}'")
 " > "$DIST_DIR/.secrets"
     else
         log "ERROR: No yq or python3 for YAML→env conversion"
         return 1
     fi
 
-    # Escape $ as $$ for docker-compose env_file interpolation
-    sed -i 's/[$]/&&/g' "$DIST_DIR/.secrets"
 
     # Extract JWKS key as PEM file (multi-line value can't go in env_file)
     jwks_file="$SRC_DIR/jwks_key.yaml"
@@ -128,7 +126,7 @@ step_compose() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
     log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate --no-deps $SERVICE_NAME"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
     log "Container rebuilt and running"
 }
 

@@ -61,7 +61,7 @@ step_secrets() {
     mkdir -p "$DIST_DIR"
 
     if command -v yq >/dev/null 2>&1; then
-        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' > "$DIST_DIR/.secrets"
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)='"'"'\(.value)'"'"'"' > "$DIST_DIR/.secrets"
     elif command -v python3 >/dev/null 2>&1; then
         sops -d "$secrets_file" | python3 -c "
 import sys
@@ -75,15 +75,13 @@ for line in sys.stdin:
         k, v = line.split(':', 1)
         k, v = k.strip(), v.strip().strip('\"').strip(\"'\")
         if v:
-            print(f'{k}={v}')
+            print(f"{k}='{v}'")
 " > "$DIST_DIR/.secrets"
     else
         log "ERROR: No yq or python3 for YAML→env conversion"
         return 1
     fi
 
-    # Escape $ as $$ for docker-compose env_file interpolation
-    sed -i 's/[$]/&&/g' "$DIST_DIR/.secrets"
 
     log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
 }
@@ -123,7 +121,7 @@ step_compose() {
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
     # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose down --remove-orphans 2>/dev/null; docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 

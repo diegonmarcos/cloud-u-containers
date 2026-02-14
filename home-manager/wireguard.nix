@@ -59,12 +59,14 @@ let
     PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -s 10.0.0.0/24 -o wg0 -j MASQUERADE
   '';
 
-  # Spoke [Interface] — simple, no forwarding
+  # Spoke [Interface] — allow WireGuard traffic to reach Docker port mappings
   mkSpokeInterface = vm: ''
     [Interface]
     Address = ${vm.address}/24
     ListenPort = ${toString vm.port}
     PrivateKey = __PRIVKEY__
+    PostUp = iptables -I FORWARD -i wg0 -j ACCEPT; iptables -I FORWARD -o wg0 -j ACCEPT
+    PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -D FORWARD -o wg0 -j ACCEPT
   '';
 
   # [Peer] block for a given peer VM

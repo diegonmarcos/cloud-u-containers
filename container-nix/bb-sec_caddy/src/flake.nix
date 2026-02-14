@@ -281,6 +281,13 @@
         ${handleErrors}
       }
 
+      # Maps
+      maps.diegonmarcos.com {
+    ${sec}
+        ${mkGithubProxy "mymaps"}
+        ${handleErrors}
+      }
+
       # ════════════════════════════════════════════════════════════
       # ANALYTICS — Matomo (public tracking + protected admin)
       # ════════════════════════════════════════════════════════════
