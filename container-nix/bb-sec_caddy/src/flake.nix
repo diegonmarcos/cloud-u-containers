@@ -21,6 +21,88 @@
     mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
 
+    # ── Dashboard data ───────────────────────────────────────────
+
+    vms = {
+      "gcp-proxy" = {
+        alias = "gcp-proxy";
+        provider = "GCP";
+        tier = "Free";
+        ip = "35.226.147.64";
+        wg = gcp;
+        ram = "1 GB";
+        cpu = "e2-micro (0.25 vCPU)";
+        arch = "x86_64";
+        availability = "24/7";
+      };
+      "oci-flex" = {
+        alias = "oci-flex";
+        provider = "OCI";
+        tier = "Paid";
+        ip = "144.24.196.72";
+        wg = flex;
+        ram = "8 GB";
+        cpu = "Ampere A1 (2 OCPU)";
+        arch = "aarch64";
+        availability = "Wake-on-demand";
+      };
+      "oci-mail" = {
+        alias = "oci-mail";
+        provider = "OCI";
+        tier = "Free";
+        ip = "130.110.251.193";
+        wg = mail;
+        ram = "1 GB";
+        cpu = "E2.1.Micro";
+        arch = "x86_64";
+        availability = "24/7";
+      };
+      "oci-analytics" = {
+        alias = "oci-analytics";
+        provider = "OCI";
+        tier = "Free";
+        ip = "129.151.228.66";
+        wg = analytics;
+        ram = "1 GB";
+        cpu = "E2.1.Micro";
+        arch = "x86_64";
+        availability = "24/7";
+      };
+    };
+
+    services = [
+      { domain = "proxy.diegonmarcos.com";              name = "Dashboard";       vm = "gcp-proxy";     port = "—";   auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "auth.diegonmarcos.com";                name = "Authelia 2FA";    vm = "gcp-proxy";     port = "9091"; auth = "Public (bypass)";   avail = "24/7"; }
+      { domain = "api.diegonmarcos.com";                 name = "API (Flask+Rust)";vm = "gcp-proxy";     port = "5000/8080"; auth = "Public";       avail = "24/7"; }
+      { domain = "vault.diegonmarcos.com";               name = "Vaultwarden";     vm = "gcp-proxy";     port = "80";  auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "rss.diegonmarcos.com";                 name = "ntfy Push";       vm = "gcp-proxy";     port = "8090"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "mail.diegonmarcos.com";                name = "Mailu";           vm = "oci-mail";      port = "8444"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "sync.diegonmarcos.com";                name = "Syncthing";       vm = "oci-mail";      port = "8384"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "cal.diegonmarcos.com";                 name = "Radicale";        vm = "oci-mail";      port = "5232"; auth = "Public";            avail = "24/7"; }
+      { domain = "analytics.diegonmarcos.com";           name = "Matomo";          vm = "oci-analytics"; port = "8080"; auth = "Hybrid (public tracking)"; avail = "24/7"; }
+      { domain = "photos.diegonmarcos.com";              name = "PhotoPrism";      vm = "oci-flex";      port = "3013"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "db.diegonmarcos.com";                  name = "NocoDB";          vm = "oci-flex";      port = "8085"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-flex";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-flex";      port = "3010"; auth = "Public";            avail = "Wake"; }
+      { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-flex";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "nexus.diegonmarcos.com";               name = "Nexus";           vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "suite.diegonmarcos.com";               name = "Suite Apps";      vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "maps.diegonmarcos.com";                name = "Maps";            vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+    ];
+
+    securityLayers = [
+      { n = "1"; name = "Network Edge";     desc = "Cloudflare Proxy + Cloud Firewalls"; }
+      { n = "2"; name = "TLS Termination";  desc = "Caddy auto-HTTPS + Let's Encrypt"; }
+      { n = "3"; name = "Traffic Filtering"; desc = "Rate limiting, bot blocking, scanner blocking"; }
+      { n = "4"; name = "Authentication";   desc = "Authelia 2FA (TOTP/WebAuthn) + OIDC bearer tokens"; }
+      { n = "5"; name = "Token Validation"; desc = "introspect-proxy OIDC introspection sidecar"; }
+      { n = "6"; name = "Network Isolation"; desc = "WireGuard mesh VPN + Docker bridge networks"; }
+      { n = "7"; name = "Credential Mgmt";  desc = "Vaultwarden (passwords) + Aegis (TOTP)"; }
+    ];
+
     # ── Security snippets ─────────────────────────────────────────
 
     # 1. Security headers (HSTS, anti-clickjacking, etc.)
@@ -178,6 +260,273 @@
           ${transportBlock}
         }
       }
+    '';
+
+    # ── Dashboard generation ───────────────────────────────────────
+
+    mkDashboardMd = let
+      vmRows = builtins.concatStringsSep "\n" (map (v:
+        "| **${v.alias}** | ${v.provider} | ${v.tier} | `${v.ip}` | `${v.wg}` | ${v.ram} | ${v.cpu} | ${v.availability} |"
+      ) (builtins.attrValues vms));
+      svcRows = builtins.concatStringsSep "\n" (map (s:
+        "| `${s.domain}` | **${s.name}** | ${s.vm} | ${s.port} | ${s.auth} | ${s.avail} |"
+      ) services);
+      secRows = builtins.concatStringsSep "\n" (map (l:
+        "| ${l.n} | **${l.name}** | ${l.desc} |"
+      ) securityLayers);
+    in ''
+# Infrastructure Dashboard
+
+*proxy.diegonmarcos.com* — generated from Nix flake at build time
+
+---
+
+## Virtual Machines
+
+| Alias | Provider | Tier | Public IP | WG IP | RAM | CPU | Availability |
+|-------|----------|------|-----------|-------|-----|-----|--------------|
+${vmRows}
+
+---
+
+## Services
+
+| Domain | Service | VM | Port | Auth | Availability |
+|--------|---------|-----|------|------|--------------|
+${svcRows}
+
+---
+
+## Security Stack
+
+| Layer | Name | Description |
+|-------|------|-------------|
+${secRows}
+
+---
+
+## Auth Flow
+
+```
+Browser Request
+    │
+    ▼
+┌─────────────┐
+│  Cloudflare  │  DNS + DDoS + WAF
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    Caddy     │  TLS termination, security headers,
+│  (gcp-proxy) │  rate limiting, bot/scanner blocking
+└──────┬──────┘
+       │
+   ┌───┴───┐
+   │       │
+Bearer?  Cookie?
+   │       │
+   ▼       ▼
+┌──────┐ ┌──────────┐
+│intro-│ │ Authelia  │  TOTP / WebAuthn
+│spect │ │   2FA    │
+└──┬───┘ └────┬─────┘
+   │          │
+   └────┬─────┘
+        │
+        ▼
+┌─────────────┐
+│  WireGuard   │  Encrypted mesh to target VM
+│   tunnel     │
+└──────┬──────┘
+       │
+       ▼
+  [ Service ]
+```
+
+---
+
+## Network Topology
+
+```
+Internet
+    │
+    ▼
+┌─────────────────────────────────────────────┐
+│  Cloudflare  (*.diegonmarcos.com)            │
+└──────────────────┬──────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────┐
+│  gcp-proxy  ${gcp}                           │
+│  ├─ Caddy (reverse proxy)                    │
+│  ├─ Authelia (2FA)                           │
+│  ├─ introspect-proxy (OIDC)                  │
+│  ├─ Vaultwarden                              │
+│  ├─ ntfy                                     │
+│  └─ Flask API + Rust API                     │
+└────┬──────────┬──────────┬───────────────────┘
+     │ wg0      │ wg0      │ wg0
+     ▼          ▼          ▼
+┌─────────┐ ┌─────────┐ ┌──────────────┐
+│oci-flex │ │oci-mail │ │oci-analytics │
+│ ${flex} │ │ ${mail} │ │ ${analytics} │
+│         │ │         │ │              │
+│PhotoPrism│ │ Mailu  │ │   Matomo     │
+│ NocoDB  │ │Syncthing│ │  Windmill    │
+│Code Srv │ │Radicale │ │              │
+│ AFFiNE  │ │         │ │              │
+│  Grist  │ │         │ │              │
+└─────────┘ └─────────┘ └──────────────┘
+```
+
+---
+
+`visitor@caddy:~$` [cd /home](https://linktree.diegonmarcos.com)
+    '';
+
+    dashboardTemplate = pkgs: pkgs.writeText "dashboard.html.template" ''
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>$title$</title>
+      <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{
+        background:#0a0a0f;
+        color:#c0c0c0;
+        font-family:'Courier New',monospace;
+        min-height:100vh;
+        overflow-x:hidden;
+        position:relative;
+        padding:2rem 1rem;
+      }
+      .stars{
+        position:fixed;
+        top:0;left:0;width:100%;height:100%;
+        pointer-events:none;
+        z-index:0;
+      }
+      .star{
+        position:absolute;
+        border-radius:50%;
+        background:#fff;
+        animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+      }
+      @keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+      .container{
+        position:relative;
+        z-index:1;
+        max-width:960px;
+        margin:0 auto;
+        padding:1rem;
+      }
+      h1{
+        font-size:clamp(1.5rem,4vw,2.5rem);
+        font-weight:bold;
+        background:linear-gradient(135deg,#845ef7,#339af0,#51cf66);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        background-clip:text;
+        text-align:center;
+        margin-bottom:1.5rem;
+      }
+      h2{
+        color:#845ef7;
+        font-size:1.1rem;
+        margin:2rem 0 .75rem;
+        border-bottom:1px solid #1a1a2e;
+        padding-bottom:.3rem;
+      }
+      p,li{line-height:1.6;margin:.5rem 0}
+      em{color:#fcc419;font-style:normal}
+      strong{color:#ff6b6b}
+      code{
+        color:#51cf66;
+        background:#0d0d15;
+        padding:.15rem .4rem;
+        border-radius:3px;
+        font-size:.85em;
+      }
+      pre{
+        background:#0d0d15;
+        border:1px solid #1a1a2e;
+        border-radius:4px;
+        padding:1rem;
+        overflow-x:auto;
+        font-size:.75rem;
+        line-height:1.5;
+        color:#868e96;
+        margin:1rem 0;
+      }
+      pre code{background:none;padding:0;color:inherit}
+      a{
+        color:#339af0;
+        text-decoration:none;
+        border-bottom:1px dashed #339af0;
+        transition:color .2s;
+      }
+      a:hover{color:#845ef7;border-color:#845ef7}
+      hr{border:none;border-top:1px solid #1a1a2e;margin:1.5rem 0}
+      table{
+        width:100%;
+        border-collapse:collapse;
+        margin:1rem 0;
+        font-size:.75rem;
+        display:block;
+        overflow-x:auto;
+      }
+      th{
+        background:#0d0d15;
+        color:#51cf66;
+        text-align:left;
+        padding:.5rem .6rem;
+        border:1px solid #1a1a2e;
+        white-space:nowrap;
+      }
+      td{
+        padding:.4rem .6rem;
+        border:1px solid #1a1a2e;
+        white-space:nowrap;
+      }
+      tr:hover td{background:#0d0d15}
+      .prompt{
+        text-align:center;
+        margin-top:2rem;
+        font-size:.9rem;
+        color:#495057;
+      }
+      .prompt span{
+        color:#51cf66;
+        animation:blink 1s step-end infinite;
+      }
+      @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+      @media(max-width:600px){
+        table{font-size:.65rem}
+        pre{font-size:.65rem}
+      }
+      </style>
+      </head>
+      <body>
+      <div class="stars" id="stars"></div>
+      <div class="container">
+      $body$
+      </div>
+      <script>
+      (function(){
+        var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+        for(var i=0;i<80;i++){
+          var d=document.createElement('div');
+          d.className='star';
+          var sz=Math.random()*2+1;
+          d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+          s.appendChild(d);
+        }
+      })();
+      </script>
+      </body>
+      </html>
     '';
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
@@ -372,10 +721,22 @@
         ${handleErrors}
       }
 
-      # Caddy admin API
+      # Infrastructure dashboard (static HTML generated from flake data)
       proxy.diegonmarcos.com {
     ${sec}
-        ${mkProtected "localhost:${toString config.admin_port}"}
+        @bearer header Authorization Bearer*
+        handle @bearer {
+    ${bearer}
+          root * /srv
+          rewrite * /dashboard.html
+          file_server
+        }
+        handle {
+    ${authelia}
+          root * /srv
+          rewrite * /dashboard.html
+          file_server
+        }
         ${handleErrors}
       }
 
@@ -425,6 +786,7 @@
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - ./error.html:/srv/error.html:ro
+            - ./dashboard.html:/srv/dashboard.html:ro
             - ./logs:/var/log/caddy
             - caddy_data:/data
             - caddy_config:/config
@@ -475,11 +837,18 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-      default = pkgs.runCommand "caddy-configs" {} ''
+      default = pkgs.runCommand "caddy-configs" {
+        nativeBuildInputs = [ pkgs.pandoc ];
+      } ''
         mkdir -p $out/introspect-proxy/app
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkCaddyfile pkgs} $out/Caddyfile
         cp ${./error.html} $out/error.html
+        pandoc --from=markdown --to=html5 --standalone \
+          --template=${dashboardTemplate pkgs} \
+          --metadata title="Infrastructure Dashboard" \
+          -o $out/dashboard.html \
+          ${pkgs.writeText "dashboard.md" mkDashboardMd}
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
         cp ${./introspect-proxy/app/requirements.txt} $out/introspect-proxy/app/requirements.txt
