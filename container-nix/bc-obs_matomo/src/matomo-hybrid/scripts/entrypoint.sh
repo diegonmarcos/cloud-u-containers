@@ -83,7 +83,30 @@ if [ -f "$CONFIG_FILE" ]; then
     if ! grep -q "unix_socket" "$CONFIG_FILE" 2>/dev/null; then
         sed -i '/^\[database\]/a unix_socket = "/run/mysqld/mysqld.sock"' "$CONFIG_FILE"
     fi
-    echo "[entrypoint] config.ini.php updated for local database connection"
+
+    # Disable browser-triggered archiving (use cron-based archiver instead)
+    # This prevents the "Oops" timeout errors on the 1GB RAM VM
+    if grep -q "enable_browser_archiving_triggering" "$CONFIG_FILE" 2>/dev/null; then
+        sed -i 's/^enable_browser_archiving_triggering = .*/enable_browser_archiving_triggering = 0/' "$CONFIG_FILE"
+    else
+        sed -i '/^\[General\]/a enable_browser_archiving_triggering = 0' "$CONFIG_FILE"
+    fi
+
+    # Enable auto-update (check + apply via console and UI)
+    if grep -q "enable_auto_update" "$CONFIG_FILE" 2>/dev/null; then
+        sed -i 's/^enable_auto_update = .*/enable_auto_update = 1/' "$CONFIG_FILE"
+    else
+        sed -i '/^\[General\]/a enable_auto_update = 1' "$CONFIG_FILE"
+    fi
+
+    # Enable update email notifications
+    if grep -q "enable_update_communication" "$CONFIG_FILE" 2>/dev/null; then
+        sed -i 's/^enable_update_communication = .*/enable_update_communication = 1/' "$CONFIG_FILE"
+    else
+        sed -i '/^\[General\]/a enable_update_communication = 1' "$CONFIG_FILE"
+    fi
+
+    echo "[entrypoint] config.ini.php updated for local database, archiving, and auto-update"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════

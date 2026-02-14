@@ -95,6 +95,7 @@ COPY scripts/entrypoint.sh /scripts/entrypoint.sh
 COPY scripts/matomo-wake.sh /scripts/matomo-wake.sh
 COPY scripts/matomo-sleep.sh /scripts/matomo-sleep.sh
 COPY scripts/import-inbox.sh /scripts/import-inbox.sh
+COPY scripts/matomo-archiver.sh /scripts/matomo-archiver.sh
 RUN chmod +x /scripts/*.sh
 
 EXPOSE 8080
