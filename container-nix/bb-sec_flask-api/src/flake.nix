@@ -28,12 +28,21 @@
             - ~/.ssh:/home/appuser/.ssh:ro
             - /home/diego/cloud/oci_config:/app/config/oci_config:ro
             - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+            - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
           environment:
             - FLASK_DEBUG=false
             - CLOUD_CONFIG_PATH=/app/config/architecture.json
             - OCI_CONFIG_FILE=/app/config/oci_config
             - OCI_KEY_FILE=/app/config/oci_api_key.pem
             - OCI_WAKE_INSTANCE_ID=''${OCI_WAKE_INSTANCE_ID}
+            - OCI_FLEX1_INSTANCE_ID=''${OCI_FLEX1_INSTANCE_ID}
+            - OCI_MICRO1_INSTANCE_ID=''${OCI_MICRO1_INSTANCE_ID}
+            - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
+            - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+            - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
+            - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
+            - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
+            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN:-}
             - CORS_ORIGINS=https://api.diegonmarcos.com,https://diegonmarcos.github.io,http://localhost:*,http://127.0.0.1:*
             - CF_API_TOKEN=''${CF_API_TOKEN}
             - CF_ZONE_ID=''${CF_ZONE_ID}

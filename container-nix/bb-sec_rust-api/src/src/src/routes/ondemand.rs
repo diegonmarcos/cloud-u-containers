@@ -57,6 +57,8 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/rust/health/up/{vm_id}", get(vm_health_up))
         .route("/rust/health/{vm_id}", get(vm_health))
         .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
+        // Fast provider-only status check
+        .route("/rust/vms/{vm_id}/status", get(vm_status))
         // Engine: generalized per-VM POST routes
         .route("/rust/vms/{vm_id}/start", post(vm_start))
         .route("/rust/vms/{vm_id}/stop", post(vm_stop))
@@ -1054,6 +1056,34 @@ pub async fn vm_health_up(
 
 #[utoipa::path(
     get,
+    path = "/rust/vms/{vm_id}/status",
+    tag = "Get-Engines",
+    params(("vm_id" = String, Path, description = "VM identifier")),
+    responses(
+        (status = 200, description = "Fast provider-only VM state (~1s, no SSH/ping)", body = Value),
+        (status = 404, description = "Unknown VM"),
+    )
+)]
+pub async fn vm_status(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let provider_state = get_vm_state_by_id(&state, &vm_id).await?;
+    let label = state.config.all_vm_services.get(&vm_id)
+        .map(|v| v.label.as_str())
+        .unwrap_or("unknown");
+    Ok(Json(json!({
+        "id": vm_id,
+        "label": label,
+        "provider_state": provider_state,
+    })))
+}
+
+#[utoipa::path(
+    get,
     path = "/rust/health/{vm_id}",
     tag = "Get-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
@@ -1198,7 +1228,7 @@ pub async fn vm_reset(
             let current = oci::get_instance_state(&state.http, &state.config, &vm.instance_id)
                 .await
                 .map_err(|e| AppError::internal(e))?;
-            let action = if current == "RUNNING" { "SOFTRESET" } else { "START" };
+            let action = if current == "RUNNING" { "RESET" } else { "START" };
             oci::instance_action(&state.http, &state.config, &vm.instance_id, action)
                 .await
                 .map_err(|e| AppError::internal(e))?;
