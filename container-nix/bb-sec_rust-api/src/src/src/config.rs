@@ -20,6 +20,7 @@ pub struct AppConfig {
     pub all_vm_services: HashMap<String, VmServiceMap>,
     pub route_check_domains: Vec<RouteCheckDomain>,
     pub authelia_bearer_token: Option<String>,
+    pub container_domain_map: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug)]
@@ -309,6 +310,24 @@ impl AppConfig {
         let authelia_bearer_token = std::env::var("AUTHELIA_BEARER_TOKEN").ok()
             .filter(|s| !s.is_empty());
 
+        let container_domain_map: HashMap<String, String> = [
+            ("authelia", "auth.diegonmarcos.com"),
+            ("vaultwarden", "vault.diegonmarcos.com"),
+            ("ntfy", "rss.diegonmarcos.com"),
+            ("photoprism_app", "photos.diegonmarcos.com"),
+            ("nocodb_app", "db.diegonmarcos.com"),
+            ("code-server", "ide.diegonmarcos.com"),
+            ("syncthing", "sync.diegonmarcos.com"),
+            ("radicale", "cal.diegonmarcos.com"),
+            ("matomo-hybrid", "analytics.diegonmarcos.com"),
+            ("mailu-front-1", "mail.diegonmarcos.com"),
+            ("flask-api", "api.diegonmarcos.com"),
+            ("affine", "drive-notes-affine.diegonmarcos.com"),
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+
         AppConfig {
             port,
             architecture,
@@ -330,6 +349,7 @@ impl AppConfig {
             all_vm_services,
             route_check_domains,
             authelia_bearer_token,
+            container_domain_map,
         }
     }
 }
