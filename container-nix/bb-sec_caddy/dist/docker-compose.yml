@@ -4,7 +4,7 @@ services:
     container_name: caddy
     restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     ports:
       - "80:80"
       - "443:443"
@@ -12,6 +12,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./error.html:/srv/error.html:ro
+      - ./dashboard.html:/srv/dashboard.html:ro
       - ./logs:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
@@ -27,7 +28,7 @@ services:
     container_name: introspect-proxy
     restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     environment:
       INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
       CLIENT_ID: cli

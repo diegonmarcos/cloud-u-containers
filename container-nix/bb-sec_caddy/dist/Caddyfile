@@ -511,26 +511,29 @@ forward_auth authelia:9091 {
 }
   }
 
-  # Caddy admin API
+  # Infrastructure dashboard (static HTML generated from flake data)
   proxy.diegonmarcos.com {
 import security
 import request_limits
-      @bearer header Authorization Bearer*
-  handle @bearer {
+    @bearer header Authorization Bearer*
+    handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy localhost:2019
-  }
-  handle {
+      root * /srv
+      rewrite * /dashboard.html
+      file_server
+    }
+    handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy localhost:2019
-  }
-
+      root * /srv
+      rewrite * /dashboard.html
+      file_server
+    }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
