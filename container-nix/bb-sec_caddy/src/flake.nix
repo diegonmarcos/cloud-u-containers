@@ -91,6 +91,7 @@
       { domain = "nexus.diegonmarcos.com";               name = "Nexus";           vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "suite.diegonmarcos.com";               name = "Suite Apps";      vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "maps.diegonmarcos.com";                name = "Maps";            vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
+      { domain = "app.diegonmarcos.com/windmill/";        name = "Windmill";        vm = "oci-analytics"; port = "8000"; auth = "Authelia + Bearer"; avail = "24/7"; }
     ];
 
     securityLayers = [
@@ -711,6 +712,18 @@ Internet
       db.diegonmarcos.com {
     ${sec}
         ${mkProtected "${flex}:8085"}
+        ${handleErrors}
+      }
+
+      # App hub (path-based routing)
+      app.diegonmarcos.com {
+    ${sec}
+        handle_path /windmill/* {
+          ${mkProtected "${analytics}:8000"}
+        }
+        handle {
+          respond "Not Found" 404
+        }
         ${handleErrors}
       }
 
