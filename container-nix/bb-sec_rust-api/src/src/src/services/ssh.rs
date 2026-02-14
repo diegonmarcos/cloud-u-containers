@@ -6,14 +6,23 @@ pub struct SshResult {
     pub output: String,
 }
 
-/// Execute a command on a remote VM via SSH.
-pub async fn ssh_command(config: &SshConfig, command: &str) -> SshResult {
-    let result = Command::new("ssh")
-        .arg("-o").arg("StrictHostKeyChecking=no")
+/// Build SSH command with common options including connection multiplexing.
+fn ssh_base(config: &SshConfig) -> Command {
+    let mut cmd = Command::new("ssh");
+    cmd.arg("-o").arg("StrictHostKeyChecking=no")
         .arg("-o").arg("ConnectTimeout=10")
         .arg("-o").arg("BatchMode=yes")
+        .arg("-o").arg("ControlMaster=auto")
+        .arg("-o").arg(format!("ControlPath=/tmp/ssh-mux-{}@{}:%p", config.user, config.host))
+        .arg("-o").arg("ControlPersist=60")
         .arg("-i").arg(&config.key_path)
-        .arg(format!("{}@{}", config.user, config.host))
+        .arg(format!("{}@{}", config.user, config.host));
+    cmd
+}
+
+/// Execute a command on a remote VM via SSH.
+pub async fn ssh_command(config: &SshConfig, command: &str) -> SshResult {
+    let result = ssh_base(config)
         .arg(command)
         .output()
         .await;
@@ -47,12 +56,8 @@ pub async fn check_ssh(config: &SshConfig) -> bool {
 
 /// Fast SSH connectivity check with a short timeout (3s).
 pub async fn check_ssh_fast(config: &SshConfig) -> bool {
-    let result = Command::new("ssh")
-        .arg("-o").arg("StrictHostKeyChecking=no")
+    let result = ssh_base(config)
         .arg("-o").arg("ConnectTimeout=3")
-        .arg("-o").arg("BatchMode=yes")
-        .arg("-i").arg(&config.key_path)
-        .arg(format!("{}@{}", config.user, config.host))
         .arg("true")
         .output()
         .await;
