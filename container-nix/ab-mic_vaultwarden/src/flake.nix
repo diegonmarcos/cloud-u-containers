@@ -26,7 +26,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           env_file:
-            - .env
+            - .secrets
           environment:
             DOMAIN: https://${config.domain}
             SIGNUPS_ALLOWED: ${config.signups_allowed}

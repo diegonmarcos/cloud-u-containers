@@ -48,7 +48,7 @@ step_build() {
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
 
-# ── Step 2: Decrypt secrets → .env ─────────────────────────────────────
+# ── Step 2: Decrypt secrets → .secrets ─────────────────────────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
 
@@ -57,11 +57,11 @@ step_secrets() {
         return 0
     fi
 
-    log "Decrypting secrets → dist/.env"
+    log "Decrypting secrets → dist/.secrets"
     mkdir -p "$DIST_DIR"
 
     if command -v yq >/dev/null 2>&1; then
-        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' > "$DIST_DIR/.env"
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' > "$DIST_DIR/.secrets"
     elif command -v python3 >/dev/null 2>&1; then
         sops -d "$secrets_file" | python3 -c "
 import sys
@@ -76,13 +76,16 @@ for line in sys.stdin:
         k, v = k.strip(), v.strip().strip('\"').strip(\"'\")
         if v:
             print(f'{k}={v}')
-" > "$DIST_DIR/.env"
+" > "$DIST_DIR/.secrets"
     else
         log "ERROR: No yq or python3 for YAML→env conversion"
         return 1
     fi
 
-    log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.env" 2>/dev/null || echo 0) keys)"
+    # Escape $ as $$ for docker-compose env_file interpolation
+    sed -i 's/[$]/&&/g' "$DIST_DIR/.secrets"
+
+    log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
 }
 
 # ── Step 3: Deploy dist/ → VM via rsync ────────────────────────────────
@@ -120,7 +123,7 @@ step_compose() {
 
     log "Rebuilding containers on $DEPLOY_HOST:$DEPLOY_PATH"
     # Run all services (no --no-deps filter) to ensure proper dependencies
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose up -d --force-recreate"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker-compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
     log "Containers rebuilt and running"
 }
 
@@ -172,7 +175,7 @@ case "${1:-all}" in
     *)
         echo "Usage: $0 [build|secrets|deploy|compose|all|ship|start|stop|clean]"
         echo "  build    Build nix flake → dist/"
-        echo "  secrets  Decrypt secrets → dist/.env"
+        echo "  secrets  Decrypt secrets → dist/.secrets"
         echo "  deploy   Rsync dist/ → VM"
         echo "  compose  Docker compose up --build on VM"
         echo "  all      build + secrets (default)"

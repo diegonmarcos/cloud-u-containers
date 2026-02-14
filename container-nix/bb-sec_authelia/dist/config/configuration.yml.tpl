@@ -108,7 +108,6 @@ identity_providers:
       - key_id: main
         algorithm: RS256
         use: sig
-        key_file: /config/oidc_jwks.pem
     cors:
       endpoints:
         - authorization

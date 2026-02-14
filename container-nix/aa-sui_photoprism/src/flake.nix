@@ -51,7 +51,7 @@
             - RCLONE_CONFIG_OCI_REGION=${config.s3_region}
             - RCLONE_CONFIG_OCI_ACL=private
           env_file:
-            - .env
+            - .secrets
           volumes:
             - /opt/containers/photoprism/originals:/data:shared
           command: >
