@@ -16,6 +16,7 @@ pub struct AppState {
     pub config: AppConfig,
     pub http: reqwest::Client,
     pub gcp_token_cache: services::gcp::TokenCache,
+    pub spec_cache: routes::docs::SpecCache,
 }
 
 #[derive(OpenApi)]
@@ -69,6 +70,11 @@ pub struct AppState {
         // Profiling
         routes::profiling::profile_container,
         routes::profiling::profile_vm,
+        // Services / API Docs
+        routes::docs::list_services,
+        routes::docs::get_service,
+        routes::docs::get_service_spec,
+        routes::docs::get_all_specs,
     ),
     components(schemas(
         models::api_response::ApiResponse,
@@ -97,6 +103,7 @@ async fn main() {
         config,
         http: reqwest::Client::new(),
         gcp_token_cache: services::gcp::new_token_cache(),
+        spec_cache: routes::docs::new_spec_cache(),
     });
 
     let cors = CorsLayer::new()
