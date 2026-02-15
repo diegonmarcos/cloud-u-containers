@@ -323,6 +323,11 @@ impl AppConfig {
             ("mailu-front-1", "mail.diegonmarcos.com"),
             ("flask-api", "api.diegonmarcos.com"),
             ("affine", "drive-notes-affine.diegonmarcos.com"),
+            ("gitea", "app.diegonmarcos.com/gitea"),
+            ("windmill", "app.diegonmarcos.com/windmill"),
+            ("grafana_app", "app.diegonmarcos.com/grafana"),
+            ("dozzle", "app.diegonmarcos.com/dozzle"),
+            ("rust-api", "api.diegonmarcos.com"),
         ]
         .iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
