@@ -6,15 +6,15 @@ services:
   windmill-db:
     image: postgres:16-alpine
     container_name: windmill-db
-    restart: always
+    restart: unless-stopped
+    env_file:
+      - .secrets
     environment:
       - POSTGRES_DB=windmill
       - POSTGRES_USER=windmill
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - windmill-db-data:/var/lib/postgresql/data
-    secrets:
-      - db_password
     networks:
       - windmill-net
     deploy:
@@ -32,9 +32,9 @@ services:
   windmill-server:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-server
-    restart: always
+    restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     environment:
       - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
       - MODE=server
@@ -50,8 +50,6 @@ services:
       - SMTP_FROM=${SMTP_FROM:-}
       - SMTP_USERNAME=${SMTP_USERNAME:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-    secrets:
-      - db_password
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -79,9 +77,9 @@ services:
   windmill-worker:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-worker
-    restart: always
+    restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     environment:
       - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
       - MODE=worker
@@ -90,8 +88,6 @@ services:
       - DISABLE_NUSER=true
       - KEEP_JOB_DIR=false
       - METRICS_ENABLED=false
-    secrets:
-      - db_password
     depends_on:
       windmill-server:
         condition: service_healthy
@@ -122,6 +118,3 @@ volumes:
   windmill-worker-data:
     name: windmill-worker-data
 
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt

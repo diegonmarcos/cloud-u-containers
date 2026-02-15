@@ -22,14 +22,14 @@
           image: postgres:16-alpine
           container_name: windmill-db
           restart: unless-stopped
+          env_file:
+            - .secrets
           environment:
             - POSTGRES_DB=windmill
             - POSTGRES_USER=windmill
-            - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+            - POSTGRES_PASSWORD=''${DB_PASSWORD}
           volumes:
             - windmill-db-data:/var/lib/postgresql/data
-          secrets:
-            - db_password
           networks:
             - windmill-net
           deploy:
@@ -65,8 +65,6 @@
             - SMTP_FROM=''${SMTP_FROM:-}
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
-          secrets:
-            - db_password
           ports:
             - "127.0.0.1:8000:8000"
           depends_on:
@@ -105,8 +103,6 @@
             - DISABLE_NUSER=true
             - KEEP_JOB_DIR=false
             - METRICS_ENABLED=false
-          secrets:
-            - db_password
           depends_on:
             windmill-server:
               condition: service_healthy
@@ -137,9 +133,6 @@
         windmill-worker-data:
           name: windmill-worker-data
 
-      secrets:
-        db_password:
-          file: ./secrets/db_password.txt
     '';
 
   in {
