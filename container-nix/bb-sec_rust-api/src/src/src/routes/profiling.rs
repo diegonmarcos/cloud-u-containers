@@ -9,11 +9,14 @@ use crate::config::{AppConfig, SshConfig};
 use crate::error::AppError;
 use crate::models::profiling::{DiagnosticCheckResult, ProfilingResponse, ProfilingSummary};
 use crate::services::diagnostics::{self, CheckResult};
+#[allow(unused_imports)]
+use crate::models::vm::validate_vm_id;
 use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/rust/profiling/{container}", get(profile_container))
+        .route("/api/profiling/{container}", get(profile_container))
+        .route("/api/profiling/vm/{vm_id}", get(profile_vm))
 }
 
 /// Resolved container location info.
@@ -52,7 +55,7 @@ fn check_to_result(c: CheckResult) -> DiagnosticCheckResult {
 
 #[utoipa::path(
     get,
-    path = "/rust/profiling/{container}",
+    path = "/api/profiling/{container}",
     tag = "Get-Profiling",
     params(("container" = String, Path, description = "Container name to profile")),
     responses(
@@ -478,6 +481,83 @@ async fn check_ports_wireguard(wg_host: &str, ports: &[(u16, u16)]) -> CheckResu
             "ports_checked": ports_checked,
         }))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Batch profiling: all containers on a VM
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/api/profiling/vm/{vm_id}",
+    tag = "Profiling",
+    params(("vm_id" = String, Path, description = "VM identifier to profile all containers")),
+    responses(
+        (status = 200, description = "Batch profiling report for all containers on VM", body = Value),
+        (status = 404, description = "Unknown VM"),
+    )
+)]
+pub async fn profile_vm(
+    State(state): State<Arc<AppState>>,
+    Path(vm_id): Path<String>,
+) -> Result<Json<Value>, AppError> {
+    if !crate::models::vm::validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    let vm_map = state.config.all_vm_services.get(&vm_id)
+        .ok_or_else(|| AppError::not_found(format!("Unknown VM: {vm_id}")))?;
+
+    let all_containers: Vec<String> = vm_map.services
+        .values()
+        .flat_map(|c| c.iter().cloned())
+        .collect();
+
+    let total_start = Instant::now();
+    let mut results = Vec::new();
+
+    for container in &all_containers {
+        let result = profile_container(
+            State(Arc::clone(&state)),
+            Path(container.clone()),
+        ).await;
+
+        match result {
+            Ok(Json(resp)) => results.push(json!({
+                "container": &resp.container,
+                "service": &resp.service,
+                "total_time_ms": resp.total_time_ms,
+                "summary": &resp.summary,
+            })),
+            Err(e) => results.push(json!({
+                "container": container,
+                "error": format!("{e}"),
+            })),
+        }
+    }
+
+    let total_time = total_start.elapsed().as_millis() as u64;
+    let healthy = results.iter()
+        .filter(|r| r["summary"]["overall_status"].as_str() == Some("healthy"))
+        .count();
+    let degraded = results.iter()
+        .filter(|r| r["summary"]["overall_status"].as_str() == Some("degraded"))
+        .count();
+    let down = results.iter()
+        .filter(|r| r["summary"]["overall_status"].as_str() == Some("down"))
+        .count();
+
+    Ok(Json(json!({
+        "vm_id": vm_id,
+        "label": vm_map.label,
+        "total_time_ms": total_time,
+        "containers": results,
+        "summary": {
+            "total": all_containers.len(),
+            "healthy": healthy,
+            "degraded": degraded,
+            "down": down,
+        }
+    })))
 }
 
 /// Check 8: Authelia bearer auth flow test.

@@ -1,0 +1,9 @@
+{
+  "name": "go-api",
+  "description": "Cloud API (Go) — api.diegonmarcos.com/go/*",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/go-api"
+  }
+}

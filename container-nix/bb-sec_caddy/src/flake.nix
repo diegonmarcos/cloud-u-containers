@@ -73,7 +73,7 @@
     services = [
       { domain = "proxy.diegonmarcos.com";              name = "Dashboard";       vm = "gcp-proxy";     port = "—";   auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "auth.diegonmarcos.com";                name = "Authelia 2FA";    vm = "gcp-proxy";     port = "9091"; auth = "Public (bypass)";   avail = "24/7"; }
-      { domain = "api.diegonmarcos.com";                 name = "API (Flask+Rust)";vm = "gcp-proxy";     port = "5000/8080"; auth = "Flask: Authelia + Bearer / Rust: Public"; avail = "24/7"; }
+      { domain = "api.diegonmarcos.com";                 name = "API (Rust+Flask+Go)";vm = "gcp-proxy";   port = "8080/5000/8090"; auth = "Rust: Public / Flask: Authelia / Go: Public"; avail = "24/7"; }
       { domain = "vault.diegonmarcos.com";               name = "Vaultwarden";     vm = "gcp-proxy";     port = "80";  auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "rss.diegonmarcos.com";                 name = "ntfy Push";       vm = "gcp-proxy";     port = "8090"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "mail.diegonmarcos.com";                name = "Mailu";           vm = "oci-mail";      port = "8444"; auth = "Authelia + Bearer"; avail = "24/7"; }
@@ -517,6 +517,38 @@ Internet
 
 ---
 
+<div id="health-section">
+<h2>Health</h2>
+<p>Lazy-loaded from <code>/api/health/*</code> and <code>/api/profiling/*</code>. Click <em>Refresh</em> to load each tier.</p>
+
+<div class="health-tier">
+<div class="tier-hdr"><h3>Declared <span class="tier-lbl">Tier 0 — Config (instant)</span></h3><button class="rbtn" id="btn-declared">Refresh</button></div>
+<div class="tier-body" id="out-declared">—</div>
+</div>
+
+<div class="health-tier">
+<div class="tier-hdr"><h3>Deployed <span class="tier-lbl">Tier 1 — docker ps (~3s)</span></h3><button class="rbtn" id="btn-deployed">Refresh</button></div>
+<div class="tier-body" id="out-deployed">—</div>
+</div>
+
+<div class="health-tier">
+<div class="tier-hdr"><h3>Drift <span class="tier-lbl">Tier 2 — Declared vs Deployed (~3s)</span></h3><button class="rbtn" id="btn-drift">Refresh</button></div>
+<div class="tier-body" id="out-drift">—</div>
+</div>
+
+<div class="health-tier">
+<div class="tier-hdr"><h3>Status <span class="tier-lbl">Tier 3 — Comprehensive (heavy)</span></h3><button class="rbtn warn" id="btn-status">Refresh</button></div>
+<div class="tier-body" id="out-status">—</div>
+</div>
+
+<div class="health-tier">
+<div class="tier-hdr"><h3>Profiling <span class="tier-lbl">Tier 4 — Deep Diagnostic (heaviest)</span></h3></div>
+<div class="tier-body" id="out-profiling">Load <em>Declared</em> first, then trigger per-container.</div>
+</div>
+</div>
+
+---
+
 `visitor@caddy:~$` [cd /home](https://linktree.diegonmarcos.com)
     '';
 
@@ -642,6 +674,65 @@ Internet
         table{font-size:.65rem}
         pre{font-size:.65rem}
       }
+      .health-tier{
+        margin:1rem 0;
+        border:1px solid #1a1a2e;
+        border-radius:4px;
+        padding:.75rem 1rem;
+      }
+      .tier-hdr{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:.5rem;
+      }
+      .tier-hdr h3{
+        color:#339af0;
+        font-size:.9rem;
+        margin:0;
+        font-weight:normal;
+      }
+      .tier-lbl{
+        color:#495057;
+        font-size:.65rem;
+        margin-left:.5rem;
+      }
+      .rbtn{
+        background:#1a1a2e;
+        color:#51cf66;
+        border:1px solid #51cf66;
+        padding:.2rem .6rem;
+        border-radius:3px;
+        cursor:pointer;
+        font-family:inherit;
+        font-size:.7rem;
+        transition:all .2s;
+      }
+      .rbtn:hover{background:#51cf66;color:#0a0a0f}
+      .rbtn:disabled{opacity:.4;cursor:not-allowed}
+      .rbtn.warn{border-color:#fcc419;color:#fcc419}
+      .rbtn.warn:hover{background:#fcc419;color:#0a0a0f}
+      .tier-body{font-size:.75rem;color:#868e96}
+      .tier-body table{margin:.5rem 0}
+      .st-ok{color:#51cf66}
+      .st-warn{color:#fcc419}
+      .st-err{color:#ff6b6b}
+      .st-off{color:#495057}
+      .loading{color:#339af0;font-style:italic}
+      .prof-btn{
+        background:none;
+        color:#339af0;
+        border:1px solid #1a1a2e;
+        padding:.1rem .4rem;
+        border-radius:2px;
+        cursor:pointer;
+        font-family:inherit;
+        font-size:.65rem;
+      }
+      .prof-btn:hover{border-color:#339af0}
+      .prof-btn.warn{color:#fcc419;border-color:#1a1a2e}
+      .prof-btn.warn:hover{border-color:#fcc419}
+      .prof-vm{margin:.5rem 0}
       </style>
       </head>
       <body>
@@ -660,6 +751,144 @@ Internet
           s.appendChild(d);
         }
       })();
+      // Health Dashboard
+      var HAPI='https://api.diegonmarcos.com';
+      function hfetch(path,elId,btnId,render){
+        var el=document.getElementById(elId);
+        var btn=document.getElementById(btnId);
+        if(btn)btn.disabled=true;
+        el.innerHTML='<span class="loading">loading...</span>';
+        fetch(HAPI+path,{signal:AbortSignal.timeout(30000)})
+          .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+          .then(function(d){render(el,d);if(btn)btn.disabled=false})
+          .catch(function(e){el.innerHTML='<span class="st-err">Error: '+e.message+'</span>';if(btn)btn.disabled=false});
+      }
+      document.getElementById('btn-declared').addEventListener('click',function(){
+        hfetch('/api/health/declared','out-declared','btn-declared',rDeclared);
+      });
+      document.getElementById('btn-deployed').addEventListener('click',function(){
+        hfetch('/api/health/deployed','out-deployed','btn-deployed',rDeployed);
+      });
+      document.getElementById('btn-drift').addEventListener('click',function(){
+        hfetch('/api/health/drift','out-drift','btn-drift',rDrift);
+      });
+      document.getElementById('btn-status').addEventListener('click',function(){
+        hfetch('/api/health/status','out-status','btn-status',rStatus);
+      });
+      function rDeclared(el,d){
+        var h='<table><tr><th>VM</th><th>Label</th><th>Services</th><th>Containers</th></tr>';
+        var vms=d.vms||{};
+        for(var id in vms){
+          var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
+          for(var s in svcs)cc+=svcs[s].length;
+          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td><td>'+sc+'</td><td>'+cc+'</td></tr>';
+        }
+        h+='</table>';
+        var t=d.totals||{};
+        h+='<p>Total: <strong>'+t.vms+'</strong> VMs, <strong>'+t.services+'</strong> services, <strong>'+t.containers+'</strong> containers</p>';
+        window._dVMs=d.vms;
+        rProfBtns();
+        el.innerHTML=h;
+      }
+      function rDeployed(el,d){
+        var h='<table><tr><th>VM</th><th>Label</th><th>Running</th><th>Stopped</th><th>Total</th></tr>';
+        var vms=d.vms||{};
+        for(var id in vms){
+          var v=vms[id];
+          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td>';
+          h+='<td class="'+(v.running>0?'st-ok':'st-off')+'">'+v.running+'</td>';
+          h+='<td class="'+(v.stopped>0?'st-warn':'st-off')+'">'+v.stopped+'</td>';
+          h+='<td>'+v.total+'</td></tr>';
+        }
+        h+='</table>';
+        var sm=d.summary||{};
+        h+='<p><span class="st-ok">'+sm.running+' running</span>, <span class="st-warn">'+sm.stopped+' stopped</span>, '+sm.total+' total</p>';
+        el.innerHTML=h;
+      }
+      function rDrift(el,d){
+        var h='<table><tr><th>VM</th><th>Declared</th><th>Deployed</th><th>Missing</th><th>Extra</th></tr>';
+        var vms=d.vms||{};
+        for(var id in vms){
+          var v=vms[id];
+          var ml=v.missing||[],xl=v.extra||[],dl=v.declared||[],dpl=v.deployed||[];
+          h+='<tr><td>'+id+'</td><td>'+dl.length+'</td><td>'+dpl.length+'</td>';
+          h+='<td class="'+(ml.length?'st-err':'st-ok')+'">'+(ml.length?ml.join(', '):'none')+'</td>';
+          h+='<td class="'+(xl.length?'st-warn':'st-ok')+'">'+(xl.length?xl.join(', '):'none')+'</td></tr>';
+        }
+        h+='</table>';
+        var sm=d.summary||{};
+        h+='<p>Drift: '+(sm.drift?'<span class="st-err">YES</span>':'<span class="st-ok">NO</span>')+'</p>';
+        el.innerHTML=h;
+      }
+      function rStatus(el,d){
+        var h='<table><tr><th>VM</th><th>Label</th><th>Health</th><th>SSH</th><th>Ping</th><th>Containers</th></tr>';
+        var vms=d.vms||{};
+        for(var id in vms){
+          var v=vms[id],sm=v.summary||{};
+          var hc=v.health==='online'?'st-ok':(v.health==='degraded'?'st-warn':'st-err');
+          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td>';
+          h+='<td class="'+hc+'">'+v.health+'</td>';
+          h+='<td class="'+(v.ssh?'st-ok':'st-err')+'">'+(v.ssh?'OK':'FAIL')+'</td>';
+          h+='<td class="'+(v.ping?'st-ok':'st-err')+'">'+(v.ping?'OK':'FAIL')+'</td>';
+          h+='<td>'+sm.containers_running+'/'+sm.containers_total+'</td></tr>';
+        }
+        h+='</table>';
+        el.innerHTML=h;
+      }
+      function rProfBtns(){
+        var el=document.getElementById('out-profiling');
+        if(!window._dVMs){el.textContent='Load Declared first.';return}
+        var h='';
+        for(var id in window._dVMs){
+          var v=window._dVMs[id],svcs=v.services||{},cs=[];
+          for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
+          h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||'')+') — '+cs.length+' containers ';
+          h+='<button class="prof-btn warn" data-profvm="'+id+'">Profile All</button></div>';
+          h+='<div id="profvm-'+id+'"></div>';
+          for(var j=0;j<cs.length;j++){
+            h+='<span>  '+cs[j]+' </span>';
+            h+='<button class="prof-btn" data-prof="'+cs[j]+'">Profile</button>';
+            h+='<span id="prof-'+cs[j]+'"></span><br>';
+          }
+        }
+        el.innerHTML=h;
+      }
+      document.getElementById('out-profiling').addEventListener('click',function(e){
+        var t=e.target;
+        if(t.dataset&&t.dataset.prof)profC(t.dataset.prof);
+        if(t.dataset&&t.dataset.profvm)profVM(t.dataset.profvm);
+      });
+      function profC(name){
+        var el=document.getElementById('prof-'+name);
+        if(el)el.innerHTML='<span class="loading"> checking...</span>';
+        fetch(HAPI+'/api/profiling/'+encodeURIComponent(name),{signal:AbortSignal.timeout(60000)})
+          .then(function(r){return r.json()})
+          .then(function(d){
+            var s=d.summary||{};
+            var c=s.overall_status==='healthy'?'st-ok':(s.overall_status==='degraded'?'st-warn':'st-err');
+            if(el)el.innerHTML=' <span class="'+c+'">'+s.overall_status+' ('+s.checks_passed+'/'+s.checks_total+', '+d.total_time_ms+'ms)</span>';
+          })
+          .catch(function(e){if(el)el.innerHTML=' <span class="st-err">'+e.message+'</span>'});
+      }
+      function profVM(vmId){
+        var el=document.getElementById('profvm-'+vmId);
+        if(el){el.className='loading';el.textContent='profiling all on '+vmId+'...';}
+        fetch(HAPI+'/api/profiling/vm/'+encodeURIComponent(vmId),{signal:AbortSignal.timeout(120000)})
+          .then(function(r){return r.json()})
+          .then(function(d){
+            var sm=d.summary||{},cs=d.containers||[];
+            var h='<span class="st-ok">'+sm.healthy+' healthy</span>, <span class="st-warn">'+sm.degraded+' degraded</span>, <span class="st-err">'+sm.down+' down</span> ('+d.total_time_ms+'ms)<br>';
+            for(var i=0;i<cs.length;i++){
+              var c=cs[i],st=(c.summary||{}).overall_status||'unknown';
+              var cls=st==='healthy'?'st-ok':(st==='degraded'?'st-warn':'st-err');
+              h+='  <span class="'+cls+'">'+c.container+': '+st+'</span><br>';
+              var cel=document.getElementById('prof-'+c.container);
+              if(cel)cel.innerHTML=' <span class="'+cls+'">'+st+'</span>';
+            }
+            if(el){el.className='';el.innerHTML=h;}
+          })
+          .catch(function(e){if(el){el.className='st-err';el.textContent=vmId+': '+e.message;}});
+      }
       </script>
       </body>
       </html>
@@ -695,14 +924,17 @@ Internet
         ${handleErrors}
       }
 
-      # API — Rust (public), Flask (protected)
+      # API — Rust (default catch-all), Flask (/flask/*), Go (/go/*)
       api.diegonmarcos.com {
     ${sec}
-        handle /rust/* {
-          reverse_proxy ${gcp}:8080
+        handle /flask/* {
+          ${mkProtected "${gcp}:5000"}
+        }
+        handle /go/* {
+          reverse_proxy ${gcp}:8090
         }
         handle {
-          ${mkProtected "${gcp}:5000"}
+          reverse_proxy ${gcp}:8080
         }
         ${handleErrors}
       }

@@ -1,5 +1,5 @@
 {
-  description = "Cloud Rust API - Docker Compose configuration";
+  description = "Cloud Go API - Docker Compose configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -10,42 +10,32 @@
 
     config = {
       domain = "api.diegonmarcos.com";
-      container_name = "rust-api";
-      port = 8080;
+      container_name = "go-api";
+      port = 8090;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
-        rust-api:
-          image: ghcr.io/diegonmarcos/rust-api:latest
+        go-api:
+          build: .
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port}:8080"
+            - "127.0.0.1:${toString config.port}:8090"
           volumes:
             - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
             - ~/.ssh:/home/appuser/.ssh:ro
             - /home/diego/cloud/oci_config:/app/config/oci_config:ro
             - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
             - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
+          env_file:
+            - .secrets
           environment:
-            - RUST_API_PORT=8080
-            - RUST_LOG=rust_api=info
-            - CLOUD_CONFIG_PATH=/app/config/architecture.json
-            - OCI_CONFIG_FILE=/app/config/oci_config
-            - OCI_KEY_FILE=/app/config/oci_api_key.pem
-            - OCI_FLEX1_INSTANCE_ID=''${OCI_FLEX1_INSTANCE_ID}
-            - OCI_MICRO1_INSTANCE_ID=''${OCI_MICRO1_INSTANCE_ID}
-            - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
-            - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
-            - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
-            - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
-            - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
-            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN:-}
+            - GO_API_PORT=8090
           networks:
             - npm_default
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:8090/go/health"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -56,13 +46,32 @@
           external: true
     '';
 
+    mkDockerfile = pkgs: pkgs.writeText "Dockerfile" ''
+      FROM golang:1.23-alpine AS builder
+      WORKDIR /build
+      COPY go.mod go.sum ./
+      RUN go mod download
+      COPY . .
+      RUN CGO_ENABLED=0 GOOS=linux go build -o /go-api .
+
+      FROM alpine:3.20
+      RUN apk add --no-cache ca-certificates curl openssh-client iputils
+      RUN adduser -D -u 1000 appuser
+      USER appuser
+      WORKDIR /app
+      COPY --from=builder /go-api /app/go-api
+      EXPOSE 8090
+      CMD ["/app/go-api"]
+    '';
+
   in {
     packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = nixpkgs.legacyPackages.''${system};
     in {
-      default = pkgs.runCommand "rust-api-configs" {} ''
+      default = pkgs.runCommand "go-api-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkDockerfile pkgs} $out/Dockerfile
       '';
     });
   };
