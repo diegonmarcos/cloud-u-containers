@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rustApiPost } from "../utils/http.js";
+import { audit } from "../utils/audit.js";
 
 function formatResult(label: string, result: ReturnType<typeof rustApiPost>) {
   const text = typeof result.data === "string" ? result.data : JSON.stringify(result.data, null, 2);
@@ -26,6 +27,7 @@ export function registerRustApiControlTools(server: McpServer) {
     },
     async ({ vm }) => {
       const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/start`, undefined, 60_000);
+      audit("vm_start", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM start ${vm}`, result);
     }
   );
@@ -38,6 +40,7 @@ export function registerRustApiControlTools(server: McpServer) {
     },
     async ({ vm }) => {
       const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/stop`, undefined, 60_000);
+      audit("vm_stop", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM stop ${vm}`, result);
     }
   );
@@ -50,6 +53,7 @@ export function registerRustApiControlTools(server: McpServer) {
     },
     async ({ vm }) => {
       const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/reset`, undefined, 60_000);
+      audit("vm_reset", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM reset ${vm}`, result);
     }
   );
@@ -58,7 +62,7 @@ export function registerRustApiControlTools(server: McpServer) {
 
   server.tool(
     "container_start",
-    "Start a container on a VM (auto-wakes VM if needed)",
+    "Start a container via the Rust API (preferred — handles VM auto-wake and validation).",
     {
       vm: z.string().describe("VM ID or SSH alias"),
       name: z.string().describe("Container name"),
@@ -69,6 +73,7 @@ export function registerRustApiControlTools(server: McpServer) {
         undefined,
         60_000
       );
+      audit("container_start", `${name}@${vm}`, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`Container start ${name}@${vm}`, result);
     }
   );
@@ -86,6 +91,7 @@ export function registerRustApiControlTools(server: McpServer) {
         undefined,
         30_000
       );
+      audit("container_stop", `${name}@${vm}`, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`Container stop ${name}@${vm}`, result);
     }
   );
@@ -103,6 +109,7 @@ export function registerRustApiControlTools(server: McpServer) {
         undefined,
         60_000
       );
+      audit("container_restart", `${name}@${vm}`, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`Container restart ${name}@${vm}`, result);
     }
   );
@@ -122,6 +129,7 @@ export function registerRustApiControlTools(server: McpServer) {
         undefined,
         120_000
       );
+      audit("service_start", `${service}@${vm}`, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`Service start ${service}@${vm}`, result);
     }
   );
@@ -139,6 +147,7 @@ export function registerRustApiControlTools(server: McpServer) {
         undefined,
         60_000
       );
+      audit("service_stop", `${service}@${vm}`, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`Service stop ${service}@${vm}`, result);
     }
   );

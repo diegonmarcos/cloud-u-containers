@@ -1,11 +1,13 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
 import {
   getConfig,
   getServiceFolder,
+  getServiceDir,
   getVmSshAlias,
   getServicesForVm,
+  resolveVmId,
 } from "../config.js";
 import {
   CONFIG_PATH,
@@ -192,11 +194,6 @@ Base URL: ${RUST_API_BASE}
 |-------|----------|
 | Any service endpoint via discovery | service_api_call |
 
-## Legacy (Deprecated)
-| Endpoint | MCP Tool |
-|----------|----------|
-| Flask API (any) | api_call |
-| Flask /vms/control | api_vm_control |
 `;
 
     return {
@@ -227,4 +224,102 @@ Base URL: ${RUST_API_BASE}
       }],
     };
   });
+
+  // ── Resource Templates ──
+
+  server.resource(
+    "service-detail",
+    new ResourceTemplate("cloud://services/{name}", {
+      list: async () => ({
+        resources: Object.keys(getConfig().services).map((name) => ({
+          uri: `cloud://services/${name}`,
+          name,
+          description: getConfig().services[name].description,
+        })),
+      }),
+    }),
+    async (uri, variables) => {
+      const name = variables.name as string;
+      const config = getConfig();
+      const svc = config.services[name];
+      if (!svc) {
+        return { contents: [{ uri: uri.href, mimeType: "text/plain", text: `Unknown service: ${name}` }] };
+      }
+
+      const folder = getServiceFolder(name);
+      const svcDir = getServiceDir(name);
+      const alias = svc.vm === "local" || svc.vm === "all" ? svc.vm : getVmSshAlias(svc.vm);
+
+      const info = {
+        name,
+        category: svc.category,
+        vm: svc.vm,
+        ssh_alias: alias,
+        description: svc.description,
+        folder,
+        path: svcDir,
+        flake: svc.flake ?? null,
+        subfolder: svc.subfolder ?? null,
+        has_build_sh: existsSync(join(svcDir, "build.sh")),
+        has_flake_nix: existsSync(join(svcDir, "src", "flake.nix")),
+        has_dist: existsSync(join(svcDir, "dist")),
+      };
+
+      return {
+        contents: [{
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(info, null, 2),
+        }],
+      };
+    }
+  );
+
+  server.resource(
+    "vm-detail",
+    new ResourceTemplate("cloud://vms/{vm_id}", {
+      list: async () => ({
+        resources: Object.keys(getConfig().vms).map((vmId) => ({
+          uri: `cloud://vms/${vmId}`,
+          name: getVmSshAlias(vmId),
+          description: getConfig().vms[vmId].description,
+        })),
+      }),
+    }),
+    async (uri, variables) => {
+      const vmId = variables.vm_id as string;
+      const config = getConfig();
+
+      // Accept both VM ID and alias
+      let resolvedId: string;
+      try {
+        resolvedId = resolveVmId(vmId);
+      } catch {
+        return { contents: [{ uri: uri.href, mimeType: "text/plain", text: `Unknown VM: ${vmId}` }] };
+      }
+
+      const vm = config.vms[resolvedId];
+      const alias = getVmSshAlias(resolvedId);
+      const services = getServicesForVm(resolvedId);
+
+      const info = {
+        vm_id: resolvedId,
+        ssh_alias: alias,
+        ip: vm.ip,
+        user: vm.user,
+        method: vm.method,
+        description: vm.description,
+        service_count: services.length,
+        services: services.map(([name, svc]) => ({ name, category: svc.category, description: svc.description })),
+      };
+
+      return {
+        contents: [{
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(info, null, 2),
+        }],
+      };
+    }
+  );
 }

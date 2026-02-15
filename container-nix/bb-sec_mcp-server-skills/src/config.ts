@@ -49,7 +49,8 @@ const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
   "gcp-f-micro_1": "gcp-proxy",
   "oci-f-micro_1": "oci-mail",
   "oci-f-micro_2": "oci-analytics",
-  "oci-p-flex_1": "oci-flex",
+  "oci-p-flex_0": "oci-flex-0",
+  "oci-p-flex_1": "oci-flex-1",
 };
 
 function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record<string, string> } {

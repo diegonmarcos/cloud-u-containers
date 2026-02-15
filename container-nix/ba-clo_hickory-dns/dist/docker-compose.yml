@@ -1,0 +1,18 @@
+services:
+  hickory-dns:
+    image: hickorydns/hickory-dns:latest
+    container_name: hickory-dns
+    restart: unless-stopped
+    ports:
+      - "10.0.0.1:53:53/tcp"
+      - "10.0.0.1:53:53/udp"
+    volumes:
+      - ./config/named.toml:/etc/named.toml:ro
+      - ./zones:/var/named:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    deploy:
+      resources:
+        limits:
+          memory: 64M

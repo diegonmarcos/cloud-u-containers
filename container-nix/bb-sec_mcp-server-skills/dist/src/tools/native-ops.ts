@@ -4,7 +4,16 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { exec } from "../utils/exec.js";
 import { sshExec } from "../utils/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId } from "../config.js";
+import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../config.js";
+import { audit } from "../utils/audit.js";
+
+const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
+
+function validatePath(path: string): void {
+  if (!SAFE_NAME_RE.test(path)) {
+    throw new Error(`Invalid path component: ${path}`);
+  }
+}
 
 export function registerNativeOpsTools(server: McpServer) {
   server.tool(
@@ -24,10 +33,12 @@ export function registerNativeOpsTools(server: McpServer) {
         };
       }
 
+      // 300s: full pipeline (nix build + sops decrypt + rsync + compose) can take minutes
       const result = exec("sh", [buildSh, "ship"], {
         timeout: 300_000,
         cwd: svcDir,
       });
+      audit("build_ship", service, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
         content: [{
@@ -61,6 +72,7 @@ export function registerNativeOpsTools(server: McpServer) {
         };
       }
 
+      // 600s: Docker builds with multi-stage + cargo can take 5+ hours on micro VMs
       const result = exec("sh", [buildSh, "docker"], {
         timeout: 600_000,
         cwd: svcDir,
@@ -132,7 +144,7 @@ export function registerNativeOpsTools(server: McpServer) {
 
   server.tool(
     "backup_trigger",
-    "Trigger a backup job on a VM (borg, bup, or db-agent)",
+    "Trigger backup for a service's data (borg=media files, bup=general files, db=database dump)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
       service: z.string().describe("Service name with backup configured"),
@@ -152,12 +164,15 @@ export function registerNativeOpsTools(server: McpServer) {
 
       const remoteBase = config.remote_base;
       const folder = getServiceFolder(service);
+      validatePath(folder);
       const remotePath = `${remoteBase}/${folder}`;
       const backupType = type ?? "borg";
 
       const cmd = `cd ${remotePath} && docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1`;
 
+      // 300s: borg/bup backups can take several minutes for large datasets
       const result = sshExec(vmId, cmd, 300_000);
+      audit("backup_trigger", `${backupType} ${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
         content: [{

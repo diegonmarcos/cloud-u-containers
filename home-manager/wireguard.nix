@@ -15,7 +15,14 @@ let
       publicKey = "GGZzgZDrOwvw1Th8iKWKeOOBgh+UvAjnmdi1iE9E1Hk=";
       role      = "hub";
     };
-    oci-flex = {
+    oci-flex-0 = {
+      address   = "10.0.0.6";
+      endpoint  = "82.70.229.129";
+      port      = 51820;
+      publicKey = "PLACEHOLDER_GENERATE_ON_FIRST_DEPLOY";
+      role      = "spoke";
+    };
+    oci-flex-1 = {
       address   = "10.0.0.2";
       endpoint  = "144.24.196.72";
       port      = 51820;

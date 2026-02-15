@@ -7,7 +7,8 @@ Declarative user environment management using Nix home-manager for all 4 cloud V
 | VM | User | Arch | RAM | Tools |
 |----|------|------|-----|-------|
 | gcp-proxy | diego | x86_64 | 1GB | Base + monitoring |
-| oci-flex | ubuntu | aarch64 | 24GB | Base + heavy workloads |
+| oci-flex-0 | ubuntu | aarch64 | 16GB | Base (no services yet) |
+| oci-flex-1 | ubuntu | aarch64 | 8GB | Base + heavy workloads |
 | oci-mail | ubuntu | aarch64 | 24GB | Base + mail tools |
 | oci-analytics | ubuntu | x86_64 | 1GB | Base + analytics |
 
@@ -48,8 +49,8 @@ cd ~/git/cloud/a_solutions/home-manager
 # Deploy to gcp-proxy
 nix run home-manager/release-24.11 -- switch --flake .#diego@gcp-proxy
 
-# Deploy to oci-flex
-nix run home-manager/release-24.11 -- switch --flake .#ubuntu@oci-flex
+# Deploy to oci-flex-1
+nix run home-manager/release-24.11 -- switch --flake .#ubuntu@oci-flex-1
 
 # Deploy to oci-mail
 nix run home-manager/release-24.11 -- switch --flake .#ubuntu@oci-mail
@@ -65,7 +66,8 @@ Use the deployment script:
 ```bash
 ./deploy.sh all          # Deploy to all VMs
 ./deploy.sh gcp-proxy    # Deploy to specific VM
-./deploy.sh oci-flex
+./deploy.sh oci-flex-0
+./deploy.sh oci-flex-1
 ./deploy.sh oci-mail
 ./deploy.sh oci-analytics
 ```
@@ -98,7 +100,8 @@ nix flake update
 home-manager/
 ├── flake.nix           # Main flake with all VM configs
 ├── gcp-proxy.nix       # diego@gcp-proxy config
-├── oci-flex.nix        # ubuntu@oci-flex config
+├── oci-flex-0.nix      # ubuntu@oci-flex-0 config
+├── oci-flex-1.nix      # ubuntu@oci-flex-1 config
 ├── oci-mail.nix        # ubuntu@oci-mail config
 ├── oci-analytics.nix   # ubuntu@oci-analytics config
 ├── deploy.sh           # Deployment script
@@ -156,5 +159,5 @@ source ~/.bashrc
 - Docker/docker-compose are commented out (assumed system-installed)
 - Each VM has custom aliases based on its role
 - All configs use Nix 24.11 stable channel
-- ARM VMs (oci-flex, oci-mail) use aarch64-linux packages
+- ARM VMs (oci-flex-0, oci-flex-1) use aarch64-linux packages
 - x86 VMs (gcp-proxy, oci-analytics) use x86_64-linux packages

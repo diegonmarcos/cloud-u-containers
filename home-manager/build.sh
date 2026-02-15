@@ -15,7 +15,7 @@ get_vms() {
     elif command -v python3 >/dev/null 2>&1; then
         python3 -c "import json; c=json.load(open('$CONFIG')); print(' '.join(c['vms'].keys()))"
     else
-        echo "gcp-proxy oci-flex oci-mail oci-analytics"
+        echo "gcp-proxy oci-flex-0 oci-flex-1 oci-mail oci-analytics"
     fi
 }
 
@@ -203,14 +203,14 @@ case "${1:-help}" in
         echo "  update    Update flake inputs"
         echo "  clean     No-op (for consistency)"
         echo ""
-        echo "VMs: all (default), gcp-proxy, oci-flex, oci-mail, oci-analytics"
+        echo "VMs: all (default), gcp-proxy, oci-flex-0, oci-flex-1, oci-mail, oci-analytics"
         echo ""
         echo "Examples:"
         echo "  $0 ship              # Deploy to all VMs"
-        echo "  $0 ship oci-flex     # Deploy to oci-flex only"
+        echo "  $0 ship oci-flex-1   # Deploy to oci-flex-1 only"
         echo "  $0 deploy gcp-proxy  # Copy files to gcp-proxy"
         echo "  $0 status            # WireGuard status on all VMs"
-        echo "  $0 diff oci-flex     # Show remote config (redacted)"
+        echo "  $0 diff oci-flex-1   # Show remote config (redacted)"
         ;;
 esac
 

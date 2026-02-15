@@ -25,6 +25,11 @@
           ip = "129.151.228.66";
           name = "OCI Free Micro 2 - Analytics";
         };
+        oci-p-flex_0 = {
+          ocid = "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva";
+          ip = "82.70.229.129";
+          name = "OCI Paid Flex 0 - Flex Server";
+        };
         oci-p-flex_1 = {
           ocid = "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczach3pczd4kn6w5stdt7rs64u2uqexzor6lyneaebc2i2ra";
           ip = "144.24.196.72";
@@ -445,6 +450,11 @@
             ip   = "${config.instances.oci-f-micro_2.ip}"
             ocid = "${config.instances.oci-f-micro_2.ocid}"
             role = "Analytics"
+          }
+          "oci-p-flex_0" = {
+            ip   = "${config.instances.oci-p-flex_0.ip}"
+            ocid = "${config.instances.oci-p-flex_0.ocid}"
+            role = "Flex Server"
           }
           "oci-p-flex_1" = {
             ip   = "${config.instances.oci-p-flex_1.ip}"

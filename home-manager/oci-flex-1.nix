@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports = [ (import ./wireguard.nix { vmName = "oci-flex"; }) ];
+  imports = [ (import ./wireguard.nix { vmName = "oci-flex-1"; }) ];
   home.username = "ubuntu";
   home.homeDirectory = "/home/ubuntu";
   home.stateVersion = "24.11";
@@ -103,7 +103,7 @@
       }
 
       # Custom prompt with color
-      PS1='\[\033[01;32m\]\u@oci-flex\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+      PS1='\[\033[01;32m\]\u@oci-flex-1\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 
       # History settings
       export HISTSIZE=10000

@@ -29,10 +29,10 @@ The endpoint resolves which VM hosts the container by iterating `all_vm_services
 | `vaultwarden` | gcp-proxy | vault.diegonmarcos.com |
 | `ntfy` | gcp-proxy | rss.diegonmarcos.com |
 | `flask-api` | gcp-proxy | api.diegonmarcos.com |
-| `photoprism_app` | oci-flex | photos.diegonmarcos.com |
-| `nocodb_app` | oci-flex | db.diegonmarcos.com |
-| `code-server` | oci-flex | ide.diegonmarcos.com |
-| `affine` | oci-flex | drive-notes-affine.diegonmarcos.com |
+| `photoprism_app` | oci-flex-1 | photos.diegonmarcos.com |
+| `nocodb_app` | oci-flex-1 | db.diegonmarcos.com |
+| `code-server` | oci-flex-1 | ide.diegonmarcos.com |
+| `affine` | oci-flex-1 | drive-notes-affine.diegonmarcos.com |
 | `syncthing` | oci-mail | sync.diegonmarcos.com |
 | `radicale` | oci-mail | cal.diegonmarcos.com |
 | `mailu-front-1` | oci-mail | mail.diegonmarcos.com |
@@ -233,7 +233,7 @@ curl http://localhost:8080/rust/profiling/authelia | jq .
 # Profile a remote container (oci-mail)
 curl http://localhost:8080/rust/profiling/mailu-front-1 | jq .
 
-# Profile wake-on-demand (oci-flex)
+# Profile wake-on-demand (oci-flex-1)
 curl http://localhost:8080/rust/profiling/photoprism_app | jq .
 
 # With bearer token (through Caddy)

@@ -23,6 +23,7 @@ export function registerRustApiHealthTools(server: McpServer) {
     "Check if the Rust API is alive (heartbeat)",
     {},
     async () => {
+      // 10s: simple heartbeat should respond within seconds
       const result = rustApiGet("/api/health", 10_000);
       return formatResult("Rust API health", result);
     }
@@ -46,6 +47,7 @@ export function registerRustApiHealthTools(server: McpServer) {
     },
     async ({ vm }) => {
       const endpoint = vm ? `/api/health/deployed/${encodeURIComponent(vm)}` : "/api/health/deployed";
+      // 60s: probes all VMs via SSH + docker ps, can be slow across 4 VMs
       const result = rustApiGet(endpoint, 60_000);
       return formatResult("Deployed containers", result);
     }
@@ -76,11 +78,12 @@ export function registerRustApiHealthTools(server: McpServer) {
 
   server.tool(
     "profile_container",
-    "Run 8-check diagnostic profile on a specific container",
+    "Run diagnostic profile: CPU, memory, network, disk, ports, health, processes, uptime",
     {
       container: z.string().describe("Container name to profile"),
     },
     async ({ container }) => {
+      // 30s: runs 8 diagnostic checks sequentially inside the container
       const result = rustApiGet(`/api/profiling/${encodeURIComponent(container)}`, 30_000);
       return formatResult(`Profile ${container}`, result);
     }
@@ -93,6 +96,7 @@ export function registerRustApiHealthTools(server: McpServer) {
       vm: z.string().describe("VM ID or alias to profile"),
     },
     async ({ vm }) => {
+      // 60s: profiles every container on the VM, 8 checks each
       const result = rustApiGet(`/api/profiling/vm/${encodeURIComponent(vm)}`, 60_000);
       return formatResult(`Profile VM ${vm}`, result);
     }

@@ -20,7 +20,11 @@ All running containers across all VMs and their corresponding flake.
 | `ntfy` | `bc-obs_ntfy` |
 | `vaultwarden` | `ab-mic_vaultwarden` |
 
-### oci-flex
+### oci-flex-0
+
+No containers deployed yet (new VM).
+
+### oci-flex-1
 
 | Container | Flake |
 |-----------|-------|

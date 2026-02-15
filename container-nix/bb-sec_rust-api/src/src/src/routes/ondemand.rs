@@ -14,10 +14,14 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        // VM actions — oci-flex
-        .route("/api/vm/oci-flex/start", post(vm_oci_flex_start))
-        .route("/api/vm/oci-flex/stop", post(vm_oci_flex_stop))
-        .route("/api/vm/oci-flex/reset", post(vm_oci_flex_reset))
+        // VM actions — oci-flex-0
+        .route("/api/vm/oci-flex-0/start", post(vm_oci_flex_0_start))
+        .route("/api/vm/oci-flex-0/stop", post(vm_oci_flex_0_stop))
+        .route("/api/vm/oci-flex-0/reset", post(vm_oci_flex_0_reset))
+        // VM actions — oci-flex-1
+        .route("/api/vm/oci-flex-1/start", post(vm_oci_flex_1_start))
+        .route("/api/vm/oci-flex-1/stop", post(vm_oci_flex_1_stop))
+        .route("/api/vm/oci-flex-1/reset", post(vm_oci_flex_1_reset))
         // VM actions — gcp-proxy
         .route("/api/vm/gcp-proxy/start", post(vm_gcp_proxy_start))
         .route("/api/vm/gcp-proxy/stop", post(vm_gcp_proxy_stop))
@@ -30,7 +34,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/vm/oci-analytics/start", post(vm_oci_analytics_start))
         .route("/api/vm/oci-analytics/stop", post(vm_oci_analytics_stop))
         .route("/api/vm/oci-analytics/reset", post(vm_oci_analytics_reset))
-        // Bulk on-demand container ops (oci-flex)
+        // Bulk on-demand container ops (oci-flex-1)
         .route("/api/containers/on-demand/start-all", post(ondemand_containers_start_all))
         .route("/api/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
         .route("/api/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
@@ -919,9 +923,13 @@ macro_rules! vm_action_handler {
     };
 }
 
-vm_action_handler!(vm_oci_flex_start, "/api/vm/oci-flex/start", "oci-p-flex_1", vm_start, "Start oci-flex");
-vm_action_handler!(vm_oci_flex_stop, "/api/vm/oci-flex/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex");
-vm_action_handler!(vm_oci_flex_reset, "/api/vm/oci-flex/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex");
+vm_action_handler!(vm_oci_flex_0_start, "/api/vm/oci-flex-0/start", "oci-p-flex_0", vm_start, "Start oci-flex-0");
+vm_action_handler!(vm_oci_flex_0_stop, "/api/vm/oci-flex-0/stop", "oci-p-flex_0", vm_stop, "Stop oci-flex-0");
+vm_action_handler!(vm_oci_flex_0_reset, "/api/vm/oci-flex-0/reset", "oci-p-flex_0", vm_reset, "Reset oci-flex-0");
+
+vm_action_handler!(vm_oci_flex_1_start, "/api/vm/oci-flex-1/start", "oci-p-flex_1", vm_start, "Start oci-flex-1");
+vm_action_handler!(vm_oci_flex_1_stop, "/api/vm/oci-flex-1/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex-1");
+vm_action_handler!(vm_oci_flex_1_reset, "/api/vm/oci-flex-1/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex-1");
 
 vm_action_handler!(vm_gcp_proxy_start, "/api/vm/gcp-proxy/start", "gcp-f-micro_1", vm_start, "Start gcp-proxy");
 vm_action_handler!(vm_gcp_proxy_stop, "/api/vm/gcp-proxy/stop", "gcp-f-micro_1", vm_stop, "Stop gcp-proxy");
@@ -936,7 +944,7 @@ vm_action_handler!(vm_oci_analytics_stop, "/api/vm/oci-analytics/stop", "oci-f-m
 vm_action_handler!(vm_oci_analytics_reset, "/api/vm/oci-analytics/reset", "oci-f-micro_2", vm_reset, "Reset oci-analytics");
 
 // ---------------------------------------------------------------------------
-// Bulk on-demand container ops (oci-flex)
+// Bulk on-demand container ops (oci-flex-1)
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(

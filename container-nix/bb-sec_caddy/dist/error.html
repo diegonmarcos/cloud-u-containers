@@ -206,7 +206,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <div class="vm-panel">
     <div class="vm-header">
       <span class="vm-indicator yellow" id="vm-light"></span>
-      <span class="vm-name">oci-flex</span>
+      <span class="vm-name">oci-flex-1</span>
       <span class="vm-health" id="vm-health">checking...</span>
     </div>
     <div class="vm-status" id="vm-status"></div>
@@ -234,8 +234,8 @@ a:hover{color:#845ef7;border-color:#845ef7}
   }
 })();
 
-var API='https://api.diegonmarcos.com/rust';
-var VM_LABEL='oci-flex';
+var API='https://api.diegonmarcos.com';
+var VM_LABEL='oci-flex-1';
 var vmId=null;
 var lightEl=document.getElementById('vm-light');
 var healthEl=document.getElementById('vm-health');
@@ -247,7 +247,7 @@ function setIndicator(color,msg){
 }
 
 function discoverVm(){
-  return fetch(API+'/health/ids',{signal:AbortSignal.timeout(10000)})
+  return fetch(API+'/api/health/declared',{signal:AbortSignal.timeout(10000)})
     .then(function(r){return r.json()})
     .then(function(data){
       var vms=data.vms||{};
@@ -272,7 +272,7 @@ function checkStatus(){
     return;
   }
   setIndicator('yellow','checking...');
-  fetch(API+'/health/up/'+vmId,{signal:AbortSignal.timeout(10000)})
+  fetch(API+'/api/health/status/'+vmId,{signal:AbortSignal.timeout(10000)})
     .then(function(r){return r.json()})
     .then(function(data){
       console.debug('[vm] health:',data);
@@ -298,7 +298,7 @@ function vmAction(action){
   }
   setIndicator('yellow','sending '+action+'...');
   statusEl.textContent='';
-  fetch(API+'/vms/'+vmId+'/'+action,{method:'POST',signal:AbortSignal.timeout(30000)})
+  fetch(API+'/api/vms/'+vmId+'/'+action,{method:'POST',signal:AbortSignal.timeout(30000)})
     .then(function(r){return r.json()})
     .then(function(data){
       console.debug('[vm] action:',action,data);

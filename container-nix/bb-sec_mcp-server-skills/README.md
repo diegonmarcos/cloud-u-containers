@@ -74,7 +74,8 @@ Container mounts `~/git` (read-only) and `~/.ssh` (read-only) from the host.
 | `gcp-f-micro_1` | `gcp-proxy` | 35.226.147.64 | diego | Free (24/7) | Central Proxy + Control |
 | `oci-f-micro_1` | `oci-mail` | 130.110.251.193 | ubuntu | Free (24/7) | Mail Server |
 | `oci-f-micro_2` | `oci-analytics` | 129.151.228.66 | ubuntu | Free (24/7) | Analytics + Workflows |
-| `oci-p-flex_1` | `oci-flex` | 144.24.196.72 | ubuntu | Paid (wake-on-demand) | Heavy Services |
+| `oci-p-flex_0` | `oci-flex-0` | 82.70.229.129 | ubuntu | Free A1.Flex (wake-on-demand) | No services yet |
+| `oci-p-flex_1` | `oci-flex-1` | 144.24.196.72 | ubuntu | Free A1.Flex (wake-on-demand) | Heavy Services |
 
 ### Services (48)
 

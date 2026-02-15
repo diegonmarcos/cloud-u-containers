@@ -88,14 +88,11 @@ import request_limits
 }
   }
 
-  # API — Rust (public), Flask (protected)
+  # API — Rust (default catch-all), Flask (/flask/*), Go (/go/*)
   api.diegonmarcos.com {
 import security
 import request_limits
-    handle /rust/* {
-      reverse_proxy 10.0.0.1:8080
-    }
-    handle {
+    handle /flask/* {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
@@ -112,6 +109,12 @@ forward_auth authelia:9091 {
     reverse_proxy 10.0.0.1:5000
   }
 
+    }
+    handle /go/* {
+      reverse_proxy 10.0.0.1:8090
+    }
+    handle {
+      reverse_proxy 10.0.0.1:8080
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
