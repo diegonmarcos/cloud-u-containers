@@ -50,6 +50,9 @@
     lsof
     iftop
 
+    # Container runtime (rootless, alongside system Docker)
+    podman
+
     # Mail-specific tools
     swaks  # SMTP testing
   ];

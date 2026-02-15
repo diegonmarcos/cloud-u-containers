@@ -7,18 +7,21 @@
       "ip": "130.110.251.193",
       "user": "ubuntu",
       "method": "key",
+      "ssh_alias": "oci-mail",
       "description": "Oracle Free - Mail Server"
     },
     "oci-f-micro_2": {
       "ip": "129.151.228.66",
       "user": "ubuntu",
       "method": "key",
+      "ssh_alias": "oci-analytics",
       "description": "Oracle Free - Analytics + Workflows"
     },
     "gcp-f-micro_1": {
       "ip": "35.226.147.64",
       "user": "diego",
       "method": "gcloud",
+      "ssh_alias": "gcp-proxy",
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
       "description": "GCloud Free - Central Proxy + Control"
@@ -27,6 +30,7 @@
       "ip": "144.24.196.72",
       "user": "ubuntu",
       "method": "key",
+      "ssh_alias": "oci-flex",
       "description": "Oracle Paid - Heavy Services (Wake-on-Demand)"
     }
   },

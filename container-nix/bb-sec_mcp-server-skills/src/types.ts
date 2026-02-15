@@ -2,6 +2,7 @@ export interface VmConfig {
   ip: string;
   user: string;
   method: "key" | "gcloud";
+  ssh_alias?: string;
   gcloud_instance?: string;
   gcloud_zone?: string;
   description: string;

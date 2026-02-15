@@ -13,7 +13,7 @@ export function registerBuildTools(server: McpServer) {
     {
       service: z.string().describe("Service name"),
       step: z
-        .enum(["build", "secrets", "ship", "clean", "all"])
+        .enum(["build", "secrets", "ship", "docker", "deploy", "compose", "clean", "all"])
         .optional()
         .describe("Build step (default: all)"),
     },

@@ -28,6 +28,7 @@ func main() {
 	routes.RegisterHealth(r, cfg)
 	routes.RegisterProfiling(r, cfg)
 	routes.RegisterActions(r, cfg)
+	routes.RegisterDocs(r, cfg)
 
 	addr := fmt.Sprintf("0.0.0.0:%s", port)
 	log.Printf("Go API listening on %s", addr)

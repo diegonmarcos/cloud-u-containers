@@ -4,16 +4,21 @@ import type { InfraConfig, ServiceConfig } from "./types.js";
 import { CONFIG_PATH, CONTAINER_NIX_DIR } from "./utils/paths.js";
 
 let _config: InfraConfig | null = null;
+let _configTimestamp = 0;
+const CONFIG_TTL = 5 * 60 * 1000; // 5 minutes
 
 export function getConfig(): InfraConfig {
-  if (!_config) {
+  const now = Date.now();
+  if (!_config || now - _configTimestamp > CONFIG_TTL) {
     _config = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
+    _configTimestamp = now;
   }
   return _config;
 }
 
 export function reloadConfig(): InfraConfig {
   _config = null;
+  _configTimestamp = 0;
   return getConfig();
 }
 
@@ -39,27 +44,47 @@ export function getServiceDir(name: string): string {
   return join(CONTAINER_NIX_DIR, getServiceFolder(name));
 }
 
-const VM_SSH_ALIASES: Record<string, string> = {
+// Hardcoded fallback — used when config.json VMs lack ssh_alias
+const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
   "gcp-f-micro_1": "gcp-proxy",
   "oci-f-micro_1": "oci-mail",
   "oci-f-micro_2": "oci-analytics",
   "oci-p-flex_1": "oci-flex",
 };
 
-const ALIAS_TO_VM: Record<string, string> = Object.fromEntries(
-  Object.entries(VM_SSH_ALIASES).map(([k, v]) => [v, k])
-);
+function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record<string, string> } {
+  const config = getConfig();
+  const vmToAlias: Record<string, string> = { ...VM_SSH_ALIASES_FALLBACK };
+  const aliasToVm: Record<string, string> = {};
+
+  // Prefer ssh_alias from config.json when present
+  for (const [vmId, vm] of Object.entries(config.vms)) {
+    if (vm.ssh_alias) {
+      vmToAlias[vmId] = vm.ssh_alias;
+    }
+  }
+
+  // Build reverse map
+  for (const [vmId, alias] of Object.entries(vmToAlias)) {
+    aliasToVm[alias] = vmId;
+  }
+
+  return { vmToAlias, aliasToVm };
+}
 
 export function getVmSshAlias(vmId: string): string {
-  return VM_SSH_ALIASES[vmId] ?? vmId;
+  const { vmToAlias } = buildAliasMap();
+  return vmToAlias[vmId] ?? vmId;
 }
 
 export function resolveVmId(nameOrAlias: string): string {
-  if (ALIAS_TO_VM[nameOrAlias]) return ALIAS_TO_VM[nameOrAlias];
+  const { aliasToVm } = buildAliasMap();
+  if (aliasToVm[nameOrAlias]) return aliasToVm[nameOrAlias];
   const config = getConfig();
   if (config.vms[nameOrAlias]) return nameOrAlias;
+  const { vmToAlias } = buildAliasMap();
   throw new Error(
-    `Unknown VM: ${nameOrAlias}. Valid: ${Object.keys(config.vms).join(", ")} or aliases: ${Object.values(VM_SSH_ALIASES).join(", ")}`
+    `Unknown VM: ${nameOrAlias}. Valid: ${Object.keys(config.vms).join(", ")} or aliases: ${Object.values(vmToAlias).join(", ")}`
   );
 }
 
