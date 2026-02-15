@@ -4,7 +4,7 @@ services:
     container_name: nocodb
     restart: unless-stopped
     env_file:
-      - .env
+      - .secrets
     environment:
       NC_DB: "pg://nocodb-db:5432?u=nocodb&p=${POSTGRES_PASSWORD}&d=nocodb"
       NC_PUBLIC_URL: https://db.diegonmarcos.com
@@ -20,7 +20,7 @@ services:
       - nocodb_data:/usr/app/data
       - /mnt/gcloud-sqlite:/sqlite:ro
     ports:
-      - "0.0.0.0:8085:8080"
+      - "10.0.0.2:8085:8080"
     networks:
       - nocodb_network
       - dev_network

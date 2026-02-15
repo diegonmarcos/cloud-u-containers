@@ -23,7 +23,7 @@
           container_name: lgtm_grafana
           restart: unless-stopped
           ports:
-            - "3016:3000"
+            - "10.0.0.2:3016:3000"
           volumes:
             - grafana_data:/var/lib/grafana
           environment:
@@ -46,7 +46,7 @@
           container_name: lgtm_loki
           restart: unless-stopped
           ports:
-            - "3017:3100"
+            - "10.0.0.2:3017:3100"
           volumes:
             - loki_data:/loki
           command: -config.file=/etc/loki/local-config.yaml
@@ -63,9 +63,9 @@
           container_name: lgtm_tempo
           restart: unless-stopped
           ports:
-            - "3018:3200"
-            - "4317:4317"
-            - "4318:4318"
+            - "10.0.0.2:3018:3200"
+            - "10.0.0.2:4317:4317"
+            - "10.0.0.2:4318:4318"
           volumes:
             - tempo_data:/var/tempo
             - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
@@ -78,7 +78,7 @@
           container_name: lgtm_mimir
           restart: unless-stopped
           ports:
-            - "3019:8080"
+            - "10.0.0.2:3019:8080"
           volumes:
             - mimir_data:/data
             - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro

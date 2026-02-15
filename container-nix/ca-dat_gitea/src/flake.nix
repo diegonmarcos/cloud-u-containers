@@ -22,8 +22,8 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port_http}:3000"
-            - "${toString config.port_ssh}:22"
+            - "10.0.0.2:${toString config.port_http}:3000"
+            - "10.0.0.2:${toString config.port_ssh}:22"
           volumes:
             - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro

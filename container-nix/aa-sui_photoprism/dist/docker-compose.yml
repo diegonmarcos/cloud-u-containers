@@ -22,7 +22,7 @@ services:
       - RCLONE_CONFIG_OCI_REGION=eu-marseille-1
       - RCLONE_CONFIG_OCI_ACL=private
     env_file:
-      - .env
+      - .secrets
     volumes:
       - /opt/containers/photoprism/originals:/data:shared
     command: >
@@ -50,7 +50,7 @@ services:
     container_name: photoprism_app
     restart: "no"
     ports:
-      - "3013:2342"
+      - "10.0.0.2:3013:2342"
     volumes:
       - photoprism_storage:/photoprism/storage
       - /opt/containers/photoprism/originals:/photoprism/originals:ro

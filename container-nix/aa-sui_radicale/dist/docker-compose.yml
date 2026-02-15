@@ -4,7 +4,7 @@ services:
     container_name: radicale
     restart: unless-stopped
     ports:
-      - "5232:5232"
+      - "10.0.0.2:5232:5232"
     volumes:
       - ./data:/data
       - ./config:/config:ro
@@ -16,11 +16,7 @@ services:
       timeout: 10s
       retries: 3
     networks:
-      - mail_network
-      - mailu_default
+      - default
 
 networks:
-  mail_network:
-    external: true
-  mailu_default:
-    external: true
+  default:

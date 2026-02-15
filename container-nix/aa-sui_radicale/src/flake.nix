@@ -22,7 +22,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port}:5232"
+            - "10.0.0.2:${toString config.port}:5232"
           volumes:
             - ./data:/data
             - ./config:/config:ro
@@ -34,14 +34,10 @@
             timeout: 10s
             retries: 3
           networks:
-            - mail_network
-            - mailu_default
+            - default
 
       networks:
-        mail_network:
-          external: true
-        mailu_default:
-          external: true
+        default:
     '';
 
     mkRadicaleConfig = pkgs: pkgs.writeText "config" ''
@@ -50,8 +46,8 @@
 
       [auth]
       type = imap
-      imap_host = imap:143
-      imap_security = none
+      imap_host = 10.0.0.3:993
+      imap_security = tls
 
       [storage]
       filesystem_folder = /data/collections

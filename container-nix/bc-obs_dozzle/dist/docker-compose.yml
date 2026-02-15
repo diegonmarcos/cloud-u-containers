@@ -2,7 +2,7 @@ services:
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle
-    restart: always
+    restart: unless-stopped
     ports:
       - "9999:8080"
     volumes:

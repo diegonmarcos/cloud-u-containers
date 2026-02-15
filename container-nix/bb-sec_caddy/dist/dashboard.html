@@ -238,7 +238,7 @@ time</p>
 <td><strong>API (Flask+Rust)</strong></td>
 <td>gcp-proxy</td>
 <td>5000/8080</td>
-<td>Public</td>
+<td>Flask: Authelia + Bearer / Rust: Public</td>
 <td>24/7</td>
 </tr>
 <tr class="even">
@@ -496,6 +496,552 @@ time</p>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="firewall-ports">Firewall &amp; Ports</h2>
+<p>Cloud firewall rules and host-level iptables. Only
+<strong>gcp-proxy</strong> should accept public traffic. OCI VMs
+restrict to WireGuard mesh + mail delivery ports.</p>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 17%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 22%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>VM</th>
+<th>WG IP</th>
+<th>Port</th>
+<th>Bind</th>
+<th>Purpose</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td><code>10.0.0.1</code></td>
+<td>22/tcp</td>
+<td>0.0.0.0</td>
+<td>SSH</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td><code>10.0.0.1</code></td>
+<td>80/tcp</td>
+<td>0.0.0.0</td>
+<td>Caddy HTTP</td>
+<td>OPEN</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td><code>10.0.0.1</code></td>
+<td>443/tcp</td>
+<td>0.0.0.0</td>
+<td>Caddy HTTPS</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td><code>10.0.0.1</code></td>
+<td>443/udp</td>
+<td>0.0.0.0</td>
+<td>Caddy HTTP/3</td>
+<td>OPEN</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td><code>10.0.0.1</code></td>
+<td>51820/udp</td>
+<td>0.0.0.0</td>
+<td>WireGuard</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td><code>10.0.0.2</code></td>
+<td>22/tcp</td>
+<td>0.0.0.0</td>
+<td>SSH</td>
+<td>RESTRICT</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td><code>10.0.0.2</code></td>
+<td>51820/udp</td>
+<td>0.0.0.0</td>
+<td>WireGuard</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>22/tcp</td>
+<td>0.0.0.0</td>
+<td>SSH</td>
+<td>RESTRICT</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>25/tcp</td>
+<td>0.0.0.0</td>
+<td>SMTP (inbound)</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>465/tcp</td>
+<td>0.0.0.0</td>
+<td>SMTPS</td>
+<td>OPEN</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>587/tcp</td>
+<td>0.0.0.0</td>
+<td>SMTP Submission</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>993/tcp</td>
+<td>0.0.0.0</td>
+<td>IMAPS</td>
+<td>OPEN</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td><code>10.0.0.3</code></td>
+<td>51820/udp</td>
+<td>0.0.0.0</td>
+<td>WireGuard</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-analytics</strong></td>
+<td><code>10.0.0.4</code></td>
+<td>22/tcp</td>
+<td>0.0.0.0</td>
+<td>SSH</td>
+<td>RESTRICT</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-analytics</strong></td>
+<td><code>10.0.0.4</code></td>
+<td>51820/udp</td>
+<td>0.0.0.0</td>
+<td>WireGuard</td>
+<td>OPEN</td>
+</tr>
+</tbody>
+</table>
+<p><strong>iptables policy per VM:</strong></p>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 26%" />
+<col style="width: 23%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>VM</th>
+<th>Chain</th>
+<th>Rule</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>gcp-proxy</td>
+<td>FORWARD</td>
+<td><code>10.0.0.0/24 → wg0 ACCEPT</code></td>
+<td>WireGuard mesh routing</td>
+</tr>
+<tr class="even">
+<td>gcp-proxy</td>
+<td>POSTROUTING</td>
+<td><code>10.0.0.0/24 MASQUERADE</code></td>
+<td>NAT for mesh hub</td>
+</tr>
+<tr class="odd">
+<td>gcp-proxy</td>
+<td>INPUT</td>
+<td><code>51820/udp ACCEPT</code></td>
+<td>WireGuard endpoint</td>
+</tr>
+<tr class="even">
+<td>oci-flex</td>
+<td>INPUT</td>
+<td><code>51820/udp ACCEPT</code></td>
+<td>WireGuard endpoint</td>
+</tr>
+<tr class="odd">
+<td>oci-flex</td>
+<td>INPUT</td>
+<td><code>22/tcp from 10.0.0.0/24 ACCEPT</code></td>
+<td>SSH via mesh only</td>
+</tr>
+<tr class="even">
+<td>oci-flex</td>
+<td>INPUT</td>
+<td><code>default DROP</code> (except established)</td>
+<td>Block public access</td>
+</tr>
+<tr class="odd">
+<td>oci-mail</td>
+<td>INPUT</td>
+<td><code>25,465,587,993/tcp ACCEPT</code></td>
+<td>Mail delivery (public)</td>
+</tr>
+<tr class="even">
+<td>oci-mail</td>
+<td>INPUT</td>
+<td><code>51820/udp ACCEPT</code></td>
+<td>WireGuard endpoint</td>
+</tr>
+<tr class="odd">
+<td>oci-mail</td>
+<td>INPUT</td>
+<td><code>other DROP</code> (except established)</td>
+<td>Block non-mail public</td>
+</tr>
+<tr class="even">
+<td>oci-analytics</td>
+<td>INPUT</td>
+<td><code>51820/udp ACCEPT</code></td>
+<td>WireGuard endpoint</td>
+</tr>
+<tr class="odd">
+<td>oci-analytics</td>
+<td>INPUT</td>
+<td><code>22/tcp from 10.0.0.0/24 ACCEPT</code></td>
+<td>SSH via mesh only</td>
+</tr>
+<tr class="even">
+<td>oci-analytics</td>
+<td>INPUT</td>
+<td><code>default DROP</code> (except established)</td>
+<td>Block public access</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="docker-network">Docker Network</h2>
+<p>Container port bindings. <code>0.0.0.0</code> = publicly exposed,
+<code>10.0.0.x</code> = WireGuard mesh only, <code>127.0.0.1</code> =
+localhost, <code>docker</code> = internal network.</p>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 22%" />
+<col style="width: 22%" />
+<col style="width: 12%" />
+<col style="width: 20%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>VM</th>
+<th>Container</th>
+<th>Host Port</th>
+<th>Bind</th>
+<th>Internal</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td>caddy</td>
+<td>80</td>
+<td><code>0.0.0.0</code></td>
+<td>80</td>
+<td>reverse proxy</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td>caddy</td>
+<td>443</td>
+<td><code>0.0.0.0</code></td>
+<td>443</td>
+<td>reverse proxy</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td>authelia</td>
+<td>9091</td>
+<td><code>127.0.0.1</code></td>
+<td>9091</td>
+<td>via Caddy</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td>rust-api</td>
+<td>8080</td>
+<td><code>127.0.0.1</code></td>
+<td>8080</td>
+<td>via Caddy</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td>flask-api</td>
+<td>5000</td>
+<td><code>127.0.0.1</code></td>
+<td>5000</td>
+<td>via Caddy</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td>introspect-proxy</td>
+<td>4182</td>
+<td><code>docker</code></td>
+<td>4182</td>
+<td>internal only</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td>vaultwarden</td>
+<td>—</td>
+<td><code>docker</code></td>
+<td>80</td>
+<td>via Caddy</td>
+</tr>
+<tr class="even">
+<td><strong>gcp-proxy</strong></td>
+<td>ntfy</td>
+<td>8090</td>
+<td><code>127.0.0.1</code></td>
+<td>80</td>
+<td>via Caddy</td>
+</tr>
+<tr class="odd">
+<td><strong>gcp-proxy</strong></td>
+<td>dozzle</td>
+<td>9999</td>
+<td><code>127.0.0.1</code></td>
+<td>8080</td>
+<td>via Caddy</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>photoprism</td>
+<td>3013</td>
+<td><code>10.0.0.2</code></td>
+<td>2342</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>nocodb</td>
+<td>8085</td>
+<td><code>10.0.0.2</code></td>
+<td>8080</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>code-server</td>
+<td>8443</td>
+<td><code>10.0.0.2</code></td>
+<td>8443</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>grist</td>
+<td>3011</td>
+<td><code>10.0.0.2</code></td>
+<td>8484</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>etherpad</td>
+<td>3012</td>
+<td><code>10.0.0.2</code></td>
+<td>9001</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>filebrowser</td>
+<td>3015</td>
+<td><code>10.0.0.2</code></td>
+<td>80</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>hedgedoc</td>
+<td>3010</td>
+<td><code>10.0.0.2</code></td>
+<td>3000</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>revealmd</td>
+<td>3014</td>
+<td><code>10.0.0.2</code></td>
+<td>1948</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>gitea</td>
+<td>3000</td>
+<td><code>10.0.0.2</code></td>
+<td>3000</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>gitea-ssh</td>
+<td>2222</td>
+<td><code>10.0.0.2</code></td>
+<td>22</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>grafana</td>
+<td>3016</td>
+<td><code>10.0.0.2</code></td>
+<td>3000</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>loki</td>
+<td>3017</td>
+<td><code>10.0.0.2</code></td>
+<td>3100</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex</strong></td>
+<td>tempo</td>
+<td>3018</td>
+<td><code>10.0.0.2</code></td>
+<td>3200</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex</strong></td>
+<td>mimir</td>
+<td>3019</td>
+<td><code>10.0.0.2</code></td>
+<td>8080</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td>mailu-front</td>
+<td>25</td>
+<td><code>0.0.0.0</code></td>
+<td>25</td>
+<td>SMTP public</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td>mailu-front</td>
+<td>465</td>
+<td><code>0.0.0.0</code></td>
+<td>465</td>
+<td>SMTPS public</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td>mailu-front</td>
+<td>587</td>
+<td><code>0.0.0.0</code></td>
+<td>587</td>
+<td>submission public</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td>mailu-front</td>
+<td>993</td>
+<td><code>0.0.0.0</code></td>
+<td>993</td>
+<td>IMAPS public</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td>mailu-front</td>
+<td>8444</td>
+<td><code>10.0.0.3</code></td>
+<td>443</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td>syncthing</td>
+<td>8384</td>
+<td><code>10.0.0.3</code></td>
+<td>8384</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-mail</strong></td>
+<td>syncthing</td>
+<td>22000</td>
+<td><code>0.0.0.0</code></td>
+<td>22000</td>
+<td>P2P sync</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-mail</strong></td>
+<td>radicale</td>
+<td>5232</td>
+<td><code>10.0.0.3</code></td>
+<td>5232</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-analytics</strong></td>
+<td>matomo</td>
+<td>8080</td>
+<td><code>10.0.0.4</code></td>
+<td>8080</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-analytics</strong></td>
+<td>windmill</td>
+<td>8000</td>
+<td><code>127.0.0.1</code></td>
+<td>8000</td>
+<td>localhost</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Docker network topology:</strong></p>
+<pre><code>┌─── npm_default (bridge) ──────────────────────────────────┐
+│                                                            │
+│  gcp-proxy:  caddy ←→ authelia ←→ introspect-proxy        │
+│              rust-api, flask-api, vaultwarden, ntfy        │
+│              dozzle (monitors all containers)              │
+│                                                            │
+│  oci-flex:   photoprism ←→ photoprism-db (redis)          │
+│              nocodb, code-server, grist, gitea             │
+│              etherpad, filebrowser, hedgedoc, revealmd     │
+│              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
+│                                                            │
+│  oci-mail:   mailu (front/smtp/imap/admin/webmail/redis)  │
+│              syncthing, radicale, caddy (local proxy)      │
+│                                                            │
+│  oci-analytics: matomo, windmill                           │
+└────────────────────────────────────────────────────────────┘</code></pre>
 <hr />
 <h2 id="auth-flow">Auth Flow</h2>
 <pre><code>Browser Request

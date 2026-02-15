@@ -7,7 +7,7 @@ services:
     container_name: grist_app
     restart: always
     ports:
-      - "3011:8484"
+      - "10.0.0.2:3011:8484"
     volumes:
       - grist_data:/persist
     environment:
