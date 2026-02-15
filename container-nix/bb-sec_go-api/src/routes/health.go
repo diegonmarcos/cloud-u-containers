@@ -1,9 +1,13 @@
 package routes
 
 import (
+	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/diegonmarcos/go-api/config"
 	"github.com/diegonmarcos/go-api/services"
@@ -237,15 +241,17 @@ func healthDrift(cfg *config.AppConfig) http.HandlerFunc {
 	}
 }
 
-// Tier 3: status (comprehensive)
+// Tier 3: status (comprehensive — provider state + resources + domain probing)
 func healthStatus(cfg *config.AppConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type vmResult struct {
-			vmID       string
-			label      string
-			sshOK      bool
-			pingOK     bool
-			containers []services.ContainerStatus
+			vmID          string
+			label         string
+			sshOK         bool
+			pingOK        bool
+			providerState string
+			containers    []services.ContainerStatus
+			resources     map[string]string
 		}
 
 		var mu sync.Mutex
@@ -260,18 +266,27 @@ func healthStatus(cfg *config.AppConfig) http.HandlerFunc {
 				if !ok {
 					return
 				}
+
+				// Provider state
+				provState := getProviderState(cfg, id)
+
 				pingOK := services.CheckPing(sshCfg.Host)
 				sshOK := services.CheckSSH(sshCfg)
 				var containers []services.ContainerStatus
+				var resources map[string]string
 				if sshOK {
 					containers = services.BatchContainerStatuses(sshCfg)
+					resources = gatherVmResources(sshCfg)
 				}
 				mu.Lock()
-				results[id] = vmResult{id, label, sshOK, pingOK, containers}
+				results[id] = vmResult{id, label, sshOK, pingOK, provState, containers, resources}
 				mu.Unlock()
 			}(vmID, vmMap.Label)
 		}
 		wg.Wait()
+
+		// Domain probing
+		domainResults := probeDomains(cfg)
 
 		vms := map[string]interface{}{}
 		for vmID, res := range results {
@@ -296,16 +311,24 @@ func healthStatus(cfg *config.AppConfig) http.HandlerFunc {
 				})
 			}
 
-			vms[vmID] = map[string]interface{}{
+			vmData := map[string]interface{}{
 				"label": res.label, "ssh": res.sshOK, "ping": res.pingOK,
 				"health": health, "containers": details,
+				"provider_state": res.providerState,
 				"summary": map[string]int{
 					"containers_running": running, "containers_total": total,
 				},
 			}
+			if res.resources != nil {
+				vmData["resources"] = res.resources
+			}
+			vms[vmID] = vmData
 		}
 
-		writeJSON(w, map[string]interface{}{"vms": vms})
+		writeJSON(w, map[string]interface{}{
+			"vms":     vms,
+			"domains": domainResults,
+		})
 	}
 }
 
@@ -324,11 +347,14 @@ func healthStatusVM(cfg *config.AppConfig) http.HandlerFunc {
 			return
 		}
 
+		provState := getProviderState(cfg, vmID)
 		pingOK := services.CheckPing(sshCfg.Host)
 		sshOK := services.CheckSSH(sshCfg)
 		var containers []services.ContainerStatus
+		var resources map[string]string
 		if sshOK {
 			containers = services.BatchContainerStatuses(sshCfg)
+			resources = gatherVmResources(sshCfg)
 		}
 
 		health := "unknown"
@@ -352,15 +378,141 @@ func healthStatusVM(cfg *config.AppConfig) http.HandlerFunc {
 			})
 		}
 
-		writeJSON(w, map[string]interface{}{
+		resp := map[string]interface{}{
 			"vm_id": vmID, "label": vmMap.Label,
 			"ssh": sshOK, "ping": pingOK, "health": health,
-			"containers": details,
+			"provider_state": provState,
+			"containers":     details,
 			"summary": map[string]int{
 				"containers_running": running, "containers_total": total,
 			},
-		})
+		}
+		if resources != nil {
+			resp["resources"] = resources
+		}
+
+		writeJSON(w, resp)
 	}
+}
+
+// getProviderState queries OCI/GCP for the VM's current state.
+func getProviderState(cfg *config.AppConfig, vmID string) string {
+	inst, ok := cfg.VmInstances[vmID]
+	if !ok {
+		return "UNKNOWN"
+	}
+
+	switch inst.Provider {
+	case "oci":
+		state, err := services.GetOciInstanceState(cfg.OciConfigFile, inst.InstanceID)
+		if err != nil {
+			return "ERROR"
+		}
+		return state
+	case "gcp":
+		gcpVm, ok := cfg.GcpVms[vmID]
+		if !ok {
+			return "UNKNOWN"
+		}
+		state, err := services.GetGcpInstanceState(cfg.GcpServiceAccountFile, gcpVm.Project, gcpVm.Zone, gcpVm.Name)
+		if err != nil {
+			return "ERROR"
+		}
+		return state
+	}
+	return "UNKNOWN"
+}
+
+// gatherVmResources collects CPU, memory, disk, and docker stats via SSH.
+func gatherVmResources(sshCfg config.SshConfig) map[string]string {
+	resources := map[string]string{}
+
+	// CPU load
+	r := services.SshCommand(sshCfg, "cat /proc/loadavg | awk '{print $1, $2, $3}'")
+	if r.Success {
+		resources["load_avg"] = strings.TrimSpace(r.Output)
+	}
+
+	// Memory
+	r = services.SshCommand(sshCfg, "free -m | awk '/^Mem:/{printf \"%s/%sMB (%.0f%%)\", $3, $2, $3/$2*100}'")
+	if r.Success {
+		resources["memory"] = strings.TrimSpace(r.Output)
+	}
+
+	// Disk
+	r = services.SshCommand(sshCfg, "df -h / | awk 'NR==2{printf \"%s/%s (%s)\", $3, $2, $5}'")
+	if r.Success {
+		resources["disk"] = strings.TrimSpace(r.Output)
+	}
+
+	// Docker container count
+	r = services.SshCommand(sshCfg, "docker ps -q | wc -l")
+	if r.Success {
+		resources["docker_running"] = strings.TrimSpace(r.Output)
+	}
+
+	return resources
+}
+
+// probeDomains probes all configured domains via HTTPS.
+func probeDomains(cfg *config.AppConfig) []map[string]interface{} {
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
+		},
+	}
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	results := make([]map[string]interface{}, 0, len(cfg.RouteCheckDomains))
+
+	for _, d := range cfg.RouteCheckDomains {
+		wg.Add(1)
+		go func(domain, service string) {
+			defer wg.Done()
+			start := time.Now()
+
+			reqURL := fmt.Sprintf("https://%s/", domain)
+			req, err := http.NewRequest("GET", reqURL, nil)
+			if err != nil {
+				mu.Lock()
+				results = append(results, map[string]interface{}{
+					"domain": domain, "service": service, "reachable": false,
+					"error": err.Error(), "time_ms": time.Since(start).Milliseconds(),
+				})
+				mu.Unlock()
+				return
+			}
+
+			if cfg.AutheliaBearerToken != "" {
+				req.Header.Set("Authorization", "Bearer "+cfg.AutheliaBearerToken)
+			}
+
+			resp, err := client.Do(req)
+			elapsed := time.Since(start).Milliseconds()
+
+			entry := map[string]interface{}{
+				"domain": domain, "service": service, "time_ms": elapsed,
+			}
+
+			if err != nil {
+				entry["reachable"] = false
+				entry["error"] = err.Error()
+			} else {
+				resp.Body.Close()
+				entry["reachable"] = resp.StatusCode < 500
+				entry["status_code"] = resp.StatusCode
+			}
+
+			mu.Lock()
+			results = append(results, entry)
+			mu.Unlock()
+		}(d.Domain, d.Service)
+	}
+	wg.Wait()
+
+	return results
 }
 
 // diff returns elements in a that are not in b.

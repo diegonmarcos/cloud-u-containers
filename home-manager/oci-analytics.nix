@@ -49,6 +49,9 @@
     # Monitoring
     lsof
     iftop
+
+    # Container runtime (rootless, alongside system Docker)
+    podman
   ];
 
   programs.git = {

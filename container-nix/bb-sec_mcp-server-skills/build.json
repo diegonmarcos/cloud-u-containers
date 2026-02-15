@@ -1,0 +1,11 @@
+{
+  "name": "mcp-server-skills",
+  "description": "Cloud-infra MCP server for Claude Code (containerized debian-slim, local deploy)",
+
+  "deploy": {
+    "host": "local",
+    "docker_image": "cloud-infra-mcp:latest",
+    "skill_dest": "~/.claude/skills/personal-cloud-manager",
+    "mcp_name": "cloud-infra"
+  }
+}

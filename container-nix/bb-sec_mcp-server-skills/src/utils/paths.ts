@@ -9,6 +9,8 @@ export const BUILD_SCRIPT = join(CONTAINER_NIX_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/oauth/age_keys.txt");
 
+export const RUST_API_BASE = "https://api.diegonmarcos.com:8080";
+
 export const FRONT_DIR = join(GIT_BASE, "front");
 export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");
 

@@ -21,6 +21,19 @@ type RouteCheckDomain struct {
 	Service string
 }
 
+// VmInstance holds cloud provider instance identifiers.
+type VmInstance struct {
+	Provider   string // "oci" or "gcp"
+	InstanceID string
+}
+
+// GcpVm holds GCP-specific VM metadata.
+type GcpVm struct {
+	Name    string
+	Zone    string
+	Project string
+}
+
 // AppConfig holds all application configuration.
 type AppConfig struct {
 	Port               int
@@ -29,6 +42,15 @@ type AppConfig struct {
 	FlexVmID           string
 	RouteCheckDomains  []RouteCheckDomain
 	ContainerDomainMap map[string]string
+
+	// Provider API config
+	VmInstances          map[string]VmInstance
+	GcpVms               map[string]GcpVm
+	OciConfigFile        string
+	OciKeyFile           string
+	GcpServiceAccountFile string
+	GcpProjectID         string
+	AutheliaBearerToken  string
 }
 
 // Load initializes the application config (mirrors Rust config.rs).
@@ -98,18 +120,23 @@ func Load() *AppConfig {
 	}
 
 	containerDomainMap := map[string]string{
-		"authelia":       "auth.diegonmarcos.com",
-		"vaultwarden":    "vault.diegonmarcos.com",
-		"ntfy":           "rss.diegonmarcos.com",
-		"photoprism_app": "photos.diegonmarcos.com",
-		"nocodb_app":     "db.diegonmarcos.com",
-		"code-server":    "ide.diegonmarcos.com",
-		"syncthing":      "sync.diegonmarcos.com",
-		"radicale":       "cal.diegonmarcos.com",
-		"matomo-hybrid":  "analytics.diegonmarcos.com",
-		"mailu-front-1":  "mail.diegonmarcos.com",
-		"flask-api":      "api.diegonmarcos.com",
-		"affine":         "drive-notes-affine.diegonmarcos.com",
+		"authelia":        "auth.diegonmarcos.com",
+		"vaultwarden":     "vault.diegonmarcos.com",
+		"ntfy":            "rss.diegonmarcos.com",
+		"photoprism_app":  "photos.diegonmarcos.com",
+		"nocodb_app":      "db.diegonmarcos.com",
+		"code-server":     "ide.diegonmarcos.com",
+		"syncthing":       "sync.diegonmarcos.com",
+		"radicale":        "cal.diegonmarcos.com",
+		"matomo-hybrid":   "analytics.diegonmarcos.com",
+		"mailu-front-1":   "mail.diegonmarcos.com",
+		"flask-api":       "api.diegonmarcos.com",
+		"affine":          "drive-notes-affine.diegonmarcos.com",
+		"gitea":           "git.diegonmarcos.com",
+		"windmill-server": "windmill.diegonmarcos.com",
+		"lgtm_grafana":    "grafana.diegonmarcos.com",
+		"dozzle":          "logs.diegonmarcos.com",
+		"rust-api":        "api.diegonmarcos.com:8080",
 	}
 
 	routeCheckDomains := []RouteCheckDomain{
@@ -122,6 +149,19 @@ func Load() *AppConfig {
 		{Domain: "api.diegonmarcos.com", Service: "api"},
 	}
 
+	gcpProjectID := envOr("GCP_PROJECT_ID", "")
+
+	vmInstances := map[string]VmInstance{
+		"oci-p-flex_1":  {Provider: "oci", InstanceID: envOr("OCI_FLEX1_INSTANCE_ID", "")},
+		"oci-f-micro_1": {Provider: "oci", InstanceID: envOr("OCI_MICRO1_INSTANCE_ID", "")},
+		"oci-f-micro_2": {Provider: "oci", InstanceID: envOr("OCI_MICRO2_INSTANCE_ID", "")},
+		"gcp-f-micro_1": {Provider: "gcp", InstanceID: ""},
+	}
+
+	gcpVms := map[string]GcpVm{
+		"gcp-f-micro_1": {Name: "arch-1", Zone: "us-central1-a", Project: gcpProjectID},
+	}
+
 	return &AppConfig{
 		Port:               8090,
 		VmSSH:              vmSSH,
@@ -129,6 +169,14 @@ func Load() *AppConfig {
 		FlexVmID:           "oci-p-flex_1",
 		RouteCheckDomains:  routeCheckDomains,
 		ContainerDomainMap: containerDomainMap,
+
+		VmInstances:          vmInstances,
+		GcpVms:               gcpVms,
+		OciConfigFile:        envOr("OCI_CONFIG_FILE", "/app/config/oci_config"),
+		OciKeyFile:           envOr("OCI_KEY_FILE", "/app/config/oci_api_key.pem"),
+		GcpServiceAccountFile: envOr("GCP_SERVICE_ACCOUNT_FILE", "/app/config/gcp_key.json"),
+		GcpProjectID:         gcpProjectID,
+		AutheliaBearerToken:  envOr("AUTHELIA_BEARER_TOKEN", ""),
 	}
 }
 

@@ -4,6 +4,7 @@ import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import {
   getConfig,
+  reloadConfig,
   getServiceFolder,
   getServiceDir,
   getVmSshAlias,
@@ -130,6 +131,40 @@ export function registerInfraTools(server: McpServer) {
       info.push(`build.sh: ${existsSync(buildSh) ? "present" : "missing"}`);
 
       return { content: [{ type: "text", text: info.join("\n") }] };
+    }
+  );
+
+  server.tool(
+    "reload_config",
+    "Reload config.json from disk and show diff (services/VMs added or removed since last load)",
+    {},
+    async () => {
+      const oldConfig = getConfig();
+      const oldVms = new Set(Object.keys(oldConfig.vms));
+      const oldServices = new Set(Object.keys(oldConfig.services));
+
+      const newConfig = reloadConfig();
+      const newVms = new Set(Object.keys(newConfig.vms));
+      const newServices = new Set(Object.keys(newConfig.services));
+
+      const addedVms = [...newVms].filter((v) => !oldVms.has(v));
+      const removedVms = [...oldVms].filter((v) => !newVms.has(v));
+      const addedServices = [...newServices].filter((s) => !oldServices.has(s));
+      const removedServices = [...oldServices].filter((s) => !newServices.has(s));
+
+      const lines: string[] = [
+        `Config reloaded. ${newVms.size} VMs, ${newServices.size} services.`,
+      ];
+
+      if (addedVms.length) lines.push(`+ VMs added: ${addedVms.join(", ")}`);
+      if (removedVms.length) lines.push(`- VMs removed: ${removedVms.join(", ")}`);
+      if (addedServices.length) lines.push(`+ Services added: ${addedServices.join(", ")}`);
+      if (removedServices.length) lines.push(`- Services removed: ${removedServices.join(", ")}`);
+      if (!addedVms.length && !removedVms.length && !addedServices.length && !removedServices.length) {
+        lines.push("No structural changes detected.");
+      }
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
     }
   );
 }

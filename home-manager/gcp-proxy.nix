@@ -26,9 +26,8 @@
     rsync
     rclone
 
-    # Container tools (if not system-installed)
-    # docker
-    # docker-compose
+    # Container runtime (rootless, alongside system Docker)
+    podman
 
     # Network tools
     curl
