@@ -111,6 +111,69 @@
       { n = "7"; name = "Credential Mgmt";  desc = "Vaultwarden (passwords) + Aegis (TOTP)"; }
     ];
 
+    # ── Firewall & Ports data ──────────────────────────────────────
+    firewallRules = [
+      # gcp-proxy — public-facing reverse proxy
+      { vm = "gcp-proxy"; ip = gcp; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "open"; }
+      { vm = "gcp-proxy"; ip = gcp; port = "80/tcp";    bind = "0.0.0.0"; purpose = "Caddy HTTP";       status = "open"; }
+      { vm = "gcp-proxy"; ip = gcp; port = "443/tcp";   bind = "0.0.0.0"; purpose = "Caddy HTTPS";      status = "open"; }
+      { vm = "gcp-proxy"; ip = gcp; port = "443/udp";   bind = "0.0.0.0"; purpose = "Caddy HTTP/3";     status = "open"; }
+      { vm = "gcp-proxy"; ip = gcp; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
+      # oci-flex — mesh only
+      { vm = "oci-flex";  ip = flex; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
+      { vm = "oci-flex";  ip = flex; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
+      # oci-mail — mesh + mail delivery
+      { vm = "oci-mail";  ip = mail; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
+      { vm = "oci-mail";  ip = mail; port = "25/tcp";    bind = "0.0.0.0"; purpose = "SMTP (inbound)";   status = "open"; }
+      { vm = "oci-mail";  ip = mail; port = "465/tcp";   bind = "0.0.0.0"; purpose = "SMTPS";            status = "open"; }
+      { vm = "oci-mail";  ip = mail; port = "587/tcp";   bind = "0.0.0.0"; purpose = "SMTP Submission";  status = "open"; }
+      { vm = "oci-mail";  ip = mail; port = "993/tcp";   bind = "0.0.0.0"; purpose = "IMAPS";            status = "open"; }
+      { vm = "oci-mail";  ip = mail; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
+      # oci-analytics — mesh only
+      { vm = "oci-analytics"; ip = analytics; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
+      { vm = "oci-analytics"; ip = analytics; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
+    ];
+
+    dockerPorts = [
+      # gcp-proxy containers (public-facing — OK on 0.0.0.0)
+      { vm = "gcp-proxy"; container = "caddy";            port = "80";   bind = "0.0.0.0"; internal = "80";   note = "reverse proxy"; }
+      { vm = "gcp-proxy"; container = "caddy";            port = "443";  bind = "0.0.0.0"; internal = "443";  note = "reverse proxy"; }
+      { vm = "gcp-proxy"; container = "authelia";         port = "9091"; bind = "127.0.0.1"; internal = "9091"; note = "via Caddy"; }
+      { vm = "gcp-proxy"; container = "rust-api";         port = "8080"; bind = "127.0.0.1"; internal = "8080"; note = "via Caddy"; }
+      { vm = "gcp-proxy"; container = "flask-api";        port = "5000"; bind = "127.0.0.1"; internal = "5000"; note = "via Caddy"; }
+      { vm = "gcp-proxy"; container = "introspect-proxy"; port = "4182"; bind = "docker";   internal = "4182"; note = "internal only"; }
+      { vm = "gcp-proxy"; container = "vaultwarden";      port = "—";    bind = "docker";   internal = "80";   note = "via Caddy"; }
+      { vm = "gcp-proxy"; container = "ntfy";             port = "8090"; bind = "127.0.0.1"; internal = "80";   note = "via Caddy"; }
+      { vm = "gcp-proxy"; container = "dozzle";           port = "9999"; bind = "127.0.0.1"; internal = "8080"; note = "via Caddy"; }
+      # oci-flex containers (WireGuard only)
+      { vm = "oci-flex"; container = "photoprism";  port = "3013"; bind = flex; internal = "2342"; note = "WG only"; }
+      { vm = "oci-flex"; container = "nocodb";      port = "8085"; bind = flex; internal = "8080"; note = "WG only"; }
+      { vm = "oci-flex"; container = "code-server"; port = "8443"; bind = flex; internal = "8443"; note = "WG only"; }
+      { vm = "oci-flex"; container = "grist";       port = "3011"; bind = flex; internal = "8484"; note = "WG only"; }
+      { vm = "oci-flex"; container = "etherpad";    port = "3012"; bind = flex; internal = "9001"; note = "WG only"; }
+      { vm = "oci-flex"; container = "filebrowser"; port = "3015"; bind = flex; internal = "80";   note = "WG only"; }
+      { vm = "oci-flex"; container = "hedgedoc";    port = "3010"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex"; container = "revealmd";    port = "3014"; bind = flex; internal = "1948"; note = "WG only"; }
+      { vm = "oci-flex"; container = "gitea";       port = "3000"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex"; container = "gitea-ssh";   port = "2222"; bind = flex; internal = "22";   note = "WG only"; }
+      { vm = "oci-flex"; container = "grafana";     port = "3016"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex"; container = "loki";        port = "3017"; bind = flex; internal = "3100"; note = "WG only"; }
+      { vm = "oci-flex"; container = "tempo";       port = "3018"; bind = flex; internal = "3200"; note = "WG only"; }
+      { vm = "oci-flex"; container = "mimir";       port = "3019"; bind = flex; internal = "8080"; note = "WG only"; }
+      # oci-mail containers (WG + mail public)
+      { vm = "oci-mail"; container = "mailu-front"; port = "25";   bind = "0.0.0.0"; internal = "25";   note = "SMTP public"; }
+      { vm = "oci-mail"; container = "mailu-front"; port = "465";  bind = "0.0.0.0"; internal = "465";  note = "SMTPS public"; }
+      { vm = "oci-mail"; container = "mailu-front"; port = "587";  bind = "0.0.0.0"; internal = "587";  note = "submission public"; }
+      { vm = "oci-mail"; container = "mailu-front"; port = "993";  bind = "0.0.0.0"; internal = "993";  note = "IMAPS public"; }
+      { vm = "oci-mail"; container = "mailu-front"; port = "8444"; bind = mail; internal = "443";  note = "WG only"; }
+      { vm = "oci-mail"; container = "syncthing";   port = "8384"; bind = mail; internal = "8384"; note = "WG only"; }
+      { vm = "oci-mail"; container = "syncthing";   port = "22000"; bind = "0.0.0.0"; internal = "22000"; note = "P2P sync"; }
+      { vm = "oci-mail"; container = "radicale";    port = "5232"; bind = mail; internal = "5232"; note = "WG only"; }
+      # oci-analytics containers (WG only)
+      { vm = "oci-analytics"; container = "matomo";   port = "8080"; bind = analytics; internal = "8080"; note = "WG only"; }
+      { vm = "oci-analytics"; container = "windmill"; port = "8000"; bind = "127.0.0.1"; internal = "8000"; note = "localhost"; }
+    ];
+
     # ── Security snippets ─────────────────────────────────────────
 
     # 1. Security headers (HSTS, anti-clickjacking, etc.)
@@ -282,6 +345,12 @@
       secRows = builtins.concatStringsSep "\n" (map (l:
         "| ${l.n} | **${l.name}** | ${l.desc} |"
       ) securityLayers);
+      fwRows = builtins.concatStringsSep "\n" (map (r:
+        "| **${r.vm}** | `${r.ip}` | ${r.port} | ${r.bind} | ${r.purpose} | ${if r.status == "open" then "OPEN" else "RESTRICT"} |"
+      ) firewallRules);
+      dkRows = builtins.concatStringsSep "\n" (map (d:
+        "| **${d.vm}** | ${d.container} | ${d.port} | `${d.bind}` | ${d.internal} | ${d.note} |"
+      ) dockerPorts);
     in ''
 # Infrastructure Dashboard
 
@@ -310,6 +379,65 @@ ${svcRows}
 | Layer | Name | Description |
 |-------|------|-------------|
 ${secRows}
+
+---
+
+## Firewall & Ports
+
+Cloud firewall rules and host-level iptables. Only **gcp-proxy** should accept public traffic.
+OCI VMs restrict to WireGuard mesh + mail delivery ports.
+
+| VM | WG IP | Port | Bind | Purpose | Status |
+|----|-------|------|------|---------|--------|
+${fwRows}
+
+**iptables policy per VM:**
+
+| VM | Chain | Rule | Purpose |
+|----|-------|------|---------|
+| gcp-proxy | FORWARD | `10.0.0.0/24 → wg0 ACCEPT` | WireGuard mesh routing |
+| gcp-proxy | POSTROUTING | `10.0.0.0/24 MASQUERADE` | NAT for mesh hub |
+| gcp-proxy | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
+| oci-flex | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
+| oci-flex | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
+| oci-flex | INPUT | `default DROP` (except established) | Block public access |
+| oci-mail | INPUT | `25,465,587,993/tcp ACCEPT` | Mail delivery (public) |
+| oci-mail | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
+| oci-mail | INPUT | `other DROP` (except established) | Block non-mail public |
+| oci-analytics | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
+| oci-analytics | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
+| oci-analytics | INPUT | `default DROP` (except established) | Block public access |
+
+---
+
+## Docker Network
+
+Container port bindings. `0.0.0.0` = publicly exposed, `10.0.0.x` = WireGuard mesh only, `127.0.0.1` = localhost, `docker` = internal network.
+
+| VM | Container | Host Port | Bind | Internal | Note |
+|----|-----------|-----------|------|----------|------|
+${dkRows}
+
+**Docker network topology:**
+
+```
+┌─── npm_default (bridge) ──────────────────────────────────┐
+│                                                            │
+│  gcp-proxy:  caddy ←→ authelia ←→ introspect-proxy        │
+│              rust-api, flask-api, vaultwarden, ntfy        │
+│              dozzle (monitors all containers)              │
+│                                                            │
+│  oci-flex:   photoprism ←→ photoprism-db (redis)          │
+│              nocodb, code-server, grist, gitea             │
+│              etherpad, filebrowser, hedgedoc, revealmd     │
+│              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
+│                                                            │
+│  oci-mail:   mailu (front/smtp/imap/admin/webmail/redis)  │
+│              syncthing, radicale, caddy (local proxy)      │
+│                                                            │
+│  oci-analytics: matomo, windmill                           │
+└────────────────────────────────────────────────────────────┘
+```
 
 ---
 

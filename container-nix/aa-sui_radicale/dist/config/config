@@ -3,8 +3,8 @@ hosts = 0.0.0.0:5232
 
 [auth]
 type = imap
-imap_host = imap:143
-imap_security = none
+imap_host = 10.0.0.3:993
+imap_security = tls
 
 [storage]
 filesystem_folder = /data/collections

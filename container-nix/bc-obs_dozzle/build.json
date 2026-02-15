@@ -1,0 +1,9 @@
+{
+  "name": "dozzle",
+  "description": "Dozzle - Real-time Docker log viewer",
+
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/dozzle"
+  }
+}

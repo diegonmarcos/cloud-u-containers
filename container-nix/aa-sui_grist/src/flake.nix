@@ -25,7 +25,7 @@
           container_name: ${config.container_name}
           restart: always
           ports:
-            - "${toString config.port}:8484"
+            - "10.0.0.2:${toString config.port}:8484"
           volumes:
             - grist_data:/persist
           environment:

@@ -1,0 +1,56 @@
+services:
+  hedgedoc:
+    image: quay.io/hedgedoc/hedgedoc:latest
+    container_name: hedgedoc_app
+    restart: unless-stopped
+    ports:
+      - "10.0.0.2:3010:3000"
+    volumes:
+      - hedgedoc_uploads:/hedgedoc/public/uploads
+    environment:
+      - CMD_DOMAIN=notes.diegonmarcos.com
+      - CMD_URL_ADDPORT=false
+      - CMD_PROTOCOL_USESSL=true
+      - CMD_DB_URL=postgres://hedgedoc:hedgedoc@hedgedoc_postgres:5432/hedgedoc
+      - CMD_ALLOW_EMAIL_REGISTER=true
+      - CMD_EMAIL=true
+      - CMD_ALLOW_FREEURL=true
+      - CMD_ALLOW_ANONYMOUS=true
+      - CMD_ALLOW_ANONYMOUS_EDITS=true
+      - CMD_DEFAULT_PERMISSION=freely
+      - CMD_SESSION_SECRET=${CMD_SESSION_SECRET:-hedgedoc-secret-change-me}
+      - CMD_TRUST_PROXY=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dev_network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: hedgedoc_postgres
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=hedgedoc
+      - POSTGRES_PASSWORD=hedgedoc
+      - POSTGRES_DB=hedgedoc
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    networks:
+      - dev_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hedgedoc']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  dev_network:
+    external: true
+
+volumes:
+  hedgedoc_uploads:
+    driver: local
+  postgres_data:
+    driver: local

@@ -7,7 +7,7 @@ services:
     container_name: etherpad_app
     restart: "no"
     ports:
-      - "3012:9001"
+      - "10.0.0.2:3012:9001"
     volumes:
       - etherpad_data:/opt/etherpad-lite/var
     environment:

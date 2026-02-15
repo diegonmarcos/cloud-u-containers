@@ -3,7 +3,7 @@ services:
     image: syncthing/syncthing:latest
     container_name: syncthing
     hostname: web-server-1
-    restart: always
+    restart: unless-stopped
     environment:
       - PUID=1000
       - PGID=1000
@@ -11,9 +11,9 @@ services:
       - /home/ubuntu/syncthing-config:/var/syncthing/config
       - /home/ubuntu/sync:/var/syncthing/data
     ports:
-      - "8384:8384"
-      - "22000:22000"
-      - "21027:21027/udp"
+      - "10.0.0.3:8384:8384"
+      - "0.0.0.0:22000:22000"
+      - "0.0.0.0:21027:21027/udp"
     networks:
       - matomo_default
     deploy:

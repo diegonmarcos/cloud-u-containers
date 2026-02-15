@@ -1,0 +1,22 @@
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    ports:
+      - "10.0.0.2:3000:3000"
+      - "10.0.0.2:2222:22"
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - gitea_backup_network
+
+networks:
+  gitea_backup_network:
+    driver: bridge
+
+volumes:
+  gitea_data:
+    driver: local

@@ -26,7 +26,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port}:3000"
+            - "10.0.0.2:${toString config.port}:3000"
           volumes:
             - hedgedoc_uploads:/hedgedoc/public/uploads
           environment:
