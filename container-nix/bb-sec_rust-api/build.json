@@ -1,6 +1,6 @@
 {
   "name": "rust-api",
-  "description": "Cloud Rust API (api.diegonmarcos.com/rust/)",
+  "description": "Cloud Rust API (api.diegonmarcos.com — default)",
 
   "docker": {
     "registry": "ghcr.io",

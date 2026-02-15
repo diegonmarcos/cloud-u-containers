@@ -1,6 +1,6 @@
 use axum::{
     extract::{Path, State},
-    routing::{get, post},
+    routing::post,
     Json, Router,
 };
 use serde_json::{json, Value};
@@ -14,67 +14,53 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        // Health
-        .route("/rust/health/all", get(health_all))
-        .route("/rust/health/containers-by-vm", get(health_containers_by_vm))
-        .route("/rust/health/containers-by-service", get(health_containers_by_service))
-        .route("/rust/health/proxied-by-services", get(health_proxied_by_services))
-        .route("/rust/health", get(health_alive))
-        .route("/rust/health/resources-all", get(health_resources_all))
-        .route("/rust/health/ids", get(health_ids))
         // VM actions — oci-flex
-        .route("/rust/vm/oci-flex/start", post(vm_oci_flex_start))
-        .route("/rust/vm/oci-flex/stop", post(vm_oci_flex_stop))
-        .route("/rust/vm/oci-flex/reset", post(vm_oci_flex_reset))
+        .route("/api/vm/oci-flex/start", post(vm_oci_flex_start))
+        .route("/api/vm/oci-flex/stop", post(vm_oci_flex_stop))
+        .route("/api/vm/oci-flex/reset", post(vm_oci_flex_reset))
         // VM actions — gcp-proxy
-        .route("/rust/vm/gcp-proxy/start", post(vm_gcp_proxy_start))
-        .route("/rust/vm/gcp-proxy/stop", post(vm_gcp_proxy_stop))
-        .route("/rust/vm/gcp-proxy/reset", post(vm_gcp_proxy_reset))
+        .route("/api/vm/gcp-proxy/start", post(vm_gcp_proxy_start))
+        .route("/api/vm/gcp-proxy/stop", post(vm_gcp_proxy_stop))
+        .route("/api/vm/gcp-proxy/reset", post(vm_gcp_proxy_reset))
         // VM actions — oci-mail
-        .route("/rust/vm/oci-mail/start", post(vm_oci_mail_start))
-        .route("/rust/vm/oci-mail/stop", post(vm_oci_mail_stop))
-        .route("/rust/vm/oci-mail/reset", post(vm_oci_mail_reset))
+        .route("/api/vm/oci-mail/start", post(vm_oci_mail_start))
+        .route("/api/vm/oci-mail/stop", post(vm_oci_mail_stop))
+        .route("/api/vm/oci-mail/reset", post(vm_oci_mail_reset))
         // VM actions — oci-analytics
-        .route("/rust/vm/oci-analytics/start", post(vm_oci_analytics_start))
-        .route("/rust/vm/oci-analytics/stop", post(vm_oci_analytics_stop))
-        .route("/rust/vm/oci-analytics/reset", post(vm_oci_analytics_reset))
+        .route("/api/vm/oci-analytics/start", post(vm_oci_analytics_start))
+        .route("/api/vm/oci-analytics/stop", post(vm_oci_analytics_stop))
+        .route("/api/vm/oci-analytics/reset", post(vm_oci_analytics_reset))
         // Bulk on-demand container ops (oci-flex)
-        .route("/rust/containers/on-demand/start-all", post(ondemand_containers_start_all))
-        .route("/rust/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
-        .route("/rust/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
+        .route("/api/containers/on-demand/start-all", post(ondemand_containers_start_all))
+        .route("/api/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
+        .route("/api/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
         // Matomo / Windmill toggle (oci-analytics)
-        .route("/rust/containers/windmill/start", post(windmill_start))
-        .route("/rust/containers/windmill/stop", post(windmill_stop))
-        .route("/rust/containers/matomo/wake", post(matomo_wake))
-        .route("/rust/containers/matomo/sleep", post(matomo_sleep))
+        .route("/api/containers/windmill/start", post(windmill_start))
+        .route("/api/containers/windmill/stop", post(windmill_stop))
+        .route("/api/containers/matomo/wake", post(matomo_wake))
+        .route("/api/containers/matomo/sleep", post(matomo_sleep))
         // Legacy flex-shortcut container/service routes
-        .route("/rust/containers/{name}/start", post(ondemand_container_start))
-        .route("/rust/containers/{name}/stop", post(ondemand_container_stop))
-        .route("/rust/containers/{name}/restart", post(ondemand_container_restart))
-        .route("/rust/services/{service}/start", post(ondemand_service_start))
-        .route("/rust/services/{service}/stop", post(ondemand_service_stop))
-        // Generalized per-VM health routes
-        .route("/rust/health/up/{vm_id}", get(vm_health_up))
-        .route("/rust/health/{vm_id}", get(vm_health))
-        .route("/rust/health/{vm_id}/{container_name}", get(vm_container_status))
-        // Fast provider-only status check
-        .route("/rust/vms/{vm_id}/status", get(vm_status))
+        .route("/api/containers/{name}/start", post(ondemand_container_start))
+        .route("/api/containers/{name}/stop", post(ondemand_container_stop))
+        .route("/api/containers/{name}/restart", post(ondemand_container_restart))
+        .route("/api/services/{service}/start", post(ondemand_service_start))
+        .route("/api/services/{service}/stop", post(ondemand_service_stop))
         // Engine: generalized per-VM POST routes
-        .route("/rust/vms/{vm_id}/start", post(vm_start))
-        .route("/rust/vms/{vm_id}/stop", post(vm_stop))
-        .route("/rust/vms/{vm_id}/reset", post(vm_reset))
-        .route("/rust/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
-        .route("/rust/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
-        .route("/rust/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
-        .route("/rust/vms/{vm_id}/services/{service}/start", post(vm_service_start))
-        .route("/rust/vms/{vm_id}/services/{service}/stop", post(vm_service_stop))
+        .route("/api/vms/{vm_id}/start", post(vm_start))
+        .route("/api/vms/{vm_id}/stop", post(vm_stop))
+        .route("/api/vms/{vm_id}/reset", post(vm_reset))
+        .route("/api/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
+        .route("/api/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
+        .route("/api/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
+        .route("/api/vms/{vm_id}/services/{service}/start", post(vm_service_start))
+        .route("/api/vms/{vm_id}/services/{service}/stop", post(vm_service_stop))
 }
 
 // ---------------------------------------------------------------------------
 // Helpers — generalized to accept vm_id
 // ---------------------------------------------------------------------------
 
-fn validate_service_for_vm(service: &str, vm_id: &str, state: &AppState) -> Result<Vec<String>, AppError> {
+pub(crate) fn validate_service_for_vm(service: &str, vm_id: &str, state: &AppState) -> Result<Vec<String>, AppError> {
     let vm_map = state.config.all_vm_services.get(vm_id)
         .ok_or_else(|| AppError::not_found(format!("Unknown VM: {vm_id}")))?;
     let containers = vm_map.services.get(service)
@@ -90,12 +76,12 @@ fn validate_service_for_vm(service: &str, vm_id: &str, state: &AppState) -> Resu
 
 /// Load GCP service account config (best-effort, cached at process level would be ideal but
 /// re-reading from disk is fine for the call frequency here).
-fn load_gcp_sa(state: &AppState) -> Result<gcp::ServiceAccountConfig, String> {
+pub(crate) fn load_gcp_sa(state: &AppState) -> Result<gcp::ServiceAccountConfig, String> {
     gcp::parse_service_account(&state.config.gcp_service_account_file)
 }
 
 /// Get the provider state for any VM.
-async fn get_vm_state_by_id(state: &AppState, vm_id: &str) -> Result<String, AppError> {
+pub(crate) async fn get_vm_state_by_id(state: &AppState, vm_id: &str) -> Result<String, AppError> {
     let vm = state.config.vm_instances.get(vm_id)
         .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
     match vm.provider {
@@ -116,7 +102,7 @@ async fn get_vm_state_by_id(state: &AppState, vm_id: &str) -> Result<String, App
 
 /// Ensure a VM is running. Starts it and polls if stopped.
 /// Returns (current_state, was_awakened) — was_awakened=true means VM was offline and had to be started.
-async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<(String, bool), AppError> {
+pub(crate) async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<(String, bool), AppError> {
     let vm = state.config.vm_instances.get(vm_id)
         .ok_or_else(|| AppError::service_unavailable(format!("VM {vm_id} not configured")))?;
 
@@ -190,7 +176,7 @@ async fn ensure_vm_running_by_id(state: &AppState, vm_id: &str) -> Result<(Strin
 }
 
 /// Get container statuses on a specific VM.
-async fn get_container_statuses(state: &AppState, vm_id: &str, containers: &[String]) -> Vec<Value> {
+pub(crate) async fn get_container_statuses(state: &AppState, vm_id: &str, containers: &[String]) -> Vec<Value> {
     let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
         Some(cfg) => cfg,
         None => return vec![],
@@ -213,7 +199,7 @@ async fn get_container_statuses(state: &AppState, vm_id: &str, containers: &[Str
 }
 
 /// Batch-fetch all container states via a single SSH call.
-async fn batch_container_statuses(state: &AppState, vm_id: &str) -> Vec<(String, String, String)> {
+pub(crate) async fn batch_container_statuses(state: &AppState, vm_id: &str) -> Vec<(String, String, String)> {
     let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
         Some(cfg) => cfg,
         None => return vec![],
@@ -243,7 +229,7 @@ async fn batch_container_statuses(state: &AppState, vm_id: &str) -> Vec<(String,
 }
 
 /// Compute service status from container states.
-fn compute_service_status(containers: &[String], all_statuses: &[(String, String, String)]) -> Value {
+pub(crate) fn compute_service_status(containers: &[String], all_statuses: &[(String, String, String)]) -> Value {
     let mut container_details = vec![];
     let mut running = 0;
 
@@ -278,7 +264,7 @@ fn compute_service_status(containers: &[String], all_statuses: &[(String, String
 }
 
 /// Determine health string from provider state and SSH connectivity.
-fn compute_health(provider_state: &str, ssh_ok: bool) -> &'static str {
+pub(crate) fn compute_health(provider_state: &str, ssh_ok: bool) -> &'static str {
     if (provider_state == "RUNNING" || provider_state == "N/A") && ssh_ok {
         "online"
     } else if provider_state == "RUNNING" || provider_state == "N/A" {
@@ -291,21 +277,21 @@ fn compute_health(provider_state: &str, ssh_ok: bool) -> &'static str {
 }
 
 /// Check if we should attempt SSH/ping probes for this provider state.
-fn should_probe(provider_state: &str) -> bool {
+pub(crate) fn should_probe(provider_state: &str) -> bool {
     matches!(provider_state, "RUNNING" | "N/A")
 }
 
 /// Result of probing a VM's connectivity.
-struct VmProbe {
-    provider_state: String,
-    ping: bool,
-    ssh: bool,
-    health: &'static str,
-    container_data: Vec<(String, String, String)>,
+pub(crate) struct VmProbe {
+    pub provider_state: String,
+    pub ping: bool,
+    pub ssh: bool,
+    pub health: &'static str,
+    pub container_data: Vec<(String, String, String)>,
 }
 
 /// Probe a VM: get provider state, ping, SSH, batch container statuses.
-async fn probe_vm(state: &AppState, vm_id: &str) -> VmProbe {
+pub(crate) async fn probe_vm(state: &AppState, vm_id: &str) -> VmProbe {
     let provider_state = get_vm_state_by_id(state, vm_id)
         .await
         .unwrap_or_else(|_| "unknown".into());
@@ -333,279 +319,7 @@ async fn probe_vm(state: &AppState, vm_id: &str) -> VmProbe {
     VmProbe { provider_state, ping, ssh: ssh_ok, health, container_data }
 }
 
-// ---------------------------------------------------------------------------
-// Health endpoints
-// ---------------------------------------------------------------------------
-
-#[utoipa::path(
-    get,
-    path = "/rust/health",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "API alive check", body = Value),
-    )
-)]
-pub async fn health_alive() -> Json<Value> {
-    Json(json!({ "status": "ok" }))
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/all",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Health of all VMs with services and containers", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_all(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut vms = serde_json::Map::new();
-    let mut global_services_up = 0u32;
-    let mut global_services_down = 0u32;
-    let mut global_services_partial = 0u32;
-    let mut global_containers_running = 0u32;
-    let mut global_containers_total = 0u32;
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let probe = probe_vm(&state, vm_id).await;
-
-        let mut services = serde_json::Map::new();
-        let mut vm_services_up = 0u32;
-        let mut vm_services_down = 0u32;
-        let mut vm_services_partial = 0u32;
-        let mut vm_containers_running = 0u32;
-        let mut vm_containers_total = 0u32;
-
-        for (svc_name, containers) in &vm_map.services {
-            let svc_status = compute_service_status(containers, &probe.container_data);
-            let status_str = svc_status["status"].as_str().unwrap_or("down");
-            match status_str {
-                "up" => vm_services_up += 1,
-                "partial" => vm_services_partial += 1,
-                _ => vm_services_down += 1,
-            }
-            if let Some(ctrs) = svc_status["containers"].as_array() {
-                for c in ctrs {
-                    vm_containers_total += 1;
-                    if c["state"].as_str() == Some("running") {
-                        vm_containers_running += 1;
-                    }
-                }
-            }
-            services.insert(svc_name.clone(), svc_status);
-        }
-
-        global_services_up += vm_services_up;
-        global_services_down += vm_services_down;
-        global_services_partial += vm_services_partial;
-        global_containers_running += vm_containers_running;
-        global_containers_total += vm_containers_total;
-
-        vms.insert(vm_id.clone(), json!({
-            "label": vm_map.label,
-            "provider_state": probe.provider_state,
-            "ssh": probe.ssh,
-            "ping": probe.ping,
-            "health": probe.health,
-            "services": services,
-            "summary": {
-                "services_up": vm_services_up,
-                "services_down": vm_services_down,
-                "services_partial": vm_services_partial,
-                "containers_running": vm_containers_running,
-                "containers_total": vm_containers_total,
-            }
-        }));
-    }
-
-    Ok(Json(json!({
-        "vms": vms,
-        "global_summary": {
-            "services_up": global_services_up,
-            "services_down": global_services_down,
-            "services_partial": global_services_partial,
-            "containers_running": global_containers_running,
-            "containers_total": global_containers_total,
-        }
-    })))
-}
-
-// ---------------------------------------------------------------------------
-// Health check endpoints
-// ---------------------------------------------------------------------------
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/containers-by-vm",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Container health across all VMs grouped by VM", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_containers_by_vm(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut set = tokio::task::JoinSet::new();
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let vm_id = vm_id.clone();
-        let label = vm_map.label.clone();
-        let state = Arc::clone(&state);
-        set.spawn(async move {
-            let containers = batch_container_statuses(&state, &vm_id).await;
-            (vm_id, label, containers)
-        });
-    }
-
-    let mut vms = serde_json::Map::new();
-    let mut global_running = 0u32;
-    let mut global_total = 0u32;
-
-    while let Some(result) = set.join_next().await {
-        let (vm_id, label, containers) = match result {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
-
-        let mut running = 0u32;
-        let details: Vec<Value> = containers.iter().map(|(name, st, ports)| {
-            if st == "running" { running += 1; }
-            global_total += 1;
-            json!({ "name": name, "state": st, "ports": ports })
-        }).collect();
-        global_running += running;
-
-        vms.insert(vm_id, json!({
-            "label": label,
-            "containers": details,
-            "running": running,
-            "total": details.len(),
-        }));
-    }
-
-    Ok(Json(json!({
-        "vms": vms,
-        "summary": {
-            "containers_running": global_running,
-            "containers_total": global_total,
-        }
-    })))
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/containers-by-service",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Container health grouped by service across VMs", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_containers_by_service(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut set = tokio::task::JoinSet::new();
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let vm_id = vm_id.clone();
-        let label = vm_map.label.clone();
-        let state = Arc::clone(&state);
-        set.spawn(async move {
-            let containers = batch_container_statuses(&state, &vm_id).await;
-            (vm_id, label, containers)
-        });
-    }
-
-    let mut vm_results: Vec<(String, String, Vec<(String, String, String)>)> = vec![];
-    while let Some(result) = set.join_next().await {
-        if let Ok(v) = result {
-            vm_results.push(v);
-        }
-    }
-
-    // Pivot: group by service across VMs
-    let mut services_map = serde_json::Map::new();
-    let mut global_running = 0u32;
-    let mut global_total = 0u32;
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let vm_containers = vm_results.iter()
-            .find(|(id, _, _)| id == vm_id)
-            .map(|(_, _, c)| c.as_slice())
-            .unwrap_or(&[]);
-
-        for (svc_name, svc_containers) in &vm_map.services {
-            let mut running = 0u32;
-            let details: Vec<Value> = svc_containers.iter().map(|name| {
-                let (st, ports) = vm_containers.iter()
-                    .find(|(n, _, _)| n == name)
-                    .map(|(_, s, p)| (s.clone(), p.clone()))
-                    .unwrap_or_else(|| ("not_found".into(), String::new()));
-                if st == "running" { running += 1; }
-                global_total += 1;
-                json!({ "name": name, "state": st, "ports": ports })
-            }).collect();
-            global_running += running;
-            let total = details.len() as u32;
-
-            let entry = services_map.entry(svc_name.clone())
-                .or_insert_with(|| json!({ "vms": {} }));
-            entry["vms"][vm_id] = json!({
-                "label": vm_map.label,
-                "containers": details,
-                "running": running,
-                "total": total,
-            });
-        }
-    }
-
-    // Compute per-service status
-    let mut services_up = 0u32;
-    let mut services_partial = 0u32;
-    let mut services_down = 0u32;
-
-    for (_svc_name, svc_val) in services_map.iter_mut() {
-        let mut svc_running = 0u32;
-        let mut svc_total = 0u32;
-        if let Some(vms_obj) = svc_val["vms"].as_object() {
-            for (_vm_id, vm_data) in vms_obj {
-                svc_running += vm_data["running"].as_u64().unwrap_or(0) as u32;
-                svc_total += vm_data["total"].as_u64().unwrap_or(0) as u32;
-            }
-        }
-        let status = if svc_total == 0 {
-            "down"
-        } else if svc_running == svc_total {
-            "up"
-        } else if svc_running == 0 {
-            "down"
-        } else {
-            "partial"
-        };
-        match status {
-            "up" => services_up += 1,
-            "partial" => services_partial += 1,
-            _ => services_down += 1,
-        }
-        svc_val["status"] = json!(status);
-    }
-
-    Ok(Json(json!({
-        "services": services_map,
-        "summary": {
-            "services_up": services_up,
-            "services_partial": services_partial,
-            "services_down": services_down,
-            "containers_running": global_running,
-            "containers_total": global_total,
-        }
-    })))
-}
-
-async fn probe_domain_chain(
+pub(crate) async fn probe_domain_chain(
     http: &reqwest::Client,
     domain: &str,
     service: &str,
@@ -724,65 +438,12 @@ async fn probe_domain_chain(
     })
 }
 
-#[utoipa::path(
-    get,
-    path = "/rust/health/proxied-by-services",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "Public route health probes with redirect chain", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_proxied_by_services(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut set = tokio::task::JoinSet::new();
-    let bearer = state.config.authelia_bearer_token.clone();
-
-    for entry in &state.config.route_check_domains {
-        let http = state.http.clone();
-        let domain = entry.domain.clone();
-        let service = entry.service.clone();
-        let token = bearer.clone();
-        set.spawn(async move {
-            probe_domain_chain(&http, &domain, &service, token.as_deref()).await
-        });
-    }
-
-    let mut routes = vec![];
-    let mut healthy_count = 0u32;
-    let mut total = 0u32;
-
-    while let Some(result) = set.join_next().await {
-        if let Ok(val) = result {
-            total += 1;
-            if val["healthy"].as_bool() == Some(true) {
-                healthy_count += 1;
-            }
-            routes.push(val);
-        }
-    }
-
-    // Sort by service for consistent output
-    routes.sort_by(|a, b| {
-        a["service"].as_str().unwrap_or("").cmp(b["service"].as_str().unwrap_or(""))
-    });
-
-    Ok(Json(json!({
-        "routes": routes,
-        "summary": {
-            "healthy": healthy_count,
-            "total": total,
-        }
-    })))
-}
-
-fn round1(v: f64) -> f64 {
+pub(crate) fn round1(v: f64) -> f64 {
     (v * 10.0).round() / 10.0
 }
 
 /// Gather system resources, specs, and info from a VM via SSH.
-async fn gather_vm_resources(state: &AppState, vm_id: &str) -> Value {
+pub(crate) async fn gather_vm_resources(state: &AppState, vm_id: &str) -> Value {
     let ssh_cfg = match state.config.vm_ssh.get(vm_id) {
         Some(cfg) => cfg,
         None => return json!({"error": "no SSH config"}),
@@ -888,236 +549,8 @@ async fn gather_vm_resources(state: &AppState, vm_id: &str) -> Value {
 }
 
 #[utoipa::path(
-    get,
-    path = "/rust/health/resources-all",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "System resources, specs, and info for all VMs", body = Value),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn health_resources_all(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut set = tokio::task::JoinSet::new();
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let vm_id = vm_id.clone();
-        let label = vm_map.label.clone();
-        let state = Arc::clone(&state);
-        set.spawn(async move {
-            let data = gather_vm_resources(&state, &vm_id).await;
-            (vm_id, label, data)
-        });
-    }
-
-    // OCI Object Storage query in parallel with VM resource gathering
-    let storage_state = Arc::clone(&state);
-    let storage_handle = tokio::spawn(async move {
-        let quota = storage_state.config.oci_storage_quota_gb;
-        crate::services::oci::get_object_storage_info(&storage_state.http, &storage_state.config, quota).await
-    });
-
-    let mut vms = serde_json::Map::new();
-    let mut total_cores = 0u32;
-    let mut total_ram_mb = 0u64;
-    let mut total_disk_gb = 0.0f64;
-    let mut sum_cpu_pct = 0.0f64;
-    let mut sum_mem_pct = 0.0f64;
-    let mut vm_count = 0u32;
-
-    while let Some(result) = set.join_next().await {
-        let (vm_id, label, mut data) = match result {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
-
-        if data.get("error").is_none() {
-            total_cores += data["resources"]["cpu"]["cores"].as_u64().unwrap_or(0) as u32;
-            total_ram_mb += data["resources"]["memory"]["total_mb"].as_u64().unwrap_or(0);
-            total_disk_gb += data["resources"]["disk"]["total_gb"].as_f64().unwrap_or(0.0);
-            sum_cpu_pct += data["resources"]["cpu"]["usage_pct"].as_f64().unwrap_or(0.0);
-            sum_mem_pct += data["resources"]["memory"]["usage_pct"].as_f64().unwrap_or(0.0);
-            vm_count += 1;
-        }
-
-        data["label"] = json!(label);
-        vms.insert(vm_id, data);
-    }
-
-    let avg_cpu_pct = if vm_count > 0 { sum_cpu_pct / vm_count as f64 } else { 0.0 };
-    let avg_mem_pct = if vm_count > 0 { sum_mem_pct / vm_count as f64 } else { 0.0 };
-
-    // Collect Object Storage result
-    let object_storage = match storage_handle.await {
-        Ok(Ok(data)) => data,
-        Ok(Err(e)) => json!({"error": e}),
-        Err(_) => json!({"error": "task failed"}),
-    };
-
-    // Build ordered response: summary → vms → object_storage
-    let mut resp = serde_json::Map::new();
-    resp.insert("summary".into(), json!({
-        "vm_count": vm_count,
-        "total_cpu_cores": total_cores,
-        "total_ram_mb": total_ram_mb,
-        "total_disk_gb": round1(total_disk_gb),
-        "avg_cpu_pct": round1(avg_cpu_pct),
-        "avg_mem_pct": round1(avg_mem_pct),
-    }));
-    resp.insert("vms".into(), json!(vms));
-    resp.insert("object_storage".into(), object_storage);
-
-    Ok(Json(Value::Object(resp)))
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/ids",
-    tag = "Get-Health",
-    responses(
-        (status = 200, description = "All valid variable IDs: vm_ids, labels, services, containers", body = Value),
-    )
-)]
-pub async fn health_ids(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<Value>, AppError> {
-    let mut vms = serde_json::Map::new();
-
-    for (vm_id, vm_map) in &state.config.all_vm_services {
-        let mut services_map = serde_json::Map::new();
-        for (svc_name, containers) in &vm_map.services {
-            services_map.insert(svc_name.clone(), json!(containers));
-        }
-        vms.insert(vm_id.clone(), json!({
-            "label": vm_map.label,
-            "services": services_map,
-        }));
-    }
-
-    let vm_ids: Vec<&String> = state.config.all_vm_services.keys().collect();
-    let labels: Vec<&str> = state.config.all_vm_services.values()
-        .map(|v| v.label.as_str()).collect();
-
-    let mut all_services: Vec<&String> = state.config.all_vm_services.values()
-        .flat_map(|v| v.services.keys()).collect();
-    all_services.sort();
-    all_services.dedup();
-
-    let mut all_containers: Vec<&String> = state.config.all_vm_services.values()
-        .flat_map(|v| v.services.values().flat_map(|c| c.iter())).collect();
-    all_containers.sort();
-    all_containers.dedup();
-
-    Ok(Json(json!({
-        "vm_ids": vm_ids,
-        "labels": labels,
-        "services": all_services,
-        "containers": all_containers,
-        "vms": vms,
-    })))
-}
-
-// ---------------------------------------------------------------------------
-// Generalized per-VM endpoints
-// ---------------------------------------------------------------------------
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/up/{vm_id}",
-    tag = "Get-Health",
-    params(("vm_id" = String, Path, description = "VM identifier")),
-    responses(
-        (status = 200, description = "Fast VM up/down check (SSH only, ~3s)", body = Value),
-        (status = 404, description = "Unknown VM"),
-    )
-)]
-pub async fn vm_health_up(
-    State(state): State<Arc<AppState>>,
-    Path(vm_id): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    let ssh_cfg = match state.config.vm_ssh.get(&vm_id) {
-        Some(cfg) => cfg,
-        None => return Err(AppError::not_found(format!("Unknown VM: {vm_id}"))),
-    };
-
-    let ssh_ok = ssh::check_ssh_fast(ssh_cfg).await;
-    let health = if ssh_ok { "online" } else { "offline" };
-
-    Ok(Json(json!({
-        "id": vm_id,
-        "ssh": ssh_ok,
-        "health": health,
-    })))
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/vms/{vm_id}/status",
-    tag = "Get-Engines",
-    params(("vm_id" = String, Path, description = "VM identifier")),
-    responses(
-        (status = 200, description = "Fast provider-only VM state (~1s, no SSH/ping)", body = Value),
-        (status = 404, description = "Unknown VM"),
-    )
-)]
-pub async fn vm_status(
-    State(state): State<Arc<AppState>>,
-    Path(vm_id): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    let provider_state = get_vm_state_by_id(&state, &vm_id).await?;
-    let label = state.config.all_vm_services.get(&vm_id)
-        .map(|v| v.label.as_str())
-        .unwrap_or("unknown");
-    Ok(Json(json!({
-        "id": vm_id,
-        "label": label,
-        "provider_state": provider_state,
-    })))
-}
-
-#[utoipa::path(
-    get,
-    path = "/rust/health/{vm_id}",
-    tag = "Get-Engines",
-    params(("vm_id" = String, Path, description = "VM identifier")),
-    responses(
-        (status = 200, description = "VM health check", body = Value),
-        (status = 404, description = "Unknown VM"),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn vm_health(
-    State(state): State<Arc<AppState>>,
-    Path(vm_id): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    if !state.config.vm_ssh.contains_key(&vm_id) {
-        return Err(AppError::not_found(format!("Unknown VM: {vm_id}")));
-    }
-
-    let probe = probe_vm(&state, &vm_id).await;
-
-    Ok(Json(json!({
-        "id": vm_id,
-        "provider_state": probe.provider_state,
-        "ssh": probe.ssh,
-        "ping": probe.ping,
-        "health": probe.health,
-    })))
-}
-
-#[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/start",
+    path = "/api/vms/{vm_id}/start",
     tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
@@ -1144,7 +577,7 @@ pub async fn vm_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/stop",
+    path = "/api/vms/{vm_id}/stop",
     tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
@@ -1204,7 +637,7 @@ pub async fn vm_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/reset",
+    path = "/api/vms/{vm_id}/reset",
     tag = "Post-Engines",
     params(("vm_id" = String, Path, description = "VM identifier")),
     responses(
@@ -1264,44 +697,13 @@ pub async fn vm_reset(
     }
 }
 
-#[utoipa::path(
-    get,
-    path = "/rust/health/{vm_id}/{container_name}",
-    tag = "Get-Engines",
-    params(
-        ("vm_id" = String, Path, description = "VM identifier"),
-        ("container_name" = String, Path, description = "Container name"),
-    ),
-    responses(
-        (status = 200, description = "Container status", body = Value),
-        (status = 400, description = "Invalid input"),
-        (status = 500, description = "Internal error")
-    )
-)]
-pub async fn vm_container_status(
-    State(state): State<Arc<AppState>>,
-    Path((vm_id, name)): Path<(String, String)>,
-) -> Result<Json<Value>, AppError> {
-    if !validate_vm_id(&vm_id) {
-        return Err(AppError::bad_request("Invalid VM ID"));
-    }
-    if !validate_container_name(&name) {
-        return Err(AppError::bad_request("Invalid container name"));
-    }
-
-    let statuses = get_container_statuses(&state, &vm_id, &[name.clone()]).await;
-    let status = statuses.into_iter().next().unwrap_or_else(|| json!({"name": name, "status": "unknown"}));
-    Ok(Json(status))
-}
-
-
 // ---------------------------------------------------------------------------
 // Engine: generalized per-VM container/service actions (Post-Engines)
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/containers/{name}/start",
+    path = "/api/vms/{vm_id}/containers/{name}/start",
     tag = "Post-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1340,7 +742,7 @@ pub async fn vm_container_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/containers/{name}/stop",
+    path = "/api/vms/{vm_id}/containers/{name}/stop",
     tag = "Post-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1384,7 +786,7 @@ pub async fn vm_container_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/containers/{name}/restart",
+    path = "/api/vms/{vm_id}/containers/{name}/restart",
     tag = "Post-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1423,7 +825,7 @@ pub async fn vm_container_restart(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/services/{service}/start",
+    path = "/api/vms/{vm_id}/services/{service}/start",
     tag = "Post-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1459,7 +861,7 @@ pub async fn vm_service_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/vms/{vm_id}/services/{service}/stop",
+    path = "/api/vms/{vm_id}/services/{service}/stop",
     tag = "Post-Engines",
     params(
         ("vm_id" = String, Path, description = "VM identifier"),
@@ -1517,21 +919,21 @@ macro_rules! vm_action_handler {
     };
 }
 
-vm_action_handler!(vm_oci_flex_start, "/rust/vm/oci-flex/start", "oci-p-flex_1", vm_start, "Start oci-flex");
-vm_action_handler!(vm_oci_flex_stop, "/rust/vm/oci-flex/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex");
-vm_action_handler!(vm_oci_flex_reset, "/rust/vm/oci-flex/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex");
+vm_action_handler!(vm_oci_flex_start, "/api/vm/oci-flex/start", "oci-p-flex_1", vm_start, "Start oci-flex");
+vm_action_handler!(vm_oci_flex_stop, "/api/vm/oci-flex/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex");
+vm_action_handler!(vm_oci_flex_reset, "/api/vm/oci-flex/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex");
 
-vm_action_handler!(vm_gcp_proxy_start, "/rust/vm/gcp-proxy/start", "gcp-f-micro_1", vm_start, "Start gcp-proxy");
-vm_action_handler!(vm_gcp_proxy_stop, "/rust/vm/gcp-proxy/stop", "gcp-f-micro_1", vm_stop, "Stop gcp-proxy");
-vm_action_handler!(vm_gcp_proxy_reset, "/rust/vm/gcp-proxy/reset", "gcp-f-micro_1", vm_reset, "Reset gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_start, "/api/vm/gcp-proxy/start", "gcp-f-micro_1", vm_start, "Start gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_stop, "/api/vm/gcp-proxy/stop", "gcp-f-micro_1", vm_stop, "Stop gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_reset, "/api/vm/gcp-proxy/reset", "gcp-f-micro_1", vm_reset, "Reset gcp-proxy");
 
-vm_action_handler!(vm_oci_mail_start, "/rust/vm/oci-mail/start", "oci-f-micro_1", vm_start, "Start oci-mail");
-vm_action_handler!(vm_oci_mail_stop, "/rust/vm/oci-mail/stop", "oci-f-micro_1", vm_stop, "Stop oci-mail");
-vm_action_handler!(vm_oci_mail_reset, "/rust/vm/oci-mail/reset", "oci-f-micro_1", vm_reset, "Reset oci-mail");
+vm_action_handler!(vm_oci_mail_start, "/api/vm/oci-mail/start", "oci-f-micro_1", vm_start, "Start oci-mail");
+vm_action_handler!(vm_oci_mail_stop, "/api/vm/oci-mail/stop", "oci-f-micro_1", vm_stop, "Stop oci-mail");
+vm_action_handler!(vm_oci_mail_reset, "/api/vm/oci-mail/reset", "oci-f-micro_1", vm_reset, "Reset oci-mail");
 
-vm_action_handler!(vm_oci_analytics_start, "/rust/vm/oci-analytics/start", "oci-f-micro_2", vm_start, "Start oci-analytics");
-vm_action_handler!(vm_oci_analytics_stop, "/rust/vm/oci-analytics/stop", "oci-f-micro_2", vm_stop, "Stop oci-analytics");
-vm_action_handler!(vm_oci_analytics_reset, "/rust/vm/oci-analytics/reset", "oci-f-micro_2", vm_reset, "Reset oci-analytics");
+vm_action_handler!(vm_oci_analytics_start, "/api/vm/oci-analytics/start", "oci-f-micro_2", vm_start, "Start oci-analytics");
+vm_action_handler!(vm_oci_analytics_stop, "/api/vm/oci-analytics/stop", "oci-f-micro_2", vm_stop, "Stop oci-analytics");
+vm_action_handler!(vm_oci_analytics_reset, "/api/vm/oci-analytics/reset", "oci-f-micro_2", vm_reset, "Reset oci-analytics");
 
 // ---------------------------------------------------------------------------
 // Bulk on-demand container ops (oci-flex)
@@ -1539,7 +941,7 @@ vm_action_handler!(vm_oci_analytics_reset, "/rust/vm/oci-analytics/reset", "oci-
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/on-demand/start-all",
+    path = "/api/containers/on-demand/start-all",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "All on-demand containers started", body = Value),
@@ -1579,7 +981,7 @@ pub async fn ondemand_containers_start_all(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/on-demand/stop-all",
+    path = "/api/containers/on-demand/stop-all",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "All on-demand containers stopped", body = Value),
@@ -1622,7 +1024,7 @@ pub async fn ondemand_containers_stop_all(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/on-demand/restart-all",
+    path = "/api/containers/on-demand/restart-all",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "All on-demand containers restarted", body = Value),
@@ -1670,7 +1072,7 @@ const MATOMO_CONTAINER: &str = "matomo-hybrid";
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/windmill/start",
+    path = "/api/containers/windmill/start",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "Windmill started (matomo sleeping)", body = Value),
@@ -1703,7 +1105,7 @@ pub async fn windmill_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/windmill/stop",
+    path = "/api/containers/windmill/stop",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "Windmill stopped (matomo waking)", body = Value),
@@ -1736,7 +1138,7 @@ pub async fn windmill_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/matomo/wake",
+    path = "/api/containers/matomo/wake",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "Matomo waking (windmill stopped)", body = Value),
@@ -1769,7 +1171,7 @@ pub async fn matomo_wake(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/matomo/sleep",
+    path = "/api/containers/matomo/sleep",
     tag = "Post-Containers",
     responses(
         (status = 200, description = "Matomo sleeping (windmill started)", body = Value),
@@ -1802,7 +1204,7 @@ pub async fn matomo_sleep(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/{name}/start",
+    path = "/api/containers/{name}/start",
     tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -1821,7 +1223,7 @@ pub async fn ondemand_container_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/{name}/stop",
+    path = "/api/containers/{name}/stop",
     tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -1840,7 +1242,7 @@ pub async fn ondemand_container_stop(
 
 #[utoipa::path(
     post,
-    path = "/rust/containers/{name}/restart",
+    path = "/api/containers/{name}/restart",
     tag = "Post-Engines",
     params(("name" = String, Path, description = "Container name")),
     responses(
@@ -1859,7 +1261,7 @@ pub async fn ondemand_container_restart(
 
 #[utoipa::path(
     post,
-    path = "/rust/services/{service}/start",
+    path = "/api/services/{service}/start",
     tag = "Post-Engines",
     params(("service" = String, Path, description = "Service name")),
     responses(
@@ -1878,7 +1280,7 @@ pub async fn ondemand_service_start(
 
 #[utoipa::path(
     post,
-    path = "/rust/services/{service}/stop",
+    path = "/api/services/{service}/stop",
     tag = "Post-Engines",
     params(("service" = String, Path, description = "Service name")),
     responses(

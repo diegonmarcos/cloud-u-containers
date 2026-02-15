@@ -21,13 +21,14 @@ pub struct AppState {
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        routes::ondemand::health_alive,
-        routes::ondemand::health_all,
-        routes::ondemand::health_containers_by_vm,
-        routes::ondemand::health_containers_by_service,
-        routes::ondemand::health_proxied_by_services,
-        routes::ondemand::health_resources_all,
-        routes::ondemand::health_ids,
+        // Health (tiered)
+        routes::health::health_alive,
+        routes::health::health_declared,
+        routes::health::health_deployed,
+        routes::health::health_deployed_vm,
+        routes::health::health_drift,
+        routes::health::health_status,
+        routes::health::health_status_vm,
         // Explicit per-VM actions (Post-VMs)
         routes::ondemand::vm_oci_flex_start,
         routes::ondemand::vm_oci_flex_stop,
@@ -57,12 +58,9 @@ pub struct AppState {
         routes::ondemand::ondemand_service_start,
         routes::ondemand::ondemand_service_stop,
         // Engine: generalized per-VM endpoints (Post-Engines)
-        routes::ondemand::vm_health_up,
-        routes::ondemand::vm_health,
         routes::ondemand::vm_start,
         routes::ondemand::vm_stop,
         routes::ondemand::vm_reset,
-        routes::ondemand::vm_container_status,
         routes::ondemand::vm_container_start,
         routes::ondemand::vm_container_stop,
         routes::ondemand::vm_container_restart,
@@ -70,6 +68,7 @@ pub struct AppState {
         routes::ondemand::vm_service_stop,
         // Profiling
         routes::profiling::profile_container,
+        routes::profiling::profile_vm,
     ),
     components(schemas(
         models::api_response::ApiResponse,
@@ -106,7 +105,7 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-        .merge(SwaggerUi::new("/rust/api-docs").url("/rust/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(SwaggerUi::new("/api/docs").url("/api/docs/openapi.json", ApiDoc::openapi()))
         .merge(routes::router())
         .layer(cors)
         .with_state(state);

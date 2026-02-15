@@ -9,6 +9,7 @@ pub mod profiling;
 
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
+        .merge(health::routes())
         .merge(ondemand::routes())
         .merge(profiling::routes())
 }

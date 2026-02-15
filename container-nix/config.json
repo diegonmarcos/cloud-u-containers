@@ -117,7 +117,12 @@
     "flask-api": {
       "category": "sec",
       "vm": "gcp-f-micro_1",
-      "description": "Cloud API (api.diegonmarcos.com)"
+      "description": "Cloud Flask API (api.diegonmarcos.com/flask/)"
+    },
+    "go-api": {
+      "category": "sec",
+      "vm": "gcp-f-micro_1",
+      "description": "Cloud Go API (api.diegonmarcos.com/go/)"
     },
     "sauron": {
       "category": "sec",
