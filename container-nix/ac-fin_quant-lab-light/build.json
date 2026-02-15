@@ -1,0 +1,9 @@
+{
+  "name": "quant-lab-light",
+  "description": "Lightweight quant research: Jupyter + NautilusTrader + Postgres",
+
+  "deploy": {
+    "host": "oci-flex-0",
+    "remote_path": "/opt/containers/quant-lab-light"
+  }
+}

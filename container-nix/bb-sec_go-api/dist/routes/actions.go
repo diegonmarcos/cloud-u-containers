@@ -35,7 +35,7 @@ func RegisterActions(r chi.Router, cfg *config.AppConfig) {
 	r.Post("/go/services/{service}/start", legacyServiceAction(cfg, "start"))
 	r.Post("/go/services/{service}/stop", legacyServiceAction(cfg, "stop"))
 
-	// Bulk on-demand (oci-flex)
+	// Bulk on-demand (oci-flex-1)
 	r.Post("/go/containers/on-demand/start-all", bulkAction(cfg, "start"))
 	r.Post("/go/containers/on-demand/stop-all", bulkAction(cfg, "stop"))
 	r.Post("/go/containers/on-demand/restart-all", bulkAction(cfg, "restart"))
@@ -157,7 +157,7 @@ func serviceAction(cfg *config.AppConfig, action string) http.HandlerFunc {
 	}
 }
 
-// legacyContainerAction routes to oci-flex (default on-demand VM).
+// legacyContainerAction routes to oci-flex-1 (default on-demand VM).
 func legacyContainerAction(cfg *config.AppConfig, action string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := chi.URLParam(r, "name")
@@ -176,7 +176,7 @@ func legacyContainerAction(cfg *config.AppConfig, action string) http.HandlerFun
 	}
 }
 
-// legacyServiceAction routes to oci-flex.
+// legacyServiceAction routes to oci-flex-1.
 func legacyServiceAction(cfg *config.AppConfig, action string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		service := chi.URLParam(r, "service")

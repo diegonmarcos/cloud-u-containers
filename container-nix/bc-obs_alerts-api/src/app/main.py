@@ -111,7 +111,7 @@ def create_alert():
 
     Body:
     {
-        "vm": "oci-flex",
+        "vm": "oci-flex-1",
         "service": "ssh",
         "topic": "auth",
         "title": "SSH: 3 failed logins",

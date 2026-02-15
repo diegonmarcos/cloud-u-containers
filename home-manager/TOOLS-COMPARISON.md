@@ -2,16 +2,16 @@
 
 ## Current State (System-Installed)
 
-| Tool | gcp-proxy | oci-flex | oci-mail | oci-analytics | Notes |
+| Tool | gcp-proxy | oci-flex-1 | oci-mail | oci-analytics | Notes |
 |------|-----------|----------|----------|---------------|-------|
 | **sops** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
 | **age** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
 | **jq** | ❌ | ✅ /usr/bin | ✅ /usr/bin | ✅ /usr/bin | Missing on gcp-proxy |
 | **yq** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
 | **docker** | ✅ /usr/bin | ✅ /usr/bin | ✅ /usr/bin | ✅ /usr/bin | All have it |
-| **docker-compose** | ✅ /usr/local/bin | ❌ | ✅ /usr/local/bin | ✅ /usr/local/bin | Missing on oci-flex |
+| **docker-compose** | ✅ /usr/local/bin | ❌ | ✅ /usr/local/bin | ✅ /usr/local/bin | Missing on oci-flex-1 |
 | **rsync** | ✅ /usr/bin | ✅ /usr/bin | ❌ | ❌ | Missing on oci-mail, oci-analytics |
-| **rclone** | ❌ | ✅ /usr/bin | ❌ | ❌ | Only on oci-flex |
+| **rclone** | ❌ | ✅ /usr/bin | ❌ | ❌ | Only on oci-flex-1 |
 | **gh** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
 | **ripgrep** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
 | **fd** | ❌ | ❌ | ❌ | ❌ | Missing on all VMs |
@@ -116,7 +116,7 @@ cd ~/git/cloud/a_solutions/home-manager
 
 ### Deploy to Single VM
 ```bash
-./build.sh ship oci-flex    # Deploy to oci-flex only
+./build.sh ship oci-flex-1    # Deploy to oci-flex-1 only
 ```
 
 ## Impact on Build Scripts

@@ -3,7 +3,7 @@
 ## ✅ Completed
 
 1. Created flake.nix with 4 VM configurations
-2. Created individual VM configs (gcp-proxy.nix, oci-flex.nix, oci-mail.nix, oci-analytics.nix)
+2. Created individual VM configs (gcp-proxy.nix, oci-flex-1.nix, oci-mail.nix, oci-analytics.nix)
 3. Created build.sh using ship pattern
 4. Created build.json with VM metadata
 5. Generated flake.lock
@@ -16,7 +16,7 @@
 | VM | Nix Installed | Version | Type |
 |----|---------------|---------|------|
 | gcp-proxy | ✅ YES | 2.33.1 | Determinate Nix 3.15.2 |
-| oci-flex | ✅ YES | 2.33.2 | Standard Nix |
+| oci-flex-1 | ✅ YES | 2.33.2 | Standard Nix |
 | oci-mail | ✅ YES | 2.33.1 | Determinate Nix 3.15.2 |
 | oci-analytics | ✅ YES | 2.33.1 | Determinate Nix 3.15.2 |
 
@@ -27,7 +27,7 @@
 | VM | Flakes Enabled | Config Location |
 |----|----------------|-----------------|
 | gcp-proxy | ❌ NO | ~/.config/nix/nix.conf missing |
-| oci-flex | ❌ NO | ~/.config/nix/nix.conf missing |
+| oci-flex-1 | ❌ NO | ~/.config/nix/nix.conf missing |
 | oci-mail | ❌ NO | ~/.config/nix/nix.conf missing |
 | oci-analytics | ❌ NO | ~/.config/nix/nix.conf missing |
 
@@ -35,7 +35,7 @@
 
 ### Current Tools
 
-| Tool | gcp-proxy | oci-flex | oci-mail | oci-analytics |
+| Tool | gcp-proxy | oci-flex-1 | oci-mail | oci-analytics |
 |------|-----------|----------|----------|---------------|
 | sops | ❌ | ❌ | ❌ | ❌ |
 | age | ❌ | ❌ | ❌ | ❌ |
@@ -64,7 +64,7 @@ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 Or automated from local machine:
 ```bash
-for vm in gcp-proxy oci-flex oci-mail oci-analytics; do
+for vm in gcp-proxy oci-flex-1 oci-mail oci-analytics; do
   ssh "$vm" "mkdir -p ~/.config/nix && echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf"
 done
 ```
@@ -75,7 +75,7 @@ done
 cd ~/git/cloud/a_solutions/home-manager
 ./build.sh ship              # Deploy to all VMs
 # or
-./build.sh ship oci-flex     # Deploy to single VM
+./build.sh ship oci-flex-1     # Deploy to single VM
 ```
 
 ### Step 3: Verify
@@ -102,7 +102,7 @@ jq --version
 - Same as gcp-proxy
 - **Recommendation:** Avoid source builds
 
-**oci-flex, oci-mail (Ampere ARM, 24GB RAM, 4 vCPU):**
+**oci-flex-1, oci-mail (Ampere ARM, 24GB RAM, 4 vCPU):**
 - ✅ **FAST** - plenty of resources
 - Nix builds: 5-15 minutes typical
 - Home manager activation: 1-2 minutes
@@ -144,7 +144,7 @@ Most of these are small binaries with pre-built packages.
 | VM | RAM | CPU | Architecture | Est. Time | Risk |
 |----|-----|-----|--------------|-----------|------|
 | gcp-proxy | 1GB | 0.25 | x86_64 | 3-5 min | Low (binary cache) |
-| oci-flex | 24GB | 4.0 | aarch64 | 1-2 min | Very Low |
+| oci-flex-1 | 24GB | 4.0 | aarch64 | 1-2 min | Very Low |
 | oci-mail | 24GB | 4.0 | aarch64 | 1-2 min | Very Low |
 | oci-analytics | 1GB | 0.25 | x86_64 | 3-5 min | Low (binary cache) |
 

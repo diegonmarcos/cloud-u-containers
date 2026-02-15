@@ -120,6 +120,7 @@ impl AppConfig {
         // OCI instance IDs from env
         let mut vm_instances = HashMap::new();
         let oci_vms = [
+            ("oci-p-flex_0", "OCI_FLEX0_INSTANCE_ID"),
             ("oci-p-flex_1", "OCI_FLEX1_INSTANCE_ID"),
             ("oci-f-micro_1", "OCI_MICRO1_INSTANCE_ID"),
             ("oci-f-micro_2", "OCI_MICRO2_INSTANCE_ID"),
@@ -185,6 +186,7 @@ impl AppConfig {
             .unwrap_or_else(|_| "/app/config/gcp_key".into());
 
         let default_ssh = vec![
+            ("oci-p-flex_0", "10.0.0.6", "ubuntu", ssh_key.as_str()),
             ("oci-p-flex_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
             ("oci-f-micro_1", "10.0.0.3", "ubuntu", ssh_key.as_str()),
             ("oci-f-micro_2", "10.0.0.4", "ubuntu", ssh_key.as_str()),
@@ -227,7 +229,13 @@ impl AppConfig {
         // All VM service maps
         let mut all_vm_services = HashMap::new();
 
-        // oci-p-flex_1 (oci-flex)
+        // oci-p-flex_0 (oci-flex-0) — no services initially
+        all_vm_services.insert("oci-p-flex_0".into(), VmServiceMap {
+            label: "oci-flex-0".into(),
+            services: HashMap::new(),
+        });
+
+        // oci-p-flex_1 (oci-flex-1)
         let mut flex_svc = HashMap::new();
         flex_svc.insert("photos".into(), vec!["photoprism_app".into(), "photoprism_mariadb".into()]);
         flex_svc.insert("calendar".into(), vec!["radicale".into()]);
@@ -244,7 +252,7 @@ impl AppConfig {
         flex_svc.insert("security".into(), vec!["sauron".into()]);
         flex_svc.insert("logs".into(), vec!["fluent-bit".into()]);
         all_vm_services.insert("oci-p-flex_1".into(), VmServiceMap {
-            label: "oci-flex".into(),
+            label: "oci-flex-1".into(),
             services: flex_svc,
         });
 

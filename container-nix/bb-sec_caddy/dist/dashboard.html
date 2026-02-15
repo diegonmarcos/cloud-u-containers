@@ -119,6 +119,65 @@ tr:hover td{background:#0d0d15}
   table{font-size:.65rem}
   pre{font-size:.65rem}
 }
+.health-tier{
+  margin:1rem 0;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  padding:.75rem 1rem;
+}
+.tier-hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:.5rem;
+}
+.tier-hdr h3{
+  color:#339af0;
+  font-size:.9rem;
+  margin:0;
+  font-weight:normal;
+}
+.tier-lbl{
+  color:#495057;
+  font-size:.65rem;
+  margin-left:.5rem;
+}
+.rbtn{
+  background:#1a1a2e;
+  color:#51cf66;
+  border:1px solid #51cf66;
+  padding:.2rem .6rem;
+  border-radius:3px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:.7rem;
+  transition:all .2s;
+}
+.rbtn:hover{background:#51cf66;color:#0a0a0f}
+.rbtn:disabled{opacity:.4;cursor:not-allowed}
+.rbtn.warn{border-color:#fcc419;color:#fcc419}
+.rbtn.warn:hover{background:#fcc419;color:#0a0a0f}
+.tier-body{font-size:.75rem;color:#868e96}
+.tier-body table{margin:.5rem 0}
+.st-ok{color:#51cf66}
+.st-warn{color:#fcc419}
+.st-err{color:#ff6b6b}
+.st-off{color:#495057}
+.loading{color:#339af0;font-style:italic}
+.prof-btn{
+  background:none;
+  color:#339af0;
+  border:1px solid #1a1a2e;
+  padding:.1rem .4rem;
+  border-radius:2px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:.65rem;
+}
+.prof-btn:hover{border-color:#339af0}
+.prof-btn.warn{color:#fcc419;border-color:#1a1a2e}
+.prof-btn.warn:hover{border-color:#fcc419}
+.prof-vm{margin:.5rem 0}
 </style>
 </head>
 <body>
@@ -174,16 +233,26 @@ time</p>
 <td>24/7</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-0</strong></td>
 <td>OCI</td>
-<td>Paid</td>
-<td><code>144.24.196.72</code></td>
-<td><code>10.0.0.2</code></td>
-<td>8 GB</td>
-<td>Ampere A1 (2 OCPU)</td>
+<td>Free (A1.Flex)</td>
+<td><code>82.70.229.129</code></td>
+<td><code>10.0.0.6</code></td>
+<td>16 GB</td>
+<td>Ampere A1 (3 OCPU)</td>
 <td>Wake-on-demand</td>
 </tr>
 <tr class="even">
+<td><strong>oci-flex-1</strong></td>
+<td>OCI</td>
+<td>Free (A1.Flex)</td>
+<td><code>144.24.196.72</code></td>
+<td><code>10.0.0.2</code></td>
+<td>8 GB</td>
+<td>Ampere A1 (1 OCPU)</td>
+<td>Wake-on-demand</td>
+</tr>
+<tr class="odd">
 <td><strong>oci-mail</strong></td>
 <td>OCI</td>
 <td>Free</td>
@@ -235,10 +304,10 @@ time</p>
 </tr>
 <tr class="odd">
 <td><code>api.diegonmarcos.com</code></td>
-<td><strong>API (Flask+Rust)</strong></td>
+<td><strong>API (Rust+Flask+Go)</strong></td>
 <td>gcp-proxy</td>
-<td>5000/8080</td>
-<td>Flask: Authelia + Bearer / Rust: Public</td>
+<td>8080/5000/8090</td>
+<td>Rust: Public / Flask: Authelia / Go: Public</td>
 <td>24/7</td>
 </tr>
 <tr class="even">
@@ -292,7 +361,7 @@ time</p>
 <tr class="even">
 <td><code>photos.diegonmarcos.com</code></td>
 <td><strong>PhotoPrism</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3013</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -300,7 +369,7 @@ time</p>
 <tr class="odd">
 <td><code>db.diegonmarcos.com</code></td>
 <td><strong>NocoDB</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>8085</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -308,7 +377,7 @@ time</p>
 <tr class="even">
 <td><code>ide.diegonmarcos.com</code></td>
 <td><strong>Code Server</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>8443</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -316,7 +385,7 @@ time</p>
 <tr class="odd">
 <td><code>drive-notes-affine.diegonmarcos.com</code></td>
 <td><strong>AFFiNE</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3010</td>
 <td>Public</td>
 <td>Wake</td>
@@ -324,7 +393,7 @@ time</p>
 <tr class="even">
 <td><code>sheets.diegonmarcos.com</code></td>
 <td><strong>Grist</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3011</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -388,7 +457,7 @@ time</p>
 <tr class="even">
 <td><code>app.diegonmarcos.com/etherpad/</code></td>
 <td><strong>Etherpad</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3012</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -396,7 +465,7 @@ time</p>
 <tr class="odd">
 <td><code>app.diegonmarcos.com/filebrowser/</code></td>
 <td><strong>FileBrowser</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3015</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -404,7 +473,7 @@ time</p>
 <tr class="even">
 <td><code>app.diegonmarcos.com/hedgedoc/</code></td>
 <td><strong>HedgeDoc</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3010</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -412,7 +481,7 @@ time</p>
 <tr class="odd">
 <td><code>app.diegonmarcos.com/revealmd/</code></td>
 <td><strong>Reveal.md</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3014</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -428,7 +497,7 @@ time</p>
 <tr class="odd">
 <td><code>app.diegonmarcos.com/grafana/</code></td>
 <td><strong>Grafana</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3016</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -436,7 +505,7 @@ time</p>
 <tr class="even">
 <td><code>app.diegonmarcos.com/gitea/</code></td>
 <td><strong>Gitea</strong></td>
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>3000</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -562,7 +631,7 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>OPEN</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td><code>10.0.0.2</code></td>
 <td>22/tcp</td>
 <td>0.0.0.0</td>
@@ -570,8 +639,24 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>RESTRICT</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td><code>10.0.0.2</code></td>
+<td>51820/udp</td>
+<td>0.0.0.0</td>
+<td>WireGuard</td>
+<td>OPEN</td>
+</tr>
+<tr class="even">
+<td><strong>oci-flex-0</strong></td>
+<td><code>10.0.0.6</code></td>
+<td>22/tcp</td>
+<td>0.0.0.0</td>
+<td>SSH</td>
+<td>RESTRICT</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-flex-0</strong></td>
+<td><code>10.0.0.6</code></td>
 <td>51820/udp</td>
 <td>0.0.0.0</td>
 <td>WireGuard</td>
@@ -679,19 +764,19 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>WireGuard endpoint</td>
 </tr>
 <tr class="even">
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>INPUT</td>
 <td><code>51820/udp ACCEPT</code></td>
 <td>WireGuard endpoint</td>
 </tr>
 <tr class="odd">
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>INPUT</td>
 <td><code>22/tcp from 10.0.0.0/24 ACCEPT</code></td>
 <td>SSH via mesh only</td>
 </tr>
 <tr class="even">
-<td>oci-flex</td>
+<td>oci-flex-1</td>
 <td>INPUT</td>
 <td><code>default DROP</code> (except established)</td>
 <td>Block public access</td>
@@ -832,7 +917,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>via Caddy</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>photoprism</td>
 <td>3013</td>
 <td><code>10.0.0.2</code></td>
@@ -840,7 +925,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>nocodb</td>
 <td>8085</td>
 <td><code>10.0.0.2</code></td>
@@ -848,7 +933,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>code-server</td>
 <td>8443</td>
 <td><code>10.0.0.2</code></td>
@@ -856,7 +941,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>grist</td>
 <td>3011</td>
 <td><code>10.0.0.2</code></td>
@@ -864,7 +949,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>etherpad</td>
 <td>3012</td>
 <td><code>10.0.0.2</code></td>
@@ -872,7 +957,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>filebrowser</td>
 <td>3015</td>
 <td><code>10.0.0.2</code></td>
@@ -880,7 +965,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>hedgedoc</td>
 <td>3010</td>
 <td><code>10.0.0.2</code></td>
@@ -888,7 +973,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>revealmd</td>
 <td>3014</td>
 <td><code>10.0.0.2</code></td>
@@ -896,7 +981,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>gitea</td>
 <td>3000</td>
 <td><code>10.0.0.2</code></td>
@@ -904,7 +989,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>gitea-ssh</td>
 <td>2222</td>
 <td><code>10.0.0.2</code></td>
@@ -912,7 +997,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>grafana</td>
 <td>3016</td>
 <td><code>10.0.0.2</code></td>
@@ -920,7 +1005,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>loki</td>
 <td>3017</td>
 <td><code>10.0.0.2</code></td>
@@ -928,7 +1013,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>tempo</td>
 <td>3018</td>
 <td><code>10.0.0.2</code></td>
@@ -936,7 +1021,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex</strong></td>
+<td><strong>oci-flex-1</strong></td>
 <td>mimir</td>
 <td>3019</td>
 <td><code>10.0.0.2</code></td>
@@ -1032,7 +1117,7 @@ localhost, <code>docker</code> = internal network.</p>
 │              rust-api, flask-api, vaultwarden, ntfy        │
 │              dozzle (monitors all containers)              │
 │                                                            │
-│  oci-flex:   photoprism ←→ photoprism-db (redis)          │
+│  oci-flex-1: photoprism ←→ photoprism-db (redis)          │
 │              nocodb, code-server, grist, gitea             │
 │              etherpad, filebrowser, hedgedoc, revealmd     │
 │              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
@@ -1098,16 +1183,90 @@ Bearer?  Cookie?
 └────┬──────────┬──────────┬───────────────────┘
      │ wg0      │ wg0      │ wg0
      ▼          ▼          ▼
-┌─────────┐ ┌─────────┐ ┌──────────────┐
-│oci-flex │ │oci-mail │ │oci-analytics │
-│ 10.0.0.2 │ │ 10.0.0.3 │ │ 10.0.0.4 │
-│         │ │         │ │              │
-│PhotoPrism│ │ Mailu  │ │   Matomo     │
-│ NocoDB  │ │Syncthing│ │  Windmill    │
-│Code Srv │ │Radicale │ │              │
-│ AFFiNE  │ │         │ │              │
-│  Grist  │ │         │ │              │
-└─────────┘ └─────────┘ └──────────────┘</code></pre>
+┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────┐
+│oci-flex-1│ │oci-flex-0│ │oci-mail │ │oci-analytics │
+│ 10.0.0.2  │ │ 10.0.0.6 │ │ 10.0.0.3 │ │ 10.0.0.4 │
+│          │ │          │ │         │ │              │
+│PhotoPrism│ │ (none)   │ │ Mailu   │ │   Matomo     │
+│ NocoDB   │ │          │ │Syncthing│ │  Windmill    │
+│Code Srv  │ │          │ │Radicale │ │              │
+│ AFFiNE   │ │          │ │         │ │              │
+│  Grist   │ │          │ │         │ │              │
+└──────────┘ └──────────┘ └─────────┘ └──────────────┘</code></pre>
+<hr />
+<div id="health-section">
+<h2>
+Health
+</h2>
+<p>
+Lazy-loaded from <code>/api/health/<em></code> and
+<code>/api/profiling/</em></code>. Click <em>Refresh</em> to load each
+tier.
+</p>
+<div class="health-tier">
+<div class="tier-hdr">
+<h3>
+Declared <span class="tier-lbl">Tier 0 — Config (instant)</span>
+</h3>
+<button class="rbtn" id="btn-declared">
+Refresh
+</button>
+</div>
+<div id="out-declared" class="tier-body">
+—
+</div>
+</div>
+<div class="health-tier">
+<div class="tier-hdr">
+<h3>
+Deployed <span class="tier-lbl">Tier 1 — docker ps (~3s)</span>
+</h3>
+<button class="rbtn" id="btn-deployed">
+Refresh
+</button>
+</div>
+<div id="out-deployed" class="tier-body">
+—
+</div>
+</div>
+<div class="health-tier">
+<div class="tier-hdr">
+<h3>
+Drift <span class="tier-lbl">Tier 2 — Declared vs Deployed (~3s)</span>
+</h3>
+<button class="rbtn" id="btn-drift">
+Refresh
+</button>
+</div>
+<div id="out-drift" class="tier-body">
+—
+</div>
+</div>
+<div class="health-tier">
+<div class="tier-hdr">
+<h3>
+Status <span class="tier-lbl">Tier 3 — Comprehensive (heavy)</span>
+</h3>
+<button class="rbtn warn" id="btn-status">
+Refresh
+</button>
+</div>
+<div id="out-status" class="tier-body">
+—
+</div>
+</div>
+<div class="health-tier">
+<div class="tier-hdr">
+<h3>
+Profiling <span class="tier-lbl">Tier 4 — Deep Diagnostic
+(heaviest)</span>
+</h3>
+</div>
+<div id="out-profiling" class="tier-body">
+Load <em>Declared</em> first, then trigger per-container.
+</div>
+</div>
+</div>
 <hr />
 <p><code>visitor@caddy:~$</code> <a
 href="https://linktree.diegonmarcos.com">cd /home</a></p>
@@ -1123,6 +1282,144 @@ href="https://linktree.diegonmarcos.com">cd /home</a></p>
     s.appendChild(d);
   }
 })();
+// Health Dashboard
+var HAPI='https://api.diegonmarcos.com';
+function hfetch(path,elId,btnId,render){
+  var el=document.getElementById(elId);
+  var btn=document.getElementById(btnId);
+  if(btn)btn.disabled=true;
+  el.innerHTML='<span class="loading">loading...</span>';
+  fetch(HAPI+path,{signal:AbortSignal.timeout(30000)})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(function(d){render(el,d);if(btn)btn.disabled=false})
+    .catch(function(e){el.innerHTML='<span class="st-err">Error: '+e.message+'</span>';if(btn)btn.disabled=false});
+}
+document.getElementById('btn-declared').addEventListener('click',function(){
+  hfetch('/api/health/declared','out-declared','btn-declared',rDeclared);
+});
+document.getElementById('btn-deployed').addEventListener('click',function(){
+  hfetch('/api/health/deployed','out-deployed','btn-deployed',rDeployed);
+});
+document.getElementById('btn-drift').addEventListener('click',function(){
+  hfetch('/api/health/drift','out-drift','btn-drift',rDrift);
+});
+document.getElementById('btn-status').addEventListener('click',function(){
+  hfetch('/api/health/status','out-status','btn-status',rStatus);
+});
+function rDeclared(el,d){
+  var h='<table><tr><th>VM</th><th>Label</th><th>Services</th><th>Containers</th></tr>';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
+    for(var s in svcs)cc+=svcs[s].length;
+    h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td><td>'+sc+'</td><td>'+cc+'</td></tr>';
+  }
+  h+='</table>';
+  var t=d.totals||{};
+  h+='<p>Total: <strong>'+t.vms+'</strong> VMs, <strong>'+t.services+'</strong> services, <strong>'+t.containers+'</strong> containers</p>';
+  window._dVMs=d.vms;
+  rProfBtns();
+  el.innerHTML=h;
+}
+function rDeployed(el,d){
+  var h='<table><tr><th>VM</th><th>Label</th><th>Running</th><th>Stopped</th><th>Total</th></tr>';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id];
+    h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td>';
+    h+='<td class="'+(v.running>0?'st-ok':'st-off')+'">'+v.running+'</td>';
+    h+='<td class="'+(v.stopped>0?'st-warn':'st-off')+'">'+v.stopped+'</td>';
+    h+='<td>'+v.total+'</td></tr>';
+  }
+  h+='</table>';
+  var sm=d.summary||{};
+  h+='<p><span class="st-ok">'+sm.running+' running</span>, <span class="st-warn">'+sm.stopped+' stopped</span>, '+sm.total+' total</p>';
+  el.innerHTML=h;
+}
+function rDrift(el,d){
+  var h='<table><tr><th>VM</th><th>Declared</th><th>Deployed</th><th>Missing</th><th>Extra</th></tr>';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id];
+    var ml=v.missing||[],xl=v.extra||[],dl=v.declared||[],dpl=v.deployed||[];
+    h+='<tr><td>'+id+'</td><td>'+dl.length+'</td><td>'+dpl.length+'</td>';
+    h+='<td class="'+(ml.length?'st-err':'st-ok')+'">'+(ml.length?ml.join(', '):'none')+'</td>';
+    h+='<td class="'+(xl.length?'st-warn':'st-ok')+'">'+(xl.length?xl.join(', '):'none')+'</td></tr>';
+  }
+  h+='</table>';
+  var sm=d.summary||{};
+  h+='<p>Drift: '+(sm.drift?'<span class="st-err">YES</span>':'<span class="st-ok">NO</span>')+'</p>';
+  el.innerHTML=h;
+}
+function rStatus(el,d){
+  var h='<table><tr><th>VM</th><th>Label</th><th>Health</th><th>SSH</th><th>Ping</th><th>Containers</th></tr>';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id],sm=v.summary||{};
+    var hc=v.health==='online'?'st-ok':(v.health==='degraded'?'st-warn':'st-err');
+    h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td>';
+    h+='<td class="'+hc+'">'+v.health+'</td>';
+    h+='<td class="'+(v.ssh?'st-ok':'st-err')+'">'+(v.ssh?'OK':'FAIL')+'</td>';
+    h+='<td class="'+(v.ping?'st-ok':'st-err')+'">'+(v.ping?'OK':'FAIL')+'</td>';
+    h+='<td>'+sm.containers_running+'/'+sm.containers_total+'</td></tr>';
+  }
+  h+='</table>';
+  el.innerHTML=h;
+}
+function rProfBtns(){
+  var el=document.getElementById('out-profiling');
+  if(!window._dVMs){el.textContent='Load Declared first.';return}
+  var h="";
+  for(var id in window._dVMs){
+    var v=window._dVMs[id],svcs=v.services||{},cs=[];
+    for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
+    h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||"")+') — '+cs.length+' containers ';
+    h+='<button class="prof-btn warn" data-profvm="'+id+'">Profile All</button></div>';
+    h+='<div id="profvm-'+id+'"></div>';
+    for(var j=0;j<cs.length;j++){
+      h+='<span>  '+cs[j]+' </span>';
+      h+='<button class="prof-btn" data-prof="'+cs[j]+'">Profile</button>';
+      h+='<span id="prof-'+cs[j]+'"></span><br>';
+    }
+  }
+  el.innerHTML=h;
+}
+document.getElementById('out-profiling').addEventListener('click',function(e){
+  var t=e.target;
+  if(t.dataset&&t.dataset.prof)profC(t.dataset.prof);
+  if(t.dataset&&t.dataset.profvm)profVM(t.dataset.profvm);
+});
+function profC(name){
+  var el=document.getElementById('prof-'+name);
+  if(el)el.innerHTML='<span class="loading"> checking...</span>';
+  fetch(HAPI+'/api/profiling/'+encodeURIComponent(name),{signal:AbortSignal.timeout(60000)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var s=d.summary||{};
+      var c=s.overall_status==='healthy'?'st-ok':(s.overall_status==='degraded'?'st-warn':'st-err');
+      if(el)el.innerHTML=' <span class="'+c+'">'+s.overall_status+' ('+s.checks_passed+'/'+s.checks_total+', '+d.total_time_ms+'ms)</span>';
+    })
+    .catch(function(e){if(el)el.innerHTML=' <span class="st-err">'+e.message+'</span>'});
+}
+function profVM(vmId){
+  var el=document.getElementById('profvm-'+vmId);
+  if(el){el.className='loading';el.textContent='profiling all on '+vmId+'...';}
+  fetch(HAPI+'/api/profiling/vm/'+encodeURIComponent(vmId),{signal:AbortSignal.timeout(120000)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var sm=d.summary||{},cs=d.containers||[];
+      var h='<span class="st-ok">'+sm.healthy+' healthy</span>, <span class="st-warn">'+sm.degraded+' degraded</span>, <span class="st-err">'+sm.down+' down</span> ('+d.total_time_ms+'ms)<br>';
+      for(var i=0;i<cs.length;i++){
+        var c=cs[i],st=(c.summary||{}).overall_status||'unknown';
+        var cls=st==='healthy'?'st-ok':(st==='degraded'?'st-warn':'st-err');
+        h+='  <span class="'+cls+'">'+c.container+': '+st+'</span><br>';
+        var cel=document.getElementById('prof-'+c.container);
+        if(cel)cel.innerHTML=' <span class="'+cls+'">'+st+'</span>';
+      }
+      if(el){el.className="";el.innerHTML=h;}
+    })
+    .catch(function(e){if(el){el.className='st-err';el.textContent=vmId+': '+e.message;}});
+}
 </script>
 </body>
 </html>

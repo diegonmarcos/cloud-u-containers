@@ -20,5 +20,8 @@ COPY src/ ./src/
 # Type-check at build time
 RUN npx tsc --noEmit
 
+# Drop privileges — node:22 images include the 'node' user
+USER node
+
 # MCP stdio transport — no port exposed
 CMD ["npx", "tsx", "src/index.ts"]

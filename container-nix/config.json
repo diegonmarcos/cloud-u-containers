@@ -26,12 +26,19 @@
       "gcloud_zone": "us-central1-a",
       "description": "GCloud Free - Central Proxy + Control"
     },
+    "oci-p-flex_0": {
+      "ip": "82.70.229.129",
+      "user": "ubuntu",
+      "method": "key",
+      "ssh_alias": "oci-flex-0",
+      "description": "Oracle Paid - Flex 0 (3 OCPUs / 16GB)"
+    },
     "oci-p-flex_1": {
       "ip": "144.24.196.72",
       "user": "ubuntu",
       "method": "key",
-      "ssh_alias": "oci-flex",
-      "description": "Oracle Paid - Heavy Services (Wake-on-Demand)"
+      "ssh_alias": "oci-flex-1",
+      "description": "Oracle Paid - Flex 1 (1 OCPU / 8GB, Wake-on-Demand)"
     }
   },
 
@@ -267,6 +274,11 @@
       "category": "cloud",
       "vm": "local",
       "description": "Oracle Cloud Infrastructure (Terraform)"
+    },
+    "hickory-dns": {
+      "category": "cloud",
+      "vm": "gcp-f-micro_1",
+      "description": "Internal DNS (.internal zone, WireGuard mesh)"
     },
     "backup-gitea": {
       "category": "data",

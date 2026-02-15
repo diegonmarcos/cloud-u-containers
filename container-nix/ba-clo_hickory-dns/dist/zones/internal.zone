@@ -1,0 +1,29 @@
+$TTL 3600
+@   IN  SOA   dns.internal. admin.internal. (
+              2026021601  ; serial (YYYYMMDDNN)
+              3600        ; refresh
+              900         ; retry
+              604800      ; expire
+              300 )       ; negative cache TTL
+
+    IN  NS    dns.internal.
+
+; ── Service A records ──
+affine          IN  A     10.0.0.2    ; AFFiNE
+api          IN  A     10.0.0.1    ; API gateway
+auth          IN  A     10.0.0.1    ; Authelia 2FA
+caddy          IN  A     10.0.0.1    ; Reverse proxy
+cal          IN  A     10.0.0.3    ; Radicale
+db          IN  A     10.0.0.2    ; NocoDB
+dns          IN  A     10.0.0.1    ; Hickory DNS
+ide          IN  A     10.0.0.2    ; Code Server
+mail          IN  A     10.0.0.3    ; Mailu
+matomo          IN  A     10.0.0.4    ; Matomo analytics
+ntfy          IN  A     10.0.0.1    ; Push notifications
+photos          IN  A     10.0.0.2    ; PhotoPrism
+sync          IN  A     10.0.0.3    ; Syncthing
+vault          IN  A     10.0.0.1    ; Vaultwarden
+windmill          IN  A     10.0.0.4    ; Windmill workflows
+
+; ── Wildcard (unmatched → Caddy) ──
+*            IN  A     10.0.0.1

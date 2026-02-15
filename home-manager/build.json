@@ -8,10 +8,15 @@
       "arch": "x86_64-linux",
       "config": "diego@gcp-proxy"
     },
-    "oci-flex": {
+    "oci-flex-0": {
       "user": "ubuntu",
       "arch": "aarch64-linux",
-      "config": "ubuntu@oci-flex"
+      "config": "ubuntu@oci-flex-0"
+    },
+    "oci-flex-1": {
+      "user": "ubuntu",
+      "arch": "aarch64-linux",
+      "config": "ubuntu@oci-flex-1"
     },
     "oci-mail": {
       "user": "ubuntu",

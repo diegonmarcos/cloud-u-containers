@@ -17,7 +17,8 @@
 
     # WireGuard IPs
     gcp = "10.0.0.1";       # gcp-proxy
-    flex = "10.0.0.2";      # oci-flex (on-demand)
+    flex = "10.0.0.2";      # oci-flex-1 (on-demand)
+    flex0 = "10.0.0.6";     # oci-flex-0 (on-demand)
     mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
 
@@ -35,14 +36,25 @@
         arch = "x86_64";
         availability = "24/7";
       };
-      "oci-flex" = {
-        alias = "oci-flex";
+      "oci-flex-1" = {
+        alias = "oci-flex-1";
         provider = "OCI";
-        tier = "Paid";
+        tier = "Free (A1.Flex)";
         ip = "144.24.196.72";
         wg = flex;
         ram = "8 GB";
-        cpu = "Ampere A1 (2 OCPU)";
+        cpu = "Ampere A1 (1 OCPU)";
+        arch = "aarch64";
+        availability = "Wake-on-demand";
+      };
+      "oci-flex-0" = {
+        alias = "oci-flex-0";
+        provider = "OCI";
+        tier = "Free (A1.Flex)";
+        ip = "82.70.229.129";
+        wg = flex0;
+        ram = "16 GB";
+        cpu = "Ampere A1 (3 OCPU)";
         arch = "aarch64";
         availability = "Wake-on-demand";
       };
@@ -80,11 +92,11 @@
       { domain = "sync.diegonmarcos.com";                name = "Syncthing";       vm = "oci-mail";      port = "8384"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "cal.diegonmarcos.com";                 name = "Radicale";        vm = "oci-mail";      port = "5232"; auth = "Public";            avail = "24/7"; }
       { domain = "analytics.diegonmarcos.com";           name = "Matomo";          vm = "oci-analytics"; port = "8080"; auth = "Hybrid (public tracking)"; avail = "24/7"; }
-      { domain = "photos.diegonmarcos.com";              name = "PhotoPrism";      vm = "oci-flex";      port = "3013"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "db.diegonmarcos.com";                  name = "NocoDB";          vm = "oci-flex";      port = "8085"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-flex";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-flex";      port = "3010"; auth = "Public";            avail = "Wake"; }
-      { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-flex";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "photos.diegonmarcos.com";              name = "PhotoPrism";      vm = "oci-flex-1";      port = "3013"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "db.diegonmarcos.com";                  name = "NocoDB";          vm = "oci-flex-1";      port = "8085"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-flex-1";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-flex-1";      port = "3010"; auth = "Public";            avail = "Wake"; }
+      { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-flex-1";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
@@ -92,13 +104,13 @@
       { domain = "suite.diegonmarcos.com";               name = "Suite Apps";      vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "maps.diegonmarcos.com";                name = "Maps";            vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "app.diegonmarcos.com/windmill/";        name = "Windmill";        vm = "oci-analytics"; port = "8000"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/etherpad/";        name = "Etherpad";        vm = "oci-flex";      port = "3012"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/filebrowser/";     name = "FileBrowser";     vm = "oci-flex";      port = "3015"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/hedgedoc/";        name = "HedgeDoc";        vm = "oci-flex";      port = "3010"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/revealmd/";        name = "Reveal.md";       vm = "oci-flex";      port = "3014"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/etherpad/";        name = "Etherpad";        vm = "oci-flex-1";      port = "3012"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/filebrowser/";     name = "FileBrowser";     vm = "oci-flex-1";      port = "3015"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/hedgedoc/";        name = "HedgeDoc";        vm = "oci-flex-1";      port = "3010"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/revealmd/";        name = "Reveal.md";       vm = "oci-flex-1";      port = "3014"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "app.diegonmarcos.com/dozzle/";          name = "Dozzle";          vm = "gcp-proxy";     port = "9999"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/grafana/";         name = "Grafana";         vm = "oci-flex";      port = "3016"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/gitea/";           name = "Gitea";           vm = "oci-flex";      port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/grafana/";         name = "Grafana";         vm = "oci-flex-1";      port = "3016"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/gitea/";           name = "Gitea";           vm = "oci-flex-1";      port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
     ];
 
     securityLayers = [
@@ -119,9 +131,12 @@
       { vm = "gcp-proxy"; ip = gcp; port = "443/tcp";   bind = "0.0.0.0"; purpose = "Caddy HTTPS";      status = "open"; }
       { vm = "gcp-proxy"; ip = gcp; port = "443/udp";   bind = "0.0.0.0"; purpose = "Caddy HTTP/3";     status = "open"; }
       { vm = "gcp-proxy"; ip = gcp; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
-      # oci-flex — mesh only
-      { vm = "oci-flex";  ip = flex; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
-      { vm = "oci-flex";  ip = flex; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
+      # oci-flex-1 — mesh only
+      { vm = "oci-flex-1";  ip = flex;  port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
+      { vm = "oci-flex-1";  ip = flex;  port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
+      # oci-flex-0 — mesh only
+      { vm = "oci-flex-0";  ip = flex0; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
+      { vm = "oci-flex-0";  ip = flex0; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
       # oci-mail — mesh + mail delivery
       { vm = "oci-mail";  ip = mail; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
       { vm = "oci-mail";  ip = mail; port = "25/tcp";    bind = "0.0.0.0"; purpose = "SMTP (inbound)";   status = "open"; }
@@ -145,21 +160,21 @@
       { vm = "gcp-proxy"; container = "vaultwarden";      port = "—";    bind = "docker";   internal = "80";   note = "via Caddy"; }
       { vm = "gcp-proxy"; container = "ntfy";             port = "8090"; bind = "127.0.0.1"; internal = "80";   note = "via Caddy"; }
       { vm = "gcp-proxy"; container = "dozzle";           port = "9999"; bind = "127.0.0.1"; internal = "8080"; note = "via Caddy"; }
-      # oci-flex containers (WireGuard only)
-      { vm = "oci-flex"; container = "photoprism";  port = "3013"; bind = flex; internal = "2342"; note = "WG only"; }
-      { vm = "oci-flex"; container = "nocodb";      port = "8085"; bind = flex; internal = "8080"; note = "WG only"; }
-      { vm = "oci-flex"; container = "code-server"; port = "8443"; bind = flex; internal = "8443"; note = "WG only"; }
-      { vm = "oci-flex"; container = "grist";       port = "3011"; bind = flex; internal = "8484"; note = "WG only"; }
-      { vm = "oci-flex"; container = "etherpad";    port = "3012"; bind = flex; internal = "9001"; note = "WG only"; }
-      { vm = "oci-flex"; container = "filebrowser"; port = "3015"; bind = flex; internal = "80";   note = "WG only"; }
-      { vm = "oci-flex"; container = "hedgedoc";    port = "3010"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-flex"; container = "revealmd";    port = "3014"; bind = flex; internal = "1948"; note = "WG only"; }
-      { vm = "oci-flex"; container = "gitea";       port = "3000"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-flex"; container = "gitea-ssh";   port = "2222"; bind = flex; internal = "22";   note = "WG only"; }
-      { vm = "oci-flex"; container = "grafana";     port = "3016"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-flex"; container = "loki";        port = "3017"; bind = flex; internal = "3100"; note = "WG only"; }
-      { vm = "oci-flex"; container = "tempo";       port = "3018"; bind = flex; internal = "3200"; note = "WG only"; }
-      { vm = "oci-flex"; container = "mimir";       port = "3019"; bind = flex; internal = "8080"; note = "WG only"; }
+      # oci-flex-1 containers (WireGuard only)
+      { vm = "oci-flex-1"; container = "photoprism";  port = "3013"; bind = flex; internal = "2342"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "nocodb";      port = "8085"; bind = flex; internal = "8080"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "code-server"; port = "8443"; bind = flex; internal = "8443"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "grist";       port = "3011"; bind = flex; internal = "8484"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "etherpad";    port = "3012"; bind = flex; internal = "9001"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "filebrowser"; port = "3015"; bind = flex; internal = "80";   note = "WG only"; }
+      { vm = "oci-flex-1"; container = "hedgedoc";    port = "3010"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "revealmd";    port = "3014"; bind = flex; internal = "1948"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "gitea";       port = "3000"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "gitea-ssh";   port = "2222"; bind = flex; internal = "22";   note = "WG only"; }
+      { vm = "oci-flex-1"; container = "grafana";     port = "3016"; bind = flex; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "loki";        port = "3017"; bind = flex; internal = "3100"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "tempo";       port = "3018"; bind = flex; internal = "3200"; note = "WG only"; }
+      { vm = "oci-flex-1"; container = "mimir";       port = "3019"; bind = flex; internal = "8080"; note = "WG only"; }
       # oci-mail containers (WG + mail public)
       { vm = "oci-mail"; container = "mailu-front"; port = "25";   bind = "0.0.0.0"; internal = "25";   note = "SMTP public"; }
       { vm = "oci-mail"; container = "mailu-front"; port = "465";  bind = "0.0.0.0"; internal = "465";  note = "SMTPS public"; }
@@ -398,9 +413,9 @@ ${fwRows}
 | gcp-proxy | FORWARD | `10.0.0.0/24 → wg0 ACCEPT` | WireGuard mesh routing |
 | gcp-proxy | POSTROUTING | `10.0.0.0/24 MASQUERADE` | NAT for mesh hub |
 | gcp-proxy | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-flex | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-flex | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
-| oci-flex | INPUT | `default DROP` (except established) | Block public access |
+| oci-flex-1 | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
+| oci-flex-1 | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
+| oci-flex-1 | INPUT | `default DROP` (except established) | Block public access |
 | oci-mail | INPUT | `25,465,587,993/tcp ACCEPT` | Mail delivery (public) |
 | oci-mail | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
 | oci-mail | INPUT | `other DROP` (except established) | Block non-mail public |
@@ -427,7 +442,7 @@ ${dkRows}
 │              rust-api, flask-api, vaultwarden, ntfy        │
 │              dozzle (monitors all containers)              │
 │                                                            │
-│  oci-flex:   photoprism ←→ photoprism-db (redis)          │
+│  oci-flex-1: photoprism ←→ photoprism-db (redis)          │
 │              nocodb, code-server, grist, gitea             │
 │              etherpad, filebrowser, hedgedoc, revealmd     │
 │              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
@@ -503,16 +518,16 @@ Internet
 └────┬──────────┬──────────┬───────────────────┘
      │ wg0      │ wg0      │ wg0
      ▼          ▼          ▼
-┌─────────┐ ┌─────────┐ ┌──────────────┐
-│oci-flex │ │oci-mail │ │oci-analytics │
-│ ${flex} │ │ ${mail} │ │ ${analytics} │
-│         │ │         │ │              │
-│PhotoPrism│ │ Mailu  │ │   Matomo     │
-│ NocoDB  │ │Syncthing│ │  Windmill    │
-│Code Srv │ │Radicale │ │              │
-│ AFFiNE  │ │         │ │              │
-│  Grist  │ │         │ │              │
-└─────────┘ └─────────┘ └──────────────┘
+┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────┐
+│oci-flex-1│ │oci-flex-0│ │oci-mail │ │oci-analytics │
+│ ${flex}  │ │ ${flex0} │ │ ${mail} │ │ ${analytics} │
+│          │ │          │ │         │ │              │
+│PhotoPrism│ │ (none)   │ │ Mailu   │ │   Matomo     │
+│ NocoDB   │ │          │ │Syncthing│ │  Windmill    │
+│Code Srv  │ │          │ │Radicale │ │              │
+│ AFFiNE   │ │          │ │         │ │              │
+│  Grist   │ │          │ │         │ │              │
+└──────────┘ └──────────┘ └─────────┘ └──────────────┘
 ```
 
 ---
@@ -781,7 +796,7 @@ Internet
         for(var id in vms){
           var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
           for(var s in svcs)cc+=svcs[s].length;
-          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td><td>'+sc+'</td><td>'+cc+'</td></tr>';
+          h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td><td>'+sc+'</td><td>'+cc+'</td></tr>';
         }
         h+='</table>';
         var t=d.totals||{};
@@ -795,7 +810,7 @@ Internet
         var vms=d.vms||{};
         for(var id in vms){
           var v=vms[id];
-          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td>';
+          h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td>';
           h+='<td class="'+(v.running>0?'st-ok':'st-off')+'">'+v.running+'</td>';
           h+='<td class="'+(v.stopped>0?'st-warn':'st-off')+'">'+v.stopped+'</td>';
           h+='<td>'+v.total+'</td></tr>';
@@ -826,7 +841,7 @@ Internet
         for(var id in vms){
           var v=vms[id],sm=v.summary||{};
           var hc=v.health==='online'?'st-ok':(v.health==='degraded'?'st-warn':'st-err');
-          h+='<tr><td>'+id+'</td><td>'+(v.label||'')+'</td>';
+          h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td>';
           h+='<td class="'+hc+'">'+v.health+'</td>';
           h+='<td class="'+(v.ssh?'st-ok':'st-err')+'">'+(v.ssh?'OK':'FAIL')+'</td>';
           h+='<td class="'+(v.ping?'st-ok':'st-err')+'">'+(v.ping?'OK':'FAIL')+'</td>';
@@ -838,11 +853,11 @@ Internet
       function rProfBtns(){
         var el=document.getElementById('out-profiling');
         if(!window._dVMs){el.textContent='Load Declared first.';return}
-        var h='';
+        var h="";
         for(var id in window._dVMs){
           var v=window._dVMs[id],svcs=v.services||{},cs=[];
           for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
-          h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||'')+') — '+cs.length+' containers ';
+          h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||"")+') — '+cs.length+' containers ';
           h+='<button class="prof-btn warn" data-profvm="'+id+'">Profile All</button></div>';
           h+='<div id="profvm-'+id+'"></div>';
           for(var j=0;j<cs.length;j++){
@@ -885,7 +900,7 @@ Internet
               var cel=document.getElementById('prof-'+c.container);
               if(cel)cel.innerHTML=' <span class="'+cls+'">'+st+'</span>';
             }
-            if(el){el.className='';el.innerHTML=h;}
+            if(el){el.className="";el.innerHTML=h;}
           })
           .catch(function(e){if(el){el.className='st-err';el.textContent=vmId+': '+e.message;}});
       }

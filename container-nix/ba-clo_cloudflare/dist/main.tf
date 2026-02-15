@@ -32,17 +32,6 @@ variable "cloudflare_zone_id" {
 # DNS Records - All HTTP traffic routes through GCP Caddy Proxy
 # =============================================================================
 
-# Wildcard -> GCP Caddy (catch-all for any new subdomain)
-resource "cloudflare_record" "wildcard" {
-  zone_id = var.cloudflare_zone_id
-  name    = "*"
-  type    = "A"
-  content   = "35.226.147.64"
-  proxied = false
-  ttl     = 1
-  comment = "Wildcard catch-all - routes any subdomain to Caddy"
-}
-
 # Root domain -> GCP Caddy
 resource "cloudflare_record" "root" {
   zone_id = var.cloudflare_zone_id
@@ -89,7 +78,7 @@ resource "cloudflare_record" "analytics" {
   comment = "Matomo Analytics - via Caddy to oci-analytics"
 }
 
-# PhotoPrism - via Caddy to oci-flex
+# PhotoPrism - via Caddy to oci-flex-1
 resource "cloudflare_record" "photos" {
   zone_id = var.cloudflare_zone_id
   name    = "photos"
@@ -97,7 +86,7 @@ resource "cloudflare_record" "photos" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "PhotoPrism - via Caddy to oci-flex"
+  comment = "PhotoPrism - via Caddy to oci-flex-1"
 }
 
 # Syncthing - via Caddy to oci-mail
@@ -111,7 +100,7 @@ resource "cloudflare_record" "sync" {
   comment = "Syncthing - via Caddy to oci-mail"
 }
 
-# Calendar (Radicale) - via Caddy to oci-flex
+# Calendar (Radicale) - via Caddy to oci-flex-1
 resource "cloudflare_record" "cal" {
   zone_id = var.cloudflare_zone_id
   name    = "cal"
@@ -119,10 +108,10 @@ resource "cloudflare_record" "cal" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "Radicale Calendar - via Caddy to oci-flex"
+  comment = "Radicale Calendar - via Caddy to oci-flex-1"
 }
 
-# Code Server IDE - via Caddy to oci-flex
+# Code Server IDE - via Caddy to oci-flex-1
 resource "cloudflare_record" "ide" {
   zone_id = var.cloudflare_zone_id
   name    = "ide"
@@ -130,10 +119,10 @@ resource "cloudflare_record" "ide" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "Code Server IDE - via Caddy to oci-flex"
+  comment = "Code Server IDE - via Caddy to oci-flex-1"
 }
 
-# NocoDB - via Caddy to oci-flex
+# NocoDB - via Caddy to oci-flex-1
 resource "cloudflare_record" "db" {
   zone_id = var.cloudflare_zone_id
   name    = "db"
@@ -141,7 +130,7 @@ resource "cloudflare_record" "db" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "NocoDB - via Caddy to oci-flex"
+  comment = "NocoDB - via Caddy to oci-flex-1"
 }
 
 # Ntfy Push Notifications - via Caddy on GCP
@@ -177,7 +166,7 @@ resource "cloudflare_record" "vault" {
   comment = "Vaultwarden password manager - via Caddy on GCP"
 }
 
-# Grist Sheets - via Caddy to oci-flex
+# Grist Sheets - via Caddy to oci-flex-1
 resource "cloudflare_record" "sheets" {
   zone_id = var.cloudflare_zone_id
   name    = "sheets"
@@ -185,10 +174,10 @@ resource "cloudflare_record" "sheets" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "Grist Sheets - via Caddy to oci-flex"
+  comment = "Grist Sheets - via Caddy to oci-flex-1"
 }
 
-# AFFiNE Drive - via Caddy to oci-flex
+# AFFiNE Drive - via Caddy to oci-flex-1
 resource "cloudflare_record" "drive_notes_affine" {
   zone_id = var.cloudflare_zone_id
   name    = "drive-notes-affine"
@@ -196,7 +185,7 @@ resource "cloudflare_record" "drive_notes_affine" {
   content   = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "AFFiNE workspace - via Caddy to oci-flex"
+  comment = "AFFiNE workspace - via Caddy to oci-flex-1"
 }
 
 # Suite - static site via Caddy to GitHub Pages
@@ -367,5 +356,5 @@ output "nameservers" {
 }
 
 output "dns_records_count" {
-  value = "25 DNS records configured (includes wildcard)"
+  value = "24 DNS records configured"
 }

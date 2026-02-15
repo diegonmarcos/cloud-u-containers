@@ -15,7 +15,16 @@ interface BuildJsonConfig {
   serve?: { mode?: string; dir?: string };
 }
 
+let _projectsCache: Map<string, { dir: string; category: string; config: BuildJsonConfig }> | null = null;
+let _projectsCacheTimestamp = 0;
+const PROJECTS_TTL = 60 * 1000; // 60 seconds
+
 function findProjects(): Map<string, { dir: string; category: string; config: BuildJsonConfig }> {
+  const now = Date.now();
+  if (_projectsCache && now - _projectsCacheTimestamp < PROJECTS_TTL) {
+    return _projectsCache;
+  }
+
   const projects = new Map<string, { dir: string; category: string; config: BuildJsonConfig }>();
 
   // Scan category dirs + c_root
@@ -56,6 +65,8 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
     } catch { /* skip */ }
   }
 
+  _projectsCache = projects;
+  _projectsCacheTimestamp = Date.now();
   return projects;
 }
 
