@@ -11,7 +11,7 @@
     config = {
       research_image = "quay.io/jupyter/scipy-notebook:latest";
       analytics_image = "python:3.12-slim";
-      ml_image = "pytorch/pytorch:latest";
+      ml_image = "python:3.12-slim";  # ARM-compatible (pytorch installed via pip)
       risk_image = "python:3.12-slim";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
@@ -79,7 +79,7 @@
           #           count: 1
           #           capabilities: [gpu]
           command: >
-            sh -c "pip install scikit-learn lightgbm pycaret xgboost &&
+            sh -c "pip install torch scikit-learn lightgbm pycaret xgboost &&
                    tail -f /dev/null"
           networks:
             - quant_network
