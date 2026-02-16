@@ -19,7 +19,7 @@ let
       address   = "10.0.0.6";
       endpoint  = "82.70.229.129";
       port      = 51820;
-      publicKey = "JuvfbgNyB3w8m//rui66hTYgwHdJqdST2ZYban6+hX8=";
+      publicKey = "JQORl44tcsUe+0iBp7vG8VinLoXSDNmPK3h4SYNnkiA=";
       role      = "spoke";
     };
     oci-flex-1 = {
