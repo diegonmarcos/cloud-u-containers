@@ -16,7 +16,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Matomo Hybrid Container
-      # VM: oci-f-micro_2 (129.151.228.66)
+      # VM: oci-E2-f_1 (129.151.228.66)
       # Domain: ${config.domain}
       #
       # Single container with:

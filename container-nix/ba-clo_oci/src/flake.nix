@@ -15,12 +15,12 @@
 
       # VM Instance OCIDs
       instances = {
-        oci-f-micro_1 = {
+        oci-E2-f_0 = {
           ocid = "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq";
           ip = "130.110.251.193";
           name = "OCI Free Micro 1 - Mail Server";
         };
-        oci-f-micro_2 = {
+        oci-E2-f_1 = {
           ocid = "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq";
           ip = "129.151.228.66";
           name = "OCI Free Micro 2 - Analytics";
@@ -30,7 +30,7 @@
           ip = "82.70.229.129";
           name = "OCI Paid Flex 0 - Flex Server";
         };
-        oci-p-flex_1 = {
+        oci-A1-f_1 = {
           ocid = "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczach3pczd4kn6w5stdt7rs64u2uqexzor6lyneaebc2i2ra";
           ip = "144.24.196.72";
           name = "OCI Paid Flex 1 - Dev Server";
@@ -110,7 +110,7 @@
       }
 
       # =============================================================================
-      # Security List - Mail Server (oci-f-micro_1)
+      # Security List - Mail Server (oci-E2-f_0)
       # =============================================================================
 
       resource "oci_core_security_list" "mail_server" {
@@ -213,7 +213,7 @@
       }
 
       # =============================================================================
-      # Security List - Analytics Server (oci-f-micro_2)
+      # Security List - Analytics Server (oci-E2-f_1)
       # =============================================================================
 
       resource "oci_core_security_list" "analytics_server" {
@@ -285,7 +285,7 @@
       }
 
       # =============================================================================
-      # Security List - Dev Server (oci-p-flex_1)
+      # Security List - Dev Server (oci-A1-f_1)
       # =============================================================================
 
       resource "oci_core_security_list" "dev_server" {
@@ -441,14 +441,14 @@
 
       output "instance_info" {
         value = {
-          "oci-f-micro_1" = {
-            ip   = "${config.instances.oci-f-micro_1.ip}"
-            ocid = "${config.instances.oci-f-micro_1.ocid}"
+          "oci-E2-f_0" = {
+            ip   = "${config.instances.oci-E2-f_0.ip}"
+            ocid = "${config.instances.oci-E2-f_0.ocid}"
             role = "Mail Server"
           }
-          "oci-f-micro_2" = {
-            ip   = "${config.instances.oci-f-micro_2.ip}"
-            ocid = "${config.instances.oci-f-micro_2.ocid}"
+          "oci-E2-f_1" = {
+            ip   = "${config.instances.oci-E2-f_1.ip}"
+            ocid = "${config.instances.oci-E2-f_1.ocid}"
             role = "Analytics"
           }
           "oci-p-flex_0" = {
@@ -456,9 +456,9 @@
             ocid = "${config.instances.oci-p-flex_0.ocid}"
             role = "Flex Server"
           }
-          "oci-p-flex_1" = {
-            ip   = "${config.instances.oci-p-flex_1.ip}"
-            ocid = "${config.instances.oci-p-flex_1.ocid}"
+          "oci-A1-f_1" = {
+            ip   = "${config.instances.oci-A1-f_1.ip}"
+            ocid = "${config.instances.oci-A1-f_1.ocid}"
             role = "Dev Server"
           }
         }

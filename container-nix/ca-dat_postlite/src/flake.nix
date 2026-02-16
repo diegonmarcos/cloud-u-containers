@@ -10,7 +10,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # SQLite REST API servers (ws4sqlite + postlite)
-      # Deployed on: gcp-f-micro_1 (35.226.147.64)
+      # Deployed on: gcp-E2-f_0 (35.226.147.64)
       # Access via WireGuard only (10.0.0.1:8880-8883, 5433-5436)
 
       services:

@@ -21,7 +21,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Etherpad - Real-time collaborative document editor
-      # Deployed on: oci-p-flex_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_1 (Oracle Flex)
 
       services:
         etherpad:

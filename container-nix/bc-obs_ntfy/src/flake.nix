@@ -17,7 +17,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ntfy - Push Notification Server
-      # Deployed on: gcp-f-micro_1 (35.226.147.64)
+      # Deployed on: gcp-E2-f_0 (35.226.147.64)
       # Domain: ${config.domain}
 
       services:

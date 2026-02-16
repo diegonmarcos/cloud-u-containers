@@ -148,9 +148,9 @@
         }
 
         source_ranges = [
-          "130.110.251.193/32",  # oci-f-micro_1
-          "129.151.228.66/32",   # oci-f-micro_2
-          "144.24.196.72/32"     # oci-p-flex_1
+          "130.110.251.193/32",  # oci-E2-f_0
+          "129.151.228.66/32",   # oci-E2-f_1
+          "144.24.196.72/32"     # oci-A1-f_1
         ]
         target_tags   = ["syslog-server"]
         description   = "Allow syslog from Oracle VMs"

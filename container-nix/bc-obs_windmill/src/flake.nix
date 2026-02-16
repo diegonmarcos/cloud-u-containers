@@ -14,7 +14,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Windmill Workflow Orchestration Platform
-      # Deploy on: oci-f-micro_2 (129.151.228.66)
+      # Deploy on: oci-E2-f_1 (129.151.228.66)
       # Port: 8000 (internal, proxied via NPM)
 
       services:

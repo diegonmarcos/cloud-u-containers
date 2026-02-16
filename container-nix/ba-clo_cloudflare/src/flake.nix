@@ -12,10 +12,10 @@
       domain = "diegonmarcos.com";
       # IPs from cloud_architecture.json
       ips = {
-        gcp-f-micro_1 = "35.226.147.64";      # Central Caddy Proxy
-        oci-f-micro_1 = "130.110.251.193";    # Mail Server
-        oci-f-micro_2 = "129.151.228.66";     # Analytics
-        oci-p-flex_1 = "144.24.196.72";       # Dev Server
+        gcp-E2-f_0 = "35.226.147.64";      # Central Caddy Proxy
+        oci-E2-f_0 = "130.110.251.193";    # Mail Server
+        oci-E2-f_1 = "129.151.228.66";     # Analytics
+        oci-A1-f_1 = "144.24.196.72";       # Dev Server
       };
     };
 
@@ -60,7 +60,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "@"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300  # Auto when proxied
       }
@@ -70,7 +70,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "www"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
       }
@@ -84,7 +84,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "auth"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Authelia 2FA - direct on GCP"
@@ -95,7 +95,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "analytics"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Matomo Analytics - via Caddy to oci-analytics"
@@ -106,7 +106,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "photos"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "PhotoPrism - via Caddy to oci-apps-1"
@@ -117,7 +117,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "sync"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Syncthing - via Caddy to oci-mail"
@@ -128,7 +128,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "cal"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Radicale Calendar - via Caddy to oci-apps-1"
@@ -139,7 +139,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "ide"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Code Server IDE - via Caddy to oci-apps-1"
@@ -150,7 +150,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "db"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "NocoDB - via Caddy to oci-apps-1"
@@ -161,7 +161,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "rss"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Ntfy push notifications - via Caddy on GCP"
@@ -172,7 +172,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "proxy"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Caddy admin UI"
@@ -183,7 +183,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "vault"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Vaultwarden password manager - via Caddy on GCP"
@@ -194,7 +194,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "sheets"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Grist Sheets - via Caddy to oci-apps-1"
@@ -205,7 +205,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "drive-notes-affine"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "AFFiNE workspace - via Caddy to oci-apps-1"
@@ -216,7 +216,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "suite"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Suite landing - via Caddy to GitHub Pages"
@@ -231,7 +231,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "linktree"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Linktree - via Caddy to GitHub Pages"
@@ -242,7 +242,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "cloud"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Cloud dashboard - via Caddy to GitHub Pages"
@@ -253,7 +253,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "nexus"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Nexus - via Caddy to GitHub Pages"
@@ -264,7 +264,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "api"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Flask + Rust API - via Caddy on GCP"
@@ -279,7 +279,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "mail"
         type    = "A"
-        content   = "${config.ips.gcp-f-micro_1}"
+        content   = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "Mailu webmail - via Caddy to oci-mail"
@@ -290,7 +290,7 @@
         zone_id = var.cloudflare_zone_id
         name    = "smtp"
         type    = "A"
-        content   = "${config.ips.oci-f-micro_1}"
+        content   = "${config.ips.oci-E2-f_0}"
         proxied = false
         ttl     = 300
         comment = "SMTP direct - cannot proxy email traffic"
