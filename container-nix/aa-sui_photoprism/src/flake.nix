@@ -28,7 +28,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # PhotoPrism - AI-powered photo management
-      # Deployed on: oci-p-flex_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_1 (Oracle Flex)
       # Originals mounted from OCI Object Storage via rclone
 
       services:

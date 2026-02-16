@@ -15,7 +15,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Borg - Binary backup for media/large files
-      # Deploy to: oci-p-flex_1
+      # Deploy to: oci-A1-f_1
       # SSH server for borg clients
 
       services:

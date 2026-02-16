@@ -16,16 +16,16 @@
       modules = [ ./gcp-proxy.nix ];
     };
 
-    # oci-flex-0 (82.70.229.129) - Ampere ARM, 3 OCPUs / 16GB, Ubuntu
-    homeConfigurations."ubuntu@oci-flex-0" = home-manager.lib.homeManagerConfiguration {
+    # oci-apps (82.70.229.129) - Ampere ARM, 3 OCPUs / 16GB, Ubuntu
+    homeConfigurations."ubuntu@oci-apps" = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages.aarch64-linux;
-      modules = [ ./oci-flex-0.nix ];
+      modules = [ ./oci-apps.nix ];
     };
 
-    # oci-flex-1 (144.24.196.72) - Ampere ARM, 1 OCPU / 8GB, Ubuntu (Wake-on-Demand)
-    homeConfigurations."ubuntu@oci-flex-1" = home-manager.lib.homeManagerConfiguration {
+    # oci-apps-1 (144.24.196.72) - Ampere ARM, 1 OCPU / 8GB, Ubuntu (Wake-on-Demand)
+    homeConfigurations."ubuntu@oci-apps-1" = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages.aarch64-linux;
-      modules = [ ./oci-flex-1.nix ];
+      modules = [ ./oci-apps-1.nix ];
     };
 
     # oci-mail (130.110.251.193) - x86_64, 1GB RAM, Ubuntu

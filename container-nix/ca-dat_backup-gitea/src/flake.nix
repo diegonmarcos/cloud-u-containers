@@ -27,7 +27,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Gitea - Self-hosted Git server for code mirrors
-      # Deploy to: oci-p-flex_1
+      # Deploy to: oci-A1-f_1
 
       services:
         gitea:

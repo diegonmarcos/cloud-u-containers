@@ -15,7 +15,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # bup - Git-based backup for database dumps
-      # Deploy to: oci-p-flex_1
+      # Deploy to: oci-A1-f_1
       # Receives dumps from all servers via SSH
 
       services:

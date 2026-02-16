@@ -44,8 +44,8 @@ ${serviceList}
 - Config-driven: container-nix/config.json defines everything
 - Per-service build.sh: build → secrets (sops) → deploy (rsync) → compose
 - WireGuard mesh connects all VMs on 10.0.0.0/24
-- GCP proxy (gcp-f-micro_1) is the central entry point with Caddy + Authelia
-- OCI Flex (oci-p-flex_1) is wake-on-demand for cost savings
+- GCP proxy (gcp-E2-f_0) is the central entry point with Caddy + Authelia
+- OCI Flex (oci-A1-f_1) is wake-on-demand for cost savings
 - Rust API (api.diegonmarcos.com:8080) provides health, discovery, and control endpoints
 
 ## Front-End (GitHub Pages)
@@ -105,7 +105,7 @@ front_list_projects, front_get_project, front_build, front_dev_server, front_dep
 3. Use service_get_spec before service_api_call — understand what endpoints are available
 4. Use native SSH for debugging (logs, arbitrary commands, file inspection)
 5. build_ship for deployment, API tools for runtime control
-6. Cost consciousness — oci-p-flex_1 costs money when running
+6. Cost consciousness — oci-A1-f_1 costs money when running
 7. Security — never expose secrets, use sops for encryption, validate inputs
 8. Front-end projects are client-only — deployed to GitHub Pages, not VMs
 

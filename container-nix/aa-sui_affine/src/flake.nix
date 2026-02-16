@@ -22,7 +22,7 @@
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # HedgeDoc - Collaborative markdown editor
       # Real-time collaboration on markdown documents
-      # Deployed on: oci-p-flex_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_1 (Oracle Flex)
 
       services:
         hedgedoc:

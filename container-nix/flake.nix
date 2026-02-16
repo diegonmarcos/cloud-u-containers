@@ -67,19 +67,19 @@
     # VM to services mapping
     vmServices = {
       # Oracle Free Micro 1 - Mail Server
-      oci-f-micro_1 = {
+      oci-E2-f_0 = {
         ip = "130.110.251.193";
         services = [ "mailu" "radicale" "syncthing" "syslog-forwarder" "smtp-proxy" "redis" "sauron-lite" ];
       };
 
       # Oracle Free Micro 2 - Analytics + Workflows
-      oci-f-micro_2 = {
+      oci-E2-f_1 = {
         ip = "129.151.228.66";
         services = [ "matomo" "windmill" "syslog-forwarder" "sauron-lite" "db-agent" ];
       };
 
       # GCloud Free Micro 1 - Central Proxy + Control
-      gcp-f-micro_1 = {
+      gcp-E2-f_0 = {
         ip = "35.226.147.64";
         services = [
           "npm" "authelia" "flask-api" "rust-api" "vaultwarden" "ntfy"
@@ -91,7 +91,7 @@
       };
 
       # Oracle Paid Flex 1 - Heavy Services (Wake-on-Demand)
-      oci-p-flex_1 = {
+      oci-A1-f_1 = {
         ip = "144.24.196.72";
         services = [
           "photoprism" "photos-webhook" "nocodb" "code-server"

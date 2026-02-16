@@ -16,7 +16,7 @@
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # LGTM Stack - Grafana Labs Observability
-      # Deployed on: oci-p-flex_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_1 (Oracle Flex)
       services:
         grafana:
           image: grafana/grafana:latest

@@ -17,7 +17,7 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Filebrowser - Web file manager
-      # Deployed on: oci-p-flex_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_1 (Oracle Flex)
 
       services:
         filebrowser:

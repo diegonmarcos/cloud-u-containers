@@ -1,7 +1,10 @@
 { config, pkgs, lib, ... }:
 
 {
-  imports = [ (import ./wireguard.nix { vmName = "oci-flex-0"; }) ];
+  imports = [
+    (import ./wireguard.nix { vmName = "oci-flex-0"; })
+    (import ./modules/idle-shutdown.nix { inherit config pkgs lib; vmName = "oci-apps"; idleTimeoutHours = 4; })
+  ];
   home.username = "ubuntu";
   home.homeDirectory = "/home/ubuntu";
   home.stateVersion = "24.11";

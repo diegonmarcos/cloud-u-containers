@@ -47,11 +47,11 @@ export function getServiceDir(name: string): string {
 
 // Hardcoded fallback — used when config.json VMs lack ssh_alias
 const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
-  "gcp-f-micro_1": "gcp-proxy",
-  "oci-f-micro_1": "oci-mail",
-  "oci-f-micro_2": "oci-analytics",
-  "oci-p-flex_0": "oci-flex-0",
-  "oci-p-flex_1": "oci-flex-1",
+  "gcp-E2-f_0": "gcp-proxy",
+  "oci-E2-f_0": "oci-mail",
+  "oci-E2-f_1": "oci-analytics",
+  "oci-A1-f_0": "oci-apps",
+  "oci-A1-f_1": "oci-apps-1",
 };
 
 function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record<string, string> } {

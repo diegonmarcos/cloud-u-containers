@@ -229,7 +229,7 @@ impl AppConfig {
         // All VM service maps
         let mut all_vm_services = HashMap::new();
 
-        // oci-p-flex_0 (oci-flex-0) — quant lab + crawlee cloud
+        // oci-A1-f_0 (oci-apps) — quant lab + crawlee cloud
         let mut flex0_svc = HashMap::new();
         flex0_svc.insert("quant-lab".into(), vec!["quant_research".into(), "nautilus_engine".into(), "quant_analytics".into(), "quant_db".into()]);
         flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
@@ -238,7 +238,7 @@ impl AppConfig {
             services: flex0_svc,
         });
 
-        // oci-p-flex_1 (oci-flex-1)
+        // oci-A1-f_1 (oci-apps-1)
         let mut flex_svc = HashMap::new();
         flex_svc.insert("photos".into(), vec!["photoprism_app".into(), "photoprism_mariadb".into()]);
         flex_svc.insert("calendar".into(), vec!["radicale".into()]);
@@ -259,7 +259,7 @@ impl AppConfig {
             services: flex_svc,
         });
 
-        // gcp-f-micro_1 (gcp-proxy)
+        // gcp-E2-f_0 (gcp-proxy)
         let mut gcp_svc = HashMap::new();
         gcp_svc.insert("proxy".into(), vec!["npm".into(), "introspect-proxy".into()]);
         gcp_svc.insert("auth".into(), vec!["authelia".into(), "authelia-redis".into()]);
@@ -272,7 +272,7 @@ impl AppConfig {
             services: gcp_svc,
         });
 
-        // oci-f-micro_1 (oci-mail)
+        // oci-E2-f_0 (oci-mail)
         let mut mail_svc = HashMap::new();
         mail_svc.insert("mail".into(), vec![
             "mailu-front-1".into(), "mailu-admin-1".into(), "mailu-imap-1".into(),
@@ -290,7 +290,7 @@ impl AppConfig {
             services: mail_svc,
         });
 
-        // oci-f-micro_2 (oci-analytics)
+        // oci-E2-f_1 (oci-analytics)
         let mut analytics_svc = HashMap::new();
         analytics_svc.insert("analytics".into(), vec!["matomo-hybrid".into()]);
         analytics_svc.insert("security".into(), vec!["sauron".into(), "sauron-forwarder".into()]);
@@ -301,7 +301,7 @@ impl AppConfig {
             services: analytics_svc,
         });
 
-        // Derive flex_services from oci-p-flex_1
+        // Derive flex_services from oci-A1-f_1
         let flex_services: HashMap<String, FlexService> = all_vm_services["oci-A1-f_1"]
             .services
             .iter()

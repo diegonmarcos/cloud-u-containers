@@ -40,7 +40,7 @@
       "2" = "oci-apps-1";
       "3" = "oci-mail";
       "4" = "oci-analytics";
-      "6" = "oci-flex-0";
+      "6" = "oci-apps";
     };
 
     # ── Zone file generators ───────────────────────────────────────────
