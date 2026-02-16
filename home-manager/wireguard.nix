@@ -15,18 +15,25 @@ let
       publicKey = "GGZzgZDrOwvw1Th8iKWKeOOBgh+UvAjnmdi1iE9E1Hk=";
       role      = "hub";
     };
-    oci-flex-0 = {
+    oci-apps = {
       address   = "10.0.0.6";
       endpoint  = "82.70.229.129";
       port      = 51820;
       publicKey = "JQORl44tcsUe+0iBp7vG8VinLoXSDNmPK3h4SYNnkiA=";
       role      = "spoke";
     };
-    oci-flex-1 = {
+    oci-apps-1 = {
       address   = "10.0.0.2";
       endpoint  = "144.24.196.72";
       port      = 51820;
       publicKey = "uUtpR3frleNgOQvQcPvC0y5vWWtmRpJnIvWrqx9gYQU=";
+      role      = "spoke";
+    };
+    oci-apps-2 = {
+      address   = "10.0.0.7";
+      endpoint  = "79.72.28.10";
+      port      = 51820;
+      publicKey = "PLACEHOLDER_WILL_BE_GENERATED_ON_FIRST_DEPLOY";
       role      = "spoke";
     };
     oci-mail = {
