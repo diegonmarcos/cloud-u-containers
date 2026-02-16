@@ -223,14 +223,24 @@ in {
   '';
 
   home.activation.installIdleScripts = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    $DRY_RUN_CMD sudo mkdir -p /opt/scripts
-    $DRY_RUN_CMD sudo mkdir -p /var/log
-    $DRY_RUN_CMD sudo cp -f $HOME/.local/share/idle-shutdown/*.sh /opt/scripts/
-    $DRY_RUN_CMD sudo chmod +x /opt/scripts/*.sh
-    $DRY_RUN_CMD sudo cp -f $HOME/.local/share/idle-shutdown/*.service $HOME/.local/share/idle-shutdown/*.timer /etc/systemd/system/
-    $DRY_RUN_CMD sudo systemctl daemon-reload
-    $DRY_RUN_CMD sudo systemctl enable idle-shutdown.timer daily-shutdown.timer
-    $DRY_RUN_CMD sudo systemctl restart idle-shutdown.timer daily-shutdown.timer
+    # Find sudo (not in PATH during home-manager activation)
+    SUDO=""
+    for p in /usr/bin/sudo /run/wrappers/bin/sudo /usr/local/bin/sudo; do
+      [ -x "$p" ] && SUDO="$p" && break
+    done
+    if [ -z "$SUDO" ]; then
+      echo "[idle-shutdown] WARNING: sudo not found — skipping idle-shutdown installation"
+      exit 0
+    fi
+
+    $DRY_RUN_CMD $SUDO mkdir -p /opt/scripts
+    $DRY_RUN_CMD $SUDO mkdir -p /var/log
+    $DRY_RUN_CMD $SUDO cp -f $HOME/.local/share/idle-shutdown/*.sh /opt/scripts/
+    $DRY_RUN_CMD $SUDO chmod +x /opt/scripts/*.sh
+    $DRY_RUN_CMD $SUDO cp -f $HOME/.local/share/idle-shutdown/*.service $HOME/.local/share/idle-shutdown/*.timer /etc/systemd/system/
+    $DRY_RUN_CMD $SUDO systemctl daemon-reload
+    $DRY_RUN_CMD $SUDO systemctl enable idle-shutdown.timer daily-shutdown.timer
+    $DRY_RUN_CMD $SUDO systemctl restart idle-shutdown.timer daily-shutdown.timer
     $VERBOSE_ECHO "Idle shutdown scripts installed for ${vmName} (${toString idleTimeoutHours}h timeout)"
   '';
 }
