@@ -50,7 +50,10 @@
     lsof
     iftop
 
-    # Container runtime (rootless, alongside system Docker)
+    # Container runtime
+    docker
+    docker-compose
+    docker-buildx
     podman
   ];
 

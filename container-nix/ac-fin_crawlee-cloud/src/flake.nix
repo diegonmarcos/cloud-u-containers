@@ -3,9 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    crawlee-src = {
+      url = "github:crawlee-cloud/crawlee-cloud";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs }: let
+  outputs = { self, nixpkgs, crawlee-src }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
@@ -16,10 +20,6 @@
       db_port = 5433;       # avoid conflict with quant-lab's 5432
       redis_port = 6380;    # avoid conflict with other redis instances
     };
-
-    # First deploy: clone repo on VM, then docker compose build
-    # ssh oci-flex-0 "cd /opt/containers/crawlee-cloud && git clone --depth 1 https://github.com/crawlee-cloud/crawlee-cloud.git repo"
-    # ssh oci-flex-0 "cd /opt/containers/crawlee-cloud && docker compose build"
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
@@ -232,11 +232,12 @@
 
   in {
     packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.''${system};
+      pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "crawlee-cloud-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/repo
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp -r ${crawlee-src}/. $out/repo/
       '';
     });
   };
