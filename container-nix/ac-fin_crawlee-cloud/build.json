@@ -3,7 +3,7 @@
   "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
 
   "deploy": {
-    "host": "oci-flex-0",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/crawlee-cloud"
   }
 }

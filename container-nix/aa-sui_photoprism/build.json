@@ -3,7 +3,7 @@
   "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
 
   "deploy": {
-    "host": "oci-flex-1",
+    "host": "oci-apps-1",
     "remote_path": "/opt/containers/photoprism"
   }
 }

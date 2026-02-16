@@ -120,10 +120,10 @@ impl AppConfig {
         // OCI instance IDs from env
         let mut vm_instances = HashMap::new();
         let oci_vms = [
-            ("oci-p-flex_0", "OCI_FLEX0_INSTANCE_ID"),
-            ("oci-p-flex_1", "OCI_FLEX1_INSTANCE_ID"),
-            ("oci-f-micro_1", "OCI_MICRO1_INSTANCE_ID"),
-            ("oci-f-micro_2", "OCI_MICRO2_INSTANCE_ID"),
+            ("oci-A1-f_0", "OCI_FLEX0_INSTANCE_ID"),
+            ("oci-A1-f_1", "OCI_FLEX1_INSTANCE_ID"),
+            ("oci-E2-f_0", "OCI_MICRO1_INSTANCE_ID"),
+            ("oci-E2-f_1", "OCI_MICRO2_INSTANCE_ID"),
         ];
         for (vm_id, env_key) in oci_vms {
             if let Ok(id) = std::env::var(env_key) {
@@ -164,7 +164,7 @@ impl AppConfig {
 
         // GCP VMs
         let mut gcp_vms = HashMap::new();
-        gcp_vms.insert("gcp-f-micro_1".to_string(), GcpVm {
+        gcp_vms.insert("gcp-E2-f_0".to_string(), GcpVm {
             name: "arch-1".to_string(),
             zone: "us-central1-a".to_string(),
             project_id: gcp_project_id.clone(),
@@ -186,11 +186,11 @@ impl AppConfig {
             .unwrap_or_else(|_| "/app/config/gcp_key".into());
 
         let default_ssh = vec![
-            ("oci-p-flex_0", "10.0.0.6", "ubuntu", ssh_key.as_str()),
-            ("oci-p-flex_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
-            ("oci-f-micro_1", "10.0.0.3", "ubuntu", ssh_key.as_str()),
-            ("oci-f-micro_2", "10.0.0.4", "ubuntu", ssh_key.as_str()),
-            ("gcp-f-micro_1", "10.0.0.1", "diego", gcp_key.as_str()),
+            ("oci-A1-f_0", "10.0.0.6", "ubuntu", ssh_key.as_str()),
+            ("oci-A1-f_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
+            ("oci-E2-f_0", "10.0.0.3", "ubuntu", ssh_key.as_str()),
+            ("oci-E2-f_1", "10.0.0.4", "ubuntu", ssh_key.as_str()),
+            ("gcp-E2-f_0", "10.0.0.1", "diego", gcp_key.as_str()),
         ];
 
         for (vm_id, host, user, key) in &default_ssh {
@@ -233,8 +233,8 @@ impl AppConfig {
         let mut flex0_svc = HashMap::new();
         flex0_svc.insert("quant-lab".into(), vec!["quant_research".into(), "nautilus_engine".into(), "quant_analytics".into(), "quant_db".into()]);
         flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
-        all_vm_services.insert("oci-p-flex_0".into(), VmServiceMap {
-            label: "oci-flex-0".into(),
+        all_vm_services.insert("oci-A1-f_0".into(), VmServiceMap {
+            label: "oci-apps".into(),
             services: flex0_svc,
         });
 
@@ -254,8 +254,8 @@ impl AppConfig {
         flex_svc.insert("cache".into(), vec!["redis".into()]);
         flex_svc.insert("security".into(), vec!["sauron".into()]);
         flex_svc.insert("logs".into(), vec!["fluent-bit".into()]);
-        all_vm_services.insert("oci-p-flex_1".into(), VmServiceMap {
-            label: "oci-flex-1".into(),
+        all_vm_services.insert("oci-A1-f_1".into(), VmServiceMap {
+            label: "oci-apps-1".into(),
             services: flex_svc,
         });
 
@@ -267,7 +267,7 @@ impl AppConfig {
         gcp_svc.insert("notifications".into(), vec!["ntfy".into()]);
         gcp_svc.insert("passwords".into(), vec!["vaultwarden".into()]);
         gcp_svc.insert("logs".into(), vec!["fluent-bit".into()]);
-        all_vm_services.insert("gcp-f-micro_1".into(), VmServiceMap {
+        all_vm_services.insert("gcp-E2-f_0".into(), VmServiceMap {
             label: "gcp-proxy".into(),
             services: gcp_svc,
         });
@@ -285,7 +285,7 @@ impl AppConfig {
         mail_svc.insert("analytics".into(), vec!["matomo-app".into(), "matomo-db".into()]);
         mail_svc.insert("proxy".into(), vec!["nginx-proxy".into()]);
         mail_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
-        all_vm_services.insert("oci-f-micro_1".into(), VmServiceMap {
+        all_vm_services.insert("oci-E2-f_0".into(), VmServiceMap {
             label: "oci-mail".into(),
             services: mail_svc,
         });
@@ -296,13 +296,13 @@ impl AppConfig {
         analytics_svc.insert("security".into(), vec!["sauron".into(), "sauron-forwarder".into()]);
         analytics_svc.insert("automation".into(), vec!["windmill-server".into(), "windmill-worker".into(), "windmill-db".into()]);
         analytics_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
-        all_vm_services.insert("oci-f-micro_2".into(), VmServiceMap {
+        all_vm_services.insert("oci-E2-f_1".into(), VmServiceMap {
             label: "oci-analytics".into(),
             services: analytics_svc,
         });
 
         // Derive flex_services from oci-p-flex_1
-        let flex_services: HashMap<String, FlexService> = all_vm_services["oci-p-flex_1"]
+        let flex_services: HashMap<String, FlexService> = all_vm_services["oci-A1-f_1"]
             .services
             .iter()
             .map(|(k, v)| (k.clone(), FlexService { containers: v.clone() }))
@@ -362,7 +362,7 @@ impl AppConfig {
                 .ok().and_then(|s| s.parse().ok()).unwrap_or(10240.0),
             gcp_service_account_file,
             gcp_project_id,
-            flex_vm_id: "oci-p-flex_1".to_string(),
+            flex_vm_id: "oci-A1-f_1".to_string(),
             flex_services,
             all_vm_services,
             route_check_domains,
