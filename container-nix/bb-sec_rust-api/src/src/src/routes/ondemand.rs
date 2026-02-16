@@ -53,6 +53,8 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/vms/{vm_id}/start", post(vm_start))
         .route("/api/vms/{vm_id}/stop", post(vm_stop))
         .route("/api/vms/{vm_id}/reset", post(vm_reset))
+        // Unified: single {action} dispatch
+        .route("/api/vms/{vm_id}/{action}", post(vm_action))
         .route("/api/vms/{vm_id}/containers/{name}/start", post(vm_container_start))
         .route("/api/vms/{vm_id}/containers/{name}/stop", post(vm_container_stop))
         .route("/api/vms/{vm_id}/containers/{name}/restart", post(vm_container_restart))
@@ -698,6 +700,51 @@ pub async fn vm_reset(
                 "vm_id": vm_id,
             })))
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Unified: single /api/vms/{vm_id}/{action} dispatcher
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    post,
+    path = "/api/vms/{vm_id}/{action}",
+    tag = "Post-Engines",
+    params(
+        ("vm_id" = String, Path, description = "VM identifier (e.g. oci-p-flex_0, gcp-f-micro_1)"),
+        ("action" = String, Path, description = "Action: start, stop, reset, status"),
+    ),
+    responses(
+        (status = 200, description = "Action executed", body = Value),
+        (status = 400, description = "Unknown action"),
+        (status = 404, description = "Unknown VM"),
+        (status = 500, description = "Action failed")
+    )
+)]
+pub async fn vm_action(
+    State(state): State<Arc<AppState>>,
+    Path((vm_id, action)): Path<(String, String)>,
+) -> Result<Json<Value>, AppError> {
+    if !validate_vm_id(&vm_id) {
+        return Err(AppError::bad_request("Invalid VM ID"));
+    }
+    match action.as_str() {
+        "start" => vm_start(State(state), Path(vm_id)).await,
+        "stop" => vm_stop(State(state), Path(vm_id)).await,
+        "reset" => vm_reset(State(state), Path(vm_id)).await,
+        "status" => {
+            let vm_state = get_vm_state_by_id(&state, &vm_id).await
+                .unwrap_or_else(|_| "unknown".into());
+            Ok(Json(json!({
+                "status": "ok",
+                "vm_id": vm_id,
+                "vm_state": vm_state,
+            })))
+        }
+        _ => Err(AppError::bad_request(format!(
+            "Unknown action '{action}'. Valid: start, stop, reset, status"
+        ))),
     }
 }
 

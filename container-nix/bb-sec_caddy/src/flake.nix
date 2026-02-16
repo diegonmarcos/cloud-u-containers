@@ -101,7 +101,7 @@
       { domain = "—";                                    name = "Nautilus Engine"; vm = "oci-flex-0";    port = "5000"; auth = "WG direct";         avail = "Wake"; }
       { domain = "—";                                    name = "Dash/Plotly";     vm = "oci-flex-0";    port = "8050"; auth = "WG direct";         avail = "Wake"; }
       { domain = "—";                                    name = "Quant DB";        vm = "oci-flex-0";    port = "5432"; auth = "WG direct";         avail = "Wake"; }
-      { domain = "—";                                    name = "Crawlee API";     vm = "oci-flex-0";    port = "3000"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "api.diegonmarcos.com/crawlee/";          name = "Crawlee API";     vm = "oci-flex-0";    port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-flex-0";    port = "3001"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-flex-0";    port = "9000"; auth = "WG direct";         avail = "Wake"; }
       { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
@@ -968,6 +968,9 @@ Internet
         }
         handle /go/* {
           reverse_proxy ${gcp}:8090
+        }
+        handle_path /crawlee/* {
+          ${mkProtected "${flex0}:3000"}
         }
         handle {
           reverse_proxy ${gcp}:8080

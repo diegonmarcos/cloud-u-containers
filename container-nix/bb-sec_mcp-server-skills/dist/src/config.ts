@@ -29,6 +29,7 @@ const CATEGORY_PREFIX: Record<string, string> = {
   sec: "bb-sec_",
   tools: "bc-obs_",
   data: "ca-dat_",
+  fin: "ac-fin_",
 };
 
 export function getServiceFolder(name: string): string {

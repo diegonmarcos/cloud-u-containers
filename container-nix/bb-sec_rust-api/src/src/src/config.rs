@@ -339,7 +339,7 @@ impl AppConfig {
             ("grafana_app", "app.diegonmarcos.com/grafana"),
             ("dozzle", "app.diegonmarcos.com/dozzle"),
             ("rust-api", "api.diegonmarcos.com"),
-            ("crawlee_api", "app.diegonmarcos.com/crawlee"),
+            ("crawlee_api", "api.diegonmarcos.com/crawlee"),
             ("crawlee_dashboard", "app.diegonmarcos.com/crawlee"),
         ]
         .iter()

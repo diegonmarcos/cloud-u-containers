@@ -62,6 +62,7 @@ pub struct AppState {
         routes::ondemand::vm_start,
         routes::ondemand::vm_stop,
         routes::ondemand::vm_reset,
+        routes::ondemand::vm_action,
         routes::ondemand::vm_container_start,
         routes::ondemand::vm_container_stop,
         routes::ondemand::vm_container_restart,
