@@ -152,7 +152,7 @@ in {
     if [ -z "$PRIVKEY" ]; then
       echo "$WG_LOG_PREFIX No existing PrivateKey in $WG_CONF — generating new keypair"
       WG_BIN=""
-      for p in /run/current-system/sw/bin/wg /usr/bin/wg /usr/local/bin/wg; do
+      for p in $HOME/.nix-profile/bin/wg /nix/var/nix/profiles/default/bin/wg /run/current-system/sw/bin/wg /usr/bin/wg /usr/local/bin/wg; do
         [ -x "$p" ] && WG_BIN="$p" && break
       done
       if [ -z "$WG_BIN" ]; then
