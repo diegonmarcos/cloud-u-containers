@@ -96,7 +96,7 @@
 
   in {
     packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.''${system};
+      pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.runCommand "quant-lab-light-configs" {} ''
         mkdir -p $out
