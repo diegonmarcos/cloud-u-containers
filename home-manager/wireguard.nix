@@ -12,21 +12,21 @@ let
       address   = "10.0.0.1";
       endpoint  = "35.226.147.64";
       port      = 51820;
-      publicKey = "GGZzgZDrOwvw1Th8iKWKeOOBgh+UvAjnmdi1iE9E1Hk=";
+      publicKey = "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=";
       role      = "hub";
     };
     oci-apps = {
       address   = "10.0.0.6";
       endpoint  = "82.70.229.129";
       port      = 51820;
-      publicKey = "38fK9FF03PkLdTfa3k1cSPre5CW26jYppiuaQ4ODgHw=";
+      publicKey = "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=";
       role      = "spoke";
     };
     oci-apps-1 = {
       address   = "10.0.0.2";
       endpoint  = "144.24.196.72";
       port      = 51820;
-      publicKey = "rsnlzl9qrhR9A/dKxcR0VNGQyu75SSFvWoN2F0M4PFk=";
+      publicKey = "Wl5oTIvtBW2Qih3n1Y/4a8zKCcBVlXFr6M2ltM0gm1c=";
       role      = "spoke";
     };
     oci-apps-2 = {
@@ -40,14 +40,14 @@ let
       address   = "10.0.0.3";
       endpoint  = "130.110.251.193";
       port      = 51820;
-      publicKey = "OG73oYVsUp7SgYGRwSIzR9rO+1L+kybXA+3zsuHCBx4=";
+      publicKey = "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=";
       role      = "spoke";
     };
     oci-analytics = {
       address   = "10.0.0.4";
       endpoint  = "129.151.228.66";
       port      = 51820;
-      publicKey = "GI6gbHaSBaixqVZgKCoGt13wV4RuCn+15ivsfZQ1Mhw=";
+      publicKey = "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=";
       role      = "spoke";
     };
     mobile = {
@@ -143,9 +143,9 @@ in {
       exit 1
     fi
 
-    # 1. Read existing private key
+    # 1. Read existing private key (use sudo — /etc/wireguard is 700 root:root)
     PRIVKEY=""
-    if [ -f "$WG_CONF" ]; then
+    if $SUDO test -f "$WG_CONF"; then
       PRIVKEY=$($SUDO grep -oP '(?<=PrivateKey = ).+' "$WG_CONF" 2>/dev/null || true)
     fi
 
@@ -176,9 +176,9 @@ in {
     TEMPLATE=$(echo "$TEMPLATE" | sed 's/^    //')
     NEW_CONF=$(echo "$TEMPLATE" | sed "s|__PRIVKEY__|$PRIVKEY|")
 
-    # 3. Compare with current live config
+    # 3. Compare with current live config (use sudo — /etc/wireguard is 700 root:root)
     CURRENT=""
-    if [ -f "$WG_CONF" ]; then
+    if $SUDO test -f "$WG_CONF"; then
       CURRENT=$($SUDO cat "$WG_CONF" 2>/dev/null || true)
     fi
 
