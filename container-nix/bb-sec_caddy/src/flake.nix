@@ -97,6 +97,13 @@
       { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-flex-1";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-flex-1";      port = "3010"; auth = "Public";            avail = "Wake"; }
       { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-flex-1";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "—";                                    name = "Jupyter Lab";     vm = "oci-flex-0";    port = "8888"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "—";                                    name = "Nautilus Engine"; vm = "oci-flex-0";    port = "5000"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "—";                                    name = "Dash/Plotly";     vm = "oci-flex-0";    port = "8050"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "—";                                    name = "Quant DB";        vm = "oci-flex-0";    port = "5432"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "—";                                    name = "Crawlee API";     vm = "oci-flex-0";    port = "3000"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-flex-0";    port = "3001"; auth = "Authelia + Bearer"; avail = "Wake"; }
+      { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-flex-0";    port = "9000"; auth = "WG direct";         avail = "Wake"; }
       { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
@@ -175,6 +182,18 @@
       { vm = "oci-flex-1"; container = "loki";        port = "3017"; bind = flex; internal = "3100"; note = "WG only"; }
       { vm = "oci-flex-1"; container = "tempo";       port = "3018"; bind = flex; internal = "3200"; note = "WG only"; }
       { vm = "oci-flex-1"; container = "mimir";       port = "3019"; bind = flex; internal = "8080"; note = "WG only"; }
+      # oci-flex-0 containers (WireGuard only — quant lab)
+      { vm = "oci-flex-0"; container = "quant_research";  port = "8888"; bind = flex0; internal = "8888"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "nautilus_engine"; port = "5000"; bind = flex0; internal = "5000"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "quant_analytics"; port = "8050"; bind = flex0; internal = "8050"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "quant_db";        port = "5432"; bind = flex0; internal = "5432"; note = "WG only"; }
+      # oci-flex-0 containers (WireGuard only — crawlee cloud)
+      { vm = "oci-flex-0"; container = "crawlee_api";       port = "3000"; bind = flex0; internal = "3000"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "crawlee_dashboard"; port = "3001"; bind = flex0; internal = "3001"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "crawlee_minio";     port = "9000"; bind = flex0; internal = "9000"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "crawlee_minio";     port = "9001"; bind = flex0; internal = "9001"; note = "MinIO console"; }
+      { vm = "oci-flex-0"; container = "crawlee_db";        port = "5433"; bind = flex0; internal = "5432"; note = "WG only"; }
+      { vm = "oci-flex-0"; container = "crawlee_redis";     port = "6380"; bind = flex0; internal = "6379"; note = "WG only"; }
       # oci-mail containers (WG + mail public)
       { vm = "oci-mail"; container = "mailu-front"; port = "25";   bind = "0.0.0.0"; internal = "25";   note = "SMTP public"; }
       { vm = "oci-mail"; container = "mailu-front"; port = "465";  bind = "0.0.0.0"; internal = "465";  note = "SMTPS public"; }
@@ -522,11 +541,13 @@ Internet
 │oci-flex-1│ │oci-flex-0│ │oci-mail │ │oci-analytics │
 │ ${flex}  │ │ ${flex0} │ │ ${mail} │ │ ${analytics} │
 │          │ │          │ │         │ │              │
-│PhotoPrism│ │ (none)   │ │ Mailu   │ │   Matomo     │
-│ NocoDB   │ │          │ │Syncthing│ │  Windmill    │
-│Code Srv  │ │          │ │Radicale │ │              │
-│ AFFiNE   │ │          │ │         │ │              │
-│  Grist   │ │          │ │         │ │              │
+│PhotoPrism│ │ Jupyter  │ │ Mailu   │ │   Matomo     │
+│ NocoDB   │ │ Nautilus │ │Syncthing│ │  Windmill    │
+│Code Srv  │ │Dash/Plot │ │Radicale │ │              │
+│ AFFiNE   │ │ Quant DB │ │         │ │              │
+│  Grist   │ │Crawlee AP│ │         │ │              │
+│          │ │Crawlee UI│ │         │ │              │
+│          │ │ MinIO/S3 │ │         │ │              │
 └──────────┘ └──────────┘ └─────────┘ └──────────────┘
 ```
 
@@ -1123,6 +1144,9 @@ Internet
         }
         handle_path /gitea/* {
           ${mkProtected "${flex}:3000"}
+        }
+        handle_path /crawlee/* {
+          ${mkProtected "${flex0}:3001"}
         }
         handle {
           respond "Not Found" 404

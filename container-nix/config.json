@@ -312,6 +312,21 @@
       "vm": "oci-p-flex_1",
       "flake": "db-agent",
       "description": "Central DB Backup Agent"
+    },
+    "quant-lab-light": {
+      "category": "fin",
+      "vm": "oci-p-flex_0",
+      "description": "Lightweight Quant Research (Jupyter + NautilusTrader + Postgres)"
+    },
+    "quant-lab-full": {
+      "category": "fin",
+      "vm": "oci-p-flex_0",
+      "description": "Full Quant Stack (Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres)"
+    },
+    "crawlee-cloud": {
+      "category": "fin",
+      "vm": "oci-p-flex_0",
+      "description": "Self-hosted Crawlee Cloud — Apify-compatible web scraping platform"
     }
   }
 }
