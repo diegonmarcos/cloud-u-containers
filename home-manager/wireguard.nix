@@ -19,7 +19,7 @@ let
       address   = "10.0.0.6";
       endpoint  = "82.70.229.129";
       port      = 51820;
-      publicKey = "PLACEHOLDER_GENERATE_ON_FIRST_DEPLOY";
+      publicKey = "JuvfbgNyB3w8m//rui66hTYgwHdJqdST2ZYban6+hX8=";
       role      = "spoke";
     };
     oci-flex-1 = {
@@ -126,10 +126,20 @@ in {
     WG_CONF="/etc/wireguard/wg0.conf"
     WG_LOG_PREFIX="[wireguard]"
 
+    # Find sudo (not in PATH during home-manager activation)
+    SUDO=""
+    for p in /usr/bin/sudo /run/wrappers/bin/sudo /usr/local/bin/sudo; do
+      [ -x "$p" ] && SUDO="$p" && break
+    done
+    if [ -z "$SUDO" ]; then
+      echo "$WG_LOG_PREFIX ERROR: sudo not found — cannot manage WireGuard"
+      exit 1
+    fi
+
     # 1. Read existing private key
     PRIVKEY=""
     if [ -f "$WG_CONF" ]; then
-      PRIVKEY=$(sudo grep -oP '(?<=PrivateKey = ).+' "$WG_CONF" 2>/dev/null || true)
+      PRIVKEY=$($SUDO grep -oP '(?<=PrivateKey = ).+' "$WG_CONF" 2>/dev/null || true)
     fi
 
     if [ -z "$PRIVKEY" ]; then
@@ -147,7 +157,7 @@ in {
       echo "$WG_LOG_PREFIX Generated new keypair for ${vmName}"
       echo "$WG_LOG_PREFIX PUBLIC KEY: $PUBKEY"
       echo "$WG_LOG_PREFIX *** Update wireguard.nix topology publicKey for ${vmName}, then redeploy all VMs ***"
-      sudo mkdir -p /etc/wireguard
+      $SUDO mkdir -p /etc/wireguard
     fi
 
     # 2. Generate new config from template with injected key
@@ -162,18 +172,18 @@ in {
     # 3. Compare with current live config
     CURRENT=""
     if [ -f "$WG_CONF" ]; then
-      CURRENT=$(sudo cat "$WG_CONF" 2>/dev/null || true)
+      CURRENT=$($SUDO cat "$WG_CONF" 2>/dev/null || true)
     fi
 
     if [ "$NEW_CONF" = "$CURRENT" ]; then
       echo "$WG_LOG_PREFIX wg0.conf unchanged — skipping"
     else
       echo "$WG_LOG_PREFIX wg0.conf changed — deploying"
-      echo "$NEW_CONF" | sudo tee "$WG_CONF" > /dev/null
-      sudo chmod 600 "$WG_CONF"
-      sudo chown root:root "$WG_CONF"
-      if sudo systemctl is-active wg-quick@wg0 >/dev/null 2>&1; then
-        sudo systemctl restart wg-quick@wg0
+      echo "$NEW_CONF" | $SUDO tee "$WG_CONF" > /dev/null
+      $SUDO chmod 600 "$WG_CONF"
+      $SUDO chown root:root "$WG_CONF"
+      if $SUDO systemctl is-active wg-quick@wg0 >/dev/null 2>&1; then
+        $SUDO systemctl restart wg-quick@wg0
         echo "$WG_LOG_PREFIX wg-quick@wg0 restarted"
       else
         echo "$WG_LOG_PREFIX wg-quick@wg0 not active — config written, start manually"

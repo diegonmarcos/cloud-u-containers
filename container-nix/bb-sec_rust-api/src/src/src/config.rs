@@ -229,10 +229,13 @@ impl AppConfig {
         // All VM service maps
         let mut all_vm_services = HashMap::new();
 
-        // oci-p-flex_0 (oci-flex-0) — no services initially
+        // oci-p-flex_0 (oci-flex-0) — quant lab + crawlee cloud
+        let mut flex0_svc = HashMap::new();
+        flex0_svc.insert("quant-lab".into(), vec!["quant_research".into(), "nautilus_engine".into(), "quant_analytics".into(), "quant_db".into()]);
+        flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
         all_vm_services.insert("oci-p-flex_0".into(), VmServiceMap {
             label: "oci-flex-0".into(),
-            services: HashMap::new(),
+            services: flex0_svc,
         });
 
         // oci-p-flex_1 (oci-flex-1)
@@ -336,6 +339,8 @@ impl AppConfig {
             ("grafana_app", "app.diegonmarcos.com/grafana"),
             ("dozzle", "app.diegonmarcos.com/dozzle"),
             ("rust-api", "api.diegonmarcos.com"),
+            ("crawlee_api", "app.diegonmarcos.com/crawlee"),
+            ("crawlee_dashboard", "app.diegonmarcos.com/crawlee"),
         ]
         .iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
