@@ -33,7 +33,7 @@
             GRANT_SUDO: "yes"
           command: >
             sh -c "pip install polars openbb quantstats riskfolio-lib plotly &&
-                   start-notebook.sh --NotebookApp.token=''"
+                   start-notebook.sh --NotebookApp.token='''"
           networks:
             - quant_network
           healthcheck:

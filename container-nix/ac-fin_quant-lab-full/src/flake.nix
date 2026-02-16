@@ -36,7 +36,7 @@
             JUPYTER_ENABLE_LAB: "yes"
           command: >
             sh -c "pip install openbb polars plotly &&
-                   start-notebook.sh --NotebookApp.token=''"
+                   start-notebook.sh --NotebookApp.token='''"
           networks:
             - quant_network
           healthcheck:
