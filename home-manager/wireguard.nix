@@ -19,35 +19,35 @@ let
       address   = "10.0.0.6";
       endpoint  = "82.70.229.129";
       port      = 51820;
-      publicKey = "JQORl44tcsUe+0iBp7vG8VinLoXSDNmPK3h4SYNnkiA=";
+      publicKey = "38fK9FF03PkLdTfa3k1cSPre5CW26jYppiuaQ4ODgHw=";
       role      = "spoke";
     };
     oci-apps-1 = {
       address   = "10.0.0.2";
       endpoint  = "144.24.196.72";
       port      = 51820;
-      publicKey = "uUtpR3frleNgOQvQcPvC0y5vWWtmRpJnIvWrqx9gYQU=";
+      publicKey = "rsnlzl9qrhR9A/dKxcR0VNGQyu75SSFvWoN2F0M4PFk=";
       role      = "spoke";
     };
     oci-apps-2 = {
       address   = "10.0.0.7";
       endpoint  = "79.72.28.10";
       port      = 51820;
-      publicKey = "PLACEHOLDER_WILL_BE_GENERATED_ON_FIRST_DEPLOY";
+      publicKey = "MlXRUN7DODGHdI4iwKMKNBUGjA9JJ1Jb/Ul+poyEkyU=";
       role      = "spoke";
     };
     oci-mail = {
       address   = "10.0.0.3";
       endpoint  = "130.110.251.193";
       port      = 51820;
-      publicKey = "1E7ofexq/gHZXnLNXFvpm9O6qtZDJD40IfSpHZ7Pezc=";
+      publicKey = "OG73oYVsUp7SgYGRwSIzR9rO+1L+kybXA+3zsuHCBx4=";
       role      = "spoke";
     };
     oci-analytics = {
       address   = "10.0.0.4";
       endpoint  = "129.151.228.66";
       port      = 51820;
-      publicKey = "DJTyVo/SYUUDI45brx15mcWxdzXPlIL7+/Y3Cb8AuTA=";
+      publicKey = "GI6gbHaSBaixqVZgKCoGt13wV4RuCn+15ivsfZQ1Mhw=";
       role      = "spoke";
     };
     mobile = {
