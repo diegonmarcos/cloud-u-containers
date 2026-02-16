@@ -39,6 +39,13 @@
       "method": "key",
       "ssh_alias": "oci-apps-1",
       "description": "Oracle Free - A1 Flex 1 (1 OCPU / 8GB, Wake-on-Demand)"
+    },
+    "oci-A1-p_0": {
+      "ip": "79.72.28.10",
+      "user": "ubuntu",
+      "method": "key",
+      "ssh_alias": "oci-apps-2",
+      "description": "Oracle Paid - A1 Flex 0 (8 OCPUs / 32GB)"
     }
   },
 
