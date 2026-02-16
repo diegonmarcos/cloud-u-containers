@@ -8,8 +8,11 @@ export const CONFIG_PATH = join(CONTAINER_NIX_DIR, "config.json");
 export const BUILD_SCRIPT = join(CONTAINER_NIX_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/oauth/age_keys.txt");
+export const AUTHELIA_TOKEN_PATH = join(GIT_BASE, "vault/A0_keys/providers/authelia/oauth/authelia_tokens.json");
 
-export const RUST_API_BASE = "https://api.diegonmarcos.com:8080";
+// Rust API endpoints - mesh primary, public fallback with auth
+export const RUST_API_MESH = "http://10.0.0.1:8080";
+export const RUST_API_PUBLIC = "https://api.diegonmarcos.com:8080";
 
 export const FRONT_DIR = join(GIT_BASE, "front");
 export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");

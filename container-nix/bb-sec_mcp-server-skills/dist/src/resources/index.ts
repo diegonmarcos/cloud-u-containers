@@ -14,7 +14,8 @@ import {
   SSH_CONFIG_PATH,
   CONTAINER_NIX_DIR,
   FRONT_DIR,
-  RUST_API_BASE,
+  RUST_API_MESH,
+  RUST_API_PUBLIC,
 } from "../utils/paths.js";
 import { rustApiGet } from "../utils/http.js";
 
@@ -156,7 +157,8 @@ export function registerResources(server: McpServer) {
   server.resource("rust-api-endpoints", "cloud://rust-api-endpoints", async (uri) => {
     const text = `# Rust API → MCP Tool Mapping
 
-Base URL: ${RUST_API_BASE}
+Base URL (mesh): ${RUST_API_MESH}
+Fallback (public): ${RUST_API_PUBLIC}
 
 ## Health (Waiter Read)
 | Endpoint | MCP Tool |
@@ -210,10 +212,10 @@ Base URL: ${RUST_API_BASE}
     let text: string;
 
     if (!result.ok) {
-      text = `# Service API Catalog\n\nFailed to fetch from Rust API: ${result.error ?? "unavailable"}\n\nThe Rust API at ${RUST_API_BASE} may be down. Use health_alive to check.`;
+      text = `# Service API Catalog\n\nFailed to fetch from Rust API: ${result.error ?? "unavailable"}\n\nTried mesh (${RUST_API_MESH}) and public (${RUST_API_PUBLIC}). Use health_alive to check.`;
     } else {
       const services = result.data as Record<string, unknown>[] | Record<string, unknown>;
-      text = `# Service API Catalog (Live)\n\nFetched from ${RUST_API_BASE}/api/services\n\n\`\`\`json\n${JSON.stringify(services, null, 2)}\n\`\`\``;
+      text = `# Service API Catalog (Live)\n\nFetched from Rust API (mesh ${RUST_API_MESH} or public ${RUST_API_PUBLIC})\n\n\`\`\`json\n${JSON.stringify(services, null, 2)}\n\`\`\``;
     }
 
     return {
