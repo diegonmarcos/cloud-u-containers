@@ -3,7 +3,7 @@
   "description": "Lightweight quant research: Jupyter + NautilusTrader + Postgres",
 
   "deploy": {
-    "host": "oci-flex-0",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/quant-lab-light"
   }
 }

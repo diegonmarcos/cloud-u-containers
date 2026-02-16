@@ -14,14 +14,14 @@ use crate::AppState;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        // VM actions — oci-flex-0
-        .route("/api/vm/oci-flex-0/start", post(vm_oci_flex_0_start))
-        .route("/api/vm/oci-flex-0/stop", post(vm_oci_flex_0_stop))
-        .route("/api/vm/oci-flex-0/reset", post(vm_oci_flex_0_reset))
-        // VM actions — oci-flex-1
-        .route("/api/vm/oci-flex-1/start", post(vm_oci_flex_1_start))
-        .route("/api/vm/oci-flex-1/stop", post(vm_oci_flex_1_stop))
-        .route("/api/vm/oci-flex-1/reset", post(vm_oci_flex_1_reset))
+        // VM actions — oci-apps
+        .route("/api/vm/oci-apps/start", post(vm_oci_apps_start))
+        .route("/api/vm/oci-apps/stop", post(vm_oci_apps_stop))
+        .route("/api/vm/oci-apps/reset", post(vm_oci_apps_reset))
+        // VM actions — oci-apps-1
+        .route("/api/vm/oci-apps-1/start", post(vm_oci_apps_1_start))
+        .route("/api/vm/oci-apps-1/stop", post(vm_oci_apps_1_stop))
+        .route("/api/vm/oci-apps-1/reset", post(vm_oci_apps_1_reset))
         // VM actions — gcp-proxy
         .route("/api/vm/gcp-proxy/start", post(vm_gcp_proxy_start))
         .route("/api/vm/gcp-proxy/stop", post(vm_gcp_proxy_stop))
@@ -34,7 +34,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/api/vm/oci-analytics/start", post(vm_oci_analytics_start))
         .route("/api/vm/oci-analytics/stop", post(vm_oci_analytics_stop))
         .route("/api/vm/oci-analytics/reset", post(vm_oci_analytics_reset))
-        // Bulk on-demand container ops (oci-flex-1)
+        // Bulk on-demand container ops (oci-apps-1)
         .route("/api/containers/on-demand/start-all", post(ondemand_containers_start_all))
         .route("/api/containers/on-demand/stop-all", post(ondemand_containers_stop_all))
         .route("/api/containers/on-demand/restart-all", post(ondemand_containers_restart_all))
@@ -712,7 +712,7 @@ pub async fn vm_reset(
     path = "/api/vms/{vm_id}/{action}",
     tag = "Post-Engines",
     params(
-        ("vm_id" = String, Path, description = "VM identifier (e.g. oci-p-flex_0, gcp-f-micro_1)"),
+        ("vm_id" = String, Path, description = "VM identifier (e.g. oci-A1-f_0, gcp-E2-f_0)"),
         ("action" = String, Path, description = "Action: start, stop, reset, status"),
     ),
     responses(
@@ -970,28 +970,28 @@ macro_rules! vm_action_handler {
     };
 }
 
-vm_action_handler!(vm_oci_flex_0_start, "/api/vm/oci-flex-0/start", "oci-p-flex_0", vm_start, "Start oci-flex-0");
-vm_action_handler!(vm_oci_flex_0_stop, "/api/vm/oci-flex-0/stop", "oci-p-flex_0", vm_stop, "Stop oci-flex-0");
-vm_action_handler!(vm_oci_flex_0_reset, "/api/vm/oci-flex-0/reset", "oci-p-flex_0", vm_reset, "Reset oci-flex-0");
+vm_action_handler!(vm_oci_apps_start, "/api/vm/oci-apps/start", "oci-A1-f_0", vm_start, "Start oci-apps");
+vm_action_handler!(vm_oci_apps_stop, "/api/vm/oci-apps/stop", "oci-A1-f_0", vm_stop, "Stop oci-apps");
+vm_action_handler!(vm_oci_apps_reset, "/api/vm/oci-apps/reset", "oci-A1-f_0", vm_reset, "Reset oci-apps");
 
-vm_action_handler!(vm_oci_flex_1_start, "/api/vm/oci-flex-1/start", "oci-p-flex_1", vm_start, "Start oci-flex-1");
-vm_action_handler!(vm_oci_flex_1_stop, "/api/vm/oci-flex-1/stop", "oci-p-flex_1", vm_stop, "Stop oci-flex-1");
-vm_action_handler!(vm_oci_flex_1_reset, "/api/vm/oci-flex-1/reset", "oci-p-flex_1", vm_reset, "Reset oci-flex-1");
+vm_action_handler!(vm_oci_apps_1_start, "/api/vm/oci-apps-1/start", "oci-A1-f_1", vm_start, "Start oci-apps-1");
+vm_action_handler!(vm_oci_apps_1_stop, "/api/vm/oci-apps-1/stop", "oci-A1-f_1", vm_stop, "Stop oci-apps-1");
+vm_action_handler!(vm_oci_apps_1_reset, "/api/vm/oci-apps-1/reset", "oci-A1-f_1", vm_reset, "Reset oci-apps-1");
 
-vm_action_handler!(vm_gcp_proxy_start, "/api/vm/gcp-proxy/start", "gcp-f-micro_1", vm_start, "Start gcp-proxy");
-vm_action_handler!(vm_gcp_proxy_stop, "/api/vm/gcp-proxy/stop", "gcp-f-micro_1", vm_stop, "Stop gcp-proxy");
-vm_action_handler!(vm_gcp_proxy_reset, "/api/vm/gcp-proxy/reset", "gcp-f-micro_1", vm_reset, "Reset gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_start, "/api/vm/gcp-proxy/start", "gcp-E2-f_0", vm_start, "Start gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_stop, "/api/vm/gcp-proxy/stop", "gcp-E2-f_0", vm_stop, "Stop gcp-proxy");
+vm_action_handler!(vm_gcp_proxy_reset, "/api/vm/gcp-proxy/reset", "gcp-E2-f_0", vm_reset, "Reset gcp-proxy");
 
-vm_action_handler!(vm_oci_mail_start, "/api/vm/oci-mail/start", "oci-f-micro_1", vm_start, "Start oci-mail");
-vm_action_handler!(vm_oci_mail_stop, "/api/vm/oci-mail/stop", "oci-f-micro_1", vm_stop, "Stop oci-mail");
-vm_action_handler!(vm_oci_mail_reset, "/api/vm/oci-mail/reset", "oci-f-micro_1", vm_reset, "Reset oci-mail");
+vm_action_handler!(vm_oci_mail_start, "/api/vm/oci-mail/start", "oci-E2-f_0", vm_start, "Start oci-mail");
+vm_action_handler!(vm_oci_mail_stop, "/api/vm/oci-mail/stop", "oci-E2-f_0", vm_stop, "Stop oci-mail");
+vm_action_handler!(vm_oci_mail_reset, "/api/vm/oci-mail/reset", "oci-E2-f_0", vm_reset, "Reset oci-mail");
 
-vm_action_handler!(vm_oci_analytics_start, "/api/vm/oci-analytics/start", "oci-f-micro_2", vm_start, "Start oci-analytics");
-vm_action_handler!(vm_oci_analytics_stop, "/api/vm/oci-analytics/stop", "oci-f-micro_2", vm_stop, "Stop oci-analytics");
-vm_action_handler!(vm_oci_analytics_reset, "/api/vm/oci-analytics/reset", "oci-f-micro_2", vm_reset, "Reset oci-analytics");
+vm_action_handler!(vm_oci_analytics_start, "/api/vm/oci-analytics/start", "oci-E2-f_1", vm_start, "Start oci-analytics");
+vm_action_handler!(vm_oci_analytics_stop, "/api/vm/oci-analytics/stop", "oci-E2-f_1", vm_stop, "Stop oci-analytics");
+vm_action_handler!(vm_oci_analytics_reset, "/api/vm/oci-analytics/reset", "oci-E2-f_1", vm_reset, "Reset oci-analytics");
 
 // ---------------------------------------------------------------------------
-// Bulk on-demand container ops (oci-flex-1)
+// Bulk on-demand container ops (oci-apps-1)
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(
@@ -1121,7 +1121,7 @@ pub async fn ondemand_containers_restart_all(
 // Matomo / Windmill toggle (oci-analytics — shared 956MB RAM)
 // ---------------------------------------------------------------------------
 
-const ANALYTICS_VM_ID: &str = "oci-f-micro_2";
+const ANALYTICS_VM_ID: &str = "oci-E2-f_1";
 const WINDMILL_COMPOSE: &str = "/home/ubuntu/windmill/docker-compose.yml";
 const MATOMO_CONTAINER: &str = "matomo-hybrid";
 

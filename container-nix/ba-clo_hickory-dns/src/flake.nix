@@ -18,7 +18,7 @@
       ntfy     = { ip = "10.0.0.1"; desc = "Push notifications"; };
       dns      = { ip = "10.0.0.1"; desc = "Hickory DNS"; };
 
-      # oci-flex-1 (10.0.0.2)
+      # oci-apps-1 (10.0.0.2)
       photos   = { ip = "10.0.0.2"; desc = "PhotoPrism"; };
       db       = { ip = "10.0.0.2"; desc = "NocoDB"; };
       ide      = { ip = "10.0.0.2"; desc = "Code Server"; };
@@ -37,7 +37,7 @@
     # VM reverse map for PTR records
     vms = {
       "1" = "gcp-proxy";
-      "2" = "oci-flex-1";
+      "2" = "oci-apps-1";
       "3" = "oci-mail";
       "4" = "oci-analytics";
       "6" = "oci-flex-0";

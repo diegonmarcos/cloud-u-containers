@@ -3,7 +3,7 @@
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
 
   "deploy": {
-    "host": "oci-flex-1",
+    "host": "oci-apps-1",
     "remote_path": "/opt/containers/grist"
   }
 }

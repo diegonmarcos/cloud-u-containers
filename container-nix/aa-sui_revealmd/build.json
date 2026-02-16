@@ -3,7 +3,7 @@
   "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
 
   "deploy": {
-    "host": "oci-flex-1",
+    "host": "oci-apps-1",
     "remote_path": "/opt/containers/revealmd"
   }
 }
