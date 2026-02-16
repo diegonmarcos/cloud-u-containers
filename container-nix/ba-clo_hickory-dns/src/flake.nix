@@ -90,8 +90,6 @@
     '';
 
     # ── Hickory DNS named.toml ─────────────────────────────────────────
-    # NOTE: Hickory DNS 0.25.2 authoritative server doesn't support Forward zones.
-    # Upstream forwarding requires hickory-resolver (separate binary) — Phase 2.
     mkNamedToml = pkgs: pkgs.writeText "named.toml" ''
       listen_addrs_ipv4 = ["0.0.0.0"]
       listen_port = 53
@@ -106,6 +104,19 @@
       zone = "0.0.10.in-addr.arpa"
       zone_type = "Primary"
       file = "0.0.10.in-addr.arpa.zone"
+
+      [[zones]]
+      zone = "."
+      zone_type = "External"
+
+      [zones.stores]
+      type = "forward"
+      name_servers = [
+          { socket_addr = "1.1.1.1:53", protocol = "udp" },
+          { socket_addr = "1.0.0.1:53", protocol = "udp" },
+          { socket_addr = "8.8.8.8:53", protocol = "udp" },
+          { socket_addr = "8.8.4.4:53", protocol = "udp" }
+      ]
     '';
 
     # ── Docker Compose ─────────────────────────────────────────────────
