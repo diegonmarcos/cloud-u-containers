@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      research_image = "quay.io/jupyter/pytorch-notebook:latest";
+      research_image = "quay.io/jupyter/scipy-notebook:latest";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
       jupyter_port = 8888;
