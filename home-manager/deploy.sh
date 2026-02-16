@@ -49,6 +49,7 @@ deploy_vm() {
         --include="flake.nix" \
         --include="flake.lock" \
         --include="${vm}.nix" \
+        --include="wireguard.nix" \
         --exclude="*" \
         ./ "$vm:~/.config/home-manager/"
 
