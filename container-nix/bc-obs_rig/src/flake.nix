@@ -22,12 +22,9 @@
           image: rig-infra:latest
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
-          extra_hosts:
-            - "host.docker.internal:host-gateway"
-          ports:
-            - "127.0.0.1:${toString config.port}:${toString config.port}"
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
           healthcheck:
