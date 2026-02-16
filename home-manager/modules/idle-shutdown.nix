@@ -222,7 +222,7 @@ in {
     WantedBy=timers.target
   '';
 
-  home.activation.installIdleScripts = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  home.activation.installIdleScripts = lib.hm.dag.entryAfter ["linkGeneration"] ''
     # Find sudo (not in PATH during home-manager activation)
     SUDO=""
     for p in /usr/bin/sudo /run/wrappers/bin/sudo /usr/local/bin/sudo; do
