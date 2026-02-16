@@ -53,6 +53,9 @@
     lsof
     iftop
 
+    # WireGuard
+    wireguard-tools
+
     # Container runtime (rootless, alongside system Docker)
     podman
   ];
