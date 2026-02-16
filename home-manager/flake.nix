@@ -39,5 +39,11 @@
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
       modules = [ ./oci-analytics.nix ];
     };
+
+    # oci-apps-2 (79.72.28.10) - Ampere ARM, 8 OCPUs / 32GB, Ubuntu (Paid, auto-shutdown 1h)
+    homeConfigurations."ubuntu@oci-apps-2" = home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.aarch64-linux;
+      modules = [ ./oci-apps-2.nix ];
+    };
   };
 }
