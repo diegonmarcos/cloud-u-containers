@@ -1,0 +1,9 @@
+{
+  "name": "rig",
+  "description": "Rig Intelligence Framework - Self-healing orchestrator + GraphRAG + Agentic framework",
+  "version": "0.1.0",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/rig"
+  }
+}
