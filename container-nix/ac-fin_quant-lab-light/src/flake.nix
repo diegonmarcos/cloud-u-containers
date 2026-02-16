@@ -21,7 +21,7 @@
       services:
         research:
           image: ${config.research_image}
-          container_name: quant_research
+          container_name: quant_light_research
           restart: unless-stopped
           ports:
             - "${toString config.jupyter_port}:8888"
@@ -45,7 +45,7 @@
 
         engine:
           image: ${config.engine_image}
-          container_name: nautilus_engine
+          container_name: quant_light_engine
           restart: unless-stopped
           ports:
             - "${toString config.engine_port}:5000"
@@ -63,7 +63,7 @@
 
         db:
           image: ${config.db_image}
-          container_name: quant_db
+          container_name: quant_light_db
           restart: unless-stopped
           ports:
             - "${toString config.db_port}:5432"

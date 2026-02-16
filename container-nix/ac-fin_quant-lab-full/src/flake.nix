@@ -25,7 +25,7 @@
       services:
         research:
           image: ${config.research_image}
-          container_name: quant_research
+          container_name: quant_full_research
           restart: unless-stopped
           ports:
             - "${toString config.jupyter_port}:8888"
@@ -48,7 +48,7 @@
 
         analytics:
           image: ${config.analytics_image}
-          container_name: quant_analytics
+          container_name: quant_full_analytics
           restart: unless-stopped
           ports:
             - "${toString config.dash_port}:8050"
@@ -64,7 +64,7 @@
 
         ml_brain:
           image: ${config.ml_image}
-          container_name: quant_ml
+          container_name: quant_full_ml
           restart: unless-stopped
           volumes:
             - ./models:/workspace/models
@@ -86,7 +86,7 @@
 
         risk_manager:
           image: ${config.risk_image}
-          container_name: quant_risk
+          container_name: quant_full_risk
           restart: unless-stopped
           volumes:
             - ./risk_reports:/reports
@@ -100,7 +100,7 @@
 
         execution_engine:
           image: ${config.engine_image}
-          container_name: nautilus_engine
+          container_name: quant_full_engine
           restart: unless-stopped
           ports:
             - "${toString config.engine_port}:5000"
@@ -116,7 +116,7 @@
 
         database:
           image: ${config.db_image}
-          container_name: quant_db
+          container_name: quant_full_db
           restart: unless-stopped
           ports:
             - "${toString config.db_port}:5432"
