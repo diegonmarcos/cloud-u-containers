@@ -17,7 +17,7 @@ impl AppConfig {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(8090),
             surreal_url: env::var("SURREAL_URL")
-                .unwrap_or_else(|_| "http://localhost:8001".into()),
+                .unwrap_or_else(|_| "http://host.docker.internal:8001".into()),
             surreal_pass: env::var("SURREAL_ROOT_PASSWORD")
                 .unwrap_or_else(|_| "root".into()),
             heal_interval_secs: env::var("HEAL_INTERVAL_SECS")
