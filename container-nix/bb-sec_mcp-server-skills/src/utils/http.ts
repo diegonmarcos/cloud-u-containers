@@ -1,5 +1,6 @@
 import { exec } from "./exec.js";
-import { RUST_API_BASE } from "./paths.js";
+import { RUST_API_MESH, RUST_API_PUBLIC, AUTHELIA_TOKEN_PATH } from "./paths.js";
+import { readFileSync } from "fs";
 
 export interface HttpResult {
   ok: boolean;
@@ -68,12 +69,60 @@ function httpRequest(
   };
 }
 
+function getBearerToken(): string | null {
+  try {
+    const tokens = JSON.parse(readFileSync(AUTHELIA_TOKEN_PATH, "utf-8"));
+    return tokens.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
 export function rustApiGet(endpoint: string, timeout?: number): HttpResult {
-  return httpRequest("GET", `${RUST_API_BASE}${endpoint}`, undefined, timeout);
+  // Try WireGuard mesh first
+  const meshResult = httpRequest("GET", `${RUST_API_MESH}${endpoint}`, undefined, timeout);
+
+  if (meshResult.ok || meshResult.status !== 0) {
+    return meshResult;
+  }
+
+  // Mesh failed (status 0 = connection failed), try public with bearer token
+  const token = getBearerToken();
+  if (token) {
+    return httpRequest(
+      "GET",
+      `${RUST_API_PUBLIC}${endpoint}`,
+      undefined,
+      timeout,
+      { Authorization: `Bearer ${token}` }
+    );
+  }
+
+  // No token available, return mesh failure
+  return meshResult;
 }
 
 export function rustApiPost(endpoint: string, body?: string, timeout?: number): HttpResult {
-  return httpRequest("POST", `${RUST_API_BASE}${endpoint}`, body, timeout);
+  // Try WireGuard mesh first
+  const meshResult = httpRequest("POST", `${RUST_API_MESH}${endpoint}`, body, timeout);
+
+  if (meshResult.ok || meshResult.status !== 0) {
+    return meshResult;
+  }
+
+  // Mesh failed, try public with bearer token
+  const token = getBearerToken();
+  if (token) {
+    return httpRequest(
+      "POST",
+      `${RUST_API_PUBLIC}${endpoint}`,
+      body,
+      timeout,
+      { Authorization: `Bearer ${token}` }
+    );
+  }
+
+  return meshResult;
 }
 
 export function httpGet(url: string, timeout?: number): HttpResult {

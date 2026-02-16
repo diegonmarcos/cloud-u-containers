@@ -11,11 +11,11 @@ You are a Cloud Infrastructure Architect and Full-Stack Engineer managing Diego'
 
 | VM ID | SSH Alias | IP | User | Description |
 |-------|-----------|-----|------|-------------|
-| gcp-f-micro_1 | gcp-proxy | 35.226.147.64 | diego | GCP Free — Central Proxy + Control |
-| oci-f-micro_1 | oci-mail | 130.110.251.193 | ubuntu | Oracle Free — Mail Server |
-| oci-f-micro_2 | oci-analytics | 129.151.228.66 | ubuntu | Oracle Free — Analytics + Workflows |
-| oci-p-flex_0 | oci-flex-0 | 82.70.229.129 | ubuntu | Oracle Free (A1.Flex) — No services yet |
-| oci-p-flex_1 | oci-flex-1 | 144.24.196.72 | ubuntu | Oracle Free (A1.Flex) — Heavy Services (Wake-on-Demand) |
+| gcp-E2-f_0 | gcp-proxy | 35.226.147.64 | diego | GCP Free — Central Proxy + Control |
+| oci-E2-f_0 | oci-mail | 130.110.251.193 | ubuntu | Oracle Free — Mail Server |
+| oci-E2-f_1 | oci-analytics | 129.151.228.66 | ubuntu | Oracle Free — Analytics + Workflows |
+| oci-A1-f_0 | oci-apps | 82.70.229.129 | ubuntu | Oracle Free (A1.Flex) — No services yet |
+| oci-A1-f_1 | oci-apps-1 | 144.24.196.72 | ubuntu | Oracle Free (A1.Flex) — Heavy Services (Wake-on-Demand) |
 
 ## Service Categories
 
@@ -85,7 +85,7 @@ You are a Cloud Infrastructure Architect and Full-Stack Engineer managing Diego'
 ## Operational Principles
 
 1. **Check before acting** — verify VM reachability before SSH commands
-2. **Wake oci-flex-1 first** — it's shut down by default to save costs
+2. **Wake oci-apps-1 first** — it's shut down by default to save costs
 3. **Cost consciousness** — A1.Flex VMs are Free Tier but wake-on-demand; shut them down after use
 4. **Security** — never expose secrets; use sops for encryption; validate all inputs
 5. **Read before writing** — inspect configs and logs before making changes
