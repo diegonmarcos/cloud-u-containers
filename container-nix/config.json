@@ -46,6 +46,19 @@
       "method": "key",
       "ssh_alias": "oci-apps-2",
       "description": "Oracle Paid - A1 Flex 0 (8 OCPUs / 32GB)"
+    },
+    "vast-RTX-p_0": {
+      "ip": "TBD",
+      "port": "TBD",
+      "user": "root",
+      "method": "key",
+      "ssh_alias": "vast-ollama",
+      "description": "Vast.ai On-Demand - RTX A4000 (16GB VRAM) - Ollama LLM",
+      "provider": "vast.ai",
+      "gpu": "RTX A4000",
+      "vram": "16GB",
+      "cost_per_hour": "$0.08-0.25",
+      "notes": "Dynamic IP/port - update after rental from Vast.ai console"
     }
   },
 
@@ -334,6 +347,15 @@
       "category": "fin",
       "vm": "oci-A1-f_0",
       "description": "Self-hosted Crawlee Cloud — Apify-compatible web scraping platform"
+    },
+    "ollama": {
+      "category": "app",
+      "vm": "vast-RTX-p_0",
+      "description": "Ollama LLM Server (13B models - llama2, mistral, deepseek-r1)",
+      "api_port": "11434",
+      "webui_port": "3000",
+      "models": ["llama2:13b", "mistral:13b", "deepseek-r1:14b"],
+      "notes": "On-demand GPU instance - start/stop via Vast.ai console"
     }
   }
 }
