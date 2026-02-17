@@ -1057,7 +1057,8 @@ Internet
           reverse_proxy ${gcp}:8090
         }
         @crawlee_docs path /crawlee/openapi.json /crawlee/docs /crawlee/docs/*
-        handle_path @crawlee_docs {
+        handle @crawlee_docs {
+          uri strip_prefix /crawlee
           header Access-Control-Allow-Origin "*"
           header Access-Control-Allow-Methods "GET, OPTIONS"
           header Access-Control-Allow-Headers "Content-Type"
