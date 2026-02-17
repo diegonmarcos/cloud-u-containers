@@ -205,6 +205,7 @@ case "${1:-all}" in
     compose)  step_compose ;;
     all)      step_build; step_secrets ;;
     ship)     step_docker; step_build; step_secrets; step_deploy; step_compose ;;
+    redeploy) step_build; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; log "Cleaned" ;;
     *)
         echo "Usage: $0 [docker|build|secrets|deploy|compose|all|ship|clean]"
@@ -215,6 +216,7 @@ case "${1:-all}" in
         echo "  compose  Docker compose pull + up on VM"
         echo "  all      build + secrets (default)"
         echo "  ship     docker + build + secrets + deploy + compose"
+        echo "  redeploy build + secrets + deploy + compose (skip docker)"
         echo "  clean    Remove dist/"
         ;;
 esac
