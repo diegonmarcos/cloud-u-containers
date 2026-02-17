@@ -12,26 +12,31 @@
 - [x] Update root `flake.nix` — add ad-agi_ollama input
 - [x] Git commit + push
 
-## Phase 2: GCP VM Creation (separate session)
+## Phase 2: GCP VM Creation
 
-- [ ] Create GCP Spot T4 VM via gcloud CLI
-- [ ] Get external IP, update config.json
-- [ ] Install Docker on VM
-- [ ] Install NVIDIA Container Toolkit on VM
-- [ ] Verify GPU: `docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi`
-- [ ] Generate WireGuard keypair on VM
-- [ ] Assign WireGuard IP 10.0.0.10
-- [ ] Add peer to all existing VMs' WireGuard configs
-- [ ] Update hickory-dns for `ollama.internal` → 10.0.0.10
-- [ ] Add SSH alias `gcp-ollama` to vault SSH configs
+- [x] Create GCP Spot T4 VM via gcloud CLI (IP: 34.57.36.41)
+- [x] Get external IP, update config.json
+- [x] Install Docker on VM
+- [x] Install NVIDIA Container Toolkit on VM
+- [x] Verify GPU: Tesla T4 15360 MiB
+- [x] Generate WireGuard keypair on VM (pubkey: PN6ddzDi...)
+- [x] Assign WireGuard IP 10.0.0.8
+- [x] Add peer to all existing VMs' WireGuard configs (via home-manager GHA)
+- [x] Install Nix on VM + configure flakes + trusted-users
+- [x] Deploy home-manager (idle-shutdown 1h + daily-shutdown 1AM + WireGuard)
+- [x] Add SSH alias `gcp-ollama` to vault SSH configs
+- [x] Set GHA secrets: GCP_T4_HOST, GCP_T4_USER, GCP_T4_SSH_KEY
+- [ ] Update hickory-dns for `ollama.internal` → 10.0.0.8
 
-## Phase 3: Deploy & Test (separate session)
+## Phase 3: Deploy & Test
 
-- [ ] Run `./build.sh ship` from local
-- [ ] Pull models: deepseek-r1:14b, qwen2.5:14b
-- [ ] Test via WireGuard: `curl http://10.0.0.10:11434/api/tags`
-- [ ] Test inference: generate request via API
-- [ ] Verify GPU usage: `nvidia-smi` inside container
+- [x] Deploy Ollama container with GPU support
+- [x] Pull models: deepseek-r1:14b (9.0GB), qwen2.5:14b (9.0GB)
+- [x] Test via WireGuard: `curl http://10.0.0.8:11434/api/tags` — working
+- [x] Test inference: deepseek-r1:14b responds correctly
+- [x] Verify WireGuard mesh: hub handshake active
+- [ ] Redeploy via `build.sh ship` (bind to WG IP instead of 0.0.0.0)
+- [ ] Verify GPU usage: `nvidia-smi` inside container during inference
 - [ ] Pull Q8 variants if VRAM allows
 
 ## Phase 4: Vast.ai Fallback (optional, separate session)
