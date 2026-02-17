@@ -963,6 +963,12 @@ Internet
       # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
       api.diegonmarcos.com {
     ${sec}
+        # Root path → Swagger UI landing page on GitHub Pages
+        @root path /
+        handle @root {
+          redir https://diegonmarcos.github.io/api/ permanent
+        }
+
         handle /flask/* {
           ${mkProtected "${gcp}:5000"}
         }
