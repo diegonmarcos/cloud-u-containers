@@ -1037,11 +1037,19 @@ Internet
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
+        handle /flask/apispec.json {
+          uri strip_prefix /flask
+          reverse_proxy ${gcp}:5000
+        }
         handle_path /flask/* {
           ${mkProtected "${gcp}:5000"}
         }
         handle /go/* {
           reverse_proxy ${gcp}:8090
+        }
+        handle /crawlee/openapi.json {
+          uri strip_prefix /crawlee
+          reverse_proxy ${flex0}:3000
         }
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
