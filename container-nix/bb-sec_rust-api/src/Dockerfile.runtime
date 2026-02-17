@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN useradd -m -u 1000 appuser
+RUN useradd -m -u 1001 appuser
 
 COPY rust-api-binary /app/rust-api
 RUN chown appuser:appuser /app/rust-api && chmod +x /app/rust-api
