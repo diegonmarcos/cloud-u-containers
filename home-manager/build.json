@@ -1,6 +1,6 @@
 {
   "name": "home-manager",
-  "description": "Home Manager configurations for all 4 VMs",
+  "description": "Home Manager configurations for all 7 VMs",
 
   "vms": {
     "gcp-proxy": {
@@ -27,6 +27,11 @@
       "user": "ubuntu",
       "arch": "x86_64-linux",
       "config": "ubuntu@oci-analytics"
+    },
+    "gcp-t4": {
+      "user": "diego",
+      "arch": "x86_64-linux",
+      "config": "diego@gcp-t4"
     }
   }
 }
