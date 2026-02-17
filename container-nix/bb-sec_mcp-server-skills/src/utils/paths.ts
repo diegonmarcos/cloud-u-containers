@@ -9,6 +9,7 @@ export const BUILD_SCRIPT = join(CONTAINER_NIX_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/oauth/age_keys.txt");
 export const AUTHELIA_TOKEN_PATH = join(GIT_BASE, "vault/A0_keys/providers/authelia/oauth/authelia_tokens.json");
+export const CRAWLEE_API_TOKEN_PATH = join(GIT_BASE, "vault/A0_keys/providers/crawlee/api_token");
 
 // Rust API endpoints - mesh primary (oci-apps), public fallback with auth
 export const RUST_API_MESH = "http://10.0.0.6:8080";
