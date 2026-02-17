@@ -48,7 +48,7 @@
       "description": "Oracle Paid - A1 Flex 0 (8 OCPUs / 32GB)"
     },
     "gcp-T4-p_0": {
-      "ip": "TBD",
+      "ip": "34.57.36.41",
       "user": "diego",
       "method": "gcloud",
       "ssh_alias": "gcp-ollama",
