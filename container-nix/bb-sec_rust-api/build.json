@@ -5,7 +5,8 @@
   "docker": {
     "registry": "ghcr.io",
     "image": "diegonmarcos/rust-api",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "binary": "/app/rust-api"
   },
 
   "deploy": {

@@ -1,0 +1,4 @@
+# Runtime-only image — built on VM from pre-compiled caddy binary
+# Base caddy:2 is cached; only the COPY layer changes per deploy
+FROM caddy:2
+COPY caddy-binary /usr/bin/caddy

@@ -32,6 +32,7 @@ export SOPS_AGE_KEY_FILE
 DOCKER_REGISTRY="$(get_config docker.registry)"
 DOCKER_IMAGE="$(get_config docker.image)"
 DOCKER_FILE="$(get_config docker.dockerfile)"
+DOCKER_BINARY="$(get_config docker.binary)"
 
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
 
@@ -54,6 +55,16 @@ step_docker() {
         "$SRC_DIR/"
 
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
+
+    # Extract binary for direct transfer (avoids image pull/decompression on VM)
+    if [ -n "$DOCKER_BINARY" ]; then
+        log "Extracting binary from image"
+        docker pull "$FULL_IMAGE:latest"
+        CONTAINER_ID=$(docker create "$FULL_IMAGE:latest")
+        docker cp "$CONTAINER_ID:$DOCKER_BINARY" "/tmp/${SERVICE_NAME}-binary"
+        docker rm "$CONTAINER_ID"
+        log "Extracted binary ($(du -h "/tmp/${SERVICE_NAME}-binary" | cut -f1))"
+    fi
 }
 
 # ── Step 1: Build nix flake ────────────────────────────────────────────
@@ -119,6 +130,15 @@ step_deploy() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
     [ ! -d "$DIST_DIR" ] && { log "No dist/ — run build first"; return 1; }
 
+    # Include binary + runtime Dockerfile for local image build on VM
+    BINARY_PATH="/tmp/${SERVICE_NAME}-binary"
+    RUNTIME_DF="$SRC_DIR/Dockerfile.runtime"
+    if [ -f "$BINARY_PATH" ] && [ -f "$RUNTIME_DF" ]; then
+        cp "$BINARY_PATH" "$DIST_DIR/rust-api-binary"
+        cp "$RUNTIME_DF" "$DIST_DIR/Dockerfile.runtime"
+        log "Included binary + Dockerfile.runtime in deploy payload"
+    fi
+
     log "Deploying dist/ → $DEPLOY_HOST:$DEPLOY_PATH"
 
     # Ensure remote dir exists
@@ -146,9 +166,28 @@ step_compose() {
     [ -z "$DEPLOY_HOST" ] && { log "ERROR: deploy.host not set in build.json"; return 1; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
-    log "Pulling and starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose pull --ignore-buildable && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --build"
-    log "Containers pulled and running"
+    FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
+
+    # Build image locally from binary (no pull, no decompression on VM)
+    if ssh "$DEPLOY_HOST" "test -f $DEPLOY_PATH/rust-api-binary -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
+        log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
+        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
+        log "Image built locally"
+    elif [ -n "$FULL_IMAGE" ]; then
+        log "No binary on VM — falling back to docker compose pull"
+        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
+    fi
+
+    # Sequential restart: stop → settle → start (avoids CPU spike on low-resource VMs)
+    log "Stopping containers on $DEPLOY_HOST"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose stop" || true
+
+    log "Waiting for CPU to settle..."
+    sleep 5
+
+    log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d"
+    log "Containers running"
 }
 
 # ── Main ────────────────────────────────────────────────────────────────
