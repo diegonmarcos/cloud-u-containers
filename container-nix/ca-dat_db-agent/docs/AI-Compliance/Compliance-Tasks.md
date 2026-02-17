@@ -34,11 +34,18 @@ Extracted from [Compliance-Plan.md](Compliance-Plan.md).
 - [ ] Test junior gate: `CLAUDE_MODEL=haiku` blocks `build.sh ship` and VM lifecycle
 - [ ] Document model-skill mapping: Haiku=Junior, Sonnet=mid-Senior, Opus=all
 
-## Layer 2: MEMORY.md — Pre-Action Checklist (Tier 2)
+## Layer 2: claude-memory.sh — SessionStart Hook (Tier 2)
 
-- [ ] Add `## MANDATORY PRE-ACTION CHECKLIST` at top (4 checks)
-- [ ] Add `## FORBIDDEN PATTERNS` table (7 NEVER→ALWAYS rows)
-- [ ] Verify MEMORY.md under 200 lines
+- [x] Create `claude-memory.sh` (Termux flake source)
+- [x] Create `claude-memory.sh` (Desktop flake source)
+- [x] Create `claude-memory.sh` reference copy in `dist/`
+- [x] Add `home.file` entry to Termux flake (executable)
+- [x] Add `home.file` entry to Desktop common.nix (executable)
+- [x] Add `SessionStart` hook to Termux `settings.json`
+- [x] Add `SessionStart` hook to Desktop `settings.json`
+- [ ] Rebuild Termux flake (`build.sh switch`)
+- [ ] Rebuild Desktop flake (`build.sh switch`)
+- [ ] Test: session start prints checklist
 
 ## Layer 3: CLAUDE.md — Index (Tier 3)
 

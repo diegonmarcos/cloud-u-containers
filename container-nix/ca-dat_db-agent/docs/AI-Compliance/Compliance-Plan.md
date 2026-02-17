@@ -13,10 +13,11 @@ Tier 1: HOOKS (settings.json → claude-guard.sh)
         └── 33 rules: 17 BLOCK + 16 WARN
         └── PROFILE-AWARE: model tier, mode, skill
 
-Tier 2: MEMORY.md (pre-loaded, 200 lines max)
+Tier 2: claude-memory.sh (SessionStart hook, nix read-only)
         └── Mandatory pre-action checklist (4 checks)
         └── Forbidden patterns table (7 NEVER→ALWAYS)
-        └── AI reads before acting — concise = effective
+        └── Injected via stdout at session start — AI cannot delete
+        └── Nix-managed symlink — immune to runtime modification
 
 Tier 3: CLAUDE.md (pre-loaded, full file)
         └── System map: stack, VMs, services, paths, APIs, code standards
@@ -239,11 +240,33 @@ echo '{"tool_name":"Bash","tool_input":{"command":"git status"}}' | ~/.claude/ho
 
 ---
 
-## Layer 2: MEMORY.md — Pre-Action Checklist (Tier 2)
+## Layer 2: claude-memory.sh — SessionStart Hook (Tier 2)
 
-**File**: `~/.claude/projects/.../memory/MEMORY.md`
+**Problem**: The original plan put the checklist in MEMORY.md (a runtime read-write file). Claude can modify or delete MEMORY.md at any time, making the checklist unreliable.
 
-### 2.1 Add at TOP of MEMORY.md
+**Solution**: `claude-memory.sh` — a SessionStart hook deployed as a nix read-only symlink. It prints the checklist to stdout at every session start, injecting it as additional context. Claude cannot modify or delete it.
+
+**Source** (Termux): `~/git/unix/bb_flakes_termux/src/modules/dotfiles/claude/claude-memory.sh`
+**Source** (Desktop): `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/claude-memory.sh`
+**Deployed to**: `~/.claude/hooks/claude-memory.sh` (via home-manager, executable, read-only)
+**Reference**: `~/git/cloud/.../ca-dat_db-agent/docs/AI-Compliance/dist/claude-memory.sh`
+
+### 2.1 Hook wiring in `settings.json`
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "\"$HOME\"/.claude/hooks/claude-memory.sh", "timeout": 5 }]
+      }
+    ]
+  }
+}
+```
+
+### 2.2 Script content (injected every session)
 
 ```markdown
 ## MANDATORY PRE-ACTION CHECKLIST
@@ -266,6 +289,15 @@ Before EVERY modification:
 | Edit `dist/` files | Edit `src/` + `build.sh build` |
 | Edit `~/.claude/CLAUDE.md` | Edit source in `~/git/unix/` flakes |
 ```
+
+### 2.3 Why this is better than MEMORY.md
+
+| Aspect | MEMORY.md (old) | claude-memory.sh (new) |
+|--------|-----------------|------------------------|
+| **Protection** | Read-write, Claude can delete | Nix read-only symlink |
+| **Injection** | Loaded from file (file must exist) | Printed to stdout (always runs) |
+| **Persistence** | File on disk, can be corrupted | Nix store, immutable |
+| **Update path** | Direct edit (anyone) | Edit flake source + `build.sh switch` |
 
 ---
 
@@ -390,7 +422,8 @@ Layer 6.3 (final verification)
 | `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/claude-guard.sh` | **CREATE**: sync engine |
 | `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/claude-guard-rules.json` | **CREATE**: sync rules |
 | `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/settings.json` | Edit: add hooks |
-| `~/.claude/projects/.../memory/MEMORY.md` | Edit: checklist + forbidden table |
+| `~/git/unix/bb_flakes_termux/src/modules/dotfiles/claude/claude-memory.sh` | **CREATE**: SessionStart hook |
+| `~/git/unix/ba_flakes_desktop/src/modules/dotfiles/claude/claude-memory.sh` | **CREATE**: SessionStart hook |
 | `~/git/unix/.../CLAUDE.md` (both) | Edit: replace rules with index |
 | `~/git/cloud/.../ca-dat_kg-graph/build.sh` | Edit: remove --exclude='.secrets' |
 | `~/git/cloud/.../bc-obs_rig/build.sh` | Edit: remove --exclude='.secrets' |
@@ -413,7 +446,7 @@ Layer 6.3 (final verification)
 
 ### Not started (implementation)
 - [ ] Layer 1: Create `claude-guard.sh` + `settings.json` + home-manager entries
-- [ ] Layer 2: Add pre-action checklist to MEMORY.md
+- [x] Layer 2: `claude-memory.sh` SessionStart hook (replaces MEMORY.md approach — nix read-only)
 - [ ] Layer 3: Add enforcement index to CLAUDE.md
 - [ ] Layer 4: Fix rsync `--exclude='.secrets'` bug
 - [ ] Layer 5: Verify docker.service on oci-apps
