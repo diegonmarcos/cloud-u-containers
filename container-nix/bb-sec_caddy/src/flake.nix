@@ -1037,6 +1037,7 @@ Internet
         # Public: API docs/specs (no auth, with CORS for GitHub Pages Swagger UI)
         @flask_docs path /flask/apispec.json /flask/docs /flask/docs/*
         handle @flask_docs {
+          uri strip_prefix /flask
           header Access-Control-Allow-Origin "*"
           header Access-Control-Allow-Methods "GET, OPTIONS"
           header Access-Control-Allow-Headers "Content-Type"
