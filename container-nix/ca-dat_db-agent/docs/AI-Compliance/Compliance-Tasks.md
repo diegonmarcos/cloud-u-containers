@@ -25,6 +25,15 @@ Extracted from [Compliance-Plan.md](Compliance-Plan.md).
 - [ ] Test: `nix-env -i` → WARN (stderr)
 - [ ] Test: `git status` → ALLOW (exit 0)
 
+## Layer 1.5: Profile System
+
+- [ ] Implement profile detection in guard script (`$CLAUDE_MODE`, `$CLAUDE_MODEL`, `$CLAUDE_SKILL`)
+- [ ] Implement 4 enforcement functions: `block()`, `std_block()`, `std_warn()`, `junior_block()`
+- [ ] Categorize all 33 rules into: critical BLOCK, standard BLOCK, WARN, skill-gated
+- [ ] Test debug mode: `CLAUDE_MODE=debug` downgrades standard BLOCKs to WARNs, skips WARNs
+- [ ] Test junior gate: `CLAUDE_MODEL=haiku` blocks `build.sh ship` and VM lifecycle
+- [ ] Document model-skill mapping: Haiku=Junior, Sonnet=mid-Senior, Opus=all
+
 ## Layer 2: MEMORY.md — Pre-Action Checklist (Tier 2)
 
 - [ ] Add `## MANDATORY PRE-ACTION CHECKLIST` at top (4 checks)
