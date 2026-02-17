@@ -823,20 +823,34 @@ Internet
         var t=d.totals||{};
         h+='<p>Total: <strong>'+t.vms+'</strong> VMs, <strong>'+t.services+'</strong> services, <strong>'+t.containers+'</strong> containers</p>';
         window._dVMs=d.vms;
-        rProfBtns();
+        window._deployedData={};
         el.innerHTML=h;
+        var pel=document.getElementById('out-profiling');
+        if(pel)pel.innerHTML='<span class="loading">Fetching deployed state...</span>';
+        fetch(HAPI+'/api/health/deployed',{signal:AbortSignal.timeout(30000)})
+          .then(function(r){return r.json()})
+          .then(function(dd){window._deployedData=dd.vms||{};rProfBtns()})
+          .catch(function(){rProfBtns()});
       }
       function rDeployed(el,d){
-        var h='<table><tr><th>VM</th><th>Label</th><th>Running</th><th>Stopped</th><th>Total</th></tr>';
+        var h='';
         var vms=d.vms||{};
         for(var id in vms){
-          var v=vms[id];
-          h+='<tr><td>'+id+'</td><td>'+(v.label||"")+'</td>';
-          h+='<td class="'+(v.running>0?'st-ok':'st-off')+'">'+v.running+'</td>';
-          h+='<td class="'+(v.stopped>0?'st-warn':'st-off')+'">'+v.stopped+'</td>';
-          h+='<td>'+v.total+'</td></tr>';
+          var v=vms[id],cs=v.containers||[];
+          h+='<div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e">';
+          h+='<strong>'+id+'</strong> ('+(v.label||"")+') — ';
+          h+='<span class="st-ok">'+v.running+' running</span>, ';
+          h+='<span class="'+(v.stopped>0?'st-warn':'st-off')+'">'+v.stopped+' stopped</span>';
+          if(cs.length>0){
+            h+='<table style="margin:.4rem 0"><tr><th>Container</th><th>State</th><th>Ports</th></tr>';
+            for(var i=0;i<cs.length;i++){
+              var c=cs[i],cls=c.state==='running'?'st-ok':(c.state==='exited'?'st-err':'st-warn');
+              h+='<tr><td>'+c.name+'</td><td class="'+cls+'">'+c.state+'</td><td>'+(c.ports||'—')+'</td></tr>';
+            }
+            h+='</table>';
+          }
+          h+='</div>';
         }
-        h+='</table>';
         var sm=d.summary||{};
         h+='<p><span class="st-ok">'+sm.running+' running</span>, <span class="st-warn">'+sm.stopped+' stopped</span>, '+sm.total+' total</p>';
         el.innerHTML=h;
@@ -874,18 +888,30 @@ Internet
       function rProfBtns(){
         var el=document.getElementById('out-profiling');
         if(!window._dVMs){el.textContent='Load Declared first.';return}
+        var dep=window._deployedData||{};
         var h="";
         for(var id in window._dVMs){
           var v=window._dVMs[id],svcs=v.services||{},cs=[];
           for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
+          var dv=dep[id]||{},dcs=dv.containers||[];
+          var stMap={};for(var k=0;k<dcs.length;k++)stMap[dcs[k].name]={state:dcs[k].state,ports:dcs[k].ports||''};
+          var unhealthy=[];
+          for(var j=0;j<cs.length;j++){var si=stMap[cs[j]];if(!si||si.state!=='running')unhealthy.push(cs[j])}
           h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||"")+') — '+cs.length+' containers ';
-          h+='<button class="prof-btn warn" data-profvm="'+id+'">Profile All</button></div>';
+          h+='<button class="prof-btn warn" data-profvm="'+id+'">Profile All</button> ';
+          if(unhealthy.length>0)h+='<button class="prof-btn warn" data-profbad="'+id+'">Profile '+unhealthy.length+' Unhealthy</button>';
+          h+='</div>';
           h+='<div id="profvm-'+id+'"></div>';
+          h+='<table><tr><th>Container</th><th>State</th><th>Ports</th><th>Action</th><th>Result</th></tr>';
           for(var j=0;j<cs.length;j++){
-            h+='<span>  '+cs[j]+' </span>';
-            h+='<button class="prof-btn" data-prof="'+cs[j]+'">Profile</button>';
-            h+='<span id="prof-'+cs[j]+'"></span><br>';
+            var cn=cs[j],si=stMap[cn];
+            var st=si?si.state:'not deployed',pts=si?si.ports:'';
+            var cls=st==='running'?'st-ok':(st==='exited'||st==='not deployed'?'st-err':'st-warn');
+            h+='<tr><td>'+cn+'</td><td class="'+cls+'">'+st+'</td><td>'+(pts||'—')+'</td>';
+            h+='<td><button class="prof-btn" data-prof="'+cn+'">Profile</button></td>';
+            h+='<td id="prof-'+cn+'"></td></tr>';
           }
+          h+='</table>';
         }
         el.innerHTML=h;
       }
@@ -893,6 +919,7 @@ Internet
         var t=e.target;
         if(t.dataset&&t.dataset.prof)profC(t.dataset.prof);
         if(t.dataset&&t.dataset.profvm)profVM(t.dataset.profvm);
+        if(t.dataset&&t.dataset.profbad)profBad(t.dataset.profbad);
       });
       function profC(name){
         var el=document.getElementById('prof-'+name);
@@ -924,6 +951,44 @@ Internet
             if(el){el.className="";el.innerHTML=h;}
           })
           .catch(function(e){if(el){el.className='st-err';el.textContent=vmId+': '+e.message;}});
+      }
+      function profBad(vmId){
+        var dep=window._deployedData||{};
+        var dv=dep[vmId]||{},dcs=dv.containers||[];
+        var stMap={};for(var k=0;k<dcs.length;k++)stMap[dcs[k].name]=dcs[k].state;
+        var v=window._dVMs[vmId];if(!v)return;
+        var svcs=v.services||{},cs=[];
+        for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
+        var bad=[];for(var j=0;j<cs.length;j++){var st=stMap[cs[j]];if(!st||st!=='running')bad.push(cs[j])}
+        if(bad.length===0)return;
+        var el=document.getElementById('profvm-'+vmId);
+        if(el){el.className='loading';el.textContent='profiling '+bad.length+' unhealthy on '+vmId+'...';}
+        var done=0,results=[];
+        for(var j=0;j<bad.length;j++){
+          (function(cn){
+            fetch(HAPI+'/api/profiling/'+encodeURIComponent(cn),{signal:AbortSignal.timeout(60000)})
+              .then(function(r){return r.json()})
+              .then(function(d){
+                var s=d.summary||{};
+                var cls=s.overall_status==='healthy'?'st-ok':(s.overall_status==='degraded'?'st-warn':'st-err');
+                results.push({name:cn,status:s.overall_status||'unknown',cls:cls,passed:s.checks_passed,total:s.checks_total,ms:d.total_time_ms});
+                var cel=document.getElementById('prof-'+cn);
+                if(cel)cel.innerHTML='<span class="'+cls+'">'+s.overall_status+' ('+s.checks_passed+'/'+s.checks_total+', '+d.total_time_ms+'ms)</span>';
+              })
+              .catch(function(e){
+                results.push({name:cn,status:'error',cls:'st-err',err:e.message});
+                var cel=document.getElementById('prof-'+cn);
+                if(cel)cel.innerHTML='<span class="st-err">'+e.message+'</span>';
+              })
+              .finally(function(){
+                done++;
+                if(done===bad.length&&el){
+                  var h='';for(var r=0;r<results.length;r++){var ri=results[r];h+='<span class="'+ri.cls+'">'+ri.name+': '+ri.status+'</span><br>'}
+                  el.className='';el.innerHTML=h;
+                }
+              });
+          })(bad[j]);
+        }
       }
       </script>
       </body>
