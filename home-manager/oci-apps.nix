@@ -4,6 +4,7 @@
   imports = [
     (import ./wireguard.nix { vmName = "oci-apps"; })
     (import ./modules/idle-shutdown.nix { inherit config pkgs lib; vmName = "oci-apps"; idleTimeoutHours = 4; })
+    ./modules/docker-service.nix
   ];
   home.username = "ubuntu";
   home.homeDirectory = "/home/ubuntu";
