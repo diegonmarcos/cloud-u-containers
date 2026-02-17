@@ -97,13 +97,13 @@
       { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-apps-1";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
       { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-apps-1";      port = "3010"; auth = "Public";            avail = "Wake"; }
       { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-apps-1";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "—";                                    name = "Jupyter Lab";     vm = "oci-apps";    port = "8888"; auth = "WG direct";         avail = "Wake"; }
-      { domain = "—";                                    name = "Nautilus Engine"; vm = "oci-apps";    port = "5000"; auth = "WG direct";         avail = "Wake"; }
-      { domain = "—";                                    name = "Dash/Plotly";     vm = "oci-apps";    port = "8050"; auth = "WG direct";         avail = "Wake"; }
-      { domain = "—";                                    name = "Quant DB";        vm = "oci-apps";    port = "5432"; auth = "WG direct";         avail = "Wake"; }
-      { domain = "api.diegonmarcos.com/crawlee/";          name = "Crawlee API";     vm = "oci-apps";    port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-apps";    port = "3001"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-apps";    port = "9000"; auth = "WG direct";         avail = "Wake"; }
+      { domain = "—";                                    name = "Jupyter Lab";     vm = "oci-apps";    port = "8888"; auth = "WG direct";         avail = "24/7"; }
+      { domain = "—";                                    name = "Nautilus Engine"; vm = "oci-apps";    port = "5000"; auth = "WG direct";         avail = "24/7"; }
+      { domain = "—";                                    name = "Dash/Plotly";     vm = "oci-apps";    port = "8050"; auth = "WG direct";         avail = "24/7"; }
+      { domain = "—";                                    name = "Quant DB";        vm = "oci-apps";    port = "5432"; auth = "WG direct";         avail = "24/7"; }
+      { domain = "api.diegonmarcos.com/crawlee/";          name = "Crawlee API";     vm = "oci-apps";    port = "3000"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-apps";    port = "3001"; auth = "Authelia + Bearer"; avail = "24/7"; }
+      { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-apps";    port = "9000"; auth = "WG direct";         avail = "24/7"; }
       { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
@@ -1062,13 +1062,10 @@ Internet
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
         }
-        handle /api/docs/openapi.json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy ${flex0}:8080
-        }
         handle {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type, Authorization"
           reverse_proxy ${flex0}:8080
         }
         ${handleErrors}
