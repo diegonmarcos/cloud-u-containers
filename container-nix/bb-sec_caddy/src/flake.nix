@@ -1035,9 +1035,6 @@ Internet
 
         handle /flask/apispec.json {
           uri strip_prefix /flask
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
           reverse_proxy ${gcp}:5000
         }
         handle_path /flask/* {
