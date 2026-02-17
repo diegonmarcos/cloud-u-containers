@@ -1035,10 +1035,19 @@ Internet
 
         handle /flask/apispec.json {
           uri strip_prefix /flask
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           reverse_proxy ${gcp}:5000
         }
         handle_path /flask/* {
           ${mkProtected "${gcp}:5000"}
+        }
+        handle /go/docs/openapi.json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
+          reverse_proxy ${gcp}:8090
         }
         handle /go/* {
           reverse_proxy ${gcp}:8090
@@ -1052,6 +1061,12 @@ Internet
         }
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
+        }
+        handle /api/docs/openapi.json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
+          reverse_proxy ${flex0}:8080
         }
         handle {
           reverse_proxy ${flex0}:8080
