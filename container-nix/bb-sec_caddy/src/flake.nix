@@ -1028,44 +1028,21 @@ Internet
       # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
       api.diegonmarcos.com {
     ${sec}
-        # Root path → Swagger UI landing page on GitHub Pages
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization"
+
         @root path /
         handle @root {
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
-        # Public: API docs/specs (no auth, with CORS for GitHub Pages Swagger UI)
-        @flask_docs path /flask/apispec.json /flask/docs /flask/docs/*
-        handle @flask_docs {
-          uri strip_prefix /flask
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy ${gcp}:5000
-        }
-
-        handle /flask/* {
+        handle_path /flask/* {
           ${mkProtected "${gcp}:5000"}
-        }
-        @go_docs path /go/docs/* /go/services /go/services/*
-        handle @go_docs {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy ${gcp}:8090
         }
         handle /go/* {
           reverse_proxy ${gcp}:8090
         }
-        @crawlee_docs path /crawlee/openapi.json /crawlee/docs /crawlee/docs/*
-        handle @crawlee_docs {
-          uri strip_prefix /crawlee
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy ${flex0}:3000
-        }
-
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
         }
