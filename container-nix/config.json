@@ -47,13 +47,28 @@
       "ssh_alias": "oci-apps-2",
       "description": "Oracle Paid - A1 Flex 0 (8 OCPUs / 32GB)"
     },
+    "gcp-T4-p_0": {
+      "ip": "TBD",
+      "user": "diego",
+      "method": "gcloud",
+      "ssh_alias": "gcp-ollama",
+      "gcloud_instance": "ollama-spot-gpu",
+      "gcloud_zone": "us-central1-a",
+      "description": "GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM",
+      "provider": "gcp",
+      "gpu": "NVIDIA T4",
+      "vram": "16GB",
+      "cost_per_hour": "$0.18",
+      "provisioning": "spot",
+      "notes": "Spot VM — may be preempted. Dynamic IP, update after creation."
+    },
     "vast-RTX-p_0": {
       "ip": "TBD",
       "port": "TBD",
       "user": "root",
       "method": "key",
       "ssh_alias": "vast-ollama",
-      "description": "Vast.ai On-Demand - RTX A4000 (16GB VRAM) - Ollama LLM",
+      "description": "Vast.ai On-Demand - RTX A4000 (16GB VRAM) - Ollama LLM fallback",
       "provider": "vast.ai",
       "gpu": "RTX A4000",
       "vram": "16GB",
@@ -349,13 +364,13 @@
       "description": "Self-hosted Crawlee Cloud — Apify-compatible web scraping platform"
     },
     "ollama": {
-      "category": "app",
-      "vm": "vast-RTX-p_0",
-      "description": "Ollama LLM Server (13B models - llama2, mistral, deepseek-r1)",
+      "category": "agi",
+      "vm": "gcp-T4-p_0",
+      "fallback_vm": "vast-RTX-p_0",
+      "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4",
       "api_port": "11434",
-      "webui_port": "3000",
-      "models": ["llama2:13b", "mistral:13b", "deepseek-r1:14b"],
-      "notes": "On-demand GPU instance - start/stop via Vast.ai console"
+      "models": ["deepseek-r1:14b", "qwen2.5:14b"],
+      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.10)."
     }
   }
 }

@@ -21,6 +21,9 @@
     syncthing.url = "path:./ab-mic_syncthing";
     vaultwarden.url = "path:./ab-mic_vaultwarden";
 
+    # AGI / AI-ML (ad-agi_)
+    ollama.url = "path:./ad-agi_ollama";
+
     # Cloud providers (ba-clo_)
     cloudflare.url = "path:./ba-clo_cloudflare";
     gcloud.url = "path:./ba-clo_gcloud";
@@ -122,6 +125,9 @@
       syncthing = inputs.syncthing.packages.${system}.default;
       vaultwarden = inputs.vaultwarden.packages.${system}.default;
 
+      # AGI / AI-ML (ad-agi_)
+      ollama = inputs.ollama.packages.${system}.default;
+
       # Cloud providers (ba-clo_)
       cloudflare = inputs.cloudflare.packages.${system}.default;
       gcloud = inputs.gcloud.packages.${system}.default;
@@ -162,7 +168,7 @@
 
       # Build all configs
       all = pkgs.runCommand "all-configs" {} ''
-        mkdir -p $out/{aa-sui,ab-mic,ba-clo,bb-sec,bc-obs,ca-dat}
+        mkdir -p $out/{aa-sui,ab-mic,ad-agi,ba-clo,bb-sec,bc-obs,ca-dat}
 
         # Suite services (aa-sui_)
         ln -s ${inputs.affine.packages.${system}.default} $out/aa-sui/affine
@@ -180,6 +186,9 @@
         # Misc tools (ab-mic_)
         ln -s ${inputs.syncthing.packages.${system}.default} $out/ab-mic/syncthing
         ln -s ${inputs.vaultwarden.packages.${system}.default} $out/ab-mic/vaultwarden
+
+        # AGI / AI-ML (ad-agi_)
+        ln -s ${inputs.ollama.packages.${system}.default} $out/ad-agi/ollama
 
         # Cloud providers (ba-clo_)
         ln -s ${inputs.cloudflare.packages.${system}.default} $out/ba-clo/cloudflare
@@ -226,6 +235,7 @@
 
         SUITE_SERVICES="affine code-server etherpad filebrowser grist mailu photoprism photos-webhook radicale revealmd smtp-proxy"
         MISC_SERVICES="syncthing vaultwarden"
+        AGI_SERVICES="ollama"
         CLOUD_SERVICES="cloudflare gcloud oci"
         SEC_SERVICES="authelia flask-api npm npm-introspect-proxy rust-api sauron sauron-central sauron-lite wireguard"
         OBS_SERVICES="alerts-api c3-collector collector-events dozzle github-rss lgtm matomo nocodb ntfy palantir-cron syslog windmill"
@@ -240,6 +250,7 @@
             echo "Structure:"
             echo "  result/aa-sui/ - Suite services (11)"
             echo "  result/ab-mic/ - Misc tools (2)"
+            echo "  result/ad-agi/ - AGI / AI-ML (1)"
             echo "  result/ba-clo/ - Cloud providers (3 - Terraform)"
             echo "  result/bb-sec/ - Security services (9)"
             echo "  result/bc-obs/ - Observability (12)"
@@ -251,6 +262,9 @@
             echo ""
             echo "Misc tools (ab-mic_):"
             for s in $MISC_SERVICES; do echo "  - $s"; done
+            echo ""
+            echo "AGI / AI-ML (ad-agi_):"
+            for s in $AGI_SERVICES; do echo "  - $s"; done
             echo ""
             echo "Cloud providers (ba-clo_):"
             for s in $CLOUD_SERVICES; do echo "  - $s (Terraform)"; done
@@ -264,7 +278,7 @@
             echo "Databases & Backups (ca-dat_):"
             for s in $DATA_SERVICES; do echo "  - $s"; done
             echo ""
-            echo "Total: 43 services"
+            echo "Total: 44 services"
             ;;
           *)
             echo "Usage: deploy-cloud [build|list]"
