@@ -1028,10 +1028,6 @@ Internet
       # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
       api.diegonmarcos.com {
     ${sec}
-        header Access-Control-Allow-Origin "*"
-        header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-        header Access-Control-Allow-Headers "Content-Type, Authorization"
-
         @root path /
         handle @root {
           redir https://diegonmarcos.github.io/api/ permanent
@@ -1039,6 +1035,9 @@ Internet
 
         handle /flask/apispec.json {
           uri strip_prefix /flask
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           reverse_proxy ${gcp}:5000
         }
         handle_path /flask/* {
@@ -1049,6 +1048,9 @@ Internet
         }
         handle /crawlee/openapi.json {
           uri strip_prefix /crawlee
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           reverse_proxy ${flex0}:3000
         }
         handle_path /crawlee/* {
