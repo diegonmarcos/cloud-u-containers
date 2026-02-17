@@ -29,19 +29,32 @@ No local CPU/RAM Ollama fallback. If vast.ai is down, AI-dependent workflows gra
 |  +--------------------------------------------------------------+  |
 |  |  RIG ORCHESTRATOR (bc-obs_rig)                         :8090  |  |
 |  |                                                               |  |
-|  |  Macro Workflow 1: Self-Healing & Protection                  |  |
+|  |  Macro Workflow 1: Self-Backups                                |  |
+|  |   +-- VolumeSnapshotOp (tar + compress Docker volumes)        |  |
+|  |   +-- DatabaseDumpOp (SurrealDB, PostgreSQL, MariaDB)         |  |
+|  |   +-- RotationOp (7 daily, 4 weekly, 3 monthly)              |  |
+|  |   +-- RemoteSyncOp (rsync to oci-apps-1)                     |  |
+|  |   +-- VerifyBackupOp (restore to temp container)              |  |
+|  |                                                               |  |
+|  |  Macro Workflow 2: Self-Healing                               |  |
 |  |   +-- HealthCheckOp (non-AI, fast)                            |  |
 |  |   +-- SmartMaintenanceOp (AI when needed)                     |  |
 |  |   +-- SelfHealingOp (sandboxed execution)                     |  |
-|  |   +-- BackupOp / WebhookOp                                    |  |
+|  |   +-- WebhookOp (ntfy notifications)                          |  |
 |  |                                                               |  |
-|  |  Macro Workflow 2: KG Maintenance                             |  |
+|  |  Macro Workflow 3: Self-Protection                            |  |
+|  |   +-- AuthLogMonitorOp (failed SSH → auto-ban)               |  |
+|  |   +-- DockerAuditOp (unexpected containers → alert)          |  |
+|  |   +-- CertExpiryOp (TLS cert monitoring)                     |  |
+|  |   +-- DriftDetectionOp (running vs declared state)            |  |
+|  |                                                               |  |
+|  |  Macro Workflow 4: KG Maintenance                             |  |
 |  |   +-- DailyIndexOp (embeddings via vast.ai Ollama)            |  |
 |  |   +-- WeeklyReviewOp (Opus via API)                           |  |
 |  |   +-- IncrementalSyncOp (LightRAG)                            |  |
 |  |   +-- GraphPruneOp (remove stale nodes)                       |  |
 |  |                                                               |  |
-|  |  Macro Workflow 3: Agentic Framework (API Gateway)            |  |
+|  |  Macro Workflow 5: Agentic Framework (API Gateway)            |  |
 |  |   +-- KG Query API (MCP integration)                          |  |
 |  |   +-- Ollama Proxy (vast.ai connection)                       |  |
 |  |   +-- Multi-Agent Orchestration                               |  |
@@ -119,15 +132,25 @@ bc-obs_rig/
 │   ├── config.rs                  # Configuration (KG URL, vast.ai dynamic endpoint, SSH keys)
 │   ├── workflows/
 │   │   ├── mod.rs
-│   │   ├── self_healing.rs        # Macro Workflow 1
-│   │   ├── kg_maintenance.rs      # Macro Workflow 2
-│   │   └── agentic_framework.rs   # Macro Workflow 3
+│   │   ├── self_backups.rs        # Macro Workflow 1: Backup lifecycle
+│   │   ├── self_healing.rs        # Macro Workflow 2: Detect + recover
+│   │   ├── self_protection.rs     # Macro Workflow 3: Monitor + defend
+│   │   ├── kg_maintenance.rs      # Macro Workflow 4: KG curation
+│   │   └── agentic_framework.rs   # Macro Workflow 5: Agent gateway
 │   ├── ops/
 │   │   ├── mod.rs
-│   │   ├── health_check.rs        # Fast non-AI checks
-│   │   ├── smart_maintenance.rs   # Conditional AI invocation
-│   │   ├── self_healing.rs        # Sandboxed command execution
-│   │   ├── backup.rs              # Backup orchestration
+│   │   ├── volume_snapshot.rs     # Backup: tar + compress volumes
+│   │   ├── database_dump.rs       # Backup: SurrealDB/PG/MariaDB exports
+│   │   ├── backup_rotation.rs     # Backup: prune old (7d/4w/3m)
+│   │   ├── backup_sync.rs         # Backup: rsync to oci-apps-1
+│   │   ├── backup_verify.rs       # Backup: restore to temp container
+│   │   ├── health_check.rs        # Healing: fast non-AI checks
+│   │   ├── smart_maintenance.rs   # Healing: conditional AI invocation
+│   │   ├── self_healing.rs        # Healing: sandboxed command execution
+│   │   ├── auth_log_monitor.rs    # Protection: SSH fail2ban
+│   │   ├── docker_audit.rs        # Protection: unexpected containers
+│   │   ├── cert_expiry.rs         # Protection: TLS cert monitoring
+│   │   ├── drift_detection.rs     # Protection: running vs declared
 │   │   ├── webhook.rs             # ntfy notifications
 │   │   ├── daily_index.rs         # KG daily maintenance
 │   │   ├── weekly_review.rs       # Opus-powered analysis
@@ -150,7 +173,7 @@ bc-obs_rig/
 ├── build.sh                       # Universal build engine
 ├── build.json                     # Deploy to oci-apps
 └── docs/
-    ├── MASTERPLAN.md              # This document
+    ├── healing-plan.md            # This document
     ├── API.md                     # REST API documentation
     └── WORKFLOWS.md               # Detailed workflow logic
 ```
@@ -305,7 +328,69 @@ cloud://kg/recent-incidents      // Last 7 days of issues
 
 ## Macro Workflow Specifications
 
-### Workflow 1: Self-Healing & Self-Protection
+### Workflow 1: Self-Backups
+
+**Trigger**: `tokio::time::interval` daily at 2 AM, or manual API call
+
+**Purpose**: Automated backup lifecycle — snapshot, dump, rotate, sync, verify. The most conservative workflow, deployed first because it's read-only (no mutations to running services) and provides immediate safety net.
+
+**Pipeline**:
+```rust
+pipeline::new()
+    .chain(VolumeSnapshotOp)             // tar + compress Docker volumes
+    .chain(DatabaseDumpOp)               // SurrealDB export, pg_dump, mysqldump
+    .chain(RotationOp)                   // Prune: keep 7 daily, 4 weekly, 3 monthly
+    .chain(RemoteSyncOp)                 // rsync backups to oci-apps-1
+    .chain(VerifyBackupOp)               // Restore to temp container, validate
+    .chain(KgUpdateOp)                   // Record backup metadata in KG
+    .chain(WebhookOp)                    // ntfy summary: "3 backups OK, 0 failed"
+```
+
+**Backup Targets** (per VM):
+
+| VM | What | Method | Schedule |
+|---|---|---|---|
+| oci-apps | SurrealDB data | `surreal export` | Daily |
+| oci-apps | Docker volumes (crawlee, rig) | `docker run --rm -v vol:/data alpine tar czf` | Daily |
+| oci-apps-1 | PostgreSQL (NocoDB) | `pg_dump` via docker exec | Daily |
+| oci-apps-1 | PhotoPrism originals index | Volume tar | Weekly |
+| oci-mail | Mailu data (mail, certs) | Volume tar | Daily |
+| oci-mail | Radicale calendars | Volume tar | Daily |
+| oci-analytics | Matomo database (MariaDB) | `mysqldump` via docker exec | Daily |
+| gcp-proxy | Authelia config + db | Volume tar | Daily |
+| gcp-proxy | Vaultwarden data | Volume tar | Daily |
+
+**Rotation Policy**:
+```
+/opt/data/backups/
+├── daily/          # Last 7 days
+├── weekly/         # Last 4 Sundays
+└── monthly/        # Last 3 first-of-month
+```
+
+**Remote Redundancy**: After local rotation, `rsync --delete` daily/ and weekly/ to `oci-apps-1:/opt/data/backups-remote/oci-apps/` (oci-apps-1 has 193GB disk, only 34GB used).
+
+**Verification**: Weekly, pick one random backup, restore to a temp Docker container, run a basic health check (e.g., SurrealDB: `surreal import` + count tables; PostgreSQL: `pg_restore` + count rows). Log pass/fail to KG.
+
+**KG Tracking**:
+```surql
+CREATE backup_record CONTENT {
+    timestamp: time::now(),
+    vm: "oci-apps",
+    target: "surrealdb",
+    method: "surreal_export",
+    size_bytes: 15234567,
+    duration_secs: 12,
+    local_path: "/opt/data/backups/daily/surrealdb-2026-02-17.gz",
+    remote_synced: true,
+    verified: null,  -- set by VerifyBackupOp
+    status: "success"
+};
+```
+
+---
+
+### Workflow 2: Self-Healing
 
 **Trigger**: `tokio::time::interval` every 5 minutes, or manual API call, or alert webhook
 
@@ -317,7 +402,7 @@ pipeline::new()
     .chain(HealthCheckOp)                // Fast check (CPU, disk, RAM, Docker)
     .chain(ConditionalOp::new(
         |status| status.is_healthy(),    // Predicate
-        BackupOp,                         // Happy path (no AI)
+        NoOp,                             // Happy path — nothing to do
         SmartMaintenanceOp                // Unhappy path (AI diagnosis)
     ))
     .chain(SelfHealingOp)                // Execute fix if diagnosis suggests one
@@ -352,7 +437,54 @@ struct HealingConstraints {
 
 ---
 
-### Workflow 2: KG Maintenance
+### Workflow 3: Self-Protection
+
+**Trigger**: `tokio::time::interval` every 10 minutes, or manual API call
+
+**Purpose**: Monitor and defend against threats. Purely observational by default — alerts via ntfy. Auto-remediation (e.g., iptables ban) only for well-defined, low-risk patterns.
+
+**Pipeline**:
+```rust
+pipeline::new()
+    .chain(AuthLogMonitorOp)             // Parse auth.log, detect brute force
+    .chain(DockerAuditOp)                // Detect unexpected containers/images
+    .chain(CertExpiryOp)                 // Check TLS cert expiry for all domains
+    .chain(DriftDetectionOp)             // Compare running state vs KG declared
+    .chain(PortScanDetectionOp)          // Monitor unexpected inbound via ss/conntrack
+    .chain(KgUpdateOp)                   // Record findings in KG security_event table
+    .chain(WebhookOp)                    // Alert on any findings
+```
+
+**Auth Log Monitor**:
+- Parse `/var/log/auth.log` for failed SSH attempts
+- Threshold: 5 failures from same IP in 10 minutes → auto-ban via `iptables -A INPUT -s <IP> -j DROP`
+- Log banned IPs to KG `security_event` table
+- ntfy alert: "Banned IP x.x.x.x (15 failed SSH attempts in 10 min)"
+
+**Docker Socket Audit**:
+- `docker ps` → compare running container names/images against KG `service` table
+- Unknown container detected → HIGH alert via ntfy (do NOT auto-remove)
+- Image hash mismatch (running vs declared) → MEDIUM alert
+
+**Certificate Expiry Monitor**:
+- Check TLS cert for all domains in KG (`*.diegonmarcos.com`)
+- Alert thresholds: 30 days (info), 14 days (warning), 7 days (critical)
+- Use `openssl s_client` or `reqwest` to fetch cert and parse `notAfter`
+
+**Drift Detection**:
+- Compare for each service: running Docker image tag vs KG declared version
+- Compare container env vars vs expected (from docker-compose.yml in KG)
+- Compare exposed ports vs declared
+- Any mismatch → log to KG `drift_event` + ntfy alert
+
+**OCI Security List Audit** (weekly):
+- Query OCI API for current security list rules
+- Compare against expected rules in KG
+- Alert on unexpected open ports or missing rules
+
+---
+
+### Workflow 4: KG Maintenance
 
 #### Daily Indexing (Automated, 3 AM via tokio scheduler)
 
@@ -408,7 +540,7 @@ Output: JSON report with findings and actionable items.
 
 ---
 
-### Workflow 3: Agentic Framework (API Gateway)
+### Workflow 5: Agentic Framework (API Gateway)
 
 **Purpose**: Expose Rig's intelligence to external agents (Claude Code via MCP, CLI tools, webhooks)
 
@@ -498,9 +630,133 @@ Agent steps:
 
 ## Implementation Phases
 
-### Phase 0: vast.ai Automation + Ollama Connectivity (Week 1)
+### Phase 0: Foundation — SurrealDB + Rig Skeleton (DONE)
 
-**Goal**: Reliable, automated connection to ephemeral vast.ai instances
+**Goal**: Deploy SurrealDB KG and minimal Rig binary
+
+**Completed**:
+- [x] SurrealDB deployed on oci-apps :8001 with schema (13 tables, 93 edges)
+- [x] `scripts/seed_from_config.sh` seeds 6 VMs, 51 services, 93 edges from config.json
+- [x] Rig Rust binary with Axum HTTP server on :8090
+- [x] Basic self-healing: local container check + auto-restart
+- [x] KG sync: container status written to SurrealDB
+- [x] Audit logging to KG
+- [x] GHA pipelines for both kg-graph and rig
+- [x] sops-encrypted secrets via standard build.sh pipeline
+- [x] docker-service.nix module for nix-managed dockerd systemd service
+
+---
+
+### Phase 1: Self-Backups (NEXT — First Deploy)
+
+**Goal**: Automated backup lifecycle for all services across all VMs. Deployed first because it's **read-only** (no mutations to running services), provides immediate safety net, and is a prerequisite for all destructive self-healing actions.
+
+**Tasks**:
+- [ ] Add `backup_record` table to SurrealDB schema
+- [ ] Implement `VolumeSnapshotOp` — `docker run --rm -v <vol>:/data alpine tar czf` for each service
+- [ ] Implement `DatabaseDumpOp` — SurrealDB `surreal export`, PostgreSQL `pg_dump`, MariaDB `mysqldump`
+- [ ] Implement `RotationOp` — keep 7 daily, 4 weekly, 3 monthly; prune old
+- [ ] Implement `RemoteSyncOp` — `rsync --delete` to `oci-apps-1:/opt/data/backups-remote/`
+- [ ] Implement `VerifyBackupOp` — weekly: restore random backup to temp container, validate
+- [ ] Implement `WebhookOp` — ntfy summary after each backup run
+- [ ] Record all backup metadata in KG (`backup_record` table)
+- [ ] Wire up tokio scheduler: daily at 2 AM
+- [ ] Add `/api/backups/status` endpoint
+- [ ] Add `/api/backups/trigger` endpoint (manual run)
+- [ ] Deploy via GHA: `build.sh ship`
+
+**Backup Targets**:
+
+| VM | Target | Method | Schedule |
+|---|---|---|---|
+| oci-apps | SurrealDB data | `surreal export` | Daily |
+| oci-apps | Docker volumes (crawlee, rig) | Volume tar | Daily |
+| oci-apps-1 | PostgreSQL (NocoDB) | `pg_dump` via docker exec | Daily |
+| oci-apps-1 | PhotoPrism originals index | Volume tar | Weekly |
+| oci-mail | Mailu data (mail, certs) | Volume tar | Daily |
+| oci-mail | Radicale calendars | Volume tar | Daily |
+| oci-analytics | Matomo database (MariaDB) | `mysqldump` via docker exec | Daily |
+| gcp-proxy | Authelia config + db | Volume tar | Daily |
+| gcp-proxy | Vaultwarden data | Volume tar | Daily |
+
+**Rotation Policy**:
+```
+/opt/data/backups/
+├── daily/          # Last 7 days
+├── weekly/         # Last 4 Sundays
+└── monthly/        # Last 3 first-of-month
+```
+
+**Remote Redundancy**: rsync daily/ and weekly/ to `oci-apps-1:/opt/data/backups-remote/` (193GB disk, 34GB used).
+
+**Success Criteria**:
+- Backup runs at 2 AM, covers all targets, completes in <15 min
+- `curl http://localhost:8090/api/backups/status` shows last backup time, size, status for each target
+- After 7 days: 7 dailies exist, oldest auto-pruned on day 8
+- Weekly verify passes: random backup restored to temp container, health check OK
+- KG has `backup_record` entries for every run
+
+---
+
+### Phase 2: Hardened Self-Healing
+
+**Goal**: Expand self-healing beyond local container restart to cross-VM health, dependency-aware restart, and ntfy escalation.
+
+**Prerequisite**: Phase 1 (backups in place before any destructive actions)
+
+**Tasks**:
+- [ ] Cross-VM health probes (SSH + HTTP to all 6 VMs)
+- [ ] Service-level health checks (hit actual health endpoints, not just Docker state)
+- [ ] Dependency-aware restart ordering from KG `depends_on` edges
+- [ ] Escalation: ntfy push alerts on repeated failures (3x restart fail → critical alert)
+- [ ] Structured health history in KG (time series, not just current status)
+- [ ] `/api/health/dashboard` endpoint — full infrastructure overview
+- [ ] Implement dual-write audit log: SurrealDB + local append-only file (`/opt/data/rig/audit.jsonl`)
+- [ ] Update Caddy config on gcp-proxy: add `handle /rig/*` block routing to `10.0.0.6:8090` over WireGuard
+
+**Deliverables**:
+- Health checks covering all VMs and services, not just local Docker
+- Dependency-aware restart (restart db before app)
+- ntfy alerts on failures
+
+**Success Criteria**:
+- Stop Authelia → Rig detects within 5 min → restarts Authelia → verifies dependent services recover → ntfy report
+- `curl https://api.diegonmarcos.com/rig/health/dashboard` returns full infra status
+
+---
+
+### Phase 3: Self-Protection
+
+**Goal**: Monitor and defend against threats. Observational by default, auto-remediation only for well-defined low-risk patterns.
+
+**Tasks**:
+- [ ] Implement `AuthLogMonitorOp` — parse `/var/log/auth.log`, auto-ban IPs after 5 failed SSH in 10 min
+- [ ] Implement `DockerAuditOp` — detect unknown containers/images, alert via ntfy
+- [ ] Implement `CertExpiryOp` — check TLS cert expiry for all domains (30d info, 14d warning, 7d critical)
+- [ ] Implement `DriftDetectionOp` — compare running container state vs KG declared (image tag, ports, env)
+- [ ] Implement `PortScanDetectionOp` — monitor unexpected inbound via `ss`/`conntrack`
+- [ ] OCI Security List audit (weekly) — compare live firewall rules vs expected
+- [ ] Add `security_event` and `drift_event` tables to KG schema
+- [ ] Add `/api/security/report` endpoint
+- [ ] Wire up tokio scheduler: every 10 minutes
+
+**Deliverables**:
+- SSH brute force auto-ban with KG logging
+- Unknown container alerts
+- TLS cert expiry monitoring
+- Drift detection between declared and running state
+
+**Success Criteria**:
+- 5 failed SSH from same IP → auto-banned → ntfy alert → logged in KG
+- Deploy a rogue `docker run alpine sleep 9999` → detected within 10 min → ntfy HIGH alert
+- Cert with 7 days left → ntfy critical alert
+- Change container env var manually → drift detected → ntfy alert
+
+---
+
+### Phase 4: vast.ai Automation + Ollama Connectivity
+
+**Goal**: Reliable, automated connection to ephemeral vast.ai instances for AI-powered features
 
 **Tasks**:
 - [ ] Implement `VastAiProviderOp` in `bc-obs_rig/src/ops/vast_ai_provider.rs`
@@ -508,160 +764,60 @@ Agent steps:
 - [ ] Auto-establish SSH tunnel from oci-apps to vast.ai Ollama endpoint
 - [ ] Handle IP/port changes on every rental (dynamic config update)
 - [ ] Implement graceful degradation: if no instance running, mark AI features as unavailable
-- [ ] Send ntfy alert when vast.ai goes offline: "vast.ai offline, AI features degraded"
-- [ ] Send ntfy alert when vast.ai comes back: "vast.ai online, AI features restored"
+- [ ] Send ntfy alert on vast.ai online/offline transitions
 - [ ] Test: manually start/stop vast.ai instance, verify Rig detects transitions
 
 **Deliverables**:
-- `VastAiProviderOp` that polls vast.ai API on interval and manages SSH tunnel lifecycle
-- Dynamic Ollama endpoint config that updates without Rig restart
+- `VastAiProviderOp` that polls vast.ai API and manages SSH tunnel lifecycle
+- Dynamic Ollama endpoint config
 
 **Success Criteria**:
-- Start a vast.ai instance -> within 60 seconds Rig detects it, establishes tunnel, marks Ollama available
-- Stop the instance -> Rig detects, marks unavailable, sends ntfy alert
+- Start vast.ai instance → Rig detects within 60s, tunnel established, Ollama available
+- Stop instance → Rig detects, marks unavailable, sends ntfy alert
 
 ---
 
-### Phase 1: SurrealDB Deploy + Schema + Seed (Week 2)
+### Phase 5: KG Client + Embeddings + Smart Healing (AI-powered)
 
-**Goal**: Deploy SurrealDB, seed initial graph with auto-inferred dependencies
-
-**Tasks**:
-- [ ] Create `ca-dat_kg-graph/` with flake.nix for SurrealDB
-- [ ] Write `schema.surql` (vm, service, container nodes + edges + MTREE vector index)
-- [ ] Create `scripts/seed_from_config.sh` with automated dependency inference:
-  - Parse Caddyfile -> extract `reverse_proxy` targets -> generate `proxied_by` edges
-  - Parse Authelia config -> extract protected domains -> generate `authenticated_by` edges
-  - Parse Docker Compose files -> extract `depends_on` + shared networks -> generate `depends_on` edges
-  - Parse WireGuard configs -> extract VM-to-VM connectivity -> generate `connected_to` edges
-  - Parse architecture.json / config.json -> generate `hosted_on` edges
-- [ ] Deploy to oci-apps: `cd ca-dat_kg-graph && ./build.sh ship`
-- [ ] Configure SurrealDB data backup (borg/bup to oci-apps-1)
-- [ ] Test manual queries: `surreal sql --conn http://localhost:8001`
-- [ ] Verify graph structure: "Show all services on oci-apps"
-
-**Deliverables**:
-- SurrealDB running on oci-apps :8001
-- Initial graph: 5 VMs, 44 services, ~100+ edges (auto-inferred)
-- Backup configured for `/opt/data/surrealdb/`
-
-**Success Criteria**:
-```surql
--- This query should return Caddy, Authelia, Vaultwarden, etc.
-SELECT <-hosted_on<-service.name FROM vm WHERE alias = 'gcp-proxy';
-```
-
----
-
-### Phase 2: Rig Skeleton + HealthCheckOp (Week 3)
-
-**Goal**: Deploy Rig with HealthCheckOp only. No AI, no KG queries -- just SSH health checks and ntfy notifications. Immediate operational value.
+**Goal**: Connect Rig to KG for intelligent diagnosis, add embedding generation via vast.ai
 
 **Tasks**:
-- [ ] **Rig API spike**: Build a minimal Rig hello-world on aarch64 to validate the actual Op trait API surface before writing real Ops. The pipeline pseudocode in this document is conceptual; confirm actual signatures, error handling, and chaining patterns.
-- [ ] Create `bc-obs_rig/` Rust project with Rig dependency
-- [ ] Implement `HealthCheckOp` (disk, RAM, Docker health via SSH to all VMs)
-- [ ] Implement `WebhookOp` (ntfy notifications)
-- [ ] Implement `tokio::time::interval` scheduler (every 5 min health check)
-- [ ] Implement dual-write audit log: SurrealDB + local append-only file (`/opt/data/rig/audit.jsonl`)
-- [ ] Update Caddy config on gcp-proxy: add `handle /rig/*` block routing to `10.0.0.6:8090` over WireGuard
-- [ ] Deploy to oci-apps: `cd bc-obs_rig && ./build.sh ship`
-- [ ] Enable systemd service
-
-**Deliverables**:
-- Rig binary running as systemd service on oci-apps
-- Health checks running every 5 min, alerting via ntfy on any issues
-- Caddy route configured for external API access
-- Audit log writing to both SurrealDB and local file
-
-**Success Criteria**:
-- Rig starts, runs health checks on all 5 VMs, sends ntfy if any VM is unreachable
-- `curl https://api.diegonmarcos.com/rig/heal/status` returns health data
-- `/opt/data/rig/audit.jsonl` contains health check entries even if SurrealDB is down
-
----
-
-### Phase 3: KG Client + Embeddings via vast.ai (Week 4)
-
-**Goal**: Connect Rig to SurrealDB KG, add embedding generation through vast.ai Ollama
-
-**Tasks**:
-- [ ] Implement `kg/client.rs` (SurrealDB client wrapper)
 - [ ] Implement `kg/embeddings.rs` (HTTP client to vast.ai Ollama `/v1/embeddings`)
-- [ ] Write batch embedding script for existing docs (~/git/cloud/README.md, service docs)
 - [ ] Update SurrealDB schema with `embedding` fields + MTREE index
-- [ ] Test hybrid query: "Find services with 'authentication' in docs, show dependencies"
+- [ ] Batch embed existing docs (READMEs, service specs)
+- [ ] Implement `SmartMaintenanceOp` (KG query + Ollama diagnosis)
+- [ ] Implement guardrailed `SelfHealingOp` (command whitelist, dry-run, blast radius check)
+- [ ] Wire up `VastAiProviderOp` status check before any AI call
+- [ ] Graceful degradation: if vast.ai down, skip AI, send raw metrics via ntfy
 
-**Deliverables**:
-- Vector embeddings for all service documentation
-- Hybrid search working: semantic + graph traversal
-
-**IMPORTANT -- SurrealDB vector::embed() does not exist**: SurrealDB does NOT have a built-in `vector::embed()` function. All embeddings must be generated externally (via Ollama) and passed as parameters:
+**IMPORTANT -- SurrealDB vector::embed() does not exist**: All embeddings must be generated externally (via Ollama) and passed as parameters:
 ```surql
--- CORRECT: pass externally-generated embedding as parameter
 LET $vec = $externally_generated_embedding;
 SELECT *, vector::similarity::cosine(embedding, $vec) AS score
-FROM service
-WHERE embedding IS NOT NONE
-ORDER BY score DESC
-LIMIT 10;
-```
-
-```surql
--- WRONG: vector::embed() does NOT exist in SurrealDB
--- LET $vec = vector::embed("user login system");  <-- THIS WILL FAIL
+FROM service WHERE embedding IS NOT NONE
+ORDER BY score DESC LIMIT 10;
 ```
 
 **Success Criteria**:
-```surql
--- Find services similar to "user login system" using externally-generated embedding
-LET $vec = $externally_generated_embedding;
-LET $matches = (
-    SELECT *, vector::similarity::cosine(embedding, $vec) AS score
-    FROM service
-    WHERE score > 0.8
-);
-SELECT $matches.*, ->depends_on->service.name AS deps FROM $matches;
-```
+- Fill disk to 95% → Rig detects → KG query for similar past issues → Ollama diagnosis → ntfy approval → fix → verify
+- Same with vast.ai offline → raw metrics via ntfy → human intervenes
 
 ---
 
-### Phase 4: SmartMaintenanceOp + SelfHealingOp (Week 5)
+### Phase 6: KG Maintenance Workflows
 
-**Goal**: AI-powered diagnosis and self-healing using vast.ai Ollama
-
-**Tasks**:
-- [ ] Implement `SmartMaintenanceOp` (KG query + Ollama diagnosis)
-- [ ] Implement `SelfHealingOp` (sandboxed command execution with guardrails)
-- [ ] Wire up `VastAiProviderOp` status check before any AI call
-- [ ] Implement graceful degradation: if vast.ai down, skip AI, send raw health data via ntfy
-- [ ] Test with simulated disk full scenario
-
-**Deliverables**:
-- Self-healing working end-to-end (detect -> diagnose -> fix -> verify)
-- ntfy integration for human approval on medium/high risk actions
-- Graceful degradation when vast.ai unavailable
-
-**Success Criteria**:
-- Fill disk to 95% -> Rig auto-detects -> Queries KG -> Ollama suggests docker prune -> Sends ntfy -> User approves -> Disk freed -> Success webhook
-- Same scenario with vast.ai offline -> Rig detects high disk -> Sends ntfy with raw metrics -> Human intervenes manually
-
----
-
-### Phase 5: KG Maintenance Workflows (Week 6)
-
-**Goal**: Automate daily indexing and weekly reviews
+**Goal**: Automate daily KG freshness and weekly deep review
 
 **Tasks**:
 - [ ] Implement `DailyIndexOp` (fetch logs, embed via vast.ai Ollama, insert to KG)
-- [ ] Handle missing embeddings: if vast.ai was down, re-embed flagged nodes on next run
-- [ ] Implement `WeeklyReviewOp` (aggregate stats, call Opus API, generate report)
+- [ ] Handle missing embeddings: if vast.ai was down, re-embed on next run
+- [ ] Implement `WeeklyReviewOp` (aggregate stats, call Opus 4.6 API, generate report)
 - [ ] Set up tokio scheduler: daily at 3 AM, weekly Sunday 2 AM
-- [ ] Test with 1 week of synthetic log data
+- [ ] Implement `GraphPruneOp` (remove logs > 30 days, stale nodes)
 
 **Deliverables**:
-- Automated KG freshness (logs indexed daily)
-- Weekly email reports via Mailu
+- KG updated daily with fresh logs and embeddings
+- Weekly Opus-generated infrastructure report via email (Mailu)
 
 **Success Criteria**:
 - After 7 days, KG contains 7 days of logs with embeddings
@@ -669,23 +825,23 @@ SELECT $matches.*, ->depends_on->service.name AS deps FROM $matches;
 
 ---
 
-### Phase 6: API + MCP Integration + LightRAG Incremental Sync (Week 7)
+### Phase 7: API + MCP Integration + Agentic Framework
 
-**Goal**: Expose Rig to external agents, integrate with Claude Code MCP, enable real-time KG updates
+**Goal**: Expose Rig to external agents, integrate with Claude Code MCP, enable goal-driven agent execution
 
 **Tasks**:
-- [ ] Implement full HTTP API in Rig (axum server, all endpoints listed in Workflow 3)
+- [ ] Implement full HTTP API (all endpoints from Workflow 5)
 - [ ] Add `/rig/kg/query`, `/rig/agent/execute` endpoints
 - [ ] Update `bb-sec_mcp-server-skills` with `kg_*` tools
-- [ ] Implement Docker event listener (bollard crate) for real-time container lifecycle events
-- [ ] Implement file watcher (inotify) for Docker logs
-- [ ] Only embed changed/new content (incremental)
-- [ ] Test multi-step agent execution (goal-driven workflow)
+- [ ] Implement Docker event listener (bollard crate) for real-time KG updates
+- [ ] Implement multi-step agent execution (goal + constraints + max_steps)
+- [ ] Add human-in-the-loop approval via ntfy for destructive actions
+- [ ] Agent conversation memory persisted in KG
 
 **Deliverables**:
-- Rig REST API accessible at `https://api.diegonmarcos.com/rig/`
-- MCP tools working in Claude Code sessions
-- KG updates within 10 seconds of infrastructure changes
+- Rig REST API at `https://api.diegonmarcos.com/rig/`
+- MCP tools in Claude Code sessions
+- Goal-driven agent execution with guardrails
 
 **Success Criteria**:
 ```bash
@@ -693,7 +849,7 @@ SELECT $matches.*, ->depends_on->service.name AS deps FROM $matches;
 kg_hybrid_search("authentication errors last week")
 # Returns similar log entries + affected services + dependency chain
 ```
-- Deploy new service -> LightRAG detects -> Embeds README -> Adds service node + edges -> Query works within 10 sec
+- `POST /rig/agent/execute {"goal": "Investigate PhotoPrism slowness"}` → 5-step investigation → report
 
 ---
 
