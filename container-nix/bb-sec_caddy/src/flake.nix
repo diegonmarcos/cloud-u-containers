@@ -1034,12 +1034,23 @@ Internet
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
+        # Public: API docs/specs (no auth needed)
+        @flask_docs path /flask/apispec.json /flask/docs /flask/docs/*
+        handle @flask_docs {
+          reverse_proxy ${gcp}:5000
+        }
+
         handle /flask/* {
           ${mkProtected "${gcp}:5000"}
         }
         handle /go/* {
           reverse_proxy ${gcp}:8090
         }
+        @crawlee_docs path /crawlee/openapi.json /crawlee/docs /crawlee/docs/*
+        handle_path @crawlee_docs {
+          reverse_proxy ${flex0}:3000
+        }
+
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
         }
