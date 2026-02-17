@@ -233,17 +233,17 @@ time</p>
 <td>24/7</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-0</strong></td>
+<td><strong>oci-apps</strong></td>
 <td>OCI</td>
 <td>Free (A1.Flex)</td>
 <td><code>82.70.229.129</code></td>
 <td><code>10.0.0.6</code></td>
 <td>16 GB</td>
 <td>Ampere A1 (3 OCPU)</td>
-<td>Wake-on-demand</td>
+<td>24/7</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>OCI</td>
 <td>Free (A1.Flex)</td>
 <td><code>144.24.196.72</code></td>
@@ -305,7 +305,7 @@ time</p>
 <tr class="odd">
 <td><code>api.diegonmarcos.com</code></td>
 <td><strong>API (Rust+Flask+Go)</strong></td>
-<td>gcp-proxy</td>
+<td>oci-apps/gcp-proxy</td>
 <td>8080/5000/8090</td>
 <td>Rust: Public / Flask: Authelia / Go: Public</td>
 <td>24/7</td>
@@ -361,7 +361,7 @@ time</p>
 <tr class="even">
 <td><code>photos.diegonmarcos.com</code></td>
 <td><strong>PhotoPrism</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3013</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -369,7 +369,7 @@ time</p>
 <tr class="odd">
 <td><code>db.diegonmarcos.com</code></td>
 <td><strong>NocoDB</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>8085</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -377,7 +377,7 @@ time</p>
 <tr class="even">
 <td><code>ide.diegonmarcos.com</code></td>
 <td><strong>Code Server</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>8443</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -385,7 +385,7 @@ time</p>
 <tr class="odd">
 <td><code>drive-notes-affine.diegonmarcos.com</code></td>
 <td><strong>AFFiNE</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3010</td>
 <td>Public</td>
 <td>Wake</td>
@@ -393,12 +393,68 @@ time</p>
 <tr class="even">
 <td><code>sheets.diegonmarcos.com</code></td>
 <td><strong>Grist</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3011</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
 <tr class="odd">
+<td><code>—</code></td>
+<td><strong>Jupyter Lab</strong></td>
+<td>oci-apps</td>
+<td>8888</td>
+<td>WG direct</td>
+<td>Wake</td>
+</tr>
+<tr class="even">
+<td><code>—</code></td>
+<td><strong>Nautilus Engine</strong></td>
+<td>oci-apps</td>
+<td>5000</td>
+<td>WG direct</td>
+<td>Wake</td>
+</tr>
+<tr class="odd">
+<td><code>—</code></td>
+<td><strong>Dash/Plotly</strong></td>
+<td>oci-apps</td>
+<td>8050</td>
+<td>WG direct</td>
+<td>Wake</td>
+</tr>
+<tr class="even">
+<td><code>—</code></td>
+<td><strong>Quant DB</strong></td>
+<td>oci-apps</td>
+<td>5432</td>
+<td>WG direct</td>
+<td>Wake</td>
+</tr>
+<tr class="odd">
+<td><code>api.diegonmarcos.com/crawlee/</code></td>
+<td><strong>Crawlee API</strong></td>
+<td>oci-apps</td>
+<td>3000</td>
+<td>Authelia + Bearer</td>
+<td>Wake</td>
+</tr>
+<tr class="even">
+<td><code>app.diegonmarcos.com/crawlee/</code></td>
+<td><strong>Crawlee Dash</strong></td>
+<td>oci-apps</td>
+<td>3001</td>
+<td>Authelia + Bearer</td>
+<td>Wake</td>
+</tr>
+<tr class="odd">
+<td><code>—</code></td>
+<td><strong>MinIO (S3)</strong></td>
+<td>oci-apps</td>
+<td>9000</td>
+<td>WG direct</td>
+<td>Wake</td>
+</tr>
+<tr class="even">
 <td><code>diegonmarcos.com</code></td>
 <td><strong>Landing Page</strong></td>
 <td>GitHub Pages</td>
@@ -406,7 +462,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>linktree.diegonmarcos.com</code></td>
 <td><strong>Linktree</strong></td>
 <td>GitHub Pages</td>
@@ -414,7 +470,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>cloud.diegonmarcos.com</code></td>
 <td><strong>Cloud Dashboard</strong></td>
 <td>GitHub Pages</td>
@@ -422,7 +478,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>nexus.diegonmarcos.com</code></td>
 <td><strong>Nexus</strong></td>
 <td>GitHub Pages</td>
@@ -430,7 +486,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>suite.diegonmarcos.com</code></td>
 <td><strong>Suite Apps</strong></td>
 <td>GitHub Pages</td>
@@ -438,7 +494,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>maps.diegonmarcos.com</code></td>
 <td><strong>Maps</strong></td>
 <td>GitHub Pages</td>
@@ -446,7 +502,7 @@ time</p>
 <td>Public</td>
 <td>24/7</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>app.diegonmarcos.com/windmill/</code></td>
 <td><strong>Windmill</strong></td>
 <td>oci-analytics</td>
@@ -454,39 +510,39 @@ time</p>
 <td>Authelia + Bearer</td>
 <td>24/7</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>app.diegonmarcos.com/etherpad/</code></td>
 <td><strong>Etherpad</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3012</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>app.diegonmarcos.com/filebrowser/</code></td>
 <td><strong>FileBrowser</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3015</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>app.diegonmarcos.com/hedgedoc/</code></td>
 <td><strong>HedgeDoc</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3010</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>app.diegonmarcos.com/revealmd/</code></td>
 <td><strong>Reveal.md</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3014</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>app.diegonmarcos.com/dozzle/</code></td>
 <td><strong>Dozzle</strong></td>
 <td>gcp-proxy</td>
@@ -494,18 +550,18 @@ time</p>
 <td>Authelia + Bearer</td>
 <td>24/7</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>app.diegonmarcos.com/grafana/</code></td>
 <td><strong>Grafana</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3016</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>app.diegonmarcos.com/gitea/</code></td>
 <td><strong>Gitea</strong></td>
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>3000</td>
 <td>Authelia + Bearer</td>
 <td>Wake</td>
@@ -631,7 +687,7 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>OPEN</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td><code>10.0.0.2</code></td>
 <td>22/tcp</td>
 <td>0.0.0.0</td>
@@ -639,7 +695,7 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>RESTRICT</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td><code>10.0.0.2</code></td>
 <td>51820/udp</td>
 <td>0.0.0.0</td>
@@ -647,7 +703,7 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>OPEN</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-0</strong></td>
+<td><strong>oci-apps</strong></td>
 <td><code>10.0.0.6</code></td>
 <td>22/tcp</td>
 <td>0.0.0.0</td>
@@ -655,7 +711,7 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>RESTRICT</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-0</strong></td>
+<td><strong>oci-apps</strong></td>
 <td><code>10.0.0.6</code></td>
 <td>51820/udp</td>
 <td>0.0.0.0</td>
@@ -764,19 +820,19 @@ restrict to WireGuard mesh + mail delivery ports.</p>
 <td>WireGuard endpoint</td>
 </tr>
 <tr class="even">
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>INPUT</td>
 <td><code>51820/udp ACCEPT</code></td>
 <td>WireGuard endpoint</td>
 </tr>
 <tr class="odd">
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>INPUT</td>
 <td><code>22/tcp from 10.0.0.0/24 ACCEPT</code></td>
 <td>SSH via mesh only</td>
 </tr>
 <tr class="even">
-<td>oci-flex-1</td>
+<td>oci-apps-1</td>
 <td>INPUT</td>
 <td><code>default DROP</code> (except established)</td>
 <td>Block public access</td>
@@ -917,7 +973,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>via Caddy</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>photoprism</td>
 <td>3013</td>
 <td><code>10.0.0.2</code></td>
@@ -925,7 +981,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>nocodb</td>
 <td>8085</td>
 <td><code>10.0.0.2</code></td>
@@ -933,7 +989,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>code-server</td>
 <td>8443</td>
 <td><code>10.0.0.2</code></td>
@@ -941,7 +997,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>grist</td>
 <td>3011</td>
 <td><code>10.0.0.2</code></td>
@@ -949,7 +1005,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>etherpad</td>
 <td>3012</td>
 <td><code>10.0.0.2</code></td>
@@ -957,7 +1013,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>filebrowser</td>
 <td>3015</td>
 <td><code>10.0.0.2</code></td>
@@ -965,7 +1021,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>hedgedoc</td>
 <td>3010</td>
 <td><code>10.0.0.2</code></td>
@@ -973,7 +1029,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>revealmd</td>
 <td>3014</td>
 <td><code>10.0.0.2</code></td>
@@ -981,7 +1037,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>gitea</td>
 <td>3000</td>
 <td><code>10.0.0.2</code></td>
@@ -989,7 +1045,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>gitea-ssh</td>
 <td>2222</td>
 <td><code>10.0.0.2</code></td>
@@ -997,7 +1053,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>grafana</td>
 <td>3016</td>
 <td><code>10.0.0.2</code></td>
@@ -1005,7 +1061,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>loki</td>
 <td>3017</td>
 <td><code>10.0.0.2</code></td>
@@ -1013,7 +1069,7 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="even">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>tempo</td>
 <td>3018</td>
 <td><code>10.0.0.2</code></td>
@@ -1021,11 +1077,91 @@ localhost, <code>docker</code> = internal network.</p>
 <td>WG only</td>
 </tr>
 <tr class="odd">
-<td><strong>oci-flex-1</strong></td>
+<td><strong>oci-apps-1</strong></td>
 <td>mimir</td>
 <td>3019</td>
 <td><code>10.0.0.2</code></td>
 <td>8080</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-apps</strong></td>
+<td>quant_research</td>
+<td>8888</td>
+<td><code>10.0.0.6</code></td>
+<td>8888</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-apps</strong></td>
+<td>nautilus_engine</td>
+<td>5000</td>
+<td><code>10.0.0.6</code></td>
+<td>5000</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-apps</strong></td>
+<td>quant_analytics</td>
+<td>8050</td>
+<td><code>10.0.0.6</code></td>
+<td>8050</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-apps</strong></td>
+<td>quant_db</td>
+<td>5432</td>
+<td><code>10.0.0.6</code></td>
+<td>5432</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_api</td>
+<td>3000</td>
+<td><code>10.0.0.6</code></td>
+<td>3000</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_dashboard</td>
+<td>3001</td>
+<td><code>10.0.0.6</code></td>
+<td>3001</td>
+<td>WG only</td>
+</tr>
+<tr class="even">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_minio</td>
+<td>9000</td>
+<td><code>10.0.0.6</code></td>
+<td>9000</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_minio</td>
+<td>9001</td>
+<td><code>10.0.0.6</code></td>
+<td>9001</td>
+<td>MinIO console</td>
+</tr>
+<tr class="even">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_db</td>
+<td>5433</td>
+<td><code>10.0.0.6</code></td>
+<td>5432</td>
+<td>WG only</td>
+</tr>
+<tr class="odd">
+<td><strong>oci-apps</strong></td>
+<td>crawlee_redis</td>
+<td>6380</td>
+<td><code>10.0.0.6</code></td>
+<td>6379</td>
 <td>WG only</td>
 </tr>
 <tr class="even">
@@ -1117,7 +1253,7 @@ localhost, <code>docker</code> = internal network.</p>
 │              rust-api, flask-api, vaultwarden, ntfy        │
 │              dozzle (monitors all containers)              │
 │                                                            │
-│  oci-flex-1: photoprism ←→ photoprism-db (redis)          │
+│  oci-apps-1: photoprism ←→ photoprism-db (redis)          │
 │              nocodb, code-server, grist, gitea             │
 │              etherpad, filebrowser, hedgedoc, revealmd     │
 │              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
@@ -1184,14 +1320,16 @@ Bearer?  Cookie?
      │ wg0      │ wg0      │ wg0
      ▼          ▼          ▼
 ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────┐
-│oci-flex-1│ │oci-flex-0│ │oci-mail │ │oci-analytics │
+│oci-apps-1│ │oci-apps│ │oci-mail │ │oci-analytics │
 │ 10.0.0.2  │ │ 10.0.0.6 │ │ 10.0.0.3 │ │ 10.0.0.4 │
 │          │ │          │ │         │ │              │
-│PhotoPrism│ │ (none)   │ │ Mailu   │ │   Matomo     │
-│ NocoDB   │ │          │ │Syncthing│ │  Windmill    │
-│Code Srv  │ │          │ │Radicale │ │              │
-│ AFFiNE   │ │          │ │         │ │              │
-│  Grist   │ │          │ │         │ │              │
+│PhotoPrism│ │ Jupyter  │ │ Mailu   │ │   Matomo     │
+│ NocoDB   │ │ Nautilus │ │Syncthing│ │  Windmill    │
+│Code Srv  │ │Dash/Plot │ │Radicale │ │              │
+│ AFFiNE   │ │ Quant DB │ │         │ │              │
+│  Grist   │ │Crawlee AP│ │         │ │              │
+│          │ │Crawlee UI│ │         │ │              │
+│          │ │ MinIO/S3 │ │         │ │              │
 └──────────┘ └──────────┘ └─────────┘ └──────────────┘</code></pre>
 <hr />
 <div id="health-section">
