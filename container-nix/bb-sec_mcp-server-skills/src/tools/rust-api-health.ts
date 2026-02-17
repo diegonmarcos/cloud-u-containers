@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rustApiGet } from "../utils/http.js";
+import { resolveVmId } from "../config.js";
 
 function formatResult(label: string, result: ReturnType<typeof rustApiGet>) {
   if (!result.ok) {
@@ -46,7 +47,8 @@ export function registerRustApiHealthTools(server: McpServer) {
       vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)"),
     },
     async ({ vm }) => {
-      const endpoint = vm ? `/api/health/deployed/${encodeURIComponent(vm)}` : "/api/health/deployed";
+      const vmId = vm ? resolveVmId(vm) : undefined;
+      const endpoint = vmId ? `/api/health/deployed/${encodeURIComponent(vmId)}` : "/api/health/deployed";
       // 60s: probes all VMs via SSH + docker ps, can be slow across 4 VMs
       const result = rustApiGet(endpoint, 60_000);
       return formatResult("Deployed containers", result);
@@ -70,7 +72,8 @@ export function registerRustApiHealthTools(server: McpServer) {
       vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)"),
     },
     async ({ vm }) => {
-      const endpoint = vm ? `/api/health/status/${encodeURIComponent(vm)}` : "/api/health/status";
+      const vmId = vm ? resolveVmId(vm) : undefined;
+      const endpoint = vmId ? `/api/health/status/${encodeURIComponent(vmId)}` : "/api/health/status";
       const result = rustApiGet(endpoint, 60_000);
       return formatResult("Health status", result);
     }
@@ -96,8 +99,9 @@ export function registerRustApiHealthTools(server: McpServer) {
       vm: z.string().describe("VM ID or alias to profile"),
     },
     async ({ vm }) => {
+      const vmId = resolveVmId(vm);
       // 60s: profiles every container on the VM, 8 checks each
-      const result = rustApiGet(`/api/profiling/vm/${encodeURIComponent(vm)}`, 60_000);
+      const result = rustApiGet(`/api/profiling/vm/${encodeURIComponent(vmId)}`, 60_000);
       return formatResult(`Profile VM ${vm}`, result);
     }
   );

@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 
 const GCP_COMPUTE_BASE: &str = "https://compute.googleapis.com";
 const GCP_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
-const GCP_COMPUTE_SCOPE: &str = "https://www.googleapis.com/auth/compute";
+const GCP_COMPUTE_SCOPE: &str = "https://www.googleapis.com/auth/cloud-platform";
 const TOKEN_LIFETIME_SECS: u64 = 3600;
 /// Refresh 60s before expiry to avoid edge-case failures.
 const TOKEN_REFRESH_MARGIN_SECS: u64 = 60;
@@ -207,4 +207,151 @@ pub async fn instance_action(
     }
 
     Ok(format!("{action} command sent"))
+}
+
+// ---------------------------------------------------------------------------
+// Cloud provider endpoints — GCP
+// ---------------------------------------------------------------------------
+
+/// List all GCP compute instances (aggregated across zones).
+pub async fn list_instances(
+    http: &reqwest::Client,
+    sa: &ServiceAccountConfig,
+    cache: &TokenCache,
+    project: &str,
+) -> Result<serde_json::Value, String> {
+    let token = get_access_token(http, sa, cache).await?;
+
+    let url = format!(
+        "{GCP_COMPUTE_BASE}/compute/v1/projects/{project}/aggregated/instances"
+    );
+
+    let resp = http.get(&url).bearer_auth(&token).send().await
+        .map_err(|e| format!("GCP API error: {e}"))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("GCP API {status}: {body}"));
+    }
+
+    let data: serde_json::Value = resp.json().await
+        .map_err(|e| format!("GCP parse error: {e}"))?;
+
+    // Flatten aggregated results
+    let mut instances = Vec::new();
+    if let Some(items) = data["items"].as_object() {
+        for (_zone_key, zone_data) in items {
+            if let Some(zone_instances) = zone_data["instances"].as_array() {
+                for i in zone_instances {
+                    instances.push(serde_json::json!({
+                        "name": i["name"],
+                        "status": i["status"],
+                        "zone": i["zone"],
+                        "machineType": i["machineType"],
+                        "creationTimestamp": i["creationTimestamp"],
+                        "networkInterfaces": i["networkInterfaces"],
+                    }));
+                }
+            }
+        }
+    }
+
+    Ok(serde_json::json!({
+        "provider": "gcp",
+        "project": project,
+        "instances": instances,
+        "count": instances.len(),
+    }))
+}
+
+/// List GCP networking and storage resources (disks, networks, firewalls).
+pub async fn list_resources(
+    http: &reqwest::Client,
+    sa: &ServiceAccountConfig,
+    cache: &TokenCache,
+    project: &str,
+) -> Result<serde_json::Value, String> {
+    let token = get_access_token(http, sa, cache).await?;
+
+    let disks_url = format!(
+        "{GCP_COMPUTE_BASE}/compute/v1/projects/{project}/aggregated/disks"
+    );
+    let networks_url = format!(
+        "{GCP_COMPUTE_BASE}/compute/v1/projects/{project}/global/networks"
+    );
+    let firewalls_url = format!(
+        "{GCP_COMPUTE_BASE}/compute/v1/projects/{project}/global/firewalls"
+    );
+
+    let token2 = token.clone();
+    let token3 = token.clone();
+
+    let (disks_res, networks_res, firewalls_res) = tokio::join!(
+        async {
+            http.get(&disks_url).bearer_auth(&token).send().await
+                .map_err(|e| format!("GCP disks error: {e}"))
+        },
+        async {
+            http.get(&networks_url).bearer_auth(&token2).send().await
+                .map_err(|e| format!("GCP networks error: {e}"))
+        },
+        async {
+            http.get(&firewalls_url).bearer_auth(&token3).send().await
+                .map_err(|e| format!("GCP firewalls error: {e}"))
+        },
+    );
+
+    let disks: serde_json::Value = match disks_res {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or(serde_json::json!({})),
+        _ => serde_json::json!({"error": "failed to fetch disks"}),
+    };
+    let networks: serde_json::Value = match networks_res {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or(serde_json::json!({})),
+        _ => serde_json::json!({"error": "failed to fetch networks"}),
+    };
+    let firewalls: serde_json::Value = match firewalls_res {
+        Ok(r) if r.status().is_success() => r.json().await.unwrap_or(serde_json::json!({})),
+        _ => serde_json::json!({"error": "failed to fetch firewalls"}),
+    };
+
+    Ok(serde_json::json!({
+        "provider": "gcp",
+        "project": project,
+        "disks": disks,
+        "networks": networks,
+        "firewalls": firewalls,
+    }))
+}
+
+/// Get GCP billing info for the project.
+pub async fn get_billing_info(
+    http: &reqwest::Client,
+    sa: &ServiceAccountConfig,
+    cache: &TokenCache,
+    project: &str,
+) -> Result<serde_json::Value, String> {
+    let token = get_access_token(http, sa, cache).await?;
+
+    let url = format!(
+        "https://cloudbilling.googleapis.com/v1/projects/{project}/billingInfo"
+    );
+
+    let resp = http.get(&url).bearer_auth(&token).send().await
+        .map_err(|e| format!("GCP Billing API error: {e}"))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("GCP Billing API {status}: {body}"));
+    }
+
+    let data: serde_json::Value = resp.json().await
+        .map_err(|e| format!("GCP billing parse error: {e}"))?;
+
+    Ok(serde_json::json!({
+        "provider": "gcp",
+        "project": project,
+        "billing_info": data,
+    }))
 }

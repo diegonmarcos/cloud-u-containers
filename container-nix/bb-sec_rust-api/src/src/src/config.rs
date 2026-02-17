@@ -236,6 +236,7 @@ impl AppConfig {
         flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
         flex0_svc.insert("kg-graph".into(), vec!["surrealdb".into()]);
         flex0_svc.insert("rig".into(), vec!["rig".into()]);
+        flex0_svc.insert("api".into(), vec!["rust-api".into()]);
         all_vm_services.insert("oci-A1-f_0".into(), VmServiceMap {
             label: "oci-apps".into(),
             services: flex0_svc,
@@ -274,7 +275,7 @@ impl AppConfig {
         let mut gcp_svc = HashMap::new();
         gcp_svc.insert("proxy".into(), vec!["npm".into(), "introspect-proxy".into()]);
         gcp_svc.insert("auth".into(), vec!["authelia".into(), "authelia-redis".into()]);
-        gcp_svc.insert("api".into(), vec!["flask-api".into(), "rust-api".into()]);
+        gcp_svc.insert("api".into(), vec!["flask-api".into()]);
         gcp_svc.insert("notifications".into(), vec!["ntfy".into()]);
         gcp_svc.insert("passwords".into(), vec!["vaultwarden".into()]);
         gcp_svc.insert("logs".into(), vec!["fluent-bit".into()]);

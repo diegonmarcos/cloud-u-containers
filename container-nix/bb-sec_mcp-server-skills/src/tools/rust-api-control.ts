@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rustApiPost } from "../utils/http.js";
 import { audit } from "../utils/audit.js";
+import { resolveVmId } from "../config.js";
 
 function formatResult(label: string, result: ReturnType<typeof rustApiPost>) {
   const text = typeof result.data === "string" ? result.data : JSON.stringify(result.data, null, 2);
@@ -26,7 +27,8 @@ export function registerRustApiControlTools(server: McpServer) {
       vm: z.string().describe("VM ID or SSH alias"),
     },
     async ({ vm }) => {
-      const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/start`, undefined, 60_000);
+      const vmId = resolveVmId(vm);
+      const result = rustApiPost(`/api/vms/${encodeURIComponent(vmId)}/start`, undefined, 60_000);
       audit("vm_start", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM start ${vm}`, result);
     }
@@ -39,7 +41,8 @@ export function registerRustApiControlTools(server: McpServer) {
       vm: z.string().describe("VM ID or SSH alias"),
     },
     async ({ vm }) => {
-      const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/stop`, undefined, 60_000);
+      const vmId = resolveVmId(vm);
+      const result = rustApiPost(`/api/vms/${encodeURIComponent(vmId)}/stop`, undefined, 60_000);
       audit("vm_stop", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM stop ${vm}`, result);
     }
@@ -52,7 +55,8 @@ export function registerRustApiControlTools(server: McpServer) {
       vm: z.string().describe("VM ID or SSH alias"),
     },
     async ({ vm }) => {
-      const result = rustApiPost(`/api/vms/${encodeURIComponent(vm)}/reset`, undefined, 60_000);
+      const vmId = resolveVmId(vm);
+      const result = rustApiPost(`/api/vms/${encodeURIComponent(vmId)}/reset`, undefined, 60_000);
       audit("vm_reset", vm, result.ok ? "OK" : `FAILED (HTTP ${result.status})`);
       return formatResult(`VM reset ${vm}`, result);
     }
@@ -68,8 +72,9 @@ export function registerRustApiControlTools(server: McpServer) {
       name: z.string().describe("Container name"),
     },
     async ({ vm, name }) => {
+      const vmId = resolveVmId(vm);
       const result = rustApiPost(
-        `/api/vms/${encodeURIComponent(vm)}/containers/${encodeURIComponent(name)}/start`,
+        `/api/vms/${encodeURIComponent(vmId)}/containers/${encodeURIComponent(name)}/start`,
         undefined,
         60_000
       );
@@ -86,8 +91,9 @@ export function registerRustApiControlTools(server: McpServer) {
       name: z.string().describe("Container name"),
     },
     async ({ vm, name }) => {
+      const vmId = resolveVmId(vm);
       const result = rustApiPost(
-        `/api/vms/${encodeURIComponent(vm)}/containers/${encodeURIComponent(name)}/stop`,
+        `/api/vms/${encodeURIComponent(vmId)}/containers/${encodeURIComponent(name)}/stop`,
         undefined,
         30_000
       );
@@ -104,8 +110,9 @@ export function registerRustApiControlTools(server: McpServer) {
       name: z.string().describe("Container name"),
     },
     async ({ vm, name }) => {
+      const vmId = resolveVmId(vm);
       const result = rustApiPost(
-        `/api/vms/${encodeURIComponent(vm)}/containers/${encodeURIComponent(name)}/restart`,
+        `/api/vms/${encodeURIComponent(vmId)}/containers/${encodeURIComponent(name)}/restart`,
         undefined,
         60_000
       );
@@ -124,8 +131,9 @@ export function registerRustApiControlTools(server: McpServer) {
       service: z.string().describe("Service name"),
     },
     async ({ vm, service }) => {
+      const vmId = resolveVmId(vm);
       const result = rustApiPost(
-        `/api/vms/${encodeURIComponent(vm)}/services/${encodeURIComponent(service)}/start`,
+        `/api/vms/${encodeURIComponent(vmId)}/services/${encodeURIComponent(service)}/start`,
         undefined,
         120_000
       );
@@ -142,8 +150,9 @@ export function registerRustApiControlTools(server: McpServer) {
       service: z.string().describe("Service name"),
     },
     async ({ vm, service }) => {
+      const vmId = resolveVmId(vm);
       const result = rustApiPost(
-        `/api/vms/${encodeURIComponent(vm)}/services/${encodeURIComponent(service)}/stop`,
+        `/api/vms/${encodeURIComponent(vmId)}/services/${encodeURIComponent(service)}/stop`,
         undefined,
         60_000
       );

@@ -23,11 +23,11 @@
           ports:
             - "${toString config.port}:8080"
           volumes:
-            - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+            - /home/ubuntu/cloud/architecture.json:/app/config/architecture.json:ro
             - ~/.ssh:/home/appuser/.ssh:ro
-            - /home/diego/cloud/oci_config:/app/config/oci_config:ro
-            - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
-            - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
+            - /home/ubuntu/cloud/oci_config:/app/config/oci_config:ro
+            - /home/ubuntu/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+            - /home/ubuntu/cloud/gcp_key.json:/app/config/gcp_key.json:ro
           env_file:
             - .secrets
           environment:
@@ -39,8 +39,6 @@
             - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
             - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
             - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
-          networks:
-            - npm_default
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
             interval: 30s
@@ -48,9 +46,6 @@
             retries: 3
             start_period: 10s
 
-      networks:
-        npm_default:
-          external: true
     '';
 
   in {
