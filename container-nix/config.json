@@ -145,20 +145,10 @@
       "vm": "gcp-E2-f_0",
       "description": "Password Manager (vault.diegonmarcos.com)"
     },
-    "npm": {
-      "category": "sec",
-      "vm": "gcp-E2-f_0",
-      "description": "Reverse Proxy (Nginx Proxy Manager)"
-    },
     "authelia": {
       "category": "sec",
       "vm": "gcp-E2-f_0",
       "description": "2FA Authentication"
-    },
-    "npm-introspect-proxy": {
-      "category": "sec",
-      "vm": "gcp-E2-f_0",
-      "description": "Authelia Token Introspection"
     },
     "flask-api": {
       "category": "sec",
@@ -169,11 +159,6 @@
       "category": "sec",
       "vm": "gcp-E2-f_0",
       "description": "Cloud Go API (api.diegonmarcos.com/go/)"
-    },
-    "sauron": {
-      "category": "sec",
-      "vm": "oci-A1-f_1",
-      "description": "YARA Security Scanner (full)"
     },
     "sauron-central": {
       "category": "sec",
@@ -214,30 +199,10 @@
       "vm": "gcp-E2-f_0",
       "description": "Push Notifications + syslog-bridge + github-rss"
     },
-    "github-rss": {
-      "category": "tools",
-      "vm": "gcp-E2-f_0",
-      "description": "GitHub RSS Feeds (part of ntfy stack)"
-    },
-    "c3-collector": {
-      "category": "tools",
-      "vm": "gcp-E2-f_0",
-      "description": "Metrics Collector"
-    },
-    "collector-events": {
-      "category": "tools",
-      "vm": "gcp-E2-f_0",
-      "description": "Docker Container Metrics Forwarder"
-    },
     "alerts-api": {
       "category": "tools",
       "vm": "gcp-E2-f_0",
       "description": "Security Alert Aggregation API"
-    },
-    "palantir-cron": {
-      "category": "tools",
-      "vm": "gcp-E2-f_0",
-      "description": "Security Scanning + Cron Scheduler"
     },
     "matomo": {
       "category": "tools",

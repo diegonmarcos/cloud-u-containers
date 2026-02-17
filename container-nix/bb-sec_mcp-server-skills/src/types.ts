@@ -9,11 +9,12 @@ export interface VmConfig {
 }
 
 export interface ServiceConfig {
-  category: "app" | "mic" | "sec" | "tools" | "cloud" | "data";
+  category: "app" | "mic" | "sec" | "tools" | "cloud" | "data" | "fin" | "agi";
   vm: string;
   flake?: string;
   subfolder?: string;
   description: string;
+  discovered?: boolean;
 }
 
 export interface InfraConfig {
