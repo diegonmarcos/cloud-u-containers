@@ -21,6 +21,8 @@
     flex0 = "10.0.0.6";     # oci-apps (on-demand)
     mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
+    flex2 = "10.0.0.7";     # oci-apps-2
+    gpu = "10.0.0.8";       # gcp-ollama (gcp-t4)
 
     # ── Dashboard data ───────────────────────────────────────────
 
@@ -80,6 +82,28 @@
         arch = "x86_64";
         availability = "24/7";
       };
+      "oci-apps-2" = {
+        alias = "oci-apps-2";
+        provider = "OCI";
+        tier = "Paid (A1.Flex)";
+        ip = "79.72.28.10";
+        wg = flex2;
+        ram = "32 GB";
+        cpu = "Ampere A1 (8 OCPU)";
+        arch = "aarch64";
+        availability = "On-demand";
+      };
+      "gcp-ollama" = {
+        alias = "gcp-ollama";
+        provider = "GCP";
+        tier = "Paid (Spot)";
+        ip = "34.57.36.41";
+        wg = gpu;
+        ram = "15 GB";
+        cpu = "N1-Std-4 + T4 GPU";
+        arch = "x86_64";
+        availability = "Spot";
+      };
     };
 
     services = [
@@ -104,6 +128,8 @@
       { domain = "api.diegonmarcos.com/crawlee/";          name = "Crawlee API";     vm = "oci-apps";    port = "3000"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-apps";    port = "3001"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-apps";    port = "9000"; auth = "WG direct";         avail = "24/7"; }
+      { domain = "—";                                    name = "Rust API";        vm = "oci-apps";    port = "8080"; auth = "Public";            avail = "24/7"; }
+      { domain = "—";                                    name = "Ollama LLM";      vm = "gcp-ollama";  port = "11434"; auth = "WG direct";        avail = "Spot"; }
       { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
       { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
@@ -154,6 +180,12 @@
       # oci-analytics — mesh only
       { vm = "oci-analytics"; ip = analytics; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
       { vm = "oci-analytics"; ip = analytics; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
+      # oci-apps-2 — mesh only
+      { vm = "oci-apps-2"; ip = flex2; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
+      { vm = "oci-apps-2"; ip = flex2; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
+      # gcp-ollama — spot GPU, mesh only
+      { vm = "gcp-ollama"; ip = gpu; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
+      { vm = "gcp-ollama"; ip = gpu; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
     ];
 
     dockerPorts = [
@@ -206,6 +238,10 @@
       # oci-analytics containers (WG only)
       { vm = "oci-analytics"; container = "matomo";   port = "8080"; bind = analytics; internal = "8080"; note = "WG only"; }
       { vm = "oci-analytics"; container = "windmill"; port = "8000"; bind = "127.0.0.1"; internal = "8000"; note = "localhost"; }
+      # oci-apps — Rust API
+      { vm = "oci-apps"; container = "rust-api"; port = "8080"; bind = flex0; internal = "8080"; note = "WG only"; }
+      # gcp-ollama — Ollama
+      { vm = "gcp-ollama"; container = "ollama"; port = "11434"; bind = gpu; internal = "11434"; note = "WG only"; }
     ];
 
     # ── Security snippets ─────────────────────────────────────────
@@ -394,13 +430,23 @@
 
 ## Virtual Machines
 
-<div id="auto-vms" class="tier-body"><span class="loading">Loading VMs from API...</span></div>
+<button class="rbtn" id="toggle-vms">Show Live</button>
+<div id="live-vms" class="tier-body" style="display:none"></div>
+
+| Alias | Provider | Tier | Public IP | WG IP | RAM | CPU | Availability |
+|-------|----------|------|-----------|-------|-----|-----|--------------|
+${vmRows}
 
 ---
 
 ## Services
 
-<div id="auto-services" class="tier-body"><span class="loading">Loading services from API...</span></div>
+<button class="rbtn" id="toggle-svcs">Show Live</button>
+<div id="live-svcs" class="tier-body" style="display:none"></div>
+
+| Domain | Service | VM | Port | Auth | Availability |
+|--------|---------|-----|------|------|--------------|
+${svcRows}
 
 ---
 
@@ -416,13 +462,32 @@ ${secRows}
 
 Only **gcp-proxy** accepts public HTTP/HTTPS traffic. All other VMs restrict to WireGuard mesh + service-specific ports.
 
+| VM | WG IP | Port | Bind | Purpose | Status |
+|----|-------|------|------|---------|--------|
+${fwRows}
+
 **Policy**: All VMs run `51820/udp` (WireGuard) + `22/tcp` (SSH restricted). gcp-proxy additionally exposes `80/443` (Caddy). oci-mail exposes `25,465,587,993` (mail delivery).
+
+### iptables / nftables
+
+| Chain | Policy | Notes |
+|-------|--------|-------|
+| INPUT | DROP (cloud firewall) | Only allowed ports above reach the VM |
+| FORWARD | ACCEPT (Docker) | Docker manages container routing via nftables |
+| OUTPUT | ACCEPT | No egress filtering |
+| DOCKER-USER | ACCEPT | Default — no extra restrictions |
+| wg0 | All traffic | Mesh peers trusted, no per-port filtering |
 
 ---
 
 ## Docker Network
 
-<div id="auto-docker" class="tier-body"><span class="loading">Loading containers from API...</span></div>
+<button class="rbtn" id="toggle-docker">Show Live</button>
+<div id="live-docker" class="tier-body" style="display:none"></div>
+
+| VM | Container | Host Port | Bind Address | Internal | Note |
+|----|-----------|-----------|--------------|----------|------|
+${dkRows}
 
 ---
 
@@ -484,20 +549,28 @@ Internet
 │  ├─ Flask API + Go API                       │
 │  ├─ Vaultwarden, ntfy, Dozzle               │
 │  └─ Sauron Central + Syslog Central          │
-└────┬──────────┬──────────┬──────┬────────────┘
-     │ wg0      │ wg0      │ wg0  │ wg0
-     ▼          ▼          ▼      ▼
-┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────┐
-│oci-apps  │ │oci-apps-1│ │oci-mail │ │oci-analytics │
-│ ${flex0} │ │ ${flex}  │ │ ${mail} │ │ ${analytics} │
-│          │ │          │ │         │ │              │
-│Rust API  │ │PhotoPrism│ │ Mailu   │ │   Matomo     │
-│Crawlee   │ │ NocoDB   │ │Syncthing│ │  Windmill    │
-│Quant Lab │ │Code Srv  │ │Radicale │ │              │
-│          │ │ AFFiNE   │ │         │ │              │
-│          │ │Grist,LGTM│ │         │ │              │
-│          │ │Gitea,Ethr│ │         │ │              │
-└──────────┘ └──────────┘ └─────────┘ └──────────────┘
+└────┬──────────┬──────────┬──────┬───────────┬──────────┘
+     │ wg0      │ wg0      │ wg0  │ wg0       │ wg0
+     ▼          ▼          ▼      ▼           ▼
+┌──────────┐ ┌──────────┐ ┌─────────┐ ┌────────────┐
+│oci-apps  │ │oci-apps-1│ │oci-mail │ │oci-analyti.│
+│ ${flex0} │ │ ${flex}  │ │ ${mail} │ │${analytics}│
+│          │ │          │ │         │ │            │
+│Rust API  │ │PhotoPrism│ │ Mailu   │ │  Matomo    │
+│Crawlee   │ │ NocoDB   │ │Syncthing│ │  Windmill  │
+│Quant Lab │ │Code Srv  │ │Radicale │ │            │
+│          │ │ AFFiNE   │ │         │ │            │
+│          │ │Grist,LGTM│ │         │ │            │
+│          │ │Gitea,Ethr│ │         │ │            │
+└──────────┘ └──────────┘ └─────────┘ └────────────┘
+
+┌──────────┐ ┌──────────┐
+│oci-apps-2│ │gcp-ollama│
+│ ${flex2} │ │ ${gpu}   │
+│          │ │          │
+│(on-demand│ │ Ollama   │
+│ compute) │ │ LLM      │
+└──────────┘ └──────────┘
 ```
 
 ---
@@ -939,97 +1012,94 @@ Internet
           })(bad[j]);
         }
       }
-      // ── Auto-load VMs, Services, Docker on page ready ──
-      (function(){
-        var vmsEl=document.getElementById("auto-vms");
-        var svcsEl=document.getElementById("auto-services");
-        var dkEl=document.getElementById("auto-docker");
-        if(!vmsEl&&!svcsEl&&!dkEl)return;
-        // Declared → VMs + Services
-        fetch(HAPI+"/api/health/declared",{signal:AbortSignal.timeout(15000)})
-          .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
-          .then(function(d){
-            var vms=d.vms||{},doms=d.domains||{},t=d.totals||{};
-            if(vmsEl){
-              var h="<table><tr><th>VM ID</th><th>Label</th><th>Services</th><th>Containers</th><th>Live</th></tr>";
-              for(var id in vms){
-                var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
-                for(var s in svcs)cc+=svcs[s].length;
-                h+="<tr><td>"+id+"</td><td><strong>"+(v.label||"")+"</strong></td><td>"+sc+"</td><td>"+cc+'</td><td class="loading">...</td></tr>';
-              }
-              h+="</table><p><strong>"+t.vms+"</strong> VMs, <strong>"+t.services+"</strong> services, <strong>"+t.containers+"</strong> containers</p>";
-              vmsEl.innerHTML=h;
+      // ── Toggle: Declared (static) ↔ Live (API) ──
+      function setupToggle(btnId, liveId, fetchFn) {
+        var btn = document.getElementById(btnId);
+        if (!btn) return;
+        var liveEl = document.getElementById(liveId);
+        // The static table is the next sibling element after the live div
+        var staticEl = liveEl.nextElementSibling;
+        var loaded = false;
+        btn.addEventListener('click', function() {
+          if (liveEl.style.display === 'none') {
+            if (staticEl) staticEl.style.display = 'none';
+            liveEl.style.display = '''';
+            btn.textContent = 'Show Declared';
+            if (!loaded) { loaded = true; fetchFn(liveEl); }
+          } else {
+            if (staticEl) staticEl.style.display = '''';
+            liveEl.style.display = 'none';
+            btn.textContent = 'Show Live';
+          }
+        });
+      }
+      setupToggle('toggle-vms', 'live-vms', function(el) {
+        el.innerHTML = '<span class="loading">Loading from API...</span>';
+        fetch(HAPI + '/api/health/declared', {signal: AbortSignal.timeout(15000)})
+          .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function(d) {
+            var vms = d.vms || {}, t = d.totals || {};
+            var h = '<table><tr><th>VM ID</th><th>Label</th><th>Services</th><th>Containers</th></tr>';
+            for (var id in vms) {
+              var v = vms[id], svcs = v.services || {}, sc = Object.keys(svcs).length, cc = 0;
+              for (var s in svcs) cc += svcs[s].length;
+              h += '<tr><td>' + id + '</td><td><strong>' + (v.label || '''') + '</strong></td><td>' + sc + '</td><td>' + cc + '</td></tr>';
             }
-            if(svcsEl){
-              var h="<table><tr><th>VM</th><th>Service</th><th>Containers</th><th>Domain</th></tr>";
-              for(var id in vms){
-                var v=vms[id],svcs=v.services||{};
-                for(var sn in svcs){
-                  var cs=svcs[sn],dom="";
-                  for(var ci=0;ci<cs.length;ci++){if(doms[cs[ci]]){dom=doms[cs[ci]];break;}}
-                  h+="<tr><td>"+(v.label||id)+"</td><td><strong>"+sn+"</strong></td><td><code>"+cs.join("</code> <code>")+"</code></td>";
-                  h+='<td>'+(dom?'<a href="https://'+dom+'" target="_blank">'+dom+"</a>":"\u2014")+"</td></tr>";
-                }
-              }
-              h+="</table>";
-              svcsEl.innerHTML=h;
-            }
-            // Fetch deployed to fill Live column + Docker section
-            fetch(HAPI+"/api/health/deployed",{signal:AbortSignal.timeout(30000)})
-              .then(function(r){return r.json()})
-              .then(function(dd){
-                var dvms=dd.vms||{};
-                // Update Live column in VMs table
-                if(vmsEl){
-                  var rows=vmsEl.querySelectorAll("tr");
-                  for(var i=1;i<rows.length;i++){
-                    var cells=rows[i].querySelectorAll("td");
-                    if(cells.length<5)continue;
-                    var vmId=cells[0].textContent;
-                    var dv=dvms[vmId];
-                    if(dv){
-                      var cls=dv.stopped>0?"st-warn":"st-ok";
-                      cells[4].className=cls;
-                      cells[4].textContent=dv.running+" up / "+dv.stopped+" down";
-                    }else{
-                      cells[4].className="st-off";
-                      cells[4].textContent="unreachable";
-                    }
-                  }
-                }
-                // Docker section
-                if(dkEl){
-                  var h="";
-                  for(var id in dvms){
-                    var v=dvms[id],cs=v.containers||[];
-                    h+='<div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e">';
-                    h+="<strong>"+(v.label||id)+"</strong> \u2014 ";
-                    h+='<span class="st-ok">'+v.running+" running</span>, ";
-                    h+='<span class="'+(v.stopped>0?"st-warn":"st-off")+'">'+v.stopped+" stopped</span>";
-                    if(cs.length>0){
-                      h+='<table style="margin:.4rem 0"><tr><th>Container</th><th>State</th><th>Ports</th></tr>';
-                      for(var j=0;j<cs.length;j++){
-                        var c=cs[j],cls=c.state==="running"?"st-ok":(c.state==="exited"?"st-err":"st-warn");
-                        h+='<tr><td>'+c.name+'</td><td class="'+cls+'">'+c.state+"</td><td>"+(c.ports||"\u2014")+"</td></tr>";
-                      }
-                      h+="</table>";
-                    }
-                    h+="</div>";
-                  }
-                  var sm=dd.summary||{};
-                  h+='<p><span class="st-ok">'+sm.running+' running</span>, <span class="st-warn">'+sm.stopped+" stopped</span>, "+sm.total+" total</p>";
-                  dkEl.innerHTML=h;
-                }
-              })
-              .catch(function(){});
+            h += '</table>';
+            h += '<p><strong>' + t.vms + '</strong> VMs, <strong>' + t.services + '</strong> services, <strong>' + t.containers + '</strong> containers</p>';
+            el.innerHTML = h;
           })
-          .catch(function(e){
-            var msg='<span class="st-err">Failed: '+e.message+"</span>";
-            if(vmsEl)vmsEl.innerHTML=msg;
-            if(svcsEl)svcsEl.innerHTML=msg;
-            if(dkEl)dkEl.innerHTML=msg;
-          });
-      })();
+          .catch(function(e) { el.innerHTML = '<span class="st-err">Error: ' + e.message + '</span>'; });
+      });
+      setupToggle('toggle-svcs', 'live-svcs', function(el) {
+        el.innerHTML = '<span class="loading">Loading from API...</span>';
+        fetch(HAPI + '/api/health/declared', {signal: AbortSignal.timeout(15000)})
+          .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function(d) {
+            var vms = d.vms || {}, doms = d.domains || {};
+            var h = '<table><tr><th>VM</th><th>Service</th><th>Containers</th><th>Domain</th></tr>';
+            for (var id in vms) {
+              var v = vms[id], svcs = v.services || {};
+              for (var sn in svcs) {
+                var cs = svcs[sn], dom = '''';
+                for (var ci = 0; ci < cs.length; ci++) { if (doms[cs[ci]]) { dom = doms[cs[ci]]; break; } }
+                h += '<tr><td>' + (v.label || id) + '</td><td><strong>' + sn + '</strong></td><td><code>' + cs.join('</code> <code>') + '</code></td>';
+                h += '<td>' + (dom ? '<a href="https://' + dom + '" target="_blank">' + dom + '</a>' : '\u2014') + '</td></tr>';
+              }
+            }
+            h += '</table>';
+            el.innerHTML = h;
+          })
+          .catch(function(e) { el.innerHTML = '<span class="st-err">Error: ' + e.message + '</span>'; });
+      });
+      setupToggle('toggle-docker', 'live-docker', function(el) {
+        el.innerHTML = '<span class="loading">Loading from API...</span>';
+        fetch(HAPI + '/api/health/deployed', {signal: AbortSignal.timeout(30000)})
+          .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function(d) {
+            var dvms = d.vms || {}, h = '''';
+            for (var id in dvms) {
+              var v = dvms[id], cs = v.containers || [];
+              h += '<div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e">';
+              h += '<strong>' + (v.label || id) + '</strong> \u2014 ';
+              h += '<span class="st-ok">' + v.running + ' running</span>, ';
+              h += '<span class="' + (v.stopped > 0 ? 'st-warn' : 'st-off') + '">' + v.stopped + ' stopped</span>';
+              if (cs.length > 0) {
+                h += '<table style="margin:.4rem 0"><tr><th>Container</th><th>State</th><th>Ports</th></tr>';
+                for (var j = 0; j < cs.length; j++) {
+                  var c = cs[j], cls = c.state === 'running' ? 'st-ok' : (c.state === 'exited' ? 'st-err' : 'st-warn');
+                  h += '<tr><td>' + c.name + '</td><td class="' + cls + '">' + c.state + '</td><td>' + (c.ports || '\u2014') + '</td></tr>';
+                }
+                h += '</table>';
+              }
+              h += '</div>';
+            }
+            var sm = d.summary || {};
+            h += '<p><span class="st-ok">' + sm.running + ' running</span>, <span class="st-warn">' + sm.stopped + ' stopped</span>, ' + sm.total + ' total</p>';
+            el.innerHTML = h;
+          })
+          .catch(function(e) { el.innerHTML = '<span class="st-err">Error: ' + e.message + '</span>'; });
+      });
       </script>
       </body>
       </html>
