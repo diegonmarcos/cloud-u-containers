@@ -50,14 +50,13 @@ let
       publicKey = "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=";
       role      = "spoke";
     };
-    # gcp-t4: commented out until VM is provisioned — PLACEHOLDER key crashes wg-quick
-    # gcp-t4 = {
-    #   address   = "10.0.0.8";
-    #   endpoint  = null;
-    #   port      = 51820;
-    #   publicKey = "PLACEHOLDER";
-    #   role      = "spoke";
-    # };
+    gcp-t4 = {
+      address   = "10.0.0.8";
+      endpoint  = "34.57.36.41";
+      port      = 51820;
+      publicKey = "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=";
+      role      = "spoke";
+    };
     mobile = {
       address   = "10.0.0.5";
       endpoint  = null;
