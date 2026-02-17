@@ -88,10 +88,16 @@ import request_limits
 }
   }
 
-  # API — Rust (default catch-all), Flask (/flask/*), Go (/go/*)
+  # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
   api.diegonmarcos.com {
 import security
 import request_limits
+    # Root path → Swagger UI landing page on GitHub Pages
+    @root path /
+    handle @root {
+      redir https://diegonmarcos.github.io/api/ permanent
+    }
+
     handle /flask/* {
         @bearer header Authorization Bearer*
   handle @bearer {
@@ -113,8 +119,26 @@ forward_auth authelia:9091 {
     handle /go/* {
       reverse_proxy 10.0.0.1:8090
     }
+    handle_path /crawlee/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3000
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3000
+  }
+
+    }
     handle {
-      reverse_proxy 10.0.0.1:8080
+      reverse_proxy 10.0.0.6:8080
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -644,6 +668,24 @@ forward_auth authelia:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy 10.0.0.2:3000
+  }
+
+    }
+    handle_path /crawlee/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3001
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3001
   }
 
     }
