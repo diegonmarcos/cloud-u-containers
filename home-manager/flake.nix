@@ -45,5 +45,11 @@
       pkgs = nixpkgs.legacyPackages.aarch64-linux;
       modules = [ ./oci-apps-2.nix ];
     };
+
+    # gcp-t4 (TBD) - N1 Std 4 + T4 GPU (Spot), x86_64, Ubuntu (Paid, auto-shutdown 1h)
+    homeConfigurations."diego@gcp-t4" = home-manager.lib.homeManagerConfiguration {
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      modules = [ ./gcp-t4.nix ];
+    };
   };
 }

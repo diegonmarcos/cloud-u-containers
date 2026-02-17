@@ -13,7 +13,7 @@
       container_name = "ollama";
       image = "ollama/ollama:latest";
       api_port = 11434;
-      wg_ip = "10.0.0.10";
+      wg_ip = "10.0.0.8";
       timezone = "America/Chicago";
       keep_alive = "5m";
       kv_cache_type = "q4_0";

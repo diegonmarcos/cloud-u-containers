@@ -12,7 +12,7 @@ Deploy Ollama LLM server with DeepSeek and Qwen 14B models (Q4/Q8 quantizations)
               ┌────────────┼────────────┐
               │            │            │
          gcp-ollama   gcp-proxy    oci-apps-*
-         10.0.0.10    10.0.0.1     10.0.0.x
+         10.0.0.8    10.0.0.1     10.0.0.x
               │
      ┌────────┴────────┐
      │  NVIDIA T4 GPU  │
@@ -51,7 +51,7 @@ Deploy Ollama LLM server with DeepSeek and Qwen 14B models (Q4/Q8 quantizations)
 - **Provisioning**: Spot (preemptible, ~70% cheaper)
 - **Disk**: 50GB SSD
 - **Zone**: us-central1-a
-- **WireGuard IP**: 10.0.0.10
+- **WireGuard IP**: 10.0.0.8
 
 ## Deployment
 
@@ -65,8 +65,8 @@ ssh gcp-ollama "docker exec ollama ollama pull deepseek-r1:14b"
 ssh gcp-ollama "docker exec ollama ollama pull qwen2.5:14b"
 
 # Test
-curl http://10.0.0.10:11434/api/tags
-curl http://10.0.0.10:11434/api/generate -d '{"model":"deepseek-r1:14b","prompt":"hello","stream":false}'
+curl http://10.0.0.8:11434/api/tags
+curl http://10.0.0.8:11434/api/generate -d '{"model":"deepseek-r1:14b","prompt":"hello","stream":false}'
 ```
 
 ## Vast.ai Fallback
@@ -82,7 +82,7 @@ If GCP spot VM is preempted or unavailable:
 
 - [ ] Create GCP spot VM with T4 GPU
 - [ ] Install NVIDIA Container Toolkit + Docker
-- [ ] Configure WireGuard (10.0.0.10)
+- [ ] Configure WireGuard (10.0.0.8)
 - [ ] Add SSH alias `gcp-ollama` to vault config
 - [ ] Update config.json with actual IP
 - [ ] Deploy via `./build.sh ship`

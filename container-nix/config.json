@@ -370,7 +370,7 @@
       "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4",
       "api_port": "11434",
       "models": ["deepseek-r1:14b", "qwen2.5:14b"],
-      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.10)."
+      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
     }
   }
 }
