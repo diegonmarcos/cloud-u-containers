@@ -833,7 +833,7 @@ Internet
           .catch(function(){rProfBtns()});
       }
       function rDeployed(el,d){
-        var h='';
+        var h='''';
         var vms=d.vms||{};
         for(var id in vms){
           var v=vms[id],cs=v.containers||[];
@@ -894,7 +894,7 @@ Internet
           var v=window._dVMs[id],svcs=v.services||{},cs=[];
           for(var s in svcs)for(var i=0;i<svcs[s].length;i++)cs.push(svcs[s][i]);
           var dv=dep[id]||{},dcs=dv.containers||[];
-          var stMap={};for(var k=0;k<dcs.length;k++)stMap[dcs[k].name]={state:dcs[k].state,ports:dcs[k].ports||''};
+          var stMap={};for(var k=0;k<dcs.length;k++)stMap[dcs[k].name]={state:dcs[k].state,ports:dcs[k].ports||''''};
           var unhealthy=[];
           for(var j=0;j<cs.length;j++){var si=stMap[cs[j]];if(!si||si.state!=='running')unhealthy.push(cs[j])}
           h+='<div class="prof-vm"><strong>'+id+'</strong> ('+(v.label||"")+') — '+cs.length+' containers ';
@@ -905,7 +905,7 @@ Internet
           h+='<table><tr><th>Container</th><th>State</th><th>Ports</th><th>Action</th><th>Result</th></tr>';
           for(var j=0;j<cs.length;j++){
             var cn=cs[j],si=stMap[cn];
-            var st=si?si.state:'not deployed',pts=si?si.ports:'';
+            var st=si?si.state:'not deployed',pts=si?si.ports:'''';
             var cls=st==='running'?'st-ok':(st==='exited'||st==='not deployed'?'st-err':'st-warn');
             h+='<tr><td>'+cn+'</td><td class="'+cls+'">'+st+'</td><td>'+(pts||'—')+'</td>';
             h+='<td><button class="prof-btn" data-prof="'+cn+'">Profile</button></td>';
@@ -983,8 +983,8 @@ Internet
               .finally(function(){
                 done++;
                 if(done===bad.length&&el){
-                  var h='';for(var r=0;r<results.length;r++){var ri=results[r];h+='<span class="'+ri.cls+'">'+ri.name+': '+ri.status+'</span><br>'}
-                  el.className='';el.innerHTML=h;
+                  var h='''';for(var r=0;r<results.length;r++){var ri=results[r];h+='<span class="'+ri.cls+'">'+ri.name+': '+ri.status+'</span><br>'}
+                  el.className='''';el.innerHTML=h;
                 }
               });
           })(bad[j]);
