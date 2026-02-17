@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY --from=builder /build/rust-api-binary /app/rust-api
 
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
 USER appuser
 
 ENV RUST_API_PORT=8080
