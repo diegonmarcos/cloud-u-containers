@@ -394,17 +394,13 @@
 
 ## Virtual Machines
 
-| Alias | Provider | Tier | Public IP | WG IP | RAM | CPU | Availability |
-|-------|----------|------|-----------|-------|-----|-----|--------------|
-${vmRows}
+<div id="auto-vms" class="tier-body"><span class="loading">Loading VMs from API...</span></div>
 
 ---
 
 ## Services
 
-| Domain | Service | VM | Port | Auth | Availability |
-|--------|---------|-----|------|------|--------------|
-${svcRows}
+<div id="auto-services" class="tier-body"><span class="loading">Loading services from API...</span></div>
 
 ---
 
@@ -418,60 +414,15 @@ ${secRows}
 
 ## Firewall & Ports
 
-Cloud firewall rules and host-level iptables. Only **gcp-proxy** should accept public traffic.
-OCI VMs restrict to WireGuard mesh + mail delivery ports.
+Only **gcp-proxy** accepts public HTTP/HTTPS traffic. All other VMs restrict to WireGuard mesh + service-specific ports.
 
-| VM | WG IP | Port | Bind | Purpose | Status |
-|----|-------|------|------|---------|--------|
-${fwRows}
-
-**iptables policy per VM:**
-
-| VM | Chain | Rule | Purpose |
-|----|-------|------|---------|
-| gcp-proxy | FORWARD | `10.0.0.0/24 → wg0 ACCEPT` | WireGuard mesh routing |
-| gcp-proxy | POSTROUTING | `10.0.0.0/24 MASQUERADE` | NAT for mesh hub |
-| gcp-proxy | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-apps-1 | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-apps-1 | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
-| oci-apps-1 | INPUT | `default DROP` (except established) | Block public access |
-| oci-mail | INPUT | `25,465,587,993/tcp ACCEPT` | Mail delivery (public) |
-| oci-mail | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-mail | INPUT | `other DROP` (except established) | Block non-mail public |
-| oci-analytics | INPUT | `51820/udp ACCEPT` | WireGuard endpoint |
-| oci-analytics | INPUT | `22/tcp from 10.0.0.0/24 ACCEPT` | SSH via mesh only |
-| oci-analytics | INPUT | `default DROP` (except established) | Block public access |
+**Policy**: All VMs run `51820/udp` (WireGuard) + `22/tcp` (SSH restricted). gcp-proxy additionally exposes `80/443` (Caddy). oci-mail exposes `25,465,587,993` (mail delivery).
 
 ---
 
 ## Docker Network
 
-Container port bindings. `0.0.0.0` = publicly exposed, `10.0.0.x` = WireGuard mesh only, `127.0.0.1` = localhost, `docker` = internal network.
-
-| VM | Container | Host Port | Bind | Internal | Note |
-|----|-----------|-----------|------|----------|------|
-${dkRows}
-
-**Docker network topology:**
-
-```
-┌─── npm_default (bridge) ──────────────────────────────────┐
-│                                                            │
-│  gcp-proxy:  caddy ←→ authelia ←→ introspect-proxy        │
-│              rust-api, flask-api, vaultwarden, ntfy        │
-│              dozzle (monitors all containers)              │
-│                                                            │
-│  oci-apps-1: photoprism ←→ photoprism-db (redis)          │
-│              nocodb, code-server, grist, gitea             │
-│              etherpad, filebrowser, hedgedoc, revealmd     │
-│              grafana ←→ loki ←→ tempo ←→ mimir (LGTM)    │
-│                                                            │
-│  oci-mail:   mailu (front/smtp/imap/admin/webmail/redis)  │
-│              syncthing, radicale, caddy (local proxy)      │
-│                                                            │
-│  oci-analytics: matomo, windmill                           │
-└────────────────────────────────────────────────────────────┘
-```
+<div id="auto-docker" class="tier-body"><span class="loading">Loading containers from API...</span></div>
 
 ---
 
@@ -482,7 +433,7 @@ Browser Request
     │
     ▼
 ┌─────────────┐
-│  Cloudflare  │  DNS + DDoS + WAF
+│  Cloudflare  │  DNS only (grey cloud, no proxy)
 └──────┬──────┘
        │
        ▼
@@ -522,32 +473,30 @@ Internet
     │
     ▼
 ┌─────────────────────────────────────────────┐
-│  Cloudflare  (*.diegonmarcos.com)            │
+│  Cloudflare  (*.diegonmarcos.com) DNS only   │
 └──────────────────┬──────────────────────────┘
                    │
                    ▼
 ┌──────────────────────────────────────────────┐
 │  gcp-proxy  ${gcp}                           │
-│  ├─ Caddy (reverse proxy)                    │
-│  ├─ Authelia (2FA)                           │
-│  ├─ introspect-proxy (OIDC)                  │
-│  ├─ Vaultwarden                              │
-│  ├─ ntfy                                     │
-│  └─ Flask API + Rust API                     │
-└────┬──────────┬──────────┬───────────────────┘
-     │ wg0      │ wg0      │ wg0
-     ▼          ▼          ▼
+│  ├─ Caddy (reverse proxy + TLS)              │
+│  ├─ Authelia (2FA) + introspect-proxy        │
+│  ├─ Flask API + Go API                       │
+│  ├─ Vaultwarden, ntfy, Dozzle               │
+│  └─ Sauron Central + Syslog Central          │
+└────┬──────────┬──────────┬──────┬────────────┘
+     │ wg0      │ wg0      │ wg0  │ wg0
+     ▼          ▼          ▼      ▼
 ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────┐
-│oci-apps-1│ │oci-apps│ │oci-mail │ │oci-analytics │
-│ ${flex}  │ │ ${flex0} │ │ ${mail} │ │ ${analytics} │
+│oci-apps  │ │oci-apps-1│ │oci-mail │ │oci-analytics │
+│ ${flex0} │ │ ${flex}  │ │ ${mail} │ │ ${analytics} │
 │          │ │          │ │         │ │              │
-│PhotoPrism│ │ Jupyter  │ │ Mailu   │ │   Matomo     │
-│ NocoDB   │ │ Nautilus │ │Syncthing│ │  Windmill    │
-│Code Srv  │ │Dash/Plot │ │Radicale │ │              │
-│ AFFiNE   │ │ Quant DB │ │         │ │              │
-│  Grist   │ │Crawlee AP│ │         │ │              │
-│          │ │Crawlee UI│ │         │ │              │
-│          │ │ MinIO/S3 │ │         │ │              │
+│Rust API  │ │PhotoPrism│ │ Mailu   │ │   Matomo     │
+│Crawlee   │ │ NocoDB   │ │Syncthing│ │  Windmill    │
+│Quant Lab │ │Code Srv  │ │Radicale │ │              │
+│          │ │ AFFiNE   │ │         │ │              │
+│          │ │Grist,LGTM│ │         │ │              │
+│          │ │Gitea,Ethr│ │         │ │              │
 └──────────┘ └──────────┘ └─────────┘ └──────────────┘
 ```
 
@@ -990,6 +939,97 @@ Internet
           })(bad[j]);
         }
       }
+      // ── Auto-load VMs, Services, Docker on page ready ──
+      (function(){
+        var vmsEl=document.getElementById("auto-vms");
+        var svcsEl=document.getElementById("auto-services");
+        var dkEl=document.getElementById("auto-docker");
+        if(!vmsEl&&!svcsEl&&!dkEl)return;
+        // Declared → VMs + Services
+        fetch(HAPI+"/api/health/declared",{signal:AbortSignal.timeout(15000)})
+          .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
+          .then(function(d){
+            var vms=d.vms||{},doms=d.domains||{},t=d.totals||{};
+            if(vmsEl){
+              var h="<table><tr><th>VM ID</th><th>Label</th><th>Services</th><th>Containers</th><th>Live</th></tr>";
+              for(var id in vms){
+                var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
+                for(var s in svcs)cc+=svcs[s].length;
+                h+="<tr><td>"+id+"</td><td><strong>"+(v.label||"")+"</strong></td><td>"+sc+"</td><td>"+cc+'</td><td class="loading">...</td></tr>';
+              }
+              h+="</table><p><strong>"+t.vms+"</strong> VMs, <strong>"+t.services+"</strong> services, <strong>"+t.containers+"</strong> containers</p>";
+              vmsEl.innerHTML=h;
+            }
+            if(svcsEl){
+              var h="<table><tr><th>VM</th><th>Service</th><th>Containers</th><th>Domain</th></tr>";
+              for(var id in vms){
+                var v=vms[id],svcs=v.services||{};
+                for(var sn in svcs){
+                  var cs=svcs[sn],dom="";
+                  for(var ci=0;ci<cs.length;ci++){if(doms[cs[ci]]){dom=doms[cs[ci]];break;}}
+                  h+="<tr><td>"+(v.label||id)+"</td><td><strong>"+sn+"</strong></td><td><code>"+cs.join("</code> <code>")+"</code></td>";
+                  h+='<td>'+(dom?'<a href="https://'+dom+'" target="_blank">'+dom+"</a>":"\u2014")+"</td></tr>";
+                }
+              }
+              h+="</table>";
+              svcsEl.innerHTML=h;
+            }
+            // Fetch deployed to fill Live column + Docker section
+            fetch(HAPI+"/api/health/deployed",{signal:AbortSignal.timeout(30000)})
+              .then(function(r){return r.json()})
+              .then(function(dd){
+                var dvms=dd.vms||{};
+                // Update Live column in VMs table
+                if(vmsEl){
+                  var rows=vmsEl.querySelectorAll("tr");
+                  for(var i=1;i<rows.length;i++){
+                    var cells=rows[i].querySelectorAll("td");
+                    if(cells.length<5)continue;
+                    var vmId=cells[0].textContent;
+                    var dv=dvms[vmId];
+                    if(dv){
+                      var cls=dv.stopped>0?"st-warn":"st-ok";
+                      cells[4].className=cls;
+                      cells[4].textContent=dv.running+" up / "+dv.stopped+" down";
+                    }else{
+                      cells[4].className="st-off";
+                      cells[4].textContent="unreachable";
+                    }
+                  }
+                }
+                // Docker section
+                if(dkEl){
+                  var h="";
+                  for(var id in dvms){
+                    var v=dvms[id],cs=v.containers||[];
+                    h+='<div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e">';
+                    h+="<strong>"+(v.label||id)+"</strong> \u2014 ";
+                    h+='<span class="st-ok">'+v.running+" running</span>, ";
+                    h+='<span class="'+(v.stopped>0?"st-warn":"st-off")+'">'+v.stopped+" stopped</span>";
+                    if(cs.length>0){
+                      h+='<table style="margin:.4rem 0"><tr><th>Container</th><th>State</th><th>Ports</th></tr>';
+                      for(var j=0;j<cs.length;j++){
+                        var c=cs[j],cls=c.state==="running"?"st-ok":(c.state==="exited"?"st-err":"st-warn");
+                        h+='<tr><td>'+c.name+'</td><td class="'+cls+'">'+c.state+"</td><td>"+(c.ports||"\u2014")+"</td></tr>";
+                      }
+                      h+="</table>";
+                    }
+                    h+="</div>";
+                  }
+                  var sm=dd.summary||{};
+                  h+='<p><span class="st-ok">'+sm.running+' running</span>, <span class="st-warn">'+sm.stopped+" stopped</span>, "+sm.total+" total</p>";
+                  dkEl.innerHTML=h;
+                }
+              })
+              .catch(function(){});
+          })
+          .catch(function(e){
+            var msg='<span class="st-err">Failed: '+e.message+"</span>";
+            if(vmsEl)vmsEl.innerHTML=msg;
+            if(svcsEl)svcsEl.innerHTML=msg;
+            if(dkEl)dkEl.innerHTML=msg;
+          });
+      })();
       </script>
       </body>
       </html>
