@@ -5,6 +5,7 @@ import { join } from "path";
 import {
   getConfig,
   reloadConfig,
+  getDriftReport,
   getServiceFolder,
   getServiceDir,
   getVmSshAlias,
@@ -53,7 +54,8 @@ export function registerInfraTools(server: McpServer) {
       const rows = entries.map(([name, svc]) => {
         const folder = getServiceFolder(name);
         const hasDistDir = existsSync(join(CONTAINER_NIX_DIR, folder, "dist"));
-        return `${name} | ${svc.category} | ${svc.vm} | ${hasDistDir ? "built" : "-"} | ${svc.description}`;
+        const tag = svc.discovered ? " [auto]" : "";
+        return `${name}${tag} | ${svc.category} | ${svc.vm} | ${hasDistDir ? "built" : "-"} | ${svc.description}`;
       });
 
       return {
@@ -162,6 +164,21 @@ export function registerInfraTools(server: McpServer) {
       if (removedServices.length) lines.push(`- Services removed: ${removedServices.join(", ")}`);
       if (!addedVms.length && !removedVms.length && !addedServices.length && !removedServices.length) {
         lines.push("No structural changes detected.");
+      }
+
+      // Drift report: filesystem vs config.json
+      const drift = getDriftReport();
+      const autoCount = Object.values(newConfig.services).filter((s) => s.discovered).length;
+      lines.push(`\n--- Drift Report ---`);
+      lines.push(`Auto-discovered: ${autoCount} services from build.json`);
+      if (drift.onDiskOnly.length) {
+        lines.push(`On disk only (auto-discovered, not in config.json): ${drift.onDiskOnly.join(", ")}`);
+      }
+      if (drift.configOnly.length) {
+        lines.push(`In config.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
+      }
+      if (!drift.onDiskOnly.length && !drift.configOnly.length) {
+        lines.push("Config and disk are in sync.");
       }
 
       return { content: [{ type: "text", text: lines.join("\n") }] };

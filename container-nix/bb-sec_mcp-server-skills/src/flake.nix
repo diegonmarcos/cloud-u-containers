@@ -34,7 +34,7 @@
     in {
       default = pkgs.runCommand "mcp-server-skills" {} ''
         mkdir -p $out/src/tools $out/src/utils $out/src/resources $out/src/prompts
-        mkdir -p $out/skills/senior $out/skills/junior $out/skills/official $out/skills/community
+        mkdir -p $out/skills/official $out/skills/community
 
         # Container files (Podman on Termux)
         cp ${mkDockerCompose pkgs} $out/podman-compose.yml
@@ -59,20 +59,13 @@
         cp ${./resources/index.ts} $out/src/resources/index.ts
         cp ${./prompts/index.ts} $out/src/prompts/index.ts
 
-        # Skill files — root
-        cp ${./skills/SKILL.md} $out/skills/SKILL.md
+        # Skill files — reference docs only (SKILL.md content migrated to MCP prompts)
         cp ${./skills/skills.md} $out/skills/skills.md
         cp ${./skills/skills_claude.md} $out/skills/skills_claude.md
         cp ${./skills/skills_front.md} $out/skills/skills_front.md
         cp ${./skills/skills_claude_front.md} $out/skills/skills_claude_front.md
 
-        # Skill files — subdirectories
-        for f in ${./skills/senior}/*; do
-          cp "$f" "$out/skills/senior/$(basename "$f")"
-        done
-        for f in ${./skills/junior}/*; do
-          cp "$f" "$out/skills/junior/$(basename "$f")"
-        done
+        # Skill files — community + official templates (senior/junior removed — migrated to MCP prompts)
         for f in ${./skills/official}/*; do
           cp "$f" "$out/skills/official/$(basename "$f")"
         done

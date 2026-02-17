@@ -1,7 +1,7 @@
 #!/bin/sh
 # Per-service build script: src/ → dist/ → docker build → local deploy
 # Containerized MCP tool — nix flake builds dist/, Docker packages runtime
-# Pipeline: build (nix + docker) → secrets → deploy (SKILL.md) → compose (register MCP)
+# Pipeline: build (nix + docker) → secrets → deploy (no-op) → compose (register MCP)
 set -e
 
 SERVICE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -114,21 +114,15 @@ for line in sys.stdin:
     log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
 }
 
-# ── Step 3: Deploy SKILL.md locally ───────────────────────────────────
+# ── Step 3: Deploy (no-op — SKILL.md migrated to MCP prompts v2.3.1) ─
 step_deploy() {
-    [ -z "$SKILL_DEST" ] && { log "ERROR: deploy.skill_dest not set in build.json"; return 1; }
-    [ ! -d "$DIST_DIR" ] && { log "No dist/ — run build first"; return 1; }
-
-    skill_src="$DIST_DIR/skills/SKILL.md"
-    if [ ! -f "$skill_src" ]; then
-        log "ERROR: No SKILL.md in dist/skills/"
-        return 1
+    log "SKILL.md no longer deployed — content migrated to MCP prompts (cloud-architect, frontend-developer, debug-ops, crawlee-scraping)"
+    # Clean up old deployed skill file if it exists
+    if [ -n "$SKILL_DEST" ] && [ -f "$SKILL_DEST/SKILL.md" ]; then
+        rm -f "$SKILL_DEST/SKILL.md"
+        rmdir "$SKILL_DEST" 2>/dev/null || true
+        log "Cleaned up old $SKILL_DEST/SKILL.md"
     fi
-
-    log "Deploying SKILL.md → $SKILL_DEST/"
-    mkdir -p "$SKILL_DEST"
-    cp "$skill_src" "$SKILL_DEST/SKILL.md"
-    log "Deployed SKILL.md"
 }
 
 # ── Step 4: Register MCP with Claude Code (docker run) ────────────────
@@ -188,7 +182,7 @@ case "${1:-all}" in
         echo "Usage: $0 [build|secrets|deploy|compose|all|ship|clean]"
         echo "  build    Nix flake → dist/ + Docker image build"
         echo "  secrets  Decrypt secrets → dist/.secrets"
-        echo "  deploy   Deploy SKILL.md locally"
+        echo "  deploy   No-op (SKILL.md migrated to MCP prompts)"
         echo "  compose  Register MCP with Claude Code (docker run)"
         echo "  all      build + secrets (default)"
         echo "  ship     build + secrets + deploy + compose"

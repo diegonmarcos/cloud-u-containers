@@ -13,15 +13,16 @@ import { registerRustApiControlTools } from "./tools/rust-api-control.js";
 import { registerRustApiProxyTools } from "./tools/rust-api-proxy.js";
 import { registerFrontTools } from "./tools/front.js";
 import { registerRustApiCloudTools } from "./tools/rust-api-cloud.js";
+import { registerCrawleeTools } from "./tools/crawlee.js";
 import { registerResources } from "./resources/index.js";
 import { registerPrompts } from "./prompts/index.js";
 
 const server = new McpServer({
   name: "cloud-infra",
-  version: "2.2.0",
+  version: "2.3.1",
 });
 
-// Register all tools (51 total — api_call + api_vm_control removed in v2.1, cloud endpoints added in v2.2)
+// Register all tools (58 total — api_call + api_vm_control removed in v2.1, cloud in v2.2, crawlee in v2.3)
 registerInfraTools(server);            //  4: list_vms, list_services, get_service_detail, reload_config
 registerRepoTools(server);             //  3: read_file, search_repos, list_directory
 registerBuildTools(server);            //  2: build_service (extended), build_all
@@ -33,19 +34,20 @@ registerRustApiControlTools(server);   //  8: vm_*, container_*, service_start/s
 registerRustApiProxyTools(server);     //  1: service_api_call
 registerFrontTools(server);            //  5: front_list_projects, front_get_project, front_build, front_dev_server, front_deploy
 registerRustApiCloudTools(server);     //  7: cloud_oci/gcp_instances/resources/costs, cloud_summary
+registerCrawleeTools(server);          //  7: crawlee_list_actors, run_actor, list_runs, get_run, get_results, get_logs, abort_run
 
 // Register resources (7 static + 2 templates = 9 total)
 registerResources(server);             // cloud://config, ssh-config, services-overview, readme, front-projects, rust-api-endpoints, service-apis + templates: services/{name}, vms/{vm_id}
 
-// Register prompts (1 total)
-registerPrompts(server);               // cloud-architect (hybrid Chef+Waiter model)
+// Register prompts (4 total)
+registerPrompts(server);               // cloud-architect, frontend-developer, debug-ops, crawlee-scraping
 
 // All logging must go to stderr (stdout is JSON-RPC)
 const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-infra MCP server v2.2.0 (51 tools, 9 resources)...");
+  log("Starting cloud-infra MCP server v2.3.1 (58 tools, 9 resources, 4 prompts)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
