@@ -79,6 +79,14 @@ pub struct AppState {
         routes::docs::get_service,
         routes::docs::get_service_spec,
         routes::docs::get_all_specs,
+        // Cloud provider endpoints
+        routes::cloud::oci_instances,
+        routes::cloud::gcp_instances,
+        routes::cloud::oci_resources,
+        routes::cloud::gcp_resources,
+        routes::cloud::oci_costs,
+        routes::cloud::gcp_costs,
+        routes::cloud::cloud_summary,
     ),
     components(schemas(
         models::api_response::ApiResponse,

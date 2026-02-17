@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::AppState;
 
+pub mod cloud;
 pub mod docs;
 pub mod health;
 pub mod ondemand;
@@ -14,4 +15,5 @@ pub fn router() -> Router<Arc<AppState>> {
         .merge(ondemand::routes())
         .merge(profiling::routes())
         .merge(docs::routes())
+        .merge(cloud::routes())
 }

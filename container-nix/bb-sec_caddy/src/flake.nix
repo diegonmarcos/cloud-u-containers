@@ -56,7 +56,7 @@
         ram = "16 GB";
         cpu = "Ampere A1 (3 OCPU)";
         arch = "aarch64";
-        availability = "Wake-on-demand";
+        availability = "24/7";
       };
       "oci-mail" = {
         alias = "oci-mail";
@@ -85,7 +85,7 @@
     services = [
       { domain = "proxy.diegonmarcos.com";              name = "Dashboard";       vm = "gcp-proxy";     port = "—";   auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "auth.diegonmarcos.com";                name = "Authelia 2FA";    vm = "gcp-proxy";     port = "9091"; auth = "Public (bypass)";   avail = "24/7"; }
-      { domain = "api.diegonmarcos.com";                 name = "API (Rust+Flask+Go)";vm = "gcp-proxy";   port = "8080/5000/8090"; auth = "Rust: Public / Flask: Authelia / Go: Public"; avail = "24/7"; }
+      { domain = "api.diegonmarcos.com";                 name = "API (Rust+Flask+Go)";vm = "oci-apps/gcp-proxy"; port = "8080/5000/8090"; auth = "Rust: Public / Flask: Authelia / Go: Public"; avail = "24/7"; }
       { domain = "vault.diegonmarcos.com";               name = "Vaultwarden";     vm = "gcp-proxy";     port = "80";  auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "rss.diegonmarcos.com";                 name = "ntfy Push";       vm = "gcp-proxy";     port = "8090"; auth = "Authelia + Bearer"; avail = "24/7"; }
       { domain = "mail.diegonmarcos.com";                name = "Mailu";           vm = "oci-mail";      port = "8444"; auth = "Authelia + Bearer"; avail = "24/7"; }
@@ -960,7 +960,7 @@ Internet
         ${handleErrors}
       }
 
-      # API — Rust (default catch-all), Flask (/flask/*), Go (/go/*)
+      # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
       api.diegonmarcos.com {
     ${sec}
         handle /flask/* {
@@ -973,7 +973,7 @@ Internet
           ${mkProtected "${flex0}:3000"}
         }
         handle {
-          reverse_proxy ${gcp}:8080
+          reverse_proxy ${flex0}:8080
         }
         ${handleErrors}
       }
