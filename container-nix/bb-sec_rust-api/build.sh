@@ -36,10 +36,24 @@ DOCKER_BINARY="$(get_config docker.binary)"
 
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
 
-# ── Step 0: Build and push Docker image ──────────────────────────────
-step_docker() {
-    [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json — skipping"; return 0; }
+# ── Step 0: Build Docker image ───────────────────────────────────────
+step_docker_remote() {
+    FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
+    DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
+    REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
 
+    log "Syncing Docker context to $DEPLOY_HOST:$REMOTE_BUILD_DIR"
+    ssh "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
+    rsync -avz --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
+
+    log "Building Docker image on $DEPLOY_HOST (remote)"
+    ssh "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE:latest -f $DOCKERFILE ."
+
+    ssh "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
+    log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
+}
+
+step_docker_local() {
     DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     SHA_TAG="${GITHUB_SHA:-$(git -C "$SERVICE_DIR" rev-parse HEAD 2>/dev/null || echo local)}"
@@ -64,6 +78,16 @@ step_docker() {
         docker cp "$CONTAINER_ID:$DOCKER_BINARY" "/tmp/${SERVICE_NAME}-binary"
         docker rm "$CONTAINER_ID"
         log "Extracted binary ($(du -h "/tmp/${SERVICE_NAME}-binary" | cut -f1))"
+    fi
+}
+
+step_docker() {
+    [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json — skipping"; return 0; }
+
+    if [ "${REMOTE_BUILD:-}" = "true" ]; then
+        step_docker_remote
+    else
+        step_docker_local
     fi
 }
 

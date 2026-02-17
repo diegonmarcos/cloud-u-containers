@@ -8,10 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 COPY src/ .
-ENV CARGO_BUILD_JOBS=1
+ENV CARGO_BUILD_JOBS=2
 RUN --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
-    cargo build --release --jobs 1 && \
+    cargo build --release --jobs 2 && \
     cp /build/target/release/rust-api /build/rust-api-binary
 
 # Stage 2: Runtime
