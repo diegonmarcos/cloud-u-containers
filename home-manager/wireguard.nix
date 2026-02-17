@@ -50,13 +50,14 @@ let
       publicKey = "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=";
       role      = "spoke";
     };
-    gcp-t4 = {
-      address   = "10.0.0.8";
-      endpoint  = null;  # TBD — update after VM creation (spot = dynamic IP)
-      port      = 51820;
-      publicKey = "PLACEHOLDER";  # Generated on first activation — update after deploy
-      role      = "spoke";
-    };
+    # gcp-t4: commented out until VM is provisioned — PLACEHOLDER key crashes wg-quick
+    # gcp-t4 = {
+    #   address   = "10.0.0.8";
+    #   endpoint  = null;
+    #   port      = 51820;
+    #   publicKey = "PLACEHOLDER";
+    #   role      = "spoke";
+    # };
     mobile = {
       address   = "10.0.0.5";
       endpoint  = null;
