@@ -122,6 +122,7 @@ impl AppConfig {
         let oci_vms = [
             ("oci-A1-f_0", "OCI_FLEX0_INSTANCE_ID"),
             ("oci-A1-f_1", "OCI_FLEX1_INSTANCE_ID"),
+            ("oci-A1-p_0", "OCI_PAID_FLEX0_INSTANCE_ID"),
             ("oci-E2-f_0", "OCI_MICRO1_INSTANCE_ID"),
             ("oci-E2-f_1", "OCI_MICRO2_INSTANCE_ID"),
         ];
@@ -189,6 +190,7 @@ impl AppConfig {
             ("oci-A1-f_0", "10.0.0.6", "ubuntu", ssh_key.as_str()),
             ("oci-A1-f_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
             ("oci-E2-f_0", "10.0.0.3", "ubuntu", ssh_key.as_str()),
+            ("oci-A1-p_0", "10.0.0.7", "ubuntu", ssh_key.as_str()),
             ("oci-E2-f_1", "10.0.0.4", "ubuntu", ssh_key.as_str()),
             ("gcp-E2-f_0", "10.0.0.1", "diego", gcp_key.as_str()),
         ];
@@ -229,13 +231,22 @@ impl AppConfig {
         // All VM service maps
         let mut all_vm_services = HashMap::new();
 
-        // oci-A1-f_0 (oci-apps) — quant lab + crawlee cloud
+        // oci-A1-f_0 (oci-apps) — crawlee cloud + kg-graph + rig
         let mut flex0_svc = HashMap::new();
-        flex0_svc.insert("quant-lab".into(), vec!["quant_research".into(), "nautilus_engine".into(), "quant_analytics".into(), "quant_db".into()]);
         flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
+        flex0_svc.insert("kg-graph".into(), vec!["surrealdb".into()]);
+        flex0_svc.insert("rig".into(), vec!["rig".into()]);
         all_vm_services.insert("oci-A1-f_0".into(), VmServiceMap {
             label: "oci-apps".into(),
             services: flex0_svc,
+        });
+
+        // oci-A1-p_0 (oci-apps-2) — paid flex, 8 OCPUs / 32GB
+        let mut paid0_svc = HashMap::new();
+        paid0_svc.insert("placeholder".into(), vec![]);
+        all_vm_services.insert("oci-A1-p_0".into(), VmServiceMap {
+            label: "oci-apps-2".into(),
+            services: paid0_svc,
         });
 
         // oci-A1-f_1 (oci-apps-1)
@@ -263,7 +274,7 @@ impl AppConfig {
         let mut gcp_svc = HashMap::new();
         gcp_svc.insert("proxy".into(), vec!["npm".into(), "introspect-proxy".into()]);
         gcp_svc.insert("auth".into(), vec!["authelia".into(), "authelia-redis".into()]);
-        gcp_svc.insert("api".into(), vec!["flask-api".into()]);
+        gcp_svc.insert("api".into(), vec!["flask-api".into(), "rust-api".into()]);
         gcp_svc.insert("notifications".into(), vec!["ntfy".into()]);
         gcp_svc.insert("passwords".into(), vec!["vaultwarden".into()]);
         gcp_svc.insert("logs".into(), vec!["fluent-bit".into()]);
