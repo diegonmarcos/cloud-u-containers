@@ -104,6 +104,13 @@ step_build() {
     chmod -R u+w "$DIST_DIR"
     rm -f "$SERVICE_DIR/.result"
 
+    # Include shared config.json for dynamic VM/service discovery
+    CONFIG_JSON="$SERVICE_DIR/../config.json"
+    if [ -f "$CONFIG_JSON" ]; then
+        cp "$CONFIG_JSON" "$DIST_DIR/config.json"
+        log "Included config.json in dist/"
+    fi
+
     log "Built files:"
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
