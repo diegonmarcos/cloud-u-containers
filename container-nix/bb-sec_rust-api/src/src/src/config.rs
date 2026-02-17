@@ -94,6 +94,56 @@ pub struct SshData {
     pub key_path: Option<String>,
 }
 
+// ── config.json serde structs ──────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct ConfigJson {
+    #[allow(dead_code)]
+    ssh_key: Option<String>,
+    vms: HashMap<String, ConfigVm>,
+    services: HashMap<String, ConfigService>,
+}
+
+#[derive(Deserialize)]
+struct ConfigVm {
+    ip: String,
+    wg_ip: Option<String>,
+    user: String,
+    method: String,
+    ssh_alias: String,
+    gcloud_instance: Option<String>,
+    gcloud_zone: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ConfigService {
+    vm: String,
+    containers: Option<Vec<String>>,
+    domain: Option<String>,
+    #[allow(dead_code)]
+    category: Option<String>,
+}
+
+fn load_config_json(path: &str) -> Option<ConfigJson> {
+    if !Path::new(path).exists() {
+        tracing::warn!("config.json not found at {path}");
+        return None;
+    }
+    match std::fs::read_to_string(path) {
+        Ok(content) => match serde_json::from_str(&content) {
+            Ok(cfg) => Some(cfg),
+            Err(e) => {
+                tracing::warn!("Failed to parse config.json: {e}");
+                None
+            }
+        },
+        Err(e) => {
+            tracing::warn!("Failed to read config.json: {e}");
+            None
+        }
+    }
+}
+
 impl AppConfig {
     pub fn load() -> Self {
         let port = std::env::var("RUST_API_PORT")
@@ -163,200 +213,125 @@ impl AppConfig {
             .unwrap_or_else(|_| "/app/config/gcp_key.json".into());
         let gcp_project_id = std::env::var("GCP_PROJECT_ID").unwrap_or_default();
 
-        // GCP VMs
-        let mut gcp_vms = HashMap::new();
-        gcp_vms.insert("gcp-E2-f_0".to_string(), GcpVm {
-            name: "arch-1".to_string(),
-            zone: "us-central1-a".to_string(),
-            project_id: gcp_project_id.clone(),
-        });
-
-        // Ensure GCP VMs are in vm_instances for provider dispatch
-        for (vm_id, gcp_vm) in &gcp_vms {
-            vm_instances.entry(vm_id.clone()).or_insert_with(|| VmInstance {
-                instance_id: gcp_vm.name.clone(),
-                provider: VmProvider::Gcp,
-            });
-        }
-
-        // SSH configs from env or architecture.json
-        let mut vm_ssh = HashMap::new();
+        // SSH key paths from env
         let ssh_key = std::env::var("SSH_KEY_PATH")
             .unwrap_or_else(|_| "/app/config/id_rsa".into());
         let gcp_key = std::env::var("GCP_SSH_KEY_PATH")
             .unwrap_or_else(|_| "/app/config/gcp_key".into());
 
-        let default_ssh = vec![
-            ("oci-A1-f_0", "10.0.0.6", "ubuntu", ssh_key.as_str()),
-            ("oci-A1-f_1", "10.0.0.2", "ubuntu", ssh_key.as_str()),
-            ("oci-E2-f_0", "10.0.0.3", "ubuntu", ssh_key.as_str()),
-            ("oci-A1-p_0", "10.0.0.7", "ubuntu", ssh_key.as_str()),
-            ("oci-E2-f_1", "10.0.0.4", "ubuntu", ssh_key.as_str()),
-            ("gcp-E2-f_0", "10.0.0.1", "diego", gcp_key.as_str()),
-        ];
+        // ── Load config.json — derive all VM/service maps dynamically ──
 
-        for (vm_id, host, user, key) in &default_ssh {
-            vm_ssh.insert(vm_id.to_string(), SshConfig {
-                host: host.to_string(),
-                user: user.to_string(),
-                key_path: key.to_string(),
-            });
-        }
+        let config_json_path = std::env::var("CONFIG_JSON_PATH")
+            .unwrap_or_else(|_| "/app/config/config.json".into());
 
-        // Override from architecture.json if available
-        if let Some(arch) = &architecture {
-            if let Some(vms) = &arch.virtual_machines {
-                for (vm_id, data) in vms {
-                    if let (Some(network), Some(ssh)) = (&data.network, &data.ssh) {
-                        if let Some(ip) = &network.public_ip {
-                            if ip != "pending" {
-                                // Use GCP key for gcp VMs, OCI key for others
-                                let key = if vm_id.starts_with("gcp-") {
-                                    gcp_key.clone()
-                                } else {
-                                    ssh_key.clone()
-                                };
-                                vm_ssh.insert(vm_id.clone(), SshConfig {
-                                    host: ip.clone(),
-                                    user: ssh.user.clone().unwrap_or_else(|| "ubuntu".into()),
-                                    key_path: key,
-                                });
-                            }
-                        }
+        let mut vm_ssh = HashMap::new();
+        let mut gcp_vms = HashMap::new();
+        let mut all_vm_services = HashMap::new();
+        let mut route_check_domains = Vec::new();
+        let mut container_domain_map = HashMap::new();
+
+        if let Some(cfg) = load_config_json(&config_json_path) {
+            // 1. Derive vm_ssh: use wg_ip (preferred) or public ip as host
+            for (vm_id, vm) in &cfg.vms {
+                let host = match &vm.wg_ip {
+                    Some(wg) => wg.clone(),
+                    None if vm.ip != "TBD" => vm.ip.clone(),
+                    _ => continue, // skip VMs with no reachable IP
+                };
+                let key = if vm.method == "gcloud" {
+                    gcp_key.clone()
+                } else {
+                    ssh_key.clone()
+                };
+                vm_ssh.insert(vm_id.clone(), SshConfig {
+                    host,
+                    user: vm.user.clone(),
+                    key_path: key,
+                });
+            }
+
+            // 2. Derive gcp_vms from VMs with method == "gcloud"
+            for (vm_id, vm) in &cfg.vms {
+                if vm.method == "gcloud" {
+                    if let (Some(instance), Some(zone)) = (&vm.gcloud_instance, &vm.gcloud_zone) {
+                        gcp_vms.insert(vm_id.clone(), GcpVm {
+                            name: instance.clone(),
+                            zone: zone.clone(),
+                            project_id: gcp_project_id.clone(),
+                        });
                     }
                 }
             }
+
+            // Ensure GCP VMs are in vm_instances for provider dispatch
+            for (vm_id, gcp_vm) in &gcp_vms {
+                vm_instances.entry(vm_id.clone()).or_insert_with(|| VmInstance {
+                    instance_id: gcp_vm.name.clone(),
+                    provider: VmProvider::Gcp,
+                });
+            }
+
+            // 3. Derive all_vm_services: group services by vm, use ssh_alias as label
+            let mut vm_svc_groups: HashMap<String, HashMap<String, Vec<String>>> = HashMap::new();
+            for (svc_name, svc) in &cfg.services {
+                if svc.vm == "all" || svc.vm == "local" {
+                    continue;
+                }
+                let containers = svc.containers.clone().unwrap_or_default();
+                vm_svc_groups
+                    .entry(svc.vm.clone())
+                    .or_default()
+                    .insert(svc_name.clone(), containers);
+            }
+            for (vm_id, services) in vm_svc_groups {
+                let label = cfg.vms.get(&vm_id)
+                    .map(|v| v.ssh_alias.clone())
+                    .unwrap_or_else(|| vm_id.clone());
+                all_vm_services.insert(vm_id, VmServiceMap { label, services });
+            }
+
+            // 4. Derive route_check_domains from services with a domain
+            for (svc_name, svc) in &cfg.services {
+                if let Some(domain) = &svc.domain {
+                    route_check_domains.push(RouteCheckDomain {
+                        domain: domain.clone(),
+                        service: svc_name.clone(),
+                    });
+                }
+            }
+
+            // 5. Derive container_domain_map: first container -> domain
+            for (_svc_name, svc) in &cfg.services {
+                if let (Some(domain), Some(containers)) = (&svc.domain, &svc.containers) {
+                    if let Some(first) = containers.first() {
+                        container_domain_map.insert(first.clone(), domain.clone());
+                    }
+                }
+            }
+
+            tracing::info!(
+                "Loaded config.json: {} VMs, {} services, {} SSH configs, {} GCP VMs",
+                cfg.vms.len(),
+                cfg.services.len(),
+                vm_ssh.len(),
+                gcp_vms.len(),
+            );
+        } else {
+            tracing::warn!("config.json not loaded — health checks will have no VM/service data");
         }
 
-        // All VM service maps
-        let mut all_vm_services = HashMap::new();
-
-        // oci-A1-f_0 (oci-apps) — crawlee cloud + kg-graph + rig
-        let mut flex0_svc = HashMap::new();
-        flex0_svc.insert("crawlee".into(), vec!["crawlee_api".into(), "crawlee_runner".into(), "crawlee_dashboard".into(), "crawlee_scheduler".into(), "crawlee_db".into(), "crawlee_redis".into(), "crawlee_minio".into()]);
-        flex0_svc.insert("kg-graph".into(), vec!["surrealdb".into()]);
-        flex0_svc.insert("rig".into(), vec!["rig".into()]);
-        flex0_svc.insert("api".into(), vec!["rust-api".into()]);
-        all_vm_services.insert("oci-A1-f_0".into(), VmServiceMap {
-            label: "oci-apps".into(),
-            services: flex0_svc,
-        });
-
-        // oci-A1-p_0 (oci-apps-2) — paid flex, 8 OCPUs / 32GB
-        let mut paid0_svc = HashMap::new();
-        paid0_svc.insert("placeholder".into(), vec![]);
-        all_vm_services.insert("oci-A1-p_0".into(), VmServiceMap {
-            label: "oci-apps-2".into(),
-            services: paid0_svc,
-        });
-
-        // oci-A1-f_1 (oci-apps-1)
-        let mut flex_svc = HashMap::new();
-        flex_svc.insert("photos".into(), vec!["photoprism_app".into(), "photoprism_mariadb".into()]);
-        flex_svc.insert("calendar".into(), vec!["radicale".into()]);
-        flex_svc.insert("hedgedoc".into(), vec!["hedgedoc_app".into(), "hedgedoc_postgres".into()]);
-        flex_svc.insert("etherpad".into(), vec!["etherpad_app".into(), "etherpad_postgres".into()]);
-        flex_svc.insert("grist".into(), vec!["grist_app".into()]);
-        flex_svc.insert("files".into(), vec!["filebrowser_app".into()]);
-        flex_svc.insert("slides".into(), vec!["revealmd_app".into()]);
-        flex_svc.insert("code".into(), vec!["code-server".into()]);
-        flex_svc.insert("nocodb".into(), vec!["nocodb_app".into(), "nocodb_postgres".into()]);
-        flex_svc.insert("monitoring".into(), vec!["lgtm_grafana".into(), "lgtm_loki".into(), "lgtm_mimir".into(), "lgtm_tempo".into()]);
-        flex_svc.insert("git".into(), vec!["gitea".into()]);
-        flex_svc.insert("cache".into(), vec!["redis".into()]);
-        flex_svc.insert("security".into(), vec!["sauron".into()]);
-        flex_svc.insert("logs".into(), vec!["fluent-bit".into()]);
-        all_vm_services.insert("oci-A1-f_1".into(), VmServiceMap {
-            label: "oci-apps-1".into(),
-            services: flex_svc,
-        });
-
-        // gcp-E2-f_0 (gcp-proxy)
-        let mut gcp_svc = HashMap::new();
-        gcp_svc.insert("proxy".into(), vec!["npm".into(), "introspect-proxy".into()]);
-        gcp_svc.insert("auth".into(), vec!["authelia".into(), "authelia-redis".into()]);
-        gcp_svc.insert("api".into(), vec!["flask-api".into()]);
-        gcp_svc.insert("notifications".into(), vec!["ntfy".into()]);
-        gcp_svc.insert("passwords".into(), vec!["vaultwarden".into()]);
-        gcp_svc.insert("logs".into(), vec!["fluent-bit".into()]);
-        all_vm_services.insert("gcp-E2-f_0".into(), VmServiceMap {
-            label: "gcp-proxy".into(),
-            services: gcp_svc,
-        });
-
-        // oci-E2-f_0 (oci-mail)
-        let mut mail_svc = HashMap::new();
-        mail_svc.insert("mail".into(), vec![
-            "mailu-front-1".into(), "mailu-admin-1".into(), "mailu-imap-1".into(),
-            "mailu-smtp-1".into(), "mailu-antispam-1".into(), "mailu-webmail-1".into(),
-            "mailu-redis-1".into(), "mailu-resolver-1".into(),
-        ]);
-        mail_svc.insert("calendar".into(), vec!["radicale".into()]);
-        mail_svc.insert("smtp_proxy".into(), vec!["smtp-proxy".into()]);
-        mail_svc.insert("sync".into(), vec!["syncthing".into()]);
-        mail_svc.insert("analytics".into(), vec!["matomo-app".into(), "matomo-db".into()]);
-        mail_svc.insert("proxy".into(), vec!["nginx-proxy".into()]);
-        mail_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
-        all_vm_services.insert("oci-E2-f_0".into(), VmServiceMap {
-            label: "oci-mail".into(),
-            services: mail_svc,
-        });
-
-        // oci-E2-f_1 (oci-analytics)
-        let mut analytics_svc = HashMap::new();
-        analytics_svc.insert("analytics".into(), vec!["matomo-hybrid".into()]);
-        analytics_svc.insert("security".into(), vec!["sauron".into(), "sauron-forwarder".into()]);
-        analytics_svc.insert("automation".into(), vec!["windmill-server".into(), "windmill-worker".into(), "windmill-db".into()]);
-        analytics_svc.insert("logs".into(), vec!["fluent-bit".into(), "syslog-forwarder".into()]);
-        all_vm_services.insert("oci-E2-f_1".into(), VmServiceMap {
-            label: "oci-analytics".into(),
-            services: analytics_svc,
-        });
-
-        // Derive flex_services from oci-A1-f_1
-        let flex_services: HashMap<String, FlexService> = all_vm_services["oci-A1-f_1"]
-            .services
-            .iter()
-            .map(|(k, v)| (k.clone(), FlexService { containers: v.clone() }))
-            .collect();
-
-        let route_check_domains = vec![
-            RouteCheckDomain { domain: "analytics.diegonmarcos.com".into(), service: "analytics".into() },
-            RouteCheckDomain { domain: "db.diegonmarcos.com".into(), service: "db".into() },
-            RouteCheckDomain { domain: "ide.diegonmarcos.com".into(), service: "ide".into() },
-            RouteCheckDomain { domain: "auth.diegonmarcos.com".into(), service: "auth".into() },
-            RouteCheckDomain { domain: "photos.diegonmarcos.com".into(), service: "photos".into() },
-            RouteCheckDomain { domain: "cal.diegonmarcos.com".into(), service: "cal".into() },
-            RouteCheckDomain { domain: "api.diegonmarcos.com".into(), service: "api".into() },
-        ];
+        // Derive flex_services from oci-A1-f_1 (wake-on-demand VM)
+        let flex_services: HashMap<String, FlexService> = all_vm_services
+            .get("oci-A1-f_1")
+            .map(|vm_map| {
+                vm_map.services.iter()
+                    .map(|(k, v)| (k.clone(), FlexService { containers: v.clone() }))
+                    .collect()
+            })
+            .unwrap_or_default();
 
         let authelia_bearer_token = std::env::var("AUTHELIA_BEARER_TOKEN").ok()
             .filter(|s| !s.is_empty());
-
-        let container_domain_map: HashMap<String, String> = [
-            ("authelia", "auth.diegonmarcos.com"),
-            ("vaultwarden", "vault.diegonmarcos.com"),
-            ("ntfy", "rss.diegonmarcos.com"),
-            ("photoprism_app", "photos.diegonmarcos.com"),
-            ("nocodb_app", "db.diegonmarcos.com"),
-            ("code-server", "ide.diegonmarcos.com"),
-            ("syncthing", "sync.diegonmarcos.com"),
-            ("radicale", "cal.diegonmarcos.com"),
-            ("matomo-hybrid", "analytics.diegonmarcos.com"),
-            ("mailu-front-1", "mail.diegonmarcos.com"),
-            ("flask-api", "api.diegonmarcos.com"),
-            ("affine", "drive-notes-affine.diegonmarcos.com"),
-            ("gitea", "app.diegonmarcos.com/gitea"),
-            ("windmill", "app.diegonmarcos.com/windmill"),
-            ("grafana_app", "app.diegonmarcos.com/grafana"),
-            ("dozzle", "app.diegonmarcos.com/dozzle"),
-            ("rust-api", "api.diegonmarcos.com"),
-            ("crawlee_api", "api.diegonmarcos.com/crawlee"),
-            ("crawlee_dashboard", "app.diegonmarcos.com/crawlee"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
 
         AppConfig {
             port,

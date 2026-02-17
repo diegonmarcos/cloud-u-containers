@@ -24,6 +24,7 @@
             - "${toString config.port}:8080"
           volumes:
             - /home/ubuntu/cloud/architecture.json:/app/config/architecture.json:ro
+            - /opt/containers/rust-api/config.json:/app/config/config.json:ro
             - ~/.ssh:/home/appuser/.ssh:ro
             - /home/ubuntu/cloud/oci_config:/app/config/oci_config:ro
             - /home/ubuntu/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
@@ -37,6 +38,7 @@
             - OCI_CONFIG_FILE=/app/config/oci_config
             - OCI_KEY_FILE=/app/config/oci_api_key.pem
             - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+            - CONFIG_JSON_PATH=/app/config/config.json
             - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
             - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
           healthcheck:
