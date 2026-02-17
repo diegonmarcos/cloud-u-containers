@@ -170,13 +170,15 @@ step_compose() {
 
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
-    # Build image locally from binary (no pull, no decompression on VM)
+    # Image strategy: binary transfer > already local > registry pull
     if ssh "$DEPLOY_HOST" "test -f $DEPLOY_PATH/caddy-binary -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
         log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
         ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
         log "Image built locally"
+    elif [ -n "$FULL_IMAGE" ] && ssh "$DEPLOY_HOST" "docker image inspect $FULL_IMAGE:latest >/dev/null 2>&1" 2>/dev/null; then
+        log "Image already local — config-only restart"
     elif [ -n "$FULL_IMAGE" ]; then
-        log "No binary on VM — falling back to docker compose pull"
+        log "No local image — falling back to docker compose pull"
         ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
     fi
 
