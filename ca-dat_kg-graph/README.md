@@ -34,7 +34,7 @@ The graph layer of the Hybrid Knowledge Graph, storing infrastructure topology, 
 ### Deploy SurrealDB
 
 ```bash
-cd ~/git/cloud/a_solutions/container-nix/ca-dat_kg-graph
+cd ~/git/cloud/a_solutions/ca-dat_kg-graph
 ./build.sh ship
 ```
 

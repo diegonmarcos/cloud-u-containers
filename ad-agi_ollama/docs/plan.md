@@ -57,7 +57,7 @@ Deploy Ollama LLM server with DeepSeek and Qwen 14B models (Q4/Q8 quantizations)
 
 ```bash
 # Build + deploy (after VM is created)
-cd ~/git/cloud/a_solutions/container-nix/ad-agi_ollama
+cd ~/git/cloud/a_solutions/ad-agi_ollama
 ./build.sh ship
 
 # Pull models on VM

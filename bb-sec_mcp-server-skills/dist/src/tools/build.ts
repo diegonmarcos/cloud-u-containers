@@ -4,7 +4,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 import { exec } from "../utils/exec.js";
 import { getServiceDir } from "../config.js";
-import { BUILD_SCRIPT, CONTAINER_NIX_DIR } from "../utils/paths.js";
+import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../utils/paths.js";
 
 export function registerBuildTools(server: McpServer) {
   server.tool(
@@ -62,7 +62,7 @@ export function registerBuildTools(server: McpServer) {
 
       const result = exec("sh", args, {
         timeout: 300_000,
-        cwd: CONTAINER_NIX_DIR,
+        cwd: SOLUTIONS_DIR,
       });
 
       return {

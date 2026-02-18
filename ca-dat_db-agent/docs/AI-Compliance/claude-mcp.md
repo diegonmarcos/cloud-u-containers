@@ -27,7 +27,7 @@ Model Context Protocol (MCP) allows Claude Code to call external tools beyond it
     "cloud-infra": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "/data/data/com.termux.nix/files/home/git/cloud/a_solutions/container-nix/bb-sec_mcp-server-skills/src/index.ts"]
+      "args": ["tsx", "/data/data/com.termux.nix/files/home/git/cloud/a_solutions/bb-sec_mcp-server-skills/src/index.ts"]
     }
   }
 }
@@ -41,7 +41,7 @@ Same structure but with desktop paths (`/home/diego/Mounts/Git/cloud/...`).
 
 ## cloud-infra MCP Server
 
-**Source**: `~/git/cloud/a_solutions/container-nix/bb-sec_mcp-server-skills/`
+**Source**: `~/git/cloud/a_solutions/bb-sec_mcp-server-skills/`
 **SDK**: `@modelcontextprotocol/sdk ^1.12.0`
 **Runtime**: `npx tsx` (primary) or Podman/Docker container (fallback)
 
@@ -130,7 +130,7 @@ MCP gives the AI **more capabilities**. Hooks take capabilities **away** (when m
 
 Skills are Claude Code's prompt-injection system — predefined prompts that load domain knowledge.
 
-**Source**: `~/git/cloud/a_solutions/container-nix/bb-sec_mcp-server-skills/src/skills/`
+**Source**: `~/git/cloud/a_solutions/bb-sec_mcp-server-skills/src/skills/`
 **Deployed to**: `~/.claude/skills/personal-cloud-manager/`
 
 | Skill Level | Role | Scope |
@@ -143,7 +143,7 @@ Skills are Claude Code's prompt-injection system — predefined prompts that loa
 | Junior Software Engineer | Bug fixes, small features, follows existing patterns | Scoped changes |
 | Junior Ops | Docker management, logs, restarts, health checks | Operations |
 
-**Deploy command**: `cd ~/git/cloud/a_solutions/container-nix/bb-sec_mcp-server-skills && ./build.sh deploy`
+**Deploy command**: `cd ~/git/cloud/a_solutions/bb-sec_mcp-server-skills && ./build.sh deploy`
 
 ---
 
