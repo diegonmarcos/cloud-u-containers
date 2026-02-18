@@ -12,9 +12,9 @@
       research_image = "quay.io/jupyter/scipy-notebook:latest";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
-      jupyter_port = 8888;
-      engine_port = 5000;
-      db_port = 5432;
+      jupyter_port = 8889;
+      engine_port = 5001;
+      db_port = 5434;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
