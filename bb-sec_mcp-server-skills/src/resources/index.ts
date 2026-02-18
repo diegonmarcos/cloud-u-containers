@@ -12,7 +12,7 @@ import {
 import {
   CONFIG_PATH,
   SSH_CONFIG_PATH,
-  CONTAINER_NIX_DIR,
+  SOLUTIONS_DIR,
   FRONT_DIR,
   RUST_API_MESH,
   RUST_API_PUBLIC,
@@ -84,7 +84,7 @@ export function registerResources(server: McpServer) {
   });
 
   server.resource("readme", "cloud://readme", async (uri) => {
-    const readmePath = join(CONTAINER_NIX_DIR, "README.md");
+    const readmePath = join(SOLUTIONS_DIR, "README.md");
     const content = existsSync(readmePath)
       ? readFileSync(readmePath, "utf-8")
       : "README.md not found";

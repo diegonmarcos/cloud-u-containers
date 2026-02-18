@@ -36,7 +36,7 @@ Ollama 14B (vast.ai) + nomic-embed-text
 ### Build & Deploy
 
 ```bash
-cd ~/git/cloud/a_solutions/container-nix/bc-obs_rig
+cd ~/git/cloud/a_solutions/bc-obs_rig
 cargo test --release
 ./build.sh ship  # Build on oci-apps (aarch64)
 ```

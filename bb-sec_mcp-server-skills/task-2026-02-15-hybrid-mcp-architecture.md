@@ -227,5 +227,5 @@ The prompt teaches the AI the full restaurant model:
 | `bb-sec_rust-api/src/src/src/routes/docs.rs` | Discovery endpoint signatures |
 | `bb-sec_rust-api/src/src/src/routes/ondemand.rs` | Control endpoint signatures |
 | `bb-sec_rust-api/src/src/src/routes/health.rs` | Health endpoint signatures |
-| `container-nix/config.json` | Service→VM mapping, all 42 services |
-| `container-nix/build.sh` | Root orchestrator commands |
+| `config.json` | Service→VM mapping, all 42 services |
+| `build.sh` | Root orchestrator commands |

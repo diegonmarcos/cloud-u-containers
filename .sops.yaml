@@ -1,4 +1,4 @@
-# SOPS configuration for container-nix secrets
+# SOPS configuration for cloud service secrets
 # Uses age encryption with Diego's key
 
 keys:

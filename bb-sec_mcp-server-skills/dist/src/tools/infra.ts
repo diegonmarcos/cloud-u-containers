@@ -12,7 +12,7 @@ import {
   getServicesForVm,
   resolveVmId,
 } from "../config.js";
-import { CONTAINER_NIX_DIR } from "../utils/paths.js";
+import { SOLUTIONS_DIR } from "../utils/paths.js";
 
 export function registerInfraTools(server: McpServer) {
   server.tool("list_vms", "List all VMs with IP, user, SSH alias, and description", {}, async () => {
@@ -53,7 +53,7 @@ export function registerInfraTools(server: McpServer) {
 
       const rows = entries.map(([name, svc]) => {
         const folder = getServiceFolder(name);
-        const hasDistDir = existsSync(join(CONTAINER_NIX_DIR, folder, "dist"));
+        const hasDistDir = existsSync(join(SOLUTIONS_DIR, folder, "dist"));
         const tag = svc.discovered ? " [auto]" : "";
         return `${name}${tag} | ${svc.category} | ${svc.vm} | ${hasDistDir ? "built" : "-"} | ${svc.description}`;
       });

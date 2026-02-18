@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
 import type { InfraConfig, ServiceConfig } from "./types.js";
-import { CONFIG_PATH, CONTAINER_NIX_DIR } from "./utils/paths.js";
+import { CONFIG_PATH, SOLUTIONS_DIR } from "./utils/paths.js";
 
 let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
@@ -53,7 +53,7 @@ export function getDriftReport(): { onDiskOnly: string[]; configOnly: string[] }
       const baseName = svc.flake ?? n;
       const prefix = CATEGORY_PREFIX[svc.category] ?? "";
       const folder = `${prefix}${baseName}`;
-      return !existsSync(join(CONTAINER_NIX_DIR, folder));
+      return !existsSync(join(SOLUTIONS_DIR, folder));
     }).sort(),
   };
 }
@@ -90,7 +90,7 @@ function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, Servi
 
   let dirs: string[];
   try {
-    dirs = readdirSync(CONTAINER_NIX_DIR, { withFileTypes: true })
+    dirs = readdirSync(SOLUTIONS_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory() && d.name !== "z_archive")
       .map((d) => d.name);
   } catch {
@@ -98,7 +98,7 @@ function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, Servi
   }
 
   for (const dirName of dirs) {
-    const buildJsonPath = join(CONTAINER_NIX_DIR, dirName, "build.json");
+    const buildJsonPath = join(SOLUTIONS_DIR, dirName, "build.json");
     if (!existsSync(buildJsonPath)) continue;
 
     let buildJson: { name?: string; description?: string; deploy?: { host?: string } };
@@ -141,7 +141,7 @@ export function getServiceFolder(name: string): string {
 }
 
 export function getServiceDir(name: string): string {
-  return join(CONTAINER_NIX_DIR, getServiceFolder(name));
+  return join(SOLUTIONS_DIR, getServiceFolder(name));
 }
 
 function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record<string, string> } {
