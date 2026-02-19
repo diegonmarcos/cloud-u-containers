@@ -1,45 +1,29 @@
-#\!/bin/sh
-# Per-service build script: src/ → dist/
-# Builds nix flake, decrypts secrets, outputs everything to dist/
+#!/bin/sh
+# Cloudflare DNS - Terraform build/deploy script
+# src/main.tf (native terraform) → dist/ (working dir) → terraform apply
+# Sops uses ~/.config/sops/age/keys.txt automatically
 set -e
 
 SERVICE_DIR="$(cd "$(dirname "$0")" && pwd)"
-SERVICE_NAME="$(basename "$SERVICE_DIR" | sed 's/^[a-z]*-[a-z]*_//')"
 SRC_DIR="$SERVICE_DIR/src"
 DIST_DIR="$SERVICE_DIR/dist"
 
-# Age key - auto-detect mobile vs desktop
-if [ -f "$HOME/git/vault/A0_keys/providers/system/oauth/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=$HOME/git/vault/A0_keys/providers/system/oauth/age_keys.txt}"
-elif [ -f "/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.txt}"
-fi
-export SOPS_AGE_KEY_FILE
-
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
 
-# ── Step 1: Build nix flake ────────────────────────────────────────────
+# ── Step 1: Copy terraform source to dist/ ─────────────────────────────
 step_build() {
-    log "Building nix flake → dist/"
-    cd "$SRC_DIR"
-
-    nix build --out-link "$SERVICE_DIR/.result"
-
-    rm -rf "$DIST_DIR"
+    log "Copying src/main.tf → dist/"
     mkdir -p "$DIST_DIR"
-    cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
-    chmod -R u+w "$DIST_DIR"
-    rm -f "$SERVICE_DIR/.result"
-
-    log "Built files:"
-    find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
+    cp "$SRC_DIR/main.tf" "$DIST_DIR/main.tf"
+    log "Build complete"
 }
 
-# ── Step 2: Decrypt secrets → .secrets ─────────────────────────────────────
+# ── Step 2: Decrypt secrets + generate terraform.tfvars ────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
+    template_file="$SRC_DIR/terraform.tfvars.template"
 
-    if [ \! -f "$secrets_file" ]; then
+    if [ ! -f "$secrets_file" ]; then
         log "No secrets.yaml — skipping"
         return 0
     fi
@@ -65,29 +49,61 @@ for line in sys.stdin:
             print(f'{k}={v}')
 " > "$DIST_DIR/.secrets"
     else
-        log "ERROR: No yq or python3 for YAML→env conversion"
+        log "ERROR: No yq or python3 available"
         return 1
     fi
 
+    log "Generating dist/terraform.tfvars from template + secrets"
+    cp "$template_file" "$DIST_DIR/terraform.tfvars"
 
-    log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
+    # Inject secrets: replace INJECTED_FROM_SECRETS placeholders with real values
+    while IFS='=' read -r key val; do
+        case "$key" in "") continue ;; esac
+        sed -i "s|^${key}.*= \"INJECTED_FROM_SECRETS\"|${key} = \"${val}\"|" "$DIST_DIR/terraform.tfvars"
+    done < "$DIST_DIR/.secrets"
+
+    log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
+}
+
+# ── Step 3: Terraform init ─────────────────────────────────────────────
+step_init() {
+    log "Terraform init"
+    terraform -chdir="$DIST_DIR" init -upgrade
+}
+
+# ── Step 4: Terraform plan ─────────────────────────────────────────────
+step_plan() {
+    log "Terraform plan"
+    terraform -chdir="$DIST_DIR" plan
+}
+
+# ── Step 5: Terraform apply ────────────────────────────────────────────
+step_apply() {
+    log "Terraform apply"
+    terraform -chdir="$DIST_DIR" apply -auto-approve
 }
 
 # ── Main ────────────────────────────────────────────────────────────────
 echo "╔════════════════════════════════════════╗"
-echo "║  Build: $SERVICE_NAME"
+echo "║  Cloudflare DNS - Terraform            ║"
 echo "╚════════════════════════════════════════╝"
 
 case "${1:-all}" in
-    build)    step_build ;;
-    secrets)  step_secrets ;;
-    all)      step_build; step_secrets ;;
-    clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; log "Cleaned" ;;
+    build)   step_build ;;
+    secrets) step_secrets ;;
+    all)     step_build; step_secrets ;;
+    init)    step_build; step_secrets; step_init ;;
+    plan)    step_build; step_secrets; step_plan ;;
+    ship)    step_build; step_secrets; step_init; step_apply ;;
+    clean)   rm -rf "$DIST_DIR"; log "Cleaned" ;;
     *)
-        echo "Usage: $0 [build|secrets|all|clean]"
-        echo "  build    Build nix flake → dist/"
-        echo "  secrets  Decrypt secrets → dist/.secrets"
-        echo "  all      Both (default)"
+        echo "Usage: $0 [build|secrets|all|init|plan|ship|clean]"
+        echo "  build    Copy src/main.tf → dist/"
+        echo "  secrets  Decrypt secrets → dist/terraform.tfvars"
+        echo "  all      build + secrets (default)"
+        echo "  init     all + terraform init"
+        echo "  plan     all + terraform plan"
+        echo "  ship     all + terraform init + terraform apply  ← DEPLOY"
         echo "  clean    Remove dist/"
         ;;
 esac
