@@ -1,5 +1,5 @@
 {
-  description = "Cloudflare Infrastructure - DNS, Firewall, SSL configuration";
+  description = "Cloudflare Infrastructure - DNS, Email Routing, SSL configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -12,14 +12,35 @@
       domain = "diegonmarcos.com";
       # IPs from cloud_architecture.json
       ips = {
-        gcp-E2-f_0 = "35.226.147.64";      # Central Caddy Proxy
-        oci-E2-f_0 = "130.110.251.193";    # Mail Server
-        oci-E2-f_1 = "129.151.228.66";     # Analytics
-        oci-A1-f_1 = "144.24.196.72";       # Dev Server
+        gcp-E2-f_0  = "35.226.147.64";      # Central Caddy Proxy
+        oci-E2-f_0  = "130.110.251.193";    # Mail Server (oci-mail)
+        oci-E2-f_1  = "129.151.228.66";     # Analytics
+        oci-A1-f_1  = "144.24.196.72";      # Dev Server (oci-apps-1)
       };
+      # Cloudflare Tunnel for smtp-proxy (alternative to direct port 8080)
+      smtpProxyTunnel = "90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com";
     };
 
-    # Main Terraform configuration
+    # =========================================================================
+    # Email Architecture (DO NOT CHANGE without understanding full flow):
+    #
+    #   INBOUND:
+    #     Sender → Cloudflare MX (route1/2/3.mx.cloudflare.net)
+    #       → Email Routing rule: me@diegonmarcos.com → Worker "email-forwarder"
+    #       → POST to smtp-proxy (oci-mail:8080, open to 0.0.0.0/0 in OCI security list)
+    #       → smtp-proxy relays to Mailu front:25
+    #     Fallback: forward to diegonmarcos@live.com if smtp-proxy fails
+    #
+    #   OUTBOUND:
+    #     Mailu → smtp.diegonmarcos.com (oci-mail:465/587) → recipients
+    #
+    #   EMAIL ROUTING RULES (managed in CF Dashboard, NOT Terraform):
+    #     me@diegonmarcos.com → Worker "email-forwarder"  (priority 0)
+    #     catch-all → drop (disabled)
+    #
+    #   WORKER SOURCE: a_solutions/ba-clo_cloudflare-worker/
+    # =========================================================================
+
     mkMainTf = pkgs: pkgs.writeText "main.tf" ''
       terraform {
         required_providers {
@@ -51,292 +72,394 @@
         type        = string
       }
 
+      variable "dkim_mailu_public_key" {
+        description = "Mailu DKIM public key (dkim._domainkey)"
+        type        = string
+        default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+      }
+
+      variable "dkim_cf_public_key" {
+        description = "Cloudflare Email Routing DKIM key (cf2024-1._domainkey)"
+        type        = string
+        default     = "v=DKIM1; h=sha256; k=rsa; p=CHANGE_ME"
+      }
+
+      variable "dkim_google_public_key" {
+        description = "Google Workspace DKIM key (google._domainkey)"
+        type        = string
+        default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+      }
+
+      variable "dkim_mail_public_key" {
+        description = "Mailu legacy DKIM key (mail._domainkey)"
+        type        = string
+        default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+      }
+
       # =============================================================================
-      # DNS Records - All HTTP traffic routes through GCP Caddy Proxy
+      # DNS Records - Root & Wildcard
       # =============================================================================
 
-      # Root domain -> GCP Caddy
       resource "cloudflare_record" "root" {
         zone_id = var.cloudflare_zone_id
         name    = "@"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
-        ttl     = 300  # Auto when proxied
+        ttl     = 300
       }
 
-      # www -> GCP Caddy
       resource "cloudflare_record" "www" {
         zone_id = var.cloudflare_zone_id
         name    = "www"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
       }
 
+      resource "cloudflare_record" "wildcard" {
+        zone_id = var.cloudflare_zone_id
+        name    = "*"
+        type    = "A"
+        content = "${config.ips.gcp-E2-f_0}"
+        proxied = false
+        ttl     = 1
+        comment = "Wildcard catch-all → GCP Caddy"
+      }
+
       # =============================================================================
-      # Service Subdomains - All proxied through GCP Caddy
+      # DNS Records - Service Subdomains (all via GCP Caddy → WireGuard → target VM)
       # =============================================================================
 
-      # Authentication (Authelia)
       resource "cloudflare_record" "auth" {
         zone_id = var.cloudflare_zone_id
         name    = "auth"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Authelia 2FA - direct on GCP"
+        comment = "Authelia 2FA"
       }
 
-      # Analytics (Matomo) - via Caddy to oci-analytics
       resource "cloudflare_record" "analytics" {
         zone_id = var.cloudflare_zone_id
         name    = "analytics"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Matomo Analytics - via Caddy to oci-analytics"
+        comment = "Matomo Analytics via Caddy → oci-analytics"
       }
 
-      # PhotoPrism - via Caddy to oci-apps-1
       resource "cloudflare_record" "photos" {
         zone_id = var.cloudflare_zone_id
         name    = "photos"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "PhotoPrism - via Caddy to oci-apps-1"
+        comment = "PhotoPrism via Caddy → oci-apps-1"
       }
 
-      # Syncthing - via Caddy to oci-mail
       resource "cloudflare_record" "sync" {
         zone_id = var.cloudflare_zone_id
         name    = "sync"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Syncthing - via Caddy to oci-mail"
+        comment = "Syncthing via Caddy → oci-mail"
       }
 
-      # Calendar (Radicale) - via Caddy to oci-apps-1
       resource "cloudflare_record" "cal" {
         zone_id = var.cloudflare_zone_id
         name    = "cal"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Radicale Calendar - via Caddy to oci-apps-1"
+        comment = "Radicale Calendar via Caddy → oci-mail"
       }
 
-      # Code Server IDE - via Caddy to oci-apps-1
       resource "cloudflare_record" "ide" {
         zone_id = var.cloudflare_zone_id
         name    = "ide"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Code Server IDE - via Caddy to oci-apps-1"
+        comment = "Code Server IDE via Caddy → oci-apps-1"
       }
 
-      # NocoDB - via Caddy to oci-apps-1
       resource "cloudflare_record" "db" {
         zone_id = var.cloudflare_zone_id
         name    = "db"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "NocoDB - via Caddy to oci-apps-1"
+        comment = "NocoDB via Caddy → oci-apps-1"
       }
 
-      # Ntfy Push Notifications - via Caddy on GCP
       resource "cloudflare_record" "rss" {
         zone_id = var.cloudflare_zone_id
         name    = "rss"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Ntfy push notifications - via Caddy on GCP"
+        comment = "Ntfy push notifications via Caddy on GCP"
       }
 
-      # Caddy Admin Proxy
       resource "cloudflare_record" "proxy" {
         zone_id = var.cloudflare_zone_id
         name    = "proxy"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Caddy admin UI"
+        comment = "Caddy admin"
       }
 
-      # Vaultwarden - via Caddy on GCP
       resource "cloudflare_record" "vault" {
         zone_id = var.cloudflare_zone_id
         name    = "vault"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Vaultwarden password manager - via Caddy on GCP"
+        comment = "Vaultwarden via Caddy on GCP"
       }
 
-      # Grist Sheets - via Caddy to oci-apps-1
       resource "cloudflare_record" "sheets" {
         zone_id = var.cloudflare_zone_id
         name    = "sheets"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Grist Sheets - via Caddy to oci-apps-1"
+        comment = "Grist Sheets via Caddy → oci-apps-1"
       }
 
-      # AFFiNE Drive - via Caddy to oci-apps-1
       resource "cloudflare_record" "drive_notes_affine" {
         zone_id = var.cloudflare_zone_id
         name    = "drive-notes-affine"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "AFFiNE workspace - via Caddy to oci-apps-1"
+        comment = "AFFiNE workspace via Caddy → oci-apps-1"
       }
 
-      # Suite - static site via Caddy to GitHub Pages
       resource "cloudflare_record" "suite" {
         zone_id = var.cloudflare_zone_id
         name    = "suite"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Suite landing - via Caddy to GitHub Pages"
       }
 
-      # =============================================================================
-      # Front-end Subdomains - Static sites via Caddy to GitHub Pages
-      # =============================================================================
-
-      # Linktree - via Caddy to GitHub Pages
       resource "cloudflare_record" "linktree" {
         zone_id = var.cloudflare_zone_id
         name    = "linktree"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Linktree - via Caddy to GitHub Pages"
       }
 
-      # Cloud dashboard - via Caddy to GitHub Pages
       resource "cloudflare_record" "cloud" {
         zone_id = var.cloudflare_zone_id
         name    = "cloud"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Cloud dashboard - via Caddy to GitHub Pages"
       }
 
-      # Nexus - via Caddy to GitHub Pages
       resource "cloudflare_record" "nexus" {
         zone_id = var.cloudflare_zone_id
         name    = "nexus"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Nexus - via Caddy to GitHub Pages"
       }
 
-      # API - Flask + Rust on GCP
       resource "cloudflare_record" "api" {
         zone_id = var.cloudflare_zone_id
         name    = "api"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Flask + Rust API - via Caddy on GCP"
+        comment = "Flask + Rust API via Caddy on GCP"
       }
 
       # =============================================================================
-      # Mail Records - Direct to OCI Micro 1 (not proxied for SMTP)
+      # DNS Records - Mail (direct to oci-mail, cannot proxy SMTP ports)
       # =============================================================================
 
-      # Mail webmail interface - via Caddy to oci-mail
       resource "cloudflare_record" "mail" {
         zone_id = var.cloudflare_zone_id
         name    = "mail"
         type    = "A"
-        content   = "${config.ips.gcp-E2-f_0}"
+        content = "${config.ips.gcp-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "Mailu webmail - via Caddy to oci-mail"
+        comment = "Mailu webmail via Caddy → oci-mail"
       }
 
-      # SMTP direct (cannot be proxied)
+      # SMTP direct - not proxied (Cloudflare cannot proxy SMTP ports)
       resource "cloudflare_record" "smtp" {
         zone_id = var.cloudflare_zone_id
         name    = "smtp"
         type    = "A"
-        content   = "${config.ips.oci-E2-f_0}"
+        content = "${config.ips.oci-E2-f_0}"
         proxied = false
         ttl     = 300
-        comment = "SMTP direct - cannot proxy email traffic"
+        comment = "SMTP direct to oci-mail - used in SPF + outbound SMTP client config"
       }
 
-      # MX Record
-      resource "cloudflare_record" "mx" {
+      # IMAP direct - not proxied
+      resource "cloudflare_record" "imap" {
+        zone_id = var.cloudflare_zone_id
+        name    = "imap"
+        type    = "A"
+        content = "${config.ips.oci-E2-f_0}"
+        proxied = false
+        ttl     = 300
+        comment = "IMAP direct to oci-mail"
+      }
+
+      # SMTP proxy via Cloudflare Tunnel (alternative inbound path to port 8080)
+      resource "cloudflare_record" "smtp_proxy_tunnel" {
+        zone_id = var.cloudflare_zone_id
+        name    = "smtp-proxy"
+        type    = "CNAME"
+        content = "${config.smtpProxyTunnel}"
+        proxied = true
+        ttl     = 1
+        comment = "Cloudflare Tunnel → smtp-proxy on oci-mail (alternative to direct port 8080)"
+      }
+
+      # =============================================================================
+      # DNS Records - External services
+      # =============================================================================
+
+      resource "cloudflare_record" "chat_google" {
+        zone_id = var.cloudflare_zone_id
+        name    = "chat"
+        type    = "CNAME"
+        content = "ghs.googlehosted.com"
+        proxied = true
+        ttl     = 1
+        comment = "Google Chat / Workspace"
+      }
+
+      # =============================================================================
+      # MX Records - Cloudflare Email Routing
+      # NOTE: Mail flows through Cloudflare Email Routing, NOT directly to Mailu.
+      # CF receives on these MX servers, then Email Routing rules forward to the
+      # Worker "email-forwarder" → smtp-proxy (oci-mail:8080) → Mailu front:25.
+      # Worker source: a_solutions/ba-clo_cloudflare-worker/
+      # =============================================================================
+
+      resource "cloudflare_record" "mx_1" {
         zone_id  = var.cloudflare_zone_id
         name     = "@"
         type     = "MX"
-        content    = "smtp.${config.domain}"
-        priority = 10
-        ttl      = 300
+        content  = "route1.mx.cloudflare.net"
+        priority = 22
+        ttl      = 1
+        comment  = "Cloudflare Email Routing MX"
       }
 
-      # SPF Record
+      resource "cloudflare_record" "mx_2" {
+        zone_id  = var.cloudflare_zone_id
+        name     = "@"
+        type     = "MX"
+        content  = "route2.mx.cloudflare.net"
+        priority = 85
+        ttl      = 1
+        comment  = "Cloudflare Email Routing MX"
+      }
+
+      resource "cloudflare_record" "mx_3" {
+        zone_id  = var.cloudflare_zone_id
+        name     = "@"
+        type     = "MX"
+        content  = "route3.mx.cloudflare.net"
+        priority = 97
+        ttl      = 1
+        comment  = "Cloudflare Email Routing MX"
+      }
+
+      # =============================================================================
+      # TXT Records - SPF, DKIM, DMARC
+      # =============================================================================
+
+      # SPF - one record only (RFC 7208: multiple SPF records = permerror)
+      # include:_spf.mx.cloudflare.net → authorizes Cloudflare Email Routing forwarding
+      # a:smtp.diegonmarcos.com → authorizes Mailu outbound SMTP (oci-mail)
       resource "cloudflare_record" "spf" {
         zone_id = var.cloudflare_zone_id
         name    = "@"
         type    = "TXT"
-        content   = "v=spf1 mx a:smtp.${config.domain} -all"
+        content = "v=spf1 include:_spf.mx.cloudflare.net a:smtp.${config.domain} ~all"
         ttl     = 300
+        comment = "SPF: CF Email Routing + Mailu outbound. ONE record only - multiple = permerror"
       }
 
-      # DKIM Record (placeholder - actual key from Mailu)
-      resource "cloudflare_record" "dkim" {
-        zone_id = var.cloudflare_zone_id
-        name    = "dkim._domainkey"
-        type    = "TXT"
-        content   = var.dkim_public_key
-        ttl     = 300
-      }
-
-      variable "dkim_public_key" {
-        description = "DKIM public key from Mailu"
-        type        = string
-        default     = "v=DKIM1; k=rsa; p=CHANGE_ME_DKIM_KEY"
-      }
-
-      # DMARC Record
+      # DMARC
       resource "cloudflare_record" "dmarc" {
         zone_id = var.cloudflare_zone_id
         name    = "_dmarc"
         type    = "TXT"
-        content   = "v=DMARC1; p=reject; rua=mailto:postmaster@${config.domain}"
+        content = "v=DMARC1; p=reject; rua=mailto:postmaster@${config.domain}"
         ttl     = 300
+      }
+
+      # DKIM - Mailu (primary selector)
+      resource "cloudflare_record" "dkim_mailu" {
+        zone_id = var.cloudflare_zone_id
+        name    = "dkim._domainkey"
+        type    = "TXT"
+        content = var.dkim_mailu_public_key
+        ttl     = 300
+        comment = "Mailu DKIM - get from Mailu admin > Domains > diegonmarcos.com > DKIM"
+      }
+
+      # DKIM - Cloudflare Email Routing (auto-managed by CF)
+      resource "cloudflare_record" "dkim_cloudflare" {
+        zone_id = var.cloudflare_zone_id
+        name    = "cf2024-1._domainkey"
+        type    = "TXT"
+        content = var.dkim_cf_public_key
+        ttl     = 1
+        comment = "Cloudflare Email Routing DKIM (auto-managed by CF)"
+      }
+
+      # DKIM - Google Workspace
+      resource "cloudflare_record" "dkim_google" {
+        zone_id = var.cloudflare_zone_id
+        name    = "google._domainkey"
+        type    = "TXT"
+        content = var.dkim_google_public_key
+        ttl     = 1
+        comment = "Google Workspace DKIM"
+      }
+
+      # DKIM - Mailu legacy selector
+      resource "cloudflare_record" "dkim_mail" {
+        zone_id = var.cloudflare_zone_id
+        name    = "mail._domainkey"
+        type    = "TXT"
+        content = var.dkim_mail_public_key
+        ttl     = 300
+        comment = "Mailu legacy DKIM selector"
       }
 
       # =============================================================================
@@ -356,44 +479,38 @@
       }
 
       # =============================================================================
-      # Page Rules
-      # =============================================================================
-
-      resource "cloudflare_page_rule" "cache_static" {
-        zone_id  = var.cloudflare_zone_id
-        target   = "*.${config.domain}/*"
-        priority = 1
-
-        actions {
-          cache_level = "cache_everything"
-          edge_cache_ttl = 86400
-        }
-      }
-
-      # =============================================================================
       # Outputs
       # =============================================================================
 
-      output "nameservers" {
-        value = ["burt.ns.cloudflare.com", "phoenix.ns.cloudflare.com"]
+      output "email_architecture" {
+        value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Mailu front:25"
       }
 
-      output "dns_records_count" {
-        value = "24 DNS records configured"
+      output "smtp_proxy_access" {
+        value = "Direct: http://smtp.diegonmarcos.com:8080/ (OCI security list TCP 8080 open to 0.0.0.0/0)"
+      }
+
+      output "smtp_proxy_tunnel" {
+        value = "Tunnel: https://smtp-proxy.diegonmarcos.com/ (Cloudflare Tunnel alternative)"
       }
     '';
 
-    # Variables template
     mkTfvarsTemplate = pkgs: pkgs.writeText "terraform.tfvars.template" ''
-      # Cloudflare Configuration
-      # Get API token from: https://dash.cloudflare.com/profile/api-tokens
-      # Required permissions: Zone:DNS:Edit, Zone:Settings:Edit
+      cloudflare_api_key   = "CHANGE_ME_API_KEY"
+      cloudflare_email     = "me@diegonmarcos.com"
+      cloudflare_zone_id   = "ff4335cc9c7de42e580d0dff9a0d70eb"
 
-      cloudflare_api_token = "CHANGE_ME_API_TOKEN"
-      cloudflare_zone_id   = "CHANGE_ME_ZONE_ID"
+      # Get from Mailu admin > Domains > diegonmarcos.com > DKIM
+      dkim_mailu_public_key  = "v=DKIM1; k=rsa; p=CHANGE_ME"
 
-      # DKIM key from Mailu: cat /opt/mailu/dkim/${config.domain}.dkim.key
-      dkim_public_key = "v=DKIM1; k=rsa; p=CHANGE_ME_DKIM_KEY"
+      # Get from Cloudflare Dashboard > Email > DKIM settings
+      dkim_cf_public_key     = "v=DKIM1; h=sha256; k=rsa; p=CHANGE_ME"
+
+      # Get from Google Workspace admin
+      dkim_google_public_key = "v=DKIM1; k=rsa; p=CHANGE_ME"
+
+      # Get from Mailu admin (legacy selector)
+      dkim_mail_public_key   = "v=DKIM1; k=rsa; p=CHANGE_ME"
     '';
 
   in {

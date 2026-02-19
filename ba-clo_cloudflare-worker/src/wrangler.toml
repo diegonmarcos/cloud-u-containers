@@ -1,0 +1,23 @@
+name = "email-forwarder"
+main = "email-forwarder.js"
+compatibility_date = "2024-01-01"
+account_id = "e5cb0a0c6f448e54f217de484259f0ae"
+
+# Email Routing architecture:
+#   Internet → Cloudflare MX (route1/2/3.mx.cloudflare.net)
+#     → Email Routing rule: me@diegonmarcos.com → Worker "email-forwarder"
+#     → POST raw email to smtp-proxy on oci-mail:8080
+#     → smtp-proxy relays to Mailu front:25
+#   Fallback: forward to BACKUP_EMAIL if smtp-proxy fails
+#
+# Email Routing rules are managed in Cloudflare Dashboard:
+#   Email > Email Routing > Routing Rules
+#   Rule: me@diegonmarcos.com → Send to Worker → email-forwarder
+
+[vars]
+# SMTP Proxy on oci-mail (130.110.251.193:8080) - open to 0.0.0.0/0 in OCI security list
+SMTP_PROXY_URL = "http://smtp.diegonmarcos.com:8080/"
+SMTP_PROXY_KEY = "stalwart-proxy-key-2025"
+# Backup email - only used if smtp-proxy is unreachable
+# Note: Cannot use me@diegonmarcos.com (would cause Worker routing loop)
+BACKUP_EMAIL = "diegonmarcos@live.com"
