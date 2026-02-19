@@ -52,12 +52,15 @@ step_build() {
     cp "$SERVICE_DIR/package.json" "$DIST_DIR/package.json"
     cp "$SERVICE_DIR/tsconfig.json" "$DIST_DIR/tsconfig.json"
 
-    # npm install + type check locally (validates TypeScript before Docker build)
+    # npm install + compile TypeScript → dist/ (JS for direct node execution)
     log "Installing npm dependencies..."
     cd "$SERVICE_DIR" && npm install
 
-    log "Type-checking TypeScript..."
-    cd "$SERVICE_DIR" && npx tsc --noEmit
+    log "Compiling TypeScript → dist/ (JS)..."
+    cd "$SERVICE_DIR" && npx tsc
+
+    log "Compiled JS files:"
+    find "$DIST_DIR" -name '*.js' -not -path '*/src/*' | sed "s|$DIST_DIR/|  |"
 
     # Build container image from dist/ (podman on Termux, docker fallback)
     # On Android/Termux, rootless podman can't build (no user_namespaces) — falls back to npx tsx
