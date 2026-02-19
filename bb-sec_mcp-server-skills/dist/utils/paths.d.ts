@@ -1,0 +1,14 @@
+export declare const HOME: string;
+export declare const GIT_BASE: string;
+export declare const SOLUTIONS_DIR: string;
+export declare const CONFIG_PATH: string;
+export declare const BUILD_SCRIPT: string;
+export declare const SSH_CONFIG_PATH: string;
+export declare const SOPS_AGE_KEY_FILE: string;
+export declare const AUTHELIA_TOKEN_PATH: string;
+export declare const CRAWLEE_API_TOKEN_PATH: string;
+export declare const RUST_API_MESH = "http://10.0.0.6:8080";
+export declare const RUST_API_PUBLIC = "https://api.diegonmarcos.com:8080";
+export declare const FRONT_DIR: string;
+export declare const FRONT_BUILD_SCRIPT: string;
+export declare const REPOS: Record<string, string>;
