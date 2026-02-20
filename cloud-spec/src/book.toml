@@ -1,0 +1,5 @@
+[book]
+title = "Cloud Documentation Portal"
+
+[output.html]
+default-theme = "ayu"
