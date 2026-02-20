@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    declared-data = { url = "path:../../data"; flake = false; };
   };
 
-  outputs = { self, nixpkgs }: let
+  outputs = { self, nixpkgs, declared-data }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
@@ -24,225 +25,15 @@
     flex2 = "10.0.0.7";     # oci-apps-2
     gpu = "10.0.0.8";       # gcp-ollama (gcp-t4)
 
-    # ── Dashboard data ───────────────────────────────────────────
+    # ── Dashboard data (imported from centralized JSON files) ─────
+    readJSON = file: builtins.fromJSON (builtins.readFile "${declared-data}/${file}");
 
-    vms = {
-      "gcp-proxy" = {
-        alias = "gcp-proxy";
-        provider = "GCP";
-        tier = "Free";
-        ip = "35.226.147.64";
-        wg = gcp;
-        ram = "1 GB";
-        cpu = "e2-micro (0.25 vCPU)";
-        arch = "x86_64";
-        availability = "24/7";
-      };
-      "oci-apps-1" = {
-        alias = "oci-apps-1";
-        provider = "OCI";
-        tier = "Free (A1.Flex)";
-        ip = "144.24.196.72";
-        wg = flex;
-        ram = "8 GB";
-        cpu = "Ampere A1 (1 OCPU)";
-        arch = "aarch64";
-        availability = "Wake-on-demand";
-      };
-      "oci-apps" = {
-        alias = "oci-apps";
-        provider = "OCI";
-        tier = "Free (A1.Flex)";
-        ip = "82.70.229.129";
-        wg = flex0;
-        ram = "16 GB";
-        cpu = "Ampere A1 (3 OCPU)";
-        arch = "aarch64";
-        availability = "24/7";
-      };
-      "oci-mail" = {
-        alias = "oci-mail";
-        provider = "OCI";
-        tier = "Free";
-        ip = "130.110.251.193";
-        wg = mail;
-        ram = "1 GB";
-        cpu = "E2.1.Micro";
-        arch = "x86_64";
-        availability = "24/7";
-      };
-      "oci-analytics" = {
-        alias = "oci-analytics";
-        provider = "OCI";
-        tier = "Free";
-        ip = "129.151.228.66";
-        wg = analytics;
-        ram = "1 GB";
-        cpu = "E2.1.Micro";
-        arch = "x86_64";
-        availability = "24/7";
-      };
-      "oci-apps-2" = {
-        alias = "oci-apps-2";
-        provider = "OCI";
-        tier = "Paid (A1.Flex)";
-        ip = "79.72.28.10";
-        wg = flex2;
-        ram = "32 GB";
-        cpu = "Ampere A1 (8 OCPU)";
-        arch = "aarch64";
-        availability = "On-demand";
-      };
-      "gcp-ollama" = {
-        alias = "gcp-ollama";
-        provider = "GCP";
-        tier = "Paid (Spot)";
-        ip = "34.57.36.41";
-        wg = gpu;
-        ram = "15 GB";
-        cpu = "N1-Std-4 + T4 GPU";
-        arch = "x86_64";
-        availability = "Spot";
-      };
-    };
-
-    services = [
-      { domain = "proxy.diegonmarcos.com";              name = "Dashboard";       vm = "gcp-proxy";     port = "—";   auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "auth.diegonmarcos.com";                name = "Authelia 2FA";    vm = "gcp-proxy";     port = "9091"; auth = "Public (bypass)";   avail = "24/7"; }
-      { domain = "api.diegonmarcos.com";                 name = "API (Rust+Flask+Go)";vm = "oci-apps/gcp-proxy"; port = "8080/5000/8090"; auth = "Rust: Public / Flask: Authelia / Go: Public"; avail = "24/7"; }
-      { domain = "vault.diegonmarcos.com";               name = "Vaultwarden";     vm = "gcp-proxy";     port = "80";  auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "rss.diegonmarcos.com";                 name = "ntfy Push";       vm = "gcp-proxy";     port = "8090"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "mail.diegonmarcos.com";                name = "Mailu";           vm = "oci-mail";      port = "8444"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "sync.diegonmarcos.com";                name = "Syncthing";       vm = "oci-mail";      port = "8384"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "cal.diegonmarcos.com";                 name = "Radicale";        vm = "oci-mail";      port = "5232"; auth = "Public";            avail = "24/7"; }
-      { domain = "analytics.diegonmarcos.com";           name = "Matomo";          vm = "oci-analytics"; port = "8080"; auth = "Hybrid (public tracking)"; avail = "24/7"; }
-      { domain = "photos.diegonmarcos.com";              name = "PhotoPrism";      vm = "oci-apps-1";      port = "3013"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "db.diegonmarcos.com";                  name = "NocoDB";          vm = "oci-apps-1";      port = "8085"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "ide.diegonmarcos.com";                 name = "Code Server";     vm = "oci-apps-1";      port = "8443"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "drive-notes-affine.diegonmarcos.com";  name = "AFFiNE";          vm = "oci-apps-1";      port = "3010"; auth = "Public";            avail = "Wake"; }
-      { domain = "sheets.diegonmarcos.com";              name = "Grist";           vm = "oci-apps-1";      port = "3011"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "—";                                    name = "Jupyter Lab";     vm = "oci-apps";    port = "8888"; auth = "WG direct";         avail = "24/7"; }
-      { domain = "—";                                    name = "Nautilus Engine"; vm = "oci-apps";    port = "5000"; auth = "WG direct";         avail = "24/7"; }
-      { domain = "—";                                    name = "Dash/Plotly";     vm = "oci-apps";    port = "8050"; auth = "WG direct";         avail = "24/7"; }
-      { domain = "—";                                    name = "Quant DB";        vm = "oci-apps";    port = "5432"; auth = "WG direct";         avail = "24/7"; }
-      { domain = "api.diegonmarcos.com/crawlee/";          name = "Crawlee API";     vm = "oci-apps";    port = "3000"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/crawlee/";        name = "Crawlee Dash";    vm = "oci-apps";    port = "3001"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "—";                                    name = "MinIO (S3)";      vm = "oci-apps";    port = "9000"; auth = "WG direct";         avail = "24/7"; }
-      { domain = "—";                                    name = "Rust API";        vm = "oci-apps";    port = "8080"; auth = "Public";            avail = "24/7"; }
-      { domain = "—";                                    name = "Ollama LLM";      vm = "gcp-ollama";  port = "11434"; auth = "WG direct";        avail = "Spot"; }
-      { domain = "diegonmarcos.com";                     name = "Landing Page";    vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "linktree.diegonmarcos.com";            name = "Linktree";        vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "cloud.diegonmarcos.com";               name = "Cloud Dashboard"; vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "nexus.diegonmarcos.com";               name = "Nexus";           vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "suite.diegonmarcos.com";               name = "Suite Apps";      vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "maps.diegonmarcos.com";                name = "Maps";            vm = "GitHub Pages";  port = "—";   auth = "Public";            avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/windmill/";        name = "Windmill";        vm = "oci-analytics"; port = "8000"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/etherpad/";        name = "Etherpad";        vm = "oci-apps-1";      port = "3012"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/filebrowser/";     name = "FileBrowser";     vm = "oci-apps-1";      port = "3015"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/hedgedoc/";        name = "HedgeDoc";        vm = "oci-apps-1";      port = "3010"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/revealmd/";        name = "Reveal.md";       vm = "oci-apps-1";      port = "3014"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/dozzle/";          name = "Dozzle";          vm = "gcp-proxy";     port = "9999"; auth = "Authelia + Bearer"; avail = "24/7"; }
-      { domain = "app.diegonmarcos.com/grafana/";         name = "Grafana";         vm = "oci-apps-1";      port = "3016"; auth = "Authelia + Bearer"; avail = "Wake"; }
-      { domain = "app.diegonmarcos.com/gitea/";           name = "Gitea";           vm = "oci-apps-1";      port = "3000"; auth = "Authelia + Bearer"; avail = "Wake"; }
-    ];
-
-    securityLayers = [
-      { n = "1"; name = "Network Edge";     desc = "Cloudflare Proxy + Cloud Firewalls"; }
-      { n = "2"; name = "TLS Termination";  desc = "Caddy auto-HTTPS + Let's Encrypt"; }
-      { n = "3"; name = "Traffic Filtering"; desc = "Rate limiting, bot blocking, scanner blocking"; }
-      { n = "4"; name = "Authentication";   desc = "Authelia 2FA (TOTP/WebAuthn) + OIDC bearer tokens"; }
-      { n = "5"; name = "Token Validation"; desc = "introspect-proxy OIDC introspection sidecar"; }
-      { n = "6"; name = "Network Isolation"; desc = "WireGuard mesh VPN + Docker bridge networks"; }
-      { n = "7"; name = "Credential Mgmt";  desc = "Vaultwarden (passwords) + Aegis (TOTP)"; }
-    ];
-
-    # ── Firewall & Ports data ──────────────────────────────────────
-    firewallRules = [
-      # gcp-proxy — public-facing reverse proxy
-      { vm = "gcp-proxy"; ip = gcp; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "open"; }
-      { vm = "gcp-proxy"; ip = gcp; port = "80/tcp";    bind = "0.0.0.0"; purpose = "Caddy HTTP";       status = "open"; }
-      { vm = "gcp-proxy"; ip = gcp; port = "443/tcp";   bind = "0.0.0.0"; purpose = "Caddy HTTPS";      status = "open"; }
-      { vm = "gcp-proxy"; ip = gcp; port = "443/udp";   bind = "0.0.0.0"; purpose = "Caddy HTTP/3";     status = "open"; }
-      { vm = "gcp-proxy"; ip = gcp; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
-      # oci-apps-1 — mesh only
-      { vm = "oci-apps-1";  ip = flex;  port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
-      { vm = "oci-apps-1";  ip = flex;  port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
-      # oci-apps — mesh only
-      { vm = "oci-apps";  ip = flex0; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
-      { vm = "oci-apps";  ip = flex0; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
-      # oci-mail — mesh + mail delivery
-      { vm = "oci-mail";  ip = mail; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";              status = "restrict"; }
-      { vm = "oci-mail";  ip = mail; port = "25/tcp";    bind = "0.0.0.0"; purpose = "SMTP (inbound)";   status = "open"; }
-      { vm = "oci-mail";  ip = mail; port = "465/tcp";   bind = "0.0.0.0"; purpose = "SMTPS";            status = "open"; }
-      { vm = "oci-mail";  ip = mail; port = "587/tcp";   bind = "0.0.0.0"; purpose = "SMTP Submission";  status = "open"; }
-      { vm = "oci-mail";  ip = mail; port = "993/tcp";   bind = "0.0.0.0"; purpose = "IMAPS";            status = "open"; }
-      { vm = "oci-mail";  ip = mail; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard";        status = "open"; }
-      # oci-analytics — mesh only
-      { vm = "oci-analytics"; ip = analytics; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
-      { vm = "oci-analytics"; ip = analytics; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
-      # oci-apps-2 — mesh only
-      { vm = "oci-apps-2"; ip = flex2; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
-      { vm = "oci-apps-2"; ip = flex2; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
-      # gcp-ollama — spot GPU, mesh only
-      { vm = "gcp-ollama"; ip = gpu; port = "22/tcp";    bind = "0.0.0.0"; purpose = "SSH";       status = "restrict"; }
-      { vm = "gcp-ollama"; ip = gpu; port = "51820/udp"; bind = "0.0.0.0"; purpose = "WireGuard"; status = "open"; }
-    ];
-
-    dockerPorts = [
-      # gcp-proxy containers (public-facing — OK on 0.0.0.0)
-      { vm = "gcp-proxy"; container = "caddy";            port = "80";   bind = "0.0.0.0"; internal = "80";   note = "reverse proxy"; }
-      { vm = "gcp-proxy"; container = "caddy";            port = "443";  bind = "0.0.0.0"; internal = "443";  note = "reverse proxy"; }
-      { vm = "gcp-proxy"; container = "authelia";         port = "9091"; bind = "127.0.0.1"; internal = "9091"; note = "via Caddy"; }
-      { vm = "gcp-proxy"; container = "rust-api";         port = "8080"; bind = "127.0.0.1"; internal = "8080"; note = "via Caddy"; }
-      { vm = "gcp-proxy"; container = "flask-api";        port = "5000"; bind = "127.0.0.1"; internal = "5000"; note = "via Caddy"; }
-      { vm = "gcp-proxy"; container = "introspect-proxy"; port = "4182"; bind = "docker";   internal = "4182"; note = "internal only"; }
-      { vm = "gcp-proxy"; container = "vaultwarden";      port = "—";    bind = "docker";   internal = "80";   note = "via Caddy"; }
-      { vm = "gcp-proxy"; container = "ntfy";             port = "8090"; bind = "127.0.0.1"; internal = "80";   note = "via Caddy"; }
-      { vm = "gcp-proxy"; container = "dozzle";           port = "9999"; bind = "127.0.0.1"; internal = "8080"; note = "via Caddy"; }
-      # oci-apps-1 containers (WireGuard only)
-      { vm = "oci-apps-1"; container = "photoprism";  port = "3013"; bind = flex; internal = "2342"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "nocodb";      port = "8085"; bind = flex; internal = "8080"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "code-server"; port = "8443"; bind = flex; internal = "8443"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "grist";       port = "3011"; bind = flex; internal = "8484"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "etherpad";    port = "3012"; bind = flex; internal = "9001"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "filebrowser"; port = "3015"; bind = flex; internal = "80";   note = "WG only"; }
-      { vm = "oci-apps-1"; container = "hedgedoc";    port = "3010"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "revealmd";    port = "3014"; bind = flex; internal = "1948"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "gitea";       port = "3000"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "gitea-ssh";   port = "2222"; bind = flex; internal = "22";   note = "WG only"; }
-      { vm = "oci-apps-1"; container = "grafana";     port = "3016"; bind = flex; internal = "3000"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "loki";        port = "3017"; bind = flex; internal = "3100"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "tempo";       port = "3018"; bind = flex; internal = "3200"; note = "WG only"; }
-      { vm = "oci-apps-1"; container = "mimir";       port = "3019"; bind = flex; internal = "8080"; note = "WG only"; }
-      # oci-apps containers (WireGuard only — quant lab)
-      { vm = "oci-apps"; container = "quant_research";  port = "8888"; bind = flex0; internal = "8888"; note = "WG only"; }
-      { vm = "oci-apps"; container = "nautilus_engine"; port = "5000"; bind = flex0; internal = "5000"; note = "WG only"; }
-      { vm = "oci-apps"; container = "quant_analytics"; port = "8050"; bind = flex0; internal = "8050"; note = "WG only"; }
-      { vm = "oci-apps"; container = "quant_db";        port = "5432"; bind = flex0; internal = "5432"; note = "WG only"; }
-      # oci-apps containers (WireGuard only — crawlee cloud)
-      { vm = "oci-apps"; container = "crawlee_api";       port = "3000"; bind = flex0; internal = "3000"; note = "WG only"; }
-      { vm = "oci-apps"; container = "crawlee_dashboard"; port = "3001"; bind = flex0; internal = "3001"; note = "WG only"; }
-      { vm = "oci-apps"; container = "crawlee_minio";     port = "9000"; bind = flex0; internal = "9000"; note = "WG only"; }
-      { vm = "oci-apps"; container = "crawlee_minio";     port = "9001"; bind = flex0; internal = "9001"; note = "MinIO console"; }
-      { vm = "oci-apps"; container = "crawlee_db";        port = "5433"; bind = flex0; internal = "5432"; note = "WG only"; }
-      { vm = "oci-apps"; container = "crawlee_redis";     port = "6380"; bind = flex0; internal = "6379"; note = "WG only"; }
-      # oci-mail containers (WG + mail public)
-      { vm = "oci-mail"; container = "mailu-front"; port = "25";   bind = "0.0.0.0"; internal = "25";   note = "SMTP public"; }
-      { vm = "oci-mail"; container = "mailu-front"; port = "465";  bind = "0.0.0.0"; internal = "465";  note = "SMTPS public"; }
-      { vm = "oci-mail"; container = "mailu-front"; port = "587";  bind = "0.0.0.0"; internal = "587";  note = "submission public"; }
-      { vm = "oci-mail"; container = "mailu-front"; port = "993";  bind = "0.0.0.0"; internal = "993";  note = "IMAPS public"; }
-      { vm = "oci-mail"; container = "mailu-front"; port = "8444"; bind = mail; internal = "443";  note = "WG only"; }
-      { vm = "oci-mail"; container = "syncthing";   port = "8384"; bind = mail; internal = "8384"; note = "WG only"; }
-      { vm = "oci-mail"; container = "syncthing";   port = "22000"; bind = "0.0.0.0"; internal = "22000"; note = "P2P sync"; }
-      { vm = "oci-mail"; container = "radicale";    port = "5232"; bind = mail; internal = "5232"; note = "WG only"; }
-      # oci-analytics containers (WG only)
-      { vm = "oci-analytics"; container = "matomo";   port = "8080"; bind = analytics; internal = "8080"; note = "WG only"; }
-      { vm = "oci-analytics"; container = "windmill"; port = "8000"; bind = "127.0.0.1"; internal = "8000"; note = "localhost"; }
-      # oci-apps — Rust API
-      { vm = "oci-apps"; container = "rust-api"; port = "8080"; bind = flex0; internal = "8080"; note = "WG only"; }
-      # gcp-ollama — Ollama
-      { vm = "gcp-ollama"; container = "ollama"; port = "11434"; bind = gpu; internal = "11434"; note = "WG only"; }
-    ];
+    vms             = readJSON "vms.json";
+    services        = readJSON "services.json";
+    securityLayers  = readJSON "security.json";
+    firewallRules   = readJSON "firewall.json";
+    dockerPorts     = readJSON "docker_ports.json";
+    dnsData         = readJSON "dns.json";
 
     # ── Security snippets ─────────────────────────────────────────
 
@@ -421,6 +212,31 @@
       dkRows = builtins.concatStringsSep "\n" (map (d:
         "| **${d.vm}** | ${d.container} | ${d.port} | `${d.bind}` | ${d.internal} | ${d.note} |"
       ) dockerPorts);
+
+      # Declared containers summary (grouped by VM)
+      groupedByVM = builtins.groupBy (d: d.vm) dockerPorts;
+      declContRows = builtins.concatStringsSep "\n" (map (vmName:
+        let
+          entries = groupedByVM.${vmName};
+          containers = map (e: e.container) entries;
+          unique = builtins.attrNames (builtins.listToAttrs (map (c: { name = c; value = true; }) containers));
+        in
+        "| **${vmName}** | ${toString (builtins.length unique)} | ${builtins.concatStringsSep ", " unique} |"
+      ) (builtins.attrNames groupedByVM));
+
+      # DNS tables
+      cfDnsRows = builtins.concatStringsSep "\n" (map (r:
+        "| ${r.type} | `${r.name}` | `${r.value}` | ${toString r.ttl} | ${r.purpose} |"
+      ) dnsData.cloudflare);
+      hickoryFwdRows = builtins.concatStringsSep "\n" (map (r:
+        "| `${r.name}.internal` | `${r.ip}` | ${r.vm} | ${r.purpose} |"
+      ) dnsData.hickory.forward);
+      hickoryRevRows = builtins.concatStringsSep "\n" (map (r:
+        "| `${r.ip}` | `${r.hostname}` | ${r.vm} |"
+      ) dnsData.hickory.reverse);
+      emailAuthRows = builtins.concatStringsSep "\n" (map (r:
+        "| ${r.type} | `${r.name}` | `${r.value}` | ${r.purpose} |"
+      ) dnsData.email_auth);
     in ''
 # Infrastructure Dashboard
 
@@ -428,18 +244,16 @@
 
 ---
 
-## Virtual Machines
+<div class="tab-bar">
+<button class="tab-btn active" data-tab="proxy">Reverse Proxy</button>
+<button class="tab-btn" data-tab="security">Security</button>
+<button class="tab-btn" data-tab="health">Health</button>
+<button class="tab-btn" data-tab="dns">DNS</button>
+</div>
 
-<button class="rbtn" id="toggle-vms">Show Live</button>
-<div id="live-vms" class="tier-body" style="display:none"></div>
+<div class="tab-content active" id="tab-proxy">
 
-| Alias | Provider | Tier | Public IP | WG IP | RAM | CPU | Availability |
-|-------|----------|------|-----------|-------|-----|-----|--------------|
-${vmRows}
-
----
-
-## Services
+## Reverse Proxying
 
 <button class="rbtn" id="toggle-svcs">Show Live</button>
 <div id="live-svcs" class="tier-body" style="display:none"></div>
@@ -447,47 +261,6 @@ ${vmRows}
 | Domain | Service | VM | Port | Auth | Availability |
 |--------|---------|-----|------|------|--------------|
 ${svcRows}
-
----
-
-## Security Stack
-
-| Layer | Name | Description |
-|-------|------|-------------|
-${secRows}
-
----
-
-## Firewall & Ports
-
-Only **gcp-proxy** accepts public HTTP/HTTPS traffic. All other VMs restrict to WireGuard mesh + service-specific ports.
-
-| VM | WG IP | Port | Bind | Purpose | Status |
-|----|-------|------|------|---------|--------|
-${fwRows}
-
-**Policy**: All VMs run `51820/udp` (WireGuard) + `22/tcp` (SSH restricted). gcp-proxy additionally exposes `80/443` (Caddy). oci-mail exposes `25,465,587,993` (mail delivery).
-
-### iptables / nftables
-
-| Chain | Policy | Notes |
-|-------|--------|-------|
-| INPUT | DROP (cloud firewall) | Only allowed ports above reach the VM |
-| FORWARD | ACCEPT (Docker) | Docker manages container routing via nftables |
-| OUTPUT | ACCEPT | No egress filtering |
-| DOCKER-USER | ACCEPT | Default — no extra restrictions |
-| wg0 | All traffic | Mesh peers trusted, no per-port filtering |
-
----
-
-## Docker Network
-
-<button class="rbtn" id="toggle-docker">Show Live</button>
-<div id="live-docker" class="tier-body" style="display:none"></div>
-
-| VM | Container | Host Port | Bind Address | Internal | Note |
-|----|-----------|-----------|--------------|----------|------|
-${dkRows}
 
 ---
 
@@ -528,6 +301,17 @@ Bearer?  Cookie?
        ▼
   [ Service ]
 ```
+
+---
+
+## Docker Network
+
+<button class="rbtn" id="toggle-docker">Show Live</button>
+<div id="live-docker" class="tier-body" style="display:none"></div>
+
+| VM | Container | Host Port | Bind Address | Internal | Note |
+|----|-----------|-----------|--------------|----------|------|
+${dkRows}
 
 ---
 
@@ -573,10 +357,63 @@ Internet
 └──────────┘ └──────────┘
 ```
 
+</div>
+
+<div class="tab-content" id="tab-security">
+
+## Security Stack
+
+| Layer | Name | Description |
+|-------|------|-------------|
+${secRows}
+
+---
+
+## Firewall & Ports
+
+Only **gcp-proxy** accepts public HTTP/HTTPS traffic. All other VMs restrict to WireGuard mesh + service-specific ports.
+
+| VM | WG IP | Port | Bind | Purpose | Status |
+|----|-------|------|------|---------|--------|
+${fwRows}
+
+**Policy**: All VMs run `51820/udp` (WireGuard) + `22/tcp` (SSH restricted). gcp-proxy additionally exposes `80/443` (Caddy). oci-mail exposes `25,465,587,993` (mail delivery).
+
+### iptables / nftables
+
+| Chain | Policy | Notes |
+|-------|--------|-------|
+| INPUT | DROP (cloud firewall) | Only allowed ports above reach the VM |
+| FORWARD | ACCEPT (Docker) | Docker manages container routing via nftables |
+| OUTPUT | ACCEPT | No egress filtering |
+| DOCKER-USER | ACCEPT | Default — no extra restrictions |
+| wg0 | All traffic | Mesh peers trusted, no per-port filtering |
+
+</div>
+
+<div class="tab-content" id="tab-health">
+
+## Virtual Machines
+
+<button class="rbtn" id="toggle-vms">Show Live</button>
+<div id="live-vms" class="tier-body" style="display:none"></div>
+
+| Alias | Provider | Tier | Public IP | WG IP | RAM | CPU | Availability |
+|-------|----------|------|-----------|-------|-----|-----|--------------|
+${vmRows}
+
+---
+
+## Declared Containers
+
+| VM | Count | Containers |
+|----|-------|------------|
+${declContRows}
+
 ---
 
 <div id="health-section">
-<h2>Health</h2>
+<h2>Live Health</h2>
 <p>Lazy-loaded from <code>/api/health/*</code> and <code>/api/profiling/*</code>. Click <em>Refresh</em> to load each tier.</p>
 
 <div class="health-tier">
@@ -603,6 +440,46 @@ Internet
 <div class="tier-hdr"><h3>Profiling <span class="tier-lbl">Tier 4 — Deep Diagnostic (heaviest)</span></h3></div>
 <div class="tier-body" id="out-profiling">Load <em>Declared</em> first, then trigger per-container.</div>
 </div>
+</div>
+
+</div>
+
+<div class="tab-content" id="tab-dns">
+
+## Public DNS (Cloudflare)
+
+*diegonmarcos.com* — all records point to gcp-proxy (35.226.147.64) except smtp/imap direct to oci-mail
+
+| Type | Name | Value | TTL | Purpose |
+|------|------|-------|-----|---------|
+${cfDnsRows}
+
+---
+
+## Internal DNS (Hickory — .internal zone)
+
+*WireGuard mesh only* — resolved by Hickory DNS on gcp-proxy:53
+
+| Name | IP | VM | Purpose |
+|------|-----|-----|---------|
+${hickoryFwdRows}
+
+---
+
+## Reverse DNS (PTR)
+
+| IP | Hostname | VM |
+|-----|----------|-----|
+${hickoryRevRows}
+
+---
+
+## Email Authentication
+
+| Type | Name | Value | Purpose |
+|------|------|-------|---------|
+${emailAuthRows}
+
 </div>
 
 ---
@@ -731,7 +608,35 @@ Internet
       @media(max-width:600px){
         table{font-size:.65rem}
         pre{font-size:.65rem}
+        .tab-bar{flex-wrap:wrap}
+        .tab-btn{font-size:.6rem;padding:.3rem .5rem}
       }
+      .tab-bar{
+        display:flex;
+        justify-content:center;
+        gap:.5rem;
+        margin:1.5rem 0;
+      }
+      .tab-btn{
+        background:#1a1a2e;
+        color:#c0c0c0;
+        border:1px solid #1a1a2e;
+        padding:.4rem .9rem;
+        border-radius:3px;
+        cursor:pointer;
+        font-family:inherit;
+        font-size:.75rem;
+        transition:all .2s;
+        border-bottom:2px solid transparent;
+      }
+      .tab-btn:hover{color:#fff;border-bottom-color:#339af0}
+      .tab-btn.active{
+        color:#fff;
+        border-bottom:2px solid;
+        border-image:linear-gradient(135deg,#845ef7,#339af0,#51cf66) 1;
+      }
+      .tab-content{display:none}
+      .tab-content.active{display:block}
       .health-tier{
         margin:1rem 0;
         border:1px solid #1a1a2e;
@@ -809,6 +714,15 @@ Internet
           s.appendChild(d);
         }
       })();
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+          document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
+          btn.classList.add('active');
+          document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+        });
+      });
       // Health Dashboard
       var HAPI='https://api.diegonmarcos.com';
       function hfetch(path,elId,btnId,render){
