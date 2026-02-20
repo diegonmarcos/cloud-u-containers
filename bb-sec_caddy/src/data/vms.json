@@ -1,0 +1,79 @@
+{
+  "gcp-proxy": {
+    "alias": "gcp-proxy",
+    "provider": "GCP",
+    "tier": "Free",
+    "ip": "35.226.147.64",
+    "wg": "10.0.0.1",
+    "ram": "1 GB",
+    "cpu": "e2-micro (0.25 vCPU)",
+    "arch": "x86_64",
+    "availability": "24/7"
+  },
+  "oci-apps-1": {
+    "alias": "oci-apps-1",
+    "provider": "OCI",
+    "tier": "Free (A1.Flex)",
+    "ip": "144.24.196.72",
+    "wg": "10.0.0.2",
+    "ram": "8 GB",
+    "cpu": "Ampere A1 (1 OCPU)",
+    "arch": "aarch64",
+    "availability": "Wake-on-demand"
+  },
+  "oci-apps": {
+    "alias": "oci-apps",
+    "provider": "OCI",
+    "tier": "Free (A1.Flex)",
+    "ip": "82.70.229.129",
+    "wg": "10.0.0.6",
+    "ram": "16 GB",
+    "cpu": "Ampere A1 (3 OCPU)",
+    "arch": "aarch64",
+    "availability": "24/7"
+  },
+  "oci-mail": {
+    "alias": "oci-mail",
+    "provider": "OCI",
+    "tier": "Free",
+    "ip": "130.110.251.193",
+    "wg": "10.0.0.3",
+    "ram": "1 GB",
+    "cpu": "E2.1.Micro",
+    "arch": "x86_64",
+    "availability": "24/7"
+  },
+  "oci-analytics": {
+    "alias": "oci-analytics",
+    "provider": "OCI",
+    "tier": "Free",
+    "ip": "129.151.228.66",
+    "wg": "10.0.0.4",
+    "ram": "1 GB",
+    "cpu": "E2.1.Micro",
+    "arch": "x86_64",
+    "availability": "24/7"
+  },
+  "oci-apps-2": {
+    "alias": "oci-apps-2",
+    "provider": "OCI",
+    "tier": "Paid (A1.Flex)",
+    "ip": "79.72.28.10",
+    "wg": "10.0.0.7",
+    "ram": "32 GB",
+    "cpu": "Ampere A1 (8 OCPU)",
+    "arch": "aarch64",
+    "availability": "On-demand"
+  },
+  "gcp-ollama": {
+    "alias": "gcp-ollama",
+    "provider": "GCP",
+    "tier": "Paid (Spot)",
+    "ip": "34.57.36.41",
+    "wg": "10.0.0.8",
+    "ram": "15 GB",
+    "cpu": "N1-Std-4 + T4 GPU",
+    "arch": "x86_64",
+    "availability": "Spot"
+  }
+}

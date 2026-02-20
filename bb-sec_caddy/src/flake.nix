@@ -3,10 +3,9 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    declared-data = { url = "path:../../data"; flake = false; };
   };
 
-  outputs = { self, nixpkgs, declared-data }: let
+  outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
@@ -26,7 +25,7 @@
     gpu = "10.0.0.8";       # gcp-ollama (gcp-t4)
 
     # ── Dashboard data (imported from centralized JSON files) ─────
-    readJSON = file: builtins.fromJSON (builtins.readFile "${declared-data}/${file}");
+    readJSON = file: builtins.fromJSON (builtins.readFile (./data + "/${file}"));
 
     vms             = readJSON "vms.json";
     services        = readJSON "services.json";
