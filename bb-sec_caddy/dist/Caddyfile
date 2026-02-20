@@ -92,13 +92,16 @@ import request_limits
   api.diegonmarcos.com {
 import security
 import request_limits
-    # Root path → Swagger UI landing page on GitHub Pages
     @root path /
     handle @root {
       redir https://diegonmarcos.github.io/api/ permanent
     }
 
-    handle /flask/* {
+    handle /flask/apispec.json {
+      uri strip_prefix /flask
+      reverse_proxy 10.0.0.1:5000
+    }
+    handle_path /flask/* {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
@@ -116,8 +119,18 @@ forward_auth authelia:9091 {
   }
 
     }
+    handle /go/docs/openapi.json {
+      header Access-Control-Allow-Origin "*"
+      header Access-Control-Allow-Methods "GET, OPTIONS"
+      header Access-Control-Allow-Headers "Content-Type"
+      reverse_proxy 10.0.0.1:8090
+    }
     handle /go/* {
       reverse_proxy 10.0.0.1:8090
+    }
+    handle /crawlee/openapi.json {
+      uri strip_prefix /crawlee
+      reverse_proxy 10.0.0.6:3000
     }
     handle_path /crawlee/* {
         @bearer header Authorization Bearer*
