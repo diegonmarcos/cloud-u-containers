@@ -1,18 +1,5 @@
 {
   "nodes": {
-    "declared-data": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-Q7QgZ4IKRoQpky034LjB4XdSSUXizl2G/6k/qr7Ttys=",
-        "path": "../../data",
-        "type": "path"
-      },
-      "original": {
-        "path": "../../data",
-        "type": "path"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1751274312,
@@ -31,7 +18,6 @@
     },
     "root": {
       "inputs": {
-        "declared-data": "declared-data",
         "nixpkgs": "nixpkgs"
       }
     }
