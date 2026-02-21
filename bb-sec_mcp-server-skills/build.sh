@@ -80,6 +80,23 @@ step_build() {
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
 
+
+# ── Step 1b: Build documentation ─────────────────────────────────────────
+step_docs() {
+    log "Building documentation..."
+    cd "$SRC_DIR"
+
+    nix build .#docs --out-link "$SERVICE_DIR/.result-docs"
+
+    mkdir -p "$DIST_DIR/docs"
+    cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
+    chmod -R u+w "$DIST_DIR/docs"
+    rm -f "$SERVICE_DIR/.result-docs"
+
+    log "Documentation built → dist/docs/"
+}
+
+
 # ── Step 2: Decrypt secrets → .secrets ────────────────────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
@@ -175,20 +192,21 @@ echo "╚═══════════════════════�
 
 case "${1:-all}" in
     build)    step_build ;;
+    docs)     step_docs ;;
     secrets)  step_secrets ;;
     deploy)   step_deploy ;;
     compose)  step_compose ;;
-    all)      step_build; step_secrets ;;
-    ship)     step_build; step_secrets; step_deploy; step_compose ;;
+    all)      step_build; step_docs; step_secrets ;;
+    ship)     step_build; step_docs; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; command -v podman >/dev/null 2>&1 && podman rmi "$CONTAINER_IMAGE" 2>/dev/null || command -v docker >/dev/null 2>&1 && docker rmi "$CONTAINER_IMAGE" 2>/dev/null || true; log "Cleaned" ;;
     *)
-        echo "Usage: $0 [build|secrets|deploy|compose|all|ship|clean]"
+        echo "Usage: $0 [build|docs|secrets|deploy|compose|all|ship|clean]"
         echo "  build    Nix flake → dist/ + Docker image build"
         echo "  secrets  Decrypt secrets → dist/.secrets"
         echo "  deploy   No-op (SKILL.md migrated to MCP prompts)"
         echo "  compose  Register MCP with Claude Code (docker run)"
-        echo "  all      build + secrets (default)"
-        echo "  ship     build + secrets + deploy + compose"
+        echo "  all      build + docs + secrets (default)"
+        echo "  ship     build + docs + secrets + deploy + compose"
         echo "  clean    Remove dist/ + Docker image"
         ;;
 esac

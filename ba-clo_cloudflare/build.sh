@@ -18,6 +18,23 @@ step_build() {
     log "Build complete"
 }
 
+
+# ── Step 1b: Build documentation ─────────────────────────────────────────
+step_docs() {
+    log "Building documentation..."
+    cd "$SRC_DIR"
+
+    nix build .#docs --out-link "$SERVICE_DIR/.result-docs"
+
+    mkdir -p "$DIST_DIR/docs"
+    cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
+    chmod -R u+w "$DIST_DIR/docs"
+    rm -f "$SERVICE_DIR/.result-docs"
+
+    log "Documentation built → dist/docs/"
+}
+
+
 # ── Step 2: Decrypt secrets + generate terraform.tfvars ────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
@@ -90,8 +107,9 @@ echo "╚═══════════════════════�
 
 case "${1:-all}" in
     build)   step_build ;;
+    docs)    step_docs ;;
     secrets) step_secrets ;;
-    all)     step_build; step_secrets ;;
+    all)      step_build; step_docs; step_secrets ;;
     init)    step_build; step_secrets; step_init ;;
     plan)    step_build; step_secrets; step_plan ;;
     ship)    step_build; step_secrets; step_init; step_apply ;;
@@ -100,7 +118,7 @@ case "${1:-all}" in
         echo "Usage: $0 [build|secrets|all|init|plan|ship|clean]"
         echo "  build    Copy src/main.tf → dist/"
         echo "  secrets  Decrypt secrets → dist/terraform.tfvars"
-        echo "  all      build + secrets (default)"
+        echo "  all      build + docs + secrets (default)"
         echo "  init     all + terraform init"
         echo "  plan     all + terraform plan"
         echo "  ship     all + terraform init + terraform apply  ← DEPLOY"

@@ -1,0 +1,1783 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generated Configs - cloud-infra MCP server for Claude Code — containerized with debian-slim</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html" class="active"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">cloud-infra MCP server for Claude Code — containerized with debian-slim</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="dockerfile"><a class="header" href="#dockerfile">Dockerfile</a></h2>
+<pre><code class="language-dockerfile">FROM node:22-bookworm-slim
+
+WORKDIR /app
+
+# System deps: SSH for remote VM commands, curl for API calls, git for repo search
+RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    openssh-client \
+    curl \
+    git \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install npm dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy TypeScript config and source
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+# Type-check at build time
+RUN npx tsc --noEmit
+
+# Drop privileges — node:22 images include the 'node' user
+USER node
+
+# MCP stdio transport — no port exposed
+CMD ["npx", "tsx", "src/index.ts"]
+
+</code></pre>
+<h2 id="podman-composeyml"><a class="header" href="#podman-composeyml">podman-compose.yml</a></h2>
+<pre><code class="language-yaml">services:
+  mcp-server:
+    build: .
+    container_name: cloud-infra-mcp
+    image: cloud-infra-mcp:latest
+    stdin_open: true
+    environment:
+      - HOME=${HOME}
+    volumes:
+      - ${HOME}/git:${HOME}/git:ro
+      - ${HOME}/.ssh:${HOME}/.ssh:ro
+
+</code></pre>
+<h2 id="skillscommunityai-engineermd"><a class="header" href="#skillscommunityai-engineermd">skills/community/ai-engineer.md</a></h2>
+<pre><code>---
+id: agent-ai-engineer
+type: skill
+name: "AI Engineer"
+path: ai-engineer
+summary: "ML models &amp; AI integration"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+  - WebSearch
+  - WebFetch
+---
+
+Manages machine learning models and AI integration. Prompt engineering, model fine-tuning, RAG pipelines, and AI workflow automation.
+
+</code></pre>
+<h2 id="skillscommunityapp-store-optimizermd"><a class="header" href="#skillscommunityapp-store-optimizermd">skills/community/app-store-optimizer.md</a></h2>
+<pre><code>---
+id: agent-aso
+type: skill
+name: "App Store Optimizer"
+path: app-store-optimizer
+summary: "ASO &amp; marketplace visibility"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - WebSearch
+  - Write
+  - Read
+---
+
+Focuses on ASO and visibility in app marketplaces. Keyword optimization, screenshot design, and review management.
+
+</code></pre>
+<h2 id="skillscommunitybackend-architectmd"><a class="header" href="#skillscommunitybackend-architectmd">skills/community/backend-architect.md</a></h2>
+<pre><code>---
+id: agent-backend-arch
+type: skill
+name: "Backend Architect"
+path: backend-architect
+summary: "Server-side &amp; system design"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+---
+
+Handles server-side logic, API design, and system infrastructure. Database modeling, microservices, and scalability patterns.
+
+</code></pre>
+<h2 id="skillscommunitybrand-guardianmd"><a class="header" href="#skillscommunitybrand-guardianmd">skills/community/brand-guardian.md</a></h2>
+<pre><code>---
+id: agent-brand-guardian
+type: skill
+name: "Brand Guardian"
+path: brand-guardian
+summary: "Voice, colors &amp; consistency"
+category: "Design Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Glob
+---
+
+Ensures consistency in voice, colors, and logos. Brand guidelines enforcement and style guide maintenance.
+
+</code></pre>
+<h2 id="skillscommunitycontent-creatormd"><a class="header" href="#skillscommunitycontent-creatormd">skills/community/content-creator.md</a></h2>
+<pre><code>---
+id: agent-content
+type: skill
+name: "Content Creator"
+path: content-creator
+summary: "Copywriting &amp; asset production"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Read
+  - WebSearch
+---
+
+General copywriting and asset production. Blog posts, landing pages, email campaigns, and marketing collateral.
+
+</code></pre>
+<h2 id="skillscommunitydevops-automatormd"><a class="header" href="#skillscommunitydevops-automatormd">skills/community/devops-automator.md</a></h2>
+<pre><code>---
+id: agent-devops
+type: skill
+name: "DevOps Automator"
+path: devops-automator
+summary: "CI/CD &amp; infrastructure"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Bash
+  - Read
+  - Write
+  - Edit
+---
+
+Focuses on deployment pipelines, workflow automation, Docker, Kubernetes, and infrastructure as code.
+
+</code></pre>
+<h2 id="skillscommunityexperiment-trackermd"><a class="header" href="#skillscommunityexperiment-trackermd">skills/community/experiment-tracker.md</a></h2>
+<pre><code>---
+id: agent-experiment
+type: skill
+name: "Experiment Tracker"
+path: experiment-tracker
+summary: "A/B tests &amp; data trials"
+category: "Project Management Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Grep
+---
+
+Monitors A/B tests and data-driven trials. Experiment design, statistical significance, and result documentation.
+
+</code></pre>
+<h2 id="skillscommunityfeedback-synthesizermd"><a class="header" href="#skillscommunityfeedback-synthesizermd">skills/community/feedback-synthesizer.md</a></h2>
+<pre><code>---
+id: agent-feedback-synth
+type: skill
+name: "Feedback Synthesizer"
+path: feedback-synthesizer
+summary: "User data interpretation"
+category: "Product Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Grep
+---
+
+Aggregates and interprets user reviews, feedback data, and behavioral metrics. Sentiment analysis and actionable insights.
+
+</code></pre>
+<h2 id="skillscommunityfrontend-developermd"><a class="header" href="#skillscommunityfrontend-developermd">skills/community/frontend-developer.md</a></h2>
+<pre><code>---
+id: agent-frontend-dev
+type: skill
+name: "Frontend Developer"
+path: frontend-developer
+summary: "UI/UX implementation specialist"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
+  - Bash
+---
+
+Specialized agent for building user-facing code and interfaces. React, Vue, Svelte expertise. Focuses on component architecture, state management, and responsive design.
+
+</code></pre>
+<h2 id="skillscommunitygrowth-hackermd"><a class="header" href="#skillscommunitygrowth-hackermd">skills/community/growth-hacker.md</a></h2>
+<pre><code>---
+id: agent-growth
+type: skill
+name: "Growth Hacker"
+path: growth-hacker
+summary: "Viral loops &amp; user acquisition"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - WebSearch
+  - Write
+  - Read
+  - Bash
+---
+
+Specialized in viral loops and rapid user acquisition. A/B testing frameworks, referral programs, and growth experiments.
+
+</code></pre>
+<h2 id="skillscommunityinstagram-curatormd"><a class="header" href="#skillscommunityinstagram-curatormd">skills/community/instagram-curator.md</a></h2>
+<pre><code>---
+id: agent-instagram
+type: skill
+name: "Instagram Curator"
+path: instagram-curator
+summary: "Visual branding &amp; aesthetics"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Read
+  - WebSearch
+---
+
+Visual branding and aesthetic feed management. Grid planning, story strategy, and engagement optimization.
+
+</code></pre>
+<h2 id="skillscommunitymobile-app-buildermd"><a class="header" href="#skillscommunitymobile-app-buildermd">skills/community/mobile-app-builder.md</a></h2>
+<pre><code>---
+id: agent-mobile-builder
+type: skill
+name: "Mobile App Builder"
+path: mobile-app-builder
+summary: "iOS/Android development"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - Edit
+  - Bash
+---
+
+Specialized in iOS/Android application development. Swift, Kotlin, React Native, Flutter. App Store optimization and mobile-specific UX.
+
+</code></pre>
+<h2 id="skillscommunityproject-shippermd"><a class="header" href="#skillscommunityproject-shippermd">skills/community/project-shipper.md</a></h2>
+<pre><code>---
+id: agent-shipper
+type: skill
+name: "Project Shipper"
+path: project-shipper
+summary: "Deadlines &amp; delivery"
+category: "Project Management Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - TodoWrite
+  - Bash
+---
+
+Focused on meeting deadlines and final delivery. Release checklists, blocker resolution, and launch coordination.
+
+</code></pre>
+<h2 id="skillscommunityrapid-prototypermd"><a class="header" href="#skillscommunityrapid-prototypermd">skills/community/rapid-prototyper.md</a></h2>
+<pre><code>---
+id: agent-prototyper
+type: skill
+name: "Rapid Prototyper"
+path: rapid-prototyper
+summary: "Quick MVPs &amp; POCs"
+category: "Engineering Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Bash
+  - Read
+---
+
+Designed for building quick MVPs and proof-of-concepts. Fast iteration, minimal viable features, rapid validation.
+
+</code></pre>
+<h2 id="skillscommunityreddit-community-buildermd"><a class="header" href="#skillscommunityreddit-community-buildermd">skills/community/reddit-community-builder.md</a></h2>
+<pre><code>---
+id: agent-reddit
+type: skill
+name: "Reddit Community Builder"
+path: reddit-community-builder
+summary: "Subreddit &amp; organic growth"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - WebSearch
+  - WebFetch
+  - Write
+---
+
+Navigates niche subreddits and organic growth. Community rules awareness, authentic engagement, and karma building.
+
+</code></pre>
+<h2 id="skillscommunitysprint-prioritizermd"><a class="header" href="#skillscommunitysprint-prioritizermd">skills/community/sprint-prioritizer.md</a></h2>
+<pre><code>---
+id: agent-sprint-prior
+type: skill
+name: "Sprint Prioritizer"
+path: sprint-prioritizer
+summary: "Roadmap &amp; task management"
+category: "Product Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - TodoWrite
+---
+
+Manages the product roadmap and task urgency. Sprint planning, backlog grooming, and priority frameworks.
+
+</code></pre>
+<h2 id="skillscommunitystudio-producermd"><a class="header" href="#skillscommunitystudio-producermd">skills/community/studio-producer.md</a></h2>
+<pre><code>---
+id: agent-producer
+type: skill
+name: "Studio Producer"
+path: studio-producer
+summary: "Multi-disciplinary coordination"
+category: "Project Management Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - TodoWrite
+  - Task
+---
+
+High-level coordination of multi-disciplinary creative tasks. Resource allocation, timeline management, and stakeholder communication.
+
+</code></pre>
+<h2 id="skillscommunitytiktok-strategistmd"><a class="header" href="#skillscommunitytiktok-strategistmd">skills/community/tiktok-strategist.md</a></h2>
+<pre><code>---
+id: agent-tiktok
+type: skill
+name: "TikTok Strategist"
+path: tiktok-strategist
+summary: "Short-form video strategy"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - WebSearch
+  - Write
+  - Read
+---
+
+Short-form video strategy and trends. Viral hooks, trend analysis, and content calendar for TikTok.
+
+</code></pre>
+<h2 id="skillscommunitytrend-researchermd"><a class="header" href="#skillscommunitytrend-researchermd">skills/community/trend-researcher.md</a></h2>
+<pre><code>---
+id: agent-trend-research
+type: skill
+name: "Trend Researcher"
+path: trend-researcher
+summary: "Market &amp; industry analysis"
+category: "Product Agents"
+source: community/diego
+requiredMcp:
+  - WebSearch
+  - WebFetch
+  - Read
+  - Write
+---
+
+Analyzes market shifts and industry movements. Competitive intelligence, emerging technology tracking, and opportunity identification.
+
+</code></pre>
+<h2 id="skillscommunitytwitter-engagermd"><a class="header" href="#skillscommunitytwitter-engagermd">skills/community/twitter-engager.md</a></h2>
+<pre><code>---
+id: agent-twitter
+type: skill
+name: "Twitter Engager"
+path: twitter-engager
+summary: "Real-time community &amp; threads"
+category: "Marketing Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - WebSearch
+  - Read
+---
+
+Focuses on real-time community interaction and threads. Trend hijacking, engagement tactics, and viral tweet patterns.
+
+</code></pre>
+<h2 id="skillscommunityui-designermd"><a class="header" href="#skillscommunityui-designermd">skills/community/ui-designer.md</a></h2>
+<pre><code>---
+id: agent-ui-designer
+type: skill
+name: "UI Designer"
+path: ui-designer
+summary: "Visual interface &amp; layout"
+category: "Design Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Read
+  - Glob
+---
+
+Focuses on the visual interface and layout. Component libraries, design systems, and pixel-perfect implementation.
+
+</code></pre>
+<h2 id="skillscommunityux-researchermd"><a class="header" href="#skillscommunityux-researchermd">skills/community/ux-researcher.md</a></h2>
+<pre><code>---
+id: agent-ux-researcher
+type: skill
+name: "UX Researcher"
+path: ux-researcher
+summary: "User journeys &amp; pain points"
+category: "Design Agents"
+source: community/diego
+requiredMcp:
+  - Read
+  - Write
+  - WebSearch
+---
+
+Analyzes user journeys and pain points. Usability testing, heuristic evaluation, and user interview synthesis.
+
+</code></pre>
+<h2 id="skillscommunityvisual-storytellermd"><a class="header" href="#skillscommunityvisual-storytellermd">skills/community/visual-storyteller.md</a></h2>
+<pre><code>---
+id: agent-visual-story
+type: skill
+name: "Visual Storyteller"
+path: visual-storyteller
+summary: "Narrative-driven graphics"
+category: "Design Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Read
+---
+
+Creates narrative-driven graphic content. Infographics, presentations, and visual communication.
+
+</code></pre>
+<h2 id="skillscommunitywhimsy-injectormd"><a class="header" href="#skillscommunitywhimsy-injectormd">skills/community/whimsy-injector.md</a></h2>
+<pre><code>---
+id: agent-whimsy
+type: skill
+name: "Whimsy Injector"
+path: whimsy-injector
+summary: "Delight &amp; easter eggs"
+category: "Design Agents"
+source: community/diego
+requiredMcp:
+  - Write
+  - Read
+  - Edit
+---
+
+Adds personality, easter eggs, and 'delight' features to the product. Micro-interactions, loading states, and surprise moments.
+
+</code></pre>
+<h2 id="skillsofficialalgorithmic-artmd"><a class="header" href="#skillsofficialalgorithmic-artmd">skills/official/algorithmic-art.md</a></h2>
+<pre><code>---
+id: skill-algorithmic-art
+type: skill
+name: "Algorithmic Art"
+path: algorithmic-art
+summary: "Generative art with p5.js"
+category: "Design &amp; Creative"
+source: anthropics/skills
+requiredMcp:
+  - Write
+---
+
+# Algorithmic Art
+
+Create generative and algorithmic art using p5.js. Supports seeded randomness for reproducibility, particle systems, fractals, Perlin noise, and creative coding patterns. Outputs as HTML with embedded canvas.
+
+## Example Prompts
+
+- "Generate a fractal tree animation with autumn colors"
+- "Create a Perlin noise flow field with particle trails"
+- "Make a generative art piece using recursive geometric patterns"
+- "Build an interactive particle system that responds to mouse movement"
+
+</code></pre>
+<h2 id="skillsofficialbrand-guidelinesmd"><a class="header" href="#skillsofficialbrand-guidelinesmd">skills/official/brand-guidelines.md</a></h2>
+<pre><code>---
+id: skill-brand-guidelines
+type: skill
+name: "Brand Guidelines"
+path: brand-guidelines
+summary: "Apply Anthropic brand styling"
+category: Communication
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+parameters:
+  - name: "Main Colors"
+    type: Hex
+    required: true
+    description: "#141413 (dark), #faf9f5 (light), #b0aea5 (mid gray)"
+  - name: Accents
+    type: Hex
+    required: true
+    description: "#d97757 (orange), #6a9bcc (blue), #788c5d (green)"
+  - name: Fonts
+    type: Typography
+    required: true
+    description: "Poppins (headings), Lora (body)"
+---
+
+Apply official brand identity: Colors (Dark #141413, Light #faf9f5, Orange #d97757, Blue #6a9bcc, Green #788c5d), Typography (Headings: Poppins, Body: Lora). Smart font application to 24pt+ headings, automatic fallbacks.
+
+The skill ensures consistent brand application across all generated documents, presentations, and web pages. The color palette centers on a warm neutral foundation -- dark charcoal (#141413) and warm off-white (#faf9f5) -- with mid-gray (#b0aea5) for secondary elements. Three accent colors serve distinct purposes: orange (#d97757) for primary actions and emphasis, blue (#6a9bcc) for informational elements and links, and green (#788c5d) for success states and positive indicators.
+
+Typography uses Poppins for headings at 24pt and above, providing clean geometric authority, with Lora as the body font for comfortable reading at smaller sizes. The skill automatically applies appropriate fallback font stacks and handles cases where custom fonts may not be available.
+
+## Example
+
+- "Apply brand colors and typography to this HTML landing page"
+- "Generate a styled status report document using the brand palette and Poppins/Lora fonts"
+- "Convert this plain markdown into a branded HTML email with proper color scheme and typography"
+- "Create a branded presentation template with consistent heading styles, accent colors, and font hierarchy"
+
+</code></pre>
+<h2 id="skillsofficialcanvas-designmd"><a class="header" href="#skillsofficialcanvas-designmd">skills/official/canvas-design.md</a></h2>
+<pre><code>---
+id: skill-canvas-design
+type: skill
+name: "Canvas Design"
+path: canvas-design
+summary: "Visual art creation (PNG/PDF)"
+category: "Design &amp; Creative"
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Read
+parameters:
+  - name: "Design Philosophy"
+    type: Markdown
+    required: true
+    description: "Name movement, articulate visual essence"
+  - name: "Canvas Expression"
+    type: "PDF/PNG"
+    required: true
+    description: "Visual output with minimal text"
+  - name: canvas-fonts
+    type: Directory
+    required: false
+    description: "Available fonts for typography"
+---
+
+# Canvas Design
+
+Two-step design process: 1) Create a design philosophy/aesthetic movement (4-6 paragraphs), 2) Express it visually. 90% visual, 10% text. Museum/magazine quality with expert craftsmanship. Subtle conceptual references, not literal.
+
+## Example Prompts
+
+- "Design a poster for a jazz festival in a mid-century modern style"
+- "Create a visual identity card inspired by Bauhaus principles"
+- "Make an abstract composition exploring the theme of urban solitude"
+- "Design a magazine cover with a bold typographic treatment"
+
+</code></pre>
+<h2 id="skillsofficialdoc-coauthoringmd"><a class="header" href="#skillsofficialdoc-coauthoringmd">skills/official/doc-coauthoring.md</a></h2>
+<pre><code>---
+id: skill-doc-coauthoring
+type: skill
+name: "Doc Co-authoring"
+path: doc-coauthoring
+summary: "Three-stage collaborative writing"
+category: Communication
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Edit
+  - Task
+  - AskUserQuestion
+parameters:
+  - name: "Stage 1"
+    type: Workflow
+    required: true
+    description: "Context gathering: doc type, audience, impact, constraints"
+  - name: "Stage 2"
+    type: Workflow
+    required: true
+    description: "Section-by-section: clarify --&gt; brainstorm --&gt; curate --&gt; draft"
+  - name: "Stage 3"
+    type: Workflow
+    required: true
+    description: "Reader testing with fresh sub-agent"
+---
+
+Structured 3-stage workflow: 1) Context Gathering (meta-questions, info dumping), 2) Refinement (clarify --&gt; brainstorm --&gt; curate --&gt; draft --&gt; iterate per section), 3) Reader Testing (sub-agent tests with fresh context). For PRDs, specs, proposals, RFCs.
+
+**Stage 1 -- Context Gathering**: The skill begins by asking meta-questions to understand the document's purpose, target audience, expected impact, and constraints. It encourages "info dumping" where the author shares raw thoughts, existing notes, and reference materials without worrying about structure. This stage produces a structured brief that guides the rest of the process.
+
+**Stage 2 -- Section-by-Section Refinement**: Each section of the document goes through a four-step cycle: clarify (resolve ambiguities with targeted questions), brainstorm (generate multiple approaches), curate (select the strongest direction), and draft (produce polished prose). The author reviews and iterates on each section before moving to the next.
+
+**Stage 3 -- Reader Testing**: A fresh sub-agent with no prior context reads the completed document and attempts to answer key comprehension questions. This reveals gaps, unclear sections, and assumptions that insiders might miss. Feedback from the reader test drives final revisions.
+
+## Example
+
+- "Co-author a PRD for adding real-time collaboration to the document editor"
+- "Help me write an RFC proposing a migration from REST to GraphQL for our internal APIs"
+- "Draft a technical spec for the new authentication service with me, section by section"
+- "Co-write a project proposal for adopting infrastructure-as-code across all environments"
+
+</code></pre>
+<h2 id="skillsofficialdocxmd"><a class="header" href="#skillsofficialdocxmd">skills/official/docx.md</a></h2>
+<pre><code>---
+id: skill-docx
+type: skill
+name: DOCX
+path: docx
+summary: "Word document manipulation"
+category: "Document Skills"
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+parameters:
+  - name: pandoc
+    type: CLI
+    required: true
+    description: "Text extraction with tracked changes"
+  - name: "docx (npm)"
+    type: Node.js
+    required: true
+    description: "Document creation"
+  - name: LibreOffice
+    type: CLI
+    required: false
+    description: "PDF/image conversion"
+  - name: defusedxml
+    type: Python
+    required: false
+    description: "Secure XML parsing for OOXML"
+---
+
+# DOCX
+
+Comprehensive Word document handling: text extraction via pandoc, raw XML access for comments/formatting/media, document creation with docx-js, tracked changes (redlining) with OOXML, and visualization via LibreOffice PDF conversion.
+
+## Example Prompts
+
+- "Extract all text from this Word document including tracked changes"
+- "Create a new DOCX report with headings, tables, and a cover page"
+- "Convert this Word document to PDF preserving all formatting"
+- "List all comments and reviewer annotations in this DOCX file"
+
+</code></pre>
+<h2 id="skillsofficialfrontend-designmd"><a class="header" href="#skillsofficialfrontend-designmd">skills/official/frontend-design.md</a></h2>
+<pre><code>---
+id: skill-frontend-design
+type: skill
+name: "Frontend Design"
+path: frontend-design
+summary: "Production-grade bold UI"
+category: Development
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Read
+  - Glob
+parameters:
+  - name: Typography
+    type: Guideline
+    required: true
+    description: "Distinctive fonts, not Arial/Inter/Roboto"
+  - name: Motion
+    type: Guideline
+    required: false
+    description: "CSS animations, orchestrated reveals"
+  - name: Backgrounds
+    type: Guideline
+    required: false
+    description: "Gradient meshes, noise, geometric patterns"
+---
+
+Create distinctive, production-grade frontends avoiding "AI aesthetics". Process: Purpose --&gt; Tone (pick extreme: brutalist, maximalist, retro-futuristic, etc.) --&gt; Constraints --&gt; Differentiation. Avoid: Inter/Roboto, purple gradients, predictable layouts.
+
+The skill enforces a deliberate design process that starts with understanding the project's purpose, then selects a strong visual tone rather than defaulting to safe, generic choices. Typography must be distinctive -- no fallback to overused system fonts. Motion design should be intentional with orchestrated reveals and micro-interactions. Backgrounds use gradient meshes, noise textures, or geometric patterns instead of flat solid colors.
+
+## Example
+
+- "Design a brutalist landing page for a developer portfolio with monospace typography and harsh grid lines"
+- "Create a retro-futuristic dashboard with CRT scan-line effects, neon accent colors, and a dark bitmap font"
+- "Build a maximalist product page with layered parallax sections, bold serif headings, and textured grain overlays"
+- "Design a minimal Japanese-inspired homepage with vertical text flow, generous whitespace, and ink-wash backgrounds"
+
+</code></pre>
+<h2 id="skillsofficialinternal-commsmd"><a class="header" href="#skillsofficialinternal-commsmd">skills/official/internal-comms.md</a></h2>
+<pre><code>---
+id: skill-internal-comms
+type: skill
+name: "Internal Comms"
+path: internal-comms
+summary: "Status reports &amp; newsletters"
+category: Communication
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+parameters:
+  - name: "3p-updates.md"
+    type: Template
+    required: false
+    description: "Progress/Plans/Problems format"
+  - name: "company-newsletter.md"
+    type: Template
+    required: false
+    description: "Newsletter format"
+  - name: "faq-answers.md"
+    type: Template
+    required: false
+    description: "FAQ response format"
+  - name: "general-comms.md"
+    type: Template
+    required: false
+    description: "Fallback template"
+---
+
+Write internal communications with company formats: 3P updates (Progress/Plans/Problems), company newsletters, FAQ responses, status reports, leadership updates, incident reports. Load guideline files from examples/ directory.
+
+The skill provides structured templates for common internal communication needs. The 3P update format (Progress/Plans/Problems) is used for team and project status reports -- each section is concise and actionable. Company newsletters follow a structured layout with sections for announcements, team highlights, upcoming events, and key metrics. FAQ responses maintain a consistent tone and format for addressing recurring questions.
+
+When guideline files exist in the examples/ directory, the skill loads them to ensure formatting matches established organizational patterns. When no template matches the request, it falls back to the general communications template, which provides a clear structure adaptable to any internal message type including leadership updates, incident reports, policy changes, and team announcements.
+
+## Example
+
+- "Write a 3P status update for the infrastructure team covering last sprint's container migration work"
+- "Draft a company newsletter announcing the new authentication system and upcoming maintenance window"
+- "Create FAQ responses for the most common questions about the VPN migration"
+- "Write an incident report for yesterday's 2-hour database outage following the postmortem template"
+
+</code></pre>
+<h2 id="skillsofficialmcp-buildermd"><a class="header" href="#skillsofficialmcp-buildermd">skills/official/mcp-builder.md</a></h2>
+<pre><code>---
+id: skill-mcp-builder
+type: skill
+name: "MCP Builder"
+path: mcp-builder
+summary: "Create MCP servers"
+category: Development
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Read
+  - Bash
+  - Glob
+  - WebSearch
+---
+
+Guide for building Model Context Protocol (MCP) servers to extend Claude with external tools. Research API --&gt; Implement server --&gt; Test with Bash --&gt; Package. Integrates databases, APIs, and services.
+
+The skill walks through the full lifecycle of creating an MCP server. It starts with researching the target API or service to understand its capabilities and authentication requirements. Implementation follows the MCP SDK patterns -- defining tools with JSON Schema input validation, implementing handlers, and setting up the stdio transport. Testing is done iteratively using Bash to invoke the server and validate tool responses. The final package includes proper dependency management, configuration examples, and documentation for end users.
+
+MCP servers can expose tools (callable functions), resources (readable data), and prompts (reusable templates). The skill covers all three primitives and helps choose which patterns fit the integration being built.
+
+## Example
+
+- "Build an MCP server that wraps the GitHub API for issue and PR management"
+- "Create an MCP server connecting to a PostgreSQL database with query and schema inspection tools"
+- "Implement an MCP server for Slack that can read channels, post messages, and search history"
+- "Build an MCP server that integrates with a local file-based task manager"
+
+</code></pre>
+<h2 id="skillsofficialpdfmd"><a class="header" href="#skillsofficialpdfmd">skills/official/pdf.md</a></h2>
+<pre><code>---
+id: skill-pdf
+type: skill
+name: PDF
+path: pdf
+summary: "PDF manipulation toolkit"
+category: "Document Skills"
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+parameters:
+  - name: Libraries
+    type: Python
+    required: true
+    description: "pypdf, pdfplumber, reportlab, pytesseract, pdf2image, pandas"
+  - name: "CLI Tools"
+    type: Bash
+    required: false
+    description: "pdftotext, qpdf, pdftk (poppler-utils)"
+---
+
+# PDF
+
+Comprehensive PDF toolkit: extract text/tables with pdfplumber, OCR scanned docs with pytesseract, create PDFs with reportlab, merge/split with pypdf/qpdf, rotate pages, add watermarks, encrypt/decrypt, and fill form fields.
+
+## Example Prompts
+
+- "Extract the table from page 3 of this PDF into a CSV file"
+- "Merge these five PDF files into a single document"
+- "OCR this scanned document and extract all the text"
+- "Fill in the form fields of this PDF with the provided data"
+
+</code></pre>
+<h2 id="skillsofficialpptxmd"><a class="header" href="#skillsofficialpptxmd">skills/official/pptx.md</a></h2>
+<pre><code>---
+id: skill-pptx
+type: skill
+name: PPTX
+path: pptx
+summary: "PowerPoint presentations"
+category: "Document Skills"
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+parameters:
+  - name: html2pptx
+    type: Script
+    required: true
+    description: "Convert HTML slides to PPTX"
+  - name: "ooxml scripts"
+    type: Python
+    required: true
+    description: "unpack.py, pack.py, validate.py"
+  - name: inventory.py
+    type: Script
+    required: false
+    description: "Template text inventory"
+  - name: thumbnail.py
+    type: Script
+    required: true
+    description: "Generate slide grids for validation"
+  - name: Sharp
+    type: Node.js
+    required: false
+    description: "Rasterize gradients/icons to PNG"
+---
+
+# PPTX
+
+Full PowerPoint support: create from HTML via html2pptx, edit via OOXML manipulation, use templates with inventory.py, thumbnail generation, slide rearrangement. Supports web-safe fonts only, two-column layouts preferred, validate with thumbnails.
+
+## Example Prompts
+
+- "Create a 10-slide presentation about Q4 results from this data"
+- "Extract all text and images from this PowerPoint file"
+- "Rearrange the slides and apply a consistent template to this deck"
+- "Generate thumbnail previews of all slides for review"
+
+</code></pre>
+<h2 id="skillsofficialskill-creatormd"><a class="header" href="#skillsofficialskill-creatormd">skills/official/skill-creator.md</a></h2>
+<pre><code>---
+id: skill-creator
+type: skill
+name: "Skill Creator"
+path: skill-creator
+summary: "Build custom skills"
+category: "Skill Creation"
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Read
+  - Bash
+  - AskUserQuestion
+parameters:
+  - name: "init_skill.py"
+    type: Script
+    required: true
+    description: "Create skeleton skill directory"
+  - name: "package_skill.py"
+    type: Script
+    required: true
+    description: "Validate and package to .skill file"
+  - name: "SKILL.md"
+    type: Markdown
+    required: true
+    description: "YAML frontmatter + instructions (&lt;500 lines)"
+---
+
+Create effective skills: SKILL.md (frontmatter + instructions), bundled resources (scripts/, references/, assets/). Progressive disclosure: metadata (100 words) --&gt; SKILL.md (&lt;5k words) --&gt; resources (as-needed). Init --&gt; Edit --&gt; Package --&gt; Iterate.
+
+The skill guides the creation of new custom skills for Claude Code. It follows a progressive disclosure model where information is layered from compact metadata to full instructions to supplementary resources. This ensures Claude loads only what it needs for a given task.
+
+**Init**: Run `init_skill.py` to create the skeleton directory structure including SKILL.md, scripts/, references/, and assets/ directories. The generated SKILL.md includes the YAML frontmatter template with all required fields.
+
+**Edit**: Write the skill instructions in SKILL.md. The frontmatter defines metadata (name, description, tools needed, parameters). The markdown body contains the actual instructions, kept under 500 lines and 5,000 words. Instructions should be specific, actionable, and include examples of expected behavior.
+
+**Package**: Run `package_skill.py` to validate the skill structure, check frontmatter completeness, verify referenced files exist, and bundle everything into a distributable `.skill` file.
+
+**Iterate**: Test the skill in real conversations, observe where it falls short, and refine instructions based on actual usage patterns.
+
+## Example
+
+- "Create a new skill for generating database migration scripts from schema diffs"
+- "Build a skill that helps write and maintain changelog entries following Keep a Changelog format"
+- "Package my code review skill with its reference style guide and linting configuration"
+- "Initialize a skill for automated API documentation generation from OpenAPI specs"
+
+</code></pre>
+<h2 id="skillsofficialslack-gif-creatormd"><a class="header" href="#skillsofficialslack-gif-creatormd">skills/official/slack-gif-creator.md</a></h2>
+<pre><code>---
+id: skill-slack-gif
+type: skill
+name: "Slack GIF Creator"
+path: slack-gif-creator
+summary: "Animated GIFs for Slack"
+category: "Design &amp; Creative"
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Bash
+parameters:
+  - name: GIFBuilder
+    type: "Python class"
+    required: true
+    description: "Assemble and optimize GIFs"
+  - name: validators
+    type: "Python module"
+    required: true
+    description: "validate_gif(), is_slack_ready()"
+  - name: easing
+    type: "Python module"
+    required: true
+    description: "interpolate() with 7 easing types"
+  - name: "pillow/imageio"
+    type: Python
+    required: true
+    description: "pip install pillow imageio numpy"
+---
+
+# Slack GIF Creator
+
+Create Slack-optimized GIFs using GIFBuilder, validators, and easing functions. Emoji: 128x128, 10-30fps, 48-128 colors, &lt;3s. Message: 480x480. PIL for drawing, built-in animations: shake, pulse, bounce, spin, fade, zoom, particles.
+
+## Example Prompts
+
+- "Create an animated Slack emoji of a spinning loading indicator"
+- "Make a pulsing heart GIF optimized for Slack emoji size"
+- "Build a bouncing text animation that says 'LGTM' for Slack"
+- "Generate a party parrot style celebration GIF for Slack reactions"
+
+</code></pre>
+<h2 id="skillsofficialtheme-factorymd"><a class="header" href="#skillsofficialtheme-factorymd">skills/official/theme-factory.md</a></h2>
+<pre><code>---
+id: skill-theme-factory
+type: skill
+name: "Theme Factory"
+path: theme-factory
+summary: "Professional theme styling"
+category: "Design &amp; Creative"
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+parameters:
+  - name: "theme-showcase.pdf"
+    type: PDF
+    required: true
+    description: "Visual preview of all 10 themes"
+  - name: "themes/"
+    type: Directory
+    required: true
+    description: "Theme files with colors and fonts"
+---
+
+# Theme Factory
+
+Apply 10 curated themes to artifacts (slides, docs, HTML). Themes include: Ocean Depths, Sunset Boulevard, Forest Canopy, Modern Minimalist, Golden Hour, Arctic Frost, Desert Rose, Tech Innovation, Botanical Garden, Midnight Galaxy.
+
+## Example Prompts
+
+- "Apply the Ocean Depths theme to this presentation deck"
+- "Restyle this HTML page using the Modern Minimalist theme"
+- "Show me a preview of all available themes for my document"
+- "Switch the current design from Golden Hour to Arctic Frost"
+
+</code></pre>
+<h2 id="skillsofficialweb-artifacts-buildermd"><a class="header" href="#skillsofficialweb-artifacts-buildermd">skills/official/web-artifacts-builder.md</a></h2>
+<pre><code>---
+id: skill-web-artifacts
+type: skill
+name: "Web Artifacts Builder"
+path: web-artifacts-builder
+summary: "React + Tailwind + shadcn/ui"
+category: Development
+source: anthropics/skills
+requiredMcp:
+  - Write
+  - Bash
+parameters:
+  - name: "init-artifact.sh"
+    type: Script
+    required: true
+    description: "Initialize React project with all deps"
+  - name: "bundle-artifact.sh"
+    type: Script
+    required: true
+    description: "Parcel bundle to single HTML"
+  - name: "Node 18+"
+    type: Runtime
+    required: true
+    description: "Required for Vite version pinning"
+---
+
+Build elaborate multi-component artifacts: React 18 + TypeScript + Vite + Parcel bundling + Tailwind CSS + 40+ shadcn/ui components. Init --&gt; Edit --&gt; Bundle to single bundle.html. Avoid "AI slop" (centered layouts, purple gradients, rounded corners).
+
+The workflow begins by running `init-artifact.sh` to scaffold a React project with all dependencies pre-installed, including Tailwind CSS, shadcn/ui components, Lucide icons, and Recharts. Development happens through direct file editing of components and pages. When the artifact is ready, `bundle-artifact.sh` uses Parcel to produce a single self-contained `bundle.html` file suitable for embedding or sharing. The skill explicitly warns against generic "AI slop" patterns -- centered hero sections, purple-to-blue gradients, excessive border-radius, and predictable card grids.
+
+## Example
+
+- "Build an interactive data explorer with filterable tables, charts, and a sidebar navigation using shadcn/ui"
+- "Create a single-page Kanban board with drag-and-drop columns, bundled into one HTML file"
+- "Scaffold a multi-step form wizard with validation, progress indicators, and toast notifications"
+- "Build a real-time markdown editor with split preview pane, syntax highlighting, and export to HTML"
+
+</code></pre>
+<h2 id="skillsofficialwebapp-testingmd"><a class="header" href="#skillsofficialwebapp-testingmd">skills/official/webapp-testing.md</a></h2>
+<pre><code>---
+id: skill-webapp-testing
+type: skill
+name: "WebApp Testing"
+path: webapp-testing
+summary: "Playwright E2E testing"
+category: Development
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+  - mcp__playwright
+parameters:
+  - name: "Playwright MCP"
+    type: "MCP Server"
+    required: true
+    description: "Browser automation capability"
+---
+
+Test local web applications using Playwright MCP. E2E testing, visual regression, accessibility testing. Requires Playwright MCP server configured. Capture screenshots, interact with pages, validate flows.
+
+The skill leverages the Playwright MCP server to automate browser interactions against running web applications. It supports end-to-end testing workflows: navigating pages, clicking elements, filling forms, asserting visible text, and capturing screenshots for visual regression. Accessibility testing checks for proper ARIA attributes, keyboard navigation, and color contrast issues.
+
+The testing process follows a structured approach: identify critical user flows, write test scenarios that exercise those flows, execute them through the Playwright MCP tools, and report results with screenshots as evidence. Tests run against local dev servers, staging environments, or any reachable URL.
+
+## Example
+
+- "Test the login flow of my app at localhost:3000 -- fill credentials, submit, verify dashboard loads"
+- "Run visual regression on the homepage by capturing screenshots at mobile, tablet, and desktop widths"
+- "Test accessibility of the signup form -- check label associations, tab order, and screen reader text"
+- "Validate the checkout flow end-to-end: add item to cart, enter shipping, confirm payment, verify confirmation page"
+
+</code></pre>
+<h2 id="skillsofficialxlsxmd"><a class="header" href="#skillsofficialxlsxmd">skills/official/xlsx.md</a></h2>
+<pre><code>---
+id: skill-xlsx
+type: skill
+name: XLSX
+path: xlsx
+summary: "Excel spreadsheet operations"
+category: "Document Skills"
+source: anthropics/skills
+requiredMcp:
+  - Read
+  - Write
+  - Bash
+parameters:
+  - name: pandas
+    type: Python
+    required: true
+    description: "Data analysis and manipulation"
+  - name: openpyxl
+    type: Python
+    required: true
+    description: "Complex formatting and formulas"
+  - name: recalc.py
+    type: Script
+    required: true
+    description: "LibreOffice formula recalculation"
+  - name: "Zero formula errors"
+    type: Validation
+    required: true
+    description: "No #REF!, #DIV/0!, #VALUE!, #N/A, #NAME?"
+---
+
+# XLSX
+
+Comprehensive spreadsheet operations: create/edit with formulas using openpyxl, data analysis with pandas, formula recalculation via LibreOffice recalc.py, financial model standards with color coding (blue=inputs, black=formulas).
+
+## Example Prompts
+
+- "Create a financial model spreadsheet with revenue projections and formatted formulas"
+- "Analyze the data in this Excel file and produce summary statistics"
+- "Recalculate all formulas in this spreadsheet and validate there are no errors"
+- "Build a pivot-style summary sheet from the raw data tab"
+
+</code></pre>
+<h2 id="skillsskillsmd"><a class="header" href="#skillsskillsmd">skills/skills.md</a></h2>
+<pre><code>Based on the image provided, here is a categorized list of the AI agent personas organized by their respective departments. These agents appear to be stored as Markdown files within a `.claude/agents/` directory structure.
+
+### Engineering
+
+* **frontend-developer.md**: Focuses on user-facing code and interfaces.
+* **backend-architect.md**: Handles server-side logic and system infrastructure.
+* **mobile-app-builder.md**: Specialized in iOS/Android application development.
+* **ai-engineer.md**: Manages machine learning models and AI integration.
+* **devops-automator.md**: Focuses on deployment pipelines and workflow automation.
+* **rapid-prototyper.md**: Designed for building quick MVPs and proof-of-concepts.
+
+### Product
+
+* **trend-researcher.md**: Analyzes market shifts and industry movements.
+* **feedback-synthesizer.md**: Aggregates and interprets user reviews and data.
+* **sprint-prioritizer.md**: Manages the product roadmap and task urgency.
+
+### Marketing
+
+* **tiktok-strategist.md**: Short-form video strategy and trends.
+* **instagram-curator.md**: Visual branding and aesthetic feed management.
+* **twitter-engager.md**: Focuses on real-time community interaction and threads.
+* **reddit-community-builder.md**: Navigates niche subreddits and organic growth.
+* **app-store-optimizer.md**: Focuses on ASO and visibility in app marketplaces.
+* **content-creator.md**: General copywriting and asset production.
+* **growth-hacker.md**: Specialized in viral loops and rapid user acquisition.
+
+### Design
+
+* **ui-designer.md**: Focuses on the visual interface and layout.
+* **ux-researcher.md**: Analyzes user journeys and pain points.
+* **brand-guardian.md**: Ensures consistency in voice, colors, and logos.
+* **visual-storyteller.md**: Creates narrative-driven graphic content.
+* **whimsy-injector.md**: Likely adds personality, easter eggs, or "delight" features to the product.
+
+### Project Management
+
+* **experiment-tracker.md**: Monitors A/B tests and data-driven trials.
+* **project-shipper.md**: Focused on meeting deadlines and final delivery.
+* **studio-producer.md**: High-level coordination of multi-disciplinary creative tasks.
+
+---
+
+Would you like me to help you draft the content for one of these persona files, such as a **System Prompt** for the "growth-hacker" or "backend-architect"?
+
+</code></pre>
+<h2 id="skillsskills_claudemd"><a class="header" href="#skillsskills_claudemd">skills/skills_claude.md</a></h2>
+<pre><code># Claude Code Skills Reference
+
+&gt; Custom skills for Claude Code CLI
+&gt; **Source**: [github.com/anthropics/skills](https://github.com/anthropics/skills)
+&gt; **Updated**: 2025-12-29
+
+---
+
+## What Are Skills?
+
+Skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks. They teach Claude how to complete specific tasks repeatably.
+
+**Use Cases:**
+- Creating documents with company brand guidelines
+- Analyzing data using organizational workflows
+- Automating personal tasks
+- Creative applications (art, music, design)
+- Technical tasks (testing web apps, MCP server generation)
+- Enterprise workflows (communications, branding)
+
+---
+
+## Skill File Structure
+
+Each skill is a self-contained folder with a `SKILL.md` file:
+
+```markdown
+---
+name: my-skill-name
+description: A clear description of what this skill does and when to use it
+---
+
+# My Skill Name
+
+[Instructions Claude will follow when this skill is active]
+
+## Examples
+- Example usage 1
+- Example usage 2
+
+## Guidelines
+- Guideline 1
+- Guideline 2
+```
+
+### Required Frontmatter Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique identifier (lowercase, hyphens for spaces) |
+| `description` | Complete description of what the skill does and when to use it |
+
+---
+
+## Using Skills in Claude Code
+
+### Register the Official Repository
+
+```bash
+/plugin marketplace add anthropics/skills
+```
+
+### Install Skills
+
+**Interactive:**
+1. Select `Browse and install plugins`
+2. Select `anthropic-agent-skills`
+3. Choose `document-skills` or `example-skills`
+4. Select `Install now`
+
+**Direct install:**
+```bash
+/plugin install document-skills@anthropic-agent-skills
+/plugin install example-skills@anthropic-agent-skills
+```
+
+### Invoke a Skill
+
+Mention the skill in your request:
+&gt; "Use the PDF skill to extract form fields from `path/to/file.pdf`"
+
+---
+
+## Official Skill Categories
+
+| Category | Examples |
+|----------|----------|
+| **Creative &amp; Design** | Art, music, design tasks |
+| **Development &amp; Technical** | Testing, MCP server generation |
+| **Enterprise &amp; Communication** | Communications, branding |
+| **Document Skills** | DOCX, PDF, PPTX, XLSX manipulation |
+
+---
+
+## Repository Structure
+
+```
+anthropics/skills/
+├── skills/      # Skill examples
+├── spec/        # Agent Skills specification
+└── template/    # Skill template for creating new skills
+```
+
+---
+
+## Skill Locations
+
+| Location | Scope |
+|----------|-------|
+| `~/.claude/skills/` | Global (all projects) |
+| `./.claude/skills/` | Project-specific |
+| Plugin marketplace | Shared/community skills |
+
+---
+
+## Integration with Agent Personas
+
+Skills can be combined with agent personas from [skills.md](./skills.md):
+
+| Persona | Recommended Skills |
+|---------|-------------------|
+| frontend-developer | document-skills, testing |
+| backend-architect | MCP server generation |
+| devops-automator | automation, deployment |
+| content-creator | document-skills, branding |
+
+---
+
+## Platform Availability
+
+| Platform | Access |
+|----------|--------|
+| **Claude Code** | Via plugin marketplace |
+| **Claude.ai** | Available to paid plans |
+| **Claude API** | Pre-built or custom skills via API |
+
+---
+
+## Official Resources
+
+- [What are skills?](https://support.claude.com/en/articles/12512176-what-are-skills)
+- [Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
+- [Creating custom skills](https://support.claude.com/en/articles/12512198-creating-custom-skills)
+- [Agent Skills Standard](http://agentskills.io)
+- [Skills API Quickstart](https://docs.claude.com/en/api/skills-guide#creating-a-skill)
+- [GitHub Repository](https://github.com/anthropics/skills)
+
+---
+
+## Related Files
+
+- [Agent Personas](./skills.md) - AI persona definitions
+
+</code></pre>
+<h2 id="skillsskills_claude_frontmd"><a class="header" href="#skillsskills_claude_frontmd">skills/skills_claude_front.md</a></h2>
+<pre><code># Claude Code Skills Reference
+
+&gt; Custom skills for Claude Code CLI
+&gt; **Source**: [github.com/anthropics/skills](https://github.com/anthropics/skills)
+&gt; **Updated**: 2025-12-29
+
+---
+
+## What Are Skills?
+
+Skills are folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks. They teach Claude how to complete specific tasks repeatably.
+
+**Use Cases:**
+- Creating documents with company brand guidelines
+- Analyzing data using organizational workflows
+- Automating personal tasks
+- Creative applications (art, music, design)
+- Technical tasks (testing web apps, MCP server generation)
+- Enterprise workflows (communications, branding)
+
+---
+
+## Skill File Structure
+
+Each skill is a self-contained folder with a `SKILL.md` file:
+
+```markdown
+---
+name: my-skill-name
+description: A clear description of what this skill does and when to use it
+---
+
+# My Skill Name
+
+[Instructions Claude will follow when this skill is active]
+
+## Examples
+- Example usage 1
+- Example usage 2
+
+## Guidelines
+- Guideline 1
+- Guideline 2
+```
+
+### Required Frontmatter Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique identifier (lowercase, hyphens for spaces) |
+| `description` | Complete description of what the skill does and when to use it |
+
+---
+
+## Using Skills in Claude Code
+
+### Register the Official Repository
+
+```bash
+/plugin marketplace add anthropics/skills
+```
+
+### Install Skills
+
+**Interactive:**
+1. Select `Browse and install plugins`
+2. Select `anthropic-agent-skills`
+3. Choose `document-skills` or `example-skills`
+4. Select `Install now`
+
+**Direct install:**
+```bash
+/plugin install document-skills@anthropic-agent-skills
+/plugin install example-skills@anthropic-agent-skills
+```
+
+### Invoke a Skill
+
+Mention the skill in your request:
+&gt; "Use the PDF skill to extract form fields from `path/to/file.pdf`"
+
+---
+
+## Official Skill Categories
+
+| Category | Examples |
+|----------|----------|
+| **Creative &amp; Design** | Art, music, design tasks |
+| **Development &amp; Technical** | Testing, MCP server generation |
+| **Enterprise &amp; Communication** | Communications, branding |
+| **Document Skills** | DOCX, PDF, PPTX, XLSX manipulation |
+
+---
+
+## Repository Structure
+
+```
+anthropics/skills/
+├── skills/      # Skill examples
+├── spec/        # Agent Skills specification
+└── template/    # Skill template for creating new skills
+```
+
+---
+
+## Skill Locations
+
+| Location | Scope |
+|----------|-------|
+| `~/.claude/skills/` | Global (all projects) |
+| `./.claude/skills/` | Project-specific |
+| Plugin marketplace | Shared/community skills |
+
+---
+
+## Integration with Agent Personas
+
+Skills can be combined with agent personas from [skills.md](./skills.md):
+
+| Persona | Recommended Skills |
+|---------|-------------------|
+| frontend-developer | document-skills, testing |
+| backend-architect | MCP server generation |
+| devops-automator | automation, deployment |
+| content-creator | document-skills, branding |
+
+---
+
+## Platform Availability
+
+| Platform | Access |
+|----------|--------|
+| **Claude Code** | Via plugin marketplace |
+| **Claude.ai** | Available to paid plans |
+| **Claude API** | Pre-built or custom skills via API |
+
+---
+
+## Official Resources
+
+- [What are skills?](https://support.claude.com/en/articles/12512176-what-are-skills)
+- [Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude)
+- [Creating custom skills](https://support.claude.com/en/articles/12512198-creating-custom-skills)
+- [Agent Skills Standard](http://agentskills.io)
+- [Skills API Quickstart](https://docs.claude.com/en/api/skills-guide#creating-a-skill)
+- [GitHub Repository](https://github.com/anthropics/skills)
+
+---
+
+## Related Files
+
+- [Agent Personas](./skills.md) - AI persona definitions
+
+</code></pre>
+<h2 id="skillsskills_frontmd"><a class="header" href="#skillsskills_frontmd">skills/skills_front.md</a></h2>
+<pre><code>Based on the image provided, here is a categorized list of the AI agent personas organized by their respective departments. These agents appear to be stored as Markdown files within a `.claude/agents/` directory structure.
+
+### Engineering
+
+* **frontend-developer.md**: Focuses on user-facing code and interfaces.
+* **backend-architect.md**: Handles server-side logic and system infrastructure.
+* **mobile-app-builder.md**: Specialized in iOS/Android application development.
+* **ai-engineer.md**: Manages machine learning models and AI integration.
+* **devops-automator.md**: Focuses on deployment pipelines and workflow automation.
+* **rapid-prototyper.md**: Designed for building quick MVPs and proof-of-concepts.
+
+### Product
+
+* **trend-researcher.md**: Analyzes market shifts and industry movements.
+* **feedback-synthesizer.md**: Aggregates and interprets user reviews and data.
+* **sprint-prioritizer.md**: Manages the product roadmap and task urgency.
+
+### Marketing
+
+* **tiktok-strategist.md**: Short-form video strategy and trends.
+* **instagram-curator.md**: Visual branding and aesthetic feed management.
+* **twitter-engager.md**: Focuses on real-time community interaction and threads.
+* **reddit-community-builder.md**: Navigates niche subreddits and organic growth.
+* **app-store-optimizer.md**: Focuses on ASO and visibility in app marketplaces.
+* **content-creator.md**: General copywriting and asset production.
+* **growth-hacker.md**: Specialized in viral loops and rapid user acquisition.
+
+### Design
+
+* **ui-designer.md**: Focuses on the visual interface and layout.
+* **ux-researcher.md**: Analyzes user journeys and pain points.
+* **brand-guardian.md**: Ensures consistency in voice, colors, and logos.
+* **visual-storyteller.md**: Creates narrative-driven graphic content.
+* **whimsy-injector.md**: Likely adds personality, easter eggs, or "delight" features to the product.
+
+### Project Management
+
+* **experiment-tracker.md**: Monitors A/B tests and data-driven trials.
+* **project-shipper.md**: Focused on meeting deadlines and final delivery.
+* **studio-producer.md**: High-level coordination of multi-disciplinary creative tasks.
+
+---
+
+Would you like me to help you draft the content for one of these persona files, such as a **System Prompt** for the "growth-hacker" or "backend-architect"?
+
+</code></pre>
+<h2 id="srctypests"><a class="header" href="#srctypests">src/types.ts</a></h2>
+<pre><code class="language-javascript">export interface VmConfig {
+  ip: string;
+  user: string;
+  method: "key" | "gcloud";
+  ssh_alias?: string;
+  gcloud_instance?: string;
+  gcloud_zone?: string;
+  description: string;
+}
+
+export interface ServiceConfig {
+  category: "app" | "mic" | "sec" | "tools" | "cloud" | "data" | "fin" | "agi";
+  vm: string;
+  flake?: string;
+  subfolder?: string;
+  description: string;
+  discovered?: boolean;
+}
+
+export interface InfraConfig {
+  ssh_key: string;
+  remote_base: string;
+  vms: Record&lt;string, VmConfig&gt;;
+  services: Record&lt;string, ServiceConfig&gt;;
+}
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="spec.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="spec.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

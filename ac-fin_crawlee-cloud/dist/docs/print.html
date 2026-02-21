@@ -1,0 +1,1701 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Crawlee Cloud - Self-hosted Apify-compatible scraping platform</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Crawlee Cloud - Self-hosted Apify-compatible scraping platform</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="crawlee-cloud---self-hosted-apify-compatible-scraping-platform"><a class="header" href="#crawlee-cloud---self-hosted-apify-compatible-scraping-platform">Crawlee Cloud - Self-hosted Apify-compatible scraping platform</a></h1>
+<h2 id="network"><a class="header" href="#network">Network</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>api_port</code></td><td><code>3000</code></td></tr>
+<tr><td><code>dashboard_port</code></td><td><code>3001</code></td></tr>
+<tr><td><code>db_port</code></td><td><code>5433</code></td></tr>
+<tr><td><code>minio_console_port</code></td><td><code>9001</code></td></tr>
+<tr><td><code>minio_port</code></td><td><code>9000</code></td></tr>
+<tr><td><code>redis_port</code></td><td><code>6380</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml">services:
+  # ═══ CORE (built from source) ═══
+
+  api:
+    build:
+      context: ./repo
+      dockerfile: docker/Dockerfile.api
+    image: crawlee-cloud-api:local
+    container_name: crawlee_api
+    restart: unless-stopped
+    env_file:
+      - .secrets
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@crawlee_db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://crawlee_redis:6379
+      S3_ENDPOINT: http://crawlee_minio:9000
+      S3_ACCESS_KEY: ${MINIO_USER}
+      S3_SECRET_KEY: ${MINIO_PASSWORD}
+      S3_BUCKET: crawlee-cloud
+      S3_FORCE_PATH_STYLE: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      RATE_LIMIT_MAX: "1000"
+      LOG_LEVEL: info
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    ports:
+      - "3000:3000"
+    depends_on:
+      crawlee_db:
+        condition: service_healthy
+      crawlee_redis:
+        condition: service_healthy
+      crawlee_minio:
+        condition: service_healthy
+    networks:
+      - crawlee_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  runner:
+    build:
+      context: ./repo
+      dockerfile: docker/Dockerfile.runner
+    image: crawlee-cloud-runner:local
+    container_name: crawlee_runner
+    restart: unless-stopped
+    env_file:
+      - .secrets
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://crawlee_api:3000
+      API_TOKEN: ${RUNNER_TOKEN}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@crawlee_db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://crawlee_redis:6379
+      DOCKER_SOCKET: /var/run/docker.sock
+      DOCKER_NETWORK: crawlee_network
+      MAX_CONCURRENT_RUNS: "5"
+      ACTOR_MAX_MEMORY_MB: "2048"
+      ACTOR_DEFAULT_MEMORY_MB: "512"
+      ACTOR_TIMEOUT_SECS: "3600"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - crawlee_network
+
+  dashboard:
+    build:
+      context: ./repo
+      dockerfile: docker/Dockerfile.dashboard
+    image: crawlee-cloud-dashboard:local
+    container_name: crawlee_dashboard
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      NEXT_PUBLIC_API_URL: http://crawlee_api:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - crawlee_network
+
+  scheduler:
+    build:
+      context: ./repo
+      dockerfile: docker/Dockerfile.api
+    image: crawlee-cloud-api:local
+    container_name: crawlee_scheduler
+    restart: unless-stopped
+    env_file:
+      - .secrets
+    command: ["node", "packages/api/dist/scheduler.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@crawlee_db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://crawlee_redis:6379
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - crawlee_network
+
+  # ═══ DATA STORES (standard images) ═══
+
+  crawlee_db:
+    image: postgres:16-alpine
+    container_name: crawlee_db
+    restart: unless-stopped
+    env_file:
+      - .secrets
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - crawlee_postgres:/var/lib/postgresql/data
+    networks:
+      - crawlee_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  crawlee_redis:
+    image: redis:7-alpine
+    container_name: crawlee_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379"
+    volumes:
+      - crawlee_redis:/data
+    networks:
+      - crawlee_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  crawlee_minio:
+    image: minio/minio:latest
+    container_name: crawlee_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file:
+      - .secrets
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - crawlee_minio:/data
+    networks:
+      - crawlee_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio_init:
+    image: minio/mc:latest
+    container_name: crawlee_minio_init
+    depends_on:
+      crawlee_minio:
+        condition: service_healthy
+    env_file:
+      - .secrets
+    entrypoint: &gt;
+      /bin/sh -c "
+      mc alias set myminio http://crawlee_minio:9000 ${MINIO_USER} ${MINIO_PASSWORD};
+      mc mb myminio/crawlee-cloud --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - crawlee_network
+
+volumes:
+  crawlee_postgres:
+    name: crawlee_postgres
+  crawlee_redis:
+    name: crawlee_redis
+  crawlee_minio:
+    name: crawlee_minio
+
+networks:
+  crawlee_network:
+    name: crawlee_network
+    driver: bridge
+
+</code></pre>
+<h2 id="repodockerignore"><a class="header" href="#repodockerignore">repo/.dockerignore</a></h2>
+<pre><code># Docker files to ignore
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build artifacts
+dist
+**/dist
+*.tsbuildinfo
+
+# Test and coverage
+coverage
+**/coverage
+**/*.test.ts
+**/*.spec.ts
+**/__tests__
+
+# Git
+.git
+.gitignore
+
+# IDE and editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment files (should be injected)
+.env
+.env.local
+.env.*.local
+
+# Misc
+*.md
+!README.md
+LICENSE
+.turbo
+.husky
+
+</code></pre>
+<h2 id="repoenvexample"><a class="header" href="#repoenvexample">repo/.env.example</a></h2>
+<pre><code># Environment Configuration
+# Copy to .env and customize for your deployment
+
+# ===========================================
+# PLATFORM API
+# ===========================================
+# Port for the API server
+PORT=3000
+
+# Platform URL (used for actor API calls)
+PLATFORM_URL=http://localhost:3000
+
+# API secret for internal services
+API_SECRET=change-me-in-production
+
+# ===========================================
+# DATABASE
+# ===========================================
+# PostgreSQL connection (cloud-agnostic)
+# Works with: AWS RDS, GCP Cloud SQL, Azure Database, 
+#             DigitalOcean, Supabase, Railway, or self-hosted
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/crawlee_cloud
+
+# ===========================================
+# OBJECT STORAGE
+# ===========================================
+# S3-compatible storage for datasets and files
+# Works with: AWS S3, MinIO, DigitalOcean Spaces, 
+#             Cloudflare R2, Backblaze B2, Wasabi
+
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=crawlee-cloud
+S3_REGION=us-east-1
+# Set to true for path-style URLs (required for MinIO)
+S3_FORCE_PATH_STYLE=true
+
+# ===========================================
+# REDIS (Queue &amp; Cache)
+# ===========================================
+# Works with: AWS ElastiCache, Redis Cloud, Upstash,
+#             Railway, or self-hosted
+REDIS_URL=redis://localhost:6379
+
+# ===========================================
+# PROXY CONFIGURATION (BYOP)
+# ===========================================
+# Configure your proxy provider (optional)
+# Supported: apify, brightdata, oxylabs, smartproxy, custom
+
+# PROXY_PROVIDER=custom
+# PROXY_URLS=http://user:pass@proxy1:8080,http://user:pass@proxy2:8080
+# PROXY_ROTATION=round-robin
+
+# Apify Proxy (if using)
+# APIFY_PROXY_PASSWORD=your-apify-proxy-password
+
+# BrightData (if using)
+# BRIGHTDATA_USERNAME=your-username
+# BRIGHTDATA_PASSWORD=your-password
+# BRIGHTDATA_ZONE=residential
+
+# ===========================================
+# AUTHENTICATION
+# ===========================================
+# JWT secret for user authentication
+JWT_SECRET=change-me-to-a-long-random-string
+
+# Optional: OAuth providers
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
+
+# ===========================================
+# DOCKER RUNNER
+# ===========================================
+# Docker socket for spawning Actor containers
+DOCKER_SOCKET=/var/run/docker.sock
+
+# Maximum memory per Actor run (MB)
+ACTOR_MAX_MEMORY_MB=4096
+
+# Default memory per Actor run (MB)
+ACTOR_DEFAULT_MEMORY_MB=1024
+
+# Actor execution timeout (seconds)
+ACTOR_TIMEOUT_SECS=3600
+
+# Docker network for Actor containers
+DOCKER_NETWORK=crawlee-cloud-network
+
+# Container registry (for Actor images)
+# CONTAINER_REGISTRY=ghcr.io/your-org
+
+# ===========================================
+# WEBHOOKS
+# ===========================================
+# Webhook retry settings
+WEBHOOK_MAX_RETRIES=3
+WEBHOOK_RETRY_DELAY_MS=5000
+
+# ===========================================
+# LOGGING &amp; MONITORING
+# ===========================================
+LOG_LEVEL=info
+# LOG_FORMAT=json
+
+# Optional: External logging
+# LOKI_URL=http://loki:3100
+# SENTRY_DSN=
+
+# ===========================================
+# OPTIONAL: KUBERNETES
+# ===========================================
+# Set to true when running in Kubernetes
+# K8S_MODE=false
+# K8S_NAMESPACE=crawlee-cloud
+# K8S_JOB_TTL_SECONDS=3600
+
+</code></pre>
+<h2 id="repogithubfundingyml"><a class="header" href="#repogithubfundingyml">repo/.github/FUNDING.yml</a></h2>
+<pre><code class="language-yaml"># These are supported funding model platforms
+
+github: [aminembarki]
+ko_fi: crawleecloud
+# tidelift: # Replace with a single Tidelift platform-name/package-name e.g., npm/babel
+# community_bridge: # Replace with a single Community Bridge project-name e.g., cloud-foundry
+# liberapay: # Replace with a single Liberapay username
+# issuehunt: # Replace with a single IssueHunt username
+# lfx_crowdfunding: # Replace with a single LFX Crowdfunding project-name e.g., cloud-foundry
+# polar: # Replace with a single Polar username
+# buy_me_a_coffee: # Replace with a single Buy Me a Coffee username
+# thanks_dev: # Replace with a single thanks.dev username
+# custom: # Replace with up to 4 custom sponsorship URLs e.g., ['link1', 'link2']
+
+</code></pre>
+<h2 id="repogithubworkflowspublish-cliyml"><a class="header" href="#repogithubworkflowspublish-cliyml">repo/.github/workflows/publish-cli.yml</a></h2>
+<pre><code class="language-yaml">name: Publish CLI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/cli/**'
+      - '!packages/cli/package.json' # Avoid infinite loop from version bump
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: packages/cli
+
+      - name: Build
+        run: npm run build
+        working-directory: packages/cli
+
+      - name: Bump version
+        id: version
+        run: |
+          cd packages/cli
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Bump patch version
+          npm version patch --no-git-tag-version
+
+          # Get new version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" &gt;&gt; $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add packages/cli/package.json
+          git commit -m "chore(cli): bump version to ${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
+          git push
+
+      - name: Publish to npm (trusted publishing)
+        run: npm publish --provenance --access public
+        working-directory: packages/cli
+
+</code></pre>
+<h2 id="repogitignore"><a class="header" href="#repogitignore">repo/.gitignore</a></h2>
+<pre><code># Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Turbo
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+tools/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Docker
+docker-compose.override.yml
+
+</code></pre>
+<h2 id="repohuskypre-commit"><a class="header" href="#repohuskypre-commit">repo/.husky/pre-commit</a></h2>
+<pre><code>#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged (ESLint + Prettier on staged files)
+npx lint-staged
+
+echo "✅ Pre-commit checks passed!"
+
+</code></pre>
+<h2 id="repochangelogmd"><a class="header" href="#repochangelogmd">repo/CHANGELOG.md</a></h2>
+<pre><code># Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.1.0] - 2025-12-14
+
+### Added
+
+#### Infrastructure (Sep 28)
+
+- Docker Compose orchestration for PostgreSQL, Redis, and MinIO
+- Separate dev and production configurations
+- Dockerfiles for API, Runner, and Actor base images
+
+#### API Server (Oct 5 - Oct 18)
+
+- Fastify server with Apify-compatible REST API
+- Dataset CRUD operations (`/v2/datasets`)
+- Key-value store support (`/v2/key-value-stores`)
+- Request queue with deduplication (`/v2/request-queues`)
+- Actor management routes (`/v2/acts`)
+- Run execution and status (`/v2/actor-runs`)
+- JWT authentication system
+- PostgreSQL integration for metadata
+- Redis for distributed locking
+- S3-compatible blob storage
+
+#### Runner (Oct 26)
+
+- Docker-based Actor execution
+- Job queue polling from Redis
+- Container lifecycle management
+- Log streaming to API
+- Resource limits and graceful shutdown
+
+#### Dashboard (Nov 9 - Dec 6)
+
+- Next.js application with App Router
+- Actor listing and management UI
+- Run execution with live logs
+- Dataset browser
+- Settings page
+- Responsive sidebar navigation
+
+#### CLI (Nov 22)
+
+- `crawlee-cloud login` - Server authentication
+- `crawlee-cloud push` - Push Actors to registry
+- `crawlee-cloud run` - Execute Actors with input
+- `crawlee-cloud logs` - Real-time log streaming
+
+#### Documentation (Dec 13)
+
+- Complete API reference
+- CLI usage guide
+- Dashboard overview
+- Deployment instructions
+- Runner configuration guide
+
+### Features
+
+- WebSocket streaming for real-time logs
+- Request queue deduplication by `uniqueKey`
+- Distributed locking for multiple workers
+- Cloud-agnostic S3-compatible storage
+
+</code></pre>
+<h2 id="repocontributingmd"><a class="header" href="#repocontributingmd">repo/CONTRIBUTING.md</a></h2>
+<pre><code># Contributing to Crawlee Cloud
+
+Thank you for your interest in contributing! We welcome contributions from everyone.
+
+## Getting Started
+
+1. **Fork the repository** and clone your fork
+2. **Install dependencies**: `npm install`
+3. **Start development**: `npm run docker:dev &amp;&amp; npm run dev`
+
+## Development Workflow
+
+```bash
+# Run tests
+npm test
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+
+# Build all packages
+npm run build
+```
+
+## Project Structure
+
+```
+crawlee-cloud/
+├── packages/
+│   ├── api/        # Fastify REST API server
+│   ├── runner/     # Docker-based Actor executor
+│   ├── dashboard/  # Next.js web interface
+│   └── cli/        # Command-line tool
+├── docker/         # Docker configurations
+└── docs/           # Documentation
+```
+
+## Submitting Changes
+
+1. Create a feature branch: `git checkout -b feature/your-feature`
+2. Make your changes with clear, descriptive commits
+3. Run tests and linting: `npm test &amp;&amp; npm run lint`
+4. Push and open a Pull Request
+
+## Code Style
+
+- Use TypeScript for all new code
+- Follow existing patterns in the codebase
+- Add tests for new functionality
+- Update documentation as needed
+
+## Reporting Issues
+
+- Check existing issues before creating a new one
+- Provide clear reproduction steps
+- Include relevant logs and environment details
+
+## Community
+
+Be respectful and inclusive. We're all here to build something great together.
+
+---
+
+Questions? Open an issue or start a discussion. We're happy to help!
+
+</code></pre>
+<h2 id="repolicense"><a class="header" href="#repolicense">repo/LICENSE</a></h2>
+<pre><code>MIT License
+
+Copyright (c) 2025 Crawlee Cloud
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+</code></pre>
+<h2 id="reporoadmapmd"><a class="header" href="#reporoadmapmd">repo/ROADMAP.md</a></h2>
+<pre><code># Crawlee Cloud Roadmap
+
+A CLI-first platform for running large-scale scrapers on your own infrastructure.
+
+## Current Version: v0.1.0 ✅
+
+- Apify-compatible REST API
+- Docker-based Actor execution
+- CLI for deployment (`crc push`, `crc run`, `crc logs`)
+- Datasets, Key-Value Stores, Request Queues
+- Basic web dashboard
+
+---
+
+## v0.2.0 - CLI &amp; Developer Experience
+
+Priority: Make the CLI the best way to work with Crawlee Cloud.
+
+- [ ] **Improved CLI output** - Better formatting, colors, progress bars
+- [ ] **`crc init`** - Scaffold new Actor projects from templates
+- [ ] **`crc dev`** - Local development mode with hot reload
+- [ ] **`crc status`** - Check run status and resource usage
+- [ ] **Input schema validation** - Validate inputs before running
+- [ ] **Better error messages** - Actionable hints for common issues
+
+## v0.3.0 - Production Scraping at Scale
+
+Priority: Run large scraping jobs reliably.
+
+- [ ] **Cron scheduling** - Schedule runs with cron expressions
+- [ ] **Retry policies** - Automatic retries with configurable backoff
+- [ ] **Run timeouts** - Kill stuck runs automatically
+- [ ] **Webhooks** - HTTP callbacks on run completion
+- [ ] **Multi-worker runners** - Scale horizontally for parallel execution
+- [ ] **Resource limits** - Memory/CPU caps per run
+
+## v0.4.0 - Reliability &amp; Operations
+
+Priority: Production-grade stability.
+
+- [ ] **Metrics &amp; monitoring** - Prometheus endpoints
+- [ ] **Health checks** - API and runner health monitoring
+- [ ] **Graceful shutdown** - Complete in-flight runs before stopping
+- [ ] **Run history retention** - Auto-cleanup old runs and data
+- [ ] **Backup &amp; restore** - Database backup utilities
+
+## v0.5.0 - Polish
+
+- [ ] **Actor versioning** - Deploy and rollback specific versions
+- [ ] **API key scopes** - Read-only vs full access keys
+- [ ] **Improved dashboard** - Better UX for those who prefer UI
+- [ ] **Documentation improvements**
+
+---
+
+## Non-Goals (for now)
+
+To keep focus, these are explicitly **not** on the roadmap:
+
+- ❌ Web IDE for editing Actors
+- ❌ Multi-tenant workspaces
+- ❌ Complex RBAC/permissions
+- ❌ Built-in proxy rotation (use your own)
+
+---
+
+## Contributing
+
+Have ideas? Open an issue on GitHub!
+
+The best contributions are CLI improvements, bug fixes, and documentation.
+
+</code></pre>
+<h2 id="repodocker-composedevyml"><a class="header" href="#repodocker-composedevyml">repo/docker-compose.dev.yml</a></h2>
+<pre><code class="language-yaml"># Minimal Docker Compose for development
+# Use this for quick local testing
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crawlee_cloud
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+</code></pre>
+<h2 id="repodocker-composeyml"><a class="header" href="#repodocker-composeyml">repo/docker-compose.yml</a></h2>
+<pre><code class="language-yaml">services:
+  # ===========================================
+  # CORE SERVICES
+  # ===========================================
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/crawlee_cloud
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_BUCKET=crawlee-cloud
+      - S3_FORCE_PATH_STYLE=true
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - RATE_LIMIT_MAX=1000
+      - LOG_LEVEL=info
+      - ADMIN_EMAIL=admin@crawlee.cloud
+      - ADMIN_PASSWORD=crawlee.cloud
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  runner:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.runner
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://api:3000
+      - API_TOKEN=runner-token
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/crawlee_cloud
+      - REDIS_URL=redis://redis:6379
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - DOCKER_NETWORK=crawlee-platfrom_crawlee-network
+      - MAX_CONCURRENT_RUNS=10
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - api
+      - redis
+      - postgres
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - api
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    command: ['node', 'dist/scheduler.js']
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/crawlee_cloud
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - api
+      - redis
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  # ===========================================
+  # DATA STORES (Replaceable with cloud services)
+  # ===========================================
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crawlee_cloud
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000' # S3 API
+      - '9001:9001' # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crawlee-network
+    restart: unless-stopped
+
+  # Create default bucket on startup
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: &gt;
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/crawlee-cloud --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - crawlee-network
+
+networks:
+  crawlee-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+</code></pre>
+<h2 id="repodockerdockerfileactor-base"><a class="header" href="#repodockerdockerfileactor-base">repo/docker/Dockerfile.actor-base</a></h2>
+<pre><code># Base image for user Actors
+# Pre-configured with Node.js, Chrome, and common dependencies
+
+FROM node:20-slim
+
+# Install Chrome and dependencies for Playwright/Puppeteer
+RUN apt-get update &amp;&amp; apt-get install -y \
+  chromium \
+  fonts-liberation \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libatspi2.0-0 \
+  libcups2 \
+  libdbus-1-3 \
+  libdrm2 \
+  libgbm1 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxkbcommon0 \
+  libxrandr2 \
+  xdg-utils \
+  wget \
+  ca-certificates \
+  --no-install-recommends \
+  &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Set Chrome executable path
+ENV CHROME_PATH=/usr/bin/chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Create app directory
+WORKDIR /app
+
+# Create storage directory
+RUN mkdir -p /tmp/storage
+
+# Set environment for Crawlee/Apify
+ENV CRAWLEE_STORAGE_DIR=/tmp/storage
+ENV APIFY_LOCAL_STORAGE_DIR=/tmp/storage
+
+# Labels
+LABEL org.opencontainers.image.title="Crawlee Platform Actor Base"
+LABEL org.opencontainers.image.description="Base image for Crawlee Platform Actors with Chrome"
+
+# The Actor's code will be added on top of this
+# Users extend this image in their Dockerfile:
+#
+# FROM crawlee-cloud/actor-base:latest
+# COPY package*.json ./
+# RUN npm ci --omit=dev
+# COPY . .
+# CMD ["node", "dist/main.js"]
+
+</code></pre>
+<h2 id="repodockerdockerfileapi"><a class="header" href="#repodockerdockerfileapi">repo/docker/Dockerfile.api</a></h2>
+<pre><code># =====================================
+# API Server Dockerfile
+# Multi-stage build for minimal image
+# =====================================
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies first (cache layer)
+COPY package*.json ./
+COPY packages/api/package*.json ./packages/api/
+
+RUN npm ci --workspace=@crawlee-cloud/api --ignore-scripts
+
+# Copy source and build
+COPY tsconfig.base.json ./
+COPY packages/api ./packages/api
+
+RUN npm run build --workspace=@crawlee-cloud/api
+
+# Stage 2: Production
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs &amp;&amp; \
+  adduser -S nodejs -u 1001
+
+# Copy built files
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/packages/api/package*.json ./packages/api/
+COPY --from=builder /app/packages/api/dist ./packages/api/dist
+
+# Install production dependencies only
+RUN npm ci --omit=dev --workspace=@crawlee-cloud/api --ignore-scripts
+
+USER nodejs
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+
+CMD ["node", "packages/api/dist/index.js"]
+
+</code></pre>
+<h2 id="repodockerdockerfiledashboard"><a class="header" href="#repodockerdockerfiledashboard">repo/docker/Dockerfile.dashboard</a></h2>
+<pre><code># Dashboard Dockerfile
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root package files for workspaces
+COPY package*.json ./
+COPY packages/dashboard/package*.json ./packages/dashboard/
+
+# Install dependencies
+RUN npm ci --workspace=@crawlee-cloud/dashboard --ignore-scripts
+
+# Copy source
+COPY tsconfig.base.json ./
+COPY packages/dashboard ./packages/dashboard
+
+# Build Next.js app
+RUN npm run build --workspace=@crawlee-cloud/dashboard
+
+# Production stage
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy built app
+COPY --from=builder /app/packages/dashboard/.next/standalone ./
+COPY --from=builder /app/packages/dashboard/.next/static ./packages/dashboard/.next/static
+COPY --from=builder /app/packages/dashboard/public ./packages/dashboard/public
+
+ENV NODE_ENV=production
+ENV PORT=3001
+
+EXPOSE 3001
+
+# Start the server
+CMD ["node", "packages/dashboard/server.js"]
+
+</code></pre>
+<h2 id="repodockerdockerfilerunner"><a class="header" href="#repodockerdockerfilerunner">repo/docker/Dockerfile.runner</a></h2>
+<pre><code># Multi-stage build for Runner service
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Copy workspace files
+COPY package*.json ./
+COPY packages/runner/package*.json ./packages/runner/
+COPY tsconfig.base.json ./
+
+# Install dependencies (ignore husky)
+RUN npm install --ignore-scripts
+
+# Copy source
+COPY packages/runner ./packages/runner
+
+# Build
+RUN npm run build --workspace=@crawlee-cloud/runner
+
+# Production stage
+FROM node:20-slim
+
+# Install Docker CLI for container management
+RUN apt-get update &amp;&amp; apt-get install -y \
+  docker.io \
+  --no-install-recommends \
+  &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy built files and lock file
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/packages/runner/dist ./dist
+COPY --from=builder /app/packages/runner/package*.json ./packages/runner/
+
+# Install production dependencies only
+RUN npm install --omit=dev --ignore-scripts
+
+# Labels
+LABEL org.opencontainers.image.title="Crawlee Platform Runner"
+LABEL org.opencontainers.image.description="Docker container runner for Actor execution"
+
+CMD ["node", "dist/index.js"]
+
+</code></pre>
+<h2 id="repopackagesclireadmemd"><a class="header" href="#repopackagesclireadmemd">repo/packages/cli/README.md</a></h2>
+<pre><code># Crawlee Cloud CLI
+
+The official CLI tool for [Crawlee Cloud](https://crawlee.cloud).
+
+Manage your Crawlee Cloud resources, deploy Actors, and view logs directly from your terminal.
+
+## Installation
+
+```bash
+npm install -g @crawlee-cloud/cli
+```
+
+Or use directly with npx:
+
+```bash
+npx @crawlee-cloud/cli &lt;command&gt;
+```
+
+## Usage
+
+```bash
+crawlee-cloud &lt;command&gt; [options]
+# Alias
+crc &lt;command&gt; [options]
+```
+
+### Commands
+
+- `login` - Login to your Crawlee Cloud account
+- `push` - Deploy an Actor to the cloud
+- `run` - Start an Actor run
+- `call` - Run an Actor and wait for it to finish
+- `logs` - Stream logs from a running Actor
+
+## Example
+
+```bash
+# Login
+crc login
+
+# Push the current directory as an Actor
+crc push my-actor
+
+# Run the Actor
+crc call my-actor
+```
+
+## Configuration
+
+Connect to your self-hosted Crawlee Cloud server:
+
+```bash
+# Login to your server
+crc login --url https://your-server.com
+```
+
+You'll be prompted for your API token. Credentials are stored in `~/.crawlee-cloud/config.json`.
+
+### Environment Variables
+
+| Variable                | Description           |
+| ----------------------- | --------------------- |
+| `CRAWLEE_CLOUD_API_URL` | Override API base URL |
+| `CRAWLEE_CLOUD_TOKEN`   | Override API token    |
+
+## Documentation
+
+For full documentation, visit the [Crawlee Cloud Documentation](https://github.com/crawlee-cloud/crawlee-cloud).
+
+</code></pre>
+<h2 id="repopackagesdashboardgitignore"><a class="header" href="#repopackagesdashboardgitignore">repo/packages/dashboard/.gitignore</a></h2>
+<pre><code># See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+</code></pre>
+<h2 id="repopackagesdashboardreadmemd"><a class="header" href="#repopackagesdashboardreadmemd">repo/packages/dashboard/README.md</a></h2>
+<pre><code>This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&amp;filter=next.js&amp;utm_source=create-next-app&amp;utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+</code></pre>
+<h2 id="repopackagesdashboardsrcappglobalscss"><a class="header" href="#repopackagesdashboardsrcappglobalscss">repo/packages/dashboard/src/app/globals.css</a></h2>
+<pre><code>@import 'tailwindcss';
+
+@theme {
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+/*
+  Tailwind v4 CSS Variables
+  We use full color values (hsl(...)) so that Tailwind can use them directly.
+  Opacity modifiers work automatically via color-mix / relative color syntax.
+*/
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(240 10% 3.9%);
+  
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 10% 3.9%);
+  
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 10% 3.9%);
+  
+  --primary: hsl(240 5.9% 10%);
+  --primary-foreground: hsl(0 0% 98%);
+  
+  --secondary: hsl(240 4.8% 95.9%);
+  --secondary-foreground: hsl(240 5.9% 10%);
+  
+  --muted: hsl(240 4.8% 95.9%);
+  --muted-foreground: hsl(240 3.8% 46.1%);
+  
+  --accent: hsl(240 4.8% 95.9%);
+  --accent-foreground: hsl(240 5.9% 10%);
+  
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  
+  --border: hsl(240 5.9% 90%);
+  --input: hsl(240 5.9% 90%);
+  --ring: hsl(240 5.9% 10%);
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(240 10% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  
+  --card: hsl(240 10% 3.9%);
+  --card-foreground: hsl(0 0% 98%);
+  
+  --popover: hsl(240 10% 3.9%);
+  --popover-foreground: hsl(0 0% 98%);
+  
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  
+  --secondary: hsl(240 3.7% 15.9%);
+  --secondary-foreground: hsl(0 0% 98%);
+  
+  --muted: hsl(240 3.7% 15.9%);
+  --muted-foreground: hsl(240 5% 64.9%);
+  
+  --accent: hsl(240 3.7% 15.9%);
+  --accent-foreground: hsl(0 0% 98%);
+  
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  
+  --border: hsl(240 3.7% 15.9%);
+  --input: hsl(240 3.7% 15.9%);
+  --ring: hsl(240 4.9% 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-card/40 backdrop-blur-xl border border-border shadow-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-card/50 backdrop-blur-lg border border-border hover:border-primary/20 transition-all duration-300;
+  }
+
+  .text-gradient {
+    @apply bg-linear-to-r from-foreground to-foreground/60 bg-clip-text text-transparent;
+  }
+}
+
+</code></pre>
+<h2 id="repopnpm-workspaceyaml"><a class="header" href="#repopnpm-workspaceyaml">repo/pnpm-workspace.yaml</a></h2>
+<pre><code class="language-yaml">packages:
+  - "packages/*"
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

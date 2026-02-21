@@ -30,35 +30,30 @@ step_portal() {
 step_services() {
     log "Building service documentation..."
     mkdir -p "$DIST_DIR/services"
+    pass=0; fail=0; skip=0
 
     for svc_dir in "$SOLUTIONS_DIR"/*/; do
         name=$(basename "$svc_dir")
-        flake="$svc_dir/src"
+        flake="${svc_dir%/}/src"
 
         # Skip non-flake services and ourselves
-        [ -f "$flake/flake.nix" ] || continue
+        [ -f "$flake/flake.nix" ] || { skip=$((skip+1)); continue; }
         [ "$name" = "cloud-spec" ] && continue
 
-        # Check if flake has a docs output
-        if ! nix eval "$flake#packages.aarch64-linux.docs" --apply 'x: true' 2>/dev/null; then
-            if ! nix eval "$flake#packages.x86_64-linux.docs" --apply 'x: true' 2>/dev/null; then
-                log "  SKIP $name (no docs output)"
-                continue
-            fi
-        fi
-
         log "  Building $name..."
-        if nix build "$flake#docs" --out-link "$SERVICE_DIR/.result-$name" 2>/dev/null; then
+        if nix build "$flake#docs" --out-link "$SERVICE_DIR/.result-$name" 2>&1; then
             mkdir -p "$DIST_DIR/services/$name"
             cp -rL "$SERVICE_DIR/.result-$name/"* "$DIST_DIR/services/$name/"
             chmod -R u+w "$DIST_DIR/services/$name"
             rm -f "$SERVICE_DIR/.result-$name"
+            pass=$((pass+1))
         else
             log "  WARN: Failed to build docs for $name"
+            fail=$((fail+1))
         fi
     done
 
-    log "Service docs collected → dist/services/"
+    log "Service docs: $pass built, $fail failed, $skip skipped"
 }
 
 # ── Main ────────────────────────────────────────────────────────────────

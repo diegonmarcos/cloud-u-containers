@@ -1,0 +1,604 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generated Configs - Sauron Lite - Lightweight file integrity and malware scanner</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html" class="active"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Sauron Lite - Lightweight file integrity and malware scanner</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="dockerfile"><a class="header" href="#dockerfile">Dockerfile</a></h2>
+<pre><code class="language-dockerfile"># Sauron-Lite: Hybrid watcher + YARA scanner
+# Image: ~15MB | RAM: 2-5MB idle, 20-30MB during scan
+
+FROM alpine:3.19
+
+RUN apk add --no-cache \
+    bash \
+    inotify-tools \
+    yara \
+    &amp;&amp; rm -rf /var/cache/apk/*
+
+COPY watcher.sh /usr/local/bin/watcher.sh
+COPY scanner.sh /usr/local/bin/scanner.sh
+RUN chmod +x /usr/local/bin/watcher.sh /usr/local/bin/scanner.sh
+
+RUN mkdir -p /var/log/sauron /var/spool/sauron /etc/sauron/yara-rules /watch
+
+# Cron job: run scanner every 5 minutes
+RUN echo "*/5 * * * * /usr/local/bin/scanner.sh &gt;&gt; /var/log/sauron/scanner.log 2&gt;&amp;1" &gt; /etc/crontabs/root
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+</code></pre>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml">
+
+services:
+  sauron:
+    build: .
+    container_name: sauron
+    restart: unless-stopped
+    volumes:
+      # Watch paths (read-only)
+      - /etc:/watch/etc:ro
+      - /home:/watch/home:ro
+      # YARA rules
+      - ./yara-rules:/etc/sauron/yara-rules:ro
+      # Persistent logs and queue
+      - ./data/logs:/var/log/sauron
+      - ./data/queue:/var/spool/sauron
+    environment:
+      TZ: Europe/Madrid
+      VM_NAME: "${VM_NAME:-unknown}"
+      WATCH_DIRS: /watch/etc /watch/home
+      QUEUE_FILE: /var/spool/sauron/scan-queue.txt
+      ALERTS_FILE: /var/log/sauron/alerts.jsonl
+      RULES_DIR: /etc/sauron/yara-rules
+    mem_limit: 64m
+    cpus: 0.25
+    cpu_shares: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - security
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "inotifywait"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+  forwarder:
+    image: debian:bookworm-slim
+    container_name: sauron-forwarder
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apt-get update &amp;&amp; apt-get install -y --no-install-recommends netcat-openbsd &amp;&amp; rm -rf /var/lib/apt/lists/*
+        echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
+        tail -F /var/log/sauron/alerts.jsonl 2&gt;/dev/null | while read line; do
+          echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2&gt;/dev/null || true
+        done
+    volumes:
+      - ./data/logs:/var/log/sauron:ro
+    environment:
+      CENTRAL_HOST: 35.226.147.64
+      CENTRAL_PORT: "5514"
+    depends_on:
+      - sauron
+    mem_limit: 16m
+    cpus: "0.05"
+    networks:
+      - security
+
+networks:
+  security:
+    driver: bridge
+
+</code></pre>
+<h2 id="entrypointsh"><a class="header" href="#entrypointsh">entrypoint.sh</a></h2>
+<pre><code class="language-bash">#!/bin/bash
+# Sauron-Lite entrypoint: runs watcher + cron for scanner
+set -e
+
+echo "[$(date -Iseconds)] Sauron-Lite starting..."
+echo "[$(date -Iseconds)] Mode: Watcher (realtime) + Scanner (every 5min)"
+
+# Start crond in background for periodic YARA scans
+crond -b -l 8
+
+# Run initial scan of watched directories
+echo "[$(date -Iseconds)] Running initial scan..."
+/usr/local/bin/scanner.sh || true
+
+# Start watcher in foreground
+exec /usr/local/bin/watcher.sh
+
+</code></pre>
+<h2 id="scannersh"><a class="header" href="#scannersh">scanner.sh</a></h2>
+<pre><code class="language-bash">#!/bin/bash
+# Sauron-Lite: Scanner component
+# Runs periodically to YARA scan queued files
+set -euo pipefail
+
+# Run with low priority (nice 19 = lowest priority)
+renice 19 $$ &gt;/dev/null 2&gt;&amp;1 || true
+
+QUEUE_FILE="${QUEUE_FILE:-/var/spool/sauron/scan-queue.txt}"
+ALERTS_FILE="${ALERTS_FILE:-/var/log/sauron/alerts.jsonl}"
+RULES_DIR="${RULES_DIR:-/etc/sauron/yara-rules}"
+VM_NAME="${VM_NAME:-unknown}"
+MAX_FILE_SIZE="${MAX_FILE_SIZE:-5242880}"  # 5MB
+
+mkdir -p "$(dirname "$ALERTS_FILE")"
+
+log_alert() {
+    local severity="$1"
+    local rule="$2"
+    local path="$3"
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    printf '{"timestamp":"%s","vm":"%s","severity":"%s","rule":"%s","path":"%s"}\n' \
+        "$timestamp" "$VM_NAME" "$severity" "$rule" "$path" | tee -a "$ALERTS_FILE"
+}
+
+# Check if queue exists and has content
+if [[ ! -s "$QUEUE_FILE" ]]; then
+    echo "[$(date -Iseconds)] No files in queue"
+    exit 0
+fi
+
+# Get unique files from queue
+SCAN_LIST=$(mktemp)
+sort -u "$QUEUE_FILE" &gt; "$SCAN_LIST"
+&gt; "$QUEUE_FILE"  # Clear queue
+
+FILE_COUNT=$(wc -l &lt; "$SCAN_LIST")
+echo "[$(date -Iseconds)] Scanning $FILE_COUNT files..."
+
+# Scan each file
+while IFS= read -r filepath; do
+    [[ -z "$filepath" ]] &amp;&amp; continue
+    [[ ! -f "$filepath" ]] &amp;&amp; continue
+
+    # Skip large files
+    filesize=$(stat -c%s "$filepath" 2&gt;/dev/null || echo 0)
+    if (( filesize &gt; MAX_FILE_SIZE )); then
+        echo "Skipping large file: $filepath ($filesize bytes)"
+        continue
+    fi
+
+    # Run YARA scan
+    if result=$(yara -r "$RULES_DIR" "$filepath" 2&gt;/dev/null); then
+        if [[ -n "$result" ]]; then
+            # Parse YARA output: "rulename filepath"
+            rule=$(echo "$result" | awk '{print $1}')
+            log_alert "high" "$rule" "$filepath"
+        fi
+    fi
+
+    # Small delay between files to prevent CPU spike
+    sleep 0.1
+done &lt; "$SCAN_LIST"
+
+rm -f "$SCAN_LIST"
+echo "[$(date -Iseconds)] Scan complete"
+
+</code></pre>
+<h2 id="watchersh"><a class="header" href="#watchersh">watcher.sh</a></h2>
+<pre><code class="language-bash">#!/bin/bash
+# Sauron-Lite: Watcher component
+# Detects file changes and queues them for YARA scanning
+set -euo pipefail
+
+WATCH_DIRS="${WATCH_DIRS:-/watch/etc /watch/home}"
+QUEUE_FILE="${QUEUE_FILE:-/var/spool/sauron/scan-queue.txt}"
+LOG_FILE="${LOG_FILE:-/var/log/sauron/changes.log}"
+VM_NAME="${VM_NAME:-unknown}"
+EXCLUDE_PATTERN="${EXCLUDE_PATTERN:-.log$|.tmp$|.swp$|.cache|__pycache__|node_modules|.git}"
+
+# Scannable extensions (potential malware carriers)
+SCAN_EXTENSIONS="sh|bash|py|pl|rb|php|js|exe|bin|so|dll|ps1|bat|cmd|vbs"
+
+mkdir -p "$(dirname "$QUEUE_FILE")" "$(dirname "$LOG_FILE")"
+touch "$QUEUE_FILE"
+
+log_change() {
+    local event="$1"
+    local path="$2"
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    echo "[$timestamp] $event: $path" &gt;&gt; "$LOG_FILE"
+
+    # Queue file for YARA scan if it's a scannable type
+    if [[ "$path" =~ \.($SCAN_EXTENSIONS)$ ]] &amp;&amp; [[ -f "$path" ]]; then
+        echo "$path" &gt;&gt; "$QUEUE_FILE"
+    fi
+}
+
+echo "[$(date -Iseconds)] Sauron Watcher starting..."
+echo "[$(date -Iseconds)] Watching: $WATCH_DIRS"
+
+inotifywait -m -r \
+    --exclude "$EXCLUDE_PATTERN" \
+    -e create -e modify -e moved_to \
+    --format '%e|%w%f' \
+    $WATCH_DIRS 2&gt;/dev/null | while IFS='|' read -r events filepath; do
+
+    case "$filepath" in
+        *.log|*.tmp|*.swp|*~) continue ;;
+    esac
+
+    log_change "$events" "$filepath"
+done
+
+</code></pre>
+<h2 id="yara-rulescustomcryptominersyar"><a class="header" href="#yara-rulescustomcryptominersyar">yara-rules/custom/cryptominers.yar</a></h2>
+<pre><code>rule CryptoMiner_Generic {
+    meta:
+        description = "Detects cryptocurrency mining scripts"
+        severity = "medium"
+    strings:
+        $miner1 = "stratum+tcp://" nocase
+        $miner2 = "xmrig" nocase
+        $miner3 = "minerd" nocase
+        $miner4 = "cpuminer" nocase
+        $miner5 = "cryptonight" nocase
+        $miner6 = "coinhive" nocase
+        $miner7 = "coin-hive" nocase
+        $pool1 = "pool.minexmr.com" nocase
+        $pool2 = "xmrpool.eu" nocase
+        $pool3 = "supportxmr.com" nocase
+    condition:
+        any of them
+}
+
+rule CryptoMiner_JavaScript {
+    meta:
+        description = "Detects browser-based crypto miners"
+        severity = "medium"
+    strings:
+        $js1 = "CoinHive.Anonymous" nocase
+        $js2 = "coinhive.min.js" nocase
+        $js3 = "cryptoloot" nocase
+        $js4 = "webminepool" nocase
+        $js5 = "miner.start()" nocase
+    condition:
+        any of them
+}
+
+</code></pre>
+<h2 id="yara-rulescustomsuspiciousyar"><a class="header" href="#yara-rulescustomsuspiciousyar">yara-rules/custom/suspicious.yar</a></h2>
+<pre><code>rule Suspicious_Reverse_Shell {
+    meta:
+        description = "Detects reverse shell patterns"
+        severity = "critical"
+    strings:
+        $bash1 = "/dev/tcp/" nocase
+        $bash2 = "bash -i &gt;&amp;" nocase
+        $nc1 = "nc -e /bin" nocase
+        $nc2 = "ncat -e" nocase
+        $py1 = "socket.socket" nocase
+        $py2 = "subprocess.call" nocase
+        $py3 = "pty.spawn" nocase
+        $perl1 = "perl -e" nocase
+        $perl2 = "IO::Socket::INET" nocase
+    condition:
+        ($bash1 or $bash2) or
+        ($nc1 or $nc2) or
+        ($py1 and $py2 and $py3) or
+        ($perl1 and $perl2)
+}
+
+rule Suspicious_Credential_Access {
+    meta:
+        description = "Detects credential harvesting attempts"
+        severity = "high"
+    strings:
+        $shadow = "/etc/shadow" nocase
+        $passwd = "/etc/passwd" nocase
+        $ssh1 = ".ssh/id_rsa" nocase
+        $ssh2 = ".ssh/authorized_keys" nocase
+        $aws = ".aws/credentials" nocase
+        $docker = ".docker/config.json" nocase
+        $kube = ".kube/config" nocase
+    condition:
+        2 of them
+}
+
+rule Suspicious_Encoded_Payload {
+    meta:
+        description = "Detects heavily encoded/obfuscated content"
+        severity = "medium"
+    strings:
+        $b64_long = /[A-Za-z0-9+\/]{100,}={0,2}/
+        $hex_long = /\\x[0-9a-fA-F]{2}(\\x[0-9a-fA-F]{2}){50,}/
+        $gzip_b64 = "H4sIA"
+    condition:
+        any of them
+}
+
+rule Suspicious_Docker_Escape {
+    meta:
+        description = "Detects container escape attempts"
+        severity = "critical"
+    strings:
+        $docker1 = "/var/run/docker.sock" nocase
+        $docker2 = "docker.sock" nocase
+        $cgroup = "/sys/fs/cgroup" nocase
+        $proc = "/proc/1/root" nocase
+        $nsenter = "nsenter" nocase
+    condition:
+        any of them
+}
+
+</code></pre>
+<h2 id="yara-rulescustomwebshellsyar"><a class="header" href="#yara-rulescustomwebshellsyar">yara-rules/custom/webshells.yar</a></h2>
+<pre><code>rule PHP_WebShell_Generic {
+    meta:
+        description = "Detects common PHP webshell patterns"
+        severity = "high"
+        author = "Security Team"
+    strings:
+        $eval1 = "eval($_POST" nocase
+        $eval2 = "eval($_GET" nocase
+        $eval3 = "eval($_REQUEST" nocase
+        $eval4 = "eval(base64_decode" nocase
+        $system1 = "system($_" nocase
+        $system2 = "passthru($_" nocase
+        $system3 = "shell_exec($_" nocase
+        $system4 = "exec($_" nocase
+        $b64 = "base64_decode($_" nocase
+        $assert = "assert($_" nocase
+    condition:
+        any of them
+}
+
+rule PHP_Backdoor_C99 {
+    meta:
+        description = "Detects C99 shell variants"
+        severity = "critical"
+    strings:
+        $c99_1 = "c99shell" nocase
+        $c99_2 = "c99madshell" nocase
+        $c99_3 = "r57shell" nocase
+    condition:
+        any of them
+}
+
+rule JSP_WebShell {
+    meta:
+        description = "Detects JSP webshell patterns"
+        severity = "high"
+    strings:
+        $jsp1 = "Runtime.getRuntime().exec"
+        $jsp2 = "ProcessBuilder"
+        $jsp3 = "request.getParameter"
+    condition:
+        $jsp3 and ($jsp1 or $jsp2)
+}
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="spec.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="spec.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
