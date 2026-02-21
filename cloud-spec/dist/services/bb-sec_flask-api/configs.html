@@ -1,0 +1,4145 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generated Configs - Cloud API (Flask)</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html" class="active"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Cloud API (Flask)</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="dockerfile"><a class="header" href="#dockerfile">Dockerfile</a></h2>
+<pre><code class="language-dockerfile">FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies for SSH and curl
+RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    openssh-client \
+    curl \
+    iputils-ping \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser &amp;&amp; chown -R appuser:appuser /app
+USER appuser
+
+# Environment variables
+ENV FLASK_HOST=0.0.0.0
+ENV FLASK_PORT=5000
+ENV FLASK_DEBUG=false
+
+EXPOSE 5000
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "--graceful-timeout", "30", "run:app"]
+
+</code></pre>
+<h2 id="appinitpy"><a class="header" href="#appinitpy">app/<strong>init</strong>.py</a></h2>
+<pre><code class="language-python">"""
+Cloud Dashboard Flask Server
+API backend for cloud infrastructure monitoring and management
+"""
+import os
+import re
+from flask import Flask
+from flask_cors import CORS
+from flasgger import Swagger
+
+
+def create_app():
+    """Application factory."""
+    app = Flask(__name__, template_folder='../templates')
+    raw_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+    # Convert wildcard patterns (e.g. http://localhost:*) to compiled regex
+    allowed_origins = []
+    for o in raw_origins:
+        if '*' in o and o != '*':
+            allowed_origins.append(re.compile(o.replace('.', r'\.').replace('*', '.*')))
+        else:
+            allowed_origins.append(o)
+    CORS(app, origins=allowed_origins, supports_credentials=True)
+
+    # Load config
+    app.config.from_mapping(
+        SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'dev-key-change-in-production'),
+        JSON_CONFIG_PATH=os.environ.get('CLOUD_CONFIG_PATH', '/opt/cloud-dashboard/cloud-infrastructure.json'),
+    )
+
+    # Register blueprints
+    from app.api.routes import api_bp
+    from app.api.web import web_bp
+    from app.api.auth import auth_bp
+    from app.api.admin import admin_bp
+    from app.api.c3 import c3_bp
+    from app.api.alerts import alerts_bp
+    from app.api.cloudflare import cloudflare_bp
+
+    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(c3_bp, url_prefix='/api/c3')
+    app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
+    app.register_blueprint(cloudflare_bp, url_prefix='/api/cloudflare')
+    app.register_blueprint(web_bp)  # Serves at / for HTML dashboard
+
+    # Initialize Swagger (auto-generates OpenAPI spec from docstrings)
+    swagger_template = {
+        "info": {
+            "title": "Cloud Dashboard API",
+            "version": "1.0.0",
+            "description": "REST API for cloud infrastructure monitoring &amp; management"
+        },
+        "securityDefinitions": {
+            "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+        }
+    }
+    swagger_config = {
+        "specs_route": "/apidocs/",
+        "swagger_ui": False,
+        "specs": [{"endpoint": "apispec", "route": "/apispec.json"}],
+        "headers": []
+    }
+    Swagger(app, template=swagger_template, config=swagger_config)
+
+    return app
+
+</code></pre>
+<h2 id="appapiadminpy"><a class="header" href="#appapiadminpy">app/api/admin.py</a></h2>
+<pre><code class="language-python">"""
+Admin API Routes for Cloud Dashboard
+Protected endpoints that require authentication
+"""
+import logging
+from datetime import datetime, timezone
+from flask import Blueprint, jsonify, request
+
+from app.api.auth import require_auth
+from app.config import get_vm, get_svc
+from app.utils.health import run_ssh_command
+
+admin_bp = Blueprint('admin', __name__)
+logger = logging.getLogger(__name__)
+
+# Audit log (in production, use proper logging/database)
+_audit_log = []
+
+
+def log_admin_action(user: str, action: str, target: str, result: str):
+    """Log admin action for audit trail."""
+    entry = {
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'user': user,
+        'action': action,
+        'target': target,
+        'result': result
+    }
+    _audit_log.append(entry)
+    logger.info(f"ADMIN ACTION: {user} - {action} - {target} - {result}")
+
+    # Keep only last 1000 entries
+    if len(_audit_log) &gt; 1000:
+        _audit_log.pop(0)
+
+
+# =============================================================================
+# VM Admin Endpoints
+# =============================================================================
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/reboot', methods=['POST'])
+@require_auth
+def reboot_vm(vm_id: str):
+    """Reboot a VM via SSH.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Reboot command sent
+      400:
+        description: VM has no public IP
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    ip = vm_data.get('network', {}).get('publicIp')
+    if not ip or ip == 'pending':
+        return jsonify({'error': 'VM has no public IP'}), 400
+
+    # Execute reboot command
+    result = run_ssh_command(vm_id, 'sudo reboot')
+
+    if result is None:
+        log_admin_action(request.current_user, 'reboot_vm', vm_id, 'failed')
+        return jsonify({'error': 'Failed to connect to VM'}), 503
+
+    log_admin_action(request.current_user, 'reboot_vm', vm_id, 'success')
+    return jsonify({
+        'status': 'ok',
+        'message': f'Reboot command sent to {vm_id}',
+        'vm_id': vm_id
+    })
+
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/containers', methods=['GET'])
+@require_auth
+def list_vm_containers(vm_id: str):
+    """List Docker containers on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of containers with name, status, image
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    result = run_ssh_command(vm_id, 'sudo docker ps -a --format "{{.Names}}|{{.Status}}|{{.Image}}"')
+
+    if result is None:
+        return jsonify({'error': 'Failed to connect to VM'}), 503
+
+    containers = []
+    for line in result.strip().split('\n'):
+        if line and '|' in line:
+            parts = line.split('|')
+            if len(parts) &gt;= 3:
+                containers.append({
+                    'name': parts[0],
+                    'status': parts[1],
+                    'image': parts[2]
+                })
+
+    return jsonify({
+        'vm_id': vm_id,
+        'containers': containers
+    })
+
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/restart', methods=['POST'])
+@require_auth
+def restart_container(vm_id: str, container_name: str):
+    """Restart a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container restarted
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    result = run_ssh_command(vm_id, f'sudo docker restart {container_name}')
+
+    if result is None:
+        log_admin_action(request.current_user, 'restart_container', f'{vm_id}/{container_name}', 'failed')
+        return jsonify({'error': 'Failed to execute command'}), 503
+
+    log_admin_action(request.current_user, 'restart_container', f'{vm_id}/{container_name}', 'success')
+    return jsonify({
+        'status': 'ok',
+        'message': f'Container {container_name} restarted',
+        'vm_id': vm_id,
+        'container': container_name
+    })
+
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/stop', methods=['POST'])
+@require_auth
+def stop_container(vm_id: str, container_name: str):
+    """Stop a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container stopped
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    result = run_ssh_command(vm_id, f'sudo docker stop {container_name}')
+
+    if result is None:
+        log_admin_action(request.current_user, 'stop_container', f'{vm_id}/{container_name}', 'failed')
+        return jsonify({'error': 'Failed to execute command'}), 503
+
+    log_admin_action(request.current_user, 'stop_container', f'{vm_id}/{container_name}', 'success')
+    return jsonify({
+        'status': 'ok',
+        'message': f'Container {container_name} stopped',
+        'vm_id': vm_id,
+        'container': container_name
+    })
+
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/start', methods=['POST'])
+@require_auth
+def start_container(vm_id: str, container_name: str):
+    """Start a Docker container on a VM.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container started
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    result = run_ssh_command(vm_id, f'sudo docker start {container_name}')
+
+    if result is None:
+        log_admin_action(request.current_user, 'start_container', f'{vm_id}/{container_name}', 'failed')
+        return jsonify({'error': 'Failed to execute command'}), 503
+
+    log_admin_action(request.current_user, 'start_container', f'{vm_id}/{container_name}', 'success')
+    return jsonify({
+        'status': 'ok',
+        'message': f'Container {container_name} started',
+        'vm_id': vm_id,
+        'container': container_name
+    })
+
+
+@admin_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/logs', methods=['GET'])
+@require_auth
+def get_container_logs(vm_id: str, container_name: str):
+    """Get logs from a Docker container.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+      - name: lines
+        in: query
+        type: integer
+        required: false
+        default: 100
+        description: Number of log lines (max 500)
+    responses:
+      200:
+        description: Container logs
+      401:
+        description: Unauthorized
+      404:
+        description: VM not found
+      503:
+        description: Failed to execute command
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    lines = request.args.get('lines', 100, type=int)
+    lines = min(lines, 500)  # Cap at 500 lines
+
+    result = run_ssh_command(vm_id, f'sudo docker logs --tail {lines} {container_name}')
+
+    if result is None:
+        return jsonify({'error': 'Failed to execute command'}), 503
+
+    return jsonify({
+        'vm_id': vm_id,
+        'container': container_name,
+        'logs': result
+    })
+
+
+# =============================================================================
+# Service Admin Endpoints
+# =============================================================================
+
+@admin_bp.route('/services/&lt;svc_id&gt;/restart', methods=['POST'])
+@require_auth
+def restart_service(svc_id: str):
+    """Restart a service (its Docker container).
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service restarted
+      400:
+        description: Service has no VM or container info
+      401:
+        description: Unauthorized
+      404:
+        description: Service not found
+      503:
+        description: Failed to execute command
+    """
+    svc_data = get_svc(svc_id)
+    if not svc_data:
+        return jsonify({'error': f'Service not found: {svc_id}'}), 404
+
+    vm_id = svc_data.get('vmId')
+    container = svc_data.get('docker', {}).get('container')
+
+    if not vm_id or not container:
+        return jsonify({'error': 'Service has no VM or container info'}), 400
+
+    result = run_ssh_command(vm_id, f'sudo docker restart {container}')
+
+    if result is None:
+        log_admin_action(request.current_user, 'restart_service', svc_id, 'failed')
+        return jsonify({'error': 'Failed to execute command'}), 503
+
+    log_admin_action(request.current_user, 'restart_service', svc_id, 'success')
+    return jsonify({
+        'status': 'ok',
+        'message': f'Service {svc_id} restarted',
+        'service_id': svc_id,
+        'container': container
+    })
+
+
+# =============================================================================
+# Audit Log Endpoint
+# =============================================================================
+
+@admin_bp.route('/audit-log', methods=['GET'])
+@require_auth
+def get_audit_log():
+    """Get recent admin actions audit log.
+    ---
+    tags:
+      - admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of entries (max 200)
+    responses:
+      200:
+        description: Audit log entries
+      401:
+        description: Unauthorized
+    """
+    limit = request.args.get('limit', 50, type=int)
+    limit = min(limit, 200)
+
+    return jsonify({
+        'entries': _audit_log[-limit:],
+        'total': len(_audit_log)
+    })
+
+</code></pre>
+<h2 id="appapialertspy"><a class="header" href="#appapialertspy">app/api/alerts.py</a></h2>
+<pre><code class="language-python">"""
+Alerts API Blueprint
+Receives alerts from all VMs and pushes to ntfy
+"""
+import os
+import time
+import hashlib
+import requests
+from datetime import datetime, timedelta
+from flask import Blueprint, request, jsonify
+
+alerts_bp = Blueprint('alerts', __name__)
+
+# Configuration
+NTFY_URL = os.environ.get('NTFY_URL', 'http://ntfy:80')
+NTFY_TOKEN = os.environ.get('NTFY_TOKEN', '')
+ALERT_HISTORY_HOURS = 24
+
+# In-memory storage (could be Redis/SQLite for persistence)
+alert_history = []
+seen_hashes = {}  # For deduplication
+
+# Topic mapping
+TOPIC_MAP = {
+    'github': 'github',
+    'sauron': 'sauron',
+    'auth': 'auth',
+    'system': 'system',
+    'docker': 'system',
+    'disk': 'system',
+    'ops': 'ops',
+    'cron': 'cron',
+    'backup': 'backup',
+    'security': 'security',
+    'deploy': 'deploy',
+}
+
+# Priority mapping
+PRIORITY_MAP = {
+    'emergency': 'urgent',
+    'alert': 'urgent',
+    'critical': 'high',
+    'error': 'high',
+    'warning': 'default',
+    'notice': 'low',
+    'info': 'low',
+    'debug': 'min',
+}
+
+
+def get_alert_hash(alert):
+    """Generate hash for deduplication"""
+    key = f"{alert.get('vm', '')}-{alert.get('category', '')}-{alert.get('message', '')[:100]}"
+    return hashlib.md5(key.encode()).hexdigest()[:16]
+
+
+def is_duplicate(alert_hash, window_seconds=300):
+    """Check if alert was seen recently"""
+    now = time.time()
+    if alert_hash in seen_hashes:
+        if now - seen_hashes[alert_hash] &lt; window_seconds:
+            return True
+    seen_hashes[alert_hash] = now
+    # Cleanup old hashes
+    cutoff = now - 3600
+    for h in list(seen_hashes.keys()):
+        if seen_hashes[h] &lt; cutoff:
+            del seen_hashes[h]
+    return False
+
+
+def push_to_ntfy(topic, title, message, priority='default', tags=None, click=None):
+    """Push notification to ntfy"""
+    headers = {
+        'Title': title[:250],
+        'Priority': priority,
+    }
+    if NTFY_TOKEN:
+        headers['Authorization'] = f'Bearer {NTFY_TOKEN}'
+    if tags:
+        headers['Tags'] = ','.join(tags)
+    if click:
+        headers['Click'] = click
+
+    try:
+        resp = requests.post(
+            f'{NTFY_URL}/{topic}',
+            data=message.encode('utf-8'),
+            headers=headers,
+            timeout=10
+        )
+        return resp.status_code == 200
+    except Exception as e:
+        print(f'ntfy error: {e}')
+        return False
+
+
+def cleanup_history():
+    """Remove old alerts from history"""
+    global alert_history
+    cutoff = datetime.utcnow() - timedelta(hours=ALERT_HISTORY_HOURS)
+    alert_history = [a for a in alert_history if _get_timestamp(a) &gt; cutoff]
+
+
+def _get_timestamp(alert):
+    """Safely get timestamp as datetime object"""
+    ts = alert.get('timestamp')
+    if ts is None:
+        return datetime.min
+    if isinstance(ts, datetime):
+        return ts
+    if isinstance(ts, str):
+        try:
+            return datetime.fromisoformat(ts.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            return datetime.min
+    return datetime.min
+
+
+@alerts_bp.route('/ingest', methods=['POST'])
+def ingest_alert():
+    """Receive alert from VM collector and push to ntfy.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - vm
+            - category
+            - title
+            - message
+          properties:
+            vm:
+              type: string
+              example: oci-micro-1
+            category:
+              type: string
+              enum: [auth, sauron, system, github, docker, ops, cron, backup, security, deploy]
+            severity:
+              type: string
+              enum: [emergency, alert, critical, error, warning, notice, info, debug]
+            title:
+              type: string
+            message:
+              type: string
+            source:
+              type: string
+            metadata:
+              type: object
+    responses:
+      200:
+        description: Alert ingested and pushed (or duplicate)
+      400:
+        description: Missing required fields
+      500:
+        description: Failed to push to ntfy
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No JSON data'}), 400
+
+    required = ['vm', 'category', 'title', 'message']
+    for field in required:
+        if field not in data:
+            return jsonify({'error': f'Missing field: {field}'}), 400
+
+    # Generate hash for deduplication
+    alert_hash = get_alert_hash(data)
+    if is_duplicate(alert_hash):
+        return jsonify({'status': 'duplicate', 'hash': alert_hash}), 200
+
+    # Map category to ntfy topic
+    category = data['category'].lower()
+    topic = TOPIC_MAP.get(category, 'system')
+
+    # Map severity to ntfy priority
+    severity = data.get('severity', 'warning').lower()
+    priority = PRIORITY_MAP.get(severity, 'default')
+
+    # Build notification
+    vm = data['vm']
+    title = f"{data['title']} [{vm}]"
+    message = data['message']
+
+    # Tags based on category
+    tags = [category, vm.replace('-', '')]
+    if severity in ['emergency', 'alert', 'critical']:
+        tags.append('warning')
+    if category == 'auth':
+        tags.append('lock')
+    elif category == 'sauron':
+        tags.append('eyes')
+    elif category == 'github':
+        tags.append('octocat')
+    elif category == 'system':
+        tags.append('computer')
+
+    # Push to ntfy
+    success = push_to_ntfy(
+        topic=topic,
+        title=title,
+        message=message,
+        priority=priority,
+        tags=tags,
+        click=data.get('metadata', {}).get('url')
+    )
+
+    # Store in history with ISO timestamp string for consistency
+    alert_record = {
+        'hash': alert_hash,
+        'timestamp': datetime.utcnow().isoformat(),
+        'vm': vm,
+        'category': category,
+        'severity': severity,
+        'title': data['title'],
+        'message': message[:500],
+        'source': data.get('source', 'api'),
+        'pushed': success,
+    }
+    alert_history.append(alert_record)
+    cleanup_history()
+
+    return jsonify({
+        'status': 'ok' if success else 'failed',
+        'hash': alert_hash,
+        'topic': topic,
+        'priority': priority,
+    }), 200 if success else 500
+
+
+@alerts_bp.route('/list', methods=['GET'])
+def list_alerts():
+    """List recent alerts.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+      - name: vm
+        in: query
+        type: string
+        required: false
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Max 500
+    responses:
+      200:
+        description: List of recent alerts
+    """
+    category = request.args.get('category')
+    vm = request.args.get('vm')
+    limit = min(int(request.args.get('limit', 50)), 500)
+
+    result = alert_history.copy()
+
+    if category:
+        result = [a for a in result if a['category'] == category]
+    if vm:
+        result = [a for a in result if a['vm'] == vm]
+
+    # Sort by timestamp descending - use helper to ensure consistent comparison
+    result.sort(key=lambda x: _get_timestamp(x), reverse=True)
+
+    # Ensure all timestamps are strings for JSON serialization
+    for a in result:
+        if isinstance(a.get('timestamp'), datetime):
+            a['timestamp'] = a['timestamp'].isoformat()
+
+    return jsonify({
+        'count': len(result[:limit]),
+        'alerts': result[:limit]
+    })
+
+
+@alerts_bp.route('/stats', methods=['GET'])
+def alert_stats():
+    """Get alert statistics.
+    ---
+    tags:
+      - alerts
+    responses:
+      200:
+        description: Alert counts by category, VM, and severity
+    """
+    cleanup_history()
+
+    stats = {
+        'total': len(alert_history),
+        'by_category': {},
+        'by_vm': {},
+        'by_severity': {},
+    }
+
+    for alert in alert_history:
+        cat = alert.get('category', 'unknown')
+        vm = alert.get('vm', 'unknown')
+        sev = alert.get('severity', 'unknown')
+
+        stats['by_category'][cat] = stats['by_category'].get(cat, 0) + 1
+        stats['by_vm'][vm] = stats['by_vm'].get(vm, 0) + 1
+        stats['by_severity'][sev] = stats['by_severity'].get(sev, 0) + 1
+
+    return jsonify(stats)
+
+
+@alerts_bp.route('/channels', methods=['GET'])
+def list_channels():
+    """List available notification channels/topics.
+    ---
+    tags:
+      - alerts
+    responses:
+      200:
+        description: Available ntfy notification channels
+    """
+    return jsonify({
+        'channels': [
+            {'id': 'github', 'name': 'GitHub', 'icon': '', 'color': '#238636', 'description': 'Repository activity', 'rss_url': 'https://rss.diegonmarcos.com/github/json?poll=1'},
+            {'id': 'sauron', 'name': 'Sauron', 'icon': '', 'color': '#f85149', 'description': 'YARA security scans', 'rss_url': 'https://rss.diegonmarcos.com/sauron/json?poll=1'},
+            {'id': 'auth', 'name': 'Auth', 'icon': '', 'color': '#a371f7', 'description': 'SSH, sudo, login events', 'rss_url': 'https://rss.diegonmarcos.com/auth/json?poll=1'},
+            {'id': 'system', 'name': 'System', 'icon': '', 'color': '#58a6ff', 'description': 'Service errors &amp; crashes', 'rss_url': 'https://rss.diegonmarcos.com/system/json?poll=1'},
+            {'id': 'ops', 'name': 'Operations', 'icon': '', 'color': '#d29922', 'description': 'Deployments &amp; restarts', 'rss_url': 'https://rss.diegonmarcos.com/ops/json?poll=1'},
+            {'id': 'docker', 'name': 'Docker', 'icon': '', 'color': '#2496ed', 'description': 'Container events', 'rss_url': 'https://rss.diegonmarcos.com/docker/json?poll=1'},
+            {'id': 'cron', 'name': 'Cron', 'icon': '', 'color': '#6e7681', 'description': 'Scheduled job events', 'rss_url': 'https://rss.diegonmarcos.com/cron/json?poll=1'},
+            {'id': 'backup', 'name': 'Backup', 'icon': '', 'color': '#3fb950', 'description': 'Backup job status', 'rss_url': 'https://rss.diegonmarcos.com/backup/json?poll=1'},
+            {'id': 'security', 'name': 'Security', 'icon': '', 'color': '#da3633', 'description': 'Security alerts', 'rss_url': 'https://rss.diegonmarcos.com/security/json?poll=1'},
+            {'id': 'deploy', 'name': 'Deploy', 'icon': '', 'color': '#bf8700', 'description': 'Deployment notifications', 'rss_url': 'https://rss.diegonmarcos.com/deploy/json?poll=1'},
+        ]
+    })
+
+
+@alerts_bp.route('/test', methods=['POST'])
+def test_alert():
+    """Send a test alert.
+    ---
+    tags:
+      - alerts
+    parameters:
+      - name: topic
+        in: query
+        type: string
+        required: false
+        default: system
+    responses:
+      200:
+        description: Test alert sent
+    """
+    topic = request.args.get('topic', 'system')
+    success = push_to_ntfy(
+        topic=topic,
+        title=f'Test {topic} [test]',
+        message=f'Test notification from Cloud API at {datetime.utcnow().isoformat()}',
+        priority='low',
+        tags=['test', topic, 'white_check_mark']
+    )
+    return jsonify({'status': 'ok' if success else 'failed', 'topic': topic})
+
+</code></pre>
+<h2 id="appapiauthpy"><a class="header" href="#appapiauthpy">app/api/auth.py</a></h2>
+<pre><code class="language-python">"""
+GitHub OAuth 2.0 Authentication for Cloud Dashboard
+"""
+import os
+import secrets
+import jwt
+from datetime import datetime, timedelta, timezone
+from functools import wraps
+from flask import Blueprint, jsonify, request, redirect, current_app
+import requests
+
+auth_bp = Blueprint('auth', __name__)
+
+# OAuth Configuration
+GITHUB_CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'change-me-in-production')
+JWT_EXPIRATION_HOURS = int(os.environ.get('JWT_EXPIRATION_HOURS', 24))
+ALLOWED_GITHUB_USERS = os.environ.get('ALLOWED_GITHUB_USERS', '').split(',')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cloud.diegonmarcos.com')
+
+# GitHub OAuth URLs
+GITHUB_AUTHORIZE_URL = 'https://github.com/login/oauth/authorize'
+GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+GITHUB_USER_URL = 'https://api.github.com/user'
+
+# Store for OAuth state tokens (in production, use Redis)
+_oauth_states = {}
+
+
+def create_jwt_token(username: str) -&gt; str:
+    """Create a JWT token for an authenticated user."""
+    payload = {
+        'sub': username,
+        'iat': datetime.now(timezone.utc),
+        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
+
+
+def decode_jwt_token(token: str) -&gt; dict | None:
+    """Decode and validate a JWT token."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+
+def require_auth(f):
+    """Decorator to require authentication for admin endpoints."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid authorization header'}), 401
+
+        token = auth_header.split(' ')[1]
+        payload = decode_jwt_token(token)
+
+        if not payload:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+
+        username = payload.get('sub')
+        if username not in ALLOWED_GITHUB_USERS:
+            return jsonify({'error': 'User not authorized for admin access'}), 403
+
+        # Add user info to request context
+        request.current_user = username
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+# =============================================================================
+# OAuth Endpoints
+# =============================================================================
+
+@auth_bp.route('/github', methods=['GET'])
+def github_login():
+    """Initiate GitHub OAuth flow.
+    ---
+    tags:
+      - auth
+    responses:
+      200:
+        description: Returns GitHub authorization URL
+        schema:
+          properties:
+            auth_url:
+              type: string
+            state:
+              type: string
+      500:
+        description: GitHub OAuth not configured
+    """
+    if not GITHUB_CLIENT_ID:
+        return jsonify({'error': 'GitHub OAuth not configured'}), 500
+
+    # Generate state token for CSRF protection
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = datetime.now(timezone.utc)
+
+    # Clean old states (older than 10 minutes)
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=10)
+    expired = [s for s, t in _oauth_states.items() if t &lt; cutoff]
+    for s in expired:
+        del _oauth_states[s]
+
+    # Build authorization URL
+    params = {
+        'client_id': GITHUB_CLIENT_ID,
+        'redirect_uri': f'{FRONTEND_URL}/api/auth/callback',
+        'scope': 'read:user',
+        'state': state
+    }
+    auth_url = f"{GITHUB_AUTHORIZE_URL}?{'&amp;'.join(f'{k}={v}' for k, v in params.items())}"
+
+    return jsonify({'auth_url': auth_url, 'state': state})
+
+
+@auth_bp.route('/github/redirect', methods=['GET'])
+def github_redirect():
+    """Redirect to GitHub OAuth (for browser-based flow).
+    ---
+    tags:
+      - auth
+    responses:
+      302:
+        description: Redirects to GitHub authorization page
+      500:
+        description: GitHub OAuth not configured
+    """
+    if not GITHUB_CLIENT_ID:
+        return jsonify({'error': 'GitHub OAuth not configured'}), 500
+
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = datetime.now(timezone.utc)
+
+    params = {
+        'client_id': GITHUB_CLIENT_ID,
+        'redirect_uri': f'{FRONTEND_URL}/api/auth/callback',
+        'scope': 'read:user',
+        'state': state
+    }
+    auth_url = f"{GITHUB_AUTHORIZE_URL}?{'&amp;'.join(f'{k}={v}' for k, v in params.items())}"
+
+    return redirect(auth_url)
+
+
+@auth_bp.route('/callback', methods=['GET'])
+def github_callback():
+    """Handle GitHub OAuth callback.
+    ---
+    tags:
+      - auth
+    parameters:
+      - name: code
+        in: query
+        type: string
+        required: true
+      - name: state
+        in: query
+        type: string
+        required: true
+    responses:
+      302:
+        description: Redirects to frontend with JWT token or error
+    """
+    code = request.args.get('code')
+    state = request.args.get('state')
+    error = request.args.get('error')
+
+    if error:
+        return redirect(f'{FRONTEND_URL}?auth_error={error}')
+
+    if not code or not state:
+        return redirect(f'{FRONTEND_URL}?auth_error=missing_params')
+
+    # Verify state token
+    if state not in _oauth_states:
+        return redirect(f'{FRONTEND_URL}?auth_error=invalid_state')
+
+    del _oauth_states[state]
+
+    # Exchange code for access token
+    token_response = requests.post(
+        GITHUB_TOKEN_URL,
+        data={
+            'client_id': GITHUB_CLIENT_ID,
+            'client_secret': GITHUB_CLIENT_SECRET,
+            'code': code,
+            'redirect_uri': f'{FRONTEND_URL}/api/auth/callback'
+        },
+        headers={'Accept': 'application/json'}
+    )
+
+    if token_response.status_code != 200:
+        return redirect(f'{FRONTEND_URL}?auth_error=token_exchange_failed')
+
+    token_data = token_response.json()
+    access_token = token_data.get('access_token')
+
+    if not access_token:
+        return redirect(f'{FRONTEND_URL}?auth_error=no_access_token')
+
+    # Get user info from GitHub
+    user_response = requests.get(
+        GITHUB_USER_URL,
+        headers={
+            'Authorization': f'Bearer {access_token}',
+            'Accept': 'application/json'
+        }
+    )
+
+    if user_response.status_code != 200:
+        return redirect(f'{FRONTEND_URL}?auth_error=user_fetch_failed')
+
+    user_data = user_response.json()
+    username = user_data.get('login')
+
+    if not username:
+        return redirect(f'{FRONTEND_URL}?auth_error=no_username')
+
+    # Check if user is allowed
+    if username not in ALLOWED_GITHUB_USERS:
+        return redirect(f'{FRONTEND_URL}?auth_error=user_not_allowed')
+
+    # Create JWT token
+    jwt_token = create_jwt_token(username)
+
+    # Redirect to frontend with token
+    return redirect(f'{FRONTEND_URL}?token={jwt_token}&amp;user={username}')
+
+
+@auth_bp.route('/me', methods=['GET'])
+@require_auth
+def get_current_user():
+    """Get current authenticated user info.
+    ---
+    tags:
+      - auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Current user info
+      401:
+        description: Unauthorized
+    """
+    return jsonify({
+        'username': request.current_user,
+        'authorized': True
+    })
+
+
+@auth_bp.route('/logout', methods=['POST'])
+@require_auth
+def logout():
+    """Logout (client should discard token).
+    ---
+    tags:
+      - auth
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Logged out
+      401:
+        description: Unauthorized
+    """
+    return jsonify({
+        'status': 'ok',
+        'message': 'Logged out successfully'
+    })
+
+
+@auth_bp.route('/verify', methods=['POST'])
+def verify_token():
+    """Verify if a token is valid.
+    ---
+    tags:
+      - auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+    responses:
+      200:
+        description: Token validity result
+      400:
+        description: No token provided
+    """
+    data = request.get_json() or {}
+    token = data.get('token')
+
+    if not token:
+        return jsonify({'valid': False, 'error': 'No token provided'}), 400
+
+    payload = decode_jwt_token(token)
+
+    if not payload:
+        return jsonify({'valid': False, 'error': 'Invalid or expired token'})
+
+    username = payload.get('sub')
+    if username not in ALLOWED_GITHUB_USERS:
+        return jsonify({'valid': False, 'error': 'User not authorized'})
+
+    return jsonify({
+        'valid': True,
+        'username': username,
+        'exp': payload.get('exp')
+    })
+
+</code></pre>
+<h2 id="appapic3py"><a class="header" href="#appapic3py">app/api/c3.py</a></h2>
+<pre><code class="language-python">"""
+C3 API Routes - Serves Cloud Control Center data from 4.jsons/
+Data source: /home/diego/Documents/Git/back-System/cloud/a_solutions/c3/in-house/4.jsons/
+"""
+import json
+from pathlib import Path
+from flask import Blueprint, jsonify
+
+c3_bp = Blueprint('c3', __name__)
+
+# Path to C3 JSON output (symlinked or mounted)
+C3_DATA_DIR = Path("/app/c3-data")
+
+# Fallback for local development
+if not C3_DATA_DIR.exists():
+    C3_DATA_DIR = Path(__file__).parent.parent.parent.parent / "c3" / "in-house" / "4.jsons"
+
+
+def load_c3_json(filename: str) -&gt; dict:
+    """Load C3 JSON file."""
+    filepath = C3_DATA_DIR / filename
+    if filepath.exists():
+        return json.loads(filepath.read_text())
+    return {"error": f"File not found: {filename}", "path": str(filepath)}
+
+
+# =============================================================================
+# Dashboard (Combined)
+# =============================================================================
+
+@c3_bp.route('/dashboard', methods=['GET'])
+def get_dashboard():
+    """Get combined dashboard data with all alerts.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Combined C3 dashboard data
+    """
+    return jsonify(load_c3_json("dashboard.json"))
+
+
+@c3_bp.route('/alerts', methods=['GET'])
+def get_alerts():
+    """Get all alerts from all categories.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Alerts and status from dashboard
+    """
+    dashboard = load_c3_json("dashboard.json")
+    return jsonify({
+        "alerts": dashboard.get("alerts", []),
+        "status": dashboard.get("status", {})
+    })
+
+
+# =============================================================================
+# Security
+# =============================================================================
+
+@c3_bp.route('/security', methods=['GET'])
+def get_security():
+    """Get full security data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full security scan results
+    """
+    return jsonify(load_c3_json("security.json"))
+
+
+@c3_bp.route('/security/summary', methods=['GET'])
+def get_security_summary():
+    """Get security summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Security summary and alerts
+    """
+    data = load_c3_json("security.json")
+    return jsonify({
+        "date": data.get("date"),
+        "summary": data.get("summary", {}),
+        "alerts": data.get("alerts", [])
+    })
+
+
+@c3_bp.route('/security/vms/&lt;vm_name&gt;', methods=['GET'])
+def get_security_vm(vm_name: str):
+    """Get security data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM security data
+      404:
+        description: VM not found
+    """
+    data = load_c3_json("security.json")
+    vm_data = data.get("vms", {}).get(vm_name)
+    if vm_data:
+        return jsonify({"vm": vm_name, **vm_data})
+    return jsonify({"error": f"VM not found: {vm_name}"}), 404
+
+
+@c3_bp.route('/security/failed-ssh', methods=['GET'])
+def get_failed_ssh():
+    """Get failed SSH attempts across all VMs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Failed SSH attempts sorted by count
+    """
+    data = load_c3_json("security.json")
+    all_failed = []
+    for vm_name, vm_data in data.get("vms", {}).items():
+        for entry in vm_data.get("failed_ssh", []):
+            all_failed.append({"vm": vm_name, **entry})
+    all_failed.sort(key=lambda x: x.get("count", 0), reverse=True)
+    return jsonify({
+        "total": data.get("summary", {}).get("total_failed_ssh", 0),
+        "by_ip": all_failed[:50]
+    })
+
+
+# =============================================================================
+# Performance
+# =============================================================================
+
+@c3_bp.route('/performance', methods=['GET'])
+def get_performance():
+    """Get full performance data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full performance metrics
+    """
+    return jsonify(load_c3_json("performance.json"))
+
+
+@c3_bp.route('/performance/summary', methods=['GET'])
+def get_performance_summary():
+    """Get performance summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Performance summary and alerts
+    """
+    data = load_c3_json("performance.json")
+    return jsonify({
+        "date": data.get("date"),
+        "summary": data.get("summary", {}),
+        "alerts": data.get("alerts", [])
+    })
+
+
+@c3_bp.route('/performance/vms/&lt;vm_name&gt;', methods=['GET'])
+def get_performance_vm(vm_name: str):
+    """Get performance data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM performance data
+      404:
+        description: VM not found
+    """
+    data = load_c3_json("performance.json")
+    vm_data = data.get("vms", {}).get(vm_name)
+    if vm_data:
+        return jsonify({"vm": vm_name, **vm_data})
+    return jsonify({"error": f"VM not found: {vm_name}"}), 404
+
+
+@c3_bp.route('/performance/docker', methods=['GET'])
+def get_docker_stats():
+    """Get Docker stats across all VMs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Docker container stats from all VMs
+    """
+    data = load_c3_json("performance.json")
+    all_containers = []
+    for vm_name, vm_data in data.get("vms", {}).items():
+        for container in vm_data.get("docker", []):
+            all_containers.append({"vm": vm_name, **container})
+    return jsonify({"containers": all_containers})
+
+
+# =============================================================================
+# Docker (dedicated)
+# =============================================================================
+
+@c3_bp.route('/docker', methods=['GET'])
+def get_docker():
+    """Get full docker data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full Docker inventory and status
+    """
+    return jsonify(load_c3_json("docker.json"))
+
+
+@c3_bp.route('/docker/vms/&lt;vm_name&gt;', methods=['GET'])
+def get_docker_vm(vm_name: str):
+    """Get docker data for specific VM.
+    ---
+    tags:
+      - c3
+    parameters:
+      - name: vm_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Docker data for VM
+      404:
+        description: VM not found
+    """
+    data = load_c3_json("docker.json")
+    vm_data = data.get("vms", {}).get(vm_name)
+    if vm_data:
+        return jsonify({"vm": vm_name, **vm_data})
+    return jsonify({"error": f"VM not found: {vm_name}"}), 404
+
+
+# =============================================================================
+# Web/HTTP
+# =============================================================================
+
+@c3_bp.route('/web', methods=['GET'])
+def get_web():
+    """Get full web/HTTP data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full web/HTTP analytics
+    """
+    return jsonify(load_c3_json("web.json"))
+
+
+@c3_bp.route('/web/summary', methods=['GET'])
+def get_web_summary():
+    """Get web summary only.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Web summary and alerts
+    """
+    data = load_c3_json("web.json")
+    return jsonify({
+        "date": data.get("date"),
+        "summary": data.get("summary", {}),
+        "alerts": data.get("alerts", [])
+    })
+
+
+@c3_bp.route('/web/threats', methods=['GET'])
+def get_web_threats():
+    """Get web security threats (suspicious requests, scanners).
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Suspicious requests, scanner activity, top error IPs
+    """
+    data = load_c3_json("web.json")
+    threats = {
+        "suspicious_requests": [],
+        "scanner_activity": [],
+        "top_error_ips": []
+    }
+    for vm_name, vm_data in data.get("vms", {}).items():
+        for req in vm_data.get("suspicious_requests", [])[:10]:
+            threats["suspicious_requests"].append({"vm": vm_name, "request": req})
+        for scanner in vm_data.get("scanner_agents", []):
+            threats["scanner_activity"].append({"vm": vm_name, **scanner})
+        for ip in vm_data.get("top_error_ips", [])[:5]:
+            threats["top_error_ips"].append({"vm": vm_name, **ip})
+    return jsonify(threats)
+
+
+@c3_bp.route('/web/top-ips', methods=['GET'])
+def get_top_ips():
+    """Get top requesting IPs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Top 30 requesting IPs across all VMs
+    """
+    data = load_c3_json("web.json")
+    all_ips = []
+    for vm_name, vm_data in data.get("vms", {}).items():
+        for ip in vm_data.get("top_ips", []):
+            all_ips.append({"vm": vm_name, **ip})
+    all_ips.sort(key=lambda x: x.get("count", 0), reverse=True)
+    return jsonify({"top_ips": all_ips[:30]})
+
+
+# =============================================================================
+# Availability
+# =============================================================================
+
+@c3_bp.route('/availability', methods=['GET'])
+def get_availability():
+    """Get full availability data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full availability report
+    """
+    return jsonify(load_c3_json("availability.json"))
+
+
+@c3_bp.route('/availability/status', methods=['GET'])
+def get_availability_status():
+    """Get current availability status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Current availability status, summary, and alerts
+    """
+    data = load_c3_json("availability.json")
+    return jsonify({
+        "date": data.get("date"),
+        "current_status": data.get("current_status", {}),
+        "summary": data.get("summary", {}),
+        "alerts": data.get("alerts", [])
+    })
+
+
+@c3_bp.route('/availability/endpoints', methods=['GET'])
+def get_endpoints_status():
+    """Get endpoint status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Endpoint up/down status
+    """
+    data = load_c3_json("availability.json")
+    return jsonify({
+        "endpoints": data.get("current_status", {}).get("endpoints", []),
+        "up": data.get("summary", {}).get("endpoints_up", 0),
+        "down": data.get("summary", {}).get("endpoints_down", 0)
+    })
+
+
+@c3_bp.route('/availability/ssl', methods=['GET'])
+def get_ssl_status():
+    """Get SSL certificate status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: SSL certificate status (ok, warning, critical)
+    """
+    data = load_c3_json("availability.json")
+    return jsonify({
+        "certificates": data.get("current_status", {}).get("ssl", []),
+        "ok": data.get("summary", {}).get("ssl_ok", 0),
+        "warning": data.get("summary", {}).get("ssl_warning", 0),
+        "critical": data.get("summary", {}).get("ssl_critical", 0)
+    })
+
+
+@c3_bp.route('/availability/vms', methods=['GET'])
+def get_vms_connectivity():
+    """Get VM connectivity status.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: VM reachability status
+    """
+    data = load_c3_json("availability.json")
+    return jsonify({
+        "vms": data.get("current_status", {}).get("vms", []),
+        "reachable": data.get("summary", {}).get("vms_reachable", 0),
+        "unreachable": data.get("summary", {}).get("vms_unreachable", 0)
+    })
+
+
+# =============================================================================
+# Costs
+# =============================================================================
+
+@c3_bp.route('/costs', methods=['GET'])
+def get_costs():
+    """Get full costs data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full cost breakdown
+    """
+    return jsonify(load_c3_json("costs.json"))
+
+
+@c3_bp.route('/costs/infra', methods=['GET'])
+def get_costs_infra():
+    """Get infrastructure costs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: GCP, OCI, and resource costs
+    """
+    data = load_c3_json("costs.json")
+    return jsonify({
+        "gcp": data.get("gcp", {}),
+        "oci": data.get("oci", {}),
+        "resources": data.get("resources", {}),
+        "summary": data.get("summary", {})
+    })
+
+
+@c3_bp.route('/costs/ai', methods=['GET'])
+def get_costs_ai():
+    """Get AI/Claude costs.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Claude API usage and cost
+    """
+    data = load_c3_json("costs.json")
+    return jsonify({
+        "claude": data.get("claude", {}),
+        "summary": {
+            "estimated_cost": data.get("claude", {}).get("usage", {}).get("estimated_cost_usd", 0)
+        }
+    })
+
+
+# =============================================================================
+# Architecture
+# =============================================================================
+
+@c3_bp.route('/architecture', methods=['GET'])
+def get_architecture():
+    """Get full architecture data.
+    ---
+    tags:
+      - c3
+    responses:
+      200:
+        description: Full architecture topology
+    """
+    return jsonify(load_c3_json("architecture.json"))
+
+</code></pre>
+<h2 id="appapicloudflarepy"><a class="header" href="#appapicloudflarepy">app/api/cloudflare.py</a></h2>
+<pre><code class="language-python">"""Cloudflare DNS, cache, firewall &amp; analytics management."""
+import os
+import requests
+from flask import Blueprint, jsonify, request
+
+cloudflare_bp = Blueprint('cloudflare', __name__)
+
+CF_API_BASE = 'https://api.cloudflare.com/client/v4'
+
+
+def _cf_headers():
+    token = os.environ.get('CF_API_TOKEN', '')
+    return {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+
+
+def _zone_id():
+    return os.environ.get('CF_ZONE_ID', '')
+
+
+def _check_config():
+    if not os.environ.get('CF_API_TOKEN') or not os.environ.get('CF_ZONE_ID'):
+        return jsonify(error='Cloudflare not configured'), 503
+    return None
+
+
+def _zone_url(path=''):
+    return f'{CF_API_BASE}/zones/{_zone_id()}{path}'
+
+
+# ── DNS ──────────────────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/dns', methods=['GET'])
+def list_dns():
+    """List all DNS records.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: DNS record list}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    resp = requests.get(_zone_url('/dns_records?per_page=100'), headers=_cf_headers(), timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    records = [
+        {
+            'id': r['id'],
+            'type': r['type'],
+            'name': r['name'],
+            'content': r['content'],
+            'proxied': r.get('proxied', False),
+            'ttl': r.get('ttl', 1),
+        }
+        for r in data.get('result', [])
+    ]
+    return jsonify(status='ok', records=records, count=len(records))
+
+
+@cloudflare_bp.route('/dns', methods=['POST'])
+def create_dns():
+    """Create a DNS record.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: DNS record created}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    body = request.get_json(force=True)
+    payload = {
+        'type': body.get('type', 'A'),
+        'name': body.get('name', ''),
+        'content': body.get('content', ''),
+        'proxied': body.get('proxied', False),
+        'ttl': body.get('ttl', 1),
+    }
+    resp = requests.post(_zone_url('/dns_records'), headers=_cf_headers(), json=payload, timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    r = data['result']
+    record = {'id': r['id'], 'type': r['type'], 'name': r['name'],
+              'content': r['content'], 'proxied': r.get('proxied', False), 'ttl': r.get('ttl', 1)}
+    return jsonify(status='ok', record=record)
+
+
+@cloudflare_bp.route('/dns/&lt;record_id&gt;', methods=['PUT'])
+def update_dns(record_id):
+    """Update a DNS record.
+    ---
+    tags: [Cloudflare]
+    parameters:
+      - {name: record_id, in: path, type: string, required: true}
+    responses:
+      200: {description: DNS record updated}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    body = request.get_json(force=True)
+    payload = {
+        'type': body.get('type', 'A'),
+        'name': body.get('name', ''),
+        'content': body.get('content', ''),
+        'proxied': body.get('proxied', False),
+        'ttl': body.get('ttl', 1),
+    }
+    resp = requests.patch(
+        _zone_url(f'/dns_records/{record_id}'), headers=_cf_headers(), json=payload, timeout=15
+    )
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    r = data['result']
+    record = {'id': r['id'], 'type': r['type'], 'name': r['name'],
+              'content': r['content'], 'proxied': r.get('proxied', False), 'ttl': r.get('ttl', 1)}
+    return jsonify(status='ok', record=record)
+
+
+@cloudflare_bp.route('/dns/&lt;record_id&gt;', methods=['DELETE'])
+def delete_dns(record_id):
+    """Delete a DNS record.
+    ---
+    tags: [Cloudflare]
+    parameters:
+      - {name: record_id, in: path, type: string, required: true}
+    responses:
+      200: {description: DNS record deleted}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    resp = requests.delete(
+        _zone_url(f'/dns_records/{record_id}'), headers=_cf_headers(), timeout=15
+    )
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    return jsonify(status='ok', deleted=record_id)
+
+
+# ── Cache ────────────────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/cache/purge', methods=['POST'])
+def purge_cache():
+    """Purge Cloudflare cache.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: Cache purged}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    body = request.get_json(force=True)
+    if body.get('purge_everything'):
+        payload = {'purge_everything': True}
+    else:
+        payload = {'files': body.get('files', [])}
+    resp = requests.post(_zone_url('/purge_cache'), headers=_cf_headers(), json=payload, timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    return jsonify(status='ok', message='Cache purged')
+
+
+# ── Zone ─────────────────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/zone', methods=['GET'])
+def zone_info():
+    """Get zone details.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: Zone details}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    resp = requests.get(_zone_url(''), headers=_cf_headers(), timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    return jsonify(status='ok', zone=data['result'])
+
+
+# ── Firewall ─────────────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/firewall', methods=['GET'])
+def list_firewall():
+    """List firewall rules.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: Firewall rules}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    resp = requests.get(_zone_url('/firewall/rules'), headers=_cf_headers(), timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    rules = [
+        {
+            'id': r.get('id'),
+            'expression': r.get('filter', {}).get('expression', ''),
+            'action': r.get('action', ''),
+            'description': r.get('description'),
+        }
+        for r in data.get('result', [])
+    ]
+    return jsonify(status='ok', rules=rules)
+
+
+@cloudflare_bp.route('/firewall', methods=['POST'])
+def create_firewall():
+    """Create a firewall rule.
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: Firewall rule created}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    body = request.get_json(force=True)
+    payload = [{
+        'filter': {'expression': body.get('expression', '')},
+        'action': body.get('action', ''),
+        'description': body.get('description', ''),
+    }]
+    resp = requests.post(_zone_url('/firewall/rules'), headers=_cf_headers(), json=payload, timeout=15)
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    return jsonify(status='ok', result=data['result'])
+
+
+# ── Analytics ────────────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/analytics', methods=['GET'])
+def analytics():
+    """Get zone analytics (last 24h).
+    ---
+    tags: [Cloudflare]
+    responses:
+      200: {description: Zone analytics}
+      503: {description: Cloudflare not configured}
+    """
+    err = _check_config()
+    if err:
+        return err
+    resp = requests.get(
+        _zone_url('/analytics/dashboard?since=-1440&amp;until=0'), headers=_cf_headers(), timeout=15
+    )
+    data = resp.json()
+    if not data.get('success'):
+        return jsonify(error=str(data.get('errors'))), 502
+    return jsonify(status='ok', analytics=data['result'])
+
+</code></pre>
+<h2 id="appapiroutespy"><a class="header" href="#appapiroutespy">app/api/routes.py</a></h2>
+<pre><code class="language-python">"""
+API Routes for Cloud Dashboard
+"""
+from flask import Blueprint, jsonify, request
+
+from app.config import (
+    load_config,
+    get_vm_ids, get_vm_ids_by_category, get_vm_categories, get_vm_category_name, get_vm,
+    get_service_ids, get_service_ids_by_category, get_service_categories, get_service_category_name, get_svc
+)
+from app.utils.health import (
+    get_vm_status, get_vm_ram_percent, get_vm_details,
+    get_svc_status, get_container_status
+)
+
+api_bp = Blueprint('api', __name__)
+
+
+# =============================================================================
+# Health Check
+# =============================================================================
+
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    """API health check endpoint.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: API is healthy
+        schema:
+          properties:
+            status:
+              type: string
+              example: ok
+            service:
+              type: string
+            version:
+              type: string
+    """
+    return jsonify({
+        'status': 'ok',
+        'service': 'cloud-dashboard-api',
+        'version': '1.0.0'
+    })
+
+
+# =============================================================================
+# Configuration Endpoints
+# =============================================================================
+
+@api_bp.route('/config', methods=['GET'])
+def get_full_config():
+    """Get full infrastructure configuration.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: Full JSON config
+      404:
+        description: Config file not found
+    """
+    try:
+        config = load_config()
+        return jsonify(config)
+    except FileNotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api_bp.route('/config/reload', methods=['POST'])
+def reload_config():
+    """Force reload configuration from disk.
+    ---
+    tags:
+      - health
+    responses:
+      200:
+        description: Configuration reloaded
+      404:
+        description: Config file not found
+    """
+    try:
+        config = load_config(force_reload=True)
+        return jsonify({'status': 'ok', 'message': 'Configuration reloaded'})
+    except FileNotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+
+
+# =============================================================================
+# VM Endpoints
+# =============================================================================
+
+@api_bp.route('/vms', methods=['GET'])
+def list_vms():
+    """List all VMs with basic info.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+        description: Filter by VM category
+    responses:
+      200:
+        description: List of VMs
+        schema:
+          properties:
+            vms:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  provider:
+                    type: string
+                  category:
+                    type: string
+                  ip:
+                    type: string
+                  instanceType:
+                    type: string
+                  configStatus:
+                    type: string
+    """
+    category = request.args.get('category')
+
+    if category:
+        vm_ids = get_vm_ids_by_category(category)
+    else:
+        vm_ids = get_vm_ids()
+
+    vms = []
+    for vm_id in vm_ids:
+        vm_data = get_vm(vm_id)
+        vms.append({
+            'id': vm_id,
+            'name': vm_data.get('name'),
+            'provider': vm_data.get('provider'),
+            'category': vm_data.get('category'),
+            'ip': vm_data.get('network', {}).get('publicIp'),
+            'instanceType': vm_data.get('instanceType'),
+            'configStatus': vm_data.get('status')
+        })
+
+    return jsonify({'vms': vms})
+
+
+@api_bp.route('/vms/categories', methods=['GET'])
+def list_vm_categories():
+    """List all VM categories.
+    ---
+    tags:
+      - vms
+    responses:
+      200:
+        description: List of VM categories
+        schema:
+          properties:
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+    """
+    categories = []
+    for cat_id in get_vm_categories():
+        categories.append({
+            'id': cat_id,
+            'name': get_vm_category_name(cat_id)
+        })
+    return jsonify({'categories': categories})
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;', methods=['GET'])
+def get_vm_info(vm_id: str):
+    """Get detailed VM information.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+        description: VM identifier
+    responses:
+      200:
+        description: VM details
+      404:
+        description: VM not found
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    return jsonify({
+        'id': vm_id,
+        **vm_data
+    })
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/status', methods=['GET'])
+def get_vm_health(vm_id: str):
+    """Get VM health status (ping, SSH).
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM health status with ping, SSH, and RAM info
+      404:
+        description: VM not found
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    status = get_vm_status(vm_id)
+    ram = get_vm_ram_percent(vm_id)
+
+    return jsonify({
+        'id': vm_id,
+        'name': vm_data.get('name'),
+        'ip': vm_data.get('network', {}).get('publicIp'),
+        **status,
+        'ram_percent': ram
+    })
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/details', methods=['GET'])
+def get_vm_remote_details(vm_id: str):
+    """Get detailed system info from VM via SSH.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Detailed system info (CPU, memory, disk, etc.)
+      404:
+        description: VM not found
+      503:
+        description: Failed to connect to VM
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    details = get_vm_details(vm_id)
+    if details is None:
+        return jsonify({'error': 'Failed to connect to VM'}), 503
+
+    return jsonify({
+        'id': vm_id,
+        'name': vm_data.get('name'),
+        'details': details
+    })
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/containers', methods=['GET'])
+def get_vm_containers(vm_id: str):
+    """Get Docker container status on VM.
+    ---
+    tags:
+      - vms
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of Docker containers on the VM
+      404:
+        description: VM not found
+      503:
+        description: Failed to get container status
+    """
+    vm_data = get_vm(vm_id)
+    if not vm_data:
+        return jsonify({'error': f'VM not found: {vm_id}'}), 404
+
+    containers = get_container_status(vm_id)
+    if containers is None:
+        return jsonify({'error': 'Failed to get container status'}), 503
+
+    return jsonify({
+        'id': vm_id,
+        'name': vm_data.get('name'),
+        'containers': containers
+    })
+
+
+# =============================================================================
+# Service Endpoints
+# =============================================================================
+
+@api_bp.route('/services', methods=['GET'])
+def list_services():
+    """List all services with basic info.
+    ---
+    tags:
+      - services
+    parameters:
+      - name: category
+        in: query
+        type: string
+        required: false
+        description: Filter by service category
+    responses:
+      200:
+        description: List of services
+        schema:
+          properties:
+            services:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  category:
+                    type: string
+                  vmId:
+                    type: string
+                  url:
+                    type: string
+                  configStatus:
+                    type: string
+    """
+    category = request.args.get('category')
+
+    if category:
+        svc_ids = get_service_ids_by_category(category)
+    else:
+        svc_ids = get_service_ids()
+
+    services = []
+    for svc_id in svc_ids:
+        svc_data = get_svc(svc_id)
+        url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+        services.append({
+            'id': svc_id,
+            'name': svc_data.get('name'),
+            'category': svc_data.get('category'),
+            'vmId': svc_data.get('vmId'),
+            'url': url,
+            'configStatus': svc_data.get('status')
+        })
+
+    return jsonify({'services': services})
+
+
+@api_bp.route('/services/categories', methods=['GET'])
+def list_service_categories():
+    """List all service categories.
+    ---
+    tags:
+      - services
+    responses:
+      200:
+        description: List of service categories
+    """
+    categories = []
+    for cat_id in get_service_categories():
+        categories.append({
+            'id': cat_id,
+            'name': get_service_category_name(cat_id)
+        })
+    return jsonify({'categories': categories})
+
+
+@api_bp.route('/services/&lt;svc_id&gt;', methods=['GET'])
+def get_service_info(svc_id: str):
+    """Get detailed service information.
+    ---
+    tags:
+      - services
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service details
+      404:
+        description: Service not found
+    """
+    svc_data = get_svc(svc_id)
+    if not svc_data:
+        return jsonify({'error': f'Service not found: {svc_id}'}), 404
+
+    return jsonify({
+        'id': svc_id,
+        **svc_data
+    })
+
+
+@api_bp.route('/services/&lt;svc_id&gt;/status', methods=['GET'])
+def get_service_health(svc_id: str):
+    """Get service health status (HTTP check).
+    ---
+    tags:
+      - services
+    parameters:
+      - name: svc_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Service health status
+      404:
+        description: Service not found
+    """
+    svc_data = get_svc(svc_id)
+    if not svc_data:
+        return jsonify({'error': f'Service not found: {svc_id}'}), 404
+
+    status = get_svc_status(svc_id)
+    url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+
+    return jsonify({
+        'id': svc_id,
+        'name': svc_data.get('name'),
+        'url': url,
+        **status
+    })
+
+
+# =============================================================================
+# Dashboard Summary Endpoints
+# =============================================================================
+
+@api_bp.route('/dashboard/summary', methods=['GET'])
+def get_dashboard_summary():
+    """Get summary of all VMs and services with status.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Dashboard summary grouped by category with health status
+    """
+    # VMs
+    vm_summary = []
+    for cat_id in get_vm_categories():
+        cat_vms = []
+        for vm_id in get_vm_ids_by_category(cat_id):
+            vm_data = get_vm(vm_id)
+            status = get_vm_status(vm_id)
+            ram = get_vm_ram_percent(vm_id)
+            cat_vms.append({
+                'id': vm_id,
+                'name': vm_data.get('name'),
+                'ip': vm_data.get('network', {}).get('publicIp'),
+                'instanceType': vm_data.get('instanceType'),
+                **status,
+                'ram_percent': ram
+            })
+        if cat_vms:
+            vm_summary.append({
+                'category': cat_id,
+                'categoryName': get_vm_category_name(cat_id),
+                'vms': cat_vms
+            })
+
+    # Services
+    svc_summary = []
+    for cat_id in get_service_categories():
+        cat_svcs = []
+        for svc_id in get_service_ids_by_category(cat_id):
+            svc_data = get_svc(svc_id)
+            status = get_svc_status(svc_id)
+            url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+            cat_svcs.append({
+                'id': svc_id,
+                'name': svc_data.get('name'),
+                'url': url,
+                **status
+            })
+        if cat_svcs:
+            svc_summary.append({
+                'category': cat_id,
+                'categoryName': get_service_category_name(cat_id),
+                'services': cat_svcs
+            })
+
+    return jsonify({
+        'vms': vm_summary,
+        'services': svc_summary
+    })
+
+
+@api_bp.route('/dashboard/quick-status', methods=['GET'])
+def get_quick_status():
+    """Get quick status without health checks (from config only).
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Quick status from config (no live health checks)
+    """
+    # VMs
+    vms = []
+    for vm_id in get_vm_ids():
+        vm_data = get_vm(vm_id)
+        vms.append({
+            'id': vm_id,
+            'name': vm_data.get('name'),
+            'ip': vm_data.get('network', {}).get('publicIp'),
+            'provider': vm_data.get('provider'),
+            'category': vm_data.get('category'),
+            'configStatus': vm_data.get('status')
+        })
+
+    # Services
+    services = []
+    for svc_id in get_service_ids():
+        svc_data = get_svc(svc_id)
+        url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+        services.append({
+            'id': svc_id,
+            'name': svc_data.get('name'),
+            'category': svc_data.get('category'),
+            'vmId': svc_data.get('vmId'),
+            'url': url,
+            'configStatus': svc_data.get('status')
+        })
+
+    return jsonify({
+        'vms': vms,
+        'services': services
+    })
+
+
+# =============================================================================
+# Providers &amp; Domains
+# =============================================================================
+
+@api_bp.route('/providers', methods=['GET'])
+def list_providers():
+    """List all cloud providers.
+    ---
+    tags:
+      - infrastructure
+    responses:
+      200:
+        description: Cloud provider details
+    """
+    config = load_config()
+    return jsonify({'providers': config.get('providers', {})})
+
+
+@api_bp.route('/domains', methods=['GET'])
+def list_domains():
+    """List all domains and subdomains.
+    ---
+    tags:
+      - infrastructure
+    responses:
+      200:
+        description: Domain configuration
+    """
+    config = load_config()
+    return jsonify(config.get('domains', {}))
+
+
+# =============================================================================
+# Cloud Control Endpoints (4 subpages: monitor, costs_infra, costs_ai, infrastructure)
+# =============================================================================
+
+@api_bp.route('/cloud_control/monitor', methods=['GET'])
+def cloud_control_monitor():
+    """Monitor page - VMs and services status summary.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Full monitor view with live VM and service status
+    """
+    # VMs
+    vm_summary = []
+    for cat_id in get_vm_categories():
+        cat_vms = []
+        for vm_id in get_vm_ids_by_category(cat_id):
+            vm_data = get_vm(vm_id)
+            status = get_vm_status(vm_id)
+            ram = get_vm_ram_percent(vm_id)
+            cat_vms.append({
+                'id': vm_id,
+                'name': vm_data.get('name'),
+                'ip': vm_data.get('network', {}).get('publicIp'),
+                'instanceType': vm_data.get('instanceType'),
+                'provider': vm_data.get('provider'),
+                **status,
+                'ram_percent': ram
+            })
+        if cat_vms:
+            vm_summary.append({
+                'category': cat_id,
+                'categoryName': get_vm_category_name(cat_id),
+                'vms': cat_vms
+            })
+
+    # Services
+    svc_summary = []
+    for cat_id in get_service_categories():
+        cat_svcs = []
+        for svc_id in get_service_ids_by_category(cat_id):
+            svc_data = get_svc(svc_id)
+            status = get_svc_status(svc_id)
+            url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+            cat_svcs.append({
+                'id': svc_id,
+                'name': svc_data.get('name'),
+                'url': url,
+                'vmId': svc_data.get('vmId'),
+                **status
+            })
+        if cat_svcs:
+            svc_summary.append({
+                'category': cat_id,
+                'categoryName': get_service_category_name(cat_id),
+                'services': cat_svcs
+            })
+
+    return jsonify({
+        'vms': vm_summary,
+        'services': svc_summary
+    })
+
+
+@api_bp.route('/cloud_control/costs_infra', methods=['GET'])
+def cloud_control_costs_infra():
+    """Infrastructure costs page - cloud provider costs.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Infrastructure cost breakdown
+    """
+    config = load_config()
+    costs_infra = config.get('costs', {}).get('infra', {})
+
+    return jsonify({
+        'costs': costs_infra,
+        'timestamp': config.get('lastUpdated')
+    })
+
+
+@api_bp.route('/cloud_control/costs_ai', methods=['GET'])
+def cloud_control_costs_ai():
+    """AI costs page - Claude/OpenAI/etc usage costs.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: AI service cost breakdown
+    """
+    config = load_config()
+    costs_ai = config.get('costs', {}).get('ai', {})
+
+    return jsonify({
+        'costs': costs_ai,
+        'timestamp': config.get('lastUpdated')
+    })
+
+
+@api_bp.route('/cloud_control/infrastructure', methods=['GET'])
+def cloud_control_infrastructure():
+    """Infrastructure page - full details on VMs, services, providers, domains.
+    ---
+    tags:
+      - dashboard
+    responses:
+      200:
+        description: Complete infrastructure details
+    """
+    config = load_config()
+
+    # VMs with full details
+    vms = []
+    for vm_id in get_vm_ids():
+        vm_data = get_vm(vm_id)
+        vms.append({
+            'id': vm_id,
+            **vm_data
+        })
+
+    # Services with full details
+    services = []
+    for svc_id in get_service_ids():
+        svc_data = get_svc(svc_id)
+        services.append({
+            'id': svc_id,
+            **svc_data
+        })
+
+    return jsonify({
+        'vms': vms,
+        'services': services,
+        'providers': config.get('providers', {}),
+        'domains': config.get('domains', {}),
+        'dockerNetworks': config.get('dockerNetworks', {}),
+        'firewallRules': config.get('firewallRules', {}),
+        'objectStorage': config.get('objectStorage', {}),
+        'vmCategories': config.get('vmCategories', {}),
+        'serviceCategories': config.get('serviceCategories', {})
+    })
+
+
+# =============================================================================
+# Wake-on-Demand Endpoints (for oci-p-flex_1 / photoprism)
+# =============================================================================
+
+import os
+import threading
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Wake state tracking
+_wake_state = {
+    'status': 'unknown',  # unknown, starting, running, stopped, error
+    'last_trigger': None,
+    'message': ''
+}
+_wake_lock = threading.Lock()
+
+# OCI instance details for wake-on-demand VM
+OCI_INSTANCE_ID = os.environ.get('OCI_WAKE_INSTANCE_ID', 'ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczachwpa3qrh7n25vfez3smidz4o7gpmtj4ga4d7zqlja5yq')
+
+# Lazy-loaded OCI clients
+_oci_compute_client = None
+_oci_initialized = False
+
+
+def _init_oci():
+    """Initialize OCI SDK client using instance principal or config file."""
+    global _oci_compute_client, _oci_initialized
+
+    if _oci_initialized:
+        return _oci_compute_client is not None
+
+    _oci_initialized = True
+
+    try:
+        import oci
+
+        # Try config file first (for local/container deployment)
+        config_file = os.environ.get('OCI_CONFIG_FILE', '/app/config/oci_config')
+        key_file = os.environ.get('OCI_KEY_FILE', '/app/config/oci_api_key.pem')
+
+        if os.path.exists(config_file):
+            config = oci.config.from_file(config_file)
+            # Override key file path if specified
+            if os.path.exists(key_file):
+                config['key_file'] = key_file
+            # Set request timeout to 30 seconds
+            _oci_compute_client = oci.core.ComputeClient(
+                config,
+                timeout=(10, 30)  # (connect_timeout, read_timeout)
+            )
+            logger.info("OCI SDK initialized with config file")
+            return True
+        else:
+            logger.warning(f"OCI config file not found at {config_file}")
+            return False
+
+    except Exception as e:
+        logger.error(f"Failed to initialize OCI SDK: {e}")
+        return False
+
+
+def _get_instance_state() -&gt; str:
+    """Get current OCI instance lifecycle state using SDK."""
+    if not _init_oci():
+        return 'unknown'
+
+    try:
+        response = _oci_compute_client.get_instance(OCI_INSTANCE_ID)
+        return response.data.lifecycle_state.lower()
+    except Exception as e:
+        logger.error(f"Failed to get instance state: {e}")
+        return 'unknown'
+
+
+def _start_instance() -&gt; tuple:
+    """Start OCI instance using SDK."""
+    if not _init_oci():
+        return False, 'OCI SDK not initialized'
+
+    try:
+        _oci_compute_client.instance_action(OCI_INSTANCE_ID, 'START')
+        return True, 'Start command sent'
+    except Exception as e:
+        return False, str(e)
+
+
+def _wake_worker():
+    """Background worker to start instance and monitor status."""
+    global _wake_state
+
+    with _wake_lock:
+        _wake_state['status'] = 'starting'
+        _wake_state['message'] = 'Sending start command to OCI...'
+
+    success, output = _start_instance()
+
+    if not success:
+        with _wake_lock:
+            _wake_state['status'] = 'error'
+            _wake_state['message'] = f'Failed to start: {output}'
+        return
+
+    # Poll for running state (max 5 minutes)
+    for _ in range(60):
+        time.sleep(5)
+        state = _get_instance_state()
+        with _wake_lock:
+            _wake_state['message'] = f'Instance state: {state}'
+            if state == 'running':
+                _wake_state['status'] = 'running'
+                return
+            elif state in ('terminated', 'terminating'):
+                _wake_state['status'] = 'error'
+                _wake_state['message'] = f'Instance in unexpected state: {state}'
+                return
+
+    with _wake_lock:
+        _wake_state['status'] = 'timeout'
+        _wake_state['message'] = 'Timeout waiting for instance to start'
+
+
+@api_bp.route('/wake/trigger', methods=['POST'])
+def trigger_wake():
+    """Trigger wake for the photoprism VM (oci-p-flex_1).
+    ---
+    tags:
+      - wake
+    responses:
+      200:
+        description: Wake triggered or already running
+        schema:
+          properties:
+            status:
+              type: string
+              enum: [ok, already_running, starting]
+            message:
+              type: string
+      503:
+        description: OCI SDK not configured
+    """
+    global _wake_state
+
+    # Check if OCI is configured
+    if not _init_oci():
+        return jsonify({
+            'status': 'error',
+            'message': 'OCI SDK not configured'
+        }), 503
+
+    # Check current state
+    current_state = _get_instance_state()
+
+    if current_state == 'running':
+        return jsonify({
+            'status': 'already_running',
+            'message': 'Instance is already running'
+        })
+
+    if current_state == 'starting':
+        return jsonify({
+            'status': 'starting',
+            'message': 'Instance is already starting'
+        })
+
+    # Start wake in background
+    with _wake_lock:
+        if _wake_state['status'] == 'starting':
+            return jsonify({
+                'status': 'starting',
+                'message': 'Wake already in progress'
+            })
+        _wake_state['last_trigger'] = time.time()
+
+    thread = threading.Thread(target=_wake_worker, daemon=True)
+    thread.start()
+
+    return jsonify({
+        'status': 'ok',
+        'message': 'Wake command triggered'
+    })
+
+
+@api_bp.route('/wake/status', methods=['GET'])
+def wake_status():
+    """Get current wake/instance status.
+    ---
+    tags:
+      - wake
+    responses:
+      200:
+        description: Current instance and wake status
+        schema:
+          properties:
+            instance_state:
+              type: string
+            wake_status:
+              type: string
+            message:
+              type: string
+            last_trigger:
+              type: number
+    """
+    current_state = _get_instance_state()
+
+    with _wake_lock:
+        return jsonify({
+            'instance_state': current_state,
+            'wake_status': _wake_state['status'],
+            'message': _wake_state['message'],
+            'last_trigger': _wake_state['last_trigger']
+        })
+
+
+# =============================================================================
+# VM Control Endpoints (start, stop, reset for all VMs)
+# =============================================================================
+
+# VM Instance IDs mapping
+VM_INSTANCE_IDS = {
+    'oci-p-flex_1': os.environ.get('OCI_WAKE_INSTANCE_ID', 'ocid1.instance.oc1.eu-marseille-1.anzwiljr5s34nfycnbimjtxr2zxutda5l67b6vgvb7ocfpjny3qbkx4hgfhq'),
+    'oci-f-micro_1': os.environ.get('OCI_MICRO1_INSTANCE_ID', ''),
+    'oci-f-micro_2': os.environ.get('OCI_MICRO2_INSTANCE_ID', ''),
+}
+
+# GCP VM mapping
+GCP_VMS = {
+    'gcp-f-micro_1': {'name': 'arch-1', 'zone': 'us-central1-a'}
+}
+
+
+def _get_oci_instance_state(instance_id: str) -&gt; str:
+    """Get OCI instance lifecycle state."""
+    if not instance_id or not _init_oci():
+        return 'unknown'
+    try:
+        response = _oci_compute_client.get_instance(instance_id)
+        return response.data.lifecycle_state.upper()
+    except Exception as e:
+        logger.error(f"Failed to get OCI instance state: {e}")
+        return 'unknown'
+
+
+def _oci_instance_action(instance_id: str, action: str) -&gt; tuple:
+    """Perform OCI instance action (START, STOP, SOFTRESET, RESET)."""
+    if not instance_id:
+        return False, 'Instance ID not configured'
+    if not _init_oci():
+        return False, 'OCI SDK not initialized'
+    try:
+        _oci_compute_client.instance_action(instance_id, action)
+        return True, f'{action} command sent'
+    except Exception as e:
+        return False, str(e)
+
+
+def _gcp_instance_action(vm_name: str, zone: str, action: str) -&gt; tuple:
+    """Perform GCP instance action via gcloud CLI."""
+    import subprocess
+    try:
+        cmd = ['gcloud', 'compute', 'instances', action, vm_name, f'--zone={zone}', '--quiet']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode == 0:
+            return True, f'{action} command sent'
+        return False, result.stderr or 'Command failed'
+    except Exception as e:
+        return False, str(e)
+
+
+def _gcp_instance_state(vm_name: str, zone: str) -&gt; str:
+    """Get GCP instance state via gcloud CLI."""
+    import subprocess
+    try:
+        cmd = ['gcloud', 'compute', 'instances', 'describe', vm_name, f'--zone={zone}', '--format=value(status)']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            return result.stdout.strip().upper()
+        return 'unknown'
+    except Exception as e:
+        logger.error(f"Failed to get GCP instance state: {e}")
+        return 'unknown'
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/start', methods=['POST'])
+def start_vm(vm_id: str):
+    """Start a VM.
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM started or already running
+      400:
+        description: Instance ID not configured
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to start VM
+    """
+    # Check if OCI VM
+    if vm_id in VM_INSTANCE_IDS:
+        instance_id = VM_INSTANCE_IDS[vm_id]
+        if not instance_id:
+            return jsonify({'error': f'Instance ID not configured for {vm_id}'}), 400
+
+        current_state = _get_oci_instance_state(instance_id)
+        if current_state == 'RUNNING':
+            return jsonify({'status': 'already_running', 'state': current_state})
+
+        success, msg = _oci_instance_action(instance_id, 'START')
+        if success:
+            return jsonify({'status': 'ok', 'action': 'started', 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    # Check if GCP VM
+    if vm_id in GCP_VMS:
+        vm_info = GCP_VMS[vm_id]
+        current_state = _gcp_instance_state(vm_info['name'], vm_info['zone'])
+        if current_state == 'RUNNING':
+            return jsonify({'status': 'already_running', 'state': current_state})
+
+        success, msg = _gcp_instance_action(vm_info['name'], vm_info['zone'], 'start')
+        if success:
+            return jsonify({'status': 'ok', 'action': 'started', 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    return jsonify({'error': f'Unknown VM: {vm_id}'}), 404
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/stop', methods=['POST'])
+def stop_vm(vm_id: str):
+    """Stop a VM.
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM stopped or already stopped
+      400:
+        description: Instance ID not configured
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to stop VM
+    """
+    # Check if OCI VM
+    if vm_id in VM_INSTANCE_IDS:
+        instance_id = VM_INSTANCE_IDS[vm_id]
+        if not instance_id:
+            return jsonify({'error': f'Instance ID not configured for {vm_id}'}), 400
+
+        current_state = _get_oci_instance_state(instance_id)
+        if current_state == 'STOPPED':
+            return jsonify({'status': 'already_stopped', 'state': current_state})
+
+        success, msg = _oci_instance_action(instance_id, 'STOP')
+        if success:
+            return jsonify({'status': 'ok', 'action': 'stopped', 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    # Check if GCP VM
+    if vm_id in GCP_VMS:
+        vm_info = GCP_VMS[vm_id]
+        current_state = _gcp_instance_state(vm_info['name'], vm_info['zone'])
+        if current_state in ('STOPPED', 'TERMINATED'):
+            return jsonify({'status': 'already_stopped', 'state': current_state})
+
+        success, msg = _gcp_instance_action(vm_info['name'], vm_info['zone'], 'stop')
+        if success:
+            return jsonify({'status': 'ok', 'action': 'stopped', 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    return jsonify({'error': f'Unknown VM: {vm_id}'}), 404
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/reset', methods=['POST'])
+def reset_vm(vm_id: str):
+    """Reset a VM (reboot if running, start if stopped).
+    ---
+    tags:
+      - vmControl
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: VM reset/started
+      400:
+        description: Instance ID not configured or invalid state
+      404:
+        description: Unknown VM
+      500:
+        description: Failed to reset VM
+    """
+    # Check if OCI VM
+    if vm_id in VM_INSTANCE_IDS:
+        instance_id = VM_INSTANCE_IDS[vm_id]
+        if not instance_id:
+            return jsonify({'error': f'Instance ID not configured for {vm_id}'}), 400
+
+        current_state = _get_oci_instance_state(instance_id)
+
+        if current_state == 'STOPPED':
+            success, msg = _oci_instance_action(instance_id, 'START')
+            action = 'started'
+        elif current_state == 'RUNNING':
+            success, msg = _oci_instance_action(instance_id, 'SOFTRESET')
+            action = 'rebooted'
+        else:
+            return jsonify({'error': f'Cannot reset VM in state: {current_state}'}), 400
+
+        if success:
+            return jsonify({'status': 'ok', 'action': action, 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    # Check if GCP VM
+    if vm_id in GCP_VMS:
+        vm_info = GCP_VMS[vm_id]
+        current_state = _gcp_instance_state(vm_info['name'], vm_info['zone'])
+
+        if current_state in ('STOPPED', 'TERMINATED'):
+            success, msg = _gcp_instance_action(vm_info['name'], vm_info['zone'], 'start')
+            action = 'started'
+        elif current_state == 'RUNNING':
+            success, msg = _gcp_instance_action(vm_info['name'], vm_info['zone'], 'reset')
+            action = 'rebooted'
+        else:
+            return jsonify({'error': f'Cannot reset VM in state: {current_state}'}), 400
+
+        if success:
+            return jsonify({'status': 'ok', 'action': action, 'message': msg})
+        return jsonify({'error': msg}), 500
+
+    return jsonify({'error': f'Unknown VM: {vm_id}'}), 404
+
+
+# =============================================================================
+# Container Control Endpoints
+# =============================================================================
+
+# VM SSH connection details
+VM_SSH_CONFIG = {
+    'oci-p-flex_1': {'host': '84.235.234.87', 'user': 'ubuntu', 'key': '/app/config/id_rsa'},
+    'oci-f-micro_1': {'host': '130.110.251.193', 'user': 'ubuntu', 'key': '/app/config/id_rsa'},
+    'oci-f-micro_2': {'host': '129.151.228.66', 'user': 'ubuntu', 'key': '/app/config/id_rsa'},
+    'gcp-f-micro_1': {'host': '34.55.55.234', 'user': 'diego', 'key': '/app/config/gcp_key'},
+}
+
+
+def _ssh_command(vm_id: str, command: str) -&gt; tuple:
+    """Execute command on VM via SSH."""
+    import subprocess
+
+    if vm_id not in VM_SSH_CONFIG:
+        return False, f'SSH not configured for {vm_id}'
+
+    config = VM_SSH_CONFIG[vm_id]
+    ssh_cmd = [
+        'ssh', '-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=10',
+        '-i', config['key'],
+        f"{config['user']}@{config['host']}",
+        command
+    ]
+
+    try:
+        result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, result.stderr.strip() or 'Command failed'
+    except subprocess.TimeoutExpired:
+        return False, 'SSH timeout'
+    except Exception as e:
+        return False, str(e)
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/restart', methods=['POST'])
+def restart_container(vm_id: str, container_name: str):
+    """Restart a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container restarted
+      500:
+        description: Failed to restart container
+    """
+    success, output = _ssh_command(vm_id, f'docker restart {container_name}')
+
+    if success:
+        return jsonify({
+            'status': 'ok',
+            'action': 'restarted',
+            'container': container_name,
+            'vm': vm_id,
+            'message': f'Container {container_name} restarted'
+        })
+
+    return jsonify({
+        'error': f'Failed to restart container: {output}',
+        'container': container_name,
+        'vm': vm_id
+    }), 500
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/stop', methods=['POST'])
+def stop_container(vm_id: str, container_name: str):
+    """Stop a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container stopped
+      500:
+        description: Failed to stop container
+    """
+    success, output = _ssh_command(vm_id, f'docker stop {container_name}')
+
+    if success:
+        return jsonify({
+            'status': 'ok',
+            'action': 'stopped',
+            'container': container_name,
+            'vm': vm_id
+        })
+
+    return jsonify({
+        'error': f'Failed to stop container: {output}',
+        'container': container_name,
+        'vm': vm_id
+    }), 500
+
+
+@api_bp.route('/vms/&lt;vm_id&gt;/containers/&lt;container_name&gt;/start', methods=['POST'])
+def start_container(vm_id: str, container_name: str):
+    """Start a Docker container on a VM.
+    ---
+    tags:
+      - containers
+    parameters:
+      - name: vm_id
+        in: path
+        type: string
+        required: true
+      - name: container_name
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Container started
+      500:
+        description: Failed to start container
+    """
+    success, output = _ssh_command(vm_id, f'docker start {container_name}')
+
+    if success:
+        return jsonify({
+            'status': 'ok',
+            'action': 'started',
+            'container': container_name,
+            'vm': vm_id
+        })
+
+    return jsonify({
+        'error': f'Failed to start container: {output}',
+        'container': container_name,
+        'vm': vm_id
+    }), 500
+
+</code></pre>
+<h2 id="appapiwebpy"><a class="header" href="#appapiwebpy">app/api/web.py</a></h2>
+<pre><code class="language-python">"""
+Web Routes for Cloud Dashboard (HTML templates)
+Serves the dashboard HTML page - static data only, JS fetches status async
+"""
+from datetime import datetime
+from flask import Blueprint, render_template, redirect
+
+from app.config import (
+    get_vm_ids_by_category, get_vm_categories, get_vm_category_name, get_vm,
+    get_service_ids_by_category, get_service_categories, get_service_category_name, get_svc
+)
+
+web_bp = Blueprint('web', __name__)
+
+VERSION = "5.1.0"
+
+# API documentation URL (Swagger UI on GitHub Pages)
+DOCS_URL = "https://diegonmarcos.github.io/api/"
+
+
+@web_bp.route('/')
+@web_bp.route('/docs')
+def api_docs():
+    """Redirect to API documentation (Swagger UI on GitHub Pages)."""
+    return redirect(DOCS_URL)
+
+
+@web_bp.route('/dashboard')
+def dashboard():
+    """Render the main dashboard HTML page with static config data.
+
+    Status updates are fetched asynchronously via JavaScript.
+    This allows the page to load instantly.
+    """
+
+    # Gather VM data (static config only, no health checks)
+    vm_categories = []
+    for cat_id in get_vm_categories():
+        cat_vms = []
+        for vm_id in get_vm_ids_by_category(cat_id):
+            vm_data = get_vm(vm_id)
+
+            cat_vms.append({
+                'id': vm_id,
+                'name': vm_data.get('name', ''),
+                'ip': vm_data.get('network', {}).get('publicIp', ''),
+                'type': vm_data.get('instanceType', ''),
+                'config_status': vm_data.get('status', 'active')  # For JS to check pending
+            })
+
+        if cat_vms:
+            vm_categories.append({
+                'id': cat_id,
+                'name': get_vm_category_name(cat_id),
+                'vms': cat_vms
+            })
+
+    # Gather Service data (static config only, no health checks)
+    service_categories = []
+    for cat_id in get_service_categories():
+        cat_svcs = []
+        for svc_id in get_service_ids_by_category(cat_id):
+            svc_data = get_svc(svc_id)
+            url = svc_data.get('urls', {}).get('gui') or svc_data.get('urls', {}).get('admin')
+
+            # Create short URL for display
+            short_url = '-'
+            if url and url != 'null':
+                short_url = url.replace('https://', '').replace('http://', '')
+                if len(short_url) &gt; 36:
+                    short_url = short_url[:33] + '...'
+
+            cat_svcs.append({
+                'id': svc_id,
+                'name': svc_data.get('name', ''),
+                'url': url if url and url != 'null' else None,
+                'short_url': short_url,
+                'config_status': svc_data.get('status', 'active')  # For JS to check dev/planned
+            })
+
+        if cat_svcs:
+            service_categories.append({
+                'id': cat_id,
+                'name': get_service_category_name(cat_id),
+                'services': cat_svcs
+            })
+
+    return render_template(
+        'dashboard.html',
+        version=VERSION,
+        timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        vm_categories=vm_categories,
+        service_categories=service_categories
+    )
+
+</code></pre>
+<h2 id="appconfigpy"><a class="header" href="#appconfigpy">app/config.py</a></h2>
+<pre><code class="language-python">"""
+Configuration management for Cloud Dashboard Flask Server
+"""
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+# Paths
+SCRIPT_DIR = Path(__file__).parent.parent.resolve()
+AUDIT_DATA_DIR = Path("/app/audit-data")  # Docker mount
+DEFAULT_CONFIG_PATH = AUDIT_DATA_DIR / 'cloud_dash.json'
+
+# Timeouts
+SSH_TIMEOUT = 5
+PING_TIMEOUT = 2
+CURL_TIMEOUT = 5
+
+# Cache
+_config: Optional[Dict[str, Any]] = None
+
+
+def get_config_path() -&gt; Path:
+    """Get configuration file path from env or default."""
+    env_path = os.environ.get('CLOUD_CONFIG_PATH')
+    if env_path:
+        return Path(env_path)
+    return DEFAULT_CONFIG_PATH
+
+
+def load_config(force_reload: bool = False) -&gt; Dict[str, Any]:
+    """Load and cache the JSON configuration."""
+    global _config
+    if _config is None or force_reload:
+        config_path = get_config_path()
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config not found: {config_path}")
+        with open(config_path, 'r') as f:
+            _config = json.load(f)
+    return _config
+
+
+def get_vm_ids() -&gt; List[str]:
+    """Get all VM IDs."""
+    return list(load_config().get('virtualMachines', {}).keys())
+
+
+def get_vm_ids_by_category(category: str) -&gt; List[str]:
+    """Get VM IDs filtered by category."""
+    vms = load_config().get('virtualMachines', {})
+    return [k for k, v in vms.items() if v.get('category') == category]
+
+
+def get_vm_categories() -&gt; List[str]:
+    """Get all VM category IDs."""
+    return list(load_config().get('vmCategories', {}).keys())
+
+
+def get_vm_category_name(category: str) -&gt; str:
+    """Get VM category display name."""
+    return load_config().get('vmCategories', {}).get(category, {}).get('name', category)
+
+
+def get_vm(vm_id: str, prop: Optional[str] = None) -&gt; Any:
+    """Get VM data or specific property."""
+    vm = load_config().get('virtualMachines', {}).get(vm_id, {})
+    if prop is None:
+        return vm
+
+    props = prop.strip('.').split('.')
+    result = vm
+    for p in props:
+        if isinstance(result, dict):
+            result = result.get(p)
+        else:
+            return None
+    return result
+
+
+def get_service_ids() -&gt; List[str]:
+    """Get all service IDs."""
+    return list(load_config().get('services', {}).keys())
+
+
+def get_service_ids_by_category(category: str) -&gt; List[str]:
+    """Get service IDs filtered by category."""
+    svcs = load_config().get('services', {})
+    return [k for k, v in svcs.items() if v.get('category') == category]
+
+
+def get_service_categories() -&gt; List[str]:
+    """Get all service category IDs."""
+    return list(load_config().get('serviceCategories', {}).keys())
+
+
+def get_service_category_name(category: str) -&gt; str:
+    """Get service category display name."""
+    return load_config().get('serviceCategories', {}).get(category, {}).get('name', category)
+
+
+def get_svc(svc_id: str, prop: Optional[str] = None) -&gt; Any:
+    """Get service data or specific property."""
+    svc = load_config().get('services', {}).get(svc_id, {})
+    if prop is None:
+        return svc
+
+    props = prop.strip('.').split('.')
+    result = svc
+    for p in props:
+        if isinstance(result, dict):
+            result = result.get(p)
+        else:
+            return None
+    return result
+
+
+def expand_path(path: str) -&gt; str:
+    """Expand ~ in paths."""
+    if path and path.startswith('~'):
+        return os.path.expanduser(path)
+    return path or ''
+
+</code></pre>
+<h2 id="apputilshealthpy"><a class="header" href="#apputilshealthpy">app/utils/health.py</a></h2>
+<pre><code class="language-python">"""
+Health check functions for VMs and services
+"""
+import subprocess
+from typing import Dict, Optional
+
+from app.config import (
+    SSH_TIMEOUT, PING_TIMEOUT, CURL_TIMEOUT,
+    get_vm, get_svc, expand_path
+)
+
+
+def check_ping(host: str) -&gt; bool:
+    """Check if host responds to ping."""
+    try:
+        result = subprocess.run(
+            ['ping', '-c', '1', '-W', str(PING_TIMEOUT), host],
+            capture_output=True,
+            timeout=PING_TIMEOUT + 1
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, Exception):
+        return False
+
+
+def check_ssh(host: str, user: str, key_path: str) -&gt; bool:
+    """Check if SSH connection is possible."""
+    try:
+        result = subprocess.run(
+            [
+                'ssh', '-i', key_path,
+                '-o', 'BatchMode=yes',
+                '-o', f'ConnectTimeout={SSH_TIMEOUT}',
+                '-o', 'StrictHostKeyChecking=no',
+                f'{user}@{host}', 'true'
+            ],
+            capture_output=True,
+            timeout=SSH_TIMEOUT + 2
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, Exception):
+        return False
+
+
+def check_http(url: str) -&gt; bool:
+    """Check if HTTP endpoint returns success status."""
+    if not url or url == 'null':
+        return False
+
+    try:
+        result = subprocess.run(
+            [
+                'curl', '-s', '-o', '/dev/null', '-w', '%{http_code}',
+                '--connect-timeout', str(CURL_TIMEOUT),
+                '--max-time', str(CURL_TIMEOUT + 2),
+                url
+            ],
+            capture_output=True,
+            text=True,
+            timeout=CURL_TIMEOUT + 5
+        )
+        code = result.stdout.strip()
+        return code.startswith('2') or code.startswith('3')
+    except (subprocess.TimeoutExpired, Exception):
+        return False
+
+
+def get_vm_status(vm_id: str) -&gt; Dict:
+    """Get VM status information."""
+    ip = get_vm(vm_id, 'network.publicIp')
+
+    if ip == 'pending':
+        return {
+            'status': 'pending',
+            'label': 'PENDING',
+            'ping': False,
+            'ssh': False
+        }
+
+    user = get_vm(vm_id, 'ssh.user')
+    key_path = expand_path(get_vm(vm_id, 'ssh.keyPath') or '')
+
+    ssh_ok = check_ssh(ip, user, key_path)
+    ping_ok = check_ping(ip) if not ssh_ok else True
+
+    if ssh_ok:
+        return {
+            'status': 'online',
+            'label': 'ONLINE',
+            'ping': True,
+            'ssh': True
+        }
+    elif ping_ok:
+        return {
+            'status': 'no_ssh',
+            'label': 'NO SSH',
+            'ping': True,
+            'ssh': False
+        }
+    else:
+        return {
+            'status': 'offline',
+            'label': 'OFFLINE',
+            'ping': False,
+            'ssh': False
+        }
+
+
+def get_vm_ram_percent(vm_id: str) -&gt; Optional[int]:
+    """Get RAM usage percentage via SSH."""
+    ip = get_vm(vm_id, 'network.publicIp')
+
+    if ip == 'pending':
+        return None
+
+    user = get_vm(vm_id, 'ssh.user')
+    key_path = expand_path(get_vm(vm_id, 'ssh.keyPath') or '')
+
+    try:
+        result = subprocess.run(
+            [
+                'ssh', '-i', key_path,
+                '-o', 'BatchMode=yes',
+                '-o', f'ConnectTimeout={SSH_TIMEOUT}',
+                '-o', 'StrictHostKeyChecking=no',
+                f'{user}@{ip}',
+                "free | awk '/^Mem:/{printf \"%.0f\", $3/$2*100}'"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=SSH_TIMEOUT + 2
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return int(result.stdout.strip())
+    except (subprocess.TimeoutExpired, ValueError, Exception):
+        pass
+    return None
+
+
+def get_vm_details(vm_id: str) -&gt; Optional[Dict]:
+    """Get detailed VM information via SSH."""
+    ip = get_vm(vm_id, 'network.publicIp')
+
+    if ip == 'pending':
+        return None
+
+    user = get_vm(vm_id, 'ssh.user')
+    key_path = expand_path(get_vm(vm_id, 'ssh.keyPath') or '')
+
+    remote_cmd = '''
+echo "hostname:$(hostname)"
+echo "uptime:$(uptime -p 2&gt;/dev/null || uptime)"
+echo "kernel:$(uname -r)"
+echo "cpu:$(nproc)"
+echo "ram_used:$(free -h | awk '/^Mem:/{print $3}')"
+echo "ram_total:$(free -h | awk '/^Mem:/{print $2}')"
+echo "ram_percent:$(free | awk '/^Mem:/{printf "%.1f", $3/$2*100}')"
+echo "disk_used:$(df -h / | awk 'NR==2{print $3}')"
+echo "disk_total:$(df -h / | awk 'NR==2{print $2}')"
+echo "containers:$(sudo docker ps -q 2&gt;/dev/null | wc -l)"
+'''
+
+    try:
+        result = subprocess.run(
+            ['ssh', '-i', key_path, '-o', f'ConnectTimeout={SSH_TIMEOUT}',
+             '-o', 'StrictHostKeyChecking=no', f'{user}@{ip}', remote_cmd],
+            capture_output=True, text=True, timeout=SSH_TIMEOUT + 5
+        )
+        if result.returncode == 0:
+            details = {}
+            for line in result.stdout.strip().split('\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    details[key.strip()] = value.strip()
+            return details
+    except Exception:
+        pass
+    return None
+
+
+def get_svc_status(svc_id: str) -&gt; Dict:
+    """Get service status information."""
+    status = get_svc(svc_id, 'status')
+
+    if status in ('planned', 'development'):
+        return {
+            'status': 'development',
+            'label': 'DEV',
+            'healthy': None
+        }
+
+    url = get_svc(svc_id, 'urls.gui') or get_svc(svc_id, 'urls.admin')
+
+    if not url or url == 'null':
+        return {
+            'status': 'no_url',
+            'label': 'N/A',
+            'healthy': None
+        }
+
+    healthy = check_http(url)
+    return {
+        'status': 'healthy' if healthy else 'error',
+        'label': 'HEALTHY' if healthy else 'ERROR',
+        'healthy': healthy
+    }
+
+
+def get_container_status(vm_id: str) -&gt; Optional[list]:
+    """Get Docker container status on a VM."""
+    ip = get_vm(vm_id, 'network.publicIp')
+
+    if ip == 'pending':
+        return None
+
+    user = get_vm(vm_id, 'ssh.user')
+    key_path = expand_path(get_vm(vm_id, 'ssh.keyPath') or '')
+
+    try:
+        result = subprocess.run(
+            ['ssh', '-i', key_path, '-o', f'ConnectTimeout={SSH_TIMEOUT}',
+             '-o', 'StrictHostKeyChecking=no', f'{user}@{ip}',
+             'sudo docker ps -a --format "{{.Names}}|{{.Status}}|{{.Ports}}"'],
+            capture_output=True, text=True, timeout=SSH_TIMEOUT + 5
+        )
+        if result.returncode == 0:
+            containers = []
+            for line in result.stdout.strip().split('\n'):
+                if '|' in line:
+                    parts = line.split('|')
+                    containers.append({
+                        'name': parts[0] if len(parts) &gt; 0 else '',
+                        'status': parts[1] if len(parts) &gt; 1 else '',
+                        'ports': parts[2] if len(parts) &gt; 2 else ''
+                    })
+            return containers
+    except Exception:
+        pass
+    return None
+
+
+def run_ssh_command(vm_id: str, command: str) -&gt; Optional[str]:
+    """Run an SSH command on a VM and return output."""
+    ip = get_vm(vm_id, 'network.publicIp')
+
+    if not ip or ip == 'pending':
+        return None
+
+    user = get_vm(vm_id, 'ssh.user')
+    key_path = expand_path(get_vm(vm_id, 'ssh.keyPath') or '')
+
+    try:
+        result = subprocess.run(
+            [
+                'ssh', '-i', key_path,
+                '-o', 'BatchMode=yes',
+                '-o', f'ConnectTimeout={SSH_TIMEOUT}',
+                '-o', 'StrictHostKeyChecking=no',
+                f'{user}@{ip}', command
+            ],
+            capture_output=True,
+            text=True,
+            timeout=SSH_TIMEOUT + 10
+        )
+        return result.stdout + result.stderr
+    except (subprocess.TimeoutExpired, Exception):
+        return None
+
+</code></pre>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml">services:
+  flask-api:
+    build: .
+    container_name: flask-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - c3-data:/app/c3-data:ro
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+      - ~/.ssh:/home/appuser/.ssh:ro
+      - /home/diego/cloud/oci_config:/app/config/oci_config:ro
+      - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+      - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
+    environment:
+      - FLASK_DEBUG=false
+      - CLOUD_CONFIG_PATH=/app/config/architecture.json
+      - OCI_CONFIG_FILE=/app/config/oci_config
+      - OCI_KEY_FILE=/app/config/oci_api_key.pem
+      - OCI_WAKE_INSTANCE_ID=${OCI_WAKE_INSTANCE_ID}
+      - OCI_FLEX1_INSTANCE_ID=${OCI_FLEX1_INSTANCE_ID}
+      - OCI_MICRO1_INSTANCE_ID=${OCI_MICRO1_INSTANCE_ID}
+      - OCI_MICRO2_INSTANCE_ID=${OCI_MICRO2_INSTANCE_ID}
+      - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
+      - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
+      - AUTHELIA_BEARER_TOKEN=${AUTHELIA_BEARER_TOKEN:-}
+      - CORS_ORIGINS=https://api.diegonmarcos.com,https://diegonmarcos.github.io,http://localhost:*,http://127.0.0.1:*
+      - CF_API_TOKEN=${CF_API_TOKEN}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+      - NTFY_URL=http://ntfy:80
+      - NTFY_TOKEN=${NTFY_TOKEN}
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  c3-data:
+    name: c3-data
+
+networks:
+  npm_default:
+    external: true
+
+</code></pre>
+<h2 id="requirementstxt"><a class="header" href="#requirementstxt">requirements.txt</a></h2>
+<pre><code>flask&gt;=3.0.0
+flask-cors&gt;=4.0.0
+flasgger&gt;=0.9.7.1
+gunicorn&gt;=21.0.0
+python-dotenv&gt;=1.0.0
+paramiko&gt;=3.0.0
+requests&gt;=2.31.0
+PyJWT&gt;=2.8.0
+oci&gt;=2.120.0
+
+</code></pre>
+<h2 id="runpy"><a class="header" href="#runpy">run.py</a></h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Cloud Dashboard Flask Server - Entry point
+
+Exposes Flask app for gunicorn: gunicorn --bind 0.0.0.0:5000 run:app
+"""
+import os
+import sys
+
+# Add the script directory to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from app import create_app
+
+# Create Flask app using factory (includes all blueprints)
+app = create_app()
+
+if __name__ == '__main__':
+    debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    host = os.environ.get('FLASK_HOST', '0.0.0.0')
+    port = int(os.environ.get('FLASK_PORT', 5000))
+    app.run(host=host, port=port, debug=debug)
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="spec.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="spec.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

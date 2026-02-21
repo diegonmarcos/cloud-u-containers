@@ -1,0 +1,3032 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Cloud Go API</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Cloud Go API</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="cloud-go-api"><a class="header" href="#cloud-go-api">Cloud Go API</a></h1>
+<h2 id="network"><a class="header" href="#network">Network</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td><code>api.diegonmarcos.com</code></td></tr>
+<tr><td><code>port</code></td><td><code>8091</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>container_name</code></td><td><code>go-api</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="dockerfile"><a class="header" href="#dockerfile">Dockerfile</a></h2>
+<pre><code class="language-dockerfile">FROM golang:1.23-alpine AS builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /go-api .
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates curl openssh-client iputils
+RUN adduser -D -u 1000 appuser
+WORKDIR /app
+COPY --from=builder /go-api /app/go-api
+USER appuser
+EXPOSE 8090
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
+    CMD curl -f http://localhost:8090/go/health || exit 1
+CMD ["/app/go-api"]
+
+</code></pre>
+<h2 id="configconfiggo"><a class="header" href="#configconfiggo">config/config.go</a></h2>
+<pre><code>package config
+
+import "os"
+
+// SshConfig holds SSH connection details for a VM.
+type SshConfig struct {
+	Host    string
+	User    string
+	KeyPath string
+}
+
+// VmServiceMap maps services to their containers for a VM.
+type VmServiceMap struct {
+	Label    string
+	Services map[string][]string
+}
+
+// RouteCheckDomain is a domain to probe for health.
+type RouteCheckDomain struct {
+	Domain  string
+	Service string
+}
+
+// VmInstance holds cloud provider instance identifiers.
+type VmInstance struct {
+	Provider   string // "oci" or "gcp"
+	InstanceID string
+}
+
+// GcpVm holds GCP-specific VM metadata.
+type GcpVm struct {
+	Name    string
+	Zone    string
+	Project string
+}
+
+// AppConfig holds all application configuration.
+type AppConfig struct {
+	Port               int
+	VmSSH              map[string]SshConfig
+	AllVmServices      map[string]VmServiceMap
+	FlexVmID           string
+	RouteCheckDomains  []RouteCheckDomain
+	ContainerDomainMap map[string]string
+
+	// Provider API config
+	VmInstances          map[string]VmInstance
+	GcpVms               map[string]GcpVm
+	OciConfigFile        string
+	OciKeyFile           string
+	GcpServiceAccountFile string
+	GcpProjectID         string
+	AutheliaBearerToken  string
+}
+
+// Load initializes the application config (mirrors Rust config.rs).
+func Load() *AppConfig {
+	sshKey := envOr("SSH_KEY_PATH", "/app/config/id_rsa")
+	gcpKey := envOr("GCP_SSH_KEY_PATH", "/app/config/gcp_key")
+
+	vmSSH := map[string]SshConfig{
+		"oci-p-flex_0":  {Host: "10.0.0.6", User: "ubuntu", KeyPath: sshKey},
+		"oci-p-flex_1":  {Host: "10.0.0.2", User: "ubuntu", KeyPath: sshKey},
+		"oci-f-micro_1": {Host: "10.0.0.3", User: "ubuntu", KeyPath: sshKey},
+		"oci-f-micro_2": {Host: "10.0.0.4", User: "ubuntu", KeyPath: sshKey},
+		"gcp-f-micro_1": {Host: "10.0.0.1", User: "diego", KeyPath: gcpKey},
+	}
+
+	allVmServices := map[string]VmServiceMap{
+		"oci-p-flex_0": {
+			Label: "oci-flex-0",
+			Services: map[string][]string{},
+		},
+		"oci-p-flex_1": {
+			Label: "oci-flex-1",
+			Services: map[string][]string{
+				"photos":     {"photoprism_app", "photoprism_mariadb"},
+				"calendar":   {"radicale"},
+				"hedgedoc":   {"hedgedoc_app", "hedgedoc_postgres"},
+				"etherpad":   {"etherpad_app", "etherpad_postgres"},
+				"grist":      {"grist_app"},
+				"files":      {"filebrowser_app"},
+				"slides":     {"revealmd_app"},
+				"code":       {"code-server"},
+				"nocodb":     {"nocodb_app", "nocodb_postgres"},
+				"monitoring": {"lgtm_grafana", "lgtm_loki", "lgtm_mimir", "lgtm_tempo"},
+				"git":        {"gitea"},
+				"cache":      {"redis"},
+				"security":   {"sauron"},
+				"logs":       {"fluent-bit"},
+			},
+		},
+		"gcp-f-micro_1": {
+			Label: "gcp-proxy",
+			Services: map[string][]string{
+				"proxy":         {"npm", "introspect-proxy"},
+				"auth":          {"authelia", "authelia-redis"},
+				"api":           {"flask-api"},
+				"notifications": {"ntfy"},
+				"passwords":     {"vaultwarden"},
+				"logs":          {"fluent-bit"},
+			},
+		},
+		"oci-f-micro_1": {
+			Label: "oci-mail",
+			Services: map[string][]string{
+				"mail":       {"mailu-front-1", "mailu-admin-1", "mailu-imap-1", "mailu-smtp-1", "mailu-antispam-1", "mailu-webmail-1", "mailu-redis-1", "mailu-resolver-1"},
+				"calendar":   {"radicale"},
+				"smtp_proxy": {"smtp-proxy"},
+				"sync":       {"syncthing"},
+				"analytics":  {"matomo-app", "matomo-db"},
+				"proxy":      {"nginx-proxy"},
+				"logs":       {"fluent-bit", "syslog-forwarder"},
+			},
+		},
+		"oci-f-micro_2": {
+			Label: "oci-analytics",
+			Services: map[string][]string{
+				"analytics":  {"matomo-hybrid"},
+				"security":   {"sauron", "sauron-forwarder"},
+				"automation": {"windmill-server", "windmill-worker", "windmill-db"},
+				"logs":       {"fluent-bit", "syslog-forwarder"},
+			},
+		},
+	}
+
+	containerDomainMap := map[string]string{
+		"authelia":        "auth.diegonmarcos.com",
+		"vaultwarden":     "vault.diegonmarcos.com",
+		"ntfy":            "rss.diegonmarcos.com",
+		"photoprism_app":  "photos.diegonmarcos.com",
+		"nocodb_app":      "db.diegonmarcos.com",
+		"code-server":     "ide.diegonmarcos.com",
+		"syncthing":       "sync.diegonmarcos.com",
+		"radicale":        "cal.diegonmarcos.com",
+		"matomo-hybrid":   "analytics.diegonmarcos.com",
+		"mailu-front-1":   "mail.diegonmarcos.com",
+		"flask-api":       "api.diegonmarcos.com",
+		"affine":          "drive-notes-affine.diegonmarcos.com",
+		"gitea":           "git.diegonmarcos.com",
+		"windmill-server": "windmill.diegonmarcos.com",
+		"lgtm_grafana":    "grafana.diegonmarcos.com",
+		"dozzle":          "logs.diegonmarcos.com",
+		"rust-api":        "api.diegonmarcos.com:8080",
+	}
+
+	routeCheckDomains := []RouteCheckDomain{
+		{Domain: "analytics.diegonmarcos.com", Service: "analytics"},
+		{Domain: "db.diegonmarcos.com", Service: "db"},
+		{Domain: "ide.diegonmarcos.com", Service: "ide"},
+		{Domain: "auth.diegonmarcos.com", Service: "auth"},
+		{Domain: "photos.diegonmarcos.com", Service: "photos"},
+		{Domain: "cal.diegonmarcos.com", Service: "cal"},
+		{Domain: "api.diegonmarcos.com", Service: "api"},
+	}
+
+	gcpProjectID := envOr("GCP_PROJECT_ID", "")
+
+	vmInstances := map[string]VmInstance{
+		"oci-p-flex_0":  {Provider: "oci", InstanceID: envOr("OCI_FLEX0_INSTANCE_ID", "")},
+		"oci-p-flex_1":  {Provider: "oci", InstanceID: envOr("OCI_FLEX1_INSTANCE_ID", "")},
+		"oci-f-micro_1": {Provider: "oci", InstanceID: envOr("OCI_MICRO1_INSTANCE_ID", "")},
+		"oci-f-micro_2": {Provider: "oci", InstanceID: envOr("OCI_MICRO2_INSTANCE_ID", "")},
+		"gcp-f-micro_1": {Provider: "gcp", InstanceID: ""},
+	}
+
+	gcpVms := map[string]GcpVm{
+		"gcp-f-micro_1": {Name: "arch-1", Zone: "us-central1-a", Project: gcpProjectID},
+	}
+
+	return &amp;AppConfig{
+		Port:               8090,
+		VmSSH:              vmSSH,
+		AllVmServices:      allVmServices,
+		FlexVmID:           "oci-p-flex_1",
+		RouteCheckDomains:  routeCheckDomains,
+		ContainerDomainMap: containerDomainMap,
+
+		VmInstances:          vmInstances,
+		GcpVms:               gcpVms,
+		OciConfigFile:        envOr("OCI_CONFIG_FILE", "/app/config/oci_config"),
+		OciKeyFile:           envOr("OCI_KEY_FILE", "/app/config/oci_api_key.pem"),
+		GcpServiceAccountFile: envOr("GCP_SERVICE_ACCOUNT_FILE", "/app/config/gcp_key.json"),
+		GcpProjectID:         gcpProjectID,
+		AutheliaBearerToken:  envOr("AUTHELIA_BEARER_TOKEN", ""),
+	}
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+</code></pre>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml">services:
+  go-api:
+    build: .
+    container_name: go-api
+    restart: unless-stopped
+    ports:
+      - "8091:8090"
+    volumes:
+      - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+      - ~/.ssh:/home/appuser/.ssh:ro
+      - /home/diego/cloud/oci_config:/app/config/oci_config:ro
+      - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+      - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
+    env_file:
+      - .secrets
+    environment:
+      - GO_API_PORT=8090
+      - CLOUD_CONFIG_PATH=/app/config/architecture.json
+      - OCI_CONFIG_FILE=/app/config/oci_config
+      - OCI_KEY_FILE=/app/config/oci_api_key.pem
+      - OCI_FLEX1_INSTANCE_ID=${OCI_FLEX1_INSTANCE_ID}
+      - OCI_MICRO1_INSTANCE_ID=${OCI_MICRO1_INSTANCE_ID}
+      - OCI_MICRO2_INSTANCE_ID=${OCI_MICRO2_INSTANCE_ID}
+      - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+      - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
+      - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
+      - AUTHELIA_BEARER_TOKEN=${AUTHELIA_BEARER_TOKEN:-}
+    networks:
+      - npm_default
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/go/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  npm_default:
+    external: true
+
+</code></pre>
+<h2 id="flakenix"><a class="header" href="#flakenix">flake.nix</a></h2>
+<pre><code>{
+  description = "Cloud Go API - Docker Compose configuration";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+  };
+
+  outputs = { self, nixpkgs }: let
+    forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+
+    config = {
+      domain = "api.diegonmarcos.com";
+      container_name = "go-api";
+      port = 8091;
+    };
+
+    title = "Cloud Go API";
+
+    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      services:
+        go-api:
+          build: .
+          container_name: ${config.container_name}
+          restart: unless-stopped
+          ports:
+            - "${toString config.port}:8090"
+          volumes:
+            - /home/diego/cloud/architecture.json:/app/config/architecture.json:ro
+            - ~/.ssh:/home/appuser/.ssh:ro
+            - /home/diego/cloud/oci_config:/app/config/oci_config:ro
+            - /home/diego/cloud/oci_api_key.pem:/app/config/oci_api_key.pem:ro
+            - /home/diego/cloud/gcp_key.json:/app/config/gcp_key.json:ro
+          env_file:
+            - .secrets
+          environment:
+            - GO_API_PORT=8090
+            - CLOUD_CONFIG_PATH=/app/config/architecture.json
+            - OCI_CONFIG_FILE=/app/config/oci_config
+            - OCI_KEY_FILE=/app/config/oci_api_key.pem
+            - OCI_FLEX1_INSTANCE_ID=''${OCI_FLEX1_INSTANCE_ID}
+            - OCI_MICRO1_INSTANCE_ID=''${OCI_MICRO1_INSTANCE_ID}
+            - OCI_MICRO2_INSTANCE_ID=''${OCI_MICRO2_INSTANCE_ID}
+            - GCP_SERVICE_ACCOUNT_FILE=/app/config/gcp_key.json
+            - GCP_PROJECT_ID=''${GCP_PROJECT_ID}
+            - SSH_KEY_PATH=/home/appuser/.ssh/id_rsa
+            - GCP_SSH_KEY_PATH=/home/appuser/.ssh/google_compute_engine
+            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN:-}
+          networks:
+            - npm_default
+          healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8090/go/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+
+      networks:
+        npm_default:
+          external: true
+    '';
+
+
+    # ── Documentation ────────────────────────────────────────────────────
+    mkDocs = pkgs: defaultPkg: let
+      inherit (pkgs.lib) concatMapStrings hasSuffix optionalString filter subtractLists removeSuffix;
+      inherit (builtins) attrNames readDir pathExists;
+
+      portKeys = filter (k: hasSuffix "_port" k || k == "port") (attrNames config);
+      imageKeys = filter (k: hasSuffix "_image" k || k == "image") (attrNames config);
+      containerKeys = filter (k: hasSuffix "_container" k || k == "container_name") (attrNames config);
+      domainKeys = filter (k: k == "domain" || k == "base_domain") (attrNames config);
+      otherKeys = subtractLists (portKeys ++ imageKeys ++ containerKeys ++ domainKeys) (attrNames config);
+
+      row = k: let
+        v = config.${k};
+        vs = if builtins.isBool v then (if v then "true" else "false")
+             else if builtins.isAttrs v || builtins.isList v then builtins.toJSON v
+             else toString v;
+      in "| `${k}` | `${vs}` |\n";
+      section = heading: keys: optionalString (keys != []) ''
+        ## ${heading}
+        | Key | Value |
+        |-----|-------|
+        ${concatMapStrings row keys}
+      '';
+
+      hasNarrative = pathExists ./docs;
+      narrativeFiles = if hasNarrative
+        then filter (f: hasSuffix ".md" f) (attrNames (readDir ./docs))
+        else [];
+
+      specMd = pkgs.writeText "spec.md" ''
+        # ${title}
+        ${section "Network" (domainKeys ++ portKeys)}
+        ${section "Containers" (containerKeys ++ imageKeys)}
+        ${section "Configuration" otherKeys}
+      '';
+
+      summaryMd = pkgs.writeText "SUMMARY.md" ''
+        # Summary
+        - [Specification](./spec.md)
+        - [Generated Configs](./configs.md)
+        ${concatMapStrings (f: "- [${removeSuffix ".md" f}](./${f})\n") narrativeFiles}
+      '';
+
+      bookToml = pkgs.writeText "book.toml" ''
+        [book]
+        title = "${title}"
+        [output.html]
+        default-theme = "ayu"
+      '';
+    in pkgs.runCommand "docs" {
+      nativeBuildInputs = [ pkgs.mdbook pkgs.file ];
+    } ''
+      mkdir -p build/src
+      cp ${bookToml} build/book.toml
+      cp ${summaryMd} build/src/SUMMARY.md
+      cp ${specMd} build/src/spec.md
+      ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2&gt;/dev/null || true"}
+
+      # Generate configs.md from packages.default output
+      echo "# Generated Configuration Files" &gt; build/src/configs.md
+      echo "" &gt;&gt; build/src/configs.md
+      echo 'These files are produced by nix build and deployed to the VM.' &gt;&gt; build/src/configs.md
+      echo "" &gt;&gt; build/src/configs.md
+      find ${defaultPkg} -type f | sort | while read -r f; do
+        relpath="''${f#${defaultPkg}/}"
+        case "$relpath" in
+          .secrets|*.secrets|*.lock|*.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.eot) continue ;;
+        esac
+        case "$relpath" in
+          *.yml|*.yaml)   lang="yaml" ;;
+          *.json)         lang="json" ;;
+          *.toml)         lang="toml" ;;
+          *.py)           lang="python" ;;
+          *.sh)           lang="bash" ;;
+          *.js|*.ts)      lang="javascript" ;;
+          *.tf)           lang="hcl" ;;
+          *.conf|*.cnf)   lang="ini" ;;
+          *.html)         lang="html" ;;
+          *.sql)          lang="sql" ;;
+          *.zone)         lang="dns" ;;
+          Dockerfile*)    lang="dockerfile" ;;
+          Caddyfile*)     lang="caddy" ;;
+          *)              lang="" ;;
+        esac
+        if file -b --mime-type "$f" | grep -q "^text/"; then
+          echo '## '"$relpath" &gt;&gt; build/src/configs.md
+          echo "" &gt;&gt; build/src/configs.md
+          echo "~~~$lang" &gt;&gt; build/src/configs.md
+          cat "$f" &gt;&gt; build/src/configs.md
+          echo "" &gt;&gt; build/src/configs.md
+          echo '~~~' &gt;&gt; build/src/configs.md
+          echo "" &gt;&gt; build/src/configs.md
+        fi
+      done
+
+      cd build &amp;&amp; mdbook build -d $out
+    '';
+
+  in {
+    packages = forAllSystems (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in let
+      defaultPkg = pkgs.runCommand "go-api-configs" {} ''
+        mkdir -p $out
+        cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp -r ${./..}/src/* $out/ 2&gt;/dev/null || cp -r ${./.}/* $out/ 2&gt;/dev/null || true
+      '';
+    in {
+      default = defaultPkg;
+      docs = mkDocs pkgs defaultPkg;
+    });
+  };
+}
+
+</code></pre>
+<h2 id="gomod"><a class="header" href="#gomod">go.mod</a></h2>
+<pre><code>module github.com/diegonmarcos/go-api
+
+go 1.23
+
+require github.com/go-chi/chi/v5 v5.1.0
+
+</code></pre>
+<h2 id="gosum"><a class="header" href="#gosum">go.sum</a></h2>
+<pre><code>github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
+github.com/go-chi/chi/v5 v5.1.0/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
+
+</code></pre>
+<h2 id="maingo"><a class="header" href="#maingo">main.go</a></h2>
+<pre><code>package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/diegonmarcos/go-api/config"
+	"github.com/diegonmarcos/go-api/routes"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+)
+
+func main() {
+	port := os.Getenv("GO_API_PORT")
+	if port == "" {
+		port = "8090"
+	}
+
+	cfg := config.Load()
+
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(corsMiddleware)
+
+	routes.RegisterHealth(r, cfg)
+	routes.RegisterProfiling(r, cfg)
+	routes.RegisterActions(r, cfg)
+	routes.RegisterDocs(r, cfg)
+
+	addr := fmt.Sprintf("0.0.0.0:%s", port)
+	log.Printf("Go API listening on %s", addr)
+	if err := http.ListenAndServe(addr, r); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+</code></pre>
+<h2 id="modelstypesgo"><a class="header" href="#modelstypesgo">models/types.go</a></h2>
+<pre><code>package models
+
+// ContainerInfo represents a deployed container's state.
+type ContainerInfo struct {
+	Name  string `json:"name"`
+	State string `json:"state"`
+	Ports string `json:"ports"`
+}
+
+// VmDeployed holds the deployed containers for a VM.
+type VmDeployed struct {
+	Label      string          `json:"label"`
+	Containers []ContainerInfo `json:"containers"`
+	Running    int             `json:"running"`
+	Stopped    int             `json:"stopped"`
+	Total      int             `json:"total"`
+}
+
+// DriftVM holds drift analysis for a VM.
+type DriftVM struct {
+	Label    string   `json:"label"`
+	Declared []string `json:"declared"`
+	Deployed []string `json:"deployed"`
+	Missing  []string `json:"missing"`
+	Extra    []string `json:"extra"`
+}
+
+// ProfilingCheck is a single diagnostic check result.
+type ProfilingCheck struct {
+	Name    string      `json:"name"`
+	Success bool        `json:"success"`
+	TimeMs  int64       `json:"time_ms"`
+	Data    interface{} `json:"data"`
+}
+
+// ProfilingSummary aggregates profiling results.
+type ProfilingSummary struct {
+	ChecksPassed int    `json:"checks_passed"`
+	ChecksFailed int    `json:"checks_failed"`
+	ChecksTotal  int    `json:"checks_total"`
+	Status       string `json:"overall_status"`
+}
+
+// ProfilingResponse is the full profiling report for a container.
+type ProfilingResponse struct {
+	Container   string           `json:"container"`
+	VmID        string           `json:"vm_id"`
+	VmLabel     string           `json:"vm_label"`
+	Service     string           `json:"service"`
+	Domain      string           `json:"domain,omitempty"`
+	TotalTimeMs int64            `json:"total_time_ms"`
+	Checks      []ProfilingCheck `json:"checks"`
+	Summary     ProfilingSummary `json:"summary"`
+}
+
+</code></pre>
+<h2 id="routesactionsgo"><a class="header" href="#routesactionsgo">routes/actions.go</a></h2>
+<pre><code>package routes
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/diegonmarcos/go-api/config"
+	"github.com/diegonmarcos/go-api/services"
+	"github.com/go-chi/chi/v5"
+)
+
+// RegisterActions registers all POST action endpoints under /go/*.
+func RegisterActions(r chi.Router, cfg *config.AppConfig) {
+	// VM actions (provider-backed)
+	r.Post("/go/vms/{vm_id}/start", vmAction(cfg, "start"))
+	r.Post("/go/vms/{vm_id}/stop", vmAction(cfg, "stop"))
+	r.Post("/go/vms/{vm_id}/reset", vmAction(cfg, "reset"))
+
+	// Container actions
+	r.Post("/go/vms/{vm_id}/containers/{name}/start", containerAction(cfg, "start"))
+	r.Post("/go/vms/{vm_id}/containers/{name}/stop", containerAction(cfg, "stop"))
+	r.Post("/go/vms/{vm_id}/containers/{name}/restart", containerAction(cfg, "restart"))
+
+	// Service actions
+	r.Post("/go/vms/{vm_id}/services/{service}/start", serviceAction(cfg, "start"))
+	r.Post("/go/vms/{vm_id}/services/{service}/stop", serviceAction(cfg, "stop"))
+
+	// Legacy flex shortcuts
+	r.Post("/go/containers/{name}/start", legacyContainerAction(cfg, "start"))
+	r.Post("/go/containers/{name}/stop", legacyContainerAction(cfg, "stop"))
+	r.Post("/go/containers/{name}/restart", legacyContainerAction(cfg, "restart"))
+	r.Post("/go/services/{service}/start", legacyServiceAction(cfg, "start"))
+	r.Post("/go/services/{service}/stop", legacyServiceAction(cfg, "stop"))
+
+	// Bulk on-demand (oci-flex-1)
+	r.Post("/go/containers/on-demand/start-all", bulkAction(cfg, "start"))
+	r.Post("/go/containers/on-demand/stop-all", bulkAction(cfg, "stop"))
+	r.Post("/go/containers/on-demand/restart-all", bulkAction(cfg, "restart"))
+
+	// Matomo / Windmill toggle
+	r.Post("/go/containers/matomo/wake", matomoWake(cfg))
+	r.Post("/go/containers/matomo/sleep", matomoSleep(cfg))
+	r.Post("/go/containers/windmill/start", windmillStart(cfg))
+	r.Post("/go/containers/windmill/stop", windmillStop(cfg))
+}
+
+func vmAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		if _, ok := cfg.AllVmServices[vmID]; !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+
+		inst, ok := cfg.VmInstances[vmID]
+		if !ok {
+			writeError(w, 500, "No instance config for VM: "+vmID)
+			return
+		}
+
+		var err error
+		var providerState string
+
+		switch inst.Provider {
+		case "oci":
+			if inst.InstanceID == "" {
+				writeError(w, 500, "No OCI instance ID configured for "+vmID)
+				return
+			}
+			err = services.OciInstanceAction(cfg.OciConfigFile, inst.InstanceID, action)
+			if err == nil {
+				providerState, _ = services.GetOciInstanceState(cfg.OciConfigFile, inst.InstanceID)
+			}
+		case "gcp":
+			gcpVm, gcpOk := cfg.GcpVms[vmID]
+			if !gcpOk {
+				writeError(w, 500, "No GCP VM config for "+vmID)
+				return
+			}
+			gcpAction := services.ResolveGcpAction(action)
+			err = services.GcpInstanceAction(cfg.GcpServiceAccountFile, gcpVm.Project, gcpVm.Zone, gcpVm.Name, gcpAction)
+			if err == nil {
+				providerState, _ = services.GetGcpInstanceState(cfg.GcpServiceAccountFile, gcpVm.Project, gcpVm.Zone, gcpVm.Name)
+			}
+		default:
+			writeError(w, 500, "Unknown provider for VM: "+vmID)
+			return
+		}
+
+		if err != nil {
+			writeJSON(w, map[string]interface{}{
+				"status": "error", "vm_id": vmID, "action": action,
+				"error": err.Error(),
+			})
+			return
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"status": "ok", "vm_id": vmID, "action": action,
+			"provider": inst.Provider, "provider_state": providerState,
+		})
+	}
+}
+
+func containerAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		name := chi.URLParam(r, "name")
+
+		sshCfg, ok := cfg.VmSSH[vmID]
+		if !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+
+		result := services.SshCommand(sshCfg, fmt.Sprintf("docker %s %s", action, name))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(result.Success),
+			"vm_id": vmID, "container": name, "action": action,
+			"output": result.Output,
+		})
+	}
+}
+
+func serviceAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		service := chi.URLParam(r, "service")
+
+		vmMap, ok := cfg.AllVmServices[vmID]
+		if !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+		containers, ok := vmMap.Services[service]
+		if !ok {
+			writeError(w, 404, fmt.Sprintf("Unknown service '%s' on %s", service, vmID))
+			return
+		}
+
+		sshCfg, ok := cfg.VmSSH[vmID]
+		if !ok {
+			writeError(w, 500, "No SSH config for VM: "+vmID)
+			return
+		}
+
+		names := strings.Join(containers, " ")
+		result := services.SshCommand(sshCfg, fmt.Sprintf("docker %s %s", action, names))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(result.Success),
+			"vm_id": vmID, "service": service, "action": action,
+			"containers": containers,
+		})
+	}
+}
+
+// legacyContainerAction routes to oci-flex-1 (default on-demand VM).
+func legacyContainerAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := chi.URLParam(r, "name")
+		sshCfg, ok := cfg.VmSSH[cfg.FlexVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for flex VM")
+			return
+		}
+
+		result := services.SshCommand(sshCfg, fmt.Sprintf("docker %s %s", action, name))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(result.Success),
+			"vm_id": cfg.FlexVmID, "container": name, "action": action,
+			"output": result.Output,
+		})
+	}
+}
+
+// legacyServiceAction routes to oci-flex-1.
+func legacyServiceAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		service := chi.URLParam(r, "service")
+		vmMap, ok := cfg.AllVmServices[cfg.FlexVmID]
+		if !ok {
+			writeError(w, 500, "Flex VM not found in config")
+			return
+		}
+		containers, ok := vmMap.Services[service]
+		if !ok {
+			writeError(w, 404, fmt.Sprintf("Unknown service '%s' on flex VM", service))
+			return
+		}
+
+		sshCfg, ok := cfg.VmSSH[cfg.FlexVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for flex VM")
+			return
+		}
+
+		names := strings.Join(containers, " ")
+		result := services.SshCommand(sshCfg, fmt.Sprintf("docker %s %s", action, names))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(result.Success),
+			"vm_id": cfg.FlexVmID, "service": service, "action": action,
+			"containers": containers,
+		})
+	}
+}
+
+func bulkAction(cfg *config.AppConfig, action string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		flexID := cfg.FlexVmID
+		sshCfg, ok := cfg.VmSSH[flexID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for flex VM")
+			return
+		}
+
+		vmMap, ok := cfg.AllVmServices[flexID]
+		if !ok {
+			writeError(w, 500, "Flex VM not found in config")
+			return
+		}
+
+		allContainers := []string{}
+		for _, containers := range vmMap.Services {
+			allContainers = append(allContainers, containers...)
+		}
+
+		names := strings.Join(allContainers, " ")
+		result := services.SshCommand(sshCfg, fmt.Sprintf("docker %s %s", action, names))
+		writeJSON(w, map[string]interface{}{
+			"status":           boolToStatus(result.Success),
+			"vm_id":            flexID,
+			"action":           action + "-all",
+			"containers_total": len(allContainers),
+		})
+	}
+}
+
+const analyticsVmID = "oci-f-micro_2"
+const windmillCompose = "/home/ubuntu/windmill/docker-compose.yml"
+const matomoContainer = "matomo-hybrid"
+
+func matomoWake(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sshCfg, ok := cfg.VmSSH[analyticsVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for oci-analytics")
+			return
+		}
+		stop := services.SshCommand(sshCfg, fmt.Sprintf("docker-compose -f %s stop", windmillCompose))
+		wake := services.SshCommand(sshCfg, fmt.Sprintf("docker exec %s /scripts/matomo-wake.sh", matomoContainer))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(wake.Success), "vm_id": analyticsVmID,
+			"action": "matomo-wake", "windmill_stop": stop.Success, "matomo_wake": wake.Success,
+		})
+	}
+}
+
+func matomoSleep(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sshCfg, ok := cfg.VmSSH[analyticsVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for oci-analytics")
+			return
+		}
+		sleep := services.SshCommand(sshCfg, fmt.Sprintf("docker exec %s /scripts/matomo-sleep.sh", matomoContainer))
+		start := services.SshCommand(sshCfg, fmt.Sprintf("docker-compose -f %s start", windmillCompose))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(sleep.Success), "vm_id": analyticsVmID,
+			"action": "matomo-sleep", "matomo_sleep": sleep.Success, "windmill_start": start.Success,
+		})
+	}
+}
+
+func windmillStart(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sshCfg, ok := cfg.VmSSH[analyticsVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for oci-analytics")
+			return
+		}
+		sleep := services.SshCommand(sshCfg, fmt.Sprintf("docker exec %s /scripts/matomo-sleep.sh", matomoContainer))
+		start := services.SshCommand(sshCfg, fmt.Sprintf("docker-compose -f %s start", windmillCompose))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(start.Success), "vm_id": analyticsVmID,
+			"action": "windmill-start", "matomo_sleep": sleep.Success, "windmill_start": start.Success,
+		})
+	}
+}
+
+func windmillStop(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		sshCfg, ok := cfg.VmSSH[analyticsVmID]
+		if !ok {
+			writeError(w, 500, "SSH config not found for oci-analytics")
+			return
+		}
+		stop := services.SshCommand(sshCfg, fmt.Sprintf("docker-compose -f %s stop", windmillCompose))
+		wake := services.SshCommand(sshCfg, fmt.Sprintf("docker exec %s /scripts/matomo-wake.sh", matomoContainer))
+		writeJSON(w, map[string]interface{}{
+			"status": boolToStatus(stop.Success), "vm_id": analyticsVmID,
+			"action": "windmill-stop", "windmill_stop": stop.Success, "matomo_wake": wake.Success,
+		})
+	}
+}
+
+// EnsureVmRunning polls a VM's provider state until RUNNING or timeout.
+func EnsureVmRunning(cfg *config.AppConfig, vmID string, timeout time.Duration) error {
+	inst, ok := cfg.VmInstances[vmID]
+	if !ok {
+		return fmt.Errorf("no instance config for %s", vmID)
+	}
+
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var state string
+		var err error
+
+		switch inst.Provider {
+		case "oci":
+			state, err = services.GetOciInstanceState(cfg.OciConfigFile, inst.InstanceID)
+		case "gcp":
+			gcpVm, ok := cfg.GcpVms[vmID]
+			if !ok {
+				return fmt.Errorf("no GCP VM config for %s", vmID)
+			}
+			state, err = services.GetGcpInstanceState(cfg.GcpServiceAccountFile, gcpVm.Project, gcpVm.Zone, gcpVm.Name)
+		}
+
+		if err != nil {
+			log.Printf("EnsureVmRunning %s: %v", vmID, err)
+		}
+
+		if state == "RUNNING" {
+			return nil
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+	return fmt.Errorf("timeout waiting for %s to reach RUNNING", vmID)
+}
+
+func boolToStatus(ok bool) string {
+	if ok {
+		return "ok"
+	}
+	return "partial"
+}
+
+</code></pre>
+<h2 id="routesdocsgo"><a class="header" href="#routesdocsgo">routes/docs.go</a></h2>
+<pre><code>package routes
+
+import (
+	"crypto/tls"
+	"fmt"
+	"io"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/diegonmarcos/go-api/config"
+	"github.com/go-chi/chi/v5"
+)
+
+// ServiceInfo describes a service in the catalog.
+type ServiceInfo struct {
+	Name       string   `json:"name"`
+	Domain     string   `json:"domain,omitempty"`
+	VM         string   `json:"vm"`
+	VMLabel    string   `json:"vm_label"`
+	Containers []string `json:"containers"`
+	SpecURL    string   `json:"spec_url,omitempty"`
+}
+
+type specCacheEntry struct {
+	data      string
+	fetchedAt time.Time
+}
+
+var (
+	specCache   = map[string]specCacheEntry{}
+	specCacheMu sync.RWMutex
+	specCacheTTL = 5 * time.Minute
+)
+
+// RegisterDocs registers service discovery endpoints under /go/services/*.
+func RegisterDocs(r chi.Router, cfg *config.AppConfig) {
+	r.Get("/go/services", listServices(cfg))
+	r.Get("/go/services/{service}", getService(cfg))
+	r.Get("/go/services/{service}/spec", getServiceSpec(cfg))
+	r.Get("/go/services/all/specs", getAllSpecs(cfg))
+}
+
+// buildServiceCatalog creates a lookup from service name to ServiceInfo.
+func buildServiceCatalog(cfg *config.AppConfig) map[string]ServiceInfo {
+	catalog := map[string]ServiceInfo{}
+
+	// Known spec endpoints
+	specURLs := map[string]string{
+		"api":        "https://api.diegonmarcos.com/docs/openapi.json",
+		"rust-api":   "https://api.diegonmarcos.com:8080/rust/api-docs/openapi.json",
+		"photos":     "https://photos.diegonmarcos.com/api/v1",
+		"db":         "https://db.diegonmarcos.com/api/v1/meta",
+		"analytics":  "https://analytics.diegonmarcos.com/matomo.php",
+		"auth":       "https://auth.diegonmarcos.com/api/oidc/.well-known/openid-configuration",
+		"mail":       "https://mail.diegonmarcos.com/admin/",
+		"vault":      "https://vault.diegonmarcos.com/api/alive",
+		"sync":       "https://sync.diegonmarcos.com/rest/system/status",
+		"cal":        "https://cal.diegonmarcos.com/.web/",
+		"ide":        "https://ide.diegonmarcos.com/healthz",
+		"rss":        "https://rss.diegonmarcos.com/v1/health",
+		"git":        "https://git.diegonmarcos.com/api/v1/version",
+		"automation": "https://windmill.diegonmarcos.com/api/version",
+		"monitoring": "https://grafana.diegonmarcos.com/api/health",
+		"drive":      "https://drive-notes-affine.diegonmarcos.com/api/server/status",
+		"logs":       "https://logs.diegonmarcos.com/version",
+	}
+
+	for vmID, vmMap := range cfg.AllVmServices {
+		for svcName, containers := range vmMap.Services {
+			// Find primary domain
+			domain := ""
+			for _, c := range containers {
+				if d, ok := cfg.ContainerDomainMap[c]; ok {
+					domain = d
+					break
+				}
+			}
+
+			info := ServiceInfo{
+				Name:       svcName,
+				Domain:     domain,
+				VM:         vmID,
+				VMLabel:    vmMap.Label,
+				Containers: containers,
+			}
+			if url, ok := specURLs[svcName]; ok {
+				info.SpecURL = url
+			}
+
+			key := vmMap.Label + "/" + svcName
+			catalog[key] = info
+		}
+	}
+
+	return catalog
+}
+
+func listServices(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		catalog := buildServiceCatalog(cfg)
+
+		// Group by VM
+		byVM := map[string][]ServiceInfo{}
+		for _, info := range catalog {
+			byVM[info.VMLabel] = append(byVM[info.VMLabel], info)
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"services": byVM,
+			"total":    len(catalog),
+		})
+	}
+}
+
+func getService(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		service := chi.URLParam(r, "service")
+		catalog := buildServiceCatalog(cfg)
+
+		// Search by service name across all VMs
+		var matches []ServiceInfo
+		for _, info := range catalog {
+			if info.Name == service {
+				matches = append(matches, info)
+			}
+		}
+
+		if len(matches) == 0 {
+			writeError(w, 404, fmt.Sprintf("Service '%s' not found", service))
+			return
+		}
+
+		if len(matches) == 1 {
+			writeJSON(w, matches[0])
+			return
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"service":   service,
+			"instances": matches,
+		})
+	}
+}
+
+func getServiceSpec(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		service := chi.URLParam(r, "service")
+		catalog := buildServiceCatalog(cfg)
+		refresh := r.URL.Query().Get("refresh") == "true"
+
+		var specURL string
+		for _, info := range catalog {
+			if info.Name == service &amp;&amp; info.SpecURL != "" {
+				specURL = info.SpecURL
+				break
+			}
+		}
+
+		if specURL == "" {
+			writeError(w, 404, fmt.Sprintf("No spec URL for service '%s'", service))
+			return
+		}
+
+		// Check cache
+		if !refresh {
+			specCacheMu.RLock()
+			if entry, ok := specCache[service]; ok &amp;&amp; time.Since(entry.fetchedAt) &lt; specCacheTTL {
+				specCacheMu.RUnlock()
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Cache", "HIT")
+				fmt.Fprint(w, entry.data)
+				return
+			}
+			specCacheMu.RUnlock()
+		}
+
+		// Fetch spec
+		data, err := fetchSpec(cfg, specURL)
+		if err != nil {
+			writeError(w, 502, fmt.Sprintf("Failed to fetch spec: %v", err))
+			return
+		}
+
+		// Cache result
+		specCacheMu.Lock()
+		specCache[service] = specCacheEntry{data: data, fetchedAt: time.Now()}
+		specCacheMu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Cache", "MISS")
+		fmt.Fprint(w, data)
+	}
+}
+
+func getAllSpecs(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		catalog := buildServiceCatalog(cfg)
+		refresh := r.URL.Query().Get("refresh") == "true"
+
+		type specResult struct {
+			Service string `json:"service"`
+			URL     string `json:"url"`
+			Status  string `json:"status"`
+			Data    string `json:"data,omitempty"`
+			Error   string `json:"error,omitempty"`
+		}
+
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		results := []specResult{}
+
+		for _, info := range catalog {
+			if info.SpecURL == "" {
+				continue
+			}
+			wg.Add(1)
+			go func(svcName, url string) {
+				defer wg.Done()
+
+				// Check cache
+				if !refresh {
+					specCacheMu.RLock()
+					if entry, ok := specCache[svcName]; ok &amp;&amp; time.Since(entry.fetchedAt) &lt; specCacheTTL {
+						specCacheMu.RUnlock()
+						mu.Lock()
+						results = append(results, specResult{
+							Service: svcName, URL: url, Status: "cached",
+							Data: truncate(entry.data, 500),
+						})
+						mu.Unlock()
+						return
+					}
+					specCacheMu.RUnlock()
+				}
+
+				data, err := fetchSpec(cfg, url)
+				sr := specResult{Service: svcName, URL: url}
+
+				if err != nil {
+					sr.Status = "error"
+					sr.Error = err.Error()
+				} else {
+					sr.Status = "ok"
+					sr.Data = truncate(data, 500)
+
+					specCacheMu.Lock()
+					specCache[svcName] = specCacheEntry{data: data, fetchedAt: time.Now()}
+					specCacheMu.Unlock()
+				}
+
+				mu.Lock()
+				results = append(results, sr)
+				mu.Unlock()
+			}(info.Name, info.SpecURL)
+		}
+		wg.Wait()
+
+		writeJSON(w, map[string]interface{}{
+			"specs": results,
+			"total": len(results),
+		})
+	}
+}
+
+func fetchSpec(cfg *config.AppConfig, specURL string) (string, error) {
+	client := &amp;http.Client{
+		Timeout: 15 * time.Second,
+		Transport: &amp;http.Transport{
+			TLSClientConfig: &amp;tls.Config{InsecureSkipVerify: false},
+		},
+	}
+
+	req, err := http.NewRequest("GET", specURL, nil)
+	if err != nil {
+		return "", err
+	}
+	if cfg.AutheliaBearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.AutheliaBearerToken)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode &gt;= 400 {
+		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+</code></pre>
+<h2 id="routeshealthgo"><a class="header" href="#routeshealthgo">routes/health.go</a></h2>
+<pre><code>package routes
+
+import (
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/diegonmarcos/go-api/config"
+	"github.com/diegonmarcos/go-api/services"
+	"github.com/go-chi/chi/v5"
+)
+
+// RegisterHealth registers all tiered health endpoints under /go/health/*.
+func RegisterHealth(r chi.Router, cfg *config.AppConfig) {
+	r.Get("/go/health", healthAlive)
+	r.Get("/go/health/declared", healthDeclared(cfg))
+	r.Get("/go/health/deployed", healthDeployed(cfg))
+	r.Get("/go/health/deployed/{vm_id}", healthDeployedVM(cfg))
+	r.Get("/go/health/drift", healthDrift(cfg))
+	r.Get("/go/health/status", healthStatus(cfg))
+	r.Get("/go/health/status/{vm_id}", healthStatusVM(cfg))
+}
+
+func writeJSON(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(v)
+}
+
+func writeError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
+// Tier 0: alive
+func healthAlive(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]string{"status": "ok"})
+}
+
+// Tier 0: declared (no SSH)
+func healthDeclared(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vms := map[string]interface{}{}
+		totalServices := 0
+		totalContainers := 0
+
+		for vmID, vmMap := range cfg.AllVmServices {
+			svcMap := map[string][]string{}
+			for svcName, containers := range vmMap.Services {
+				totalServices++
+				totalContainers += len(containers)
+				svcMap[svcName] = containers
+			}
+			vms[vmID] = map[string]interface{}{
+				"label":    vmMap.Label,
+				"services": svcMap,
+			}
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vms":     vms,
+			"domains": cfg.ContainerDomainMap,
+			"totals": map[string]int{
+				"vms":        len(cfg.AllVmServices),
+				"services":   totalServices,
+				"containers": totalContainers,
+			},
+		})
+	}
+}
+
+// Tier 1: deployed (docker ps -a via SSH, parallel)
+func healthDeployed(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type vmResult struct {
+			vmID       string
+			label      string
+			containers []services.ContainerStatus
+		}
+
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		results := make([]vmResult, 0, len(cfg.AllVmServices))
+
+		for vmID, vmMap := range cfg.AllVmServices {
+			wg.Add(1)
+			go func(id, label string) {
+				defer wg.Done()
+				sshCfg, ok := cfg.VmSSH[id]
+				if !ok {
+					return
+				}
+				containers := services.BatchContainerStatuses(sshCfg)
+				mu.Lock()
+				results = append(results, vmResult{id, label, containers})
+				mu.Unlock()
+			}(vmID, vmMap.Label)
+		}
+		wg.Wait()
+
+		vms := map[string]interface{}{}
+		globalRunning, globalStopped, globalTotal := 0, 0, 0
+
+		for _, res := range results {
+			running, stopped := 0, 0
+			details := make([]map[string]string, 0, len(res.containers))
+			for _, c := range res.containers {
+				if c.State == "running" {
+					running++
+				} else {
+					stopped++
+				}
+				details = append(details, map[string]string{
+					"name": c.Name, "state": c.State, "ports": c.Ports,
+				})
+			}
+			globalRunning += running
+			globalStopped += stopped
+			globalTotal += len(res.containers)
+			vms[res.vmID] = map[string]interface{}{
+				"label": res.label, "containers": details,
+				"running": running, "stopped": stopped, "total": len(res.containers),
+			}
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vms": vms,
+			"summary": map[string]int{
+				"running": globalRunning, "stopped": globalStopped, "total": globalTotal,
+			},
+		})
+	}
+}
+
+// Tier 1: deployed per-VM
+func healthDeployedVM(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		vmMap, ok := cfg.AllVmServices[vmID]
+		if !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+		sshCfg, ok := cfg.VmSSH[vmID]
+		if !ok {
+			writeError(w, 500, "No SSH config for VM: "+vmID)
+			return
+		}
+
+		containers := services.BatchContainerStatuses(sshCfg)
+		running, stopped := 0, 0
+		details := make([]map[string]string, 0, len(containers))
+		for _, c := range containers {
+			if c.State == "running" {
+				running++
+			} else {
+				stopped++
+			}
+			details = append(details, map[string]string{
+				"name": c.Name, "state": c.State, "ports": c.Ports,
+			})
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vm_id": vmID, "label": vmMap.Label,
+			"containers": details,
+			"running": running, "stopped": stopped, "total": len(containers),
+		})
+	}
+}
+
+// Tier 2: drift
+func healthDrift(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type vmResult struct {
+			vmID       string
+			containers []services.ContainerStatus
+		}
+
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		deployedMap := map[string][]services.ContainerStatus{}
+
+		for vmID := range cfg.AllVmServices {
+			wg.Add(1)
+			go func(id string) {
+				defer wg.Done()
+				sshCfg, ok := cfg.VmSSH[id]
+				if !ok {
+					return
+				}
+				containers := services.BatchContainerStatuses(sshCfg)
+				mu.Lock()
+				deployedMap[id] = containers
+				mu.Unlock()
+			}(vmID)
+		}
+		wg.Wait()
+
+		vms := map[string]interface{}{}
+		sumDeclared, sumDeployed, sumMissing, sumExtra := 0, 0, 0, 0
+
+		for vmID, vmMap := range cfg.AllVmServices {
+			declared := []string{}
+			for _, containers := range vmMap.Services {
+				declared = append(declared, containers...)
+			}
+
+			deployedRaw := deployedMap[vmID]
+			deployed := make([]string, 0, len(deployedRaw))
+			for _, c := range deployedRaw {
+				deployed = append(deployed, c.Name)
+			}
+
+			missing := diff(declared, deployed)
+			extra := diff(deployed, declared)
+
+			sumDeclared += len(declared)
+			sumDeployed += len(deployed)
+			sumMissing += len(missing)
+			sumExtra += len(extra)
+
+			vms[vmID] = map[string]interface{}{
+				"label": vmMap.Label, "declared": declared, "deployed": deployed,
+				"missing": missing, "extra": extra,
+			}
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vms": vms,
+			"summary": map[string]interface{}{
+				"declared": sumDeclared, "deployed": sumDeployed,
+				"missing": sumMissing, "extra": sumExtra,
+				"drift": sumMissing &gt; 0 || sumExtra &gt; 0,
+			},
+		})
+	}
+}
+
+// Tier 3: status (comprehensive — provider state + resources + domain probing)
+func healthStatus(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type vmResult struct {
+			vmID          string
+			label         string
+			sshOK         bool
+			pingOK        bool
+			providerState string
+			containers    []services.ContainerStatus
+			resources     map[string]string
+		}
+
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		results := map[string]vmResult{}
+
+		for vmID, vmMap := range cfg.AllVmServices {
+			wg.Add(1)
+			go func(id, label string) {
+				defer wg.Done()
+				sshCfg, ok := cfg.VmSSH[id]
+				if !ok {
+					return
+				}
+
+				// Provider state
+				provState := getProviderState(cfg, id)
+
+				pingOK := services.CheckPing(sshCfg.Host)
+				sshOK := services.CheckSSH(sshCfg)
+				var containers []services.ContainerStatus
+				var resources map[string]string
+				if sshOK {
+					containers = services.BatchContainerStatuses(sshCfg)
+					resources = gatherVmResources(sshCfg)
+				}
+				mu.Lock()
+				results[id] = vmResult{id, label, sshOK, pingOK, provState, containers, resources}
+				mu.Unlock()
+			}(vmID, vmMap.Label)
+		}
+		wg.Wait()
+
+		// Domain probing
+		domainResults := probeDomains(cfg)
+
+		vms := map[string]interface{}{}
+		for vmID, res := range results {
+			health := "unknown"
+			if res.sshOK {
+				health = "online"
+			} else if res.pingOK {
+				health = "degraded"
+			} else {
+				health = "offline"
+			}
+
+			running, total := 0, 0
+			details := make([]map[string]string, 0, len(res.containers))
+			for _, c := range res.containers {
+				total++
+				if c.State == "running" {
+					running++
+				}
+				details = append(details, map[string]string{
+					"name": c.Name, "state": c.State, "ports": c.Ports,
+				})
+			}
+
+			vmData := map[string]interface{}{
+				"label": res.label, "ssh": res.sshOK, "ping": res.pingOK,
+				"health": health, "containers": details,
+				"provider_state": res.providerState,
+				"summary": map[string]int{
+					"containers_running": running, "containers_total": total,
+				},
+			}
+			if res.resources != nil {
+				vmData["resources"] = res.resources
+			}
+			vms[vmID] = vmData
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vms":     vms,
+			"domains": domainResults,
+		})
+	}
+}
+
+// Tier 3: status per-VM
+func healthStatusVM(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		vmMap, ok := cfg.AllVmServices[vmID]
+		if !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+		sshCfg, ok := cfg.VmSSH[vmID]
+		if !ok {
+			writeError(w, 500, "No SSH config for VM: "+vmID)
+			return
+		}
+
+		provState := getProviderState(cfg, vmID)
+		pingOK := services.CheckPing(sshCfg.Host)
+		sshOK := services.CheckSSH(sshCfg)
+		var containers []services.ContainerStatus
+		var resources map[string]string
+		if sshOK {
+			containers = services.BatchContainerStatuses(sshCfg)
+			resources = gatherVmResources(sshCfg)
+		}
+
+		health := "unknown"
+		if sshOK {
+			health = "online"
+		} else if pingOK {
+			health = "degraded"
+		} else {
+			health = "offline"
+		}
+
+		running, total := 0, 0
+		details := make([]map[string]string, 0, len(containers))
+		for _, c := range containers {
+			total++
+			if c.State == "running" {
+				running++
+			}
+			details = append(details, map[string]string{
+				"name": c.Name, "state": c.State, "ports": c.Ports,
+			})
+		}
+
+		resp := map[string]interface{}{
+			"vm_id": vmID, "label": vmMap.Label,
+			"ssh": sshOK, "ping": pingOK, "health": health,
+			"provider_state": provState,
+			"containers":     details,
+			"summary": map[string]int{
+				"containers_running": running, "containers_total": total,
+			},
+		}
+		if resources != nil {
+			resp["resources"] = resources
+		}
+
+		writeJSON(w, resp)
+	}
+}
+
+// getProviderState queries OCI/GCP for the VM's current state.
+func getProviderState(cfg *config.AppConfig, vmID string) string {
+	inst, ok := cfg.VmInstances[vmID]
+	if !ok {
+		return "UNKNOWN"
+	}
+
+	switch inst.Provider {
+	case "oci":
+		state, err := services.GetOciInstanceState(cfg.OciConfigFile, inst.InstanceID)
+		if err != nil {
+			return "ERROR"
+		}
+		return state
+	case "gcp":
+		gcpVm, ok := cfg.GcpVms[vmID]
+		if !ok {
+			return "UNKNOWN"
+		}
+		state, err := services.GetGcpInstanceState(cfg.GcpServiceAccountFile, gcpVm.Project, gcpVm.Zone, gcpVm.Name)
+		if err != nil {
+			return "ERROR"
+		}
+		return state
+	}
+	return "UNKNOWN"
+}
+
+// gatherVmResources collects CPU, memory, disk, and docker stats via SSH.
+func gatherVmResources(sshCfg config.SshConfig) map[string]string {
+	resources := map[string]string{}
+
+	// CPU load
+	r := services.SshCommand(sshCfg, "cat /proc/loadavg | awk '{print $1, $2, $3}'")
+	if r.Success {
+		resources["load_avg"] = strings.TrimSpace(r.Output)
+	}
+
+	// Memory
+	r = services.SshCommand(sshCfg, "free -m | awk '/^Mem:/{printf \"%s/%sMB (%.0f%%)\", $3, $2, $3/$2*100}'")
+	if r.Success {
+		resources["memory"] = strings.TrimSpace(r.Output)
+	}
+
+	// Disk
+	r = services.SshCommand(sshCfg, "df -h / | awk 'NR==2{printf \"%s/%s (%s)\", $3, $2, $5}'")
+	if r.Success {
+		resources["disk"] = strings.TrimSpace(r.Output)
+	}
+
+	// Docker container count
+	r = services.SshCommand(sshCfg, "docker ps -q | wc -l")
+	if r.Success {
+		resources["docker_running"] = strings.TrimSpace(r.Output)
+	}
+
+	return resources
+}
+
+// probeDomains probes all configured domains via HTTPS.
+func probeDomains(cfg *config.AppConfig) []map[string]interface{} {
+	client := &amp;http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &amp;http.Transport{
+			TLSClientConfig: &amp;tls.Config{InsecureSkipVerify: false},
+		},
+	}
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	results := make([]map[string]interface{}, 0, len(cfg.RouteCheckDomains))
+
+	for _, d := range cfg.RouteCheckDomains {
+		wg.Add(1)
+		go func(domain, service string) {
+			defer wg.Done()
+			start := time.Now()
+
+			reqURL := fmt.Sprintf("https://%s/", domain)
+			req, err := http.NewRequest("GET", reqURL, nil)
+			if err != nil {
+				mu.Lock()
+				results = append(results, map[string]interface{}{
+					"domain": domain, "service": service, "reachable": false,
+					"error": err.Error(), "time_ms": time.Since(start).Milliseconds(),
+				})
+				mu.Unlock()
+				return
+			}
+
+			if cfg.AutheliaBearerToken != "" {
+				req.Header.Set("Authorization", "Bearer "+cfg.AutheliaBearerToken)
+			}
+
+			resp, err := client.Do(req)
+			elapsed := time.Since(start).Milliseconds()
+
+			entry := map[string]interface{}{
+				"domain": domain, "service": service, "time_ms": elapsed,
+			}
+
+			if err != nil {
+				entry["reachable"] = false
+				entry["error"] = err.Error()
+			} else {
+				resp.Body.Close()
+				entry["reachable"] = resp.StatusCode &lt; 500
+				entry["status_code"] = resp.StatusCode
+			}
+
+			mu.Lock()
+			results = append(results, entry)
+			mu.Unlock()
+		}(d.Domain, d.Service)
+	}
+	wg.Wait()
+
+	return results
+}
+
+// diff returns elements in a that are not in b.
+func diff(a, b []string) []string {
+	set := map[string]bool{}
+	for _, v := range b {
+		set[v] = true
+	}
+	var result []string
+	for _, v := range a {
+		if !set[v] {
+			result = append(result, v)
+		}
+	}
+	if result == nil {
+		return []string{}
+	}
+	return result
+}
+
+</code></pre>
+<h2 id="routesprofilinggo"><a class="header" href="#routesprofilinggo">routes/profiling.go</a></h2>
+<pre><code>package routes
+
+import (
+	"crypto/tls"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/diegonmarcos/go-api/config"
+	"github.com/diegonmarcos/go-api/services"
+	"github.com/go-chi/chi/v5"
+)
+
+// RegisterProfiling registers profiling endpoints under /go/profiling/*.
+func RegisterProfiling(r chi.Router, cfg *config.AppConfig) {
+	r.Get("/go/profiling/{container}", profileContainer(cfg))
+	r.Get("/go/profiling/vm/{vm_id}", profileVM(cfg))
+	r.Get("/go/profiling/authelia", profileAuthelia(cfg))
+}
+
+// resolveContainer finds which VM and service a container belongs to.
+func resolveContainer(cfg *config.AppConfig, container string) (vmID, vmLabel, serviceName, domain string, found bool) {
+	for vid, vmMap := range cfg.AllVmServices {
+		for svcName, containers := range vmMap.Services {
+			for _, c := range containers {
+				if c == container {
+					d := cfg.ContainerDomainMap[container]
+					return vid, vmMap.Label, svcName, d, true
+				}
+			}
+		}
+	}
+	return "", "", "", "", false
+}
+
+func profileContainer(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		container := chi.URLParam(r, "container")
+		vmID, vmLabel, svcName, domain, found := resolveContainer(cfg, container)
+		if !found {
+			writeError(w, 404, fmt.Sprintf("Container '%s' not found in any VM", container))
+			return
+		}
+
+		sshCfg, ok := cfg.VmSSH[vmID]
+		if !ok {
+			writeError(w, 500, fmt.Sprintf("No SSH config for VM %s", vmID))
+			return
+		}
+
+		totalStart := time.Now()
+		checks := []map[string]interface{}{}
+
+		// Check 1: Ping
+		pingStart := time.Now()
+		pingOK := services.CheckPing(sshCfg.Host)
+		checks = append(checks, map[string]interface{}{
+			"name": "wireguard_ping", "success": pingOK,
+			"time_ms": time.Since(pingStart).Milliseconds(),
+			"data":    map[string]interface{}{"host": sshCfg.Host},
+		})
+
+		// Check 2: SSH
+		sshStart := time.Now()
+		sshOK := services.CheckSSH(sshCfg)
+		checks = append(checks, map[string]interface{}{
+			"name": "ssh_connectivity", "success": sshOK,
+			"time_ms": time.Since(sshStart).Milliseconds(),
+			"data":    map[string]interface{}{"host": sshCfg.Host},
+		})
+
+		if sshOK {
+			// Check 3: Container status
+			statusStart := time.Now()
+			result := services.SshCommand(sshCfg, fmt.Sprintf(
+				"docker inspect --format '{{.State.Status}}|{{.Config.Image}}' %s 2&gt;&amp;1", container))
+			parts := strings.SplitN(result.Output, "|", 2)
+			state := "unknown"
+			image := ""
+			if len(parts) &gt;= 1 {
+				state = parts[0]
+			}
+			if len(parts) &gt;= 2 {
+				image = parts[1]
+			}
+			checks = append(checks, map[string]interface{}{
+				"name": "container_status", "success": state == "running",
+				"time_ms": time.Since(statusStart).Milliseconds(),
+				"data":    map[string]interface{}{"state": state, "image": image},
+			})
+
+			// Check 4: Docker network
+			netStart := time.Now()
+			netResult := services.SshCommand(sshCfg, fmt.Sprintf(
+				"docker inspect --format '{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}' %s 2&gt;&amp;1", container))
+			netOK := netResult.Success &amp;&amp; strings.TrimSpace(netResult.Output) != ""
+			checks = append(checks, map[string]interface{}{
+				"name": "docker_network", "success": netOK,
+				"time_ms": time.Since(netStart).Milliseconds(),
+				"data":    map[string]interface{}{"has_network": netOK},
+			})
+
+			// Check 5: Port reachability (host-level)
+			portStart := time.Now()
+			portResult := services.SshCommand(sshCfg, fmt.Sprintf(
+				"docker inspect --format '{{range $p, $c := .NetworkSettings.Ports}}{{$p}} {{end}}' %s 2&gt;&amp;1", container))
+			portOK := portResult.Success
+			checks = append(checks, map[string]interface{}{
+				"name": "port_reachability", "success": portOK,
+				"time_ms": time.Since(portStart).Milliseconds(),
+				"data":    map[string]interface{}{"ports": strings.TrimSpace(portResult.Output)},
+			})
+
+			// Check 6: WireGuard port reachability (from gcp-proxy)
+			if vmID != "gcp-f-micro_1" {
+				wgStart := time.Now()
+				gcpSSH, gcpOk := cfg.VmSSH["gcp-f-micro_1"]
+				wgOK := false
+				if gcpOk {
+					wgResult := services.SshCommand(gcpSSH, fmt.Sprintf(
+						"timeout 3 bash -c 'echo &gt; /dev/tcp/%s/22' 2&gt;/dev/null &amp;&amp; echo ok || echo fail", sshCfg.Host))
+					wgOK = strings.Contains(wgResult.Output, "ok")
+				}
+				checks = append(checks, map[string]interface{}{
+					"name": "wireguard_port_reachability", "success": wgOK,
+					"time_ms": time.Since(wgStart).Milliseconds(),
+					"data":    map[string]interface{}{"from": "gcp-proxy", "to": sshCfg.Host},
+				})
+			}
+
+			// Check 7: iptables DNAT (check if nftables has relevant rules)
+			dnatStart := time.Now()
+			dnatResult := services.SshCommand(sshCfg, "nft list ruleset 2&gt;/dev/null | grep -c dnat || iptables -t nat -S 2&gt;/dev/null | grep -c DNAT || echo 0")
+			dnatCount := strings.TrimSpace(dnatResult.Output)
+			checks = append(checks, map[string]interface{}{
+				"name": "iptables_dnat", "success": dnatResult.Success,
+				"time_ms": time.Since(dnatStart).Milliseconds(),
+				"data":    map[string]interface{}{"dnat_rules": dnatCount},
+			})
+		} else {
+			for _, name := range []string{"container_status", "docker_network", "port_reachability", "wireguard_port_reachability", "iptables_dnat"} {
+				checks = append(checks, map[string]interface{}{
+					"name": name, "success": false, "time_ms": 0,
+					"data": map[string]string{"error": "skipped: SSH unavailable"},
+				})
+			}
+		}
+
+		// Check 8: Authelia bearer auth (domain probe)
+		if domain != "" {
+			authStart := time.Now()
+			authOK := probeWithBearer(cfg, domain)
+			checks = append(checks, map[string]interface{}{
+				"name": "authelia_bearer_auth", "success": authOK,
+				"time_ms": time.Since(authStart).Milliseconds(),
+				"data":    map[string]interface{}{"domain": domain},
+			})
+		}
+
+		totalTime := time.Since(totalStart).Milliseconds()
+		passed, failed := 0, 0
+		for _, c := range checks {
+			if c["success"].(bool) {
+				passed++
+			} else {
+				failed++
+			}
+		}
+
+		status := "healthy"
+		if failed &gt; 0 &amp;&amp; passed &gt; 0 {
+			status = "degraded"
+		} else if passed == 0 {
+			status = "down"
+		}
+
+		resp := map[string]interface{}{
+			"container":     container,
+			"vm_id":         vmID,
+			"vm_label":      vmLabel,
+			"service":       svcName,
+			"total_time_ms": totalTime,
+			"checks":        checks,
+			"summary": map[string]interface{}{
+				"checks_passed":  passed,
+				"checks_failed":  failed,
+				"checks_total":   len(checks),
+				"overall_status": status,
+			},
+		}
+		if domain != "" {
+			resp["domain"] = domain
+		}
+
+		writeJSON(w, resp)
+	}
+}
+
+func profileVM(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vmID := chi.URLParam(r, "vm_id")
+		vmMap, ok := cfg.AllVmServices[vmID]
+		if !ok {
+			writeError(w, 404, "Unknown VM: "+vmID)
+			return
+		}
+
+		totalStart := time.Now()
+		allContainers := []string{}
+		for _, containers := range vmMap.Services {
+			allContainers = append(allContainers, containers...)
+		}
+
+		results := []map[string]interface{}{}
+		healthy, degraded, down := 0, 0, 0
+
+		for _, container := range allContainers {
+			_, _, svcName, _, _ := resolveContainer(cfg, container)
+			sshCfg, hasSsh := cfg.VmSSH[vmID]
+
+			status := "down"
+			if hasSsh {
+				result := services.SshCommand(sshCfg, fmt.Sprintf(
+					"docker inspect --format '{{.State.Status}}' %s 2&gt;/dev/null || echo not_found", container))
+				state := strings.TrimSpace(result.Output)
+				if state == "running" {
+					status = "healthy"
+					healthy++
+				} else {
+					down++
+				}
+			} else {
+				down++
+			}
+
+			results = append(results, map[string]interface{}{
+				"container": container,
+				"service":   svcName,
+				"summary":   map[string]string{"overall_status": status},
+			})
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"vm_id":         vmID,
+			"label":         vmMap.Label,
+			"total_time_ms": time.Since(totalStart).Milliseconds(),
+			"containers":    results,
+			"summary": map[string]int{
+				"total": len(allContainers), "healthy": healthy,
+				"degraded": degraded, "down": down,
+			},
+		})
+	}
+}
+
+// profileAuthelia runs comprehensive checks on the Authelia auth chain.
+func profileAuthelia(cfg *config.AppConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		totalStart := time.Now()
+		checks := []map[string]interface{}{}
+
+		// 1. Authelia container status
+		sshCfg, ok := cfg.VmSSH["gcp-f-micro_1"]
+		if ok {
+			statusStart := time.Now()
+			result := services.SshCommand(sshCfg, "docker inspect --format '{{.State.Status}}' authelia 2&gt;&amp;1")
+			checks = append(checks, map[string]interface{}{
+				"name": "authelia_container", "success": strings.TrimSpace(result.Output) == "running",
+				"time_ms": time.Since(statusStart).Milliseconds(),
+				"data":    map[string]interface{}{"state": strings.TrimSpace(result.Output)},
+			})
+
+			// 2. Authelia Redis
+			redisStart := time.Now()
+			redisResult := services.SshCommand(sshCfg, "docker inspect --format '{{.State.Status}}' authelia-redis 2&gt;&amp;1")
+			checks = append(checks, map[string]interface{}{
+				"name": "authelia_redis", "success": strings.TrimSpace(redisResult.Output) == "running",
+				"time_ms": time.Since(redisStart).Milliseconds(),
+				"data":    map[string]interface{}{"state": strings.TrimSpace(redisResult.Output)},
+			})
+
+			// 3. Introspect proxy
+			introStart := time.Now()
+			introResult := services.SshCommand(sshCfg, "docker inspect --format '{{.State.Status}}' introspect-proxy 2&gt;&amp;1")
+			checks = append(checks, map[string]interface{}{
+				"name": "introspect_proxy", "success": strings.TrimSpace(introResult.Output) == "running",
+				"time_ms": time.Since(introStart).Milliseconds(),
+				"data":    map[string]interface{}{"state": strings.TrimSpace(introResult.Output)},
+			})
+		}
+
+		// 4. Auth domain HTTPS
+		authStart := time.Now()
+		authOK := probeWithBearer(cfg, "auth.diegonmarcos.com")
+		checks = append(checks, map[string]interface{}{
+			"name": "auth_domain_https", "success": authOK,
+			"time_ms": time.Since(authStart).Milliseconds(),
+			"data":    map[string]interface{}{"domain": "auth.diegonmarcos.com"},
+		})
+
+		// 5. Bearer token validity (probe a protected service)
+		if cfg.AutheliaBearerToken != "" {
+			bearerStart := time.Now()
+			bearerOK := probeWithBearer(cfg, "db.diegonmarcos.com")
+			checks = append(checks, map[string]interface{}{
+				"name": "bearer_token_valid", "success": bearerOK,
+				"time_ms": time.Since(bearerStart).Milliseconds(),
+				"data":    map[string]interface{}{"tested_against": "db.diegonmarcos.com"},
+			})
+		} else {
+			checks = append(checks, map[string]interface{}{
+				"name": "bearer_token_valid", "success": false, "time_ms": int64(0),
+				"data": map[string]string{"error": "no bearer token configured"},
+			})
+		}
+
+		// 6. Docker network connectivity (authelia → npm_default)
+		if ok {
+			netStart := time.Now()
+			netResult := services.SshCommand(sshCfg, "docker network inspect npm_default --format '{{range .Containers}}{{.Name}} {{end}}' 2&gt;&amp;1")
+			hasAuthelia := strings.Contains(netResult.Output, "authelia")
+			checks = append(checks, map[string]interface{}{
+				"name": "docker_network_npm", "success": hasAuthelia,
+				"time_ms": time.Since(netStart).Milliseconds(),
+				"data":    map[string]interface{}{"containers_in_network": strings.TrimSpace(netResult.Output)},
+			})
+
+			// 7. Port 9091 listening
+			portStart := time.Now()
+			portResult := services.SshCommand(sshCfg, "docker inspect --format '{{range $p, $c := .NetworkSettings.Ports}}{{$p}} {{end}}' authelia 2&gt;&amp;1")
+			has9091 := strings.Contains(portResult.Output, "9091")
+			checks = append(checks, map[string]interface{}{
+				"name": "authelia_port_9091", "success": has9091,
+				"time_ms": time.Since(portStart).Milliseconds(),
+				"data":    map[string]interface{}{"ports": strings.TrimSpace(portResult.Output)},
+			})
+
+			// 8. OIDC introspection endpoint
+			oidcStart := time.Now()
+			oidcResult := services.SshCommand(sshCfg, "docker exec authelia curl -sf http://localhost:9091/api/oidc/.well-known/openid-configuration 2&gt;&amp;1 | head -c 200")
+			checks = append(checks, map[string]interface{}{
+				"name": "oidc_endpoint", "success": oidcResult.Success &amp;&amp; strings.Contains(oidcResult.Output, "issuer"),
+				"time_ms": time.Since(oidcStart).Milliseconds(),
+				"data":    map[string]interface{}{"response_preview": truncate(oidcResult.Output, 200)},
+			})
+		}
+
+		totalTime := time.Since(totalStart).Milliseconds()
+		passed, failed := 0, 0
+		for _, c := range checks {
+			if c["success"].(bool) {
+				passed++
+			} else {
+				failed++
+			}
+		}
+
+		status := "healthy"
+		if failed &gt; 0 &amp;&amp; passed &gt; 0 {
+			status = "degraded"
+		} else if passed == 0 {
+			status = "down"
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"service":       "authelia",
+			"total_time_ms": totalTime,
+			"checks":        checks,
+			"summary": map[string]interface{}{
+				"checks_passed":  passed,
+				"checks_failed":  failed,
+				"checks_total":   len(checks),
+				"overall_status": status,
+			},
+		})
+	}
+}
+
+// probeWithBearer makes an HTTPS GET with optional bearer token.
+func probeWithBearer(cfg *config.AppConfig, domain string) bool {
+	client := &amp;http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &amp;http.Transport{
+			TLSClientConfig: &amp;tls.Config{InsecureSkipVerify: false},
+		},
+	}
+
+	reqURL := fmt.Sprintf("https://%s/", domain)
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return false
+	}
+	if cfg.AutheliaBearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.AutheliaBearerToken)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode &lt; 500
+}
+
+func truncate(s string, max int) string {
+	if len(s) &lt;= max {
+		return s
+	}
+	return s[:max] + "..."
+}
+
+</code></pre>
+<h2 id="secretsyaml"><a class="header" href="#secretsyaml">secrets.yaml</a></h2>
+<pre><code class="language-yaml">#ENC[AES256_GCM,data:3KgxegTMd5zY4+rx4VETrUc=,iv:x2HDc+KoS2pUlT7MChc3xHmjEWNsslRsGQcOyhR7ZUw=,tag:kNYhEaZkWfPDx/nla4govA==,type:comment]
+OCI_FLEX1_INSTANCE_ID: ENC[AES256_GCM,data:0o7VBUCqEBm/RbwVhhN07iMw9psGNhaQcTSPY7iYyF+K2csvCVtDb+Vftrtq8A1sVXzeTb9pxT9jjzZodMb7MjN81R3Vsf/PAihYPnWByz6VLCQTLp6xj6pphxt4Zg==,iv:Bb8BNJHvzA+FygiN4C3HPPCjGcthIwEphVbjEBoVELQ=,tag:hXc6UShk1XAFGSykrJl+0A==,type:str]
+OCI_MICRO1_INSTANCE_ID: ENC[AES256_GCM,data:ojhlorfH32ueIJFtM1bHtQZDD0+VXc4dMySVm9OgQ9wBWQHO2d1xkdsGSOipUf/DNQUQCeqso5sNizSboySr0kxWO7RXdYjQPfUbDKCkYk/O6fQuBZLK/ovv+GgLVw==,iv:+nZwCGGsSw7wBFlv8Xga1RYSgSwPT8q08nEcFIBbJTQ=,tag:GrqwiK4Q4C1cYVWqo7yW9g==,type:str]
+OCI_MICRO2_INSTANCE_ID: ENC[AES256_GCM,data:A6e6TAcSMauW9cU10B2EcZZ8zc9YxrpxSb7PxAQYWzY17xqTBUePc1SdfwlBHSNxB0hNe6ITqkoZ7Q6wkAXbYdjkNmeg9rqcws7fK7AEROPSVMbhOS/3Dr2n6uTtlg==,iv:QdJHMaHrAEL3bkGjDi5QfbHRNLSXl20HoKWbz7l+fT4=,tag:o3SBphRtevYjfR5AmT5gIA==,type:str]
+GCP_PROJECT_ID: ENC[AES256_GCM,data:ljzx7lzq/UpC0sYAQMLD6ee2RQmZL5s=,iv:8PHF7hl1r5Qv23XlFUvFhzMkUeShD+JZGGFN64Mrk4A=,tag:MuiRQb0JGU741D6xKNNAyg==,type:str]
+CF_API_TOKEN: ENC[AES256_GCM,data:IqU69lhMWq9f90Pm6PWD8PETikOqSRHFrXV6Sht47qJbbYvIjindZQ==,iv:MhV7er6TSS0To+EA/1z7+90fewYQQOSBvlhMCefknD0=,tag:gensCiJPj2b0j3eUjgM1fA==,type:str]
+CF_ZONE_ID: ENC[AES256_GCM,data:dcd3NDW7hgLo+0M0+LW5XLgl5JV9XJwV8b5MuUteFEA=,iv:X3dcKmnRI7uPw4F0PmqOabDoX6M3IOn4Lvg/NUJNj+I=,tag:8WjVANlnUSYO3lsl6/lzoA==,type:str]
+AUTHELIA_BEARER_TOKEN: ENC[AES256_GCM,data:jxDz09+8uSkh/VKTY73Pkk7CUzVGYW9nS1rL91RGQJsbJHWhOomtPNeNjp5iqfZ5TzCb0x01Cj/j+U/BBFeUUN5FvMVdztjMjzoPEny6DiAZQYhqen2VcR+fYMEnoy2JJhpSREp0JfTq4IDUCG3nzG+umEqynv5wrUjJ8tEYGAbPTG2NU18c+5imJGj2alpFK9CFMG8Uwp7yiqCd8luqemphn4zWyQ73JRzoDlIv5Fp6xWVYhguDTOJHho8r3zeSbUIgzruJw6F3vFP2f6chShHgKIeQpg0I3nHtjxZDG9qALI08QLVFCKMmqJDPHDEkDHJN6Ot1jbo58icIPBhYhTJ93esrpWulKWS+MzPb2E0OQQ2hLoFm3F1g/r1HZ7pVtU+QgtEyb9XS8Gwznv/PUdGc4VY93vjlQJ0dn+qfz0xGBCTv+iljfI0EFnAUXxyFU5ha8/d4XfbJDSo3kUTPfcHHrn+sH+K9jM35wpWq5F1zicd+UiSGUqYqmrCQfnBV0VKeSB0lTIjjKUsH5uZxss2yEBlywSHC5fNDyxsjy2egpEEFQLJ+5Nr93neM2/JuxbdtiX1OlNYiMFNcIbyn5kAHJ2thMDkv8IbQa4wY7J94/Iz62ltokuFMqcLpzOQ865gw2uWqJzVts7s1D4oWjCaCECdb9hjS8TBGp6K8RjD/OTq06bpNmMV0NFp3a/3OE9WrqOtPJ4bkwDX7sxrB+0MfTigvXFMEdibpWBIeUIM2+bWmFMLmUFkTuWHsPGU2cvNZCz8ZskRZIz/fOoTaQuUjsL4wMgveaHitH+DyaMLd4c+VKpGDX8Q4R8f7FnClcf5INqYt0LBQRTOX0mD5y4+kbLIcKif4XJyHNOiW1y3SPdlaeyboPCbCPhZuWAIzgEWiQ3PVpwiT92gGJKFvHaboIQvlkGdqhitffgcrBXHepkY8m93OWvxkxwzOHJSVgPIPaoZk1uCmziy55UlfHvYYyAxW319w9Dbq+g4vAVPq0QFKOFmdYz9J24JZ/DyXUPYEcnEQvUsX18VyaeBks9s4FgxmOYO+frtefP1GJLUA6GvP1SPdI8znQVASyLs9GmkjA6CKJfPF+9MIzwjoDDY+0aN3ZHXTMVaXU3ISln33bixreuNneyVYd54oURvcW3dl5Cg+NZPmY/Z+YnjkaPn7pJx+8Ar88DbOV6ApPnME7GW/Zmf0Vm/8Ojvu9ky34ld6aLojOUnme2s6sYfMaXdYumSH2BRUKSLmUIIN1fAc6Ho7YPeEPAUbC6TFFzyOt078UN3euW3s1SoLTmjbIE8OwoKSBvq/peu5vinfp8Oh2TmcqRrHiXzB9u9MToE7smB4MXfzlkHhC/SqJDoDXmlGC6dSZIsHjzlrxGKvMkFwlJusbX5TB2ziFuaJRZW7kfbcdzkVARzuDrNlmWCe++okUAYyc97VxamzMyU7HCESOAdMA7OWRJQ6VWdmH/QIbDjb1u1s6JucsftqFoEggUkgXsSYQct/Vgh6+il49kLV8KtJKEQSuFFwkgK3GuL7gBZvHptofGBKP5UXsUH/YSaLrFHFmDZW2+JoBySe/0dCPKGUPf5VB8GaAFEn0DebBeWEYh97W62h6alMj0qWfmvlnZXsQxe4siUDUL+bx0Q=,iv:H7PqP21FHdX/aahv5Cs+p0NuLUsVszbABlhAUBggSF8=,tag:AwLst7ic3/EQ9XcGRT24ZQ==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age:
+        - recipient: age1u575hx8h4t5cgle2uznmyfy75e7cgd02h9t5dax506luz9e05vlqxtd7pq
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAwTVhYbjlXd1RvUVJQQkZ0
+            NkpMM3hhckNPcTRNMy9UVFJHUmRnTWhyUldJCjRxeXpWVWlTVXYrNmNoQWdZZG9x
+            dmRwUTZkN01KUmdpZVNGTDJ5c0VKekEKLS0tIFkyV2lJRFZNU2k1SGhCYTh4N2kx
+            d0dKbS8vUTZnUHJxbS82ZXBPWUZXZWcKP0Hgge9oHoe5lxPcq56aR+QJl8DXAh3a
+            00jb/7vYbTUCf+Viql3rRDDzgT7mPbHVuE017Laf4alPt+Udh+/ubA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-02-14T17:03:29Z"
+    mac: ENC[AES256_GCM,data:3tv8SO5NI8MRM6hqHK4qc7fqO9sKMnqB93DGc/fjVBNCSySoKW1YwtuhGaT8Fshok/INaD1+MpAaTPbmC9iF4lQUfSoeuGaMFA5e+ZZzY5lYMxwbQwWRswz906lj+VbczdrT6mGwyP4s05mcJMbH8qRUYiJvN9Xqnd6SKu91+CQ=,iv:tk03B88vKx+yXCyyuLzGEIWruKYfLc2EGkmhwq3vfDc=,tag:seP/yQRpMBtIfDFTc7nu5w==,type:str]
+    pgp: []
+    unencrypted_suffix: _unencrypted
+    version: 3.8.1
+
+</code></pre>
+<h2 id="servicesgcpgo"><a class="header" href="#servicesgcpgo">services/gcp.go</a></h2>
+<pre><code>package services
+
+import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"sync"
+	"time"
+)
+
+// GcpServiceAccount holds parsed GCP service account key JSON.
+type GcpServiceAccount struct {
+	ClientEmail  string `json:"client_email"`
+	PrivateKey   string `json:"private_key"`
+	TokenURI     string `json:"token_uri"`
+	ProjectID    string `json:"project_id"`
+	PrivateKeyID string `json:"private_key_id"`
+}
+
+// GcpTokenCache caches OAuth2 access tokens with expiration.
+type GcpTokenCache struct {
+	mu        sync.RWMutex
+	token     string
+	expiresAt time.Time
+}
+
+// ParseServiceAccount reads a GCP service account key JSON file.
+func ParseServiceAccount(path string) (*GcpServiceAccount, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read service account: %w", err)
+	}
+	var sa GcpServiceAccount
+	if err := json.Unmarshal(data, &amp;sa); err != nil {
+		return nil, fmt.Errorf("parse service account: %w", err)
+	}
+	if sa.TokenURI == "" {
+		sa.TokenURI = "https://oauth2.googleapis.com/token"
+	}
+	return &amp;sa, nil
+}
+
+func createSignedJWT(sa *GcpServiceAccount) (string, error) {
+	now := time.Now().Unix()
+	header := base64URLEncode([]byte(`{"alg":"RS256","typ":"JWT"}`))
+
+	claimSet := map[string]interface{}{
+		"iss":   sa.ClientEmail,
+		"scope": "https://www.googleapis.com/auth/compute",
+		"aud":   sa.TokenURI,
+		"iat":   now,
+		"exp":   now + 3600,
+	}
+	claimJSON, err := json.Marshal(claimSet)
+	if err != nil {
+		return "", err
+	}
+	payload := base64URLEncode(claimJSON)
+
+	sigInput := header + "." + payload
+	hashed := sha256.Sum256([]byte(sigInput))
+
+	block, _ := pem.Decode([]byte(sa.PrivateKey))
+	if block == nil {
+		return "", fmt.Errorf("no PEM block in service account key")
+	}
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("parse private key: %w", err)
+	}
+	rsaKey, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		return "", fmt.Errorf("key is not RSA")
+	}
+
+	sig, err := rsa.SignPKCS1v15(rand.Reader, rsaKey, crypto.SHA256, hashed[:])
+	if err != nil {
+		return "", fmt.Errorf("sign JWT: %w", err)
+	}
+
+	return sigInput + "." + base64URLEncode(sig), nil
+}
+
+func base64URLEncode(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
+}
+
+// GetAccessToken returns a cached or fresh OAuth2 access token.
+func GetAccessToken(sa *GcpServiceAccount, cache *GcpTokenCache) (string, error) {
+	cache.mu.RLock()
+	if cache.token != "" &amp;&amp; time.Now().Before(cache.expiresAt) {
+		t := cache.token
+		cache.mu.RUnlock()
+		return t, nil
+	}
+	cache.mu.RUnlock()
+
+	jwt, err := createSignedJWT(sa)
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{
+		"grant_type": {"urn:ietf:params:oauth:grant-type:jwt-bearer"},
+		"assertion":  {jwt},
+	}
+
+	resp, err := http.PostForm(sa.TokenURI, form)
+	if err != nil {
+		return "", fmt.Errorf("token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("token exchange failed (%d): %s", resp.StatusCode, string(body))
+	}
+
+	var tokenResp struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+	}
+	if err := json.Unmarshal(body, &amp;tokenResp); err != nil {
+		return "", err
+	}
+
+	cache.mu.Lock()
+	cache.token = tokenResp.AccessToken
+	cache.expiresAt = time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
+	cache.mu.Unlock()
+
+	return tokenResp.AccessToken, nil
+}
+
+func gcpAPIRequest(sa *GcpServiceAccount, cache *GcpTokenCache, method, apiURL string) ([]byte, int, error) {
+	token, err := GetAccessToken(sa, cache)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	req, err := http.NewRequest(method, apiURL, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &amp;http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return body, resp.StatusCode, nil
+}
+
+// Global GCP token cache
+var gcpCache = &amp;GcpTokenCache{}
+
+// GetGcpInstanceState returns the status of a GCP Compute instance.
+func GetGcpInstanceState(saPath, project, zone, instance string) (string, error) {
+	if saPath == "" || project == "" {
+		return "UNKNOWN", nil
+	}
+
+	sa, err := ParseServiceAccount(saPath)
+	if err != nil {
+		return "UNKNOWN", err
+	}
+
+	apiURL := fmt.Sprintf("https://compute.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s",
+		project, zone, instance)
+	body, status, err := gcpAPIRequest(sa, gcpCache, "GET", apiURL)
+	if err != nil {
+		return "UNKNOWN", err
+	}
+	if status != 200 {
+		return "UNKNOWN", fmt.Errorf("GCP API returned %d: %s", status, string(body))
+	}
+
+	var result struct {
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(body, &amp;result); err != nil {
+		return "UNKNOWN", err
+	}
+	return result.Status, nil
+}
+
+// GcpInstanceAction performs a start/stop/reset on a GCP instance.
+func GcpInstanceAction(saPath, project, zone, instance, action string) error {
+	if saPath == "" || project == "" {
+		return fmt.Errorf("missing GCP service account or project")
+	}
+
+	sa, err := ParseServiceAccount(saPath)
+	if err != nil {
+		return err
+	}
+
+	apiURL := fmt.Sprintf("https://compute.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s/%s",
+		project, zone, instance, action)
+	_, status, err := gcpAPIRequest(sa, gcpCache, "POST", apiURL)
+	if err != nil {
+		return err
+	}
+	if status != 200 {
+		// GCP returns 200 for successful operations
+		return fmt.Errorf("GCP action %s returned %d", action, status)
+	}
+	return nil
+}
+
+// ResolveGcpAction maps generic action names to GCP API actions.
+func ResolveGcpAction(action string) string {
+	switch action {
+	case "start":
+		return "start"
+	case "stop":
+		return "stop"
+	case "reset":
+		return "reset"
+	default:
+		return action
+	}
+}
+
+// NewGcpTokenCache creates a new token cache.
+func NewGcpTokenCache() *GcpTokenCache {
+	return &amp;GcpTokenCache{}
+}
+
+// InvalidateGcpCache clears the cached token.
+func InvalidateGcpCache() {
+	gcpCache.mu.Lock()
+	gcpCache.token = ""
+	gcpCache.expiresAt = time.Time{}
+	gcpCache.mu.Unlock()
+}
+
+</code></pre>
+<h2 id="servicesocigo"><a class="header" href="#servicesocigo">services/oci.go</a></h2>
+<pre><code>package services
+
+import (
+	"bufio"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+)
+
+// OciConfig holds parsed OCI CLI config values.
+type OciConfig struct {
+	Tenancy     string
+	User        string
+	Fingerprint string
+	Region      string
+	KeyFile     string
+}
+
+// ParseOciConfig reads an OCI config ini file.
+func ParseOciConfig(path string) (*OciConfig, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open oci config: %w", err)
+	}
+	defer f.Close()
+
+	cfg := &amp;OciConfig{}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "[") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		switch key {
+		case "tenancy":
+			cfg.Tenancy = val
+		case "user":
+			cfg.User = val
+		case "fingerprint":
+			cfg.Fingerprint = val
+		case "region":
+			cfg.Region = val
+		case "key_file":
+			cfg.KeyFile = val
+		}
+	}
+	return cfg, scanner.Err()
+}
+
+func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read key: %w", err)
+	}
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, fmt.Errorf("no PEM block found in %s", path)
+	}
+
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		// Fallback to PKCS1
+		key2, err2 := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err2 != nil {
+			return nil, fmt.Errorf("parse key: %w (pkcs1: %w)", err, err2)
+		}
+		return key2, nil
+	}
+	rsaKey, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("key is not RSA")
+	}
+	return rsaKey, nil
+}
+
+// signOciRequest builds the OCI HTTP Signature header for a request.
+func signOciRequest(cfg *OciConfig, method, path, host string, body []byte) (map[string]string, error) {
+	now := time.Now().UTC().Format(http.TimeFormat)
+	keyID := fmt.Sprintf("%s/%s/%s", cfg.Tenancy, cfg.User, cfg.Fingerprint)
+
+	headers := []string{"date", "(request-target)", "host"}
+	signingString := fmt.Sprintf("date: %s\n(request-target): %s %s\nhost: %s",
+		now, strings.ToLower(method), path, host)
+
+	if body != nil &amp;&amp; len(body) &gt; 0 {
+		bodyHash := sha256.Sum256(body)
+		b64Hash := base64.StdEncoding.EncodeToString(bodyHash[:])
+		contentLen := fmt.Sprintf("%d", len(body))
+		headers = append(headers, "content-length", "content-type", "x-content-sha256")
+		signingString += fmt.Sprintf("\ncontent-length: %s\ncontent-type: application/json\nx-content-sha256: %s",
+			contentLen, b64Hash)
+	}
+
+	privKey, err := loadPrivateKey(cfg.KeyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	hashed := sha256.Sum256([]byte(signingString))
+	sig, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
+	if err != nil {
+		return nil, fmt.Errorf("sign: %w", err)
+	}
+
+	authHeader := fmt.Sprintf(
+		`Signature version="1",keyId="%s",algorithm="rsa-sha256",headers="%s",signature="%s"`,
+		keyID, strings.Join(headers, " "), base64.StdEncoding.EncodeToString(sig),
+	)
+
+	result := map[string]string{
+		"date":          now,
+		"authorization": authHeader,
+	}
+	if body != nil &amp;&amp; len(body) &gt; 0 {
+		bodyHash := sha256.Sum256(body)
+		result["content-type"] = "application/json"
+		result["content-length"] = fmt.Sprintf("%d", len(body))
+		result["x-content-sha256"] = base64.StdEncoding.EncodeToString(bodyHash[:])
+	}
+
+	return result, nil
+}
+
+func ociAPIRequest(cfg *OciConfig, method, url string, body []byte) ([]byte, int, error) {
+	// Extract host and path from URL
+	// URL format: https://host/path
+	withoutScheme := strings.TrimPrefix(url, "https://")
+	slashIdx := strings.Index(withoutScheme, "/")
+	host := withoutScheme[:slashIdx]
+	path := withoutScheme[slashIdx:]
+
+	headers, err := signOciRequest(cfg, method, path, host, body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = strings.NewReader(string(body))
+	}
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, 0, err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	client := &amp;http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return respBody, resp.StatusCode, nil
+}
+
+// GetOciInstanceState returns the lifecycle state for an OCI instance.
+func GetOciInstanceState(ociCfgPath, instanceID string) (string, error) {
+	if ociCfgPath == "" || instanceID == "" {
+		return "UNKNOWN", nil
+	}
+
+	cfg, err := ParseOciConfig(ociCfgPath)
+	if err != nil {
+		return "UNKNOWN", fmt.Errorf("parse oci config: %w", err)
+	}
+
+	url := fmt.Sprintf("https://iaas.%s.oraclecloud.com/20160918/instances/%s", cfg.Region, instanceID)
+	respBody, status, err := ociAPIRequest(cfg, "GET", url, nil)
+	if err != nil {
+		return "UNKNOWN", err
+	}
+	if status != 200 {
+		return "UNKNOWN", fmt.Errorf("OCI API returned %d: %s", status, string(respBody))
+	}
+
+	var result struct {
+		LifecycleState string `json:"lifecycleState"`
+	}
+	if err := json.Unmarshal(respBody, &amp;result); err != nil {
+		return "UNKNOWN", err
+	}
+	return result.LifecycleState, nil
+}
+
+// OciInstanceAction performs a start/stop/reset on an OCI instance.
+func OciInstanceAction(ociCfgPath, instanceID, action string) error {
+	if ociCfgPath == "" || instanceID == "" {
+		return fmt.Errorf("missing OCI config or instance ID")
+	}
+
+	cfg, err := ParseOciConfig(ociCfgPath)
+	if err != nil {
+		return fmt.Errorf("parse oci config: %w", err)
+	}
+
+	var ociAction string
+	switch action {
+	case "start":
+		ociAction = "START"
+	case "stop":
+		ociAction = "STOP"
+	case "reset":
+		ociAction = "RESET"
+	default:
+		return fmt.Errorf("unknown action: %s", action)
+	}
+
+	url := fmt.Sprintf("https://iaas.%s.oraclecloud.com/20160918/instances/%s?action=%s",
+		cfg.Region, instanceID, ociAction)
+	_, status, err := ociAPIRequest(cfg, "POST", url, nil)
+	if err != nil {
+		return err
+	}
+	if status != 200 {
+		return fmt.Errorf("OCI action %s returned %d", ociAction, status)
+	}
+	return nil
+}
+
+</code></pre>
+<h2 id="servicessshgo"><a class="header" href="#servicessshgo">services/ssh.go</a></h2>
+<pre><code>package services
+
+import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"time"
+
+	"github.com/diegonmarcos/go-api/config"
+)
+
+// SshResult holds the output of an SSH command.
+type SshResult struct {
+	Success bool
+	Output  string
+}
+
+// SshCommand runs a command on a remote VM via SSH.
+func SshCommand(cfg config.SshConfig, cmd string) SshResult {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	args := []string{
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "ConnectTimeout=10",
+		"-o", "ControlMaster=auto",
+		"-o", "ControlPath=/tmp/ssh-%r@%h:%p",
+		"-o", "ControlPersist=60",
+		"-i", cfg.KeyPath,
+		fmt.Sprintf("%s@%s", cfg.User, cfg.Host),
+		cmd,
+	}
+
+	out, err := exec.CommandContext(ctx, "ssh", args...).CombinedOutput()
+	output := strings.TrimSpace(string(out))
+
+	return SshResult{
+		Success: err == nil,
+		Output:  output,
+	}
+}
+
+// CheckSSH tests SSH connectivity to a VM.
+func CheckSSH(cfg config.SshConfig) bool {
+	result := SshCommand(cfg, "echo ok")
+	return result.Success &amp;&amp; strings.Contains(result.Output, "ok")
+}
+
+// CheckPing tests ICMP ping to a host.
+func CheckPing(host string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := exec.CommandContext(ctx, "ping", "-c", "1", "-W", "3", host).Run()
+	return err == nil
+}
+
+// BatchContainerStatuses fetches all container states from a VM via a single SSH call.
+func BatchContainerStatuses(cfg config.SshConfig) []ContainerStatus {
+	result := SshCommand(cfg, "docker ps -a --format '{{.Names}}|{{.State}}|{{.Ports}}'")
+	if !result.Success {
+		return nil
+	}
+
+	var statuses []ContainerStatus
+	for _, line := range strings.Split(result.Output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "|", 3)
+		if len(parts) &gt;= 2 {
+			ports := ""
+			if len(parts) &gt;= 3 {
+				ports = parts[2]
+			}
+			statuses = append(statuses, ContainerStatus{
+				Name:  parts[0],
+				State: parts[1],
+				Ports: ports,
+			})
+		}
+	}
+	return statuses
+}
+
+// ContainerStatus holds basic container info from docker ps.
+type ContainerStatus struct {
+	Name  string `json:"name"`
+	State string `json:"state"`
+	Ports string `json:"ports"`
+}
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

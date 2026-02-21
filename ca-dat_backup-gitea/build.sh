@@ -35,6 +35,23 @@ step_build() {
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
 
+
+# ── Step 1b: Build documentation ─────────────────────────────────────────
+step_docs() {
+    log "Building documentation..."
+    cd "$SRC_DIR"
+
+    nix build .#docs --out-link "$SERVICE_DIR/.result-docs"
+
+    mkdir -p "$DIST_DIR/docs"
+    cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
+    chmod -R u+w "$DIST_DIR/docs"
+    rm -f "$SERVICE_DIR/.result-docs"
+
+    log "Documentation built → dist/docs/"
+}
+
+
 # ── Step 2: Decrypt secrets → .secrets ─────────────────────────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
@@ -80,12 +97,14 @@ echo "╚═══════════════════════�
 
 case "${1:-all}" in
     build)    step_build ;;
+    docs)     step_docs ;;
     secrets)  step_secrets ;;
-    all)      step_build; step_secrets ;;
-    clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result"; log "Cleaned" ;;
+    all)      step_build; step_docs; step_secrets ;;
+    clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs"; log "Cleaned" ;;
     *)
         echo "Usage: $0 [build|secrets|all|clean]"
         echo "  build    Build nix flake → dist/"
+        echo "  docs     Build documentation → dist/docs/"
         echo "  secrets  Decrypt secrets → dist/.secrets"
         echo "  all      Both (default)"
         echo "  clean    Remove dist/"

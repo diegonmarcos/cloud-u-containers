@@ -1,0 +1,706 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Cloudflare Infrastructure - DNS, Email Routing, SSL configuration</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Cloudflare Infrastructure - DNS, Email Routing, SSL configuration</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="cloudflare-infrastructure---dns-email-routing-ssl-configuration"><a class="header" href="#cloudflare-infrastructure---dns-email-routing-ssl-configuration">Cloudflare Infrastructure - DNS, Email Routing, SSL configuration</a></h1>
+<h2 id="network"><a class="header" href="#network">Network</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td><code>diegonmarcos.com</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>ips</code></td><td><code>{"gcp-E2-f_0":"35.226.147.64","oci-A1-f_1":"144.24.196.72","oci-E2-f_0":"130.110.251.193","oci-E2-f_1":"129.151.228.66"}</code></td></tr>
+<tr><td><code>smtpProxyTunnel</code></td><td><code>90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="maintf"><a class="header" href="#maintf">main.tf</a></h2>
+<pre><code class="language-hcl">terraform {
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~&gt; 4.0"
+    }
+  }
+}
+
+provider "cloudflare" {
+  api_key = var.cloudflare_api_key
+  email   = var.cloudflare_email
+}
+
+variable "cloudflare_api_key" {
+  description = "Cloudflare Global API Key"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_email" {
+  description = "Cloudflare account email"
+  type        = string
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for diegonmarcos.com"
+  type        = string
+}
+
+variable "dkim_mailu_public_key" {
+  description = "Mailu DKIM public key (dkim._domainkey)"
+  type        = string
+  default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+}
+
+variable "dkim_cf_public_key" {
+  description = "Cloudflare Email Routing DKIM key (cf2024-1._domainkey)"
+  type        = string
+  default     = "v=DKIM1; h=sha256; k=rsa; p=CHANGE_ME"
+}
+
+variable "dkim_google_public_key" {
+  description = "Google Workspace DKIM key (google._domainkey)"
+  type        = string
+  default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+}
+
+variable "dkim_mail_public_key" {
+  description = "Mailu legacy DKIM key (mail._domainkey)"
+  type        = string
+  default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+}
+
+# =============================================================================
+# DNS Records - Root &amp; Wildcard
+# =============================================================================
+
+resource "cloudflare_record" "root" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "www" {
+  zone_id = var.cloudflare_zone_id
+  name    = "www"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "wildcard" {
+  zone_id = var.cloudflare_zone_id
+  name    = "*"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 1
+  comment = "Wildcard catch-all → GCP Caddy"
+}
+
+# =============================================================================
+# DNS Records - Service Subdomains (all via GCP Caddy → WireGuard → target VM)
+# =============================================================================
+
+resource "cloudflare_record" "auth" {
+  zone_id = var.cloudflare_zone_id
+  name    = "auth"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Authelia 2FA"
+}
+
+resource "cloudflare_record" "analytics" {
+  zone_id = var.cloudflare_zone_id
+  name    = "analytics"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Matomo Analytics via Caddy → oci-analytics"
+}
+
+resource "cloudflare_record" "photos" {
+  zone_id = var.cloudflare_zone_id
+  name    = "photos"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "PhotoPrism via Caddy → oci-apps-1"
+}
+
+resource "cloudflare_record" "sync" {
+  zone_id = var.cloudflare_zone_id
+  name    = "sync"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Syncthing via Caddy → oci-mail"
+}
+
+resource "cloudflare_record" "cal" {
+  zone_id = var.cloudflare_zone_id
+  name    = "cal"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Radicale Calendar via Caddy → oci-mail"
+}
+
+resource "cloudflare_record" "ide" {
+  zone_id = var.cloudflare_zone_id
+  name    = "ide"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Code Server IDE via Caddy → oci-apps-1"
+}
+
+resource "cloudflare_record" "db" {
+  zone_id = var.cloudflare_zone_id
+  name    = "db"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "NocoDB via Caddy → oci-apps-1"
+}
+
+resource "cloudflare_record" "rss" {
+  zone_id = var.cloudflare_zone_id
+  name    = "rss"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Ntfy push notifications via Caddy on GCP"
+}
+
+resource "cloudflare_record" "proxy" {
+  zone_id = var.cloudflare_zone_id
+  name    = "proxy"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Caddy admin"
+}
+
+resource "cloudflare_record" "vault" {
+  zone_id = var.cloudflare_zone_id
+  name    = "vault"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Vaultwarden via Caddy on GCP"
+}
+
+resource "cloudflare_record" "sheets" {
+  zone_id = var.cloudflare_zone_id
+  name    = "sheets"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Grist Sheets via Caddy → oci-apps-1"
+}
+
+resource "cloudflare_record" "drive_notes_affine" {
+  zone_id = var.cloudflare_zone_id
+  name    = "drive-notes-affine"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "AFFiNE workspace via Caddy → oci-apps-1"
+}
+
+resource "cloudflare_record" "suite" {
+  zone_id = var.cloudflare_zone_id
+  name    = "suite"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "linktree" {
+  zone_id = var.cloudflare_zone_id
+  name    = "linktree"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "cloud" {
+  zone_id = var.cloudflare_zone_id
+  name    = "cloud"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "nexus" {
+  zone_id = var.cloudflare_zone_id
+  name    = "nexus"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+}
+
+resource "cloudflare_record" "api" {
+  zone_id = var.cloudflare_zone_id
+  name    = "api"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Flask + Rust API via Caddy on GCP"
+}
+
+# =============================================================================
+# DNS Records - Mail (direct to oci-mail, cannot proxy SMTP ports)
+# =============================================================================
+
+resource "cloudflare_record" "mail" {
+  zone_id = var.cloudflare_zone_id
+  name    = "mail"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Mailu webmail via Caddy → oci-mail"
+}
+
+# SMTP direct - not proxied (Cloudflare cannot proxy SMTP ports)
+resource "cloudflare_record" "smtp" {
+  zone_id = var.cloudflare_zone_id
+  name    = "smtp"
+  type    = "A"
+  content = "130.110.251.193"
+  proxied = false
+  ttl     = 300
+  comment = "SMTP direct to oci-mail - used in SPF + outbound SMTP client config"
+}
+
+# IMAP direct - not proxied
+resource "cloudflare_record" "imap" {
+  zone_id = var.cloudflare_zone_id
+  name    = "imap"
+  type    = "A"
+  content = "130.110.251.193"
+  proxied = false
+  ttl     = 300
+  comment = "IMAP direct to oci-mail"
+}
+
+# SMTP proxy via Cloudflare Tunnel (alternative inbound path to port 8080)
+resource "cloudflare_record" "smtp_proxy_tunnel" {
+  zone_id = var.cloudflare_zone_id
+  name    = "smtp-proxy"
+  type    = "CNAME"
+  content = "90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com"
+  proxied = true
+  ttl     = 1
+  comment = "Cloudflare Tunnel → smtp-proxy on oci-mail (alternative to direct port 8080)"
+}
+
+# =============================================================================
+# DNS Records - External services
+# =============================================================================
+
+resource "cloudflare_record" "chat_google" {
+  zone_id = var.cloudflare_zone_id
+  name    = "chat"
+  type    = "CNAME"
+  content = "ghs.googlehosted.com"
+  proxied = true
+  ttl     = 1
+  comment = "Google Chat / Workspace"
+}
+
+# =============================================================================
+# MX Records - Cloudflare Email Routing
+# NOTE: Mail flows through Cloudflare Email Routing, NOT directly to Mailu.
+# CF receives on these MX servers, then Email Routing rules forward to the
+# Worker "email-forwarder" → smtp-proxy (oci-mail:8080) → Mailu front:25.
+# Worker source: a_solutions/ba-clo_cloudflare-worker/
+# =============================================================================
+
+resource "cloudflare_record" "mx_1" {
+  zone_id  = var.cloudflare_zone_id
+  name     = "@"
+  type     = "MX"
+  content  = "route1.mx.cloudflare.net"
+  priority = 22
+  ttl      = 1
+  comment  = "Cloudflare Email Routing MX"
+}
+
+resource "cloudflare_record" "mx_2" {
+  zone_id  = var.cloudflare_zone_id
+  name     = "@"
+  type     = "MX"
+  content  = "route2.mx.cloudflare.net"
+  priority = 85
+  ttl      = 1
+  comment  = "Cloudflare Email Routing MX"
+}
+
+resource "cloudflare_record" "mx_3" {
+  zone_id  = var.cloudflare_zone_id
+  name     = "@"
+  type     = "MX"
+  content  = "route3.mx.cloudflare.net"
+  priority = 97
+  ttl      = 1
+  comment  = "Cloudflare Email Routing MX"
+}
+
+# =============================================================================
+# TXT Records - SPF, DKIM, DMARC
+# =============================================================================
+
+# SPF - one record only (RFC 7208: multiple SPF records = permerror)
+# include:_spf.mx.cloudflare.net → authorizes Cloudflare Email Routing forwarding
+# a:smtp.diegonmarcos.com → authorizes Mailu outbound SMTP (oci-mail)
+resource "cloudflare_record" "spf" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  type    = "TXT"
+  content = "v=spf1 include:_spf.mx.cloudflare.net a:smtp.diegonmarcos.com ~all"
+  ttl     = 300
+  comment = "SPF: CF Email Routing + Mailu outbound. ONE record only - multiple = permerror"
+}
+
+# DMARC
+resource "cloudflare_record" "dmarc" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_dmarc"
+  type    = "TXT"
+  content = "v=DMARC1; p=reject; rua=mailto:postmaster@diegonmarcos.com"
+  ttl     = 300
+}
+
+# DKIM - Mailu (primary selector)
+resource "cloudflare_record" "dkim_mailu" {
+  zone_id = var.cloudflare_zone_id
+  name    = "dkim._domainkey"
+  type    = "TXT"
+  content = var.dkim_mailu_public_key
+  ttl     = 300
+  comment = "Mailu DKIM - get from Mailu admin &gt; Domains &gt; diegonmarcos.com &gt; DKIM"
+}
+
+# DKIM - Cloudflare Email Routing (auto-managed by CF)
+resource "cloudflare_record" "dkim_cloudflare" {
+  zone_id = var.cloudflare_zone_id
+  name    = "cf2024-1._domainkey"
+  type    = "TXT"
+  content = var.dkim_cf_public_key
+  ttl     = 1
+  comment = "Cloudflare Email Routing DKIM (auto-managed by CF)"
+}
+
+# DKIM - Google Workspace
+resource "cloudflare_record" "dkim_google" {
+  zone_id = var.cloudflare_zone_id
+  name    = "google._domainkey"
+  type    = "TXT"
+  content = var.dkim_google_public_key
+  ttl     = 1
+  comment = "Google Workspace DKIM"
+}
+
+# DKIM - Mailu legacy selector
+resource "cloudflare_record" "dkim_mail" {
+  zone_id = var.cloudflare_zone_id
+  name    = "mail._domainkey"
+  type    = "TXT"
+  content = var.dkim_mail_public_key
+  ttl     = 300
+  comment = "Mailu legacy DKIM selector"
+}
+
+# =============================================================================
+# SSL/TLS Settings
+# =============================================================================
+
+resource "cloudflare_zone_settings_override" "ssl_settings" {
+  zone_id = var.cloudflare_zone_id
+
+  settings {
+    ssl                      = "full"
+    always_use_https         = "on"
+    min_tls_version          = "1.2"
+    automatic_https_rewrites = "on"
+    opportunistic_encryption = "on"
+  }
+}
+
+# =============================================================================
+# Outputs
+# =============================================================================
+
+output "email_architecture" {
+  value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Mailu front:25"
+}
+
+output "smtp_proxy_access" {
+  value = "Direct: http://smtp.diegonmarcos.com:8080/ (OCI security list TCP 8080 open to 0.0.0.0/0)"
+}
+
+output "smtp_proxy_tunnel" {
+  value = "Tunnel: https://smtp-proxy.diegonmarcos.com/ (Cloudflare Tunnel alternative)"
+}
+
+</code></pre>
+<h2 id="terraformtfvarstemplate"><a class="header" href="#terraformtfvarstemplate">terraform.tfvars.template</a></h2>
+<pre><code>cloudflare_api_key   = "CHANGE_ME_API_KEY"
+cloudflare_email     = "me@diegonmarcos.com"
+cloudflare_zone_id   = "ff4335cc9c7de42e580d0dff9a0d70eb"
+
+# Get from Mailu admin &gt; Domains &gt; diegonmarcos.com &gt; DKIM
+dkim_mailu_public_key  = "v=DKIM1; k=rsa; p=CHANGE_ME"
+
+# Get from Cloudflare Dashboard &gt; Email &gt; DKIM settings
+dkim_cf_public_key     = "v=DKIM1; h=sha256; k=rsa; p=CHANGE_ME"
+
+# Get from Google Workspace admin
+dkim_google_public_key = "v=DKIM1; k=rsa; p=CHANGE_ME"
+
+# Get from Mailu admin (legacy selector)
+dkim_mail_public_key   = "v=DKIM1; k=rsa; p=CHANGE_ME"
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

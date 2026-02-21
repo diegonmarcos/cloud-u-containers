@@ -19,6 +19,23 @@ step_build() {
     find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
 }
 
+
+# ── Step 1b: Build documentation ─────────────────────────────────────────
+step_docs() {
+    log "Building documentation..."
+    cd "$SRC_DIR"
+
+    nix build .#docs --out-link "$SERVICE_DIR/.result-docs"
+
+    mkdir -p "$DIST_DIR/docs"
+    cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
+    chmod -R u+w "$DIST_DIR/docs"
+    rm -f "$SERVICE_DIR/.result-docs"
+
+    log "Documentation built → dist/docs/"
+}
+
+
 # ── Step 2: Deploy via wrangler ─────────────────────────────────────────
 step_deploy() {
     [ ! -d "$DIST_DIR" ] && { log "No dist/ — run build first"; return 1; }
