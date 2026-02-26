@@ -193,6 +193,9 @@
 
       PUBLICIP=${config.public_ip}
 
+      REJECT_UNLISTED_RECIPIENT=yes
+      REAL_IP_HEADER=X-Forwarded-For
+
       PROXY_AUTH_WHITELIST=35.226.147.64
       PROXY_AUTH_HEADER=X-Forwarded-User
       PROXY_AUTH_CREATE=False
@@ -352,6 +355,7 @@
         chmod +x $out/setup.sh
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
+        cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
         ln -s letsencrypt/live/mailu/fullchain.pem $out/certs/cert.pem
         ln -s letsencrypt/live/mailu/privkey.pem $out/certs/key.pem
       '';
