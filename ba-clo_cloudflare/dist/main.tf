@@ -333,14 +333,14 @@ resource "cloudflare_record" "spf" {
   comment = "SPF: CF Email Routing + OCI relay + Mailu. ONE record only."
 }
 
-# DMARC - quarantine while building reputation (tighten to reject once reputation established)
+# DMARC - reject emails failing SPF+DKIM (domain spoofing protection)
 resource "cloudflare_record" "dmarc" {
   zone_id = var.cloudflare_zone_id
   name    = "_dmarc"
   type    = "TXT"
-  content = "v=DMARC1; p=quarantine; rua=mailto:postmaster@diegonmarcos.com"
+  content = "v=DMARC1; p=reject; rua=mailto:postmaster@diegonmarcos.com"
   ttl     = 300
-  comment = "DMARC: quarantine while warming up sender reputation"
+  comment = "DMARC: reject spoofed emails"
 }
 
 # DKIM - Mailu (primary selector used by Mailu rspamd to sign outbound mail)
@@ -381,6 +381,24 @@ resource "cloudflare_record" "dkim_mail" {
   content = var.dkim_mail_public_key
   ttl     = 300
   comment = "Mailu legacy DKIM selector"
+}
+
+# =============================================================================
+# DNS Records - Security
+# =============================================================================
+
+# CAA - Only Let's Encrypt may issue TLS certificates for this domain
+resource "cloudflare_record" "caa_letsencrypt" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  type    = "CAA"
+  data {
+    flags = "0"
+    tag   = "issue"
+    value = "letsencrypt.org"
+  }
+  ttl     = 300
+  comment = "CAA: restrict cert issuance to Let's Encrypt only"
 }
 
 # =============================================================================
