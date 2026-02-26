@@ -362,6 +362,9 @@ CREDENTIAL_ROUNDS=12
 
 PUBLICIP=130.110.251.193
 
+REJECT_UNLISTED_RECIPIENT=yes
+REAL_IP_HEADER=X-Forwarded-For
+
 PROXY_AUTH_WHITELIST=35.226.147.64
 PROXY_AUTH_HEADER=X-Forwarded-User
 PROXY_AUTH_CREATE=False
@@ -387,6 +390,15 @@ $config["calendar_first_day"] = 1;
 $config["calendar_first_hour"] = 8;
 $config["calendar_work_start"] = 8;
 $config["calendar_work_end"] = 18;
+
+</code></pre>
+<h2 id="overridesroundcubecustomincphp"><a class="header" href="#overridesroundcubecustomincphp">overrides/roundcube/custom.inc.php</a></h2>
+<pre><code>&lt;?php
+// Privacy: block remote images by default (user can click to load per email)
+$config['show_images'] = 0;
+
+// Privacy: never send read receipts (MDN) to senders
+$config['mdn_requests'] = 0;
 
 </code></pre>
 <h2 id="setupsh"><a class="header" href="#setupsh">setup.sh</a></h2>
