@@ -1,0 +1,8 @@
+{
+  "name": "cloudflare",
+  "description": "Cloudflare DNS records and configuration (Terraform)",
+  "deploy": {
+    "host": "local",
+    "remote_path": ""
+  }
+}
