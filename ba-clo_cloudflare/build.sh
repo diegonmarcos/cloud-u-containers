@@ -1,7 +1,6 @@
 #!/bin/sh
-# Cloudflare DNS - Terraform build/deploy script
-# src/main.tf (native terraform) → dist/ (working dir) → terraform apply
-# Sops uses ~/.config/sops/age/keys.txt automatically
+# Cloudflare DNS: src/*.tf → dist/ (terraform runs in dist/)
+# Secrets: sops decrypt → dist/terraform.tfvars (injected from template)
 set -e
 
 SERVICE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,16 +9,18 @@ DIST_DIR="$SERVICE_DIR/dist"
 
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
 
-# ── Step 1: Copy terraform source to dist/ ─────────────────────────────
+# Run terraform in dist/ (state + providers live there)
+tf() { (cd "$DIST_DIR" && terraform "$@"); }
+
+# ── Build — copy src/*.tf → dist/ ──────────────────────────────────────
 step_build() {
-    log "Copying src/main.tf → dist/"
+    log "Copying src/*.tf → dist/"
     mkdir -p "$DIST_DIR"
-    cp "$SRC_DIR/main.tf" "$DIST_DIR/main.tf"
-    log "Build complete"
+    cp "$SRC_DIR"/*.tf "$DIST_DIR/"
+    log "Built → dist/"
 }
 
-
-# ── Step 1b: Build documentation ─────────────────────────────────────────
+# ── Docs — build documentation from nix flake ─────────────────────────
 step_docs() {
     log "Building documentation..."
     cd "$SRC_DIR"
@@ -34,8 +35,7 @@ step_docs() {
     log "Documentation built → dist/docs/"
 }
 
-
-# ── Step 2: Decrypt secrets + generate terraform.tfvars ────────────────
+# ── Secrets — decrypt + generate terraform.tfvars ──────────────────────
 step_secrets() {
     secrets_file="$SRC_DIR/secrets.yaml"
     template_file="$SRC_DIR/terraform.tfvars.template"
@@ -82,22 +82,60 @@ for line in sys.stdin:
     log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
 }
 
-# ── Step 3: Terraform init ─────────────────────────────────────────────
+# ── Init ────────────────────────────────────────────────────────────────
 step_init() {
-    log "Terraform init"
-    terraform -chdir="$DIST_DIR" init -upgrade
+    step_build
+    step_secrets
+    log "terraform init"
+    tf init -upgrade
 }
 
-# ── Step 4: Terraform plan ─────────────────────────────────────────────
+# ── Plan ────────────────────────────────────────────────────────────────
 step_plan() {
-    log "Terraform plan"
-    terraform -chdir="$DIST_DIR" plan
+    step_build
+    step_secrets
+    log "terraform plan"
+    tf plan
 }
 
-# ── Step 5: Terraform apply ────────────────────────────────────────────
+# ── Apply (interactive) ────────────────────────────────────────────────
 step_apply() {
-    log "Terraform apply"
-    terraform -chdir="$DIST_DIR" apply -auto-approve
+    step_build
+    step_secrets
+    log "terraform apply"
+    tf apply
+}
+
+# ── Ship (build + secrets + init + apply -auto-approve) ────────────────
+step_ship() {
+    step_build
+    step_secrets
+    log "terraform init"
+    tf init -upgrade
+    log "terraform apply -auto-approve"
+    tf apply -auto-approve
+}
+
+# ── Destroy ─────────────────────────────────────────────────────────────
+step_destroy() {
+    step_build
+    step_secrets
+    log "terraform destroy"
+    tf destroy
+}
+
+# ── Fmt ─────────────────────────────────────────────────────────────────
+step_fmt() {
+    log "terraform fmt"
+    terraform fmt "$SRC_DIR"
+}
+
+# ── Clean — remove generated files only (keeps state + .terraform/) ────
+step_clean() {
+    log "Removing generated files from dist/"
+    rm -f "$DIST_DIR"/*.tf "$DIST_DIR/.secrets" "$DIST_DIR/terraform.tfvars"
+    rm -rf "$DIST_DIR/docs"
+    rm -f "$SERVICE_DIR/.result-docs"
 }
 
 # ── Main ────────────────────────────────────────────────────────────────
@@ -105,24 +143,31 @@ echo "╔═══════════════════════�
 echo "║  Cloudflare DNS - Terraform            ║"
 echo "╚════════════════════════════════════════╝"
 
-case "${1:-all}" in
-    build)   step_build ;;
-    docs)    step_docs ;;
-    secrets) step_secrets ;;
+case "${1:-plan}" in
+    build)    step_build ;;
+    docs)     step_docs ;;
+    secrets)  step_secrets ;;
     all)      step_build; step_docs; step_secrets ;;
-    init)    step_build; step_secrets; step_init ;;
-    plan)    step_build; step_secrets; step_plan ;;
-    ship)    step_build; step_secrets; step_init; step_apply ;;
-    clean)   rm -rf "$DIST_DIR"; log "Cleaned" ;;
+    init)     step_init ;;
+    plan)     step_plan ;;
+    apply)    step_apply ;;
+    ship)     step_ship ;;
+    destroy)  step_destroy ;;
+    fmt)      step_fmt ;;
+    clean)    step_clean ;;
     *)
-        echo "Usage: $0 [build|secrets|all|init|plan|ship|clean]"
-        echo "  build    Copy src/main.tf → dist/"
+        echo "Usage: $0 [build|docs|secrets|all|init|plan|apply|ship|destroy|fmt|clean]"
+        echo "  build    Copy src/*.tf → dist/"
+        echo "  docs     Build documentation → dist/docs/"
         echo "  secrets  Decrypt secrets → dist/terraform.tfvars"
         echo "  all      build + docs + secrets (default)"
-        echo "  init     all + terraform init"
-        echo "  plan     all + terraform plan"
-        echo "  ship     all + terraform init + terraform apply  ← DEPLOY"
-        echo "  clean    Remove dist/"
+        echo "  init     build + secrets + terraform init"
+        echo "  plan     build + secrets + terraform plan (default)"
+        echo "  apply    build + secrets + terraform apply (interactive)"
+        echo "  ship     build + secrets + init + apply -auto-approve"
+        echo "  destroy  build + secrets + terraform destroy"
+        echo "  fmt      terraform fmt src/"
+        echo "  clean    Remove generated files (keeps state)"
         ;;
 esac
 
