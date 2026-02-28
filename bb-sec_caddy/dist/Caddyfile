@@ -862,6 +862,22 @@ forward_auth authelia:9091 {
   rss.diegonmarcos.com {
 import security
 import request_limits
+    handle /setup {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+      root * /srv
+      rewrite * /ntfy-setup.html
+      file_server
+    }
+    handle /api/topics {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+      reverse_proxy ntfy-topic-scanner:8091
+    }
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {

@@ -3,7 +3,7 @@ base-url: https://rss.diegonmarcos.com
 
 # Cache and retention
 cache-file: /var/cache/ntfy/cache.db
-cache-duration: 12h
+cache-duration: 720h
 attachment-cache-dir: /var/cache/ntfy/attachments
 
 # Limits

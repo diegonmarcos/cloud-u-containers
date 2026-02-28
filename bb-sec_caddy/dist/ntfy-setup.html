@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ntfy — Channel Setup</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+  overflow-y:auto;
+  position:relative;
+  padding:1rem 0;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding:2rem 1rem;
+  max-width:600px;
+  width:100%;
+}
+.title{
+  font-size:clamp(2rem,6vw,3rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#51cf66,#339af0,#845ef7);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1.2;
+  margin-bottom:.5rem;
+}
+.subtitle{
+  font-size:.9rem;
+  color:#868e96;
+  margin-bottom:2rem;
+}
+.log{
+  text-align:left;
+  font-size:.75rem;
+  color:#495057;
+  line-height:1.8;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+  min-height:6rem;
+  max-height:20rem;
+  overflow-y:auto;
+}
+.log .ok{color:#51cf66}
+.log .warn{color:#fcc419}
+.log .err{color:#ff6b6b}
+.log .info{color:#339af0}
+.actions{
+  margin-top:1.5rem;
+  display:flex;
+  gap:.75rem;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.btn{
+  font-family:'Courier New',monospace;
+  font-size:.85rem;
+  padding:.5rem 1.5rem;
+  border:1px solid;
+  border-radius:3px;
+  background:transparent;
+  cursor:pointer;
+  transition:opacity .2s,background .2s;
+}
+.btn:active{opacity:.7}
+.btn.primary{color:#51cf66;border-color:#51cf66}
+.btn.primary:hover{background:#51cf661a}
+.btn.primary:disabled{color:#495057;border-color:#495057;cursor:not-allowed;background:transparent}
+.btn.secondary{color:#339af0;border-color:#339af0}
+.btn.secondary:hover{background:#339af01a}
+.prompt{
+  margin-top:2rem;
+  font-size:.9rem;
+  color:#495057;
+}
+.prompt span{
+  color:#51cf66;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="container">
+  <div class="title">ntfy setup</div>
+  <p class="subtitle">Auto-subscribe to all active notification channels</p>
+  <div class="log" id="log"></div>
+  <div class="actions">
+    <button class="btn primary" id="subscribe-btn" disabled>Subscribe All</button>
+    <button class="btn secondary" id="go-btn" onclick="location.href='/'">Open ntfy</button>
+  </div>
+  <p class="prompt">
+    visitor@ntfy:~$ <a href="/">cd /notifications</a><span>_</span>
+  </p>
+</div>
+<script>
+(function(){
+  // Stars
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i<80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+
+  var logEl=document.getElementById('log');
+  var btn=document.getElementById('subscribe-btn');
+  var baseUrl=location.origin;
+  var topics=[];
+
+  function log(cls,msg){
+    var div=document.createElement('div');
+    var span=document.createElement('span');
+    span.className=cls;
+    var labels={ok:'[OK]',warn:'[WARN]',err:'[ERR]',info:'[INFO]'};
+    span.textContent=labels[cls]||'[LOG]';
+    div.appendChild(span);
+    div.appendChild(document.createTextNode(' '+msg));
+    logEl.appendChild(div);
+    logEl.scrollTop=logEl.scrollHeight;
+  }
+
+  // Step 1: Fetch topics from scanner
+  log('info','Fetching active topics...');
+  fetch('/api/topics')
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      topics=data.topics||[];
+      if(topics.length===0){
+        log('warn','No topics found in cache — publish a message first');
+        return;
+      }
+      log('ok','Found '+topics.length+' topic(s): '+topics.join(', '));
+      btn.disabled=false;
+    })
+    .catch(function(e){
+      log('err','Failed to fetch topics: '+e.message);
+    });
+
+  // Step 2: Subscribe — write into ntfy IndexedDB
+  btn.addEventListener('click',function(){
+    btn.disabled=true;
+    if(topics.length===0){
+      log('warn','No topics to subscribe');
+      return;
+    }
+    log('info','Opening ntfy IndexedDB...');
+    subscribeAll();
+  });
+
+  function subscribeAll(){
+    // Try opening existing DB first (no version = open at current version)
+    var req=indexedDB.open('ntfy');
+
+    req.onupgradeneeded=function(e){
+      // Fresh browser — DB doesn't exist yet, create Dexie v3 schema
+      var db=e.target.result;
+      log('info','Creating ntfy database (first visit)...');
+      if(!db.objectStoreNames.contains('subscriptions')){
+        db.createObjectStore('subscriptions',{keyPath:'id'});
+      }
+      if(!db.objectStoreNames.contains('notifications')){
+        var ns=db.createObjectStore('notifications',{keyPath:'id'});
+        ns.createIndex('nidx','[subscriptionId+time]',{unique:false});
+      }
+      if(!db.objectStoreNames.contains('users')){
+        db.createObjectStore('users',{keyPath:'baseUrl'});
+      }
+      if(!db.objectStoreNames.contains('prefs')){
+        db.createObjectStore('prefs',{keyPath:'key'});
+      }
+    };
+
+    req.onsuccess=function(e){
+      var db=e.target.result;
+      log('ok','Database opened (version '+db.version+')');
+
+      if(!db.objectStoreNames.contains('subscriptions')){
+        db.close();
+        log('err','No subscriptions store found — try visiting ntfy UI first, then return here');
+        return;
+      }
+
+      var tx=db.transaction('subscriptions','readwrite');
+      var store=tx.objectStore('subscriptions');
+      var added=0;
+      var skipped=0;
+      var pending=topics.length;
+
+      topics.forEach(function(topic){
+        var id=baseUrl+'/'+topic;
+        var getReq=store.get(id);
+
+        getReq.onsuccess=function(){
+          if(getReq.result){
+            skipped++;
+            log('warn','Skip (exists): '+topic);
+            checkDone();
+          }else{
+            var putReq=store.put({
+              id:id,
+              baseUrl:baseUrl,
+              topic:topic,
+              mutedUntil:0,
+              last:null
+            });
+            putReq.onsuccess=function(){
+              added++;
+              log('ok','Subscribed: '+topic);
+              checkDone();
+            };
+            putReq.onerror=function(){
+              log('err','Failed to write: '+topic);
+              checkDone();
+            };
+          }
+        };
+
+        getReq.onerror=function(){
+          log('err','Failed to read: '+topic);
+          checkDone();
+        };
+      });
+
+      function checkDone(){
+        pending--;
+        if(pending<=0){
+          log('info','Done — '+added+' added, '+skipped+' skipped');
+          if(added>0){
+            log('ok','Redirecting to ntfy in 2s...');
+            setTimeout(function(){location.href='/'},2000);
+          }
+        }
+      }
+
+      tx.onerror=function(e){
+        log('err','Transaction error: '+e.target.error);
+      };
+    };
+
+    req.onerror=function(e){
+      log('err','Failed to open IndexedDB: '+e.target.error);
+    };
+  }
+})();
+</script>
+</body>
+</html>
