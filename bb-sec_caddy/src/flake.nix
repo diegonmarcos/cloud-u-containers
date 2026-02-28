@@ -19,8 +19,7 @@
 
     # WireGuard IPs
     gcp = "10.0.0.1";       # gcp-proxy
-    flex = "10.0.0.2";      # oci-apps-1 (on-demand)
-    flex0 = "10.0.0.6";     # oci-apps (on-demand)
+    flex0 = "10.0.0.6";     # oci-apps (consolidated — all A1 services)
     mail = "10.0.0.3";      # oci-mail
     analytics = "10.0.0.4"; # oci-analytics
     flex2 = "10.0.0.7";     # oci-apps-2
@@ -262,7 +261,7 @@
       # Radicale CalDAV/CardDAV
       cal.diegonmarcos.com {
     ${sec}
-        reverse_proxy ${flex}:5232
+        reverse_proxy ${flex0}:5232
         ${handleErrors}
       }
 
@@ -272,7 +271,7 @@
         request_body {
           max_size 100MB
         }
-        reverse_proxy ${flex}:3010 {
+        reverse_proxy ${flex0}:3010 {
           transport http {
             read_timeout 3600s
             write_timeout 3600s
@@ -360,7 +359,7 @@
         }
 
         # All other paths → auth + PhotoPrism
-        ${mkProtected "${flex}:3013"}
+        ${mkProtected "${flex0}:3013"}
         ${handleErrors}
       }
 
@@ -391,14 +390,14 @@
       # Code Server IDE (WebSocket support is automatic in Caddy)
       ide.diegonmarcos.com {
     ${sec}
-        ${mkProtected "${flex}:8443"}
+        ${mkProtected "${flex0}:8443"}
         ${handleErrors}
       }
 
       # NocoDB
       db.diegonmarcos.com {
     ${sec}
-        ${mkProtected "${flex}:8085"}
+        ${mkProtected "${flex0}:8085"}
         ${handleErrors}
       }
 
@@ -409,25 +408,25 @@
           ${mkProtected "${analytics}:8000"}
         }
         handle_path /etherpad/* {
-          ${mkProtected "${flex}:3012"}
+          ${mkProtected "${flex0}:3012"}
         }
         handle_path /filebrowser/* {
-          ${mkProtected "${flex}:3015"}
+          ${mkProtected "${flex0}:3015"}
         }
         handle_path /hedgedoc/* {
-          ${mkProtected "${flex}:3010"}
+          ${mkProtected "${flex0}:3018"}
         }
         handle_path /revealmd/* {
-          ${mkProtected "${flex}:3014"}
+          ${mkProtected "${flex0}:3014"}
         }
         handle_path /dozzle/* {
           ${mkProtected "${gcp}:9999"}
         }
         handle_path /grafana/* {
-          ${mkProtected "${flex}:3016"}
+          ${mkProtected "${flex0}:3016"}
         }
         handle_path /gitea/* {
-          ${mkProtected "${flex}:3000"}
+          ${mkProtected "${flex0}:3017"}
         }
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3001"}
@@ -441,7 +440,7 @@
       # Grist Sheets
       sheets.diegonmarcos.com {
     ${sec}
-        ${mkProtected "${flex}:3011"}
+        ${mkProtected "${flex0}:3011"}
         ${handleErrors}
       }
 
@@ -475,7 +474,7 @@
       # ntfy notifications
       rss.diegonmarcos.com {
     ${sec}
-        ${mkProtected "${gcp}:8090"}
+        ${mkProtected "ntfy:80"}
         ${handleErrors}
       }
 

@@ -1,0 +1,9 @@
+{
+  "name": "orchestrator",
+  "description": "Container orchestrator — resource budget management for on-demand services",
+
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/orchestrator"
+  }
+}
