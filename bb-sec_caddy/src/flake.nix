@@ -269,10 +269,10 @@
           header Access-Control-Allow-Origin "*"
           header Access-Control-Allow-Methods "GET, OPTIONS"
           header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy ${gcp}:8090
+          reverse_proxy go-api:8090
         }
         handle /go/* {
-          reverse_proxy ${gcp}:8090
+          reverse_proxy go-api:8090
         }
         handle /crawlee/openapi.json {
           uri strip_prefix /crawlee
