@@ -315,7 +315,7 @@
                 Content-Type: application/json
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
-                {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational - $(uptime | awk '{print $1}')","priority":1,"tags":["chart_with_upwards_trend"]}
+                {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational","priority":1,"tags":["chart_with_upwards_trend"]}
             command: POST ''${NTFY_URL}
       '';
     };
