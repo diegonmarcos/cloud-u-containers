@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, resolve } from "path";
-import { exec } from "../utils/exec.js";
-import { FRONT_DIR, FRONT_BUILD_SCRIPT } from "../utils/paths.js";
+import { exec } from "../../shared/exec.js";
+import { FRONT_DIR, FRONT_BUILD_SCRIPT } from "../../shared/paths.js";
 
 interface BuildJsonConfig {
   name: string;

@@ -178,7 +178,7 @@
 <h2 id="network"><a class="header" href="#network">Network</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
 <tr><td><code>domain</code></td><td><code>notes.diegonmarcos.com</code></td></tr>
-<tr><td><code>port</code></td><td><code>3010</code></td></tr>
+<tr><td><code>port</code></td><td><code>3018</code></td></tr>
 </tbody></table>
 </div>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
@@ -203,7 +203,7 @@
     container_name: hedgedoc_app
     restart: unless-stopped
     ports:
-      - "10.0.0.2:3010:3000"
+      - "10.0.0.6:3018:3000"
     volumes:
       - hedgedoc_uploads:/hedgedoc/public/uploads
     environment:

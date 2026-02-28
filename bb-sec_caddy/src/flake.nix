@@ -221,12 +221,31 @@
         ${handleErrors}
       }
 
-      # API — Rust on oci-apps (default), Flask (/flask/*), Go (/go/*) on gcp-proxy
+      # API hub — path-based routing to backend APIs
       api.diegonmarcos.com {
     ${sec}
         @root path /
         handle @root {
           redir https://diegonmarcos.github.io/api/ permanent
+        }
+
+        # C3 — Cloud Control Center API (replaces Rust API)
+        handle /c3-api/docs/json {
+          uri strip_prefix /c3-api
+          reverse_proxy ${flex0}:8081
+        }
+        handle_path /c3-api/* {
+          ${mkProtected "${flex0}:8081"}
+        }
+
+        # Rust API (legacy/backup) — needs /api prefix restored after handle_path strips /rust-api
+        handle /rust-api/docs/openapi.json {
+          rewrite * /api/docs/openapi.json
+          reverse_proxy ${flex0}:8080
+        }
+        handle_path /rust-api/* {
+          uri replace / /api/ 1
+          ${mkProtected "${flex0}:8080"}
         }
 
         handle /flask/apispec.json {
@@ -253,7 +272,7 @@
           ${mkProtected "${flex0}:3000"}
         }
         handle {
-          reverse_proxy ${flex0}:8080
+          respond "API hub — use /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
         }
         ${handleErrors}
       }

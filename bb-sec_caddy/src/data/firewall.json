@@ -4,8 +4,6 @@
   { "vm": "gcp-proxy",     "ip": "10.0.0.1", "port": "443/tcp",   "bind": "0.0.0.0", "purpose": "Caddy HTTPS",      "status": "open" },
   { "vm": "gcp-proxy",     "ip": "10.0.0.1", "port": "443/udp",   "bind": "0.0.0.0", "purpose": "Caddy HTTP/3",     "status": "open" },
   { "vm": "gcp-proxy",     "ip": "10.0.0.1", "port": "51820/udp", "bind": "0.0.0.0", "purpose": "WireGuard",        "status": "open" },
-  { "vm": "oci-apps-1",    "ip": "10.0.0.2", "port": "22/tcp",    "bind": "0.0.0.0", "purpose": "SSH",              "status": "restrict" },
-  { "vm": "oci-apps-1",    "ip": "10.0.0.2", "port": "51820/udp", "bind": "0.0.0.0", "purpose": "WireGuard",        "status": "open" },
   { "vm": "oci-apps",      "ip": "10.0.0.6", "port": "22/tcp",    "bind": "0.0.0.0", "purpose": "SSH",              "status": "restrict" },
   { "vm": "oci-apps",      "ip": "10.0.0.6", "port": "51820/udp", "bind": "0.0.0.0", "purpose": "WireGuard",        "status": "open" },
   { "vm": "oci-mail",      "ip": "10.0.0.3", "port": "22/tcp",    "bind": "0.0.0.0", "purpose": "SSH",              "status": "restrict" },

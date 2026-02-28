@@ -1,5 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getConfig, getVmSshAlias } from "../config.js";
+import { getConfig, getVmSshAlias } from "../../shared/config.js";
 
 export function registerPrompts(server: McpServer) {
   // ── 1. cloud-architect (refactored) ──────────────────────────────────
@@ -48,7 +48,7 @@ ${serviceList}
 - WireGuard mesh 10.0.0.0/24 connects all VMs
 - GCP proxy (gcp-E2-f_0): Caddy + Authelia entry point
 - oci-A1-f_1: wake-on-demand (costs money when running)
-- Rust API (api.diegonmarcos.com:8080): health, discovery, control
+- C3 API (api.diegonmarcos.com/c3-api): health, discovery, control, topology, tests, files
 
 ## Chef + Waiter Tool Model
 
@@ -59,12 +59,12 @@ ${serviceList}
 - Ops: secrets_status, backup_trigger
 - Debug: docker_logs, ssh_exec, check_vm, docker_ps, docker_control, docker_compose_up
 
-**Waiter Read (Rust API, 11 tools)** — OBSERVING
+**Waiter Read (C3 API, 11 tools)** — OBSERVING
 - Health: health_alive, health_declared, health_deployed, health_drift, health_status
 - Profile: profile_container, profile_vm
 - Discovery: service_list_apis, service_get_info, service_get_spec, service_discover_all
 
-**Waiter Write (Rust API, 8 tools)** — ACTING
+**Waiter Write (C3 API, 8 tools)** — ACTING
 - VM: vm_start, vm_stop, vm_reset
 - Container: container_start, container_stop, container_restart
 - Service: service_start, service_stop
@@ -89,7 +89,7 @@ ${serviceList}
 
 ## Key Rules
 1. OBSERVE (health_status) before ACTING — understand state first
-2. Prefer Rust API writes over SSH — API handles wake-on-demand + validation
+2. Prefer C3 API writes over SSH — API handles wake-on-demand + validation
 3. service_get_spec before service_api_call — understand available endpoints
 4. Native SSH for debugging (logs, arbitrary commands)
 5. build_ship for deployment, API tools for runtime control
@@ -222,7 +222,7 @@ _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
 
 ### Step 4: Act
 \`container_restart\` → restart single container (prefer over docker_control)
-\`service_start\` / \`service_stop\` → lifecycle via Rust API
+\`service_start\` / \`service_stop\` → lifecycle via C3 API
 \`docker_compose_up\` → recreate all containers from compose file
 \`docker_control\` → direct start/stop/restart via SSH (when API is down)
 

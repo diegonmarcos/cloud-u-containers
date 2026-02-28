@@ -3,7 +3,7 @@
   "description": "Collaborative markdown editor",
 
   "deploy": {
-    "host": "oci-apps-1",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/hedgedoc"
   }
 }

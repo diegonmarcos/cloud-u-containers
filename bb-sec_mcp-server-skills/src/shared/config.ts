@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
 import type { InfraConfig, ServiceConfig } from "./types.js";
-import { CONFIG_PATH, SOLUTIONS_DIR } from "./utils/paths.js";
+import { CONFIG_PATH, SOLUTIONS_DIR } from "./paths.js";
 
 let _config: InfraConfig | null = null;
 let _configTimestamp = 0;

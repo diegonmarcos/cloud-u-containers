@@ -3,7 +3,7 @@
   "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
 
   "deploy": {
-    "host": "oci-apps-1",
+    "host": "oci-apps",
     "remote_path": "/home/ubuntu/nocodb"
   }
 }

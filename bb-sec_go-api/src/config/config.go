@@ -60,7 +60,6 @@ func Load() *AppConfig {
 
 	vmSSH := map[string]SshConfig{
 		"oci-p-flex_0":  {Host: "10.0.0.6", User: "ubuntu", KeyPath: sshKey},
-		"oci-p-flex_1":  {Host: "10.0.0.2", User: "ubuntu", KeyPath: sshKey},
 		"oci-f-micro_1": {Host: "10.0.0.3", User: "ubuntu", KeyPath: sshKey},
 		"oci-f-micro_2": {Host: "10.0.0.4", User: "ubuntu", KeyPath: sshKey},
 		"gcp-f-micro_1": {Host: "10.0.0.1", User: "diego", KeyPath: gcpKey},
@@ -69,10 +68,6 @@ func Load() *AppConfig {
 	allVmServices := map[string]VmServiceMap{
 		"oci-p-flex_0": {
 			Label: "oci-flex-0",
-			Services: map[string][]string{},
-		},
-		"oci-p-flex_1": {
-			Label: "oci-flex-1",
 			Services: map[string][]string{
 				"photos":     {"photoprism_app", "photoprism_mariadb"},
 				"calendar":   {"radicale"},
@@ -158,7 +153,6 @@ func Load() *AppConfig {
 
 	vmInstances := map[string]VmInstance{
 		"oci-p-flex_0":  {Provider: "oci", InstanceID: envOr("OCI_FLEX0_INSTANCE_ID", "")},
-		"oci-p-flex_1":  {Provider: "oci", InstanceID: envOr("OCI_FLEX1_INSTANCE_ID", "")},
 		"oci-f-micro_1": {Provider: "oci", InstanceID: envOr("OCI_MICRO1_INSTANCE_ID", "")},
 		"oci-f-micro_2": {Provider: "oci", InstanceID: envOr("OCI_MICRO2_INSTANCE_ID", "")},
 		"gcp-f-micro_1": {Provider: "gcp", InstanceID: ""},
@@ -172,7 +166,7 @@ func Load() *AppConfig {
 		Port:               8090,
 		VmSSH:              vmSSH,
 		AllVmServices:      allVmServices,
-		FlexVmID:           "oci-p-flex_1",
+		FlexVmID:           "oci-p-flex_0",
 		RouteCheckDomains:  routeCheckDomains,
 		ContainerDomainMap: containerDomainMap,
 

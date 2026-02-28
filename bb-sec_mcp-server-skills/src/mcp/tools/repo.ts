@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, readdirSync, statSync } from "fs";
 import { join, resolve } from "path";
-import { REPOS } from "../utils/paths.js";
-import { exec } from "../utils/exec.js";
+import { REPOS } from "../../shared/paths.js";
+import { exec } from "../../shared/exec.js";
 
 const VALID_REPOS = Object.keys(REPOS);
 

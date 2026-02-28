@@ -247,6 +247,29 @@ networks:
     external: true
 
 </code></pre>
+<h2 id="etcserveryml"><a class="header" href="#etcserveryml">etc/server.yml</a></h2>
+<pre><code class="language-yaml"># ntfy server configuration
+base-url: https://rss.diegonmarcos.com
+
+# Cache and retention
+cache-file: /var/cache/ntfy/cache.db
+cache-duration: 12h
+attachment-cache-dir: /var/cache/ntfy/attachments
+
+# Limits
+visitor-request-limit-burst: 60
+visitor-request-limit-replenish: 10s
+visitor-message-daily-limit: 0
+
+# Web interface
+enable-login: false
+enable-signup: false
+enable-reservations: false
+
+# Behind reverse proxy (Authelia handles auth)
+behind-proxy: true
+
+</code></pre>
 <h2 id="github-rss-to-ntfypy"><a class="header" href="#github-rss-to-ntfypy">github-rss-to-ntfy.py</a></h2>
 <pre><code class="language-python">#!/usr/bin/env python3
 import sys; sys.stdout.reconfigure(line_buffering=True)

@@ -27,7 +27,7 @@
           container_name: ${config.container_name}
           restart: "no"
           ports:
-            - "10.0.0.2:${toString config.port}:1948"
+            - "10.0.0.6:${toString config.port}:1948"
           volumes:
             - slides_data:/slides
           command: /slides --watch

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { sshExec, checkVmReachable } from "../utils/ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias } from "../config.js";
+import { sshExec, checkVmReachable } from "../../shared/ssh.js";
+import { getConfig, resolveVmId, getVmSshAlias } from "../../shared/config.js";
 
 export function registerSshTools(server: McpServer) {
   server.tool(
@@ -73,11 +73,23 @@ export function registerSshTools(server: McpServer) {
         15_000
       );
 
+      const header = `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE`;
+      if (!info.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${header}\n\n(SSH exec failed for detailed info — exit ${info.exitCode})${info.stderr ? `\n${info.stderr}` : ""}`,
+            },
+          ],
+        };
+      }
+
       return {
         content: [
           {
             type: "text",
-            text: `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE\n\n${info.stdout}`,
+            text: `${header}\n\n${info.stdout}`,
           },
         ],
       };

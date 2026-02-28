@@ -3,7 +3,7 @@
   "description": "Etherpad collaborative editor (NEW - not deployed yet)",
 
   "deploy": {
-    "host": "oci-apps-1",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/etherpad"
   }
 }

@@ -30,7 +30,7 @@
             PGID: 1000
             DEFAULT_WORKSPACE: /workspace
           ports:
-            - "10.0.0.2:${toString config.port}:8443"
+            - "10.0.0.6:${toString config.port}:8443"
           volumes:
             - ./config:/config
             - /home/ubuntu/workspace:/workspace

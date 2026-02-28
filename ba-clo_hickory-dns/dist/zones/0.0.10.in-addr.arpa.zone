@@ -10,7 +10,6 @@ $TTL 3600
 
 ; ── PTR records ──
 1    IN  PTR   gcp-proxy.internal.
-2    IN  PTR   oci-flex-1.internal.
 3    IN  PTR   oci-mail.internal.
 4    IN  PTR   oci-analytics.internal.
-6    IN  PTR   oci-flex-0.internal.
+6    IN  PTR   oci-apps.internal.

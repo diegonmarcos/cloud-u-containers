@@ -10,25 +10,15 @@
     "arch": "x86_64",
     "availability": "24/7"
   },
-  "oci-apps-1": {
-    "alias": "oci-apps-1",
-    "provider": "OCI",
-    "tier": "Free (A1.Flex)",
-    "ip": "144.24.196.72",
-    "wg": "10.0.0.2",
-    "ram": "8 GB",
-    "cpu": "Ampere A1 (1 OCPU)",
-    "arch": "aarch64",
-    "availability": "Wake-on-demand"
-  },
   "oci-apps": {
     "alias": "oci-apps",
     "provider": "OCI",
     "tier": "Free (A1.Flex)",
     "ip": "82.70.229.129",
     "wg": "10.0.0.6",
-    "ram": "16 GB",
-    "cpu": "Ampere A1 (3 OCPU)",
+    "ram": "24 GB",
+    "cpu": "Ampere A1 (4 OCPU)",
+    "disk": "100 GB",
     "arch": "aarch64",
     "availability": "24/7"
   },

@@ -1,0 +1,445 @@
+import { sshExec, checkVmReachable } from "./ssh.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
+import { listContainers } from "./docker.js";
+import type { VmConfig, ServiceConfig } from "./types.js";
+
+// ── Types ────────────────────────────────────────────────────────────────
+
+export interface Tier1Result {
+  vm: string;
+  alias: string;
+  ip: string;
+  reachable: boolean;
+  latencyMs?: number;
+  error?: string;
+}
+
+export interface Tier2Result extends Tier1Result {
+  sshOk?: boolean;
+  sshError?: string;
+}
+
+export interface VmResources {
+  uptime?: string;
+  memoryTotal?: string;
+  memoryUsed?: string;
+  memoryFree?: string;
+  diskTotal?: string;
+  diskUsed?: string;
+  diskAvailable?: string;
+  diskPercent?: string;
+}
+
+export interface ContainerInfo {
+  name: string;
+  status: string;
+  image?: string;
+  ports?: string;
+}
+
+export interface Tier3Result extends Tier2Result {
+  resources?: VmResources;
+  containers?: ContainerInfo[];
+}
+
+export interface DeployedVm {
+  vm: string;
+  alias: string;
+  containers: ContainerInfo[];
+  error?: string;
+}
+
+export interface DriftEntry {
+  service: string;
+  declared: boolean;
+  deployed: boolean;
+  status: "ok" | "missing" | "extra" | "unknown";
+}
+
+export interface HealthDeclaredResult {
+  vms: Record<string, VmConfig>;
+  services: Record<string, ServiceConfig>;
+  vmCount: number;
+  serviceCount: number;
+}
+
+export interface HealthStatusResult {
+  declared: HealthDeclaredResult;
+  deployed: DeployedVm[];
+  drift: DriftEntry[];
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function getVmIds(vmId?: string): string[] {
+  if (vmId) {
+    const resolved = resolveVmId(vmId);
+    return [resolved];
+  }
+  const config = getConfig();
+  return Object.keys(config.vms);
+}
+
+function parseResources(output: string): VmResources {
+  const resources: VmResources = {};
+
+  // Split by markers
+  const memMarker = "===MEM===";
+  const diskMarker = "===DISK===";
+
+  const memIdx = output.indexOf(memMarker);
+  const diskIdx = output.indexOf(diskMarker);
+
+  // Parse uptime (everything before ===MEM===)
+  if (memIdx > 0) {
+    resources.uptime = output.slice(0, memIdx).trim();
+  }
+
+  // Parse free -h output (between ===MEM=== and ===DISK===)
+  if (memIdx >= 0 && diskIdx > memIdx) {
+    const memBlock = output.slice(memIdx + memMarker.length, diskIdx).trim();
+    const lines = memBlock.split("\n");
+    // Find the "Mem:" line
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("Mem:")) {
+        //  Mem:   total   used   free   shared   buff/cache   available
+        const parts = trimmed.split(/\s+/);
+        if (parts.length >= 4) {
+          resources.memoryTotal = parts[1];
+          resources.memoryUsed = parts[2];
+          resources.memoryFree = parts[3];
+        }
+        break;
+      }
+    }
+  }
+
+  // Parse df -h / output (after ===DISK===)
+  if (diskIdx >= 0) {
+    const diskBlock = output.slice(diskIdx + diskMarker.length).trim();
+    const lines = diskBlock.split("\n");
+    // Skip header, find the data line (usually line 1, but could wrap)
+    for (let i = 1; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+      const parts = trimmed.split(/\s+/);
+      // Format: Filesystem Size Used Avail Use% Mounted
+      if (parts.length >= 5) {
+        resources.diskTotal = parts[1];
+        resources.diskUsed = parts[2];
+        resources.diskAvailable = parts[3];
+        resources.diskPercent = parts[4];
+        break;
+      }
+    }
+  }
+
+  return resources;
+}
+
+// ── Exported Functions ───────────────────────────────────────────────────
+
+/**
+ * Simple heartbeat. This MCP server IS the API now (replaces Rust API health.rs).
+ */
+export function healthAlive(): { status: string; version: string } {
+  return { status: "ok", version: "3.0.0" };
+}
+
+/**
+ * Returns declared VMs and services from config.json. No network probing.
+ */
+export function healthDeclared(): HealthDeclaredResult {
+  const config = getConfig();
+  return {
+    vms: config.vms,
+    services: config.services,
+    vmCount: Object.keys(config.vms).length,
+    serviceCount: Object.keys(config.services).length,
+  };
+}
+
+/**
+ * For each VM (or a single VM), SSH in and run docker ps to get live containers.
+ */
+export function healthDeployed(vmId?: string): DeployedVm[] {
+  const vmIds = getVmIds(vmId);
+  const results: DeployedVm[] = [];
+
+  for (const id of vmIds) {
+    const alias = getVmSshAlias(id);
+    try {
+      const { containers, ok, raw } = listContainers(id);
+      if (!ok) {
+        results.push({ vm: id, alias, containers: [], error: raw });
+      } else {
+        const mapped: ContainerInfo[] = containers.map((c) => ({
+          name: c.name ?? "",
+          status: c.status ?? "",
+          image: c.image,
+          ports: c.ports,
+        }));
+        results.push({ vm: id, alias, containers: mapped });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      results.push({ vm: id, alias, containers: [], error: message });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Compare declared services (config.json) with deployed containers (docker ps).
+ * For each service, check if expected containers are running.
+ */
+export function healthDrift(): DriftEntry[] {
+  const config = getConfig();
+  const drift: DriftEntry[] = [];
+
+  // Gather all deployed containers indexed by VM
+  const deployedByVm = new Map<string, Set<string>>();
+  const allContainerNames = new Set<string>();
+
+  for (const vmId of Object.keys(config.vms)) {
+    try {
+      const { containers, ok } = listContainers(vmId, true);
+      if (ok) {
+        const names = new Set(containers.map((c) => c.name ?? ""));
+        deployedByVm.set(vmId, names);
+        Array.from(names).forEach((name) => {
+          allContainerNames.add(name);
+        });
+      }
+    } catch {
+      // VM unreachable -- skip, we will mark its services as "unknown"
+    }
+  }
+
+  // Track which container names are accounted for by declared services
+  const accountedContainers = new Set<string>();
+
+  // Check each declared service
+  for (const [serviceName, svc] of Object.entries(config.services)) {
+    const vmId = svc.vm;
+
+    // Skip local-only or "all" services -- not deployed as containers
+    if (vmId === "local" || vmId === "all") {
+      continue;
+    }
+
+    const vmContainers = deployedByVm.get(vmId);
+
+    if (!vmContainers) {
+      // VM was unreachable, cannot determine status
+      drift.push({
+        service: serviceName,
+        declared: true,
+        deployed: false,
+        status: "unknown",
+      });
+      continue;
+    }
+
+    // A service is considered "deployed" if any container name contains the service name
+    const matchingContainers = Array.from(vmContainers).filter((name) =>
+      name.includes(serviceName)
+    );
+    const isDeployed = matchingContainers.length > 0;
+
+    for (const name of matchingContainers) {
+      accountedContainers.add(name);
+    }
+
+    drift.push({
+      service: serviceName,
+      declared: true,
+      deployed: isDeployed,
+      status: isDeployed ? "ok" : "missing",
+    });
+  }
+
+  // Find "extra" containers: deployed but not declared
+  for (const containerName of Array.from(allContainerNames)) {
+    if (!accountedContainers.has(containerName)) {
+      drift.push({
+        service: containerName,
+        declared: false,
+        deployed: true,
+        status: "extra",
+      });
+    }
+  }
+
+  return drift;
+}
+
+/**
+ * Combined view: declared + deployed + drift in one call.
+ */
+export function healthStatus(vmId?: string): HealthStatusResult {
+  const declared = healthDeclared();
+  const deployed = healthDeployed(vmId);
+
+  // For drift, we always check all VMs to get the full picture,
+  // but if vmId is specified we filter the drift entries to relevant services
+  let drift: DriftEntry[];
+  if (vmId) {
+    const resolvedVm = resolveVmId(vmId);
+    const vmServiceNames = new Set(
+      getServicesForVm(resolvedVm).map(([name]) => name)
+    );
+    const fullDrift = healthDrift();
+    drift = fullDrift.filter((entry) => vmServiceNames.has(entry.service));
+  } else {
+    drift = healthDrift();
+  }
+
+  return { declared, deployed, drift };
+}
+
+/**
+ * Tier 1: Quick TCP/SSH-keyscan check (no auth, fast).
+ * Uses ssh-keyscan which does a TCP handshake + SSH banner exchange.
+ */
+export function checkTier1All(vmId?: string): Tier1Result[] {
+  const vmIds = getVmIds(vmId);
+  const config = getConfig();
+  const results: Tier1Result[] = [];
+
+  for (const id of vmIds) {
+    const alias = getVmSshAlias(id);
+    const vmConfig = config.vms[id];
+    const ip = vmConfig?.ip ?? "unknown";
+
+    const start = Date.now();
+    try {
+      const result = checkVmReachable(id);
+      const latencyMs = Date.now() - start;
+
+      results.push({
+        vm: id,
+        alias,
+        ip,
+        reachable: result.ok,
+        latencyMs,
+        ...(result.ok ? {} : { error: result.stderr.trim() || "keyscan failed" }),
+      });
+    } catch (err) {
+      const latencyMs = Date.now() - start;
+      const message = err instanceof Error ? err.message : String(err);
+      results.push({
+        vm: id,
+        alias,
+        ip,
+        reachable: false,
+        latencyMs,
+        error: message,
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Tier 2: SSH session check (full authentication).
+ * For each VM, runs `ssh <alias> true` to verify a full SSH session works.
+ */
+export function checkTier2All(vmId?: string): Tier2Result[] {
+  const tier1Results = checkTier1All(vmId);
+  const results: Tier2Result[] = [];
+
+  for (const t1 of tier1Results) {
+    if (!t1.reachable) {
+      // Skip SSH auth check if TCP is unreachable
+      results.push({ ...t1, sshOk: false, sshError: "VM unreachable (tier1 failed)" });
+      continue;
+    }
+
+    try {
+      const sshResult = sshExec(t1.vm, "true", 15_000);
+      results.push({
+        ...t1,
+        sshOk: sshResult.ok,
+        ...(sshResult.ok ? {} : { sshError: sshResult.stderr.trim() || `exit ${sshResult.exitCode}` }),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      results.push({ ...t1, sshOk: false, sshError: message });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Tier 3: Full probe -- SSH in and get resources (uptime, memory, disk) + docker ps.
+ */
+export function checkTier3All(vmId?: string): Tier3Result[] {
+  const tier2Results = checkTier2All(vmId);
+  const results: Tier3Result[] = [];
+
+  for (const t2 of tier2Results) {
+    if (!t2.sshOk) {
+      results.push({ ...t2 });
+      continue;
+    }
+
+    try {
+      const resources = gatherVmResources(t2.vm);
+      const { containers } = listContainers(t2.vm);
+      const containerInfos: ContainerInfo[] = containers.map((c) => ({
+        name: c.name ?? "",
+        status: c.status ?? "",
+        image: c.image,
+        ports: c.ports,
+      }));
+
+      results.push({ ...t2, resources, containers: containerInfos });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      results.push({ ...t2, error: message });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * SSH into a VM and gather resource usage: uptime, memory (free -h), and disk (df -h /).
+ */
+export function gatherVmResources(vmId: string): VmResources {
+  const resolved = resolveVmId(vmId);
+  const cmd = 'uptime && echo "===MEM===" && free -h && echo "===DISK===" && df -h /';
+  const result = sshExec(resolved, cmd, 15_000);
+
+  if (!result.ok) {
+    return { uptime: `(failed: exit ${result.exitCode})` };
+  }
+
+  return parseResources(result.stdout);
+}
+
+/**
+ * Run tier1 + tier2 + tier3 for a single VM. Returns the combined result.
+ */
+export function probeVm(vmId: string): Tier3Result {
+  const results = checkTier3All(vmId);
+  if (results.length === 0) {
+    const resolved = resolveVmId(vmId);
+    const alias = getVmSshAlias(resolved);
+    const config = getConfig();
+    const ip = config.vms[resolved]?.ip ?? "unknown";
+    return {
+      vm: resolved,
+      alias,
+      ip,
+      reachable: false,
+      error: "No results returned from tier3 check",
+    };
+  }
+  return results[0];
+}

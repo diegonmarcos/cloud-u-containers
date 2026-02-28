@@ -2,10 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { exec } from "../utils/exec.js";
-import { sshExec } from "../utils/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../config.js";
-import { audit } from "../utils/audit.js";
+import { exec } from "../../shared/exec.js";
+import { sshExec } from "../../shared/ssh.js";
+import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../../shared/config.js";
+import { audit } from "../../shared/audit.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 

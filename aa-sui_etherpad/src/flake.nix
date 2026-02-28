@@ -31,7 +31,7 @@
           container_name: ${config.container_name}
           restart: "no"
           ports:
-            - "10.0.0.2:${toString config.port}:9001"
+            - "10.0.0.6:${toString config.port}:9001"
           volumes:
             - etherpad_data:/opt/etherpad-lite/var
           environment:

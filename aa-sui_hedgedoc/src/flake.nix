@@ -14,7 +14,7 @@
       image = "quay.io/hedgedoc/hedgedoc:latest";
       db_container = "hedgedoc_postgres";
       db_image = "postgres:16-alpine";
-      port = 3010;
+      port = 3018;
       db_user = "hedgedoc";
       db_name = "hedgedoc";
     };
@@ -28,7 +28,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "10.0.0.2:${toString config.port}:3000"
+            - "10.0.0.6:${toString config.port}:3000"
           volumes:
             - hedgedoc_uploads:/hedgedoc/public/uploads
           environment:

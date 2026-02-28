@@ -1,0 +1,22 @@
+smtp:
+  host: mailu-smtp-1
+  port: "25"
+  username: ""
+  password: ""
+
+mailOn:
+  failure: false
+  success: false
+
+errorMail:
+  from: no-reply@diegonmarcos.com
+  to:
+    - me@diegonmarcos.com
+  prefix: "[Dagu FAIL]"
+  attachLogs: true
+
+infoMail:
+  from: no-reply@diegonmarcos.com
+  to:
+    - me@diegonmarcos.com
+  prefix: "[Dagu OK]"
