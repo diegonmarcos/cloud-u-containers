@@ -416,6 +416,13 @@
         ${handleErrors}
       }
 
+      # Dagu workflow scheduler
+      workflows.diegonmarcos.com {
+    ${sec}
+        ${mkProtected "${mail}:8070"}
+        ${handleErrors}
+      }
+
       # Code Server IDE (WebSocket support is automatic in Caddy)
       ide.diegonmarcos.com {
     ${sec}
