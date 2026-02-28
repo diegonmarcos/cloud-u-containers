@@ -10,6 +10,15 @@
 
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-api"
+    "remote_path": "/opt/containers/c3-api",
+    "sequential_restart": "true"
+  },
+
+  "build": {
+    "include_config_json": "true"
+  },
+
+  "secrets": {
+    "escape_dollars": "true"
   }
 }

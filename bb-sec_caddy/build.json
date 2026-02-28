@@ -6,11 +6,17 @@
     "registry": "ghcr.io",
     "image": "diegonmarcos/caddy-custom",
     "dockerfile": "Dockerfile.caddy",
-    "binary": "/usr/bin/caddy"
+    "binary": "/usr/bin/caddy",
+    "binary_name": "caddy-binary"
   },
 
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/caddy"
+    "remote_path": "/opt/containers/caddy",
+    "excludes": ["logs/"]
+  },
+
+  "secrets": {
+    "escape_dollars": "true"
   }
 }
