@@ -63,7 +63,7 @@
         password: ""
 
       mailOn:
-        failure: true
+        failure: false
         success: false
 
       errorMail:
@@ -91,7 +91,7 @@
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
-          failure: true
+          failure: false
           success: false
 
         steps:
