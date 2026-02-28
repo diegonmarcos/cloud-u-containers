@@ -305,7 +305,7 @@
 
         steps:
           - name: gather-stats
-            command: bash -c "uptime && docker ps --format '{{.Names}}: {{.Status}}' | wc -l"
+            command: bash -c "uptime && docker ps | wc -l"
 
         handlerOn:
           success:
