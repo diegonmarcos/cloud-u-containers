@@ -1,8 +1,23 @@
 {
   "name": "matomo",
   "description": "Matomo hybrid analytics (oci-analytics)",
+
   "deploy": {
     "host": "oci-analytics",
-    "remote_path": "/opt/containers/matomo"
+    "remote_path": "/opt/containers/matomo",
+    "compose_flags": "--build"
+  },
+
+  "lifecycle": {
+    "wake": [
+      { "action": "compose_stop", "vm": "oci-analytics", "path": "/home/ubuntu/windmill" },
+      { "action": "exec", "vm": "oci-analytics", "container": "matomo-hybrid", "script": "/scripts/matomo-wake.sh" },
+      { "action": "stats", "vm": "oci-analytics" }
+    ],
+    "sleep": [
+      { "action": "exec", "vm": "oci-analytics", "container": "matomo-hybrid", "script": "/scripts/matomo-sleep.sh" },
+      { "action": "compose_start", "vm": "oci-analytics", "path": "/home/ubuntu/windmill" },
+      { "action": "stats", "vm": "oci-analytics" }
+    ]
   }
 }

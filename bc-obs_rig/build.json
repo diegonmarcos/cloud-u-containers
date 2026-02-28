@@ -2,8 +2,15 @@
   "name": "rig",
   "description": "Rig Intelligence Framework - Self-healing orchestrator + GraphRAG + Agentic framework",
   "version": "0.1.0",
+
+  "build": {
+    "extra_copy": ["Cargo.toml", "Cargo.lock", "Dockerfile", "src"]
+  },
+
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/rig"
+    "remote_path": "/opt/containers/rig",
+    "excludes": [".secrets"],
+    "compose_flags": "--build"
   }
 }

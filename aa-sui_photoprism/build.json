@@ -4,6 +4,7 @@
 
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/photoprism"
+    "remote_path": "/opt/containers/photoprism",
+    "compose_flags": "--build"
   }
 }

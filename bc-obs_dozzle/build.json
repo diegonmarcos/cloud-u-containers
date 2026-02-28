@@ -4,6 +4,11 @@
 
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/dozzle"
+    "remote_path": "/opt/containers/dozzle",
+    "compose_flags": "--build"
+  },
+
+  "secrets": {
+    "escape_dollars": "true"
   }
 }

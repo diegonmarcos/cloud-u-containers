@@ -5,5 +5,10 @@
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/authelia"
+  },
+
+  "secrets": {
+    "jwks_file": "jwks_key.yaml",
+    "jwks_dest": "config/oidc_jwks.pem"
   }
 }

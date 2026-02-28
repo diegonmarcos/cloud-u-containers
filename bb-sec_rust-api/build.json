@@ -6,11 +6,21 @@
     "registry": "ghcr.io",
     "image": "diegonmarcos/rust-api",
     "dockerfile": "Dockerfile",
-    "binary": "/app/rust-api"
+    "binary": "/app/rust-api",
+    "binary_name": "rust-api-binary"
   },
 
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/rust-api"
+    "remote_path": "/opt/containers/rust-api",
+    "sequential_restart": "true"
+  },
+
+  "build": {
+    "include_config_json": "true"
+  },
+
+  "secrets": {
+    "escape_dollars": "true"
   }
 }
