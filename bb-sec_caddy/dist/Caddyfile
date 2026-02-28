@@ -98,10 +98,18 @@ import request_limits
     }
 
     # C3 — Cloud Control Center API (replaces Rust API)
+    # Public endpoints (no auth required)
     handle /c3-api/docs/json {
       uri strip_prefix /c3-api
       reverse_proxy 10.0.0.6:8081
     }
+    handle_path /c3-api/dash {
+      reverse_proxy 10.0.0.6:8081
+    }
+    handle_path /c3-api/health/* {
+      reverse_proxy 10.0.0.6:8081
+    }
+    # Protected endpoints (require Authelia or bearer token)
     handle_path /c3-api/* {
         @bearer header Authorization Bearer*
   handle @bearer {
@@ -876,6 +884,7 @@ forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
+      uri strip_prefix /api/topics
       reverse_proxy ntfy-topic-scanner:8091
     }
       @bearer header Authorization Bearer*
