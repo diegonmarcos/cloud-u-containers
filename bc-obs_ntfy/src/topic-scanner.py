@@ -23,6 +23,7 @@ CONFIGURED_TOPICS = [
     "backup",       # Backup job status
     "security",     # Security alerts
     "deploy",       # Deployment notifications
+    "infra",        # Infrastructure health (Dagu mesh checks)
 ]
 
 # Shared state
