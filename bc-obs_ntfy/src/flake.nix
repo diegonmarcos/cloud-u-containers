@@ -23,7 +23,7 @@
 
       # Cache and retention
       cache-file: /var/cache/ntfy/cache.db
-      cache-duration: 12h
+      cache-duration: 720h
       attachment-cache-dir: /var/cache/ntfy/attachments
 
       # Limits
@@ -100,6 +100,22 @@
           dns:
             - 8.8.8.8
             - 1.1.1.1
+          networks:
+            - npm_default
+
+        ntfy-topic-scanner:
+          image: python:3.11-slim
+          container_name: ntfy-topic-scanner
+          command: python -u /app/topic-scanner.py
+          volumes:
+            - ./topic-scanner.py:/app/topic-scanner.py:ro
+            - ./cache:/var/cache/ntfy:ro
+          environment:
+            - TZ=Europe/Paris
+            - PYTHONUNBUFFERED=1
+          depends_on:
+            - ntfy
+          restart: unless-stopped
           networks:
             - npm_default
 
@@ -221,6 +237,7 @@
         cp ${mkServerConfig pkgs} $out/etc/server.yml
         cp ${./syslog-to-ntfy.py} $out/syslog-to-ntfy.py
         cp ${./github-rss-to-ntfy.py} $out/github-rss-to-ntfy.py
+        cp ${./topic-scanner.py} $out/topic-scanner.py
       '';
     in {
       default = defaultPkg;
