@@ -17,6 +17,29 @@
 
     title = "ntfy Push Notifications + syslog-bridge + github-rss";
 
+    mkServerConfig = pkgs: pkgs.writeText "server.yml" ''
+      # ntfy server configuration
+      base-url: https://${config.domain}
+
+      # Cache and retention
+      cache-file: /var/cache/ntfy/cache.db
+      cache-duration: 12h
+      attachment-cache-dir: /var/cache/ntfy/attachments
+
+      # Limits
+      visitor-request-limit-burst: 60
+      visitor-request-limit-replenish: 10s
+      visitor-message-daily-limit: 0
+
+      # Web interface
+      enable-login: false
+      enable-signup: false
+      enable-reservations: false
+
+      # Behind reverse proxy (Authelia handles auth)
+      behind-proxy: true
+    '';
+
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ntfy - Push Notification Server
       # Deployed on: gcp-E2-f_0 (35.226.147.64)
@@ -193,8 +216,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "ntfy-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/etc
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkServerConfig pkgs} $out/etc/server.yml
         cp ${./syslog-to-ntfy.py} $out/syslog-to-ntfy.py
         cp ${./github-rss-to-ntfy.py} $out/github-rss-to-ntfy.py
       '';
