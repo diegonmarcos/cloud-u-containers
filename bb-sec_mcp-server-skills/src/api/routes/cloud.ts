@@ -28,16 +28,20 @@ export async function registerCloudRoutes(app: FastifyInstance) {
   });
 
   app.get("/cloud/summary", { schema: { tags: ["Cloud"] } }, async () => {
+    const safe = <T>(fn: () => T): T | { ok: false; error: string } => {
+      try { return fn(); }
+      catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
+    };
     return {
       oci: {
-        instances: oci.listInstances(),
-        resources: oci.listResources(),
-        costs: oci.getCosts(),
+        instances: safe(() => oci.listInstances()),
+        resources: safe(() => oci.listResources()),
+        costs: safe(() => oci.getCosts()),
       },
       gcp: {
-        instances: gcp.listInstances(),
-        resources: gcp.listResources(),
-        costs: gcp.getCosts(),
+        instances: safe(() => gcp.listInstances()),
+        resources: safe(() => gcp.listResources()),
+        costs: safe(() => gcp.getCosts()),
       },
     };
   });
