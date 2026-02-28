@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import swagger from "@fastify/swagger";
@@ -44,6 +47,13 @@ export async function buildApp() {
 
   await app.register(swaggerUi, {
     routePrefix: "/docs",
+  });
+
+  // Dashboard — read once at startup, serve at /dash
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const dashboardHtml = readFileSync(join(__dirname, "static", "dashboard.html"), "utf-8");
+  app.get("/dash", async (_req, reply) => {
+    reply.type("text/html").send(dashboardHtml);
   });
 
   // Auth

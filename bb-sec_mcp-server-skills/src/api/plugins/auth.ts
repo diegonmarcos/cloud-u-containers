@@ -4,6 +4,7 @@ import { getBearerToken } from "../../shared/http.js";
 
 const PUBLIC_PATHS = new Set([
   "/health",
+  "/dash",
   "/docs",
   "/docs/",
   "/docs/json",
