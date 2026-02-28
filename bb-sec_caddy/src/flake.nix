@@ -493,6 +493,16 @@
       # ntfy notifications
       rss.diegonmarcos.com {
     ${sec}
+        handle /setup {
+    ${authelia}
+          root * /srv
+          rewrite * /ntfy-setup.html
+          file_server
+        }
+        handle /api/topics {
+    ${authelia}
+          reverse_proxy ntfy-topic-scanner:8091
+        }
         ${mkProtected "ntfy:80"}
         ${handleErrors}
       }
@@ -529,6 +539,7 @@
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - ./error.html:/srv/error.html:ro
             - ./dashboard.html:/srv/dashboard.html:ro
+            - ./ntfy-setup.html:/srv/ntfy-setup.html:ro
             - ./logs:/var/log/caddy
             - caddy_data:/data
             - caddy_config:/config
@@ -683,6 +694,7 @@
         cp ${mkCaddyfile pkgs} $out/Caddyfile
         cp ${./error.html} $out/error.html
         cp ${./dashboard.html} $out/dashboard.html
+        cp ${./ntfy-setup.html} $out/ntfy-setup.html
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
         cp ${./introspect-proxy/app/requirements.txt} $out/introspect-proxy/app/requirements.txt
