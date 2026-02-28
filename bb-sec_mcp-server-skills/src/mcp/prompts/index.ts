@@ -260,7 +260,7 @@ _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
 ## Key Principles
 1. OBSERVE before ACTING — health_status first
 2. Check VM reachability before SSH commands
-3. Wake oci-apps-1 first (shut down by default)
+3. Wake oci-apps if needed (on-demand services may be stopped)
 4. Read configs/logs before making changes
 5. Never expose secrets`,
           },

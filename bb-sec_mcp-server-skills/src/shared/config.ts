@@ -13,7 +13,7 @@ const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
   "oci-E2-f_0": "oci-mail",
   "oci-E2-f_1": "oci-analytics",
   "oci-A1-f_0": "oci-apps",
-  "oci-A1-f_1": "oci-apps-1",
+  // oci-A1-f_1 (oci-apps-1) DECOMMISSIONED 2026-02-28
 };
 
 export function getConfig(): InfraConfig {
