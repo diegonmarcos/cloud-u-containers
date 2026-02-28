@@ -235,10 +235,12 @@
           uri strip_prefix /c3-api
           reverse_proxy ${flex0}:8081
         }
-        handle_path /c3-api/dash {
+        handle /c3-api/dash* {
+          uri strip_prefix /c3-api
           reverse_proxy ${flex0}:8081
         }
-        handle_path /c3-api/health/* {
+        handle /c3-api/health/* {
+          uri strip_prefix /c3-api
           reverse_proxy ${flex0}:8081
         }
         # Protected endpoints (require Authelia or bearer token)
