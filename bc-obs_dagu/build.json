@@ -1,0 +1,9 @@
+{
+  "name": "dagu",
+  "description": "Dagu - Lightweight DAG-based workflow scheduler",
+
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/dagu"
+  }
+}
