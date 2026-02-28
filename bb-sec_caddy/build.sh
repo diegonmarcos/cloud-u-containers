@@ -199,16 +199,9 @@ step_compose() {
         ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
     fi
 
-    # Sequential restart: stop → settle → start (avoids CPU spike on low-resource VMs)
-    log "Stopping containers on $DEPLOY_HOST"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose stop" || true
-
-    log "Waiting for CPU to settle..."
-    sleep 5
-
-    log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d"
-    log "Containers running"
+    log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
+    ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$([ -f .secrets ] && echo '--env-file .secrets') up -d --force-recreate"
+    log "Container rebuilt and running"
 }
 
 # ── Main ────────────────────────────────────────────────────────────────
