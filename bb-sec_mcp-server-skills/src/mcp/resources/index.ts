@@ -8,16 +8,14 @@ import {
   getVmSshAlias,
   getServicesForVm,
   resolveVmId,
-} from "../config.js";
+} from "../../shared/config.js";
 import {
   CONFIG_PATH,
   SSH_CONFIG_PATH,
   SOLUTIONS_DIR,
   FRONT_DIR,
-  RUST_API_MESH,
-  RUST_API_PUBLIC,
-} from "../utils/paths.js";
-import { rustApiGet } from "../utils/http.js";
+} from "../../shared/paths.js";
+import { listServices } from "../../shared/discovery.js";
 
 export function registerResources(server: McpServer) {
   server.resource("config", "cloud://config", async (uri) => {
@@ -154,47 +152,61 @@ export function registerResources(server: McpServer) {
     };
   });
 
-  server.resource("rust-api-endpoints", "cloud://rust-api-endpoints", async (uri) => {
-    const text = `# Rust API → MCP Tool Mapping
+  server.resource("c3-api-endpoints", "cloud://c3-api-endpoints", async (uri) => {
+    const text = `# C3 API — Cloud Control Center
 
-Base URL (mesh): ${RUST_API_MESH}
-Fallback (public): ${RUST_API_PUBLIC}
+API: api.diegonmarcos.com/c3-api/ (port 8081 via WG mesh)
+MCP tools call shared/ layer directly (no HTTP proxy needed).
 
-## Health (Waiter Read)
+## Health
 | Endpoint | MCP Tool |
 |----------|----------|
-| GET /api/health | health_alive |
-| GET /api/health/declared | health_declared |
-| GET /api/health/deployed[/{vm}] | health_deployed |
-| GET /api/health/drift | health_drift |
-| GET /api/health/status[/{vm}] | health_status |
-| GET /api/profiling/{container} | profile_container |
-| GET /api/profiling/vm/{vm_id} | profile_vm |
+| GET /health | health_alive |
+| GET /health/declared | health_declared |
+| GET /health/deployed[/{vm}] | health_deployed |
+| GET /health/drift | health_drift |
+| GET /health/status[/{vm}] | health_status |
+| GET /profiling/{container} | profile_container |
+| GET /profiling/vm/{vm_id} | profile_vm |
 
-## Discovery (Waiter Read)
+## Discovery
 | Endpoint | MCP Tool |
 |----------|----------|
-| GET /api/services | service_list_apis |
-| GET /api/services/{service} | service_get_info |
-| GET /api/services/{service}/spec | service_get_spec |
-| GET /api/services/all/specs | service_discover_all |
+| GET /services | service_list_apis |
+| GET /services/{service} | service_get_info |
+| GET /services/{service}/spec | service_get_spec |
+| GET /services/all/specs | service_discover_all |
 
-## Control (Waiter Write)
+## Control
 | Endpoint | MCP Tool |
 |----------|----------|
-| POST /api/vms/{vm_id}/start | vm_start |
-| POST /api/vms/{vm_id}/stop | vm_stop |
-| POST /api/vms/{vm_id}/reset | vm_reset |
-| POST /api/vms/{vm_id}/containers/{name}/start | container_start |
-| POST /api/vms/{vm_id}/containers/{name}/stop | container_stop |
-| POST /api/vms/{vm_id}/containers/{name}/restart | container_restart |
-| POST /api/vms/{vm_id}/services/{service}/start | service_start |
-| POST /api/vms/{vm_id}/services/{service}/stop | service_stop |
+| POST /vms/{vm_id}/start | vm_start |
+| POST /vms/{vm_id}/stop | vm_stop |
+| POST /vms/{vm_id}/reset | vm_reset |
+| POST /vms/{vm_id}/containers/{name}/start | container_start |
+| POST /vms/{vm_id}/containers/{name}/stop | container_stop |
+| POST /vms/{vm_id}/containers/{name}/restart | container_restart |
+| POST /vms/{vm_id}/services/{service}/start | service_start |
+| POST /vms/{vm_id}/services/{service}/stop | service_stop |
 
-## Proxy (Waiter Proxy)
+## Proxy
 | Usage | MCP Tool |
 |-------|----------|
 | Any service endpoint via discovery | service_api_call |
+
+## C3 New
+| Endpoint | MCP Tool |
+|----------|----------|
+| GET /topology | c3_topology |
+| GET /topology/drift | c3_topology_drift |
+| GET /topology/security | c3_topology_security |
+| GET /tests/run/{suite} | c3_test |
+| GET /files/config/{service} | c3_file |
+| GET /files/report/{type} | c3_report |
+| GET /files/status/{vm} | c3_vm_status |
+| GET /health/tier1 | health_tier1 |
+| GET /health/tier2 | health_tier2 |
+| GET /health/tier3 | health_tier3 |
 
 `;
 
@@ -208,15 +220,8 @@ Fallback (public): ${RUST_API_PUBLIC}
   });
 
   server.resource("service-apis", "cloud://service-apis", async (uri) => {
-    const result = rustApiGet("/api/services");
-    let text: string;
-
-    if (!result.ok) {
-      text = `# Service API Catalog\n\nFailed to fetch from Rust API: ${result.error ?? "unavailable"}\n\nTried mesh (${RUST_API_MESH}) and public (${RUST_API_PUBLIC}). Use health_alive to check.`;
-    } else {
-      const services = result.data as Record<string, unknown>[] | Record<string, unknown>;
-      text = `# Service API Catalog (Live)\n\nFetched from Rust API (mesh ${RUST_API_MESH} or public ${RUST_API_PUBLIC})\n\n\`\`\`json\n${JSON.stringify(services, null, 2)}\n\`\`\``;
-    }
+    const services = listServices();
+    const text = `# Service API Catalog\n\n${services.length} services discovered from config.\n\n\`\`\`json\n${JSON.stringify(services, null, 2)}\n\`\`\``;
 
     return {
       contents: [{

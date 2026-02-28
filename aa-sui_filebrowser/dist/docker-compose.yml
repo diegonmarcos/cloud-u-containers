@@ -1,5 +1,5 @@
 # Filebrowser - Web file manager
-# Deployed on: oci-p-flex_1 (Oracle Flex)
+# Deployed on: oci-A1-f_1 (Oracle Flex)
 
 services:
   filebrowser:
@@ -7,7 +7,7 @@ services:
     container_name: filebrowser_app
     restart: "no"
     ports:
-      - "10.0.0.2:3015:80"
+      - "10.0.0.6:3015:80"
     volumes:
       - filebrowser_data:/srv
       - filebrowser_db:/database

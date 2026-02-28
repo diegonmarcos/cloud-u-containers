@@ -1,0 +1,22 @@
+services:
+  c3-api:
+    image: ghcr.io/diegonmarcos/c3-api:latest
+    container_name: c3-api
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - /opt/containers/c3-api/config.json:/app/config/config.json:ro
+      - ~/.ssh:/root/.ssh:ro
+    env_file:
+      - .secrets
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - CONFIG_JSON_PATH=/app/config/config.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

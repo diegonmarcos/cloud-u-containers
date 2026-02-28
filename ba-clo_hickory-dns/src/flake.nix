@@ -22,11 +22,11 @@
       ntfy     = { ip = "10.0.0.1"; desc = "Push notifications"; };
       dns      = { ip = "10.0.0.1"; desc = "Hickory DNS"; };
 
-      # oci-apps-1 (10.0.0.2)
-      photos   = { ip = "10.0.0.2"; desc = "PhotoPrism"; };
-      db       = { ip = "10.0.0.2"; desc = "NocoDB"; };
-      ide      = { ip = "10.0.0.2"; desc = "Code Server"; };
-      affine   = { ip = "10.0.0.2"; desc = "AFFiNE"; };
+      # oci-apps (10.0.0.6)
+      photos   = { ip = "10.0.0.6"; desc = "PhotoPrism"; };
+      db       = { ip = "10.0.0.6"; desc = "NocoDB"; };
+      ide      = { ip = "10.0.0.6"; desc = "Code Server"; };
+      affine   = { ip = "10.0.0.6"; desc = "AFFiNE"; };
 
       # oci-mail (10.0.0.3)
       mail     = { ip = "10.0.0.3"; desc = "Mailu"; };
@@ -41,7 +41,6 @@
     # VM reverse map for PTR records
     vms = {
       "1" = "gcp-proxy";
-      "2" = "oci-apps-1";
       "3" = "oci-mail";
       "4" = "oci-analytics";
       "6" = "oci-apps";

@@ -183,7 +183,7 @@
 </div>
 <h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
-<tr><td><code>port_http</code></td><td><code>3000</code></td></tr>
+<tr><td><code>port_http</code></td><td><code>3017</code></td></tr>
 <tr><td><code>port_ssh</code></td><td><code>2222</code></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
@@ -195,8 +195,8 @@
     container_name: gitea
     restart: unless-stopped
     ports:
-      - "10.0.0.2:3000:3000"
-      - "10.0.0.2:2222:22"
+      - "10.0.0.6:3017:3000"
+      - "10.0.0.6:2222:22"
     volumes:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro

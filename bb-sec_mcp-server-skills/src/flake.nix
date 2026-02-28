@@ -1,5 +1,5 @@
 {
-  description = "cloud-infra MCP server for Claude Code — containerized with debian-slim";
+  description = "C3 — Cloud Control Center: MCP server + Fastify API";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -9,27 +9,38 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "cloud-infra-mcp";
-      image = "cloud-infra-mcp:latest";
+      container_name = "c3-api";
+      image = "ghcr.io/diegonmarcos/c3-api:latest";
+      port = 8081;   # parallel with Rust API on 8080 — swap to 8080 after cutover
     };
 
-    title = "cloud-infra MCP server for Claude Code — containerized with debian-slim";
+    title = "C3 — Cloud Control Center";
 
-    # podman-compose.yml — stdio MCP server with host volume mounts (runs in Podman on Termux)
-    mkDockerCompose = pkgs: pkgs.writeText "podman-compose.yml" ''
+    # ── docker-compose.yml for C3 API deployment ────────────────────────
+    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
-        mcp-server:
-          build: .
-          container_name: ${config.container_name}
+        c3-api:
           image: ${config.image}
-          stdin_open: true
-          environment:
-            - HOME=''${HOME}
+          container_name: ${config.container_name}
+          restart: unless-stopped
+          ports:
+            - "${toString config.port}:8080"
           volumes:
-            - ''${HOME}/git:''${HOME}/git:ro
-            - ''${HOME}/.ssh:''${HOME}/.ssh:ro
+            - /opt/containers/c3-api/config.json:/app/config/config.json:ro
+            - ~/.ssh:/root/.ssh:ro
+          env_file:
+            - .secrets
+          environment:
+            - PORT=8080
+            - NODE_ENV=production
+            - CONFIG_JSON_PATH=/app/config/config.json
+          healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 15s
     '';
-
 
     # ── Documentation ────────────────────────────────────────────────────
     mkDocs = pkgs: defaultPkg: let
@@ -133,46 +144,9 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "mcp-server-skills" {} ''
-        mkdir -p $out/src/tools $out/src/utils $out/src/resources $out/src/prompts
-        mkdir -p $out/skills/official $out/skills/community
-
-        # Container files (Podman on Termux)
-        cp ${mkDockerCompose pkgs} $out/podman-compose.yml
-        cp ${./Dockerfile} $out/Dockerfile
-
-        # TypeScript source — root files
-        cp ${./index.ts} $out/src/index.ts
-        cp ${./types.ts} $out/src/types.ts
-        cp ${./config.ts} $out/src/config.ts
-
-        # TypeScript source — tools/
-        for f in ${./tools}/*.ts; do
-          cp "$f" "$out/src/tools/$(basename "$f")"
-        done
-
-        # TypeScript source — utils/
-        for f in ${./utils}/*.ts; do
-          cp "$f" "$out/src/utils/$(basename "$f")"
-        done
-
-        # TypeScript source — resources/ and prompts/
-        cp ${./resources/index.ts} $out/src/resources/index.ts
-        cp ${./prompts/index.ts} $out/src/prompts/index.ts
-
-        # Skill files — reference docs only (SKILL.md content migrated to MCP prompts)
-        cp ${./skills/skills.md} $out/skills/skills.md
-        cp ${./skills/skills_claude.md} $out/skills/skills_claude.md
-        cp ${./skills/skills_front.md} $out/skills/skills_front.md
-        cp ${./skills/skills_claude_front.md} $out/skills/skills_claude_front.md
-
-        # Skill files — community + official templates (senior/junior removed — migrated to MCP prompts)
-        for f in ${./skills/official}/*; do
-          cp "$f" "$out/skills/official/$(basename "$f")"
-        done
-        for f in ${./skills/community}/*; do
-          cp "$f" "$out/skills/community/$(basename "$f")"
-        done
+      defaultPkg = pkgs.runCommand "c3-api-configs" {} ''
+        mkdir -p $out
+        cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';
     in {
       default = defaultPkg;

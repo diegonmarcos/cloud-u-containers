@@ -1,5 +1,5 @@
 import { exec, type ExecResult } from "./exec.js";
-import { getConfig, resolveVmId, getVmSshAlias } from "../config.js";
+import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
 
 export function sshExec(
@@ -20,9 +20,12 @@ export function sshExec(
 
 export function checkVmReachable(vmNameOrAlias: string): ExecResult {
   const vmId = resolveVmId(vmNameOrAlias);
-  const alias = getVmSshAlias(vmId);
+  const config = getConfig();
+  const vmConfig = config.vms[vmId];
 
-  return exec("ssh", ["-o", "ConnectTimeout=5", alias, "echo ok"], {
+  // ssh-keyscan: TCP connect + SSH handshake only — no auth, no PAM session
+  // Avoids 55s+ delays caused by slow PAM session creation on some VMs
+  return exec("ssh-keyscan", ["-T", "5", vmConfig.ip], {
     timeout: 10_000,
   });
 }

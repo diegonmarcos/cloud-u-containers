@@ -3,7 +3,7 @@
   "description": "Self-hosted Git service",
 
   "deploy": {
-    "host": "oci-apps-1",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/gitea"
   }
 }

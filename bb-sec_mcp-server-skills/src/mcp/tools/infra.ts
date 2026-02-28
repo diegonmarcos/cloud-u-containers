@@ -11,8 +11,8 @@ import {
   getVmSshAlias,
   getServicesForVm,
   resolveVmId,
-} from "../config.js";
-import { SOLUTIONS_DIR } from "../utils/paths.js";
+} from "../../shared/config.js";
+import { SOLUTIONS_DIR } from "../../shared/paths.js";
 
 export function registerInfraTools(server: McpServer) {
   server.tool("list_vms", "List all VMs with IP, user, SSH alias, and description", {}, async () => {

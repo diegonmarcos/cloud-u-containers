@@ -18,14 +18,14 @@
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # LGTM Stack - Grafana Labs Observability
-      # Deployed on: oci-A1-f_1 (Oracle Flex)
+      # Deployed on: oci-A1-f_0 (Oracle Flex — consolidated)
       services:
         grafana:
           image: grafana/grafana:latest
           container_name: lgtm_grafana
           restart: unless-stopped
           ports:
-            - "10.0.0.2:3016:3000"
+            - "10.0.0.6:3016:3000"
           volumes:
             - grafana_data:/var/lib/grafana
           environment:
@@ -48,7 +48,7 @@
           container_name: lgtm_loki
           restart: unless-stopped
           ports:
-            - "10.0.0.2:3017:3100"
+            - "10.0.0.6:3019:3100"
           volumes:
             - loki_data:/loki
           command: -config.file=/etc/loki/local-config.yaml
@@ -65,9 +65,9 @@
           container_name: lgtm_tempo
           restart: unless-stopped
           ports:
-            - "10.0.0.2:3018:3200"
-            - "10.0.0.2:4317:4317"
-            - "10.0.0.2:4318:4318"
+            - "10.0.0.6:3020:3200"
+            - "10.0.0.6:4317:4317"
+            - "10.0.0.6:4318:4318"
           volumes:
             - tempo_data:/var/tempo
             - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
@@ -80,7 +80,7 @@
           container_name: lgtm_mimir
           restart: unless-stopped
           ports:
-            - "10.0.0.2:3019:8080"
+            - "10.0.0.6:3021:8080"
           volumes:
             - mimir_data:/data
             - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro

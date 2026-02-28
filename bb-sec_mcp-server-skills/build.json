@@ -1,11 +1,15 @@
 {
   "name": "mcp-server-skills",
-  "description": "Cloud-infra MCP server for Claude Code (containerized debian-slim, local deploy)",
+  "description": "C3 — Cloud Control Center: MCP server + Fastify API (api.diegonmarcos.com)",
+
+  "docker": {
+    "registry": "ghcr.io",
+    "image": "diegonmarcos/c3-api",
+    "dockerfile": "Dockerfile"
+  },
 
   "deploy": {
-    "host": "local",
-    "docker_image": "cloud-infra-mcp:latest",
-    "skill_dest": "~/.claude/skills/personal-cloud-manager",
-    "mcp_name": "cloud-infra"
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/c3-api"
   }
 }

@@ -3,7 +3,7 @@
   "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
 
   "deploy": {
-    "host": "oci-apps-1",
+    "host": "oci-apps",
     "remote_path": "/home/ubuntu/radicale"
   }
 }

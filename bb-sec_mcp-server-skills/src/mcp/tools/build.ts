@@ -2,9 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { existsSync } from "fs";
 import { join } from "path";
-import { exec } from "../utils/exec.js";
-import { getServiceDir } from "../config.js";
-import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../utils/paths.js";
+import { exec } from "../../shared/exec.js";
+import { getServiceDir } from "../../shared/config.js";
+import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../../shared/paths.js";
 
 export function registerBuildTools(server: McpServer) {
   server.tool(

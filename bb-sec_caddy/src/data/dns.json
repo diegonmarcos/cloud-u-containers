@@ -38,10 +38,10 @@
       { "name": "api",      "ip": "10.0.0.1", "vm": "gcp-proxy",     "purpose": "API Gateway" },
       { "name": "ntfy",     "ip": "10.0.0.1", "vm": "gcp-proxy",     "purpose": "Push notifications" },
       { "name": "dns",      "ip": "10.0.0.1", "vm": "gcp-proxy",     "purpose": "Hickory DNS" },
-      { "name": "photos",   "ip": "10.0.0.2", "vm": "oci-apps-1",    "purpose": "PhotoPrism" },
-      { "name": "db",       "ip": "10.0.0.2", "vm": "oci-apps-1",    "purpose": "NocoDB" },
-      { "name": "ide",      "ip": "10.0.0.2", "vm": "oci-apps-1",    "purpose": "Code Server" },
-      { "name": "affine",   "ip": "10.0.0.2", "vm": "oci-apps-1",    "purpose": "AFFiNE" },
+      { "name": "photos",   "ip": "10.0.0.6", "vm": "oci-apps",      "purpose": "PhotoPrism" },
+      { "name": "db",       "ip": "10.0.0.6", "vm": "oci-apps",      "purpose": "NocoDB" },
+      { "name": "ide",      "ip": "10.0.0.6", "vm": "oci-apps",      "purpose": "Code Server" },
+      { "name": "affine",   "ip": "10.0.0.6", "vm": "oci-apps",      "purpose": "AFFiNE" },
       { "name": "mail",     "ip": "10.0.0.3", "vm": "oci-mail",      "purpose": "Mailu" },
       { "name": "sync",     "ip": "10.0.0.3", "vm": "oci-mail",      "purpose": "Syncthing" },
       { "name": "cal",      "ip": "10.0.0.3", "vm": "oci-mail",      "purpose": "Radicale" },
@@ -51,7 +51,6 @@
     ],
     "reverse": [
       { "ip": "10.0.0.1", "octet": "1", "hostname": "gcp-proxy.internal",     "vm": "gcp-proxy" },
-      { "ip": "10.0.0.2", "octet": "2", "hostname": "oci-apps-1.internal",    "vm": "oci-apps-1" },
       { "ip": "10.0.0.3", "octet": "3", "hostname": "oci-mail.internal",      "vm": "oci-mail" },
       { "ip": "10.0.0.4", "octet": "4", "hostname": "oci-analytics.internal", "vm": "oci-analytics" },
       { "ip": "10.0.0.6", "octet": "6", "hostname": "oci-apps.internal",      "vm": "oci-apps" }

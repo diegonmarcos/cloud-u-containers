@@ -11,7 +11,7 @@
     config = {
       container_name = "gitea";
       image = "gitea/gitea:latest";
-      port_http = 3000;
+      port_http = 3017;
       port_ssh = 2222;
     };
 
@@ -24,8 +24,8 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "10.0.0.2:${toString config.port_http}:3000"
-            - "10.0.0.2:${toString config.port_ssh}:22"
+            - "10.0.0.6:${toString config.port_http}:3000"
+            - "10.0.0.6:${toString config.port_ssh}:22"
           volumes:
             - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro

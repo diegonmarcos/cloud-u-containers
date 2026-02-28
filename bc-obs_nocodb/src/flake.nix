@@ -41,7 +41,7 @@
             - nocodb_data:/usr/app/data
             - /mnt/gcloud-sqlite:/sqlite:ro
           ports:
-            - "10.0.0.2:${toString config.port}:8080"
+            - "10.0.0.6:${toString config.port}:8080"
           networks:
             - nocodb_network
             - dev_network

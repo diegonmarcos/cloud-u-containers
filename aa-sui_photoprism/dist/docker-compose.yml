@@ -1,5 +1,5 @@
 # PhotoPrism - AI-powered photo management
-# Deployed on: oci-p-flex_1 (Oracle Flex)
+# Deployed on: oci-A1-f_1 (Oracle Flex)
 # Originals mounted from OCI Object Storage via rclone
 
 services:
@@ -50,7 +50,7 @@ services:
     container_name: photoprism_app
     restart: "no"
     ports:
-      - "10.0.0.2:3013:2342"
+      - "10.0.0.6:3013:2342"
     volumes:
       - photoprism_storage:/photoprism/storage
       - /opt/containers/photoprism/originals:/photoprism/originals:ro

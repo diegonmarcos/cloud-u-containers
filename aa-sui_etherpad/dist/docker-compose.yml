@@ -1,5 +1,5 @@
 # Etherpad - Real-time collaborative document editor
-# Deployed on: oci-p-flex_1 (Oracle Flex)
+# Deployed on: oci-A1-f_1 (Oracle Flex)
 
 services:
   etherpad:
@@ -7,7 +7,7 @@ services:
     container_name: etherpad_app
     restart: "no"
     ports:
-      - "10.0.0.2:3012:9001"
+      - "10.0.0.6:3012:9001"
     volumes:
       - etherpad_data:/opt/etherpad-lite/var
     environment:

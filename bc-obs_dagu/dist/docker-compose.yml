@@ -1,0 +1,35 @@
+services:
+  dagu:
+    image: ghcr.io/dagu-org/dagu:1.30.3
+    container_name: dagu
+    restart: unless-stopped
+    entrypoint: []
+    command: ["dagu", "start-all"]
+    ports:
+      - "10.0.0.3:8070:8080"
+    environment:
+      - DAGU_HOST=0.0.0.0
+      - DAGU_PORT=8080
+      - DAGU_DAGS_DIR=/var/lib/dagu/dags
+      - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
+      - DAGU_AUTH_MODE=basic
+      - DAGU_AUTH_BASIC_USERNAME=${DAGU_USERNAME}
+      - DAGU_AUTH_BASIC_PASSWORD=${DAGU_PASSWORD}
+      - DAGU_TZ=Europe/Berlin
+      - BEARER_TOKEN=${BEARER_TOKEN}
+    volumes:
+      - dagu-data:/var/lib/dagu
+      - ./dags:/var/lib/dagu/dags:ro
+      - ./base.yaml:/var/lib/dagu/base.yaml:ro
+    mem_limit: 64m
+    networks:
+      - default
+      - mailu_default
+
+volumes:
+  dagu-data:
+    driver: local
+
+networks:
+  mailu_default:
+    external: true

@@ -2,26 +2,28 @@ FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# System deps: SSH for remote VM commands, curl for API calls, git for repo search
+# System deps: SSH for remote VM commands, curl for healthcheck + API calls, ping for WG checks
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
+    iputils-ping \
     curl \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install npm dependencies
+# Install npm dependencies (src/package.json is the Docker-context copy)
 COPY package.json ./
-RUN npm install
+RUN npm install --omit=dev && npm install tsx
 
-# Copy TypeScript config and source
+# Copy TypeScript config and source (context = src/)
 COPY tsconfig.json ./
-COPY src/ ./src/
+COPY shared/ ./src/shared/
+COPY api/ ./src/api/
 
-# Type-check at build time
-RUN npx tsc --noEmit
+# SSH: known_hosts for host key verification
+RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 
-# Drop privileges — node:22 images include the 'node' user
-USER node
+EXPOSE 8080
 
-# MCP stdio transport — no port exposed
-CMD ["npx", "tsx", "src/index.ts"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["npx", "tsx", "src/api/index.ts"]

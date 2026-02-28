@@ -24,7 +24,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "10.0.0.2:${toString config.port}:5232"
+            - "10.0.0.6:${toString config.port}:5232"
           volumes:
             - ./data:/data
             - ./config:/config:ro

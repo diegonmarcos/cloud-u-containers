@@ -1,5 +1,5 @@
 import { exec } from "./exec.js";
-import { RUST_API_MESH, RUST_API_PUBLIC, AUTHELIA_TOKEN_PATH } from "./paths.js";
+import { C3_API_MESH, C3_API_PUBLIC, AUTHELIA_TOKEN_PATH } from "./paths.js";
 import { readFileSync } from "fs";
 
 export interface HttpResult {
@@ -69,7 +69,12 @@ function httpRequest(
   };
 }
 
-function getBearerToken(): string | null {
+export function getBearerToken(): string | null {
+  // Container: token from env var
+  const envToken = process.env.AUTHELIA_BEARER_TOKEN;
+  if (envToken) return envToken;
+
+  // Local: token from file
   try {
     const tokens = JSON.parse(readFileSync(AUTHELIA_TOKEN_PATH, "utf-8"));
     return tokens.access_token || null;
@@ -78,9 +83,9 @@ function getBearerToken(): string | null {
   }
 }
 
-export function rustApiGet(endpoint: string, timeout?: number): HttpResult {
+export function c3ApiGet(endpoint: string, timeout?: number): HttpResult {
   // Try WireGuard mesh first
-  const meshResult = httpRequest("GET", `${RUST_API_MESH}${endpoint}`, undefined, timeout);
+  const meshResult = httpRequest("GET", `${C3_API_MESH}${endpoint}`, undefined, timeout);
 
   if (meshResult.ok || meshResult.status !== 0) {
     return meshResult;
@@ -91,7 +96,7 @@ export function rustApiGet(endpoint: string, timeout?: number): HttpResult {
   if (token) {
     return httpRequest(
       "GET",
-      `${RUST_API_PUBLIC}${endpoint}`,
+      `${C3_API_PUBLIC}${endpoint}`,
       undefined,
       timeout,
       { Authorization: `Bearer ${token}` }
@@ -102,9 +107,9 @@ export function rustApiGet(endpoint: string, timeout?: number): HttpResult {
   return meshResult;
 }
 
-export function rustApiPost(endpoint: string, body?: string, timeout?: number): HttpResult {
+export function c3ApiPost(endpoint: string, body?: string, timeout?: number): HttpResult {
   // Try WireGuard mesh first
-  const meshResult = httpRequest("POST", `${RUST_API_MESH}${endpoint}`, body, timeout);
+  const meshResult = httpRequest("POST", `${C3_API_MESH}${endpoint}`, body, timeout);
 
   if (meshResult.ok || meshResult.status !== 0) {
     return meshResult;
@@ -115,7 +120,7 @@ export function rustApiPost(endpoint: string, body?: string, timeout?: number): 
   if (token) {
     return httpRequest(
       "POST",
-      `${RUST_API_PUBLIC}${endpoint}`,
+      `${C3_API_PUBLIC}${endpoint}`,
       body,
       timeout,
       { Authorization: `Bearer ${token}` }

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { rawHttpRequest, type HttpResult } from "../utils/http.js";
-import { CRAWLEE_API_TOKEN_PATH } from "../utils/paths.js";
+import { rawHttpRequest, type HttpResult } from "../../shared/http.js";
+import { CRAWLEE_API_TOKEN_PATH } from "../../shared/paths.js";
 import { readFileSync } from "fs";
 
 // Crawlee Cloud API on oci-apps via WireGuard

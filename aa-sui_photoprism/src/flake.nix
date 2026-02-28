@@ -81,7 +81,7 @@
           container_name: ${config.app_container}
           restart: "no"
           ports:
-            - "10.0.0.2:${toString config.app_port}:2342"
+            - "10.0.0.6:${toString config.app_port}:2342"
           volumes:
             - photoprism_storage:/photoprism/storage
             - /opt/containers/photoprism/originals:/photoprism/originals:ro

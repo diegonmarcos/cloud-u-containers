@@ -1,0 +1,39 @@
+services:
+  orchestrator:
+    build: .
+    image: orchestrator:local
+    container_name: orchestrator
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./orchestrator.sh:/app/orchestrator.sh:ro
+      - ./manifest.json:/app/manifest.json:ro
+      - orchestrator_state:/app/state
+      - orchestrator_logs:/app/logs
+    environment:
+      - API_PORT=9100
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:9100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - dev_network
+
+volumes:
+  orchestrator_state:
+  orchestrator_logs:
+
+networks:
+  dev_network:
+    external: true
+    name: dev_network

@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { sshExec } from "../utils/ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../config.js";
-import { audit } from "../utils/audit.js";
+import { sshExec } from "../../shared/ssh.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/config.js";
+import { audit } from "../../shared/audit.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 const SAFE_SINCE_RE = /^\d+[smhd]$|^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/;
