@@ -126,6 +126,198 @@
                 {"topic":"infra","title":"Mesh Health OK","message":"All always-on peers reachable","priority":2,"tags":["white_check_mark"]}
             command: POST ''${NTFY_URL}
       '';
+
+      # ── System Health Check (daily) ──
+      system-check = pkgs.writeText "system-check.yaml" ''
+        schedule: "0 9 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-disk-space
+            command: df -h / | awk 'NR==2 {if (substr($5,1,length($5)-1) > 80) exit 1}'
+          - name: check-memory
+            command: free | awk 'NR==2 {if ($3/$2 > 0.9) exit 1}'
+          - name: check-load
+            command: bash -c "uptime | awk '{if ($(NF-2) > 2.0) exit 1}'"
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"system","title":"System Health Alert","message":"High resource usage detected on oci-mail","priority":4,"tags":["warning"]}
+            command: POST ''${NTFY_URL}
+
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"system","title":"System Health OK","message":"All system resources within limits","priority":1,"tags":["white_check_mark"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Docker Health Check (daily) ──
+      docker-check = pkgs.writeText "docker-check.yaml" ''
+        schedule: "0 10 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-unhealthy
+            command: bash -c "[ $(docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l) -eq 0 ]"
+          - name: check-exited
+            command: bash -c "[ $(docker ps -a --filter status=exited --format '{{.Names}}' | wc -l) -eq 0 ]"
+          - name: check-restart-count
+            command: bash -c "docker ps --format '{{.RestartCount}}' | awk '{if ($1 > 5) exit 1}'"
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"docker","title":"Docker Health Issues","message":"Unhealthy or crashed containers detected","priority":4,"tags":["whale","warning"]}
+            command: POST ''${NTFY_URL}
+
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"docker","title":"Docker Health OK","message":"All containers healthy","priority":1,"tags":["whale","white_check_mark"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Backup Check (daily) ──
+      backup-check = pkgs.writeText "backup-check.yaml" ''
+        schedule: "0 11 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-backup-age
+            command: bash -c "find /var/backups -name '*.sql.gz' -mtime -1 | grep -q ."
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"backup","title":"Backup Alert","message":"No recent backups found (>24h old)","priority":4,"tags":["floppy_disk","warning"]}
+            command: POST ''${NTFY_URL}
+
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"backup","title":"Backup OK","message":"Recent backups verified","priority":1,"tags":["floppy_disk","white_check_mark"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Security Audit (daily) ──
+      security-audit = pkgs.writeText "security-audit.yaml" ''
+        schedule: "0 12 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-failed-ssh
+            command: bash -c "[ $(grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d)) -lt 10 ]"
+          - name: check-root-login
+            command: bash -c "! grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -q $(date +%b\ %d)"
+          - name: check-sudo-usage
+            command: bash -c "grep COMMAND /var/log/auth.log 2>/dev/null | grep $(date +%b\ %d) || true"
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"security","title":"Security Alert","message":"Suspicious authentication activity detected","priority":5,"tags":["lock","rotating_light"]}
+            command: POST ''${NTFY_URL}
+
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"security","title":"Security Audit OK","message":"No suspicious activity detected today","priority":1,"tags":["lock","white_check_mark"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Ops Summary (daily) ──
+      ops-summary = pkgs.writeText "ops-summary.yaml" ''
+        schedule: "0 18 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: true
+
+        steps:
+          - name: gather-stats
+            command: bash -c "uptime && docker ps --format '{{.Names}}: {{.Status}}' | wc -l"
+
+        handlerOn:
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational - $(uptime | awk '{print $1}')","priority":1,"tags":["chart_with_upwards_trend"]}
+            command: POST ''${NTFY_URL}
+      '';
     };
 
     # ── Documentation ────────────────────────────────────────────────────
@@ -235,6 +427,11 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBaseConfig pkgs} $out/base.yaml
         cp ${dags.healthcheck} $out/dags/healthcheck.yaml
+        cp ${dags.system-check} $out/dags/system-check.yaml
+        cp ${dags.docker-check} $out/dags/docker-check.yaml
+        cp ${dags.backup-check} $out/dags/backup-check.yaml
+        cp ${dags.security-audit} $out/dags/security-audit.yaml
+        cp ${dags.ops-summary} $out/dags/ops-summary.yaml
       '';
     in {
       default = defaultPkg;
