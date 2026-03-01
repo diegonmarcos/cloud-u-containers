@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
 import { resolveVmId } from "../../shared/config.js";
 
@@ -18,7 +19,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Security"],
         summary: "Full security scan across VMs",
-        querystring: securityScanSchema,
+        querystring: zodToJsonSchema(securityScanSchema, "securityScanSchema"),
         response: { 200: { type: "object" } },
       },
     },
@@ -35,7 +36,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Security"],
         summary: "Docker-specific security checks",
-        querystring: vmSchema,
+        querystring: zodToJsonSchema(vmSchema, "vmSchema"),
         response: { 200: { type: "object" } },
       },
     },
@@ -52,7 +53,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Security"],
         summary: "SSH key permissions and config check",
-        querystring: vmSchema,
+        querystring: zodToJsonSchema(vmSchema, "vmSchema"),
         response: { 200: { type: "object" } },
       },
     },

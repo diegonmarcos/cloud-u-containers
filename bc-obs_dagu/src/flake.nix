@@ -19,7 +19,10 @@
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
         dagu:
-          image: ${config.image}
+          build:
+            context: .
+            dockerfile: Dockerfile
+          image: dagu-ssh:local
           container_name: ${config.container_name}
           restart: unless-stopped
           command: ["dagu", "start-all"]
@@ -36,7 +39,7 @@
             - DAGU_TZ=Europe/Berlin
             - BEARER_TOKEN=''${BEARER_TOKEN}
           volumes:
-            - dagu-data:/var/lib/dagu
+            - ./data:/var/lib/dagu/data
             - ./dags:/var/lib/dagu/dags
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
             - ~/.ssh:/root/.ssh:ro
@@ -44,10 +47,6 @@
           networks:
             - default
             - mailu_default
-
-      volumes:
-        dagu-data:
-          driver: local
 
       networks:
         mailu_default:
@@ -721,6 +720,7 @@
         mkdir -p $out/dags
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBaseConfig pkgs} $out/base.yaml
+        cp ${./Dockerfile} $out/Dockerfile
         cp ${dags.healthcheck} $out/dags/healthcheck.yaml
         cp ${dags.system-check} $out/dags/system-check.yaml
         cp ${dags.docker-check} $out/dags/docker-check.yaml
