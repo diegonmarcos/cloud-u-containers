@@ -3,7 +3,9 @@ services:
     image: redis:alpine
     container_name: redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    env_file:
+      - .secrets
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
     volumes:
       - /data/redis:/data
     healthcheck:
