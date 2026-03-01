@@ -1,6 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { assembleTopology, getTopologyDrift, getSecurityTopology } from "../../shared/topology.js";
+import {
+  assembleTopology,
+  getTopologyDrift,
+  getSecurityTopology,
+  networkTopology,
+  volumeTopology,
+  imageTopology,
+  dependencyTopology,
+} from "../../shared/topology.js";
 import { runTestSuite } from "../../shared/tests.js";
 import { getConfigFile, getContainerLog, getVmStatus, getReport, getSecretsStatus } from "../../shared/files.js";
 import { checkTier1All, checkTier2All, checkTier3All } from "../../shared/health.js";
@@ -45,8 +53,23 @@ export function registerC3Tools(server: McpServer) {
     "c3_test",
     "Run an infrastructure test suite to validate the cloud is working",
     {
-      suite: z.enum(["connectivity", "dns", "tls", "routes", "containers", "wireguard", "full"])
-        .describe("Test suite to run"),
+      suite: z.enum([
+        "connectivity",
+        "dns",
+        "tls",
+        "routes",
+        "containers",
+        "wireguard",
+        "auth",
+        "secrets",
+        "compose",
+        "volumes",
+        "resources",
+        "latency",
+        "images",
+        "cross-vm",
+        "full",
+      ]).describe("Test suite to run"),
       target: z.string().optional().describe("Optional target (VM ID/alias for connectivity/containers, domain for dns/tls/routes)"),
     },
     async ({ suite, target }) => jsonText(`Test suite: ${suite}`, runTestSuite(suite, target)),
@@ -76,9 +99,9 @@ export function registerC3Tools(server: McpServer) {
 
   server.tool(
     "c3_report",
-    "Generate a text report (health, services, drift)",
+    "Generate a text report (health, services, drift, resources, security)",
     {
-      type: z.enum(["health", "services", "drift"]).describe("Report type"),
+      type: z.enum(["health", "services", "drift", "resources", "security"]).describe("Report type"),
     },
     async ({ type }) => plainText(getReport(type)),
   );
@@ -128,5 +151,35 @@ export function registerC3Tools(server: McpServer) {
       const vmId = vm ? resolveVmId(vm) : undefined;
       return jsonText("Tier 3 health", checkTier3All(vmId));
     },
+  );
+
+  // ── Extended Topology (4 tools) ──
+
+  server.tool(
+    "c3_topology_network",
+    "Show Docker networks per VM with connected containers",
+    {},
+    async () => jsonText("Network topology", networkTopology()),
+  );
+
+  server.tool(
+    "c3_topology_volumes",
+    "Show Docker volumes per VM",
+    {},
+    async () => jsonText("Volume topology", volumeTopology()),
+  );
+
+  server.tool(
+    "c3_topology_images",
+    "Show Docker images per VM",
+    {},
+    async () => jsonText("Image topology", imageTopology()),
+  );
+
+  server.tool(
+    "c3_topology_dependencies",
+    "Show service dependencies (depends_on from compose files)",
+    {},
+    async () => jsonText("Dependency topology", dependencyTopology()),
   );
 }

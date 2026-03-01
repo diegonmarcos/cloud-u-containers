@@ -15,6 +15,9 @@ import { registerServicesRoutes } from "./routes/services.js";
 import { registerTopologyRoutes } from "./routes/topology.js";
 import { registerTestsRoutes } from "./routes/tests.js";
 import { registerFilesRoutes } from "./routes/files.js";
+import { registerSecurityRoutes } from "./routes/security.js";
+import { registerNotifyRoutes } from "./routes/notify.js";
+import { registerDatabaseRoutes } from "./routes/database.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -41,6 +44,9 @@ export async function buildApp() {
         { name: "Topology", description: "Declarative topology assembly" },
         { name: "Tests", description: "Dynamic infrastructure tests" },
         { name: "Files", description: "Config files, logs, reports, and secrets status" },
+        { name: "Security", description: "Security scanning and auditing" },
+        { name: "Notifications", description: "Push notifications via ntfy" },
+        { name: "Database", description: "SQLite persistence and audit logs" },
       ],
     },
   });
@@ -71,6 +77,9 @@ export async function buildApp() {
   await app.register(registerTopologyRoutes);
   await app.register(registerTestsRoutes);
   await app.register(registerFilesRoutes);
+  await app.register(registerSecurityRoutes);
+  await app.register(registerNotifyRoutes);
+  await app.register(registerDatabaseRoutes);
 
   return app;
 }

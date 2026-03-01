@@ -9,9 +9,26 @@ import {
   checkTier1All,
   checkTier2All,
   checkTier3All,
+  healthEndpoints,
+  metricsSnapshot,
 } from "../../shared/health.js";
-import { profileContainer, profileVm } from "../../shared/diagnostics.js";
-import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
+import {
+  profileContainer,
+  profileVm,
+  profileService,
+  vmNetwork,
+  vmTop,
+  vmDiskUsage,
+  vmJournal,
+} from "../../shared/diagnostics.js";
+import {
+  listServices,
+  getService,
+  probeSpec,
+  getAllSpecs,
+  serviceVersion,
+  allServiceVersions,
+} from "../../shared/discovery.js";
 import { resolveVmId } from "../../shared/config.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
@@ -118,4 +135,114 @@ export function registerHealthTools(server: McpServer) {
     const truncated = text.length > 15000 ? `...(truncated)\n${text.slice(-15000)}` : text;
     return { content: [{ type: "text" as const, text: `All service specs:\n\n${truncated}` }] };
   });
+
+  server.tool(
+    "service_version",
+    "Get version info for a service (via API endpoint)",
+    { service: z.string().describe("Service name") },
+    async ({ service }) => {
+      return jsonText(`Version: ${service}`, serviceVersion(service));
+    }
+  );
+
+  server.tool("service_all_versions", "Get version info for all services", {}, async () => {
+    return jsonText("All service versions", allServiceVersions());
+  });
+
+  // ── Tiered Health Checks (3 tools) ──
+
+  server.tool(
+    "health_tier1",
+    "Quick UP check: TCP/SSH-keyscan reachability for all VMs (~2s)",
+    { vm: z.string().optional().describe("Filter by VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = vm ? resolveVmId(vm) : undefined;
+      return jsonText("Tier 1 Health", checkTier1All(vmId));
+    }
+  );
+
+  server.tool(
+    "health_tier2",
+    "SSH session check: full authentication test for all VMs (~5s)",
+    { vm: z.string().optional().describe("Filter by VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = vm ? resolveVmId(vm) : undefined;
+      return jsonText("Tier 2 Health", checkTier2All(vmId));
+    }
+  );
+
+  server.tool(
+    "health_tier3",
+    "Full probe: resources + docker ps for all VMs (~8s)",
+    { vm: z.string().optional().describe("Filter by VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = vm ? resolveVmId(vm) : undefined;
+      return jsonText("Tier 3 Health", checkTier3All(vmId));
+    }
+  );
+
+  // ── Advanced Health & Metrics (2 tools) ──
+
+  server.tool("health_endpoints", "Probe HTTP health endpoints for all services", {}, async () => {
+    return jsonText("Endpoint Health", healthEndpoints());
+  });
+
+  server.tool("metrics_snapshot", "Get current container metrics (CPU, memory, I/O)", {}, async () => {
+    return jsonText("Container Metrics", metricsSnapshot());
+  });
+
+  // ── Extended Profiling (5 tools) ──
+
+  server.tool(
+    "profile_service",
+    "Profile all containers for a service (by service name)",
+    { service: z.string().describe("Service name") },
+    async ({ service }) => {
+      return jsonText(`Profile service: ${service}`, profileService(service));
+    }
+  );
+
+  server.tool(
+    "vm_network",
+    "Show network configuration for a VM (interfaces, routes, WireGuard)",
+    { vm: z.string().describe("VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = resolveVmId(vm);
+      return jsonText(`Network: ${vm}`, vmNetwork(vmId));
+    }
+  );
+
+  server.tool(
+    "vm_top",
+    "Show top processes on a VM",
+    { vm: z.string().describe("VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = resolveVmId(vm);
+      return jsonText(`Top: ${vm}`, vmTop(vmId));
+    }
+  );
+
+  server.tool(
+    "vm_disk_usage",
+    "Show disk usage breakdown on a VM (du -sh per directory)",
+    { vm: z.string().describe("VM ID or alias") },
+    async ({ vm }) => {
+      const vmId = resolveVmId(vm);
+      return jsonText(`Disk usage: ${vm}`, vmDiskUsage(vmId));
+    }
+  );
+
+  server.tool(
+    "vm_journal",
+    "Get recent systemd journal logs from a VM",
+    {
+      vm: z.string().describe("VM ID or alias"),
+      lines: z.number().optional().describe("Number of lines (default: 100)"),
+      unit: z.string().optional().describe("Filter by systemd unit (e.g. 'docker')"),
+    },
+    async ({ vm, lines, unit }) => {
+      const vmId = resolveVmId(vm);
+      return jsonText(`Journal: ${vm}`, vmJournal(vmId, lines, unit));
+    }
+  );
 }

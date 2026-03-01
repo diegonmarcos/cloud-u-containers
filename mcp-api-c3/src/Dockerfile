@@ -3,10 +3,13 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 # System deps: SSH for remote VM commands, curl for healthcheck + API calls, ping for WG checks
+# Build tools for better-sqlite3 (native module) — only needed if prebuilt binaries fail
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     iputils-ping \
     curl \
+    python3 \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install npm dependencies (src/package.json is the Docker-context copy)

@@ -4,11 +4,13 @@ import {
   vmStart,
   vmStop,
   vmReset,
+  vmDrain,
   containerStart,
   containerStop,
   containerRestart,
   serviceStart,
   serviceStop,
+  serviceRestart,
 } from "../../shared/control.js";
 
 function formatControl(result: { ok: boolean; message: string }) {
@@ -94,5 +96,22 @@ export function registerControlTools(server: McpServer) {
       service: z.string().describe("Service name"),
     },
     async ({ vm, service }) => formatControl(serviceStop(vm, service)),
+  );
+
+  server.tool(
+    "service_restart",
+    "Restart all containers for a service (compose down + up)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      service: z.string().describe("Service name"),
+    },
+    async ({ vm, service }) => formatControl(serviceRestart(vm, service)),
+  );
+
+  server.tool(
+    "vm_drain",
+    "Gracefully stop all containers on a VM before maintenance",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => formatControl(vmDrain(vm)),
   );
 }
