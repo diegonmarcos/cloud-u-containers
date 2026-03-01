@@ -1,0 +1,32 @@
+schedule: "0 9 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: true
+
+steps:
+  - name: collect-auth-events
+    command: |
+      TOTAL=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=${vm_ip%:*}
+        name=${vm_ip#*:}
+        COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep -c 'Accepted publickey' /var/log/auth.log 2>/dev/null || echo 0")
+        TOTAL=$((TOTAL + COUNT))
+      done
+      echo "Total SSH logins (24h): $TOTAL"
+
+handlerOn:
+  success:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"auth","title":"Daily Auth Summary","message":"SSH activity aggregated across all VMs","priority":1,"tags":["key"]}
+    command: POST ${NTFY_URL}

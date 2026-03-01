@@ -1,0 +1,36 @@
+schedule: "0 12 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: false
+
+steps:
+  - name: check-all-auth-logs
+    command: |
+      FAILED=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=${vm_ip%:*}
+        name=${vm_ip#*:}
+        FAIL_COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+        ROOT_LOGIN=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+        if [ $FAIL_COUNT -gt 10 ] || [ $ROOT_LOGIN -gt 0 ]; then
+          echo "$name: failed_ssh=$FAIL_COUNT root_login=$ROOT_LOGIN"
+          FAILED=1
+        fi
+      done
+      exit $FAILED
+
+handlerOn:
+  failure:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"security","title":"Security Alert","message":"Suspicious authentication activity on one or more VMs","priority":5,"tags":["lock","rotating_light"]}
+    command: POST ${NTFY_URL}

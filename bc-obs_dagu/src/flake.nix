@@ -26,6 +26,13 @@
           command:
             - |
               apt-get update -qq && apt-get install -y -qq curl openssh-client dnsutils > /dev/null 2>&1
+              if [ -f /mnt/ssh/id_rsa ]; then
+                mkdir -p /root/.ssh-internal
+                cp /mnt/ssh/* /root/.ssh-internal/
+                chmod 700 /root/.ssh-internal
+                chmod 600 /root/.ssh-internal/id_rsa
+                chmod 644 /root/.ssh-internal/*.pub 2>/dev/null || true
+              fi
               dagu start-all
           ports:
             - "10.0.0.3:${toString config.port}:8080"
@@ -43,7 +50,7 @@
             - dagu-data:/var/lib/dagu
             - ./dags:/var/lib/dagu/dags
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
-            - /home/ubuntu/.ssh:/root/.ssh:ro
+            - /home/ubuntu/.ssh:/mnt/ssh:ro
           mem_limit: 128m
           networks:
             - default
@@ -148,10 +155,10 @@
             command: |
               FAILED=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                DISK=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
-                MEM=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                DISK=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
+                MEM=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
                 if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
                   echo "$name: disk=$DISK% mem=$MEM%"
                   FAILED=1
@@ -188,10 +195,10 @@
             command: |
               FAILED=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                UNHEALTHY=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
-                EXITED=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps -a --filter status=exited --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                UNHEALTHY=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
+                EXITED=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps -a --filter status=exited --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
                 if [ $UNHEALTHY -gt 0 ] || [ $EXITED -gt 0 ]; then
                   echo "$name: unhealthy=$UNHEALTHY exited=$EXITED"
                   FAILED=1
@@ -228,9 +235,9 @@
             command: |
               FAILED=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
                 if [ $COUNT -eq 0 ]; then
                   echo "$name: no recent backups"
                   FAILED=1
@@ -267,10 +274,10 @@
             command: |
               FAILED=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                FAIL_COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
-                ROOT_LOGIN=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                FAIL_COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+                ROOT_LOGIN=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
                 if [ $FAIL_COUNT -gt 10 ] || [ $ROOT_LOGIN -gt 0 ]; then
                   echo "$name: failed_ssh=$FAIL_COUNT root_login=$ROOT_LOGIN"
                   FAILED=1
@@ -440,9 +447,9 @@
             command: |
               TOTAL=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep -c 'Accepted publickey' /var/log/auth.log 2>/dev/null || echo 0")
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "grep -c 'Accepted publickey' /var/log/auth.log 2>/dev/null || echo 0")
                 TOTAL=$((TOTAL + COUNT))
               done
               echo "Total SSH logins (24h): $TOTAL"
@@ -476,9 +483,9 @@
             command: |
               FAILED=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                FAIL_COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "systemctl list-timers --failed --no-legend | wc -l" 2>/dev/null || echo 0)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                FAIL_COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "systemctl list-timers --failed --no-legend | wc -l" 2>/dev/null || echo 0)
                 FAILED=$((FAILED + FAIL_COUNT))
               done
               if [ $FAILED -gt 0 ]; then
@@ -513,7 +520,7 @@
         steps:
           - name: summarize-deployments
             command: |
-              COUNT=$(ssh -o StrictHostKeyChecking=no ubuntu@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
+              COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no ubuntu@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
               echo "Container restarts (24h): $COUNT"
 
         handlerOn:
@@ -545,8 +552,8 @@
             command: |
               RUNNING=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
+                ip=$${vm_ip%:*}
+                if ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
                   RUNNING=$((RUNNING + 1))
                 fi
               done
@@ -584,9 +591,9 @@
             command: |
               TOTAL_DISK=0
               for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=${vm_ip%:*}
-                name=${vm_ip#*:}
-                USAGE=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print \$5}' | sed 's/%//'" 2>/dev/null || echo 0)
+                ip=''${vm_ip%:*}
+                name=''${vm_ip#*:}
+                USAGE=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print \$5}' | sed 's/%//'" 2>/dev/null || echo 0)
                 TOTAL_DISK=$((TOTAL_DISK + USAGE))
               done
               AVG_DISK=$((TOTAL_DISK / 5))

@@ -1,0 +1,36 @@
+schedule: "0 9 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: false
+
+steps:
+  - name: check-all-vms
+    command: |
+      FAILED=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=${vm_ip%:*}
+        name=${vm_ip#*:}
+        DISK=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
+        MEM=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
+        if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
+          echo "$name: disk=$DISK% mem=$MEM%"
+          FAILED=1
+        fi
+      done
+      exit $FAILED
+
+handlerOn:
+  failure:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"system","title":"System Health Alert","message":"High resource usage detected on one or more VMs","priority":4,"tags":["warning"]}
+    command: POST ${NTFY_URL}
