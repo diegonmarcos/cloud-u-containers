@@ -69,6 +69,19 @@ def fetch_feed(url):
         print(f'Feed fetch error: {e}')
         return None
 
+def strip_html(text):
+    """Remove HTML tags from text"""
+    import re
+    if not text:
+        return ''
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Decode HTML entities
+    text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"')
+    # Clean up whitespace
+    text = ' '.join(text.split())
+    return text
+
 def parse_atom_feed(xml_content):
     entries = []
     try:
@@ -79,13 +92,20 @@ def parse_atom_feed(xml_content):
             link = entry.find('atom:link', ns)
             updated = entry.find('atom:updated', ns)
             content = entry.find('atom:content', ns)
-            
+
+            # Extract and clean content text
+            content_text = ''
+            if content is not None:
+                # Get all text including from nested elements
+                content_text = ''.join(content.itertext())
+                content_text = strip_html(content_text)[:200]
+
             entries.append({
                 'id': hashlib.md5((title.text if title is not None else '').encode()).hexdigest()[:12],
                 'title': title.text if title is not None else 'No title',
                 'link': link.get('href') if link is not None else '',
                 'updated': updated.text if updated is not None else '',
-                'content': (content.text or '')[:200] if content is not None else ''
+                'content': content_text
             })
     except Exception as e:
         print(f'Parse error: {e}')

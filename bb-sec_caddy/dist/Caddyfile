@@ -103,10 +103,12 @@ import request_limits
       uri strip_prefix /c3-api
       reverse_proxy 10.0.0.6:8081
     }
-    handle_path /c3-api/dash {
+    handle /c3-api/dash* {
+      uri strip_prefix /c3-api
       reverse_proxy 10.0.0.6:8081
     }
-    handle_path /c3-api/health/* {
+    handle /c3-api/health/* {
+      uri strip_prefix /c3-api
       reverse_proxy 10.0.0.6:8081
     }
     # Protected endpoints (require Authelia or bearer token)
@@ -180,10 +182,10 @@ forward_auth authelia:9091 {
       header Access-Control-Allow-Origin "*"
       header Access-Control-Allow-Methods "GET, OPTIONS"
       header Access-Control-Allow-Headers "Content-Type"
-      reverse_proxy 10.0.0.1:8090
+      reverse_proxy go-api:8090
     }
     handle /go/* {
-      reverse_proxy 10.0.0.1:8090
+      reverse_proxy go-api:8090
     }
     handle /crawlee/openapi.json {
       uri strip_prefix /crawlee
