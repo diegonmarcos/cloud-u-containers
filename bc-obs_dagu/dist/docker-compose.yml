@@ -1,6 +1,9 @@
 services:
   dagu:
-    image: ghcr.io/dagu-org/dagu:1.30.3
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dagu-ssh:local
     container_name: dagu
     restart: unless-stopped
     command: ["dagu", "start-all"]
@@ -17,7 +20,7 @@ services:
       - DAGU_TZ=Europe/Berlin
       - BEARER_TOKEN=${BEARER_TOKEN}
     volumes:
-      - dagu-data:/var/lib/dagu
+      - ./data:/var/lib/dagu/data
       - ./dags:/var/lib/dagu/dags
       - ./base.yaml:/var/lib/dagu/base.yaml:ro
       - ~/.ssh:/root/.ssh:ro
@@ -25,10 +28,6 @@ services:
     networks:
       - default
       - mailu_default
-
-volumes:
-  dagu-data:
-    driver: local
 
 networks:
   mailu_default:
