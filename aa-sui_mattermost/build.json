@@ -5,5 +5,9 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mattermost"
+  },
+
+  "compose": {
+    "pre_hook": "init-dirs.sh"
   }
 }

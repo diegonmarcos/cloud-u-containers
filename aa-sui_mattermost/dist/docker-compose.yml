@@ -1,0 +1,60 @@
+services:
+  mattermost:
+    image: ngrie/mattermost-team-edition-arm:10.11
+    container_name: mattermost
+    restart: unless-stopped
+    ports:
+      - "10.0.0.6:8065:8065"
+    volumes:
+      - ./data/mattermost/config:/mattermost/config
+      - ./data/mattermost/data:/mattermost/data
+      - ./data/mattermost/logs:/mattermost/logs
+      - ./data/mattermost/plugins:/mattermost/plugins
+      - ./data/mattermost/client-plugins:/mattermost/client/plugins
+    env_file:
+      - .secrets
+    environment:
+      - TZ=America/Chicago
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SERVICESETTINGS_SITEURL=https://chat.diegonmarcos.com
+      - MM_SERVICESETTINGS_LISTENADDRESS=:8065
+      - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:16-alpine
+    container_name: mattermost-postgres
+    restart: unless-stopped
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    env_file:
+      - .secrets
+    environment:
+      - POSTGRES_DB=mattermost
+      - POSTGRES_USER=mattermost
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ntfy-bridge:
+    image: python:3.12-slim
+    container_name: mattermost-ntfy-bridge
+    restart: unless-stopped
+    volumes:
+      - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
+      - ./requirements-bridge.txt:/app/requirements.txt:ro
+      - bridge_data:/data
+    entrypoint: ["/bin/sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"]
+    env_file:
+      - .secrets
+    environment:
+      - NTFY_URL=http://10.0.0.1:8090
+      - MM_URL=http://mattermost:8065
+    depends_on:
+      - mattermost
+
+volumes:
+  bridge_data:
