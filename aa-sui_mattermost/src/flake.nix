@@ -12,7 +12,7 @@
       container_name = "mattermost";
       postgres_container = "mattermost-postgres";
       bridge_container = "mattermost-ntfy-bridge";
-      image = "mattermost/mattermost-team-edition:10.6";
+      image = "ngrie/mattermost-team-edition-arm:10.11";
       postgres_image = "postgres:16-alpine";
       bridge_image = "python:3.12-slim";
       port = 8065;
