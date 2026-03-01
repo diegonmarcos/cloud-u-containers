@@ -186,7 +186,7 @@ step_build() {
 
     # Include shared config.json for dynamic VM/service discovery
     if [ "$INCLUDE_CONFIG_JSON" = "true" ]; then
-        CONFIG_JSON="$SERVICE_DIR/../config.json"
+        CONFIG_JSON="$SERVICE_DIR/../../config.json"
         if [ -f "$CONFIG_JSON" ]; then
             cp "$CONFIG_JSON" "$DIST_DIR/config.json"
             log "Included config.json in dist/"
