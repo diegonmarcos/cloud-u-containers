@@ -57,7 +57,7 @@
             - ./cache:/var/cache/ntfy
             - ./etc:/etc/ntfy
           ports:
-            - '127.0.0.1:${toString config.port}:80'
+            - '10.0.0.1:${toString config.port}:80'
           restart: unless-stopped
           dns:
             - 8.8.8.8
