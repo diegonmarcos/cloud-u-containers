@@ -4,6 +4,9 @@ USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
+    curl \
+    openssl \
+    dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 USER dagu

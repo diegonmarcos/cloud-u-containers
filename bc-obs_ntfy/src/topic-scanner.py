@@ -12,18 +12,29 @@ PORT = 8091
 REFRESH_INTERVAL = 30  # seconds
 
 # ALL configured channels (always shown, even if no messages yet)
+# Format: category_name-of-channel
 CONFIGURED_TOPICS = [
-    "github",       # Repository activity
-    "sauron",       # YARA security scans
-    "auth",         # SSH, sudo, login events
-    "system",       # Service errors & crashes
-    "ops",          # Deployments & restarts
-    "docker",       # Container events
-    "cron",         # Scheduled job events
-    "backup",       # Backup job status
-    "security",     # Security alerts
-    "deploy",       # Deployment notifications
-    "infra",        # Infrastructure health (Dagu mesh checks)
+    # VCS — version control events (from GitHub Atom feed)
+    "vcs_commits",              # Push/commit events
+    "vcs_pull-requests",        # PR open/close/merge events
+    "vcs_issues-releases",      # Issues, releases, tags, forks
+    # CI/CD — build & deploy pipeline
+    "cicd_deploy-digest",       # Container restarts & deploy activity
+    # Infrastructure — system & network health
+    "infra_mesh-health",        # WireGuard mesh connectivity checks
+    "infra_endpoints",          # HTTP service endpoint monitoring
+    "infra_dns",                # DNS resolution checks
+    "infra_resources",          # VM disk/memory/CPU usage
+    "infra_containers",         # Docker container health
+    # Operations — scheduled tasks & data
+    "ops_summary",              # Daily/weekly ops reports
+    "ops_backups",              # Backup freshness status
+    "ops_cron",                 # Systemd timer/cron failures
+    # Security — threats, auth, certs
+    "security_audit",           # Auth log analysis & brute-force detection
+    "security_tls",             # TLS certificate expiry warnings
+    "security_connections",     # All SSH/sudo/connection events across VMs
+    "security_yara",            # YARA malware scanner alerts & status
 ]
 
 # Shared state
