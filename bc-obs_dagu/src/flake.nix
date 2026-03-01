@@ -41,7 +41,7 @@
             - BEARER_TOKEN=''${BEARER_TOKEN}
           volumes:
             - dagu-data:/var/lib/dagu
-            - ./dags:/var/lib/dagu/dags:ro
+            - ./dags:/var/lib/dagu/dags
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
             - /home/ubuntu/.ssh:/root/.ssh:ro
           mem_limit: 128m
