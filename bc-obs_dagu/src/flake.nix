@@ -649,17 +649,58 @@
                 REPORT="''${REPORT}  $name ($ip)\n"
                 REPORT="''${REPORT}================================================================\n\n"
 
-                # -- System health --
-                UPTIME=$($SSH $user@$ip "uptime -p" 2>/dev/null || echo "N/A")
-                LOAD=$($SSH $user@$ip "cat /proc/loadavg | awk '{print \$1, \$2, \$3}'" 2>/dev/null || echo "N/A")
-                DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \$3 \"/\" \$2 \" (\" \$5 \")\"}'" 2>/dev/null || echo "N/A")
-                MEM=$($SSH $user@$ip "free -h | awk '/Mem:/ {print \$3 \"/\" \$2 \" (\" int(\$3/\$2*100) \"%)\"}'" 2>/dev/null || echo "N/A")
-                REPORT="''${REPORT}[System]\n  Uptime: $UPTIME\n  Load: $LOAD\n  Disk: $DISK\n  Memory: $MEM\n\n"
+                # -- SINGLE SSH CALL: Collect all data in one shot --
+                VM_DATA=$($SSH $user@$ip 'bash -s' <<'EOSSH' 2>/dev/null || echo "ERROR: SSH failed"
+                  echo "===UPTIME==="
+                  uptime -p 2>/dev/null || echo "N/A"
+                  echo "===LOAD==="
+                  cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}' || echo "N/A"
+                  echo "===DISK==="
+                  df -h / 2>/dev/null | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}' || echo "N/A"
+                  echo "===MEM==="
+                  free -h 2>/dev/null | awk '/Mem:/ {print $3 "/" $2 " (" int($3/$2*100) "%)"}' || echo "N/A"
+                  echo "===CONTAINERS==="
+                  docker ps -a --format '  {{.Names}}: {{.Status}}' 2>/dev/null | head -30 || echo "  N/A"
+                  echo "===UNHEALTHY==="
+                  docker ps --filter health=unhealthy --format '  {{.Names}}' 2>/dev/null
+                  echo "===EXITED==="
+                  docker ps -a --filter status=exited --format '  {{.Names}} (exited {{.Status}})' 2>/dev/null | head -10
+                  echo "===SSH_ACCEPT==="
+                  journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Accepted' || echo 0
+                  echo "===SSH_FAIL==="
+                  journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Failed' || echo 0
+                  echo "===SUDO==="
+                  journalctl --since '24 hours ago' 2>/dev/null | grep -c 'sudo:' || echo 0
+                  echo "===TOP_FAIL_IPS==="
+                  journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep 'Failed' | awk '{for(i=1;i<=NF;i++) if($i ~ /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/) print $i}' | sort | uniq -c | sort -rn | head -5 | awk '{print "    " $2 " (" $1 "x)"}'
+                  echo "===RESTARTS==="
+                  journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print $NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print "  " $2 " (" $1 "x)"}'
+                  echo "===BACKUPS==="
+                  ls -lht /opt/backups/ 2>/dev/null | head -5 | awk '{print "  " $0}' || echo "  No backups dir"
+                  echo "===FAILED_UNITS==="
+                  systemctl --failed --no-legend 2>/dev/null | head -5 | awk '{print "  " $0}'
+                  echo "===END==="
+EOSSH
+)
 
-                # -- Containers --
-                CONTAINERS=$($SSH $user@$ip "docker ps -a --format '  {{.Names}}: {{.Status}}' 2>/dev/null | head -30" 2>/dev/null || echo "  N/A")
-                UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '  {{.Names}}' 2>/dev/null" 2>/dev/null || echo "")
-                EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --format '  {{.Names}} (exited {{.Status}})' 2>/dev/null | head -10" 2>/dev/null || echo "")
+                # -- Parse the collected data --
+                UPTIME=$(echo "$VM_DATA" | awk '/===UPTIME===/,/===LOAD===/' | grep -v '===' || echo "N/A")
+                LOAD=$(echo "$VM_DATA" | awk '/===LOAD===/,/===DISK===/' | grep -v '===' || echo "N/A")
+                DISK=$(echo "$VM_DATA" | awk '/===DISK===/,/===MEM===/' | grep -v '===' || echo "N/A")
+                MEM=$(echo "$VM_DATA" | awk '/===MEM===/,/===CONTAINERS===/' | grep -v '===' || echo "N/A")
+                CONTAINERS=$(echo "$VM_DATA" | awk '/===CONTAINERS===/,/===UNHEALTHY===/' | grep -v '===' || echo "  N/A")
+                UNHEALTHY=$(echo "$VM_DATA" | awk '/===UNHEALTHY===/,/===EXITED===/' | grep -v '===')
+                EXITED=$(echo "$VM_DATA" | awk '/===EXITED===/,/===SSH_ACCEPT===/' | grep -v '===')
+                SSH_ACCEPT=$(echo "$VM_DATA" | awk '/===SSH_ACCEPT===/,/===SSH_FAIL===/' | grep -v '===' || echo "0")
+                SSH_FAIL=$(echo "$VM_DATA" | awk '/===SSH_FAIL===/,/===SUDO===/' | grep -v '===' || echo "0")
+                SUDO_COUNT=$(echo "$VM_DATA" | awk '/===SUDO===/,/===TOP_FAIL_IPS===/' | grep -v '===' || echo "0")
+                TOP_FAIL=$(echo "$VM_DATA" | awk '/===TOP_FAIL_IPS===/,/===RESTARTS===/' | grep -v '===')
+                RESTARTS=$(echo "$VM_DATA" | awk '/===RESTARTS===/,/===BACKUPS===/' | grep -v '===')
+                BACKUP=$(echo "$VM_DATA" | awk '/===BACKUPS===/,/===FAILED_UNITS===/' | grep -v '===')
+                FAILED_UNITS=$(echo "$VM_DATA" | awk '/===FAILED_UNITS===/,/===END===/' | grep -v '===')
+
+                # -- Build report --
+                REPORT="''${REPORT}[System]\n  Uptime: $UPTIME\n  Load: $LOAD\n  Disk: $DISK\n  Memory: $MEM\n\n"
                 REPORT="''${REPORT}[Containers]\n$CONTAINERS\n"
                 if [ -n "$UNHEALTHY" ]; then
                   REPORT="''${REPORT}\n  !! UNHEALTHY:\n$UNHEALTHY\n"
@@ -668,38 +709,20 @@
                   REPORT="''${REPORT}\n  !! EXITED:\n$EXITED\n"
                 fi
                 REPORT="''${REPORT}\n"
-
-                # -- Security (24h) --
-                SSH_ACCEPT=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Accepted' || echo 0" 2>/dev/null || echo "0")
-                SSH_FAIL=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Failed' || echo 0" 2>/dev/null || echo "0")
-                SUDO_COUNT=$($SSH $user@$ip "journalctl --since '24 hours ago' 2>/dev/null | grep -c 'sudo:' || echo 0" 2>/dev/null || echo "0")
                 REPORT="''${REPORT}[Security - 24h]\n  SSH accepted: $SSH_ACCEPT | failed: $SSH_FAIL\n  sudo events: $SUDO_COUNT\n"
-                if [ "$SSH_FAIL" -gt 10 ] 2>/dev/null; then
-                  TOP_FAIL=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep 'Failed' | awk '{for(i=1;i<=NF;i++) if(\$i ~ /[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/) print \$i}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
-                  if [ -n "$TOP_FAIL" ]; then
-                    REPORT="''${REPORT}  Top failed IPs:\n$TOP_FAIL\n"
-                  fi
+                if [ "$SSH_FAIL" -gt 10 ] 2>/dev/null && [ -n "$TOP_FAIL" ]; then
+                  REPORT="''${REPORT}  Top failed IPs:\n$TOP_FAIL\n"
                 fi
                 REPORT="''${REPORT}\n"
-
-                # -- Docker restarts (24h) --
-                RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"  \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
                 if [ -n "$RESTARTS" ]; then
                   REPORT="''${REPORT}[Container Restarts - 24h]\n$RESTARTS\n\n"
                 fi
-
-                # -- Backups --
-                BACKUP=$($SSH $user@$ip "ls -lht /opt/backups/ 2>/dev/null | head -5 | awk '{print \"  \" \$0}'" 2>/dev/null || echo "  No backups dir")
                 REPORT="''${REPORT}[Latest Backups]\n$BACKUP\n\n"
-
-                # -- Failed systemd units --
-                FAILED_UNITS=$($SSH $user@$ip "systemctl --failed --no-legend 2>/dev/null | head -5 | awk '{print \"  \" \$0}'" 2>/dev/null || echo "")
                 if [ -n "$FAILED_UNITS" ]; then
                   REPORT="''${REPORT}[Failed Services]\n$FAILED_UNITS\n\n"
                 else
                   REPORT="''${REPORT}[Failed Services]\n  None\n\n"
                 fi
-
                 REPORT="''${REPORT}\n"
               done
 
