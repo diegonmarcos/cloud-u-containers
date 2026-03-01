@@ -28,7 +28,6 @@
             - /var/run/docker.sock:/var/run/docker.sock:ro
           environment:
             - DOZZLE_LEVEL=info
-            - DOZZLE_TAILSIZE=300
           mem_limit: 64m
           networks:
             - npm_default

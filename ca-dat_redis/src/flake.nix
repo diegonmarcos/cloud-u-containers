@@ -23,7 +23,9 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          command: redis-server --appendonly yes --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy}
+          env_file:
+            - .secrets
+          command: redis-server --appendonly yes --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass ''${REDIS_PASSWORD}
           volumes:
             - /data/redis:/data
           healthcheck:
