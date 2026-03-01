@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     image: dagu-ssh:local
     container_name: dagu
+    entrypoint: ["dagu", "start-all"]
     restart: unless-stopped
-    command: ["dagu", "start-all"]
     ports:
       - "10.0.0.3:8070:8080"
     environment:

@@ -24,6 +24,7 @@
             dockerfile: Dockerfile
           image: dagu-ssh:local
           container_name: ${config.container_name}
+          entrypoint: ["dagu", "start-all"]
           restart: unless-stopped
           ports:
             - "10.0.0.3:${toString config.port}:8080"
@@ -618,6 +619,149 @@
                 -H "Tags: bar_chart" \
                 -d "$MSG"
       '';
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DAILY EMAIL REPORT
+      # ═══════════════════════════════════════════════════════════════════
+
+      daily-report = pkgs.writeText "daily-report.yaml" ''
+        schedule: "0 7 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: true
+          success: false
+        steps:
+          - name: collect-and-email
+            command: |
+              SSH="${sshCmd}"
+              DATE=$(date '+%Y-%m-%d')
+              REPORT=""
+
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+
+                REPORT="''${REPORT}================================================================\n"
+                REPORT="''${REPORT}  $name ($ip)\n"
+                REPORT="''${REPORT}================================================================\n\n"
+
+                # -- System health --
+                UPTIME=$($SSH $user@$ip "uptime -p" 2>/dev/null || echo "N/A")
+                LOAD=$($SSH $user@$ip "cat /proc/loadavg | awk '{print \$1, \$2, \$3}'" 2>/dev/null || echo "N/A")
+                DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \$3 \"/\" \$2 \" (\" \$5 \")\"}'" 2>/dev/null || echo "N/A")
+                MEM=$($SSH $user@$ip "free -h | awk '/Mem:/ {print \$3 \"/\" \$2 \" (\" int(\$3/\$2*100) \"%)\"}'" 2>/dev/null || echo "N/A")
+                REPORT="''${REPORT}[System]\n  Uptime: $UPTIME\n  Load: $LOAD\n  Disk: $DISK\n  Memory: $MEM\n\n"
+
+                # -- Containers --
+                CONTAINERS=$($SSH $user@$ip "docker ps -a --format '  {{.Names}}: {{.Status}}' 2>/dev/null | head -30" 2>/dev/null || echo "  N/A")
+                UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '  {{.Names}}' 2>/dev/null" 2>/dev/null || echo "")
+                EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --format '  {{.Names}} (exited {{.Status}})' 2>/dev/null | head -10" 2>/dev/null || echo "")
+                REPORT="''${REPORT}[Containers]\n$CONTAINERS\n"
+                if [ -n "$UNHEALTHY" ]; then
+                  REPORT="''${REPORT}\n  !! UNHEALTHY:\n$UNHEALTHY\n"
+                fi
+                if [ -n "$EXITED" ]; then
+                  REPORT="''${REPORT}\n  !! EXITED:\n$EXITED\n"
+                fi
+                REPORT="''${REPORT}\n"
+
+                # -- Security (24h) --
+                SSH_ACCEPT=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Accepted' || echo 0" 2>/dev/null || echo "0")
+                SSH_FAIL=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep -c 'Failed' || echo 0" 2>/dev/null || echo "0")
+                SUDO_COUNT=$($SSH $user@$ip "journalctl --since '24 hours ago' 2>/dev/null | grep -c 'sudo:' || echo 0" 2>/dev/null || echo "0")
+                REPORT="''${REPORT}[Security - 24h]\n  SSH accepted: $SSH_ACCEPT | failed: $SSH_FAIL\n  sudo events: $SUDO_COUNT\n"
+                if [ "$SSH_FAIL" -gt 10 ] 2>/dev/null; then
+                  TOP_FAIL=$($SSH $user@$ip "journalctl -u ssh --since '24 hours ago' 2>/dev/null | grep 'Failed' | awk '{for(i=1;i<=NF;i++) if(\$i ~ /[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/) print \$i}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
+                  if [ -n "$TOP_FAIL" ]; then
+                    REPORT="''${REPORT}  Top failed IPs:\n$TOP_FAIL\n"
+                  fi
+                fi
+                REPORT="''${REPORT}\n"
+
+                # -- Docker restarts (24h) --
+                RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"  \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
+                if [ -n "$RESTARTS" ]; then
+                  REPORT="''${REPORT}[Container Restarts - 24h]\n$RESTARTS\n\n"
+                fi
+
+                # -- Backups --
+                BACKUP=$($SSH $user@$ip "ls -lht /opt/backups/ 2>/dev/null | head -5 | awk '{print \"  \" \$0}'" 2>/dev/null || echo "  No backups dir")
+                REPORT="''${REPORT}[Latest Backups]\n$BACKUP\n\n"
+
+                # -- Failed systemd units --
+                FAILED_UNITS=$($SSH $user@$ip "systemctl --failed --no-legend 2>/dev/null | head -5 | awk '{print \"  \" \$0}'" 2>/dev/null || echo "")
+                if [ -n "$FAILED_UNITS" ]; then
+                  REPORT="''${REPORT}[Failed Services]\n$FAILED_UNITS\n\n"
+                else
+                  REPORT="''${REPORT}[Failed Services]\n  None\n\n"
+                fi
+
+                REPORT="''${REPORT}\n"
+              done
+
+              # -- Dagu Workflows (24h execution summary) --
+              REPORT="''${REPORT}================================================================\n"
+              REPORT="''${REPORT}  Dagu Workflows (24h)\n"
+              REPORT="''${REPORT}================================================================\n\n"
+
+              WORKFLOWS="healthcheck system-check docker-check backup-check security-audit ops-summary service-endpoints tls-expiry dns-resolution auth-events cron-status deploy-digest sauron-integrity capacity-review"
+              for wf in $WORKFLOWS; do
+                # Get the latest run status for each workflow
+                STATUS_OUTPUT=$(dagu status /var/lib/dagu/dags/$wf.yaml 2>/dev/null | head -1 || echo "N/A")
+                STATUS_LINE=$(echo "$STATUS_OUTPUT" | grep -oE '(Success|Failed|Running|Canceled|N/A)' | head -1)
+                if [ -z "$STATUS_LINE" ]; then
+                  STATUS_LINE="N/A"
+                fi
+
+                # Get run count from last 24h by checking data directory
+                RUN_COUNT=$(find /var/lib/dagu/data/dag-runs/$wf/dag-runs -type d -mtime -1 2>/dev/null | wc -l || echo "0")
+
+                # Format status with indicator
+                if [ "$STATUS_LINE" = "Success" ]; then
+                  INDICATOR="✓"
+                elif [ "$STATUS_LINE" = "Failed" ]; then
+                  INDICATOR="✗"
+                elif [ "$STATUS_LINE" = "Running" ]; then
+                  INDICATOR="→"
+                else
+                  INDICATOR=" "
+                fi
+
+                REPORT="''${REPORT}  $INDICATOR $wf: $STATUS_LINE"
+                if [ "$RUN_COUNT" -gt 0 ]; then
+                  REPORT="''${REPORT} ($RUN_COUNT runs)\n"
+                else
+                  REPORT="''${REPORT}\n"
+                fi
+              done
+              REPORT="''${REPORT}\n"
+
+              # -- Compose email via curl SMTP --
+              SUBJECT="Daily Ops Report - $DATE"
+
+              {
+                echo "From: no-reply@diegonmarcos.com"
+                echo "To: me@diegonmarcos.com"
+                echo "Subject: $SUBJECT"
+                echo "Content-Type: text/plain; charset=UTF-8"
+                echo ""
+                echo "Daily Operations Report - $DATE"
+                echo "Generated at $(date '+%H:%M %Z')"
+                echo ""
+                echo -e "$REPORT"
+                echo "---"
+                echo "Dagu Dashboard: http://10.0.0.3:8070"
+              } | curl -s --url "smtp://mailu-smtp-1:25" \
+                    --mail-from "no-reply@diegonmarcos.com" \
+                    --mail-rcpt "me@diegonmarcos.com" \
+                    -T -
+
+              echo "Daily report email sent for $DATE"
+      '';
     };
 
     # ── Documentation ────────────────────────────────────────────────────
@@ -741,6 +885,7 @@
         cp ${dags.deploy-digest} $out/dags/deploy-digest.yaml
         cp ${dags.sauron-integrity} $out/dags/sauron-integrity.yaml
         cp ${dags.capacity-review} $out/dags/capacity-review.yaml
+        cp ${dags.daily-report} $out/dags/daily-report.yaml
       '';
     in {
       default = defaultPkg;

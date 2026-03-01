@@ -303,7 +303,10 @@ for line in sys.stdin:
     log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
 }
 
-# ── Step: Deploy dist/ to VM via rsync ───────────────────────────────
+# ── Step: Deploy dist/ to VM via rsync (manifest-based) ──────────────
+# Additive sync + manifest cleanup: only removes files the engine previously
+# deployed that are no longer in dist/. Runtime state (DBs, caches, logs)
+# is never touched because it was never in the manifest.
 step_deploy() {
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping deploy"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
@@ -323,7 +326,15 @@ step_deploy() {
     # Ensure remote dir exists
     ssh "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH"
 
-    # Build rsync exclude flags from build.json array
+    MANIFEST_FILE=".deploy-manifest"
+
+    # 1. Build list of files we're about to deploy (relative paths)
+    NEW_MANIFEST=$(cd "$DIST_DIR" && find . -type f | sort)
+
+    # 2. Read old manifest from remote (may be empty on first deploy)
+    OLD_MANIFEST=$(ssh "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
+
+    # 3. Build rsync exclude flags from build.json array
     RSYNC_EXCLUDES=""
     EXCLUDES="$(get_config_array deploy.excludes)"
     if [ -n "$EXCLUDES" ]; then
@@ -332,11 +343,11 @@ step_deploy() {
         done)
     fi
 
-    # Sync (rsync primary, rclone fallback)
+    # 4. Additive rsync (NO --delete) — adds/updates files, never removes
     if command -v rsync >/dev/null 2>&1; then
-        eval rsync -avz --delete $RSYNC_EXCLUDES '"$DIST_DIR/"' '"$DEPLOY_HOST:$DEPLOY_PATH/"'
+        eval rsync -avz $RSYNC_EXCLUDES '"$DIST_DIR/"' '"$DEPLOY_HOST:$DEPLOY_PATH/"'
     elif command -v rclone >/dev/null 2>&1; then
-        rclone sync "$DIST_DIR/" ":sftp:$DEPLOY_PATH/" \
+        rclone copy "$DIST_DIR/" ":sftp:$DEPLOY_PATH/" \
             --sftp-host="$(ssh -G "$DEPLOY_HOST" | grep '^hostname ' | awk '{print $2}')" \
             --sftp-user="$(ssh -G "$DEPLOY_HOST" | grep '^user ' | awk '{print $2}')" \
             --sftp-key-file="$(ssh -G "$DEPLOY_HOST" | grep '^identityfile ' | head -1 | awk '{print $2}')" \
@@ -345,6 +356,31 @@ step_deploy() {
         log "ERROR: No rsync or rclone available"
         return 1
     fi
+
+    # 5. Clean stale files: in old manifest but not in new
+    if [ -n "$OLD_MANIFEST" ]; then
+        STALE_COUNT=0
+        # Write manifests to temp files for reliable comparison (avoids subshell issues)
+        OLD_TMP=$(mktemp)
+        NEW_TMP=$(mktemp)
+        echo "$OLD_MANIFEST" > "$OLD_TMP"
+        echo "$NEW_MANIFEST" > "$NEW_TMP"
+        # comm -23: lines only in old (stale files)
+        STALE_FILES=$(comm -23 "$OLD_TMP" "$NEW_TMP")
+        rm -f "$OLD_TMP" "$NEW_TMP"
+        if [ -n "$STALE_FILES" ]; then
+            echo "$STALE_FILES" | while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                log "  rm stale: $f"
+                ssh "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
+                STALE_COUNT=$((STALE_COUNT + 1))
+            done
+            log "Cleaned stale files from previous deploy"
+        fi
+    fi
+
+    # 6. Save new manifest to remote
+    echo "$NEW_MANIFEST" | ssh "$DEPLOY_HOST" "cat > '$DEPLOY_PATH/$MANIFEST_FILE'"
 
     log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH"
 }
@@ -444,6 +480,59 @@ run_lifecycle() {
     log "Lifecycle $COMMAND complete"
 }
 
+# ── Step: Clean remote (remove non-manifest files) ───────────────────
+# For intentional full cleanup of runtime state (DBs, caches, logs).
+# Shows a dry-run first, requires explicit --force to actually delete.
+step_clean_remote() {
+    FORCE_FLAG="$1"
+    [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- nothing to clean"; return 0; }
+    [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set"; return 1; }
+
+    MANIFEST_FILE=".deploy-manifest"
+    MANIFEST=$(ssh "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
+
+    if [ -z "$MANIFEST" ]; then
+        log "No deploy manifest found — cannot determine engine-owned files"
+        log "Run 'build.sh ship' first to establish a manifest"
+        return 1
+    fi
+
+    # List all files on remote, find those NOT in manifest
+    ALL_REMOTE=$(ssh "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && find . -type f | sort")
+    MANIFEST_TMP=$(mktemp)
+    REMOTE_TMP=$(mktemp)
+    KNOWN_TMP=$(mktemp)
+    echo "$ALL_REMOTE" > "$REMOTE_TMP"
+    # Known files = manifest + the manifest file itself
+    { echo "$MANIFEST"; echo "./$MANIFEST_FILE"; } | sort -u > "$KNOWN_TMP"
+
+    # comm -23: lines only in remote (not in known) = extra files
+    EXTRA_FILES=$(comm -23 "$REMOTE_TMP" "$KNOWN_TMP")
+    rm -f "$MANIFEST_TMP" "$REMOTE_TMP" "$KNOWN_TMP"
+
+    if [ -z "$EXTRA_FILES" ]; then
+        log "No non-manifest files found — remote is clean"
+        return 0
+    fi
+
+    log "Non-manifest files on $DEPLOY_HOST:$DEPLOY_PATH:"
+    echo "$EXTRA_FILES" | while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        echo "  $f"
+    done
+
+    if [ "$FORCE_FLAG" = "--force" ]; then
+        log "Removing non-manifest files (--force)"
+        echo "$EXTRA_FILES" | while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            ssh "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
+        done
+        log "Remote cleaned"
+    else
+        log "Dry run — add --force to actually delete"
+    fi
+}
+
 # ── Main ─────────────────────────────────────────────────────────────
 echo "========================================"
 echo "  Build: $SERVICE_NAME"
@@ -457,25 +546,41 @@ case "${1:-all}" in
     deploy)   step_deploy ;;
     compose)  step_compose ;;
     all)      step_build; step_docs; step_secrets ;;
-    ship)     step_docker; step_build; step_secrets; step_deploy; step_compose ;;
+    ship)
+        step_docker
+        step_build
+        step_secrets
+        # Skip deploy+compose if dist/ output is unchanged since last ship
+        NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
+        OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
+        if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ]; then
+            log "Config unchanged — skipping deploy+compose"
+        else
+            step_deploy
+            step_compose
+            echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
+        fi
+        ;;
     redeploy) step_build; step_secrets; step_deploy; step_compose ;;
-    clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs"; log "Cleaned" ;;
+    clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs" "$SERVICE_DIR/.dist-hash"; log "Cleaned" ;;
+    clean-remote) step_clean_remote "${2:-}" ;;
     *)
         # Try lifecycle command from build.json
         if [ -f "$CONFIG" ] && get_lifecycle "$1" | grep -q .; then
             run_lifecycle "$1"
         else
-            echo "Usage: $0 [docker|build|docs|secrets|deploy|compose|all|ship|redeploy|clean|<lifecycle>]"
-            echo "  docker    Build + push Docker image"
-            echo "  build     Build nix flake -> dist/"
-            echo "  docs      Build documentation -> dist/docs/"
-            echo "  secrets   Decrypt secrets -> dist/.secrets"
-            echo "  deploy    Rsync dist/ -> VM"
-            echo "  compose   Docker compose up on VM"
-            echo "  all       build + docs + secrets (default)"
-            echo "  ship      docker + build + secrets + deploy + compose"
-            echo "  redeploy  build + secrets + deploy + compose (skip docker)"
-            echo "  clean     Remove dist/"
+            echo "Usage: $0 [docker|build|docs|secrets|deploy|compose|all|ship|redeploy|clean|clean-remote|<lifecycle>]"
+            echo "  docker       Build + push Docker image"
+            echo "  build        Build nix flake -> dist/"
+            echo "  docs         Build documentation -> dist/docs/"
+            echo "  secrets      Decrypt secrets -> dist/.secrets"
+            echo "  deploy       Rsync dist/ -> VM (manifest-based, no --delete)"
+            echo "  compose      Docker compose up on VM"
+            echo "  all          build + docs + secrets (default)"
+            echo "  ship         docker + build + secrets + deploy + compose (skips if unchanged)"
+            echo "  redeploy     build + secrets + deploy + compose (skip docker)"
+            echo "  clean        Remove dist/ and build artifacts"
+            echo "  clean-remote List non-manifest files on VM (--force to delete)"
             # Show available lifecycle commands
             if [ -f "$CONFIG" ]; then
                 LIFECYCLE_CMDS="$(node -e "const c=require('$CONFIG'); Object.keys(c.lifecycle||{}).forEach(k=>console.log('  '+k))" 2>/dev/null || python3 -c "import json; [print('  '+k) for k in json.load(open('$CONFIG')).get('lifecycle',{})]" 2>/dev/null)"

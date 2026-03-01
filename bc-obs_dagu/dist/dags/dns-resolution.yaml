@@ -1,27 +1,27 @@
 schedule: "0 8 * * *"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
   success: false
-
 steps:
-  - name: check-dns
+  - name: check-dns-and-notify
     command: |
-      for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com; do
-        dig +short $domain @1.1.1.1 || exit 1
+      FAILED=""
+      for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com; do
+        RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
+        if [ -z "$RESULT" ]; then
+          FAILED="${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
+        fi
       done
-
-handlerOn:
-  failure:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"infra","title":"DNS Resolution FAILED","message":"Critical domain not resolving","priority":5,"tags":["rotating_light"]}
-    command: POST ${NTFY_URL}
+      if [ -n "$FAILED" ]; then
+        MSG=$(printf "DNS resolution failures:\n${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_dns" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Title: DNS Resolution FAILED" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi

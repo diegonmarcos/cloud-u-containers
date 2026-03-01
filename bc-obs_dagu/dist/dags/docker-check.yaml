@@ -1,38 +1,42 @@
 schedule: "0 10 * * *"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
   success: false
-
 steps:
-  - name: check-all-containers
+  - name: check-containers-and-notify
     command: |
-      FAILED=0
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
       for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
         ip=${vm_data%%:*}
         temp=${vm_data#*:}
         name=${temp%:*}
         user=${temp#*:}
-        UNHEALTHY=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
-        EXITED=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps -a --filter status=exited --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
-        if [ $UNHEALTHY -gt 0 ] || [ $EXITED -gt 0 ]; then
-          echo "$name: unhealthy=$UNHEALTHY exited=$EXITED"
-          FAILED=1
+        UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}'" 2>/dev/null)
+        EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --filter 'exited!=0' --format '{{.Names}} (exit {{.Status}})'" 2>/dev/null)
+        if [ -n "$UNHEALTHY" ]; then
+          ALERTS="${ALERTS}  $name — UNHEALTHY:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done <<< "$UNHEALTHY"
+        fi
+        if [ -n "$EXITED" ]; then
+          ALERTS="${ALERTS}  $name — CRASHED:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done <<< "$EXITED"
         fi
       done
-      exit $FAILED
-
-handlerOn:
-  failure:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"docker","title":"Docker Health Issues","message":"Unhealthy or crashed containers detected on one or more VMs","priority":4,"tags":["whale","warning"]}
-    command: POST ${NTFY_URL}
+      if [ -n "$ALERTS" ]; then
+        MSG=$(printf "Container issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_containers" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Title: Container Health Issues" \
+          -H "Priority: 4" \
+          -H "Tags: whale,warning" \
+          -d "$MSG"
+        exit 1
+      fi

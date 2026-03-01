@@ -6,6 +6,8 @@ result-*
 # Deploy staging directories
 .deploy-*
 .tmp-*
+.dist-hash
+.dockerfile-hash-new
 
 # Decrypted secrets (NEVER commit)
 # Security model:

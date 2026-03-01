@@ -1,38 +1,34 @@
 schedule: "0 9 * * *"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
   success: false
-
 steps:
-  - name: check-all-vms
+  - name: check-resources-and-notify
     command: |
-      FAILED=0
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
       for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
         ip=${vm_data%%:*}
         temp=${vm_data#*:}
         name=${temp%:*}
         user=${temp#*:}
-        DISK=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
-        MEM=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
-        if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
-          echo "$name: disk=$DISK% mem=$MEM%"
-          FAILED=1
+        DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo "N/A")
+        MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo "N/A")
+        LOAD=$($SSH $user@$ip "cat /proc/loadavg | awk '{print \$1}'" 2>/dev/null || echo "N/A")
+        if [ "$DISK" != "N/A" ] && [ "$DISK" -gt 80 ] 2>/dev/null || [ "$MEM" != "N/A" ] && [ "$MEM" -gt 90 ] 2>/dev/null; then
+          ALERTS="${ALERTS}  - $name ($ip): disk=$DISK% mem=$MEM% load=$LOAD\n"
         fi
       done
-      exit $FAILED
-
-handlerOn:
-  failure:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"system","title":"System Health Alert","message":"High resource usage detected on one or more VMs","priority":4,"tags":["warning"]}
-    command: POST ${NTFY_URL}
+      if [ -n "$ALERTS" ]; then
+        MSG=$(printf "High resource usage:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_resources" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Title: System Resources Alert" \
+          -H "Priority: 4" \
+          -H "Tags: warning,chart_with_upwards_trend" \
+          -d "$MSG"
+        exit 1
+      fi
