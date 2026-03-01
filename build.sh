@@ -9,7 +9,7 @@ set -e
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/config.json"
+CONFIG_FILE="$SCRIPT_DIR/../config.json"
 
 # Age key - auto-detect mobile vs desktop
 if [ -f "$HOME/git/vault/A0_keys/providers/system/oauth/age_keys.txt" ]; then
