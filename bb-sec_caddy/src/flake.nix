@@ -294,6 +294,13 @@
         ${handleErrors}
       }
 
+      # Mattermost team chat (WebSocket upgrade handled by Caddy automatically)
+      chat.diegonmarcos.com {
+    ${sec}
+        ${mkProtected "${flex0}:8065"}
+        ${handleErrors}
+      }
+
       # Affine collaborative docs (100MB uploads, long timeouts)
       drive-notes-affine.diegonmarcos.com {
     ${secNoLimit}

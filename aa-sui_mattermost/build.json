@@ -1,0 +1,9 @@
+{
+  "name": "mattermost",
+  "description": "Mattermost team chat with ntfy bridge and AI agents",
+
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/mattermost"
+  }
+}
