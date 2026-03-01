@@ -51,6 +51,8 @@
             - MM_SERVICESETTINGS_SITEURL=https://chat.diegonmarcos.com
             - MM_SERVICESETTINGS_LISTENADDRESS=:8065
             - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+            - MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION=true
+            - MM_SERVICESETTINGS_ENABLEUSERACCESSTOKENS=true
           depends_on:
             postgres:
               condition: service_healthy
