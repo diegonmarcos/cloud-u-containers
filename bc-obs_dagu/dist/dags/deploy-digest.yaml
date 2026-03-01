@@ -11,7 +11,7 @@ mailOn:
 steps:
   - name: summarize-deployments
     command: |
-      COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no ubuntu@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
+      COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no diego@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
       echo "Container restarts (24h): $COUNT"
 
 handlerOn:

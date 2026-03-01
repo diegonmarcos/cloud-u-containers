@@ -14,7 +14,7 @@ steps:
       RUNNING=0
       for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
         ip=$${vm_ip%:*}
-        if ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
+        if ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
           RUNNING=$((RUNNING + 1))
         fi
       done
