@@ -54,10 +54,6 @@
           depends_on:
             postgres:
               condition: service_healthy
-          networks:
-            - npm_default
-            - default
-
         postgres:
           image: ${config.postgres_image}
           container_name: ${config.postgres_container}
@@ -74,8 +70,6 @@
             interval: 10s
             timeout: 5s
             retries: 5
-          networks:
-            - default
 
         ntfy-bridge:
           image: ${config.bridge_image}
@@ -93,19 +87,9 @@
             - MM_URL=http://mattermost:8065
           depends_on:
             - mattermost
-          networks:
-            - npm_default
-            - default
 
       volumes:
-        mattermost_data:
-        postgres_data:
         bridge_data:
-
-      networks:
-        npm_default:
-          external: true
-        default:
     '';
 
     # ── ntfy bridge script ──────────────────────────────────────
