@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { exec } from "../exec.js";
 import type { z } from "zod";
 import type { CloudInstanceSchema, CloudResourceSchema, CloudCostSchema } from "../schemas.js";
@@ -5,6 +7,40 @@ import type { CloudInstanceSchema, CloudResourceSchema, CloudCostSchema } from "
 type CloudInstance = z.infer<typeof CloudInstanceSchema>;
 type CloudResource = z.infer<typeof CloudResourceSchema>;
 type CloudCost = z.infer<typeof CloudCostSchema>;
+
+// Suppress file permissions warning (config is a symlink from vault)
+process.env.OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = "True";
+
+// ── Cached compartment (tenancy) ID ──
+
+let _compartmentId: string | null = null;
+
+function getCompartmentId(): string {
+  if (_compartmentId) return _compartmentId;
+
+  // 1. Environment variable
+  if (process.env.OCI_COMPARTMENT_ID) {
+    _compartmentId = process.env.OCI_COMPARTMENT_ID;
+    return _compartmentId;
+  }
+
+  // 2. Parse tenancy OCID from ~/.oci/config (tenancy = root compartment)
+  try {
+    const configPath = join(process.env.HOME ?? "/root", ".oci", "config");
+    const config = readFileSync(configPath, "utf-8");
+    const match = config.match(/^tenancy\s*=\s*(.+)$/m);
+    if (match?.[1]?.trim()) {
+      _compartmentId = match[1].trim();
+      return _compartmentId;
+    }
+  } catch { /* config not readable, continue */ }
+
+  // 3. Environment fallback
+  _compartmentId = process.env.OCI_TENANCY_ID ?? "";
+  return _compartmentId;
+}
+
+// ── OCI CLI wrapper ──
 
 function ociCli(args: string[], timeout = 30_000): { ok: boolean; data: unknown; raw: string; error?: string } {
   const result = exec("oci", args, { timeout });
@@ -19,10 +55,17 @@ function ociCli(args: string[], timeout = 30_000): { ok: boolean; data: unknown;
   }
 }
 
+// ── Instances ──
+
 export function listInstances(): { ok: boolean; instances: CloudInstance[]; error?: string } {
+  const compartmentId = getCompartmentId();
+  if (!compartmentId) {
+    return { ok: false, instances: [], error: "No OCI tenancy/compartment ID found. Set OCI_COMPARTMENT_ID or configure ~/.oci/config" };
+  }
+
   const result = ociCli([
     "compute", "instance", "list",
-    "--compartment-id", getCompartmentId(),
+    "--compartment-id", compartmentId,
     "--output", "json",
     "--all",
   ], 60_000);
@@ -78,8 +121,14 @@ export function instanceAction(
   };
 }
 
+// ── Resources ──
+
 export function listResources(): { ok: boolean; resources: CloudResource[]; error?: string } {
   const compartmentId = getCompartmentId();
+  if (!compartmentId) {
+    return { ok: false, resources: [], error: "No OCI tenancy/compartment ID found" };
+  }
+
   const resources: CloudResource[] = [];
 
   // VCNs
@@ -118,72 +167,270 @@ export function listResources(): { ok: boolean; resources: CloudResource[]; erro
     }
   }
 
-  // Boot volumes
-  const bvResult = ociCli([
-    "bv", "boot-volume", "list",
+  // Availability domains (needed for boot/block volumes)
+  const adResult = ociCli([
+    "iam", "availability-domain", "list",
     "--compartment-id", compartmentId,
     "--output", "json", "--all",
   ]);
-  if (bvResult.ok) {
-    const bootVols = (bvResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
-    for (const bv of bootVols) {
-      resources.push({
-        type: "boot-volume",
-        name: String(bv["display-name"] ?? ""),
-        id: String(bv.id ?? ""),
-        details: { sizeGb: bv["size-in-gbs"], state: bv["lifecycle-state"] },
-      });
+  const ads: string[] = [];
+  if (adResult.ok) {
+    const adList = (adResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+    for (const ad of adList) {
+      ads.push(String(ad.name ?? ""));
+    }
+  }
+
+  // Boot volumes (requires --availability-domain)
+  for (const ad of ads) {
+    const bvResult = ociCli([
+      "bv", "boot-volume", "list",
+      "--compartment-id", compartmentId,
+      "--availability-domain", ad,
+      "--output", "json", "--all",
+    ]);
+    if (bvResult.ok) {
+      const bootVols = (bvResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+      for (const bv of bootVols) {
+        resources.push({
+          type: "boot-volume",
+          name: String(bv["display-name"] ?? ""),
+          id: String(bv.id ?? ""),
+          details: { sizeGb: bv["size-in-gbs"], state: bv["lifecycle-state"], ad },
+        });
+      }
+    }
+  }
+
+  // Block volumes
+  for (const ad of ads) {
+    const volResult = ociCli([
+      "bv", "volume", "list",
+      "--compartment-id", compartmentId,
+      "--availability-domain", ad,
+      "--output", "json", "--all",
+    ]);
+    if (volResult.ok) {
+      const vols = (volResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+      for (const vol of vols) {
+        resources.push({
+          type: "block-volume",
+          name: String(vol["display-name"] ?? ""),
+          id: String(vol.id ?? ""),
+          details: { sizeGb: vol["size-in-gbs"], state: vol["lifecycle-state"], ad },
+        });
+      }
+    }
+  }
+
+  // Object Storage buckets
+  const nsResult = ociCli(["os", "ns", "get", "--output", "json"]);
+  if (nsResult.ok) {
+    const ns = (nsResult.data as { data?: string }).data;
+    if (ns) {
+      const bucketResult = ociCli([
+        "os", "bucket", "list",
+        "--compartment-id", compartmentId,
+        "--namespace-name", ns,
+        "--output", "json", "--all",
+      ]);
+      if (bucketResult.ok) {
+        const buckets = (bucketResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+        for (const b of buckets) {
+          resources.push({
+            type: "object-storage-bucket",
+            name: String(b.name ?? ""),
+            id: `${ns}/${b.name}`,
+            details: {
+              namespace: ns,
+              storageTier: b["storage-tier"],
+              timeCreated: b["time-created"],
+            },
+          });
+        }
+      }
     }
   }
 
   return { ok: true, resources };
 }
 
-export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } {
-  // OCI cost tracking via usage API — requires proper tenancy setup
-  // For now, return a summary from the CLI if available
-  const result = ociCli([
-    "account", "subscription", "list",
-    "--compartment-id", getCompartmentId(),
-    "--output", "json",
-  ]);
+// ── Costs ──
 
-  if (!result.ok) {
-    // OCI free tier — costs are typically $0
-    return {
-      ok: true,
-      costs: [{
-        service: "OCI Always Free",
+function monthLabel(d: Date): string {
+  return `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`;
+}
+
+export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } {
+  const tenantId = getCompartmentId();
+  if (!tenantId) {
+    return { ok: false, costs: [], error: "No OCI tenancy ID found. Set OCI_COMPARTMENT_ID or configure ~/.oci/config" };
+  }
+
+  const now = new Date();
+  const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const endOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+  const period = monthLabel(now);
+
+  // Try the OCI Usage API for real cost data (group by service for breakdown)
+  const result = ociCli([
+    "usage-api", "usage-summary", "request-summarized-usages",
+    "--tenant-id", tenantId,
+    "--time-usage-started", startOfMonth.toISOString(),
+    "--time-usage-ended", endOfMonth.toISOString(),
+    "--granularity", "MONTHLY",
+    "--query-type", "COST",
+    "--group-by", JSON.stringify(["service"]),
+    "--output", "json",
+  ], 60_000);
+
+  if (result.ok) {
+    const raw = result.data as { data?: { items?: Array<Record<string, unknown>> } };
+    const items = raw.data?.items ?? [];
+
+    if (items.length === 0) {
+      return { ok: true, costs: [{ service: "OCI (no usage charges)", amount: 0, currency: "USD", period }] };
+    }
+
+    // Aggregate costs by service
+    const serviceMap = new Map<string, number>();
+    let currency = "USD";
+    for (const item of items) {
+      const svc = String(item.service ?? item["sku-name"] ?? "Unknown");
+      const amt = Number(item["computed-amount"] ?? 0);
+      currency = String(item.currency ?? "USD");
+      serviceMap.set(svc, (serviceMap.get(svc) ?? 0) + amt);
+    }
+
+    const costs: CloudCost[] = [];
+    let total = 0;
+    for (const [svc, amt] of serviceMap) {
+      const rounded = Math.round(amt * 100) / 100;
+      total += rounded;
+      if (rounded !== 0) {
+        costs.push({ service: svc, amount: rounded, currency, period });
+      }
+    }
+
+    if (costs.length === 0) {
+      costs.push({ service: "OCI (all services within free tier)", amount: 0, currency, period });
+    }
+
+    costs.push({ service: "OCI TOTAL", amount: Math.round(total * 100) / 100, currency, period });
+    return { ok: true, costs };
+  }
+
+  // Fallback: try older CLI module name
+  const fallback = ociCli([
+    "metering-computation", "usage", "request-summarized-usages",
+    "--tenant-id", tenantId,
+    "--time-usage-started", startOfMonth.toISOString(),
+    "--time-usage-ended", endOfMonth.toISOString(),
+    "--granularity", "MONTHLY",
+    "--query-type", "COST",
+    "--group-by", JSON.stringify(["service"]),
+    "--output", "json",
+  ], 60_000);
+
+  if (fallback.ok) {
+    const raw = fallback.data as { data?: { items?: Array<Record<string, unknown>> } };
+    const items = raw.data?.items ?? [];
+    const serviceMap = new Map<string, number>();
+    let currency = "USD";
+    for (const item of items) {
+      const svc = String(item.service ?? item["sku-name"] ?? "Unknown");
+      const amt = Number(item["computed-amount"] ?? 0);
+      currency = String(item.currency ?? "USD");
+      serviceMap.set(svc, (serviceMap.get(svc) ?? 0) + amt);
+    }
+    const costs: CloudCost[] = [];
+    let total = 0;
+    for (const [svc, amt] of serviceMap) {
+      const rounded = Math.round(amt * 100) / 100;
+      total += rounded;
+      if (rounded !== 0) {
+        costs.push({ service: svc, amount: rounded, currency, period });
+      }
+    }
+    if (costs.length === 0) {
+      costs.push({ service: "OCI (all services within free tier)", amount: 0, currency, period });
+    }
+    costs.push({ service: "OCI TOTAL", amount: Math.round(total * 100) / 100, currency, period });
+    return { ok: true, costs };
+  }
+
+  // Last resort: instance-based estimation
+  return getInstanceBasedCosts(tenantId, period);
+}
+
+function getInstanceBasedCosts(compartmentId: string, period: string): { ok: boolean; costs: CloudCost[]; error?: string } {
+  const costs: CloudCost[] = [];
+  const FREE_SHAPES = new Set(["VM.Standard.E2.1.Micro", "VM.Standard.A1.Flex"]);
+
+  const instanceResult = ociCli([
+    "compute", "instance", "list",
+    "--compartment-id", compartmentId,
+    "--output", "json", "--all",
+  ], 60_000);
+
+  if (instanceResult.ok) {
+    const instances = (instanceResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+    for (const inst of instances) {
+      const name = String(inst["display-name"] ?? "");
+      const shape = String(inst.shape ?? "");
+      const state = String(inst["lifecycle-state"] ?? "");
+      const shapeConfig = inst["shape-config"] as Record<string, unknown> | undefined;
+      const ocpus = Number(shapeConfig?.ocpus ?? 0);
+      const memGb = Number(shapeConfig?.["memory-in-gbs"] ?? 0);
+
+      const isFreeTier = FREE_SHAPES.has(shape) && (
+        shape === "VM.Standard.E2.1.Micro" ||
+        (shape === "VM.Standard.A1.Flex" && ocpus <= 4 && memGb <= 24)
+      );
+
+      costs.push({
+        service: `${name} (${shape}, ${ocpus} OCPU, ${memGb}GB)`,
         amount: 0,
         currency: "USD",
-        period: "current month",
-      }],
-    };
+        period: isFreeTier
+          ? `${period} — Always Free (${state})`
+          : `${period} — Paid tier (${state}), usage API unavailable`,
+      });
+    }
+  }
+
+  // Object Storage
+  const nsResult = ociCli(["os", "ns", "get", "--output", "json"]);
+  if (nsResult.ok) {
+    const ns = (nsResult.data as { data?: string }).data;
+    if (ns) {
+      const bucketResult = ociCli([
+        "os", "bucket", "list",
+        "--compartment-id", compartmentId,
+        "--namespace-name", ns,
+        "--output", "json", "--all",
+      ]);
+      if (bucketResult.ok) {
+        const buckets = (bucketResult.data as { data?: Array<Record<string, unknown>> }).data ?? [];
+        for (const b of buckets) {
+          costs.push({
+            service: `Object Storage: ${b.name} (${b["storage-tier"] ?? "Standard"})`,
+            amount: 0,
+            currency: "USD",
+            period: `${period} — Free tier: 20GB Standard, 50k requests/mo`,
+          });
+        }
+      }
+    }
+  }
+
+  if (costs.length === 0) {
+    costs.push({ service: "OCI", amount: 0, currency: "USD", period: `${period} — usage API unavailable, no instances found` });
   }
 
   return {
     ok: true,
-    costs: [{
-      service: "OCI Subscription",
-      amount: 0,
-      currency: "USD",
-      period: "current month",
-    }],
+    costs,
+    error: "Usage API unavailable — showing instance classification only. Actual costs may differ.",
   };
-}
-
-function getCompartmentId(): string {
-  // Read from OCI config or environment
-  const envId = process.env.OCI_COMPARTMENT_ID;
-  if (envId) return envId;
-
-  // Try to get from oci config
-  const result = exec("oci", ["iam", "compartment", "list", "--query", "data[0].id", "--raw-output"], { timeout: 10_000 });
-  if (result.ok && result.stdout.trim()) {
-    return result.stdout.trim();
-  }
-
-  // Fallback: use tenancy OCID from config file
-  const configResult = exec("oci", ["setup", "config", "--help"], { timeout: 5_000 });
-  return process.env.OCI_TENANCY_ID ?? "";
 }
