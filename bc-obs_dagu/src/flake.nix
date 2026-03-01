@@ -720,7 +720,6 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBaseConfig pkgs} $out/base.yaml
         cp ${./Dockerfile} $out/Dockerfile
-        cp ${./Dockerfile} $out/Dockerfile
         cp ${dags.healthcheck} $out/dags/healthcheck.yaml
         cp ${dags.system-check} $out/dags/system-check.yaml
         cp ${dags.docker-check} $out/dags/docker-check.yaml
