@@ -9,6 +9,7 @@
 
   "secrets": {
     "jwks_file": "jwks_key.yaml",
-    "jwks_dest": "config/oidc_jwks.pem"
+    "jwks_dest": "config/oidc_jwks.pem",
+    "escape_dollars": true
   }
 }
