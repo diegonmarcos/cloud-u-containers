@@ -32,12 +32,13 @@ const deployHistorySchema = z.object({
 });
 
 const alertStateSchema = z.object({
-  key: z.string(),
+  vm: z.string(),
 });
 
 const alertUpdateSchema = z.object({
-  key: z.string(),
-  sent: z.boolean(),
+  vm: z.string(),
+  status: z.string(),
+  notified: z.boolean(),
 });
 
 const pruneSchema = z.object({
@@ -57,7 +58,7 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       const { vm, limit } = healthHistorySchema.parse(req.query);
-      return getHealthHistory(vm, limit);
+      return getHealthHistory({ vm, limit });
     }
   );
 
@@ -88,8 +89,8 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const { tool, target, limit } = auditLogSchema.parse(req.query);
-      return getAuditLog(tool, target, limit);
+      const { tool, limit } = auditLogSchema.parse(req.query);
+      return getAuditLog({ tool, limit });
     }
   );
 
@@ -105,7 +106,7 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       const { service, limit } = deployHistorySchema.parse(req.query);
-      return getDeployHistory(service, limit);
+      return getDeployHistory({ service, limit });
     }
   );
 
@@ -120,8 +121,8 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const { key } = alertStateSchema.parse(req.query);
-      return getAlertState(key);
+      const { vm } = alertStateSchema.parse(req.query);
+      return getAlertState(vm);
     }
   );
 
@@ -136,9 +137,9 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const { key, sent } = alertUpdateSchema.parse(req.body);
-      updateAlertState(key, sent);
-      return { ok: true, key, sent };
+      const { vm, status, notified } = alertUpdateSchema.parse(req.body);
+      updateAlertState(vm, status, notified);
+      return { ok: true, vm, status, notified };
     }
   );
 
@@ -154,8 +155,8 @@ export const registerDatabaseRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       const { days } = pruneSchema.parse(req.body);
-      const count = pruneOldRecords(days);
-      return { ok: true, pruned: count };
+      const result = pruneOldRecords(days);
+      return { ok: true, ...result };
     }
   );
 };

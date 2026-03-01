@@ -42,10 +42,9 @@ export function registerSecurityTools(server: McpServer) {
   server.tool(
     "security_tokens",
     "Check for exposed secrets/tokens in running containers (env vars, files)",
-    { vm: z.string().describe("VM ID or alias") },
-    async ({ vm }) => {
-      const vmId = resolveVmId(vm);
-      return jsonText(`Token scan: ${vm}`, securityTokens(vmId));
+    {},
+    async () => {
+      return jsonText("Token scan", securityTokens());
     }
   );
 }

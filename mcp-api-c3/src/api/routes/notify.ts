@@ -22,7 +22,6 @@ const healthDownSchema = z.object({
 
 const healthRecoveredSchema = z.object({
   target: z.string(),
-  downtime: z.string().optional(),
 });
 
 const certExpiringSchema = z.object({
@@ -32,8 +31,7 @@ const certExpiringSchema = z.object({
 
 const diskFullSchema = z.object({
   vm: z.string(),
-  percent: z.number(),
-  path: z.string().optional(),
+  percent: z.string(),
 });
 
 export const registerNotifyRoutes: FastifyPluginAsync = async (app) => {
@@ -80,8 +78,8 @@ export const registerNotifyRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const { target, downtime } = healthRecoveredSchema.parse(req.body);
-      return alertHealthRecovered(target, downtime);
+      const { target } = healthRecoveredSchema.parse(req.body);
+      return alertHealthRecovered(target);
     }
   );
 
@@ -112,8 +110,8 @@ export const registerNotifyRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (req) => {
-      const { vm, percent, path } = diskFullSchema.parse(req.body);
-      return alertDiskFull(vm, percent, path);
+      const { vm, percent } = diskFullSchema.parse(req.body);
+      return alertDiskFull(vm, percent);
     }
   );
 };

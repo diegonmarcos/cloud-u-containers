@@ -69,14 +69,11 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Security"],
         summary: "Check for exposed secrets/tokens in containers",
-        querystring: vmSchema,
         response: { 200: { type: "object" } },
       },
     },
-    async (req) => {
-      const { vm } = vmSchema.parse(req.query);
-      const vmId = resolveVmId(vm);
-      return securityTokens(vmId);
+    async () => {
+      return securityTokens();
     }
   );
 };

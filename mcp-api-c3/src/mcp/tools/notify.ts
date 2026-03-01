@@ -48,10 +48,9 @@ export function registerNotifyTools(server: McpServer) {
     "Send alert for a VM/service recovery",
     {
       target: z.string().describe("VM or service name"),
-      downtime: z.string().optional().describe("Downtime duration (e.g. '2h 15m')"),
     },
-    async ({ target, downtime }) => {
-      const result = alertHealthRecovered(target, downtime);
+    async ({ target }) => {
+      const result = alertHealthRecovered(target);
       return {
         content: [{ type: "text", text: result.ok ? "Alert sent" : `Error: ${result.error}` }],
         isError: !result.ok,
@@ -80,11 +79,10 @@ export function registerNotifyTools(server: McpServer) {
     "Send alert for disk space warning",
     {
       vm: z.string().describe("VM ID or alias"),
-      percent: z.number().describe("Disk usage percentage"),
-      path: z.string().optional().describe("Mount path (default: /)"),
+      percent: z.string().describe("Disk usage percentage"),
     },
-    async ({ vm, percent, path }) => {
-      const result = alertDiskFull(vm, percent, path);
+    async ({ vm, percent }) => {
+      const result = alertDiskFull(vm, percent);
       return {
         content: [{ type: "text", text: result.ok ? "Alert sent" : `Error: ${result.error}` }],
         isError: !result.ok,
