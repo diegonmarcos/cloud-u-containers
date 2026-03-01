@@ -1,7 +1,12 @@
+// ── Security Routes — "Is it safe" ──
+// Security scanning, auditing, topology, secrets status
+
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
+import { getSecurityTopology } from "../../shared/topology.js";
+import { getSecretsStatus } from "../../shared/files.js";
 import { resolveVmId } from "../../shared/config.js";
 
 const securityScanSchema = z.object({
@@ -76,5 +81,25 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     async () => {
       return securityTokens();
     }
+  );
+
+  // ── Security topology (from topology.ts) ──
+
+  app.get(
+    "/topology/security",
+    { schema: { tags: ["Security"] } },
+    async () => {
+      return getSecurityTopology();
+    }
+  );
+
+  // ── Secrets status (from files.ts) ──
+
+  app.get<{ Params: { service: string } }>(
+    "/files/secrets/:service",
+    { schema: { tags: ["Security"] } },
+    async (req) => {
+      return { content: getSecretsStatus(req.params.service) };
+    },
   );
 };

@@ -1,6 +1,11 @@
+// ── Security Pillar — "Is it safe" (6 tools) ──
+// Security scanning, auditing, topology, secrets
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
+import { getSecurityTopology } from "../../shared/topology.js";
+import { getSecretsStatus } from "../../shared/files.js";
 import { resolveVmId } from "../../shared/config.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
@@ -8,7 +13,13 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
   return { content: [{ type: "text" as const, text: `${label}\n\n${text}` }] };
 }
 
+function plainText(text: string): { content: { type: "text"; text: string }[] } {
+  return { content: [{ type: "text" as const, text }] };
+}
+
 export function registerSecurityTools(server: McpServer) {
+  // ── Scanning (4 tools, original security.ts) ──
+
   server.tool(
     "security_scan",
     "Full security scan: privileged containers, root users, exposed ports, Docker config",
@@ -46,5 +57,25 @@ export function registerSecurityTools(server: McpServer) {
     async () => {
       return jsonText("Token scan", securityTokens());
     }
+  );
+
+  // ── Security topology (1 tool, from c3.ts) ──
+
+  server.tool(
+    "c3_topology_security",
+    "Security topology: exposed services, secrets status, VM access methods",
+    {},
+    async () => jsonText("Security topology", getSecurityTopology()),
+  );
+
+  // ── Secrets status (1 tool, from c3.ts) ──
+
+  server.tool(
+    "c3_secrets_status",
+    "Show secrets encryption status for services (never exposes values)",
+    {
+      service: z.string().optional().describe("Service name (omit for all)"),
+    },
+    async ({ service }) => plainText(getSecretsStatus(service)),
   );
 }

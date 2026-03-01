@@ -7,17 +7,13 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { authPlugin } from "./plugins/auth.js";
 import { errorHandler } from "./plugins/error-handler.js";
-import { registerHealthRoutes } from "./routes/health.js";
-import { registerProfilingRoutes } from "./routes/profiling.js";
-import { registerControlRoutes } from "./routes/control.js";
-import { registerCloudRoutes } from "./routes/cloud.js";
-import { registerServicesRoutes } from "./routes/services.js";
-import { registerTopologyRoutes } from "./routes/topology.js";
-import { registerTestsRoutes } from "./routes/tests.js";
-import { registerFilesRoutes } from "./routes/files.js";
+
+// ── 6 Pillars ────────────────────────────────────
+import { registerInventoryRoutes } from "./routes/inventory.js";
+import { registerOperationsRoutes } from "./routes/operations.js";
+import { registerObservabilityRoutes } from "./routes/observability.js";
 import { registerSecurityRoutes } from "./routes/security.js";
-import { registerNotifyRoutes } from "./routes/notify.js";
-import { registerDatabaseRoutes } from "./routes/database.js";
+import { registerFinOpsRoutes } from "./routes/finops.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -36,17 +32,12 @@ export async function buildApp() {
         description: "Unified API for cloud infrastructure management. Replaces the Rust API.",
       },
       tags: [
-        { name: "Health", description: "Health checks and tiered probes" },
-        { name: "Profiling", description: "Container and VM diagnostics" },
-        { name: "Control", description: "VM, container, and service lifecycle" },
-        { name: "Cloud", description: "OCI and GCP cloud provider operations" },
-        { name: "Services", description: "Service discovery and API specs" },
-        { name: "Topology", description: "Declarative topology assembly" },
-        { name: "Tests", description: "Dynamic infrastructure tests" },
-        { name: "Files", description: "Config files, logs, reports, and secrets status" },
-        { name: "Security", description: "Security scanning and auditing" },
-        { name: "Notifications", description: "Push notifications via ntfy" },
-        { name: "Database", description: "SQLite persistence and audit logs" },
+        { name: "Inventory", description: "Service catalog, topology, config, and discovery" },
+        { name: "Delivery", description: "Build, deploy, and CI/CD pipeline" },
+        { name: "Operations", description: "VM, container, and service lifecycle control" },
+        { name: "Observability", description: "Health, profiling, diagnostics, testing, and alerting" },
+        { name: "Security", description: "Security scanning, auditing, and compliance" },
+        { name: "FinOps", description: "Cloud provider operations and cost tracking" },
       ],
     },
   });
@@ -69,17 +60,12 @@ export async function buildApp() {
   app.setErrorHandler(errorHandler);
 
   // Routes (no prefix — Caddy handle_path /c3-api/* strips the prefix)
-  await app.register(registerHealthRoutes);
-  await app.register(registerProfilingRoutes);
-  await app.register(registerControlRoutes);
-  await app.register(registerCloudRoutes);
-  await app.register(registerServicesRoutes);
-  await app.register(registerTopologyRoutes);
-  await app.register(registerTestsRoutes);
-  await app.register(registerFilesRoutes);
+  // Note: Delivery pillar is MCP-only (build/deploy), no REST routes
+  await app.register(registerInventoryRoutes);
+  await app.register(registerOperationsRoutes);
+  await app.register(registerObservabilityRoutes);
   await app.register(registerSecurityRoutes);
-  await app.register(registerNotifyRoutes);
-  await app.register(registerDatabaseRoutes);
+  await app.register(registerFinOpsRoutes);
 
   return app;
 }

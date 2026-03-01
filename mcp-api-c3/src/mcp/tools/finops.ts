@@ -1,3 +1,6 @@
+// ── FinOps Pillar — "What it costs" (7 tools) ──
+// Cloud provider operations and cost tracking
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as oci from "../../shared/cloud/oci.js";
 import * as gcp from "../../shared/cloud/gcp.js";
@@ -7,7 +10,7 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
   return { content: [{ type: "text" as const, text: `${label}\n\n${text}` }] };
 }
 
-export function registerCloudTools(server: McpServer) {
+export function registerFinOpsTools(server: McpServer) {
   server.tool(
     "cloud_oci_instances",
     "List all OCI compute instances in the tenancy",
