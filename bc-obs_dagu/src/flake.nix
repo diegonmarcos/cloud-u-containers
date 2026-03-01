@@ -25,7 +25,6 @@
           image: dagu-ssh:local
           container_name: ${config.container_name}
           restart: unless-stopped
-          command: ["dagu", "start-all"]
           ports:
             - "10.0.0.3:${toString config.port}:8080"
           environment:
@@ -720,6 +719,7 @@
         mkdir -p $out/dags
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBaseConfig pkgs} $out/base.yaml
+        cp ${./Dockerfile} $out/Dockerfile
         cp ${./Dockerfile} $out/Dockerfile
         cp ${dags.healthcheck} $out/dags/healthcheck.yaml
         cp ${dags.system-check} $out/dags/system-check.yaml

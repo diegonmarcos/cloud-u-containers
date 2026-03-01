@@ -4,6 +4,7 @@
 
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/containers/dagu"
+    "remote_path": "/opt/containers/dagu",
+    "excludes": ["data"]
   }
 }
