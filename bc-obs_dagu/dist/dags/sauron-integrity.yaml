@@ -1,35 +1,36 @@
 schedule: "0 3 * * 0"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
   success: false
-
 steps:
-  - name: verify-scanners
+  - name: verify-scanners-and-notify
     command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       RUNNING=0
-      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-        ip=$${vm_ip%:*}
-        if ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
+      TOTAL=0
+      MISSING=""
+      for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        TOTAL=$((TOTAL + 1))
+        if $SSH $user@$ip "docker ps --format '{{.Names}}' | grep -q sauron" 2>/dev/null; then
           RUNNING=$((RUNNING + 1))
+        else
+          MISSING="${MISSING}  - $name ($ip): sauron-lite NOT running\n"
         fi
       done
-      if [ $RUNNING -lt 4 ]; then
-        echo "Only $RUNNING/4 Sauron scanners running"
+      if [ $RUNNING -lt $TOTAL ]; then
+        MSG=$(printf "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/security_yara" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Title: Sauron Scanner(s) Down" \
+          -H "Priority: 4" \
+          -H "Tags: warning,eye" \
+          -d "$MSG"
         exit 1
       fi
-
-handlerOn:
-  failure:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"sauron","title":"Sauron Scanner(s) Down","message":"Not all security scanners are running","priority":4,"tags":["warning"]}
-    command: POST ${NTFY_URL}

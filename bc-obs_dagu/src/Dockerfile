@@ -8,5 +8,3 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     dnsutils \
     && rm -rf /var/lib/apt/lists/*
-
-USER dagu

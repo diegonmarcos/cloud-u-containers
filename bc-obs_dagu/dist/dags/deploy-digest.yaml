@@ -1,26 +1,36 @@
 schedule: "0 19 * * *"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
-  success: true
-
+  success: false
 steps:
-  - name: summarize-deployments
+  - name: collect-deploys-and-notify
     command: |
-      COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no diego@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
-      echo "Container restarts (24h): $COUNT"
-
-handlerOn:
-  success:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"deploy","title":"Daily Deploy Digest","message":"Deployment activity summary","priority":1,"tags":["rocket"]}
-    command: POST ${NTFY_URL}
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      TOTAL=0
+      for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
+        COUNT=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep -c 'Container.*Started' || echo 0" 2>/dev/null || echo 0)
+        TOTAL=$((TOTAL + COUNT))
+        if [ "$COUNT" -gt 0 ] 2>/dev/null; then
+          REPORT="${REPORT}$name ($ip): $COUNT restarts\n"
+          if [ -n "$RESTARTS" ]; then
+            REPORT="${REPORT}$RESTARTS\n"
+          fi
+          REPORT="${REPORT}\n"
+        fi
+      done
+      MSG=$(printf "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
+        -H "Authorization: Bearer $BEARER_TOKEN" \
+        -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
+        -H "Priority: 2" \
+        -H "Tags: rocket" \
+        -d "$MSG"

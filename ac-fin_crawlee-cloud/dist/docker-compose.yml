@@ -100,14 +100,11 @@ services:
     restart: unless-stopped
     env_file:
       - .secrets
-    command: ["node", "packages/api/dist/scheduler.js"]
+    command: ["sleep", "infinity"]
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@crawlee_db:5432/${POSTGRES_DB}
       REDIS_URL: redis://crawlee_redis:6379
-    depends_on:
-      api:
-        condition: service_healthy
     networks:
       - crawlee_network
 

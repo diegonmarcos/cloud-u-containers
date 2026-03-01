@@ -1,41 +1,31 @@
 schedule: "*/5 * * * *"
-
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
-
 mailOn:
   failure: false
   success: false
-
 steps:
-  - name: check-hub
-    command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.1/22'"
-    retryPolicy:
-      limit: 1
-      intervalSec: 5
-  - name: check-mail
-    command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.3/25'"
-  - name: check-analytics
-    command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.4/22'"
-
-handlerOn:
-  failure:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"infra","title":"Mesh Health FAILED","message":"One or more always-on peers unreachable","priority":5,"tags":["rotating_light"]}
-    command: POST ${NTFY_URL}
-
-  success:
-    type: http
-    config:
-      headers:
-        Content-Type: application/json
-        Authorization: "Bearer ${BEARER_TOKEN}"
-      body: |
-        {"topic":"infra","title":"Mesh Health OK","message":"All always-on peers reachable","priority":2,"tags":["white_check_mark"]}
-    command: POST ${NTFY_URL}
+  - name: check-mesh-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      FAILED=""
+      for peer in "10.0.0.1:gcp-proxy:22" "10.0.0.3:oci-mail:25" "10.0.0.4:oci-analytics:22"; do
+        ip=${peer%%:*}
+        rest=${peer#*:}
+        name=${rest%:*}
+        port=${rest##*:}
+        if ! echo QUIT | timeout 3 bash -c "cat > /dev/tcp/$ip/$port" 2>/dev/null; then
+          FAILED="${FAILED}  - $name ($ip) port $port UNREACHABLE\n"
+        fi
+      done
+      if [ -n "$FAILED" ]; then
+        MSG=$(printf "Unreachable peers:\n${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_mesh-health" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Title: Mesh Health FAILED" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi
