@@ -156,6 +156,18 @@
       "domain": "slides.diegonmarcos.com",
       "description": "Markdown Presentations (slides.diegonmarcos.com)"
     },
+    "mattermost": {
+      "category": "app",
+      "vm": "oci-A1-f_0",
+      "containers": [
+        "mattermost",
+        "mattermost-postgres",
+        "mattermost-ntfy-bridge"
+      ],
+      "domain": "chat.diegonmarcos.com",
+      "api_port": "8065",
+      "description": "Mattermost team chat with ntfy bridge and AI agents"
+    },
     "mailu": {
       "category": "app",
       "flake": "tools-mailu",
@@ -496,6 +508,19 @@
         "qwen2.5:14b"
       ],
       "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
+    },
+    "ollama-arm": {
+      "category": "agi",
+      "vm": "oci-A1-p_0",
+      "containers": [
+        "ollama-arm"
+      ],
+      "api_port": "11434",
+      "models": [
+        "deepseek-r1:7b",
+        "qwen2.5:7b"
+      ],
+      "description": "Ollama LLM server (ARM CPU, 7b models)"
     },
     "caddy": {
       "category": "sec",
