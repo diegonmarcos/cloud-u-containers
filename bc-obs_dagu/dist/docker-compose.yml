@@ -3,18 +3,7 @@ services:
     image: ghcr.io/dagu-org/dagu:1.30.3
     container_name: dagu
     restart: unless-stopped
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        apt-get update -qq && apt-get install -y -qq curl openssh-client dnsutils > /dev/null 2>&1
-        if [ -f /mnt/ssh/id_rsa ]; then
-          mkdir -p /root/.ssh-internal
-          cp /mnt/ssh/* /root/.ssh-internal/
-          chmod 700 /root/.ssh-internal
-          chmod 600 /root/.ssh-internal/id_rsa
-          chmod 644 /root/.ssh-internal/*.pub 2>/dev/null || true
-        fi
-        dagu start-all
+    command: ["dagu", "start-all"]
     ports:
       - "10.0.0.3:8070:8080"
     environment:
@@ -31,7 +20,7 @@ services:
       - dagu-data:/var/lib/dagu
       - ./dags:/var/lib/dagu/dags
       - ./base.yaml:/var/lib/dagu/base.yaml:ro
-      - /home/ubuntu/.ssh:/mnt/ssh:ro
+      - ~/.ssh:/root/.ssh:ro
     mem_limit: 128m
     networks:
       - default

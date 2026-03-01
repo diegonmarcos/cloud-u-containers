@@ -12,11 +12,13 @@ steps:
   - name: check-all-vms
     command: |
       FAILED=0
-      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-        ip=${vm_ip%:*}
-        name=${vm_ip#*:}
-        DISK=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
-        MEM=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
+      for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        DISK=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
+        MEM=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
         if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
           echo "$name: disk=$DISK% mem=$MEM%"
           FAILED=1
