@@ -188,3 +188,68 @@ export function profileVm(vmNameOrAlias: string): ProfilingResponse[] {
 
   return containers.map((c) => profileContainer(c.name));
 }
+
+// ── New: Profile by service name ─────────────────────────────────────────
+
+export function profileService(serviceName: string): ProfilingResponse[] {
+  const config = getConfig();
+  const svc = config.services[serviceName];
+  if (!svc) throw new Error(`Unknown service: ${serviceName}`);
+  if (svc.vm === "local" || svc.vm === "all") {
+    throw new Error(`Cannot profile service with vm=${svc.vm}`);
+  }
+
+  const vmId = svc.vm;
+  const { containers } = listContainers(vmId, true);
+  const matching = containers.filter((c) => c.name.includes(serviceName));
+
+  if (matching.length === 0) {
+    return [{
+      container: serviceName,
+      vm: getVmSshAlias(vmId),
+      checks: [{ name: "locate", passed: false, details: `No containers found matching "${serviceName}"` }],
+      passed: 0,
+      failed: 1,
+      total: 1,
+    }];
+  }
+
+  return matching.map((c) => profileContainer(c.name));
+}
+
+// ── New: VM-level diagnostics ────────────────────────────────────────────
+
+export function vmNetwork(vmNameOrAlias: string): { ok: boolean; output: string } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const result = sshExec(vmId, "ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null", 10_000);
+  return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
+}
+
+export function vmTop(vmNameOrAlias: string): { ok: boolean; output: string } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const result = sshExec(vmId, "ps aux --sort=-%mem | head -20", 10_000);
+  return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
+}
+
+export function vmDiskUsage(vmNameOrAlias: string): { ok: boolean; output: string } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const config = getConfig();
+  const remoteBase = config.remote_base;
+  const result = sshExec(vmId, `du -sh ${remoteBase}/* 2>/dev/null | sort -rh | head -30`, 15_000);
+  return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
+}
+
+export function vmJournal(
+  vmNameOrAlias: string,
+  since = "1h",
+  lines = 100,
+): { ok: boolean; output: string } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const safeLines = Math.max(1, Math.min(Math.floor(lines), 5000));
+  const result = sshExec(
+    vmId,
+    `journalctl --since "${since} ago" --no-pager -n ${safeLines} 2>/dev/null || echo "(journalctl unavailable)"`,
+    15_000,
+  );
+  return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
+}

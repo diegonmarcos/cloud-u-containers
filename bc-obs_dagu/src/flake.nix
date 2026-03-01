@@ -91,7 +91,7 @@
         schedule: "*/5 * * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -136,7 +136,7 @@
         schedule: "0 9 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -174,7 +174,7 @@
         schedule: "0 10 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -212,7 +212,7 @@
         schedule: "0 11 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -249,7 +249,7 @@
         schedule: "0 12 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -287,7 +287,7 @@
         schedule: "0 18 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -315,7 +315,7 @@
         schedule: "*/5 * * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -351,7 +351,7 @@
         schedule: "0 8 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -389,7 +389,7 @@
         schedule: "0 8 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -420,7 +420,7 @@
         schedule: "0 9 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -454,7 +454,7 @@
         schedule: "0 7 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -491,7 +491,7 @@
         schedule: "0 19 * * *"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -521,7 +521,7 @@
         schedule: "0 3 * * 0"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:
@@ -559,7 +559,7 @@
         schedule: "0 9 * * 1"
 
         env:
-          - NTFY_URL: https://rss.diegonmarcos.com
+          - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
 
         mailOn:

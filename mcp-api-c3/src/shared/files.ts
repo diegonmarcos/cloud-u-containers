@@ -12,8 +12,9 @@ import { join } from "path";
 import { getConfig, getServiceDir, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
 import { SOLUTIONS_DIR } from "./paths.js";
 import { sshExec } from "./ssh.js";
-import { healthDeclared, healthDrift } from "./health.js";
+import { healthDeclared, healthDrift, metricsSnapshot } from "./health.js";
 import { listServices } from "./discovery.js";
+import { securityScan } from "./security.js";
 
 // ── Security Helpers ─────────────────────────────────────────────────────
 
@@ -200,9 +201,11 @@ export function getVmStatus(vmId: string): string {
  * Generates a text report based on reportType.
  *
  * Supported types:
- * - "health"   -- Declared + drift summary as markdown
- * - "services" -- All services with VM, category, domain
- * - "drift"    -- Detailed drift report (declared vs deployed)
+ * - "health"     -- Declared + drift summary as markdown
+ * - "services"   -- All services with VM, category, domain
+ * - "drift"      -- Detailed drift report (declared vs deployed)
+ * - "resources"  -- Container resource usage (CPU, memory, I/O)
+ * - "security"   -- Security scan findings
  */
 export function getReport(reportType: string): string {
   try {
@@ -301,8 +304,70 @@ export function getReport(reportType: string): string {
         return lines.join("\n");
       }
 
+      case "resources": {
+        const metrics = metricsSnapshot();
+        const lines: string[] = [
+          "# Resources Report",
+          "",
+          "| VM | Container | CPU | Memory | Net I/O | Block I/O |",
+          "|-----|-----------|-----|--------|---------|-----------|",
+        ];
+
+        for (const vmMetrics of metrics) {
+          if (vmMetrics.error) {
+            lines.push(`| ${vmMetrics.alias} | - | - | - | - | ${vmMetrics.error} |`);
+            continue;
+          }
+          for (const c of vmMetrics.containers) {
+            lines.push(
+              `| ${vmMetrics.alias} | ${c.name} | ${c.cpuPercent} | ${c.memUsage} | ${c.netIO} | ${c.blockIO} |`,
+            );
+          }
+        }
+
+        lines.push("");
+        const totalContainers = metrics.reduce((sum, vm) => sum + vm.containers.length, 0);
+        lines.push(`Total: ${totalContainers} containers across ${metrics.length} VMs`);
+        return lines.join("\n");
+      }
+
+      case "security": {
+        const results = securityScan();
+        const lines: string[] = [
+          "# Security Scan Report",
+          "",
+        ];
+
+        for (const vmResult of results) {
+          lines.push(`## ${vmResult.vm}`);
+          lines.push("");
+          lines.push(`**Findings**: ${vmResult.summary.critical} critical, ${vmResult.summary.warn} warnings, ${vmResult.summary.info} info`);
+          lines.push("");
+
+          const critical = vmResult.findings.filter((f) => f.severity === "critical");
+          if (critical.length > 0) {
+            lines.push("### Critical");
+            for (const f of critical) {
+              lines.push(`- **${f.check}** (${f.target}): ${f.details}`);
+            }
+            lines.push("");
+          }
+
+          const warn = vmResult.findings.filter((f) => f.severity === "warn");
+          if (warn.length > 0) {
+            lines.push("### Warnings");
+            for (const f of warn) {
+              lines.push(`- ${f.check} (${f.target}): ${f.details}`);
+            }
+            lines.push("");
+          }
+        }
+
+        return lines.join("\n");
+      }
+
       default:
-        return `Error: unknown report type "${reportType}". Supported: health, services, drift`;
+        return `Error: unknown report type "${reportType}". Supported: health, services, drift, resources, security`;
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

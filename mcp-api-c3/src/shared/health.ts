@@ -1,6 +1,7 @@
 import { sshExec, checkVmReachable } from "./ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
 import { listContainers } from "./docker.js";
+import { exec } from "./exec.js";
 import type { VmConfig, ServiceConfig } from "./types.js";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -442,4 +443,130 @@ export function probeVm(vmId: string): Tier3Result {
     };
   }
   return results[0];
+}
+
+// ── New: Application-level health endpoints ──────────────────────────────
+
+// Service-specific health paths. If a service isn't here, we skip it.
+const HEALTH_PATHS: Record<string, string> = {
+  authelia: "/api/health",
+  vaultwarden: "/alive",
+  ntfy: "/v1/health",
+  matomo: "/index.php?module=API&method=API.getMatomoVersion&format=json",
+  syncthing: "/rest/noauth/health",
+  photoprism: "/api/v1/status",
+  nocodb: "/api/v1/health",
+  windmill: "/api/version",
+};
+
+// Known service domains (duplicated from discovery for independence)
+const HEALTH_DOMAINS: Record<string, string> = {
+  authelia: "auth.diegonmarcos.com",
+  vaultwarden: "vault.diegonmarcos.com",
+  ntfy: "rss.diegonmarcos.com",
+  matomo: "analytics.diegonmarcos.com",
+  syncthing: "sync.diegonmarcos.com",
+  photoprism: "photos.diegonmarcos.com",
+  nocodb: "db.diegonmarcos.com",
+  windmill: "windmill.diegonmarcos.com",
+};
+
+export interface EndpointHealthResult {
+  service: string;
+  domain: string;
+  path: string;
+  statusCode: number;
+  responseTimeMs: number;
+  ok: boolean;
+  error?: string;
+}
+
+export function healthEndpoints(): EndpointHealthResult[] {
+  const results: EndpointHealthResult[] = [];
+
+  for (const [service, path] of Object.entries(HEALTH_PATHS)) {
+    const domain = HEALTH_DOMAINS[service];
+    if (!domain) continue;
+
+    const url = `https://${domain}${path}`;
+    const start = Date.now();
+
+    const result = exec("curl", [
+      "-s", "-o", "/dev/null",
+      "-w", "%{http_code}",
+      "-m", "10",
+      url,
+    ], { timeout: 15_000 });
+
+    const responseTimeMs = Date.now() - start;
+    const statusCode = parseInt(result.stdout.trim(), 10) || 0;
+
+    results.push({
+      service,
+      domain,
+      path,
+      statusCode,
+      responseTimeMs,
+      ok: statusCode >= 200 && statusCode < 400,
+      ...(statusCode === 0 ? { error: result.stderr.trim() || "Connection failed" } : {}),
+    });
+  }
+
+  return results;
+}
+
+// ── New: Metrics snapshot ────────────────────────────────────────────────
+
+export interface ContainerMetrics {
+  name: string;
+  cpuPercent: string;
+  memUsage: string;
+  memPercent: string;
+  netIO: string;
+  blockIO: string;
+  pids: string;
+}
+
+export interface VmMetricsSnapshot {
+  vm: string;
+  alias: string;
+  containers: ContainerMetrics[];
+  error?: string;
+}
+
+export function metricsSnapshot(vmFilter?: string): VmMetricsSnapshot[] {
+  const config = getConfig();
+  const vmIds = vmFilter ? [resolveVmId(vmFilter)] : Object.keys(config.vms);
+  const results: VmMetricsSnapshot[] = [];
+
+  for (const vmId of vmIds) {
+    const alias = getVmSshAlias(vmId);
+    const result = sshExec(
+      vmId,
+      `docker stats --no-stream --format '{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}\t{{.PIDs}}' 2>/dev/null`,
+      15_000,
+    );
+
+    if (!result.ok || !result.stdout.trim()) {
+      results.push({ vm: vmId, alias, containers: [], error: result.stderr.trim() || "unreachable" });
+      continue;
+    }
+
+    const containers: ContainerMetrics[] = result.stdout.trim().split("\n").map((line) => {
+      const [name, cpuPercent, memUsage, memPercent, netIO, blockIO, pids] = line.split("\t");
+      return {
+        name: name ?? "",
+        cpuPercent: cpuPercent ?? "",
+        memUsage: memUsage ?? "",
+        memPercent: memPercent ?? "",
+        netIO: netIO ?? "",
+        blockIO: blockIO ?? "",
+        pids: pids ?? "",
+      };
+    });
+
+    results.push({ vm: vmId, alias, containers });
+  }
+
+  return results;
 }

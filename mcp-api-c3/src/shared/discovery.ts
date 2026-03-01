@@ -150,3 +150,75 @@ export function getAllSpecs(): { ok: boolean; specs: Record<string, unknown>; er
 
   return { ok: true, specs, errors };
 }
+
+// ── New: Service version detection ───────────────────────────────────────
+
+const VERSION_PATHS: Record<string, { url: string; extract: (data: unknown) => string }> = {
+  matomo: {
+    url: "/index.php?module=API&method=API.getMatomoVersion&format=json",
+    extract: (d) => (d as Record<string, unknown>)?.value as string ?? "unknown",
+  },
+  vaultwarden: {
+    url: "/api/config",
+    extract: (d) => (d as Record<string, unknown>)?.version as string ?? "unknown",
+  },
+  photoprism: {
+    url: "/api/v1/status",
+    extract: (d) => (d as Record<string, unknown>)?.version as string ?? "unknown",
+  },
+  syncthing: {
+    url: "/rest/system/version",
+    extract: (d) => (d as Record<string, unknown>)?.version as string ?? "unknown",
+  },
+  windmill: {
+    url: "/api/version",
+    extract: (d) => typeof d === "string" ? d : JSON.stringify(d),
+  },
+  ntfy: {
+    url: "/v1/health",
+    extract: (d) => (d as Record<string, unknown>)?.healthy ? "healthy" : "unknown",
+  },
+};
+
+export interface ServiceVersion {
+  service: string;
+  version: string;
+  ok: boolean;
+  error?: string;
+}
+
+export function serviceVersion(serviceName: string): ServiceVersion {
+  const versionInfo = VERSION_PATHS[serviceName];
+  const domain = SERVICE_DOMAINS[serviceName];
+
+  if (!versionInfo || !domain) {
+    return { service: serviceName, version: "unknown", ok: false, error: "No version endpoint known" };
+  }
+
+  const url = `https://${domain}${versionInfo.url}`;
+  const token = getBearerToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const result = rawHttpRequest("GET", url, undefined, 10_000, Object.keys(headers).length ? headers : undefined);
+
+  if (!result.ok) {
+    return { service: serviceName, version: "unknown", ok: false, error: `HTTP ${result.status}` };
+  }
+
+  try {
+    const version = versionInfo.extract(result.data);
+    return { service: serviceName, version, ok: true };
+  } catch {
+    return { service: serviceName, version: "unknown", ok: false, error: "Failed to parse version" };
+  }
+}
+
+export function allServiceVersions(): ServiceVersion[] {
+  return Object.keys(VERSION_PATHS)
+    .filter((name) => SERVICE_DOMAINS[name])
+    .map((name) => serviceVersion(name));
+}
+
+/** Expose SERVICE_DOMAINS for other modules */
+export { SERVICE_DOMAINS };

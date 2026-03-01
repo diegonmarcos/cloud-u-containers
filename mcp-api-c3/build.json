@@ -1,5 +1,5 @@
 {
-  "name": "mcp-server-skills",
+  "name": "c3-api",
   "description": "C3 — Cloud Control Center: MCP server + Fastify API (api.diegonmarcos.com)",
 
   "docker": {

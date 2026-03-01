@@ -94,7 +94,7 @@ No containers deployed yet (new VM).
 | `ba-clo_cloudflare` | Cloudflare DNS / Terraform |
 | `ba-clo_gcloud` | Google Cloud SDK |
 | `ba-clo_oci` | Oracle Cloud CLI |
-| `bb-sec_mcp-server-skills` | MCP server for Claude |
+| `mcp-api-c3` | C3 API (Cloud Control Center) — MCP server + Fastify REST API |
 | `bb-sec_rust-api` | Rust cloud API (replacement for flask-api) |
 | `bb-sec_sauron-central` | Central monitoring aggregator |
 | `bb-sec_wireguard` | WireGuard VPN mesh (4 VMs) |
@@ -149,7 +149,7 @@ No containers deployed yet (new VM).
 | `bb-sec_authelia` | SSO and 2FA authentication portal |
 | `bb-sec_caddy` | Caddy reverse proxy + introspect-proxy sidecar (replaces NPM) |
 | `bb-sec_flask-api` | Flask API for cloud automation |
-| `bb-sec_mcp-server-skills` | MCP server for Claude |
+| `mcp-api-c3` | C3 API (Cloud Control Center) — MCP server + Fastify REST API |
 | `bb-sec_rust-api` | Rust cloud API (flask-api replacement) |
 | `bb-sec_sauron-central` | Central monitoring aggregator |
 | `bb-sec_wireguard` | WireGuard VPN mesh across all 4 VMs |

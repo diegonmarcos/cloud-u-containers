@@ -323,3 +323,67 @@ export function serviceStop(
       : `Failed to stop service ${serviceName} on ${alias}: ${output}`,
   };
 }
+
+// ─── Service restart ────────────────────────────────────────────────────
+
+export function serviceRestart(
+  vmNameOrAlias: string,
+  serviceName: string,
+): ControlResult {
+  validatePathComponent(serviceName);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const config = getConfig();
+  const alias = getVmSshAlias(vmId);
+
+  const unreachable = ensureVmReachable(vmId);
+  if (unreachable) {
+    audit("service_restart", `${serviceName}@${alias}`, "VM_UNREACHABLE");
+    return unreachable;
+  }
+
+  const remotePath = `${config.remote_base}/${serviceName}`;
+  const result = sshExec(vmId, `cd ${remotePath} && docker compose down && docker compose up -d`, 90_000);
+
+  audit(
+    "service_restart",
+    `${serviceName}@${alias}`,
+    result.ok ? "OK" : `FAILED (exit ${result.exitCode})`,
+  );
+
+  const output = `${result.stdout}${result.stderr}`.trim();
+  return {
+    ok: result.ok,
+    message: result.ok
+      ? `Service ${serviceName} restarted on ${alias}.\n${output}`
+      : `Failed to restart service ${serviceName} on ${alias}: ${output}`,
+  };
+}
+
+// ─── VM drain ───────────────────────────────────────────────────────────
+
+export function vmDrain(vmNameOrAlias: string): ControlResult {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+
+  const unreachable = ensureVmReachable(vmId);
+  if (unreachable) {
+    audit("vm_drain", alias, "VM_UNREACHABLE");
+    return unreachable;
+  }
+
+  const result = sshExec(vmId, "docker ps -q | xargs -r docker stop", 120_000);
+
+  audit(
+    "vm_drain",
+    alias,
+    result.ok ? "OK" : `FAILED (exit ${result.exitCode})`,
+  );
+
+  const output = `${result.stdout}${result.stderr}`.trim();
+  return {
+    ok: result.ok,
+    message: result.ok
+      ? `All containers stopped on ${alias}.\n${output}`
+      : `Failed to drain ${alias}: ${output}`,
+  };
+}

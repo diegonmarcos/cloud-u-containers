@@ -524,10 +524,10 @@
       ],
       "description": "Container Orchestrator — resource budget management for on-demand services"
     },
-    "mcp-server-skills": {
+    "c3-api": {
       "category": "sec",
-      "vm": "local",
-      "description": "MCP Server + Claude Skills (local tooling)"
+      "vm": "oci-A1-f_0",
+      "description": "C3 API (Cloud Control Center) — MCP Server + Fastify REST API + Skills"
     }
   }
 }

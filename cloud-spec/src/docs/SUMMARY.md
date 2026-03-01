@@ -45,7 +45,7 @@
 - [Caddy](../services/bb-sec_caddy/index.html)
 - [Flask API](../services/bb-sec_flask-api/index.html)
 - [Go API](../services/bb-sec_go-api/index.html)
-- [MCP Server](../services/bb-sec_mcp-server-skills/index.html)
+- [C3 API](../services/mcp-api-c3/index.html)
 - [Rust API](../services/bb-sec_rust-api/index.html)
 - [Sauron Central](../services/bb-sec_sauron-central/index.html)
 

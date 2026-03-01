@@ -11,6 +11,7 @@ import {
 } from "./config.js";
 import { SOLUTIONS_DIR, REPOS } from "./paths.js";
 import { listServices } from "./discovery.js";
+import { sshExec } from "./ssh.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -360,4 +361,164 @@ export function getSecurityTopology(): SecurityTopology {
     vms: vmsList,
     summary: summaryParts.join(" | "),
   };
+}
+
+// ---------------------------------------------------------------------------
+// 4. networkTopology() — Docker networks per VM
+// ---------------------------------------------------------------------------
+
+export interface NetworkInfo {
+  vm: string;
+  networks: Array<{ name: string; driver: string; containers: string[] }>;
+}
+
+export function networkTopology(): NetworkInfo[] {
+  const config = getConfig();
+  const results: NetworkInfo[] = [];
+
+  for (const vmId of Object.keys(config.vms)) {
+    const alias = getVmSshAlias(vmId);
+    const result = sshExec(vmId, `docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null`, 10_000);
+
+    if (!result.ok || !result.stdout.trim()) {
+      results.push({ vm: alias, networks: [] });
+      continue;
+    }
+
+    const networks = result.stdout.trim().split("\n").map((line) => {
+      const [name, driver] = line.split("\t");
+      // Get containers on this network
+      const inspectResult = sshExec(vmId, `docker network inspect ${name} --format '{{range .Containers}}{{.Name}},{{end}}' 2>/dev/null`, 5_000);
+      const containers = inspectResult.ok && inspectResult.stdout.trim()
+        ? inspectResult.stdout.trim().split(",").filter(Boolean)
+        : [];
+      return { name: name ?? "", driver: driver ?? "", containers };
+    });
+
+    results.push({ vm: alias, networks });
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// 5. volumeTopology() — Docker volumes per VM
+// ---------------------------------------------------------------------------
+
+export interface VolumeInfo {
+  vm: string;
+  volumes: Array<{ name: string; driver: string; mountpoint: string }>;
+}
+
+export function volumeTopology(): VolumeInfo[] {
+  const config = getConfig();
+  const results: VolumeInfo[] = [];
+
+  for (const vmId of Object.keys(config.vms)) {
+    const alias = getVmSshAlias(vmId);
+    const result = sshExec(vmId, `docker volume ls --format '{{.Name}}\t{{.Driver}}\t{{.Mountpoint}}' 2>/dev/null`, 10_000);
+
+    if (!result.ok || !result.stdout.trim()) {
+      results.push({ vm: alias, volumes: [] });
+      continue;
+    }
+
+    const volumes = result.stdout.trim().split("\n").map((line) => {
+      const [name, driver, mountpoint] = line.split("\t");
+      return { name: name ?? "", driver: driver ?? "", mountpoint: mountpoint ?? "" };
+    });
+
+    results.push({ vm: alias, volumes });
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// 6. imageTopology() — Docker images per VM
+// ---------------------------------------------------------------------------
+
+export interface ImageInfo {
+  vm: string;
+  images: Array<{ repository: string; tag: string; size: string; created: string }>;
+}
+
+export function imageTopology(): ImageInfo[] {
+  const config = getConfig();
+  const results: ImageInfo[] = [];
+
+  for (const vmId of Object.keys(config.vms)) {
+    const alias = getVmSshAlias(vmId);
+    const result = sshExec(vmId, `docker image ls --format '{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedSince}}' 2>/dev/null`, 15_000);
+
+    if (!result.ok || !result.stdout.trim()) {
+      results.push({ vm: alias, images: [] });
+      continue;
+    }
+
+    const images = result.stdout.trim().split("\n").map((line) => {
+      const [repository, tag, size, created] = line.split("\t");
+      return { repository: repository ?? "", tag: tag ?? "", size: size ?? "", created: created ?? "" };
+    });
+
+    results.push({ vm: alias, images });
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// 7. dependencyTopology() — Parse depends_on from compose files
+// ---------------------------------------------------------------------------
+
+export interface DependencyInfo {
+  service: string;
+  dependencies: string[];
+}
+
+export function dependencyTopology(): DependencyInfo[] {
+  const config = getConfig();
+  const results: DependencyInfo[] = [];
+
+  for (const [serviceName] of Object.entries(config.services)) {
+    try {
+      const serviceDir = getServiceDir(serviceName);
+      const composePath = join(serviceDir, "dist", "docker-compose.yml");
+
+      if (!existsSync(composePath)) continue;
+
+      const content = readFileSync(composePath, "utf-8");
+      const deps: string[] = [];
+
+      // Simple regex parsing for depends_on (fragile, but good enough)
+      const lines = content.split("\n");
+      let inDependsOn = false;
+
+      for (const line of lines) {
+        if (line.trim().startsWith("depends_on:")) {
+          inDependsOn = true;
+          continue;
+        }
+
+        if (inDependsOn) {
+          // Check if still in depends_on block (indented)
+          if (line.match(/^\s{4,}- /)) {
+            const dep = line.trim().replace(/^- /, "").replace(/["']/g, "");
+            deps.push(dep);
+          } else if (line.match(/^\s{2,}\w/)) {
+            // Exited depends_on block
+            inDependsOn = false;
+          }
+        }
+      }
+
+      if (deps.length > 0) {
+        results.push({ service: serviceName, dependencies: deps });
+      }
+    } catch {
+      // Service folder may not exist
+    }
+  }
+
+  return results;
 }
