@@ -11,7 +11,6 @@ import {
 } from "../../shared/topology.js";
 import { runTestSuite } from "../../shared/tests.js";
 import { getConfigFile, getContainerLog, getVmStatus, getReport, getSecretsStatus } from "../../shared/files.js";
-import { checkTier1All, checkTier2All, checkTier3All } from "../../shared/health.js";
 import { resolveVmId } from "../../shared/config.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
@@ -115,43 +114,7 @@ export function registerC3Tools(server: McpServer) {
     async ({ service }) => plainText(getSecretsStatus(service)),
   );
 
-  // ── Tiered Health (3 tools) ──
-
-  server.tool(
-    "health_tier1",
-    "Quick UP check: TCP/SSH-keyscan reachability for all VMs (~2s)",
-    {
-      vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)"),
-    },
-    async ({ vm }) => {
-      const vmId = vm ? resolveVmId(vm) : undefined;
-      return jsonText("Tier 1 health", checkTier1All(vmId));
-    },
-  );
-
-  server.tool(
-    "health_tier2",
-    "SSH session check: full authentication test for all VMs (~5s)",
-    {
-      vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)"),
-    },
-    async ({ vm }) => {
-      const vmId = vm ? resolveVmId(vm) : undefined;
-      return jsonText("Tier 2 health", checkTier2All(vmId));
-    },
-  );
-
-  server.tool(
-    "health_tier3",
-    "Full probe: resources + docker ps for all VMs (~8s)",
-    {
-      vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)"),
-    },
-    async ({ vm }) => {
-      const vmId = vm ? resolveVmId(vm) : undefined;
-      return jsonText("Tier 3 health", checkTier3All(vmId));
-    },
-  );
+  // Note: Tiered health checks (health_tier1/2/3) are in health.ts
 
   // ── Extended Topology (4 tools) ──
 

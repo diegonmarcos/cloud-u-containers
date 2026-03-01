@@ -33,13 +33,13 @@ registerBuildTools(server);            //  2: build_service (extended), build_al
 registerSshTools(server);              //  2: ssh_exec, check_vm
 registerDockerTools(server);           // 14: docker_ps, control, logs, compose, top, diff, inspect, events, pause/unpause, exec, logs_search, logs_multi, system_df
 registerNativeOpsTools(server);        //  4: build_ship, build_docker, secrets_status, backup_trigger
-registerHealthTools(server);           // 23: health_*, health_endpoints, metrics_snapshot, tier1/2/3, profile_*, vm_network/top/disk/journal, service_list/get/spec/discover/version
+registerHealthTools(server);           // 26: health_*, health_endpoints, metrics_snapshot, health_tier1/2/3, profile_*, vm_network/top/disk/journal, service_list/get/spec/discover/version
 registerControlTools(server);          // 10: vm_*, vm_drain, container_*, service_start/stop/restart
 registerDiscoveryTools(server);        //  1: service_api_call
 registerFrontTools(server);            //  5: front_list_projects, front_get_project, front_build, front_dev_server, front_deploy
 registerCloudTools(server);            //  7: cloud_oci/gcp_instances/resources/costs, cloud_summary
 registerCrawleeTools(server);          //  7: crawlee_list_actors, run_actor, list_runs, get_run, get_results, get_logs, abort_run
-registerC3Tools(server);               // 16: c3_topology* (base+network/volumes/images/deps), c3_test (14 suites), c3_file, c3_vm_status, c3_report (5 types), c3_secrets_status, health_tier1/2/3
+registerC3Tools(server);               // 13: c3_topology* (base+network/volumes/images/deps), c3_test (14 suites), c3_file, c3_vm_status, c3_report (5 types), c3_secrets_status
 registerSecurityTools(server);         //  4: security_scan, security_docker, security_ssh_keys, security_tokens
 registerNotifyTools(server);           //  5: notify_send, notify_health_down/recovered, notify_cert_expiring, notify_disk_full
 registerDatabaseTools(server);         //  7: db_health_history, db_uptime_report, db_audit_log, db_deploy_history, db_alert_state, db_alert_update, db_prune
