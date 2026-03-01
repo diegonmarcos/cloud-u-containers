@@ -78,538 +78,545 @@
         prefix: "[Dagu OK]"
     '';
 
+    # ── SSH shorthand used across all workflows ──────────────────────────
+    # VMs: ip:name:user
+    vmList = "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu";
+    sshCmd = "ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
+
     # ── DAG workflows ────────────────────────────────────────────────────
     mkDags = pkgs: {
 
+      # ═══════════════════════════════════════════════════════════════════
+      # INFRASTRUCTURE
+      # ═══════════════════════════════════════════════════════════════════
+
       healthcheck = pkgs.writeText "healthcheck.yaml" ''
         schedule: "*/5 * * * *"
-
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
-
         mailOn:
           failure: false
           success: false
-
         steps:
-          - name: check-hub
-            command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.1/22'"
-            retryPolicy:
-              limit: 1
-              intervalSec: 5
-          - name: check-mail
-            command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.3/25'"
-          - name: check-analytics
-            command: bash -c "echo QUIT | /usr/bin/timeout 3 bash -c 'cat > /dev/tcp/10.0.0.4/22'"
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"infra","title":"Mesh Health FAILED","message":"One or more always-on peers unreachable","priority":5,"tags":["rotating_light"]}
-            command: POST ''${NTFY_URL}
-
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"infra","title":"Mesh Health OK","message":"All always-on peers reachable","priority":2,"tags":["white_check_mark"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── System Health Check (daily) - ALL VMs ──
-      system-check = pkgs.writeText "system-check.yaml" ''
-        schedule: "0 9 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-all-vms
+          - name: check-mesh-and-notify
             command: |
-              FAILED=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                DISK=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
-                MEM=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
-                if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
-                  echo "$name: disk=$DISK% mem=$MEM%"
-                  FAILED=1
+              SSH="${sshCmd}"
+              FAILED=""
+              for peer in "10.0.0.1:gcp-proxy:22" "10.0.0.3:oci-mail:25" "10.0.0.4:oci-analytics:22"; do
+                ip=''${peer%%:*}
+                rest=''${peer#*:}
+                name=''${rest%:*}
+                port=''${rest##*:}
+                if ! echo QUIT | timeout 3 bash -c "cat > /dev/tcp/$ip/$port" 2>/dev/null; then
+                  FAILED="''${FAILED}  - $name ($ip) port $port UNREACHABLE\n"
                 fi
               done
-              exit $FAILED
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"system","title":"System Health Alert","message":"High resource usage detected on one or more VMs","priority":4,"tags":["warning"]}
-            command: POST ''${NTFY_URL}
+              if [ -n "$FAILED" ]; then
+                MSG=$(printf "Unreachable peers:\n''${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_mesh-health" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Mesh Health FAILED" \
+                  -H "Priority: 5" \
+                  -H "Tags: rotating_light" \
+                  -d "$MSG"
+                exit 1
+              fi
       '';
 
-      # ── Docker Health Check (daily) - ALL VMs ──
-      docker-check = pkgs.writeText "docker-check.yaml" ''
-        schedule: "0 10 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-all-containers
-            command: |
-              FAILED=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                UNHEALTHY=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
-                EXITED=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps -a --filter status=exited --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
-                if [ $UNHEALTHY -gt 0 ] || [ $EXITED -gt 0 ]; then
-                  echo "$name: unhealthy=$UNHEALTHY exited=$EXITED"
-                  FAILED=1
-                fi
-              done
-              exit $FAILED
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"docker","title":"Docker Health Issues","message":"Unhealthy or crashed containers detected on one or more VMs","priority":4,"tags":["whale","warning"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Backup Check (daily) - ALL VMs ──
-      backup-check = pkgs.writeText "backup-check.yaml" ''
-        schedule: "0 11 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-all-backups
-            command: |
-              FAILED=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
-                if [ $COUNT -eq 0 ]; then
-                  echo "$name: no recent backups"
-                  FAILED=1
-                fi
-              done
-              exit $FAILED
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"backup","title":"Backup Alert","message":"No recent backups on one or more VMs (>24h)","priority":4,"tags":["floppy_disk","warning"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Security Audit (daily) - ALL VMs ──
-      security-audit = pkgs.writeText "security-audit.yaml" ''
-        schedule: "0 12 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-all-auth-logs
-            command: |
-              FAILED=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                FAIL_COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
-                ROOT_LOGIN=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
-                if [ $FAIL_COUNT -gt 10 ] || [ $ROOT_LOGIN -gt 0 ]; then
-                  echo "$name: failed_ssh=$FAIL_COUNT root_login=$ROOT_LOGIN"
-                  FAILED=1
-                fi
-              done
-              exit $FAILED
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"security","title":"Security Alert","message":"Suspicious authentication activity on one or more VMs","priority":5,"tags":["lock","rotating_light"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Ops Summary (daily) ──
-      ops-summary = pkgs.writeText "ops-summary.yaml" ''
-        schedule: "0 18 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: true
-
-        steps:
-          - name: gather-stats
-            command: bash -c "uptime && docker ps | wc -l"
-
-        handlerOn:
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational","priority":1,"tags":["chart_with_upwards_trend"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Service Endpoints (every 5 min) ──
       service-endpoints = pkgs.writeText "service-endpoints.yaml" ''
         schedule: "*/5 * * * *"
-
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
-
         mailOn:
           failure: false
           success: false
-
         steps:
-          - name: check-auth
-            command: curl -f -m 5 https://auth.diegonmarcos.com/api/health || exit 1
-          - name: check-vault
-            command: curl -f -m 5 https://vault.diegonmarcos.com/ || exit 1
-          - name: check-proxy
-            command: curl -f -m 5 https://proxy.diegonmarcos.com/ || exit 1
-          - name: check-api
-            command: curl -f -m 5 https://api.diegonmarcos.com/c3-api/health || exit 1
-          - name: check-analytics
-            command: curl -f -m 5 https://analytics.diegonmarcos.com/ || exit 1
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"infra","title":"Service Endpoint DOWN","message":"Critical endpoint unreachable","priority":5,"tags":["rotating_light"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── TLS Expiry Check (daily 8am) ──
-      tls-expiry = pkgs.writeText "tls-expiry.yaml" ''
-        schedule: "0 8 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-certs
+          - name: check-endpoints-and-notify
             command: |
-              for domain in auth.diegonmarcos.com vault.diegonmarcos.com proxy.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com photos.diegonmarcos.com sync.diegonmarcos.com; do
-                EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
-                EXPIRY_SEC=$(date -d "$EXPIRY" +%s)
-                NOW_SEC=$(date +%s)
-                DAYS_LEFT=$(( ($EXPIRY_SEC - $NOW_SEC) / 86400 ))
-                if [ $DAYS_LEFT -lt 14 ]; then
-                  echo "$domain expires in $DAYS_LEFT days"
-                  exit 1
+              FAILED=""
+              for endpoint in \
+                "auth.diegonmarcos.com/api/health:Authelia 2FA" \
+                "vault.diegonmarcos.com/:Vaultwarden" \
+                "proxy.diegonmarcos.com/:Caddy Proxy" \
+                "api.diegonmarcos.com/c3-api/health:C3 API" \
+                "analytics.diegonmarcos.com/:Matomo" \
+                "mail.diegonmarcos.com/:Mailu"; do
+                url=''${endpoint%:*}
+                svc=''${endpoint##*:}
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://$url" 2>/dev/null || echo "000")
+                if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
+                  FAILED="''${FAILED}  - $svc (https://$url) -> HTTP $HTTP_CODE\n"
                 fi
               done
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"security","title":"TLS Certificate Expiring","message":"Certificate expires in <14 days","priority":4,"tags":["warning"]}
-            command: POST ''${NTFY_URL}
+              if [ -n "$FAILED" ]; then
+                MSG=$(printf "DOWN endpoints:\n''${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_endpoints" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Service Endpoint DOWN" \
+                  -H "Priority: 5" \
+                  -H "Tags: rotating_light" \
+                  -d "$MSG"
+                exit 1
+              fi
       '';
 
-      # ── DNS Resolution Check (daily 8am) ──
       dns-resolution = pkgs.writeText "dns-resolution.yaml" ''
         schedule: "0 8 * * *"
-
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
-
         mailOn:
           failure: false
           success: false
-
         steps:
-          - name: check-dns
+          - name: check-dns-and-notify
             command: |
-              for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com; do
-                dig +short $domain @1.1.1.1 || exit 1
-              done
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"infra","title":"DNS Resolution FAILED","message":"Critical domain not resolving","priority":5,"tags":["rotating_light"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Auth Events Aggregator (daily 9am) ──
-      auth-events = pkgs.writeText "auth-events.yaml" ''
-        schedule: "0 9 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: true
-
-        steps:
-          - name: collect-auth-events
-            command: |
-              TOTAL=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "grep -c 'Accepted publickey' /var/log/auth.log 2>/dev/null || echo 0")
-                TOTAL=$((TOTAL + COUNT))
-              done
-              echo "Total SSH logins (24h): $TOTAL"
-
-        handlerOn:
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"auth","title":"Daily Auth Summary","message":"SSH activity aggregated across all VMs","priority":1,"tags":["key"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Cron Status Check (daily 7am) ──
-      cron-status = pkgs.writeText "cron-status.yaml" ''
-        schedule: "0 7 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: check-systemd-timers
-            command: |
-              FAILED=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
-                ip=''${vm_data%%:*}
-                temp=''${vm_data#*:}
-                name=''${temp%:*}
-                user=''${temp#*:}
-                FAIL_COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "systemctl list-timers --failed --no-legend | wc -l" 2>/dev/null || echo 0)
-                FAILED=$((FAILED + FAIL_COUNT))
-              done
-              if [ $FAILED -gt 0 ]; then
-                echo "$FAILED failed timers detected"
-                exit 1
-              fi
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"cron","title":"Cron/Timer Failures Detected","message":"One or more scheduled tasks failed","priority":4,"tags":["warning"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Deploy Digest (daily 7pm) ──
-      deploy-digest = pkgs.writeText "deploy-digest.yaml" ''
-        schedule: "0 19 * * *"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: true
-
-        steps:
-          - name: summarize-deployments
-            command: |
-              COUNT=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no diego@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
-              echo "Container restarts (24h): $COUNT"
-
-        handlerOn:
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"deploy","title":"Daily Deploy Digest","message":"Deployment activity summary","priority":1,"tags":["rocket"]}
-            command: POST ''${NTFY_URL}
-      '';
-
-      # ── Sauron Integrity Check (weekly Sunday 3am) ──
-      sauron-integrity = pkgs.writeText "sauron-integrity.yaml" ''
-        schedule: "0 3 * * 0"
-
-        env:
-          - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
-
-        mailOn:
-          failure: false
-          success: false
-
-        steps:
-          - name: verify-scanners
-            command: |
-              RUNNING=0
-              for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
-                ip=$${vm_ip%:*}
-                if ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
-                  RUNNING=$((RUNNING + 1))
+              FAILED=""
+              for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com; do
+                RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
+                if [ -z "$RESULT" ]; then
+                  FAILED="''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
                 fi
               done
-              if [ $RUNNING -lt 4 ]; then
-                echo "Only $RUNNING/4 Sauron scanners running"
+              if [ -n "$FAILED" ]; then
+                MSG=$(printf "DNS resolution failures:\n''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_dns" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: DNS Resolution FAILED" \
+                  -H "Priority: 5" \
+                  -H "Tags: rotating_light" \
+                  -d "$MSG"
                 exit 1
               fi
-
-        handlerOn:
-          failure:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"sauron","title":"Sauron Scanner(s) Down","message":"Not all security scanners are running","priority":4,"tags":["warning"]}
-            command: POST ''${NTFY_URL}
       '';
 
-      # ── Capacity Review (weekly Monday 9am) ──
-      capacity-review = pkgs.writeText "capacity-review.yaml" ''
-        schedule: "0 9 * * 1"
-
+      system-check = pkgs.writeText "system-check.yaml" ''
+        schedule: "0 9 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - BEARER_TOKEN: ''${BEARER_TOKEN}
-
         mailOn:
           failure: false
-          success: true
-
+          success: false
         steps:
-          - name: check-capacity
+          - name: check-resources-and-notify
             command: |
-              TOTAL_DISK=0
-              for vm_data in 10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu; do
+              SSH="${sshCmd}"
+              ALERTS=""
+              for vm_data in ${vmList}; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
                 user=''${temp#*:}
-                USAGE=$(ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 $user@$ip "df -h / | awk 'NR==2 {print \$5}' | sed 's/%//'" 2>/dev/null || echo 0)
-                TOTAL_DISK=$((TOTAL_DISK + USAGE))
+                DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo "N/A")
+                MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo "N/A")
+                LOAD=$($SSH $user@$ip "cat /proc/loadavg | awk '{print \$1}'" 2>/dev/null || echo "N/A")
+                if [ "$DISK" != "N/A" ] && [ "$DISK" -gt 80 ] 2>/dev/null || [ "$MEM" != "N/A" ] && [ "$MEM" -gt 90 ] 2>/dev/null; then
+                  ALERTS="''${ALERTS}  - $name ($ip): disk=$DISK% mem=$MEM% load=$LOAD\n"
+                fi
               done
-              AVG_DISK=$((TOTAL_DISK / 5))
-              echo "Average disk usage: $AVG_DISK%"
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "High resource usage:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_resources" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: System Resources Alert" \
+                  -H "Priority: 4" \
+                  -H "Tags: warning,chart_with_upwards_trend" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
 
-        handlerOn:
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"ops","title":"Weekly Capacity Review","message":"Storage trends across all VMs","priority":1,"tags":["bar_chart"]}
-            command: POST ''${NTFY_URL}
+      docker-check = pkgs.writeText "docker-check.yaml" ''
+        schedule: "0 10 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: check-containers-and-notify
+            command: |
+              SSH="${sshCmd}"
+              ALERTS=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}'" 2>/dev/null)
+                EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --filter 'exited!=0' --format '{{.Names}} (exit {{.Status}})'" 2>/dev/null)
+                if [ -n "$UNHEALTHY" ]; then
+                  ALERTS="''${ALERTS}  $name — UNHEALTHY:\n"
+                  while IFS= read -r c; do
+                    ALERTS="''${ALERTS}    - $c\n"
+                  done <<< "$UNHEALTHY"
+                fi
+                if [ -n "$EXITED" ]; then
+                  ALERTS="''${ALERTS}  $name — CRASHED:\n"
+                  while IFS= read -r c; do
+                    ALERTS="''${ALERTS}    - $c\n"
+                  done <<< "$EXITED"
+                fi
+              done
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "Container issues:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_containers" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Container Health Issues" \
+                  -H "Priority: 4" \
+                  -H "Tags: whale,warning" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SECURITY
+      # ═══════════════════════════════════════════════════════════════════
+
+      security-audit = pkgs.writeText "security-audit.yaml" ''
+        schedule: "0 12 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: audit-and-notify
+            command: |
+              SSH="${sshCmd}"
+              TODAY=$(date +"%b %e")
+              ALERTS=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                FAIL_COUNT=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c '$TODAY' || echo 0" 2>/dev/null || echo 0)
+                ROOT_LOGIN=$($SSH $user@$ip "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c '$TODAY' || echo 0" 2>/dev/null || echo 0)
+                TOP_IPS=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep '$TODAY' | grep -oP 'from \K[0-9.]+' | sort | uniq -c | sort -rn | head -3 | awk '{print \"    \" \$2 \" (\" \$1 \" attempts)\"}'" 2>/dev/null || echo "")
+                if [ "$FAIL_COUNT" -gt 10 ] 2>/dev/null || [ "$ROOT_LOGIN" -gt 0 ] 2>/dev/null; then
+                  ALERTS="''${ALERTS}  $name ($ip):\n    Failed SSH: $FAIL_COUNT\n    Root logins: $ROOT_LOGIN\n"
+                  if [ -n "$TOP_IPS" ]; then
+                    ALERTS="''${ALERTS}    Top attacker IPs:\n$TOP_IPS\n"
+                  fi
+                fi
+              done
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "Suspicious auth activity:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'fail2ban-client status sshd'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/security_audit" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Security Audit Alert" \
+                  -H "Priority: 5" \
+                  -H "Tags: lock,rotating_light" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      tls-expiry = pkgs.writeText "tls-expiry.yaml" ''
+        schedule: "0 8 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: check-tls-and-notify
+            command: |
+              ALERTS=""
+              for domain in auth.diegonmarcos.com vault.diegonmarcos.com proxy.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com sync.diegonmarcos.com; do
+                EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+                if [ -n "$EXPIRY" ]; then
+                  EXPIRY_SEC=$(date -d "$EXPIRY" +%s 2>/dev/null || echo 0)
+                  NOW_SEC=$(date +%s)
+                  DAYS_LEFT=$(( (EXPIRY_SEC - NOW_SEC) / 86400 ))
+                  if [ $DAYS_LEFT -lt 14 ]; then
+                    ALERTS="''${ALERTS}  - $domain: expires in $DAYS_LEFT days ($EXPIRY)\n"
+                  fi
+                else
+                  ALERTS="''${ALERTS}  - $domain: COULD NOT READ CERTIFICATE\n"
+                fi
+              done
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "TLS certificates expiring soon:\n''${ALERTS}\nAction:\n  openssl s_client -connect <domain>:443 </dev/null 2>/dev/null | openssl x509 -noout -dates\n  ssh gcp-proxy 'docker exec caddy caddy reload'\n  Check Let's Encrypt / Caddy auto-renewal logs\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/security_tls" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: TLS Certificate Expiring" \
+                  -H "Priority: 4" \
+                  -H "Tags: warning,lock" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      auth-events = pkgs.writeText "auth-events.yaml" ''
+        schedule: "0 9 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: collect-all-connections
+            command: |
+              SSH="${sshCmd}"
+              TODAY=$(date +"%b %e")
+              REPORT=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                ACCEPTED=$($SSH $user@$ip "grep 'Accepted' /var/log/auth.log 2>/dev/null | grep -c '$TODAY' || echo 0" 2>/dev/null || echo "N/A")
+                FAILED_SSH=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c '$TODAY' || echo 0" 2>/dev/null || echo "N/A")
+                SUDO_EVENTS=$($SSH $user@$ip "grep 'sudo:' /var/log/auth.log 2>/dev/null | grep -c '$TODAY' || echo 0" 2>/dev/null || echo "N/A")
+                ACTIVE_CONN=$($SSH $user@$ip "ss -tun state established 2>/dev/null | tail -n +2 | wc -l" 2>/dev/null || echo "N/A")
+                DOCKER_CONN=$($SSH $user@$ip "ss -tlnp 2>/dev/null | grep -c docker || echo 0" 2>/dev/null || echo "N/A")
+                RECENT_LOGINS=$($SSH $user@$ip "grep 'Accepted' /var/log/auth.log 2>/dev/null | grep '$TODAY' | tail -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    (none)")
+                REPORT="''${REPORT}$name ($ip):\n  SSH accepted: $ACCEPTED | failed: $FAILED_SSH\n  Sudo events: $SUDO_EVENTS\n  Active TCP: $ACTIVE_CONN | Docker listeners: $DOCKER_CONN\n  Recent logins:\n$RECENT_LOGINS\n\n"
+              done
+              MSG=$(printf "Daily Connection Report ($TODAY):\n\n''${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: http://10.0.0.3:8070")
+              curl -s -X POST "$NTFY_URL/security_connections" \
+                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Title: Daily Connection Report" \
+                -H "Priority: 2" \
+                -H "Tags: key,shield" \
+                -d "$MSG"
+      '';
+
+      sauron-integrity = pkgs.writeText "sauron-integrity.yaml" ''
+        schedule: "0 3 * * 0"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: verify-scanners-and-notify
+            command: |
+              SSH="${sshCmd}"
+              RUNNING=0
+              TOTAL=0
+              MISSING=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                TOTAL=$((TOTAL + 1))
+                if $SSH $user@$ip "docker ps --format '{{.Names}}' | grep -q sauron" 2>/dev/null; then
+                  RUNNING=$((RUNNING + 1))
+                else
+                  MISSING="''${MISSING}  - $name ($ip): sauron-lite NOT running\n"
+                fi
+              done
+              if [ $RUNNING -lt $TOTAL ]; then
+                MSG=$(printf "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n''${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/security_yara" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Sauron Scanner(s) Down" \
+                  -H "Priority: 4" \
+                  -H "Tags: warning,eye" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      # ═══════════════════════════════════════════════════════════════════
+      # OPERATIONS
+      # ═══════════════════════════════════════════════════════════════════
+
+      ops-summary = pkgs.writeText "ops-summary.yaml" ''
+        schedule: "0 18 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: gather-and-report
+            command: |
+              SSH="${sshCmd}"
+              REPORT=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                UPTIME=$($SSH $user@$ip "uptime -p" 2>/dev/null || echo "N/A")
+                CONTAINERS=$($SSH $user@$ip "docker ps -q 2>/dev/null | wc -l" 2>/dev/null || echo "N/A")
+                DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \$5}'" 2>/dev/null || echo "N/A")
+                MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f%%\", (\$3/\$2)*100}'" 2>/dev/null || echo "N/A")
+                REPORT="''${REPORT}$name ($ip):\n  Uptime: $UPTIME\n  Containers: $CONTAINERS | Disk: $DISK | Mem: $MEM\n\n"
+              done
+              MSG=$(printf "Daily Ops Summary:\n\n''${REPORT}Dagu: http://10.0.0.3:8070")
+              curl -s -X POST "$NTFY_URL/ops_summary" \
+                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Title: Daily Ops Summary" \
+                -H "Priority: 2" \
+                -H "Tags: chart_with_upwards_trend" \
+                -d "$MSG"
+      '';
+
+      backup-check = pkgs.writeText "backup-check.yaml" ''
+        schedule: "0 11 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: check-backups-and-notify
+            command: |
+              SSH="${sshCmd}"
+              ALERTS=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                RECENT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -o -name '*.tar.gz' -o -name '*.bak' 2>/dev/null | head -5 | while read f; do stat --format='%n (%s bytes, %y)' \"\$f\" 2>/dev/null; done | head -5" 2>/dev/null)
+                COUNT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
+                if [ "$COUNT" -eq 0 ] 2>/dev/null; then
+                  ALERTS="''${ALERTS}  $name ($ip): NO backups in last 24h\n"
+                  if [ -n "$RECENT" ]; then
+                    ALERTS="''${ALERTS}    Latest files:\n"
+                    while IFS= read -r f; do
+                      ALERTS="''${ALERTS}      $f\n"
+                    done <<< "$RECENT"
+                  fi
+                fi
+              done
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "Backup freshness issues:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/ops_backups" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Backup Alert" \
+                  -H "Priority: 4" \
+                  -H "Tags: floppy_disk,warning" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      cron-status = pkgs.writeText "cron-status.yaml" ''
+        schedule: "0 7 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: check-timers-and-notify
+            command: |
+              SSH="${sshCmd}"
+              ALERTS=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                FAILED_TIMERS=$($SSH $user@$ip "systemctl list-timers --failed --no-legend 2>/dev/null" 2>/dev/null || echo "")
+                if [ -n "$FAILED_TIMERS" ]; then
+                  ALERTS="''${ALERTS}  $name ($ip):\n"
+                  while IFS= read -r t; do
+                    ALERTS="''${ALERTS}    - $t\n"
+                  done <<< "$FAILED_TIMERS"
+                fi
+              done
+              if [ -n "$ALERTS" ]; then
+                MSG=$(printf "Failed systemd timers:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'systemctl list-timers --failed'\n  ssh <user>@<ip> 'journalctl -u <timer-name> --since yesterday'\n\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/ops_cron" \
+                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Title: Cron/Timer Failures" \
+                  -H "Priority: 4" \
+                  -H "Tags: warning,clock1" \
+                  -d "$MSG"
+                exit 1
+              fi
+      '';
+
+      deploy-digest = pkgs.writeText "deploy-digest.yaml" ''
+        schedule: "0 19 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: collect-deploys-and-notify
+            command: |
+              SSH="${sshCmd}"
+              REPORT=""
+              TOTAL=0
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
+                COUNT=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep -c 'Container.*Started' || echo 0" 2>/dev/null || echo 0)
+                TOTAL=$((TOTAL + COUNT))
+                if [ "$COUNT" -gt 0 ] 2>/dev/null; then
+                  REPORT="''${REPORT}$name ($ip): $COUNT restarts\n"
+                  if [ -n "$RESTARTS" ]; then
+                    REPORT="''${REPORT}$RESTARTS\n"
+                  fi
+                  REPORT="''${REPORT}\n"
+                fi
+              done
+              MSG=$(printf "Deploy Digest (24h): $TOTAL total restarts\n\n''${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
+              curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
+                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
+                -H "Priority: 2" \
+                -H "Tags: rocket" \
+                -d "$MSG"
+      '';
+
+      capacity-review = pkgs.writeText "capacity-review.yaml" ''
+        schedule: "0 9 * * 1"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+        mailOn:
+          failure: false
+          success: false
+        steps:
+          - name: review-capacity-and-notify
+            command: |
+              SSH="${sshCmd}"
+              REPORT=""
+              for vm_data in ${vmList}; do
+                ip=''${vm_data%%:*}
+                temp=''${vm_data#*:}
+                name=''${temp%:*}
+                user=''${temp#*:}
+                DISK_DETAIL=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \"Used: \" \$3 \"/\" \$2 \" (\" \$5 \")\"}'" 2>/dev/null || echo "N/A")
+                DOCKER_IMAGES=$($SSH $user@$ip "docker system df --format '{{.Type}}\t{{.Size}}' 2>/dev/null | head -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    N/A")
+                LARGEST=$($SSH $user@$ip "du -sh /opt/containers/*/data 2>/dev/null | sort -rh | head -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    N/A")
+                REPORT="''${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
+              done
+              MSG=$(printf "Weekly Capacity Review:\n\n''${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
+              curl -s -X POST "$NTFY_URL/ops_summary" \
+                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Title: Weekly Capacity Review" \
+                -H "Priority: 2" \
+                -H "Tags: bar_chart" \
+                -d "$MSG"
       '';
     };
 

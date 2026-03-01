@@ -4,6 +4,7 @@
 
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/ntfy"
+    "remote_path": "/opt/containers/ntfy",
+    "excludes": ["cache"]
   }
 }

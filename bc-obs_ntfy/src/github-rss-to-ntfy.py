@@ -2,11 +2,12 @@
 import sys; sys.stdout.reconfigure(line_buffering=True)
 """
 GitHub RSS to ntfy bridge
-Fetches GitHub activity feeds and pushes to ntfy
+Fetches GitHub activity feeds and routes to categorized ntfy topics
 """
 import json
 import time
 import hashlib
+import re
 import urllib.request
 import urllib.error
 import xml.etree.ElementTree as ET
@@ -14,9 +15,13 @@ from pathlib import Path
 from datetime import datetime
 
 NTFY_URL = 'http://ntfy:80'
-NTFY_TOPIC = 'github'
 STATE_FILE = '/var/cache/ntfy/github-seen.json'
 CHECK_INTERVAL = 300  # 5 minutes
+
+# Topic routing based on event type
+TOPIC_COMMITS = 'vcs_commits'
+TOPIC_PRS = 'vcs_pull-requests'
+TOPIC_OTHER = 'vcs_issues-releases'
 
 # GitHub feeds to monitor
 GITHUB_FEEDS = [
@@ -27,6 +32,25 @@ GITHUB_FEEDS = [
     },
 ]
 
+
+def classify_event(title):
+    """Classify GitHub event by title pattern and return (topic, event_type)."""
+    t = title.lower()
+    if 'pushed to' in t or 'committed' in t:
+        return TOPIC_COMMITS, 'push'
+    if 'created branch' in t or 'deleted branch' in t:
+        return TOPIC_COMMITS, 'branch'
+    if 'pull request' in t or 'merged' in t:
+        return TOPIC_PRS, 'pr'
+    if 'released' in t or 'tagged' in t or 'created tag' in t:
+        return TOPIC_OTHER, 'release'
+    if 'issue' in t or 'opened' in t or 'closed' in t:
+        return TOPIC_OTHER, 'issue'
+    if 'forked' in t or 'starred' in t or 'watched' in t:
+        return TOPIC_OTHER, 'social'
+    return TOPIC_OTHER, 'other'
+
+
 def load_seen():
     try:
         return json.loads(Path(STATE_FILE).read_text())
@@ -36,7 +60,7 @@ def load_seen():
 def save_seen(seen):
     Path(STATE_FILE).write_text(json.dumps(seen))
 
-def send_ntfy(title, message, priority='default', tags=None, click=None):
+def send_ntfy(topic, title, message, priority='default', tags=None, click=None):
     data = message.encode('utf-8')
     headers = {
         'Title': title[:250],
@@ -46,9 +70,9 @@ def send_ntfy(title, message, priority='default', tags=None, click=None):
         headers['Tags'] = ','.join(tags)
     if click:
         headers['Click'] = click
-    
+
     req = urllib.request.Request(
-        f'{NTFY_URL}/{NTFY_TOPIC}',
+        f'{NTFY_URL}/{topic}',
         data=data,
         headers=headers,
         method='POST'
@@ -71,14 +95,10 @@ def fetch_feed(url):
 
 def strip_html(text):
     """Remove HTML tags from text"""
-    import re
     if not text:
         return ''
-    # Remove HTML tags
     text = re.sub(r'<[^>]+>', '', text)
-    # Decode HTML entities
     text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"')
-    # Clean up whitespace
     text = ' '.join(text.split())
     return text
 
@@ -93,10 +113,8 @@ def parse_atom_feed(xml_content):
             updated = entry.find('atom:updated', ns)
             content = entry.find('atom:content', ns)
 
-            # Extract and clean content text
             content_text = ''
             if content is not None:
-                # Get all text including from nested elements
                 content_text = ''.join(content.itertext())
                 content_text = strip_html(content_text)[:200]
 
@@ -114,44 +132,71 @@ def parse_atom_feed(xml_content):
 def main():
     print('GitHub RSS to ntfy bridge starting...')
     print(f'Monitoring {len(GITHUB_FEEDS)} feeds')
-    print(f'Pushing to: {NTFY_URL}/{NTFY_TOPIC}')
-    
+    print(f'Routing to: {TOPIC_COMMITS}, {TOPIC_PRS}, {TOPIC_OTHER}')
+
     seen = load_seen()
-    
+
     while True:
         for feed in GITHUB_FEEDS:
             print(f'Checking: {feed["name"]}')
             xml_content = fetch_feed(feed['url'])
             if not xml_content:
                 continue
-            
+
             entries = parse_atom_feed(xml_content)
             feed_key = hashlib.md5(feed['url'].encode()).hexdigest()[:8]
-            
+
             for entry in entries:
                 entry_key = f'{feed_key}:{entry["id"]}'
                 if entry_key in seen:
                     continue
-                
-                # New entry - send notification
-                title = f"GitHub: {entry['title'][:100]}"
-                message = entry['content'] if entry['content'] else entry['title']
-                
+
+                # Classify and route
+                topic, event_type = classify_event(entry['title'])
+
+                # Build repo name from link
+                repo = ''
+                if entry['link']:
+                    parts = entry['link'].replace('https://github.com/', '').split('/')
+                    if len(parts) >= 2:
+                        repo = f"{parts[0]}/{parts[1]}"
+
+                # Detailed message with link
+                msg_parts = []
+                if repo:
+                    msg_parts.append(f"Repo: {repo}")
+                if entry['content']:
+                    msg_parts.append(entry['content'])
+                msg_parts.append(f"Link: {entry['link']}")
+                message = '\n'.join(msg_parts)
+
+                tag_map = {
+                    'push': 'arrow_up',
+                    'branch': 'herb',
+                    'pr': 'twisted_rightwards_arrows',
+                    'release': 'package',
+                    'issue': 'exclamation',
+                    'social': 'star',
+                    'other': 'octocat',
+                }
+                tags = [tag_map.get(event_type, 'octocat'), feed.get('icon', 'octocat')]
+
                 if send_ntfy(
-                    title=title,
+                    topic=topic,
+                    title=f"[{event_type.upper()}] {entry['title'][:100]}",
                     message=message,
                     priority='default',
-                    tags=['github', feed.get('icon', 'octocat')],
+                    tags=tags,
                     click=entry['link']
                 ):
-                    print(f'Sent: {entry["title"][:50]}...')
+                    print(f'Sent [{event_type}] -> {topic}: {entry["title"][:50]}...')
                     seen[entry_key] = time.time()
-        
+
         # Cleanup old entries (older than 7 days)
         cutoff = time.time() - (7 * 24 * 3600)
         seen = {k: v for k, v in seen.items() if v > cutoff}
         save_seen(seen)
-        
+
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == '__main__':
