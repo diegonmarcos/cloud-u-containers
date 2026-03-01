@@ -54,6 +54,7 @@ services:
       - .secrets
     environment:
       - NTFY_URL=http://10.0.0.1:8090
+      - TOPIC_SCANNER_URL=http://10.0.0.1:8091
       - MM_URL=http://mattermost:8065
     depends_on:
       - mattermost

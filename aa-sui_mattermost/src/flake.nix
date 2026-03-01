@@ -19,6 +19,7 @@
       postgres_port = 5432;
       wg_ip = "10.0.0.6";
       ntfy_url = "http://10.0.0.1:8090";
+      topic_scanner_url = "http://10.0.0.1:8091";
       timezone = "America/Chicago";
     };
 
@@ -86,6 +87,7 @@
             - .secrets
           environment:
             - NTFY_URL=${config.ntfy_url}
+            - TOPIC_SCANNER_URL=${config.topic_scanner_url}
             - MM_URL=http://mattermost:8065
           depends_on:
             - mattermost
@@ -118,13 +120,11 @@
       log = logging.getLogger("ntfy-bridge")
 
       NTFY_URL = os.environ["NTFY_URL"]
+      TOPIC_SCANNER_URL = os.environ.get("TOPIC_SCANNER_URL", "http://10.0.0.1:8091")
       MM_URL = os.environ["MM_URL"]
       MM_ADMIN_EMAIL = os.environ["MM_ADMIN_EMAIL"]
       MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
       MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
-      BEARER_TOKEN = os.environ.get("BEARER_TOKEN", "")
-
-      NTFY_HEADERS = {"Authorization": f"Bearer {BEARER_TOKEN}"} if BEARER_TOKEN else {}
       BOT_USERNAME = "ntfy-bridge"
       BOT_DISPLAY = "ntfy Bridge"
       TOKEN_FILE = "/data/bot-token"
@@ -370,14 +370,44 @@
               log.error("Failed to post to %s: %s %s", topic, resp.status_code, resp.text[:200])
 
 
-      def subscribe_and_bridge() -> None:
-          url = f"{NTFY_URL}/*/json"
-          log.info("Subscribing to %s", url)
+      def fetch_topics() -> list[str]:
+          """Fetch active topics from the ntfy topic-scanner."""
+          try:
+              r = requests.get(TOPIC_SCANNER_URL, timeout=10)
+              r.raise_for_status()
+              topics = r.json().get("topics", [])
+              if topics:
+                  return topics
+          except Exception as e:
+              log.warning("Failed to fetch topics from scanner: %s", e)
+          return []
 
-          with requests.get(url, headers=NTFY_HEADERS, stream=True, timeout=None) as resp:
+
+      def subscribe_and_bridge() -> None:
+          topics = fetch_topics()
+          if not topics:
+              log.warning("No topics from scanner, retrying in 30s...")
+              time.sleep(30)
+              return
+
+          topic_str = ",".join(topics)
+          url = f"{NTFY_URL}/{topic_str}/json"
+          log.info("Subscribing to %d topics: %s", len(topics), topic_str[:120])
+
+          with requests.get(url, stream=True, timeout=(10, None)) as resp:
               resp.raise_for_status()
+              log.info("Connected to ntfy stream")
+              last_topic_refresh = time.time()
+
               for line in resp.iter_lines(decode_unicode=True):
                   if not line:
+                      # Check if we should refresh topics (every 5 min)
+                      if time.time() - last_topic_refresh > 300:
+                          new_topics = fetch_topics()
+                          if set(new_topics) != set(topics):
+                              log.info("Topic list changed, reconnecting...")
+                              return  # Will reconnect in main loop with new topics
+                          last_topic_refresh = time.time()
                       continue
                   try:
                       msg = json.loads(line)
