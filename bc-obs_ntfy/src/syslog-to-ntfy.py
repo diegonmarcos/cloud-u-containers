@@ -13,7 +13,7 @@ import urllib.error
 
 SYSLOG_FILE = '/var/log/messages'
 NTFY_URL = 'http://ntfy:80'
-NTFY_TOPIC = 'sauron-alerts'
+NTFY_TOPIC = 'sauron'
 STATE_FILE = '/var/cache/ntfy/syslog-offset.txt'
 
 def get_last_offset():

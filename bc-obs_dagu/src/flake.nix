@@ -22,8 +22,11 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          entrypoint: []
-          command: ["dagu", "start-all"]
+          entrypoint: ["/bin/bash", "-c"]
+          command:
+            - |
+              apt-get update -qq && apt-get install -y -qq curl openssh-client dnsutils > /dev/null 2>&1
+              dagu start-all
           ports:
             - "10.0.0.3:${toString config.port}:8080"
           environment:
@@ -40,7 +43,8 @@
             - dagu-data:/var/lib/dagu
             - ./dags:/var/lib/dagu/dags:ro
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
-          mem_limit: 64m
+            - /home/ubuntu/.ssh:/root/.ssh:ro
+          mem_limit: 128m
           networks:
             - default
             - mailu_default
@@ -127,7 +131,7 @@
             command: POST ''${NTFY_URL}
       '';
 
-      # ── System Health Check (daily) ──
+      # ── System Health Check (daily) - ALL VMs ──
       system-check = pkgs.writeText "system-check.yaml" ''
         schedule: "0 9 * * *"
 
@@ -140,12 +144,18 @@
           success: false
 
         steps:
-          - name: check-disk-space
-            command: df -h / | awk 'NR==2 {if (substr($5,1,length($5)-1) > 80) exit 1}'
-          - name: check-memory
-            command: free | awk 'NR==2 {if ($3/$2 > 0.9) exit 1}'
-          - name: check-load
-            command: bash -c "uptime | awk '{if ($(NF-2) > 2.0) exit 1}'"
+          - name: check-all-vms
+            command: |
+              FAILED=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                DISK=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2>/dev/null || echo 100)
+                MEM=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2>/dev/null || echo 100)
+                if [ $DISK -gt 80 ] || [ $MEM -gt 90 ]; then
+                  echo "$vm: disk=$DISK% mem=$MEM%"
+                  FAILED=1
+                fi
+              done
+              exit $FAILED
 
         handlerOn:
           failure:
@@ -155,21 +165,11 @@
                 Content-Type: application/json
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
-                {"topic":"system","title":"System Health Alert","message":"High resource usage detected on oci-mail","priority":4,"tags":["warning"]}
-            command: POST ''${NTFY_URL}
-
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"system","title":"System Health OK","message":"All system resources within limits","priority":1,"tags":["white_check_mark"]}
+                {"topic":"system","title":"System Health Alert","message":"High resource usage detected on one or more VMs","priority":4,"tags":["warning"]}
             command: POST ''${NTFY_URL}
       '';
 
-      # ── Docker Health Check (daily) ──
+      # ── Docker Health Check (daily) - ALL VMs ──
       docker-check = pkgs.writeText "docker-check.yaml" ''
         schedule: "0 10 * * *"
 
@@ -182,12 +182,18 @@
           success: false
 
         steps:
-          - name: check-unhealthy
-            command: bash -c "[ $(docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l) -eq 0 ]"
-          - name: check-exited
-            command: bash -c "[ $(docker ps -a --filter status=exited --format '{{.Names}}' | wc -l) -eq 0 ]"
-          - name: check-restart-count
-            command: bash -c "docker ps --format '{{.RestartCount}}' | awk '{if ($1 > 5) exit 1}'"
+          - name: check-all-containers
+            command: |
+              FAILED=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                UNHEALTHY=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "docker ps --filter health=unhealthy --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
+                EXITED=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "docker ps -a --filter status=exited --format '{{.Names}}' | wc -l" 2>/dev/null || echo 0)
+                if [ $UNHEALTHY -gt 0 ] || [ $EXITED -gt 0 ]; then
+                  echo "$vm: unhealthy=$UNHEALTHY exited=$EXITED"
+                  FAILED=1
+                fi
+              done
+              exit $FAILED
 
         handlerOn:
           failure:
@@ -197,21 +203,11 @@
                 Content-Type: application/json
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
-                {"topic":"docker","title":"Docker Health Issues","message":"Unhealthy or crashed containers detected","priority":4,"tags":["whale","warning"]}
-            command: POST ''${NTFY_URL}
-
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"docker","title":"Docker Health OK","message":"All containers healthy","priority":1,"tags":["whale","white_check_mark"]}
+                {"topic":"docker","title":"Docker Health Issues","message":"Unhealthy or crashed containers detected on one or more VMs","priority":4,"tags":["whale","warning"]}
             command: POST ''${NTFY_URL}
       '';
 
-      # ── Backup Check (daily) ──
+      # ── Backup Check (daily) - ALL VMs ──
       backup-check = pkgs.writeText "backup-check.yaml" ''
         schedule: "0 11 * * *"
 
@@ -224,8 +220,17 @@
           success: false
 
         steps:
-          - name: check-backup-age
-            command: bash -c "find /var/backups -name '*.sql.gz' -mtime -1 | grep -q ."
+          - name: check-all-backups
+            command: |
+              FAILED=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
+                if [ $COUNT -eq 0 ]; then
+                  echo "$vm: no recent backups"
+                  FAILED=1
+                fi
+              done
+              exit $FAILED
 
         handlerOn:
           failure:
@@ -235,21 +240,11 @@
                 Content-Type: application/json
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
-                {"topic":"backup","title":"Backup Alert","message":"No recent backups found (>24h old)","priority":4,"tags":["floppy_disk","warning"]}
-            command: POST ''${NTFY_URL}
-
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"backup","title":"Backup OK","message":"Recent backups verified","priority":1,"tags":["floppy_disk","white_check_mark"]}
+                {"topic":"backup","title":"Backup Alert","message":"No recent backups on one or more VMs (>24h)","priority":4,"tags":["floppy_disk","warning"]}
             command: POST ''${NTFY_URL}
       '';
 
-      # ── Security Audit (daily) ──
+      # ── Security Audit (daily) - ALL VMs ──
       security-audit = pkgs.writeText "security-audit.yaml" ''
         schedule: "0 12 * * *"
 
@@ -262,12 +257,18 @@
           success: false
 
         steps:
-          - name: check-failed-ssh
-            command: bash -c "[ $(grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d)) -lt 10 ]"
-          - name: check-root-login
-            command: bash -c "! grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -q $(date +%b\ %d)"
-          - name: check-sudo-usage
-            command: bash -c "grep COMMAND /var/log/auth.log 2>/dev/null | grep $(date +%b\ %d) || true"
+          - name: check-all-auth-logs
+            command: |
+              FAILED=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                FAIL_COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "grep 'Failed password' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+                ROOT_LOGIN=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "grep 'root.*session opened' /var/log/auth.log 2>/dev/null | grep -c $(date +%b\ %d) || echo 0" 2>/dev/null || echo 0)
+                if [ $FAIL_COUNT -gt 10 ] || [ $ROOT_LOGIN -gt 0 ]; then
+                  echo "$vm: failed_ssh=$FAIL_COUNT root_login=$ROOT_LOGIN"
+                  FAILED=1
+                fi
+              done
+              exit $FAILED
 
         handlerOn:
           failure:
@@ -277,17 +278,7 @@
                 Content-Type: application/json
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
-                {"topic":"security","title":"Security Alert","message":"Suspicious authentication activity detected","priority":5,"tags":["lock","rotating_light"]}
-            command: POST ''${NTFY_URL}
-
-          success:
-            type: http
-            config:
-              headers:
-                Content-Type: application/json
-                Authorization: "Bearer ''${BEARER_TOKEN}"
-              body: |
-                {"topic":"security","title":"Security Audit OK","message":"No suspicious activity detected today","priority":1,"tags":["lock","white_check_mark"]}
+                {"topic":"security","title":"Security Alert","message":"Suspicious authentication activity on one or more VMs","priority":5,"tags":["lock","rotating_light"]}
             command: POST ''${NTFY_URL}
       '';
 
@@ -316,6 +307,285 @@
                 Authorization: "Bearer ''${BEARER_TOKEN}"
               body: |
                 {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational","priority":1,"tags":["chart_with_upwards_trend"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Service Endpoints (every 5 min) ──
+      service-endpoints = pkgs.writeText "service-endpoints.yaml" ''
+        schedule: "*/5 * * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-auth
+            command: curl -f -m 5 https://auth.diegonmarcos.com/api/health || exit 1
+          - name: check-vault
+            command: curl -f -m 5 https://vault.diegonmarcos.com/ || exit 1
+          - name: check-proxy
+            command: curl -f -m 5 https://proxy.diegonmarcos.com/ || exit 1
+          - name: check-api
+            command: curl -f -m 5 https://api.diegonmarcos.com/c3-api/health || exit 1
+          - name: check-analytics
+            command: curl -f -m 5 https://analytics.diegonmarcos.com/ || exit 1
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"infra","title":"Service Endpoint DOWN","message":"Critical endpoint unreachable","priority":5,"tags":["rotating_light"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── TLS Expiry Check (daily 8am) ──
+      tls-expiry = pkgs.writeText "tls-expiry.yaml" ''
+        schedule: "0 8 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-certs
+            command: |
+              for domain in auth.diegonmarcos.com vault.diegonmarcos.com proxy.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com photos.diegonmarcos.com sync.diegonmarcos.com; do
+                EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+                EXPIRY_SEC=$(date -d "$EXPIRY" +%s)
+                NOW_SEC=$(date +%s)
+                DAYS_LEFT=$(( ($EXPIRY_SEC - $NOW_SEC) / 86400 ))
+                if [ $DAYS_LEFT -lt 14 ]; then
+                  echo "$domain expires in $DAYS_LEFT days"
+                  exit 1
+                fi
+              done
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"security","title":"TLS Certificate Expiring","message":"Certificate expires in <14 days","priority":4,"tags":["warning"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── DNS Resolution Check (daily 8am) ──
+      dns-resolution = pkgs.writeText "dns-resolution.yaml" ''
+        schedule: "0 8 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-dns
+            command: |
+              for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com; do
+                dig +short $domain @1.1.1.1 || exit 1
+              done
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"infra","title":"DNS Resolution FAILED","message":"Critical domain not resolving","priority":5,"tags":["rotating_light"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Auth Events Aggregator (daily 9am) ──
+      auth-events = pkgs.writeText "auth-events.yaml" ''
+        schedule: "0 9 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: true
+
+        steps:
+          - name: collect-auth-events
+            command: |
+              TOTAL=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "grep -c 'Accepted publickey' /var/log/auth.log 2>/dev/null || echo 0")
+                TOTAL=$((TOTAL + COUNT))
+              done
+              echo "Total SSH logins (24h): $TOTAL"
+
+        handlerOn:
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"auth","title":"Daily Auth Summary","message":"SSH activity aggregated across all VMs","priority":1,"tags":["key"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Cron Status Check (daily 7am) ──
+      cron-status = pkgs.writeText "cron-status.yaml" ''
+        schedule: "0 7 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: check-systemd-timers
+            command: |
+              FAILED=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                FAIL_COUNT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "systemctl list-timers --failed --no-legend | wc -l" 2>/dev/null || echo 0)
+                FAILED=$((FAILED + FAIL_COUNT))
+              done
+              if [ $FAILED -gt 0 ]; then
+                echo "$FAILED failed timers detected"
+                exit 1
+              fi
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"cron","title":"Cron/Timer Failures Detected","message":"One or more scheduled tasks failed","priority":4,"tags":["warning"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Deploy Digest (daily 7pm) ──
+      deploy-digest = pkgs.writeText "deploy-digest.yaml" ''
+        schedule: "0 19 * * *"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: true
+
+        steps:
+          - name: summarize-deployments
+            command: |
+              COUNT=$(ssh -o StrictHostKeyChecking=no gcp-proxy "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
+              echo "Container restarts (24h): $COUNT"
+
+        handlerOn:
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"deploy","title":"Daily Deploy Digest","message":"Deployment activity summary","priority":1,"tags":["rocket"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Sauron Integrity Check (weekly Sunday 3am) ──
+      sauron-integrity = pkgs.writeText "sauron-integrity.yaml" ''
+        schedule: "0 3 * * 0"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: false
+
+        steps:
+          - name: verify-scanners
+            command: |
+              RUNNING=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps; do
+                if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "docker ps | grep -q sauron-lite" 2>/dev/null; then
+                  RUNNING=$((RUNNING + 1))
+                fi
+              done
+              if [ $RUNNING -lt 4 ]; then
+                echo "Only $RUNNING/4 Sauron scanners running"
+                exit 1
+              fi
+
+        handlerOn:
+          failure:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"sauron","title":"Sauron Scanner(s) Down","message":"Not all security scanners are running","priority":4,"tags":["warning"]}
+            command: POST ''${NTFY_URL}
+      '';
+
+      # ── Capacity Review (weekly Monday 9am) ──
+      capacity-review = pkgs.writeText "capacity-review.yaml" ''
+        schedule: "0 9 * * 1"
+
+        env:
+          - NTFY_URL: https://rss.diegonmarcos.com
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+
+        mailOn:
+          failure: false
+          success: true
+
+        steps:
+          - name: check-capacity
+            command: |
+              TOTAL_DISK=0
+              for vm in gcp-proxy oci-mail oci-analytics oci-apps oci-apps-1; do
+                USAGE=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 $vm "df -h / | awk 'NR==2 {print \$5}' | sed 's/%//'" 2>/dev/null || echo 0)
+                TOTAL_DISK=$((TOTAL_DISK + USAGE))
+              done
+              AVG_DISK=$((TOTAL_DISK / 5))
+              echo "Average disk usage: $AVG_DISK%"
+
+        handlerOn:
+          success:
+            type: http
+            config:
+              headers:
+                Content-Type: application/json
+                Authorization: "Bearer ''${BEARER_TOKEN}"
+              body: |
+                {"topic":"ops","title":"Weekly Capacity Review","message":"Storage trends across all VMs","priority":1,"tags":["bar_chart"]}
             command: POST ''${NTFY_URL}
       '';
     };
@@ -432,6 +702,14 @@
         cp ${dags.backup-check} $out/dags/backup-check.yaml
         cp ${dags.security-audit} $out/dags/security-audit.yaml
         cp ${dags.ops-summary} $out/dags/ops-summary.yaml
+        cp ${dags.service-endpoints} $out/dags/service-endpoints.yaml
+        cp ${dags.tls-expiry} $out/dags/tls-expiry.yaml
+        cp ${dags.dns-resolution} $out/dags/dns-resolution.yaml
+        cp ${dags.auth-events} $out/dags/auth-events.yaml
+        cp ${dags.cron-status} $out/dags/cron-status.yaml
+        cp ${dags.deploy-digest} $out/dags/deploy-digest.yaml
+        cp ${dags.sauron-integrity} $out/dags/sauron-integrity.yaml
+        cp ${dags.capacity-review} $out/dags/capacity-review.yaml
       '';
     in {
       default = defaultPkg;
