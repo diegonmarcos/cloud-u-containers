@@ -1,22 +1,37 @@
 #!/bin/sh
 set -e
 
-echo "[init] Substituting secrets into configuration..."
-sed \
-  -e "s|\${AUTHELIA_JWT_SECRET}|$AUTHELIA_JWT_SECRET|g" \
-  -e "s|\${AUTHELIA_SESSION_SECRET}|$AUTHELIA_SESSION_SECRET|g" \
-  -e "s|\${AUTHELIA_STORAGE_ENCRYPTION_KEY}|$AUTHELIA_STORAGE_ENCRYPTION_KEY|g" \
-  -e "s|\${AUTHELIA_REDIS_PASSWORD}|$AUTHELIA_REDIS_PASSWORD|g" \
-  -e "s|\${AUTHELIA_OIDC_HMAC_SECRET}|$AUTHELIA_OIDC_HMAC_SECRET|g" \
-  -e "s|\${AUTHELIA_OIDC_CLIENT_CLI_SECRET}|$AUTHELIA_OIDC_CLIENT_CLI_SECRET|g" \
-  -e "s|\${AUTHELIA_OIDC_CLIENT_NPM_SECRET}|$AUTHELIA_OIDC_CLIENT_NPM_SECRET|g" \
-  -e "s|\${AUTHELIA_OIDC_CLIENT_NOCODB_SECRET}|$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET|g" \
-  -e "s|\${AUTHELIA_SMTP_PASSWORD}|$AUTHELIA_SMTP_PASSWORD|g" \
-  /config/configuration.yml.tpl > /config/configuration.yml
+# Replace ${VAR} placeholders with env values using awk (literal string, no regex)
+# Usage: subst <file> VAR1 VAR2 ...
+subst() {
+  _file="$1"; shift
+  for _var in "$@"; do
+    eval _val="\$$_var"
+    awk -v pat="\${${_var}}" -v rep="$_val" '{
+      while (i = index($0, pat)) {
+        $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
+      }
+      print
+    }' "$_file" > "$_file.tmp"
+    mv "$_file.tmp" "$_file"
+  done
+}
 
-sed \
-  -e "s|\${AUTHELIA_USER_DIEGO_HASH}|$AUTHELIA_USER_DIEGO_HASH|g" \
-  /config/users_database.yml.tpl > /config/users_database.yml
+echo "[init] Substituting secrets into configuration..."
+cp /config/configuration.yml.tpl /config/configuration.yml
+subst /config/configuration.yml \
+  AUTHELIA_JWT_SECRET \
+  AUTHELIA_SESSION_SECRET \
+  AUTHELIA_STORAGE_ENCRYPTION_KEY \
+  AUTHELIA_REDIS_PASSWORD \
+  AUTHELIA_OIDC_HMAC_SECRET \
+  AUTHELIA_OIDC_CLIENT_CLI_SECRET \
+  AUTHELIA_OIDC_CLIENT_NPM_SECRET \
+  AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
+  AUTHELIA_SMTP_PASSWORD
+
+cp /config/users_database.yml.tpl /config/users_database.yml
+subst /config/users_database.yml AUTHELIA_USER_DIEGO_HASH
 
 # Inject JWKS private key into configuration
 if [ -f /config/oidc_jwks.pem ]; then

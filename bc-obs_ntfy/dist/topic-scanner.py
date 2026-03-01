@@ -1,4 +1,4 @@
-"""ntfy topic scanner — reads cache.db and serves active topics as JSON."""
+"""ntfy topic scanner — serves ALL configured channels (not just ones with messages)."""
 
 import json
 import sqlite3
@@ -11,6 +11,21 @@ DB_PATH = "/var/cache/ntfy/cache.db"
 PORT = 8091
 REFRESH_INTERVAL = 30  # seconds
 
+# ALL configured channels (always shown, even if no messages yet)
+CONFIGURED_TOPICS = [
+    "github",       # Repository activity
+    "sauron",       # YARA security scans
+    "auth",         # SSH, sudo, login events
+    "system",       # Service errors & crashes
+    "ops",          # Deployments & restarts
+    "docker",       # Container events
+    "cron",         # Scheduled job events
+    "backup",       # Backup job status
+    "security",     # Security alerts
+    "deploy",       # Deployment notifications
+    "infra",        # Infrastructure health (Dagu mesh checks)
+]
+
 # Shared state
 _lock = threading.Lock()
 _topics = []
@@ -18,17 +33,21 @@ _updated = ""
 
 
 def scan_topics():
-    """Read distinct topics from ntfy's cache.db (read-only)."""
+    """Return ALL configured topics + any discovered in cache.db."""
+    all_topics = set(CONFIGURED_TOPICS)
+
+    # Also add any topics found in cache.db (user-created channels)
     try:
         conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
         cur = conn.cursor()
         cur.execute("SELECT DISTINCT topic FROM messages ORDER BY topic")
-        topics = [row[0] for row in cur.fetchall()]
+        db_topics = [row[0] for row in cur.fetchall()]
         conn.close()
-        return topics
+        all_topics.update(db_topics)
     except Exception as e:
-        print(f"[scanner] error reading cache.db: {e}", flush=True)
-        return None
+        print(f"[scanner] warning: could not read cache.db: {e}", flush=True)
+
+    return sorted(list(all_topics))
 
 
 def refresh_loop():
