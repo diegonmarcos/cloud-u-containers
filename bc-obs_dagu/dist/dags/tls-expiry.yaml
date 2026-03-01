@@ -1,0 +1,34 @@
+schedule: "0 8 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: false
+
+steps:
+  - name: check-certs
+    command: |
+      for domain in auth.diegonmarcos.com vault.diegonmarcos.com proxy.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com photos.diegonmarcos.com sync.diegonmarcos.com; do
+        EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+        EXPIRY_SEC=$(date -d "$EXPIRY" +%s)
+        NOW_SEC=$(date +%s)
+        DAYS_LEFT=$(( ($EXPIRY_SEC - $NOW_SEC) / 86400 ))
+        if [ $DAYS_LEFT -lt 14 ]; then
+          echo "$domain expires in $DAYS_LEFT days"
+          exit 1
+        fi
+      done
+
+handlerOn:
+  failure:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"security","title":"TLS Certificate Expiring","message":"Certificate expires in <14 days","priority":4,"tags":["warning"]}
+    command: POST ${NTFY_URL}

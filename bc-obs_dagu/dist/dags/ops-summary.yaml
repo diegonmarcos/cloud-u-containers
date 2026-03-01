@@ -1,0 +1,24 @@
+schedule: "0 18 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: true
+
+steps:
+  - name: gather-stats
+    command: bash -c "uptime && docker ps | wc -l"
+
+handlerOn:
+  success:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"ops","title":"Daily Ops Summary","message":"All systems operational","priority":1,"tags":["chart_with_upwards_trend"]}
+    command: POST ${NTFY_URL}

@@ -1,0 +1,35 @@
+schedule: "0 3 * * 0"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: false
+
+steps:
+  - name: verify-scanners
+    command: |
+      RUNNING=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=$${vm_ip%:*}
+        if ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "docker ps | grep -q sauron-lite" 2>/dev/null; then
+          RUNNING=$((RUNNING + 1))
+        fi
+      done
+      if [ $RUNNING -lt 4 ]; then
+        echo "Only $RUNNING/4 Sauron scanners running"
+        exit 1
+      fi
+
+handlerOn:
+  failure:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"sauron","title":"Sauron Scanner(s) Down","message":"Not all security scanners are running","priority":4,"tags":["warning"]}
+    command: POST ${NTFY_URL}

@@ -1,0 +1,33 @@
+schedule: "0 9 * * 1"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: true
+
+steps:
+  - name: check-capacity
+    command: |
+      TOTAL_DISK=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=${vm_ip%:*}
+        name=${vm_ip#*:}
+        USAGE=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "df -h / | awk 'NR==2 {print \$5}' | sed 's/%//'" 2>/dev/null || echo 0)
+        TOTAL_DISK=$((TOTAL_DISK + USAGE))
+      done
+      AVG_DISK=$((TOTAL_DISK / 5))
+      echo "Average disk usage: $AVG_DISK%"
+
+handlerOn:
+  success:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"ops","title":"Weekly Capacity Review","message":"Storage trends across all VMs","priority":1,"tags":["bar_chart"]}
+    command: POST ${NTFY_URL}

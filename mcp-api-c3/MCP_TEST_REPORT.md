@@ -12,9 +12,9 @@
 | **Total Tools** | 110 |
 | **Total Resources** | 73 (7 static + 66 service/VM templates) |
 | **Total Prompts** | 4 |
-| **Tools Tested** | 65+ |
-| **Tools Passing** | 60+ |
-| **Test Success Rate** | 92%+ |
+| **Tools Tested** | 72+ |
+| **Tools Passing** | 67+ |
+| **Test Success Rate** | 93%+ |
 
 ---
 
@@ -29,7 +29,7 @@
 | **vm** | 8 | ✅ All tested, all passing |
 | **db** | 7 | ✅ All tested, all passing |
 | **crawlee** | 7 | ⚠ Not tested (requires external service) |
-| **cloud** | 7 | ✅ Tested (summary passing) |
+| **cloud** | 7 | ✅ All tested, all passing (OCI + GCP APIs working) |
 | **notify** | 5 | ✅ All tested, all passing |
 | **front** | 5 | ✅ Tested (project name sensitive) |
 | **security** | 4 | ✅ All tested, all passing |
@@ -130,11 +130,14 @@
 - `front_dev_server` (not tested)
 - `front_deploy` (not tested)
 
-### ⚠ Cloud Tools (7 registered, 1 tested)
-- `cloud_summary` ✓
-- `cloud_oci_instances` (not tested)
-- `cloud_gcp_instances` (not tested)
-- Others (not tested)
+### ✅ Cloud Tools (7/7 tested, all passing)
+- `cloud_oci_instances` ✓
+- `cloud_oci_resources` ✓
+- `cloud_oci_costs` ✓
+- `cloud_gcp_instances` ✓ (found 2 instances: arch-1 RUNNING, ollama-spot-gpu TERMINATED)
+- `cloud_gcp_resources` ✓
+- `cloud_gcp_costs` ✓
+- `cloud_summary` ✓ (combined OCI + GCP data)
 
 ### ⚠ Crawlee Tools (7 registered, not tested)
 - Requires Crawlee Cloud service to be running
@@ -208,6 +211,7 @@
 - Database tools (7/7)
 - Notify tools (5/5)
 - Security tools (4/4)
+- Cloud tools (7/7) ← **OCI & GCP APIs verified working**
 - Infra tools (4/4)
 - Repo tools (3/3)
 
@@ -217,8 +221,7 @@
 - C3 tools (11/13)
 
 **Partially tested categories** (<80% coverage):
-- Cloud tools (1/7) - requires cloud credentials
-- Crawlee tools (0/7) - requires Crawlee Cloud service
+- Crawlee tools (0/7) - requires Crawlee Cloud service running
 - Front tools (1/5) - build operations not tested
 
 ---

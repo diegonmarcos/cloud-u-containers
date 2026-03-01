@@ -1,0 +1,26 @@
+schedule: "0 19 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: true
+
+steps:
+  - name: summarize-deployments
+    command: |
+      COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no ubuntu@10.0.0.1 "journalctl -u docker --since '24 hours ago' | grep -c 'Container.*Started' || echo 0")
+      echo "Container restarts (24h): $COUNT"
+
+handlerOn:
+  success:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"deploy","title":"Daily Deploy Digest","message":"Deployment activity summary","priority":1,"tags":["rocket"]}
+    command: POST ${NTFY_URL}

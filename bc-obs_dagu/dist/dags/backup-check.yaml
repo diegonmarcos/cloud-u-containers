@@ -1,0 +1,35 @@
+schedule: "0 11 * * *"
+
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - BEARER_TOKEN: ${BEARER_TOKEN}
+
+mailOn:
+  failure: false
+  success: false
+
+steps:
+  - name: check-all-backups
+    command: |
+      FAILED=0
+      for vm_ip in 10.0.0.1:gcp-proxy 10.0.0.3:oci-mail 10.0.0.4:oci-analytics 10.0.0.6:oci-apps; do
+        ip=${vm_ip%:*}
+        name=${vm_ip#*:}
+        COUNT=$(ssh -i /root/.ssh-internal/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 ubuntu@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
+        if [ $COUNT -eq 0 ]; then
+          echo "$name: no recent backups"
+          FAILED=1
+        fi
+      done
+      exit $FAILED
+
+handlerOn:
+  failure:
+    type: http
+    config:
+      headers:
+        Content-Type: application/json
+        Authorization: "Bearer ${BEARER_TOKEN}"
+      body: |
+        {"topic":"backup","title":"Backup Alert","message":"No recent backups on one or more VMs (>24h)","priority":4,"tags":["floppy_disk","warning"]}
+    command: POST ${NTFY_URL}

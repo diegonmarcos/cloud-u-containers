@@ -1,7 +1,7 @@
 schedule: "*/5 * * * *"
 
 env:
-  - NTFY_URL: https://rss.diegonmarcos.com
+  - NTFY_URL: http://10.0.0.1:8090
   - BEARER_TOKEN: ${BEARER_TOKEN}
 
 mailOn:
