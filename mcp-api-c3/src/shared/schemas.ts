@@ -198,7 +198,8 @@ export const TestSuiteResultSchema = z.object({
 
 export const TestSuiteNameSchema = z.enum([
   "connectivity", "dns", "tls", "routes", "containers",
-  "services", "wireguard", "security", "full",
+  "services", "wireguard", "security", "auth", "secrets",
+  "compose", "volumes", "resources", "latency", "images", "cross-vm", "full",
 ]);
 
 // ── Files (C3) ───────────────────────────────────────────────────────────
@@ -224,4 +225,88 @@ export const ServiceInfoSchema = z.object({
   category: z.string(),
   hasSpec: z.boolean().optional(),
   specUrl: z.string().optional(),
+});
+
+// ── Security ──────────────────────────────────────────────────────────────
+
+export const SecurityFindingSchema = z.object({
+  severity: z.enum(["info", "warn", "critical"]),
+  check: z.string(),
+  target: z.string(),
+  details: z.string(),
+});
+
+export const SecurityScanResultSchema = z.object({
+  vm: z.string(),
+  alias: z.string(),
+  findings: z.array(SecurityFindingSchema),
+  summary: z.object({
+    critical: z.number(),
+    warn: z.number(),
+    info: z.number(),
+  }),
+});
+
+// ── Notifications ─────────────────────────────────────────────────────────
+
+export const NotifyOptionsSchema = z.object({
+  title: z.string(),
+  message: z.string(),
+  priority: z.enum(["min", "low", "default", "high", "urgent"]).optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const NotifyResultSchema = z.object({
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+
+// ── Database / Audit ──────────────────────────────────────────────────────
+
+export const HealthRecordSchema = z.object({
+  timestamp: z.number(),
+  vm: z.string(),
+  tier: z.number(),
+  reachable: z.boolean(),
+  ssh_ok: z.boolean().optional(),
+  latency_ms: z.number().optional(),
+  disk_percent: z.number().optional(),
+  mem_used: z.string().optional(),
+  containers_up: z.number().optional(),
+  containers_total: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export const AuditRecordSchema = z.object({
+  id: z.number(),
+  timestamp: z.number(),
+  tool: z.string(),
+  target: z.string(),
+  result: z.string(),
+  source: z.string(),
+});
+
+export const DeployRecordSchema = z.object({
+  id: z.number(),
+  timestamp: z.number(),
+  service: z.string(),
+  vm: z.string(),
+  success: z.boolean(),
+  error: z.string().optional(),
+});
+
+export const AlertStateSchema = z.object({
+  key: z.string(),
+  sent: z.boolean(),
+  last_sent: z.number().optional(),
+});
+
+export const UptimeReportSchema = z.object({
+  vm: z.string(),
+  days: z.number(),
+  totalChecks: z.number(),
+  upChecks: z.number(),
+  downChecks: z.number(),
+  uptimePercent: z.number(),
+  avgLatencyMs: z.number().optional(),
 });

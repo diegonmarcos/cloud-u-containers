@@ -3,6 +3,18 @@ import { z } from "zod";
 import { sshExec } from "../../shared/ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/config.js";
 import { audit } from "../../shared/audit.js";
+import {
+  containerTop,
+  containerDiff,
+  containerInspectFull,
+  containerEvents,
+  containerPause,
+  containerUnpause,
+  containerExecCmd,
+  logsSearch,
+  logsMulti,
+  dockerSystemDf,
+} from "../../shared/docker.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 const SAFE_SINCE_RE = /^\d+[smhd]$|^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/;
@@ -146,6 +158,179 @@ export function registerDockerTools(server: McpServer) {
             text: `docker compose up ${service} on ${getVmSshAlias(vmId)}:\n${result.ok ? "SUCCESS" : "FAILED"}\n\n${result.stdout}${result.stderr}`,
           },
         ],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_top",
+    "Show running processes inside a container",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+    },
+    async ({ vm, container }) => {
+      validateContainerName(container);
+      const result = containerTop(vm, container);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_diff",
+    "Show filesystem changes in a container since it started",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+    },
+    async ({ vm, container }) => {
+      validateContainerName(container);
+      const result = containerDiff(vm, container);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_inspect",
+    "Get full container configuration (env vars redacted)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+    },
+    async ({ vm, container }) => {
+      validateContainerName(container);
+      const result = containerInspectFull(vm, container);
+      return {
+        content: [{ type: "text", text: result.ok ? JSON.stringify(result.data, null, 2) : `Error: ${result.error}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_events",
+    "Stream recent Docker events for a container (last 100 events)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+      since: z.string().optional().describe("Show events since (e.g. '1h', '30m')"),
+    },
+    async ({ vm, container, since }) => {
+      validateContainerName(container);
+      if (since) validateSince(since);
+      const result = containerEvents(vm, container, since);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_pause",
+    "Pause a running container (freeze all processes)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+    },
+    async ({ vm, container }) => {
+      validateContainerName(container);
+      const result = containerPause(vm, container);
+      return {
+        content: [{ type: "text", text: result.message }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_unpause",
+    "Unpause a paused container (resume all processes)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+    },
+    async ({ vm, container }) => {
+      validateContainerName(container);
+      const result = containerUnpause(vm, container);
+      return {
+        content: [{ type: "text", text: result.message }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_exec",
+    "Execute a command inside a running container",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+      command: z.string().describe("Command to execute (e.g. 'ls -la /app')"),
+    },
+    async ({ vm, container, command }) => {
+      validateContainerName(container);
+      const result = containerExecCmd(vm, container, command);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_logs_search",
+    "Search container logs for a pattern (grep)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      container: z.string().describe("Container name"),
+      pattern: z.string().describe("Search pattern (plain text or regex)"),
+      lines: z.number().optional().describe("Max log lines to search (default: 1000)"),
+    },
+    async ({ vm, container, pattern, lines }) => {
+      validateContainerName(container);
+      const result = logsSearch(vm, container, pattern, lines);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_logs_multi",
+    "Get logs from multiple containers on a VM (parallel fetch)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      containers: z.array(z.string()).describe("Container names"),
+      lines: z.number().optional().describe("Lines per container (default: 50)"),
+    },
+    async ({ vm, containers }) => {
+      const results = logsMulti(vm, containers);
+      const text = results.map((r) => `=== ${r.container} ===\n${r.ok ? r.logs : `Error: ${r.logs}`}`).join("\n\n");
+      return {
+        content: [{ type: "text", text }],
+      };
+    }
+  );
+
+  server.tool(
+    "docker_system_df",
+    "Show Docker disk usage (images, containers, volumes)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+    },
+    async ({ vm }) => {
+      const result = dockerSystemDf(vm);
+      return {
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
         isError: !result.ok,
       };
     }
