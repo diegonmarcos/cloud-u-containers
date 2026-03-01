@@ -1,7 +1,10 @@
+// ── Frontend Extension — "Front-end monorepo" (5 tools) ──
+// Build, dev, deploy for 32-project front-end monorepo
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
-import { join, resolve } from "path";
+import { join } from "path";
 import { exec } from "../../shared/exec.js";
 import { FRONT_DIR, FRONT_BUILD_SCRIPT } from "../../shared/paths.js";
 
@@ -17,7 +20,7 @@ interface BuildJsonConfig {
 
 let _projectsCache: Map<string, { dir: string; category: string; config: BuildJsonConfig }> | null = null;
 let _projectsCacheTimestamp = 0;
-const PROJECTS_TTL = 60 * 1000; // 60 seconds
+const PROJECTS_TTL = 60 * 1000;
 
 function findProjects(): Map<string, { dir: string; category: string; config: BuildJsonConfig }> {
   const now = Date.now();
@@ -27,7 +30,6 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
 
   const projects = new Map<string, { dir: string; category: string; config: BuildJsonConfig }>();
 
-  // Scan category dirs + c_root
   const entries = readdirSync(FRONT_DIR).filter((name) => {
     const full = join(FRONT_DIR, name);
     return statSync(full).isDirectory() && !name.startsWith(".") && name !== "node_modules" && name !== "1.ops" && name !== "0.spec";
@@ -37,7 +39,6 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
     const entryPath = join(FRONT_DIR, entry);
     const buildJson = join(entryPath, "build.json");
 
-    // Direct project (e.g. c_root)
     if (existsSync(buildJson)) {
       try {
         const config = JSON.parse(readFileSync(buildJson, "utf-8")) as BuildJsonConfig;
@@ -46,7 +47,6 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
       continue;
     }
 
-    // Category dir with sub-projects
     if (!statSync(entryPath).isDirectory()) continue;
     try {
       const subs = readdirSync(entryPath);
@@ -56,7 +56,6 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
         if (existsSync(subBuildJson)) {
           try {
             const config = JSON.parse(readFileSync(subBuildJson, "utf-8")) as BuildJsonConfig;
-            // Use category/name for duplicates (e.g. b_Work_Tools/mymaps vs c_Personal_Tools/mymaps)
             const key = projects.has(sub) ? `${entry}/${sub}` : sub;
             projects.set(key, { dir: subPath, category: entry, config });
           } catch { /* skip */ }
@@ -70,7 +69,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
   return projects;
 }
 
-export function registerFrontTools(server: McpServer) {
+export function registerFrontendTools(server: McpServer) {
   server.tool(
     "front_list_projects",
     "List all front-end web projects with framework, port, and build type",
@@ -134,21 +133,17 @@ export function registerFrontTools(server: McpServer) {
         `Path: ${p.dir}`,
       ];
 
-      // Build modules
       const mods = (c.build ?? []).map((b) => b.mod);
       info.push(`Build modules: ${mods.join(" → ") || "none"}`);
 
-      // Serve config
       if (c.serve) {
         info.push(`Serve mode: ${c.serve.mode ?? "auto"}`);
         info.push(`Serve dir: ${c.serve.dir ?? c.src ?? "src"}`);
       }
 
-      // build.json full
       info.push(`\n--- build.json ---`);
       info.push(JSON.stringify(c, null, 2));
 
-      // package.json deps summary
       const pkgPath = join(p.dir, "package.json");
       if (existsSync(pkgPath)) {
         try {
@@ -161,7 +156,6 @@ export function registerFrontTools(server: McpServer) {
         } catch { /* skip */ }
       }
 
-      // Dist status
       const distDir = join(p.dir, c.dist ?? "dist");
       if (existsSync(distDir)) {
         try {
@@ -174,7 +168,6 @@ export function registerFrontTools(server: McpServer) {
         info.push(`\nDist: not built`);
       }
 
-      // .build.pid status
       const pidFile = join(p.dir, ".build.pid");
       if (existsSync(pidFile)) {
         try {

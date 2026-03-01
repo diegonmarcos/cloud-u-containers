@@ -1,6 +1,9 @@
+// ── Operations Pillar — "How we run it" (26 tools) ──
+// SSH, Docker ops, VM/container/service lifecycle
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { sshExec } from "../../shared/ssh.js";
+import { sshExec, checkVmReachable } from "../../shared/ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/config.js";
 import { audit } from "../../shared/audit.js";
 import {
@@ -15,6 +18,20 @@ import {
   logsMulti,
   dockerSystemDf,
 } from "../../shared/docker.js";
+import {
+  vmStart,
+  vmStop,
+  vmReset,
+  vmDrain,
+  containerStart,
+  containerStop,
+  containerRestart,
+  serviceStart,
+  serviceStop,
+  serviceRestart,
+} from "../../shared/control.js";
+
+// ── Validation helpers ──
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 const SAFE_SINCE_RE = /^\d+[smhd]$|^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/;
@@ -37,7 +54,110 @@ function validatePath(path: string): void {
   }
 }
 
-export function registerDockerTools(server: McpServer) {
+function formatControl(result: { ok: boolean; message: string }) {
+  return {
+    content: [{ type: "text" as const, text: result.message }],
+    isError: !result.ok,
+  };
+}
+
+export function registerOperationsTools(server: McpServer) {
+  // ── SSH (2 tools, from ssh-tools.ts) ──
+
+  server.tool(
+    "ssh_exec",
+    "Execute a command on a VM via SSH",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      command: z.string().describe("Command to execute"),
+      timeout: z.number().optional().describe("Timeout in ms (default: 30000)"),
+    },
+    async ({ vm, command, timeout }) => {
+      const vmId = resolveVmId(vm);
+      const result = sshExec(vmId, command, timeout);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: [
+              `SSH ${getVmSshAlias(vmId)} (${vmId}): ${result.ok ? "OK" : "FAILED"}`,
+              `Exit code: ${result.exitCode}`,
+              result.stdout ? `\n${result.stdout}` : "",
+              result.stderr ? `\nstderr: ${result.stderr}` : "",
+            ].join("\n"),
+          },
+        ],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "check_vm",
+    "Test if a VM is reachable via SSH, optionally with system info",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      detailed: z.boolean().optional().describe("Include system info (uptime, memory, disk)"),
+    },
+    async ({ vm, detailed }) => {
+      const vmId = resolveVmId(vm);
+      const alias = getVmSshAlias(vmId);
+      const config = getConfig();
+      const vmConfig = config.vms[vmId];
+
+      const ping = checkVmReachable(vmId);
+      if (!ping.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${alias} (${vmId}) @ ${vmConfig.ip}: UNREACHABLE\n${ping.stderr}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (!detailed) {
+        return {
+          content: [
+            { type: "text", text: `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE` },
+          ],
+        };
+      }
+
+      const info = sshExec(
+        vmId,
+        'echo "=== Uptime ===" && uptime && echo "=== Memory ===" && free -h && echo "=== Disk ===" && df -h / && echo "=== Docker ===" && docker ps --format "table {{.Names}}\\t{{.Status}}" 2>/dev/null || echo "Docker not available"',
+        15_000
+      );
+
+      const header = `${alias} (${vmId}) @ ${vmConfig.ip}: REACHABLE`;
+      if (!info.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${header}\n\n(SSH exec failed for detailed info — exit ${info.exitCode})${info.stderr ? `\n${info.stderr}` : ""}`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `${header}\n\n${info.stdout}`,
+          },
+        ],
+      };
+    }
+  );
+
+  // ── Docker (14 tools, from docker.ts) ──
+
   server.tool(
     "docker_ps",
     "List Docker containers on a VM",
@@ -108,9 +228,7 @@ export function registerDockerTools(server: McpServer) {
       if (since) cmd += ` --since ${since}`;
       cmd += ` ${container}`;
 
-      // 15s: log retrieval is fast, but SSH connect can take a few seconds on cold VMs
       const result = sshExec(vmId, cmd, 15_000);
-      // Docker logs go to both stdout and stderr
       const output = (result.stdout + result.stderr).trim();
 
       return {
@@ -148,7 +266,6 @@ export function registerDockerTools(server: McpServer) {
       const remotePath = `${config.remote_base}/${service}`;
       const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose up -d`;
 
-      // 60s: compose pull + recreate can take up to a minute on slow VMs
       const result = sshExec(vmId, cmd, 60_000);
       audit("docker_compose_up", `${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
       return {
@@ -208,7 +325,7 @@ export function registerDockerTools(server: McpServer) {
       validateContainerName(container);
       const result = containerInspectFull(vm, container);
       return {
-        content: [{ type: "text", text: result.ok ? JSON.stringify(result.data, null, 2) : `Error: ${result.error}` }],
+        content: [{ type: "text", text: result.ok ? JSON.stringify(result.data, null, 2) : `Error: ${String(result.data)}` }],
         isError: !result.ok,
       };
     }
@@ -333,5 +450,99 @@ export function registerDockerTools(server: McpServer) {
         isError: !result.ok,
       };
     }
+  );
+
+  // ── VM Control (4 tools, from control.ts) ──
+
+  server.tool(
+    "vm_start",
+    "Start a VM via the Rust API (handles OCI/GCP abstraction)",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => formatControl(vmStart(vm)),
+  );
+
+  server.tool(
+    "vm_stop",
+    "Stop a VM gracefully via the Rust API",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => formatControl(vmStop(vm)),
+  );
+
+  server.tool(
+    "vm_reset",
+    "Reset/force-restart a VM via the Rust API",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => formatControl(vmReset(vm)),
+  );
+
+  server.tool(
+    "vm_drain",
+    "Gracefully stop all containers on a VM before maintenance",
+    { vm: z.string().describe("VM ID or SSH alias") },
+    async ({ vm }) => formatControl(vmDrain(vm)),
+  );
+
+  // ── Container Control (3 tools, from control.ts) ──
+
+  server.tool(
+    "container_start",
+    "Start a container via the Rust API (preferred — handles VM auto-wake and validation).",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      name: z.string().describe("Container name"),
+    },
+    async ({ vm, name }) => formatControl(containerStart(vm, name)),
+  );
+
+  server.tool(
+    "container_stop",
+    "Stop a container on a VM",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      name: z.string().describe("Container name"),
+    },
+    async ({ vm, name }) => formatControl(containerStop(vm, name)),
+  );
+
+  server.tool(
+    "container_restart",
+    "Restart a container on a VM",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      name: z.string().describe("Container name"),
+    },
+    async ({ vm, name }) => formatControl(containerRestart(vm, name)),
+  );
+
+  // ── Service Control (3 tools, from control.ts) ──
+
+  server.tool(
+    "service_start",
+    "Start all containers for a service on a VM",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      service: z.string().describe("Service name"),
+    },
+    async ({ vm, service }) => formatControl(serviceStart(vm, service)),
+  );
+
+  server.tool(
+    "service_stop",
+    "Stop all containers for a service on a VM",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      service: z.string().describe("Service name"),
+    },
+    async ({ vm, service }) => formatControl(serviceStop(vm, service)),
+  );
+
+  server.tool(
+    "service_restart",
+    "Restart all containers for a service (compose down + up)",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      service: z.string().describe("Service name"),
+    },
+    async ({ vm, service }) => formatControl(serviceRestart(vm, service)),
   );
 }
