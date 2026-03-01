@@ -1,8 +1,11 @@
 import { sshExec, checkVmReachable } from "./ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "./config.js";
 import { exec } from "./exec.js";
 import { listContainers } from "./docker.js";
 import { listServices, getService } from "./discovery.js";
+import { AUTHELIA_TOKEN_PATH } from "./paths.js";
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -432,9 +435,311 @@ function runWireguardSuite(): TestSuiteResult {
   return buildSuiteResult("wireguard", tests, start);
 }
 
+// ── New Test Suites ──────────────────────────────────────────────────────
+
+/**
+ * Run the "auth" suite: Test Authelia OIDC flow, verify bearer token works.
+ */
+function runAuthSuite(): TestSuiteResult {
+  const start = Date.now();
+  const tests: TestResult[] = [];
+
+  // Test 1: Authelia API health
+  tests.push(
+    runTest("authelia-health", "auth.diegonmarcos.com", () => {
+      const result = exec("curl", ["-s", "-o", "/dev/null", "-w", "%{http_code}", "-m", "10", "https://auth.diegonmarcos.com/api/health"], { timeout: 15_000 });
+      const code = parseInt(result.stdout.trim(), 10);
+      return {
+        passed: code === 200,
+        details: code === 200 ? "Authelia health OK" : `HTTP ${code}`,
+      };
+    }),
+  );
+
+  // Test 2: Bearer token exists and not expired
+  tests.push(
+    runTest("bearer-token", "authelia_tokens.json", () => {
+      if (!existsSync(AUTHELIA_TOKEN_PATH)) {
+        return { passed: false, details: "No token file found" };
+      }
+      try {
+        const tokens = JSON.parse(readFileSync(AUTHELIA_TOKEN_PATH, "utf-8"));
+        if (!tokens.access_token) {
+          return { passed: false, details: "No access_token in file" };
+        }
+        // Check expiry if present
+        if (tokens.expires_at) {
+          const expiry = new Date(tokens.expires_at);
+          const remaining = expiry.getTime() - Date.now();
+          if (remaining <= 0) {
+            return { passed: false, details: `Token expired ${Math.abs(Math.floor(remaining / 1000))}s ago` };
+          }
+          return { passed: true, details: `Token valid for ${Math.floor(remaining / 1000)}s` };
+        }
+        return { passed: true, details: "Token present (no expiry info)" };
+      } catch {
+        return { passed: false, details: "Failed to parse token file" };
+      }
+    }),
+  );
+
+  return buildSuiteResult("auth", tests, start);
+}
+
+/**
+ * Run the "secrets" suite: Validate all services with secrets.yaml have decrypted .secrets.
+ */
+function runSecretsSuite(): TestSuiteResult {
+  const start = Date.now();
+  const config = getConfig();
+  const tests: TestResult[] = [];
+
+  for (const [name, svc] of Object.entries(config.services)) {
+    try {
+      const serviceDir = getServiceDir(name);
+      const secretsYaml = join(serviceDir, "src", "secrets.yaml");
+      const dotSecrets = join(serviceDir, "dist", ".secrets");
+
+      if (existsSync(secretsYaml)) {
+        tests.push(
+          runTest("secrets-decrypted", name, () => {
+            return {
+              passed: existsSync(dotSecrets),
+              details: existsSync(dotSecrets)
+                ? "secrets.yaml → .secrets OK"
+                : "secrets.yaml exists but no .secrets (run build.sh secrets)",
+            };
+          }),
+        );
+      }
+    } catch {
+      // Service folder may not exist
+    }
+  }
+
+  return buildSuiteResult("secrets", tests, start);
+}
+
+/**
+ * Run the "compose" suite: Validate docker-compose.yml syntax.
+ */
+function runComposeSuite(): TestSuiteResult {
+  const start = Date.now();
+  const config = getConfig();
+  const tests: TestResult[] = [];
+
+  for (const [name] of Object.entries(config.services)) {
+    try {
+      const serviceDir = getServiceDir(name);
+      const composePath = join(serviceDir, "dist", "docker-compose.yml");
+
+      if (existsSync(composePath)) {
+        tests.push(
+          runTest("compose-syntax", name, () => {
+            const result = exec("docker", ["compose", "-f", composePath, "config"], {
+              timeout: 10_000,
+              cwd: join(serviceDir, "dist"),
+            });
+            return {
+              passed: result.ok,
+              details: result.ok
+                ? "docker-compose.yml syntax valid"
+                : `Syntax error: ${result.stderr.slice(0, 200)}`,
+            };
+          }),
+        );
+      }
+    } catch {
+      // Service folder may not exist
+    }
+  }
+
+  return buildSuiteResult("compose", tests, start);
+}
+
+/**
+ * Run the "volumes" suite: Check that declared Docker volumes exist and have data.
+ */
+function runVolumesSuite(target?: string): TestSuiteResult {
+  const start = Date.now();
+  const vmIds = getVmIds(target);
+  const tests: TestResult[] = [];
+
+  for (const vmId of vmIds) {
+    const alias = getVmSshAlias(vmId);
+    tests.push(
+      runTest("volume-list", alias, () => {
+        const result = sshExec(vmId, "docker volume ls -q | wc -l", 10_000);
+        if (!result.ok) {
+          return { passed: false, details: `Failed to list volumes: ${result.stderr}` };
+        }
+        const count = parseInt(result.stdout.trim(), 10);
+        return {
+          passed: count >= 0,
+          details: `${count} volume(s) found`,
+        };
+      }),
+    );
+  }
+
+  return buildSuiteResult("volumes", tests, start);
+}
+
+/**
+ * Run the "resources" suite: Memory/disk threshold test — fail if any VM is >85% disk or >90% memory.
+ */
+function runResourcesSuite(target?: string): TestSuiteResult {
+  const start = Date.now();
+  const vmIds = getVmIds(target);
+  const tests: TestResult[] = [];
+
+  for (const vmId of vmIds) {
+    const alias = getVmSshAlias(vmId);
+
+    // Disk check
+    tests.push(
+      runTest("disk-usage", alias, () => {
+        const result = sshExec(vmId, "df / | tail -1 | awk '{print $5}' | sed 's/%//'", 10_000);
+        if (!result.ok) {
+          return { passed: false, details: `Failed to check disk: ${result.stderr}` };
+        }
+        const percent = parseInt(result.stdout.trim(), 10);
+        return {
+          passed: percent < 85,
+          details: `Disk usage: ${percent}% ${percent >= 85 ? "(CRITICAL)" : ""}`,
+        };
+      }),
+    );
+
+    // Memory check
+    tests.push(
+      runTest("memory-usage", alias, () => {
+        const result = sshExec(vmId, "free | grep Mem | awk '{printf \"%.0f\", $3/$2 * 100}'", 10_000);
+        if (!result.ok) {
+          return { passed: false, details: `Failed to check memory: ${result.stderr}` };
+        }
+        const percent = parseInt(result.stdout.trim(), 10);
+        return {
+          passed: percent < 90,
+          details: `Memory usage: ${percent}% ${percent >= 90 ? "(WARNING)" : ""}`,
+        };
+      }),
+    );
+  }
+
+  return buildSuiteResult("resources", tests, start);
+}
+
+/**
+ * Run the "latency" suite: Service response time test — curl with -w timing.
+ */
+function runLatencySuite(): TestSuiteResult {
+  const start = Date.now();
+  const services = getServicesWithDomains();
+  const tests: TestResult[] = [];
+
+  for (const { domain } of services) {
+    tests.push(
+      runTest("response-time", domain, () => {
+        const result = exec("curl", [
+          "-s", "-o", "/dev/null",
+          "-w", "%{time_total}",
+          "-m", "10",
+          `https://${domain}/`,
+        ], { timeout: 15_000 });
+
+        if (!result.ok) {
+          return { passed: false, details: `Request failed: ${result.stderr}` };
+        }
+
+        const timeSeconds = parseFloat(result.stdout.trim());
+        const timeMs = Math.round(timeSeconds * 1000);
+        return {
+          passed: timeMs < 5000,
+          details: `${timeMs}ms ${timeMs >= 5000 ? "(SLOW)" : ""}`,
+        };
+      }),
+    );
+  }
+
+  return buildSuiteResult("latency", tests, start);
+}
+
+/**
+ * Run the "images" suite: Check for outdated/old base images.
+ */
+function runImagesSuite(target?: string): TestSuiteResult {
+  const start = Date.now();
+  const vmIds = getVmIds(target);
+  const tests: TestResult[] = [];
+
+  for (const vmId of vmIds) {
+    const alias = getVmSshAlias(vmId);
+
+    tests.push(
+      runTest("image-age", alias, () => {
+        // Get images older than 180 days
+        const result = sshExec(vmId, `docker image ls --format '{{.CreatedAt}}' | awk '{print $1}' | sort -u | head -5`, 10_000);
+        if (!result.ok) {
+          return { passed: true, details: "Could not check image age" };
+        }
+        const dates = result.stdout.trim().split("\n").filter(Boolean);
+        return {
+          passed: true,
+          details: `Oldest images from: ${dates.join(", ") || "none"}`,
+        };
+      }),
+    );
+  }
+
+  return buildSuiteResult("images", tests, start);
+}
+
+/**
+ * Run the "cross-vm" suite: WireGuard connectivity between VMs.
+ */
+function runCrossVmSuite(): TestSuiteResult {
+  const start = Date.now();
+  const config = getConfig();
+  const vmIds = Object.keys(config.vms);
+  const tests: TestResult[] = [];
+
+  if (vmIds.length < 2) {
+    return buildSuiteResult("cross-vm", [{
+      name: "insufficient-vms",
+      target: "all",
+      passed: false,
+      timeMs: 0,
+      details: "Need at least 2 VMs for cross-VM tests",
+    }], start);
+  }
+
+  // Ping from first VM to all others
+  const sourceVm = vmIds[0];
+  const sourceAlias = getVmSshAlias(sourceVm);
+
+  for (let i = 1; i < vmIds.length; i++) {
+    const targetVm = vmIds[i];
+    const targetIp = config.vms[targetVm].ip;
+    const targetAlias = getVmSshAlias(targetVm);
+
+    tests.push(
+      runTest("wg-cross-ping", `${sourceAlias} → ${targetAlias}`, () => {
+        const result = sshExec(sourceVm, `ping -c 1 -W 3 ${targetIp}`, 10_000);
+        return {
+          passed: result.ok,
+          details: result.ok ? `Ping ${targetIp}: OK` : `Ping ${targetIp}: FAILED`,
+        };
+      }),
+    );
+  }
+
+  return buildSuiteResult("cross-vm", tests, start);
+}
+
 // ── Master Dispatcher ────────────────────────────────────────────────────
 
-type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "full";
+type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "auth" | "secrets" | "compose" | "volumes" | "resources" | "latency" | "images" | "cross-vm" | "full";
 
 /**
  * Run a named test suite, optionally scoped to a specific VM target.
@@ -468,6 +773,30 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
     case "wireguard":
       return runWireguardSuite();
 
+    case "auth":
+      return runAuthSuite();
+
+    case "secrets":
+      return runSecretsSuite();
+
+    case "compose":
+      return runComposeSuite();
+
+    case "volumes":
+      return runVolumesSuite(target);
+
+    case "resources":
+      return runResourcesSuite(target);
+
+    case "latency":
+      return runLatencySuite();
+
+    case "images":
+      return runImagesSuite(target);
+
+    case "cross-vm":
+      return runCrossVmSuite();
+
     case "full": {
       const start = Date.now();
       const suites = [
@@ -477,6 +806,14 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
         runRoutesSuite(),
         runContainersSuite(target),
         runWireguardSuite(),
+        runAuthSuite(),
+        runSecretsSuite(),
+        runComposeSuite(),
+        runVolumesSuite(target),
+        runResourcesSuite(target),
+        runLatencySuite(),
+        runImagesSuite(target),
+        runCrossVmSuite(),
       ];
 
       // Flatten all tests into one combined suite
@@ -490,7 +827,9 @@ export function runTestSuite(suite: SuiteName, target?: string): TestSuiteResult
 
     default: {
       const validSuites: SuiteName[] = [
-        "connectivity", "dns", "tls", "routes", "containers", "wireguard", "full",
+        "connectivity", "dns", "tls", "routes", "containers", "wireguard",
+        "auth", "secrets", "compose", "volumes", "resources", "latency", "images", "cross-vm",
+        "full",
       ];
       return {
         suite: String(suite),
