@@ -416,6 +416,18 @@
           main()
     '';
 
+    # ── Init dirs (compose pre_hook) ──────────────────────────────
+    mkInitDirs = pkgs: pkgs.writeText "init-dirs.sh" ''
+      #!/bin/sh
+      # Mattermost runs as uid 2000 inside the container
+      MM_UID=2000
+      MM_GID=2000
+      for dir in data/mattermost/config data/mattermost/data data/mattermost/logs data/mattermost/plugins data/mattermost/client-plugins data/postgres; do
+        mkdir -p "$dir"
+      done
+      chown -R $MM_UID:$MM_GID data/mattermost
+    '';
+
     # ── Bridge requirements ─────────────────────────────────────
     mkRequirements = pkgs: pkgs.writeText "requirements-bridge.txt" ''
       requests>=2.31.0
@@ -527,6 +539,8 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBridge pkgs} $out/ntfy-bridge.py
         cp ${mkRequirements pkgs} $out/requirements-bridge.txt
+        cp ${mkInitDirs pkgs} $out/init-dirs.sh
+        chmod +x $out/init-dirs.sh
       '';
     in {
       default = defaultPkg;
