@@ -24,7 +24,7 @@ export function registerDatabaseTools(server: McpServer) {
       limit: z.number().optional().describe("Max records (default: 100)"),
     },
     async ({ vm, limit }) => {
-      return jsonText(`Health history: ${vm}`, getHealthHistory(vm, limit));
+      return jsonText(`Health history: ${vm}`, getHealthHistory({ vm, limit }));
     }
   );
 
@@ -36,7 +36,8 @@ export function registerDatabaseTools(server: McpServer) {
       days: z.number().optional().describe("Days back (default: 7)"),
     },
     async ({ vm, days }) => {
-      return jsonText(`Uptime report: ${vm}`, getUptimeReport(vm, days));
+      const hours = days ? days * 24 : 24 * 7; // Convert days to hours
+      return jsonText(`Uptime report: ${vm}`, getUptimeReport(vm, hours));
     }
   );
 
@@ -49,7 +50,7 @@ export function registerDatabaseTools(server: McpServer) {
       limit: z.number().optional().describe("Max records (default: 100)"),
     },
     async ({ tool, target, limit }) => {
-      return jsonText("Audit log", getAuditLog(tool, target, limit));
+      return jsonText("Audit log", getAuditLog({ tool, limit }));
     }
   );
 
@@ -61,29 +62,30 @@ export function registerDatabaseTools(server: McpServer) {
       limit: z.number().optional().describe("Max records (default: 50)"),
     },
     async ({ service, limit }) => {
-      return jsonText(`Deploy history${service ? `: ${service}` : ""}`, getDeployHistory(service, limit));
+      return jsonText(`Deploy history${service ? `: ${service}` : ""}`, getDeployHistory({ service, limit }));
     }
   );
 
   server.tool(
     "db_alert_state",
-    "Get current alert state (which alerts have been sent, when)",
-    { key: z.string().describe("Alert key (e.g. 'vm_down:oci-apps')") },
-    async ({ key }) => {
-      return jsonText(`Alert state: ${key}`, getAlertState(key));
+    "Get current alert state for a VM",
+    { vm: z.string().describe("VM ID or alias") },
+    async ({ vm }) => {
+      return jsonText(`Alert state: ${vm}`, getAlertState(vm));
     }
   );
 
   server.tool(
     "db_alert_update",
-    "Update alert state (mark alert as sent/resolved)",
+    "Update alert state for a VM",
     {
-      key: z.string().describe("Alert key"),
-      sent: z.boolean().describe("Alert sent?"),
+      vm: z.string().describe("VM ID or alias"),
+      status: z.string().describe("Current status (e.g. 'up', 'down')"),
+      notified: z.boolean().describe("Has notification been sent?"),
     },
-    async ({ key, sent }) => {
-      updateAlertState(key, sent);
-      return { content: [{ type: "text", text: `Alert state updated: ${key} → sent=${sent}` }] };
+    async ({ vm, status, notified }) => {
+      updateAlertState(vm, status, notified);
+      return { content: [{ type: "text", text: `Alert state updated: ${vm} → ${status} (notified=${notified})` }] };
     }
   );
 
@@ -92,8 +94,8 @@ export function registerDatabaseTools(server: McpServer) {
     "Remove old records from SQLite database (keeps last N days)",
     { days: z.number().optional().describe("Keep last N days (default: 30)") },
     async ({ days }) => {
-      const count = pruneOldRecords(days);
-      return { content: [{ type: "text", text: `Pruned ${count} old records` }] };
+      const result = pruneOldRecords(days);
+      return { content: [{ type: "text", text: `Pruned ${result.healthDeleted + result.auditDeleted + result.deployDeleted} old records (health: ${result.healthDeleted}, audit: ${result.auditDeleted}, deploy: ${result.deployDeleted})` }] };
     }
   );
 }

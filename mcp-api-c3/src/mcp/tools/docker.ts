@@ -244,7 +244,7 @@ export function registerDockerTools(server: McpServer) {
       validateContainerName(container);
       const result = containerPause(vm, container);
       return {
-        content: [{ type: "text", text: result.message }],
+        content: [{ type: "text", text: result.output }],
         isError: !result.ok,
       };
     }
@@ -261,7 +261,7 @@ export function registerDockerTools(server: McpServer) {
       validateContainerName(container);
       const result = containerUnpause(vm, container);
       return {
-        content: [{ type: "text", text: result.message }],
+        content: [{ type: "text", text: result.output }],
         isError: !result.ok,
       };
     }
@@ -306,17 +306,16 @@ export function registerDockerTools(server: McpServer) {
 
   server.tool(
     "docker_logs_multi",
-    "Get logs from multiple containers on a VM (parallel fetch)",
+    "Get logs from all containers for a service",
     {
-      vm: z.string().describe("VM ID or SSH alias"),
-      containers: z.array(z.string()).describe("Container names"),
+      service: z.string().describe("Service name from config.json"),
       lines: z.number().optional().describe("Lines per container (default: 50)"),
     },
-    async ({ vm, containers }) => {
-      const results = logsMulti(vm, containers);
-      const text = results.map((r) => `=== ${r.container} ===\n${r.ok ? r.logs : `Error: ${r.logs}`}`).join("\n\n");
+    async ({ service, lines }) => {
+      const result = logsMulti(service, lines);
       return {
-        content: [{ type: "text", text }],
+        content: [{ type: "text", text: result.ok ? result.output : `Error: ${result.output}` }],
+        isError: !result.ok,
       };
     }
   );

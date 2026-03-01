@@ -6,11 +6,11 @@
     "esModuleInterop": true,
     "strict": true,
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["shared/**/*", "api/**/*"],
+  "include": ["shared/**/*", "api/**/*", "mcp/**/*"],
   "exclude": ["node_modules"]
 }
