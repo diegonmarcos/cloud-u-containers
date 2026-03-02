@@ -237,6 +237,41 @@ import request_limits
 }
   }
 
+  # Mattermost team chat (WebSocket upgrade handled by Caddy automatically)
+  chat.diegonmarcos.com {
+import security
+import request_limits
+    # Mattermost API — has its own session auth, bypass Authelia
+    handle /api/v4/* {
+      reverse_proxy 10.0.0.6:8065
+    }
+    # Everything else — browser access with Authelia
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8065
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8065
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
   # Affine collaborative docs (100MB uploads, long timeouts)
   drive-notes-affine.diegonmarcos.com {
 import security
@@ -261,15 +296,22 @@ import security
 
   # ── GitHub Pages reverse proxies (URL stays as subdomain) ──
 
-  # Landing page
+  # Landing page + WKD (Web Key Directory for PGP)
   diegonmarcos.com, www.diegonmarcos.com {
 import security
 import request_limits
-    rewrite * /landpage{uri}
+    # WKD — PGP public key discovery (no auth — must be public per spec)
+    handle_path /.well-known/openpgpkey/* {
+      root * /srv/wkd
+      file_server
+    }
+    handle {
+      rewrite * /landpage{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
 }
 
+    }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -910,14 +952,6 @@ forward_auth authelia:9091 {
       root * /srv
       rewrite * /ntfy-setup.html
       file_server
-    }
-    handle /api/topics {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-      uri strip_prefix /api/topics
-      reverse_proxy ntfy-topic-scanner:8091
     }
       @bearer header Authorization Bearer*
   handle @bearer {
