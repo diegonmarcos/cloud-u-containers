@@ -9,8 +9,15 @@ export function sshExec(
 ): ExecResult {
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
+  const config = getConfig();
+  const vmConfig = config.vms[vmId];
 
-  const result = exec("ssh", ["-o", "ConnectTimeout=10", alias, command], {
+  // Use user@ip directly — no SSH config needed inside Docker
+  const host = vmConfig?.wg_ip || vmConfig?.ip || alias;
+  const user = vmConfig?.user || "ubuntu";
+  const target = `${user}@${host}`;
+
+  const result = exec("ssh", ["-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no", target, command], {
     timeout: timeout ?? 30_000,
   });
 
