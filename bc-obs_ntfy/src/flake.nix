@@ -110,8 +110,6 @@
           volumes:
             - ./topic-scanner.py:/app/topic-scanner.py:ro
             - ./cache:/var/cache/ntfy:ro
-          ports:
-            - '10.0.0.1:8091:8091'
           environment:
             - TZ=Europe/Paris
             - PYTHONUNBUFFERED=1
