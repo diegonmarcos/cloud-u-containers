@@ -14,6 +14,7 @@ services:
       - ./error.html:/srv/error.html:ro
       - ./dashboard.html:/srv/dashboard.html:ro
       - ./ntfy-setup.html:/srv/ntfy-setup.html:ro
+      - ./wkd:/srv/wkd:ro
       - ./logs:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
