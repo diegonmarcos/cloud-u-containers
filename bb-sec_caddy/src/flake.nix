@@ -297,6 +297,11 @@
       # Mattermost team chat (WebSocket upgrade handled by Caddy automatically)
       chat.diegonmarcos.com {
     ${sec}
+        # Mattermost API — has its own session auth, bypass Authelia
+        handle /api/v4/* {
+          reverse_proxy ${flex0}:8065
+        }
+        # Everything else — browser access with Authelia
         ${mkProtected "${flex0}:8065"}
         ${handleErrors}
       }
@@ -318,10 +323,17 @@
 
       # ── GitHub Pages reverse proxies (URL stays as subdomain) ──
 
-      # Landing page
+      # Landing page + WKD (Web Key Directory for PGP)
       diegonmarcos.com, www.diegonmarcos.com {
     ${sec}
-        ${mkGithubProxy "landpage"}
+        # WKD — PGP public key discovery (no auth — must be public per spec)
+        handle_path /.well-known/openpgpkey/* {
+          root * /srv/wkd
+          file_server
+        }
+        handle {
+          ${mkGithubProxy "landpage"}
+        }
         ${handleErrors}
       }
 
@@ -560,6 +572,7 @@
             - ./error.html:/srv/error.html:ro
             - ./dashboard.html:/srv/dashboard.html:ro
             - ./ntfy-setup.html:/srv/ntfy-setup.html:ro
+            - ./wkd:/srv/wkd:ro
             - ./logs:/var/log/caddy
             - caddy_data:/data
             - caddy_config:/config
@@ -715,6 +728,9 @@
         cp ${./error.html} $out/error.html
         cp ${./dashboard.html} $out/dashboard.html
         cp ${./ntfy-setup.html} $out/ntfy-setup.html
+        mkdir -p $out/wkd/hu
+        touch $out/wkd/policy
+        cp ${./pgp-wkd-key.bin} $out/wkd/hu/s8y7oh5xrdpu9psba3i5ntk64ohouhga
         cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
         cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
         cp ${./introspect-proxy/app/requirements.txt} $out/introspect-proxy/app/requirements.txt
