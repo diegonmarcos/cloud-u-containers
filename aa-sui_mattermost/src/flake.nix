@@ -19,7 +19,8 @@
       postgres_port = 5432;
       wg_ip = "10.0.0.6";
       ntfy_url = "http://10.0.0.1:8090";
-      topics = "cicd_deploy-digest,infra_mesh-health,infra_endpoints,infra_dns,infra_resources,infra_containers,ops_summary,ops_backups,ops_cron,security_audit,security_tls,security_connections,security_yara,vcs_commits,vcs_pull-requests,vcs_issues-releases";
+      # Scraped from bc-obs_ntfy/src/topic-scanner.py CONFIGURED_TOPICS
+      topics = builtins.concatStringsSep "," (import ./ntfy-topics.nix);
       timezone = "America/Chicago";
     };
 
@@ -54,6 +55,9 @@
             - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
             - MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true
             - MM_SERVICESETTINGS_ENABLEUSERACCESSTOKENS=true
+            - MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true
+            - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
+            - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
           depends_on:
             postgres:
               condition: service_healthy
@@ -175,12 +179,60 @@
           return tid
 
 
-      def ensure_webhook(headers, team_id):
-          """Find or create incoming webhook. Returns webhook URL."""
-          r = mm_api("GET", f"/teams/{team_id}/channels/name/town-square", headers)
-          r.raise_for_status()
-          channel_id = r.json()["id"]
+      def sanitize_channel(topic):
+          name = re.sub(r"[^a-z0-9_-]", "-", topic.lower().strip())
+          return re.sub(r"-+", "-", name).strip("-")[:64] or "ntfy-general"
 
+
+      def sync_channels(headers, team_id):
+          """Sync channels: create missing, delete removed. Returns default channel_id."""
+          wanted = {sanitize_channel(t) for t in TOPICS.split(",")}
+          prefix = "ntfy: "
+
+          # Get existing ntfy channels
+          r = mm_api("GET", f"/teams/{team_id}/channels?per_page=200", headers)
+          r.raise_for_status()
+          existing = {}
+          default_channel_id = ""
+          for ch in r.json():
+              if ch["display_name"].startswith(prefix):
+                  existing[ch["name"]] = ch["id"]
+              if ch["name"] == "town-square":
+                  default_channel_id = ch["id"]
+
+          # Create missing
+          for topic in TOPICS.split(","):
+              name = sanitize_channel(topic)
+              if name not in existing:
+                  r = mm_api("POST", "/channels", headers, json={
+                      "team_id": team_id,
+                      "name": name,
+                      "display_name": f"{prefix}{topic}",
+                      "purpose": f"Mirrored from ntfy topic: {topic}",
+                      "type": "O",
+                  })
+                  if r.ok:
+                      log.info("Created channel: %s", name)
+                  elif r.status_code == 409:
+                      log.info("Channel exists: %s", name)
+                  else:
+                      log.warning("Failed to create %s: %s", name, r.text[:100])
+
+          # Delete removed
+          for name, ch_id in existing.items():
+              if name not in wanted:
+                  r = mm_api("DELETE", f"/channels/{ch_id}", headers)
+                  if r.ok:
+                      log.info("Deleted channel: %s", name)
+                  else:
+                      log.warning("Failed to delete %s: %s", name, r.text[:100])
+
+          log.info("Channel sync complete: %d wanted, %d existed", len(wanted), len(existing))
+          return default_channel_id
+
+
+      def ensure_webhook(headers, default_channel_id):
+          """Find or create incoming webhook. Returns webhook URL."""
           r = mm_api("GET", "/hooks/incoming?per_page=200", headers)
           if r.ok:
               for hook in r.json():
@@ -190,7 +242,7 @@
                       return url
 
           r = mm_api("POST", "/hooks/incoming", headers, json={
-              "channel_id": channel_id,
+              "channel_id": default_channel_id,
               "display_name": "ntfy Bridge",
               "description": "Bridges ntfy notifications to Mattermost channels",
           })
@@ -198,11 +250,6 @@
           url = f"{MM_URL}/hooks/{r.json()['id']}"
           log.info("Created webhook: %s", r.json()["id"])
           return url
-
-
-      def sanitize_channel(topic):
-          name = re.sub(r"[^a-z0-9_-]", "-", topic.lower().strip())
-          return re.sub(r"-+", "-", name).strip("-")[:64] or "ntfy-general"
 
 
       def format_message(msg):
@@ -256,7 +303,8 @@
           admin_token = bootstrap_admin()
           headers = {"Authorization": f"Bearer {admin_token}"}
           team_id = ensure_team(headers)
-          webhook_url = ensure_webhook(headers, team_id)
+          default_ch = sync_channels(headers, team_id)
+          webhook_url = ensure_webhook(headers, default_ch)
           log.info("Bootstrap complete. Starting ntfy bridge loop.")
 
           backoff = 1
