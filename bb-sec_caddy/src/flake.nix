@@ -523,11 +523,6 @@
           rewrite * /ntfy-setup.html
           file_server
         }
-        handle /api/topics {
-    ${authelia}
-          uri strip_prefix /api/topics
-          reverse_proxy ntfy-topic-scanner:8091
-        }
         ${mkProtected "ntfy:80"}
         ${handleErrors}
       }
