@@ -30,7 +30,7 @@
             - ~/.ssh:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
-            - ~/.config/gcloud:/root/.config/gcloud:ro
+            - ~/.config/gcloud:/root/.config/gcloud
           env_file:
             - .secrets
           environment:
