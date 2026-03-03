@@ -19,8 +19,14 @@ services:
       - MM_SERVICESETTINGS_SITEURL=https://chat.diegonmarcos.com
       - MM_SERVICESETTINGS_LISTENADDRESS=:8065
       - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+      - MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true
+      - MM_SERVICESETTINGS_ENABLECOMMANDS=true
       - MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION=true
       - MM_SERVICESETTINGS_ENABLEUSERACCESSTOKENS=true
+      - MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true
+      - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
+      - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
+      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mattermost-bots
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,23 +47,33 @@ services:
       timeout: 5s
       retries: 5
 
-  ntfy-bridge:
+  mattermost-bots:
     image: python:3.12-slim
-    container_name: mattermost-ntfy-bridge
+    container_name: mattermost-bots
     restart: unless-stopped
+    ports:
+      - "10.0.0.6:8888:8888"
     volumes:
       - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
       - ./requirements-bridge.txt:/app/requirements.txt:ro
-      - bridge_data:/data
     entrypoint: ["/bin/sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"]
     env_file:
       - .secrets
     environment:
       - NTFY_URL=http://10.0.0.1:8090
-      - TOPIC_SCANNER_URL=http://10.0.0.1:8091
+      - TOPICS=vcs_commits,vcs_pull-requests,vcs_issues-releases,cicd_deploy-digest,infra_mesh-health,infra_endpoints,infra_dns,infra_resources,infra_containers,ops_summary,ops_backups,ops_cron,security_audit,security_tls,security_connections,security_yara
       - MM_URL=http://mattermost:8065
+      - C3_API_URL=http://c3-api:8080
+      - OLLAMA_URL=http://10.0.0.8:11434
+      - OLLAMA_MODEL=deepseek-r1:14b-qwen-distill-q8_0
+      - OLLAMA_VM=gcp-t4
+    networks:
+      - default
+      - c3-api
     depends_on:
       - mattermost
 
-volumes:
-  bridge_data:
+networks:
+  c3-api:
+    external: true
+    name: c3-api_default

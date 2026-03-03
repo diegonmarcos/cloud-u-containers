@@ -1,10 +1,10 @@
 {
-  "name": "mattermost",
-  "description": "Mattermost team chat with ntfy bridge and AI agents",
+  "name": "mattermost-bots",
+  "description": "Mattermost team chat with ntfy bridge and C3 command bot",
 
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mattermost"
+    "remote_path": "/opt/containers/mattermost-bots"
   },
 
   "compose": {
