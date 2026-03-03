@@ -18,12 +18,8 @@
       keep_alive = "5m";
       kv_cache_type = "q4_0";
       models = [
-        "deepseek-r1:14b"
-        "qwen2.5:14b"
-      ];
-      models_q8 = [
-        "deepseek-r1:14b-q8_0"
-        "qwen2.5:14b-q8_0"
+        "deepseek-r1:14b-qwen-distill-q8_0"
+        "qwen2.5:14b-instruct-q8_0"
       ];
     };
 
@@ -73,15 +69,10 @@
         sleep 1
       done
 
-      echo "Pulling default models (Q4)..."
+      echo "Pulling Q8 models..."
       ${builtins.concatStringsSep "\n      " (map (m: ''
       echo "  Pulling ${m}..."
       docker exec ${config.container_name} ollama pull ${m}'') config.models)}
-
-      echo ""
-      echo "Default models pulled. To pull Q8 variants (higher quality, ~14GB VRAM each):"
-      ${builtins.concatStringsSep "\n      " (map (m: ''
-      echo "  docker exec ${config.container_name} ollama pull ${m}"'') config.models_q8)}
 
       echo ""
       echo "=== Startup complete ==="

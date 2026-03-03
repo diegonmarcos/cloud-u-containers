@@ -25,7 +25,7 @@
       topics = builtins.concatStringsSep "," (import ./ntfy-topics.nix);
       timezone = "America/Chicago";
       ollama_url = "http://10.0.0.8:11434";
-      ollama_model = "deepseek-r1:14b";
+      ollama_model = "deepseek-r1:14b-qwen-distill-q8_0";
       ollama_vm = "gcp-ollama";
     };
 
