@@ -151,6 +151,7 @@
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
       OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-ollama")
       _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
+      _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
 
       def mm_api(method, path, headers, **kwargs):
@@ -462,15 +463,18 @@
           return "\n".join(lines)
 
 
-      def handle_gpu():
-          """Wake gcp-t4 (gcp-ollama) and start ollama container."""
-          steps = []
+      def _gpu_background(channel_id, root_id, bot_headers):
+          """Background thread: wake gcp-ollama, poll, start container, post updates."""
           r = c3_req("POST", "/vms/gcp-ollama/start")
           if "error" in r:
-              return f":x: Failed to start gcp-t4: {r['error']}"
-          steps.append(":rocket: VM gcp-t4 start requested")
+              msg = f":x: Failed to start gcp-ollama: {r['error']}"
+              body = {"channel_id": channel_id, "message": msg}
+              if root_id:
+                  body["root_id"] = root_id
+              mm_api("POST", "/posts", bot_headers, json=body)
+              return
 
-          for i in range(18):
+          for i in range(24):
               time.sleep(5)
               check = c3_req("GET", "/health/tier1/gcp-ollama")
               reachable = False
@@ -479,18 +483,26 @@
               elif isinstance(check, dict):
                   reachable = check.get("reachable", False)
               if reachable:
-                  steps.append(f":white_check_mark: VM reachable after {(i+1)*5}s")
-                  break
-          else:
-              steps.append(":warning: VM not reachable after 90s (may still be booting)")
-              return "\n".join(steps)
+                  r = c3_req("POST", "/vms/gcp-ollama/containers/ollama/start")
+                  if "error" in r:
+                      msg = f":white_check_mark: VM reachable after {(i+1)*5}s\n:x: Container start failed: {r['error']}"
+                  else:
+                      msg = f":white_check_mark: VM reachable after {(i+1)*5}s\n:white_check_mark: Ollama container started"
+                  body = {"channel_id": channel_id, "message": msg}
+                  if root_id:
+                      body["root_id"] = root_id
+                  mm_api("POST", "/posts", bot_headers, json=body)
+                  return
 
-          r = c3_req("POST", "/vms/gcp-ollama/containers/ollama/start")
-          if "error" in r:
-              steps.append(f":x: Container start failed: {r['error']}")
-          else:
-              steps.append(":white_check_mark: Ollama container started")
-          return "\n".join(steps)
+          msg = ":warning: gcp-ollama not reachable after 120s (may still be booting)"
+          body = {"channel_id": channel_id, "message": msg}
+          if root_id:
+              body["root_id"] = root_id
+          mm_api("POST", "/posts", bot_headers, json=body)
+
+      def handle_gpu():
+          """Immediate ack — actual wake runs in background thread."""
+          return ":hourglass: Starting gcp-ollama... (polling in background)"
 
 
       def handle_c3_command(text):
@@ -643,6 +655,12 @@
                   params = parse_qs(body)
                   text = params.get("text", ["help"])[0]
 
+              # Extract channel_id for background tasks (slash commands include it)
+              if self.path == "/c3/action":
+                  slash_channel_id = None
+              else:
+                  slash_channel_id = params.get("channel_id", [None])[0]
+
               log.info("C3 command: %s", text)
               try:
                   response = handle_c3_command(text)
@@ -669,6 +687,14 @@
               self.send_header("Content-Type", "application/json")
               self.end_headers()
               self.wfile.write(json.dumps(resp).encode())
+
+              # Launch background polling for gpu via slash command
+              if cmd == "gpu" and slash_channel_id and _c3_bot_headers:
+                  threading.Thread(
+                      target=_gpu_background,
+                      args=(slash_channel_id, "", _c3_bot_headers),
+                      daemon=True,
+                  ).start()
 
           def log_message(self, fmt, *a):
               pass
@@ -799,6 +825,8 @@
                   if not text:
                       text = "help"
 
+              channel_id = post["channel_id"]
+              root_id = post.get("id", "") if not is_dm else ""
               log.info("C3 bot %s: %s", "DM" if is_dm else "mention", text[:80])
               try:
                   response = handle_c3_command(text)
@@ -815,14 +843,22 @@
                   props = {}
 
               post_body = {
-                  "channel_id": post["channel_id"],
+                  "channel_id": channel_id,
                   "message": response,
               }
               if props:
                   post_body["props"] = props
-              if not is_dm:
-                  post_body["root_id"] = post.get("id", "")
+              if root_id:
+                  post_body["root_id"] = root_id
               mm_api("POST", "/posts", bot_headers, json=post_body)
+
+              # Launch background polling for gpu command
+              if cmd == "gpu":
+                  threading.Thread(
+                      target=_gpu_background,
+                      args=(channel_id, root_id, bot_headers),
+                      daemon=True,
+                  ).start()
 
           def on_open(ws):
               ws.send(json.dumps({
@@ -973,31 +1009,55 @@
 
       # ── Ollama Bot ────────────────────────────────────────────
 
-      def ensure_ollama_up():
-          """Check if Ollama VM is up, wake if needed. Returns (ok, message)."""
-          check = c3_req("GET", f"/health/tier1/{OLLAMA_VM}")
-          reachable = False
+      def _check_vm_reachable(vm):
+          """Quick tier1 check, returns bool."""
+          check = c3_req("GET", f"/health/tier1/{vm}")
           if isinstance(check, list):
-              reachable = any(v.get("reachable") for v in check)
+              return any(v.get("reachable") for v in check)
           elif isinstance(check, dict):
-              reachable = check.get("reachable", False)
-          if reachable:
+              return check.get("reachable", False)
+          return False
+
+      def ensure_ollama_up():
+          """Quick check — returns (ok, message). Does NOT block/poll."""
+          if _check_vm_reachable(OLLAMA_VM):
               return True, ""
+          # Not reachable — request start, but don't poll
           r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
           if "error" in r:
               return False, f":x: Failed to wake {OLLAMA_VM}: {r['error']}"
-          for i in range(18):
+          return False, f":hourglass: {OLLAMA_VM} is down — wake requested. Try again in ~60s."
+
+      def _ollama_wake_and_reply(channel_id, root_id, user_text, bot_headers):
+          """Background thread: wake VM, wait for it, then send the chat reply."""
+          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+          wake_msg = None
+          for i in range(24):
               time.sleep(5)
-              check = c3_req("GET", f"/health/tier1/{OLLAMA_VM}")
-              up = False
-              if isinstance(check, list):
-                  up = any(v.get("reachable") for v in check)
-              elif isinstance(check, dict):
-                  up = check.get("reachable", False)
-              if up:
+              if _check_vm_reachable(OLLAMA_VM):
                   c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-                  return True, f":rocket: Woke {OLLAMA_VM} ({(i+1)*5}s)"
-          return False, f":warning: {OLLAMA_VM} not reachable after 90s"
+                  time.sleep(3)
+                  wake_msg = f":rocket: Woke {OLLAMA_VM} ({(i+1)*5}s)"
+                  break
+          if not wake_msg:
+              msg = f":warning: {OLLAMA_VM} not reachable after 120s"
+              body = {"channel_id": channel_id, "message": msg}
+              if root_id:
+                  body["root_id"] = root_id
+              mm_api("POST", "/posts", bot_headers, json=body)
+              return
+
+          # Post wake notification
+          body = {"channel_id": channel_id, "message": wake_msg}
+          if root_id:
+              body["root_id"] = root_id
+          mm_api("POST", "/posts", bot_headers, json=body)
+          # Now send the actual chat
+          response = ollama_chat(channel_id, user_text)
+          body = {"channel_id": channel_id, "message": response}
+          if root_id:
+              body["root_id"] = root_id
+          mm_api("POST", "/posts", bot_headers, json=body)
 
 
       def ollama_chat(channel_id, user_text):
@@ -1095,53 +1155,58 @@
                       text = "hello"
 
               channel_id = post["channel_id"]
+              root_id = post.get("id", "") if not is_dm else ""
               log.info("Ollama bot %s: %s", "DM" if is_dm else "mention", text[:80])
+
+              def _post_reply(msg):
+                  body = {"channel_id": channel_id, "message": msg}
+                  if root_id:
+                      body["root_id"] = root_id
+                  mm_api("POST", "/posts", bot_headers, json=body)
 
               cmd_lower = text.lower().strip()
               if cmd_lower == "clear":
                   _ollama_contexts.pop(channel_id, None)
-                  response = ":wastebasket: Context cleared"
+                  _post_reply(":wastebasket: Context cleared")
               elif cmd_lower.startswith("model "):
                   global OLLAMA_MODEL
                   new_model = text[6:].strip()
                   OLLAMA_MODEL = new_model
                   _ollama_contexts.clear()
-                  response = f":brain: Model set to **{new_model}** (context cleared)"
+                  _post_reply(f":brain: Model set to **{new_model}** (context cleared)")
               elif cmd_lower == "models":
                   try:
                       r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=30)
                       r.raise_for_status()
                       models = [m.get("name", "?") for m in r.json().get("models", [])]
-                      response = "**Available models:**\n" + "\n".join(f"- `{m}`" for m in models) if models else "No models found"
+                      _post_reply("**Available models:**\n" + "\n".join(f"- `{m}`" for m in models) if models else "No models found")
                   except Exception as e:
                       ok, wake_msg = ensure_ollama_up()
-                      response = wake_msg if wake_msg else f":x: {e}"
+                      _post_reply(wake_msg if wake_msg else f":x: {e}")
               elif cmd_lower == "status":
-                  check = c3_req("GET", f"/health/tier1/{OLLAMA_VM}")
-                  reachable = False
-                  if isinstance(check, list):
-                      reachable = any(v.get("reachable") for v in check)
-                  elif isinstance(check, dict):
-                      reachable = check.get("reachable", False)
+                  reachable = _check_vm_reachable(OLLAMA_VM)
                   icon = ":white_check_mark:" if reachable else ":x:"
                   ctx_len = len(_ollama_contexts.get(channel_id, []))
-                  response = f"{icon} **{OLLAMA_VM}** | Model: `{OLLAMA_MODEL}` | Context: {ctx_len} msgs"
+                  _post_reply(f"{icon} **{OLLAMA_VM}** | Model: `{OLLAMA_MODEL}` | Context: {ctx_len} msgs")
               else:
-                  ok, wake_msg = ensure_ollama_up()
-                  if not ok:
-                      response = wake_msg
-                  else:
+                  # Chat request — may need to wake VM + run inference (slow)
+                  # Run in background thread to not block WebSocket
+                  def _handle_chat():
+                      ok, wake_msg = ensure_ollama_up()
+                      if not ok:
+                          # VM down, try waking in background
+                          _post_reply(wake_msg)
+                          threading.Thread(
+                              target=_ollama_wake_and_reply,
+                              args=(channel_id, root_id, text, bot_headers),
+                              daemon=True,
+                          ).start()
+                          return
                       if wake_msg:
-                          wake_body = {"channel_id": channel_id, "message": wake_msg}
-                          if not is_dm:
-                              wake_body["root_id"] = post.get("id", "")
-                          mm_api("POST", "/posts", bot_headers, json=wake_body)
+                          _post_reply(wake_msg)
                       response = ollama_chat(channel_id, text)
-
-              post_body = {"channel_id": channel_id, "message": response}
-              if not is_dm:
-                  post_body["root_id"] = post.get("id", "")
-              mm_api("POST", "/posts", bot_headers, json=post_body)
+                      _post_reply(response)
+                  threading.Thread(target=_handle_chat, daemon=True).start()
 
           def on_open(ws):
               ws.send(json.dumps({
@@ -1250,6 +1315,8 @@
           # Create c3-bot account and start WebSocket DM listener
           bot_user_id, bot_token = create_bot(headers, team_id)
           if bot_user_id and bot_token:
+              global _c3_bot_headers
+              _c3_bot_headers = {"Authorization": f"Bearer {bot_token}"}
               add_bot_to_channels(headers, bot_user_id, all_channel_ids)
               threading.Thread(target=ws_listener, args=(bot_user_id, bot_token), daemon=True).start()
               setup_c3_sidebar(headers, user_id, team_id, bot_user_id)
