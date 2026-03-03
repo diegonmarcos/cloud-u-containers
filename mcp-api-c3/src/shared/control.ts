@@ -48,13 +48,8 @@ export function vmStart(vmNameOrAlias: string): ControlResult {
       };
     }
     const result = exec("gcloud", [
-      "compute",
-      "instances",
-      "start",
-      vm.gcloud_instance,
-      "--zone",
-      vm.gcloud_zone,
-      "--format=json",
+      "compute", "instances", "start",
+      vm.gcloud_instance, "--zone", vm.gcloud_zone, "--format=json",
     ]);
     audit("vm_start", `${alias} (gcloud)`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
     if (!result.ok) {
@@ -98,13 +93,8 @@ export function vmStop(vmNameOrAlias: string): ControlResult {
       };
     }
     const result = exec("gcloud", [
-      "compute",
-      "instances",
-      "stop",
-      vm.gcloud_instance,
-      "--zone",
-      vm.gcloud_zone,
-      "--format=json",
+      "compute", "instances", "stop",
+      vm.gcloud_instance, "--zone", vm.gcloud_zone, "--format=json",
     ]);
     audit("vm_stop", `${alias} (gcloud)`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
     if (!result.ok) {
@@ -144,13 +134,8 @@ export function vmReset(vmNameOrAlias: string): ControlResult {
       };
     }
     const result = exec("gcloud", [
-      "compute",
-      "instances",
-      "reset",
-      vm.gcloud_instance,
-      "--zone",
-      vm.gcloud_zone,
-      "--format=json",
+      "compute", "instances", "reset",
+      vm.gcloud_instance, "--zone", vm.gcloud_zone, "--format=json",
     ]);
     audit("vm_reset", `${alias} (gcloud)`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
     if (!result.ok) {
