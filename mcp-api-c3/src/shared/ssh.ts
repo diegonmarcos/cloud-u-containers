@@ -17,7 +17,13 @@ export function sshExec(
   const user = vmConfig?.user || "ubuntu";
   const target = `${user}@${host}`;
 
-  const result = exec("ssh", ["-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=no", target, command], {
+  const result = exec("ssh", [
+    "-o", "ConnectTimeout=10",
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "UserKnownHostsFile=/dev/null",
+    "-i", "/root/.ssh/vault_id_rsa",
+    target, command,
+  ], {
     timeout: timeout ?? 30_000,
   });
 
