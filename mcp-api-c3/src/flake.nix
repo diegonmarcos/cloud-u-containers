@@ -28,12 +28,14 @@
           volumes:
             - /opt/containers/c3-api/config.json:/app/config/config.json:ro
             - ~/.ssh:/root/.ssh:ro
+            - ~/.nix-profile/bin:/usr/local/nix-bin:ro
           env_file:
             - .secrets
           environment:
             - PORT=8080
             - NODE_ENV=production
             - CONFIG_JSON_PATH=/app/config/config.json
+            - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 30s
