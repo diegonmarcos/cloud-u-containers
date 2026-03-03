@@ -26,7 +26,7 @@
       timezone = "America/Chicago";
       ollama_url = "http://10.0.0.8:11434";
       ollama_model = "deepseek-r1:14b-qwen-distill-q8_0";
-      ollama_vm = "gcp-ollama";
+      ollama_vm = "gcp-t4";
     };
 
     title = "Mattermost Team Chat";
@@ -149,7 +149,7 @@
       C3_API_TOKEN = os.environ.get("C3_API_TOKEN", "")
       OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
-      OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-ollama")
+      OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
       _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
       _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
@@ -464,10 +464,10 @@
 
 
       def _gpu_background(channel_id, root_id, bot_headers):
-          """Background thread: wake gcp-ollama, poll, start container, post updates."""
-          r = c3_req("POST", "/vms/gcp-ollama/start")
+          """Background thread: wake GPU VM, poll, start container, post updates."""
+          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
           if "error" in r:
-              msg = f":x: Failed to start gcp-ollama: {r['error']}"
+              msg = f":x: Failed to start {OLLAMA_VM}: {r['error']}"
               body = {"channel_id": channel_id, "message": msg}
               if root_id:
                   body["root_id"] = root_id
@@ -476,14 +476,8 @@
 
           for i in range(24):
               time.sleep(5)
-              check = c3_req("GET", "/health/tier1/gcp-ollama")
-              reachable = False
-              if isinstance(check, list):
-                  reachable = any(v.get("reachable") for v in check)
-              elif isinstance(check, dict):
-                  reachable = check.get("reachable", False)
-              if reachable:
-                  r = c3_req("POST", "/vms/gcp-ollama/containers/ollama/start")
+              if _check_vm_reachable(OLLAMA_VM):
+                  r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
                   if "error" in r:
                       msg = f":white_check_mark: VM reachable after {(i+1)*5}s\n:x: Container start failed: {r['error']}"
                   else:
@@ -494,7 +488,7 @@
                   mm_api("POST", "/posts", bot_headers, json=body)
                   return
 
-          msg = ":warning: gcp-ollama not reachable after 120s (may still be booting)"
+          msg = f":warning: {OLLAMA_VM} not reachable after 120s (may still be booting)"
           body = {"channel_id": channel_id, "message": msg}
           if root_id:
               body["root_id"] = root_id
@@ -502,7 +496,7 @@
 
       def handle_gpu():
           """Immediate ack — actual wake runs in background thread."""
-          return ":hourglass: Starting gcp-ollama... (polling in background)"
+          return f":hourglass: Starting {OLLAMA_VM}... (polling in background)"
 
 
       def handle_c3_command(text):
