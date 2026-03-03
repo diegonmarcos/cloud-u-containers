@@ -1071,39 +1071,41 @@
               return f":x: Ollama error: {e}"
 
 
+      OLLAMA_BOT_USERNAME = "ollama-14bq8-ai"
+
       def create_ollama_bot(admin_headers, team_id):
-          """Create or find ollama bot account. Returns (bot_user_id, bot_token) or (None, None)."""
+          """Create or find ollama AI account. Returns (bot_user_id, bot_token) or (None, None)."""
           bot_user_id = None
           r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
           if r.ok:
               for bot in r.json():
-                  if bot.get("username") == "ollama":
+                  if bot.get("username") == OLLAMA_BOT_USERNAME:
                       bot_user_id = bot["user_id"]
-                      log.info("Found existing ollama bot: %s", bot_user_id)
+                      log.info("Found existing %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
                       break
           if not bot_user_id:
               r = mm_api("POST", "/bots", admin_headers, json={
-                  "username": "ollama",
-                  "display_name": "Ollama",
-                  "description": "Chat with LLM. DM me or @mention. Commands: clear, model <name>, models, status",
+                  "username": OLLAMA_BOT_USERNAME,
+                  "display_name": "Ollama 14B-Q8 AI",
+                  "description": "Chat with Qwen 2.5 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
               })
               if r.ok or r.status_code == 201:
                   bot_user_id = r.json()["user_id"]
-                  log.info("Created ollama bot: %s", bot_user_id)
+                  log.info("Created %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
               else:
-                  log.error("Failed to create ollama bot: %s", r.text[:200])
+                  log.error("Failed to create %s: %s", OLLAMA_BOT_USERNAME, r.text[:200])
                   return None, None
           mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
               "team_id": team_id, "user_id": bot_user_id,
           })
           r = mm_api("POST", f"/users/{bot_user_id}/tokens", admin_headers, json={
-              "description": "ollama-bot runtime",
+              "description": f"{OLLAMA_BOT_USERNAME} runtime",
           })
           if not r.ok:
-              log.error("Failed to create ollama bot token: %s", r.text[:200])
+              log.error("Failed to create %s token: %s", OLLAMA_BOT_USERNAME, r.text[:200])
               return bot_user_id, None
           bot_token = r.json()["token"]
-          log.info("Created ollama bot access token")
+          log.info("Created %s access token", OLLAMA_BOT_USERNAME)
           return bot_user_id, bot_token
 
 
@@ -1133,16 +1135,16 @@
 
               is_dm = channel_type == "D"
               if not is_dm:
-                  # In channels and group DMs, require explicit @ollama in text
-                  if "@ollama" not in text.lower():
+                  # In channels and group DMs, require explicit @mention in text
+                  if f"@{OLLAMA_BOT_USERNAME}" not in text.lower():
                       return
-                  text = re.sub(r"@ollama\s*", "", text).strip()
+                  text = re.sub(rf"@{re.escape(OLLAMA_BOT_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
                   if not text:
                       text = "hello"
 
               channel_id = post["channel_id"]
               root_id = post.get("id", "") if not is_dm else ""
-              log.info("Ollama bot %s: %s", "DM" if is_dm else "mention", text[:80])
+              log.info("%s %s: %s", OLLAMA_BOT_USERNAME, "DM" if is_dm else "mention", text[:80])
 
               def _post_reply(msg):
                   body = {"channel_id": channel_id, "message": msg}
@@ -1200,13 +1202,13 @@
                   "action": "authentication_challenge",
                   "data": {"token": bot_token},
               }))
-              log.info("Ollama bot WebSocket connected")
+              log.info("%s WebSocket connected", OLLAMA_BOT_USERNAME)
 
           def on_error(ws, error):
-              log.warning("Ollama bot WebSocket error: %s", error)
+              log.warning("%s WebSocket error: %s", OLLAMA_BOT_USERNAME, error)
 
           def on_close(ws, code, msg):
-              log.warning("Ollama bot WebSocket closed: %s %s", code, msg)
+              log.warning("%s WebSocket closed: %s %s", OLLAMA_BOT_USERNAME, code, msg)
 
           while True:
               try:
@@ -1219,18 +1221,18 @@
                   )
                   ws.run_forever(ping_interval=30, ping_timeout=10, origin="https://chat.diegonmarcos.com")
               except Exception as e:
-                  log.warning("Ollama bot WebSocket failed: %s — retrying in 5s", e)
+                  log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_BOT_USERNAME, e)
               time.sleep(5)
 
 
       def setup_ollama_sidebar(admin_headers, user_id, team_id, bot_user_id):
-          """Create DM channel with ollama bot and put it in the C3 sidebar category."""
+          """Create DM channel with ollama AI and put it in the C3 sidebar category."""
           r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, bot_user_id])
           if not r.ok:
-              log.warning("Failed to create DM with ollama bot: %s", r.text[:100])
+              log.warning("Failed to create DM with %s: %s", OLLAMA_BOT_USERNAME, r.text[:100])
               return
           dm_channel_id = r.json()["id"]
-          log.info("DM channel with ollama bot: %s", dm_channel_id)
+          log.info("DM channel with %s: %s", OLLAMA_BOT_USERNAME, dm_channel_id)
 
           r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers)
           if not r.ok:
@@ -1259,13 +1261,13 @@
                       "id": c3_cat["id"], "user_id": user_id, "team_id": team_id,
                       "display_name": "C3", "type": "custom", "channel_ids": ids,
                   })
-                  log.info("Added ollama DM to C3 sidebar category")
+                  log.info("Added %s DM to C3 sidebar category", OLLAMA_BOT_USERNAME)
           else:
               mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
                   "user_id": user_id, "team_id": team_id,
                   "display_name": "C3", "type": "custom", "channel_ids": [dm_channel_id],
               })
-              log.info("Created C3 sidebar category with ollama DM")
+              log.info("Created C3 sidebar category with %s DM", OLLAMA_BOT_USERNAME)
 
 
       def main():
@@ -1316,9 +1318,9 @@
               add_bot_to_channels(headers, ollama_user_id, all_channel_ids)
               threading.Thread(target=ollama_ws_listener, args=(ollama_user_id, ollama_token), daemon=True).start()
               setup_ollama_sidebar(headers, user_id, team_id, ollama_user_id)
-              log.info("Ollama bot ready — DM @ollama or @mention")
+              log.info("%s ready — DM @%s or @mention", OLLAMA_BOT_USERNAME, OLLAMA_BOT_USERNAME)
           else:
-              log.warning("Ollama bot creation failed")
+              log.warning("%s creation failed", OLLAMA_BOT_USERNAME)
 
           log.info("Bootstrap complete. Starting ntfy bridge loop.")
 
