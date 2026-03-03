@@ -411,13 +411,6 @@
         ${handleErrors}
       }
 
-      # Syncthing
-      sync.diegonmarcos.com {
-    ${sec}
-        ${mkProtected "${mail}:8384"}
-        ${handleErrors}
-      }
-
       # Mailu webmail (upstream is HTTPS with self-signed cert)
       mail.diegonmarcos.com {
     ${sec}
