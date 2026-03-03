@@ -412,13 +412,13 @@
 
       # ── C3 Command Bot ──────────────────────────────────────────
 
-      def c3_req(method, path):
+      def c3_req(method, path, timeout=30):
           """Call C3 API. Returns parsed JSON or error dict."""
           try:
               headers = {}
               if C3_API_TOKEN:
                   headers["Authorization"] = f"Bearer {C3_API_TOKEN}"
-              r = requests.request(method, f"{C3_API_URL}{path}", headers=headers, timeout=30)
+              r = requests.request(method, f"{C3_API_URL}{path}", headers=headers, timeout=timeout)
               r.raise_for_status()
               return r.json()
           except Exception as e:
@@ -503,7 +503,7 @@
               return format_tier1(c3_req("GET", "/health/tier1"))
 
           elif cmd == "vms":
-              return format_tier3(c3_req("GET", "/health/tier3"))
+              return format_tier3(c3_req("GET", "/health/tier3", timeout=120))
 
           elif cmd == "wake" and args:
               data = c3_req("POST", f"/vms/{args[0]}/start")
