@@ -28,6 +28,7 @@
           volumes:
             - /opt/containers/c3-api/config.json:/app/config/config.json:ro
             - ~/.ssh:/root/.ssh:ro
+            - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
           env_file:
             - .secrets
