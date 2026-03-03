@@ -811,15 +811,11 @@
               if not text:
                   return
 
-              # Determine if DM or @mention in channel
+              # Determine if DM or @mention in channel/group DM
               is_dm = channel_type == "D"
               if not is_dm:
-                  mentions_str = post_data.get("mentions", "[]")
-                  try:
-                      mentions = json.loads(mentions_str) if mentions_str else []
-                  except json.JSONDecodeError:
-                      mentions = []
-                  if bot_user_id not in mentions:
+                  # In channels and group DMs, require explicit @c3-bot in text
+                  if "@c3-bot" not in text.lower():
                       return
                   text = re.sub(r"@c3-bot\s*", "", text).strip()
                   if not text:
@@ -1143,12 +1139,8 @@
 
               is_dm = channel_type == "D"
               if not is_dm:
-                  mentions_str = post_data.get("mentions", "[]")
-                  try:
-                      mentions = json.loads(mentions_str) if mentions_str else []
-                  except json.JSONDecodeError:
-                      mentions = []
-                  if bot_user_id not in mentions:
+                  # In channels and group DMs, require explicit @ollama in text
+                  if "@ollama" not in text.lower():
                       return
                   text = re.sub(r"@ollama\s*", "", text).strip()
                   if not text:
