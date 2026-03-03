@@ -126,11 +126,12 @@
       Bot 1: ntfy bridge — subscribes to ntfy topics, posts to channels via webhook.
       Bot 2: C3 bot — a proper bot account you can DM + /c3 slash command.
       """
-      import os, sys, json, time, re, logging, threading
+      import os, sys, json, time, re, logging, threading, io
       from http.server import HTTPServer, BaseHTTPRequestHandler
       from urllib.parse import parse_qs
       import requests
       import websocket
+      from PIL import Image, ImageDraw, ImageFont
 
       logging.basicConfig(
           level=logging.INFO,
@@ -463,36 +464,57 @@
           return "\n".join(lines)
 
 
-      def _gpu_background(channel_id, root_id, bot_headers):
-          """Background thread: wake GPU VM, poll, start container, post updates."""
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-          if "error" in r:
-              msg = f":x: Failed to start {OLLAMA_VM}: {r['error']}"
-              body = {"channel_id": channel_id, "message": msg}
-              if root_id:
-                  body["root_id"] = root_id
-              mm_api("POST", "/posts", bot_headers, json=body)
-              return
-
-          for i in range(24):
-              time.sleep(5)
-              if _check_vm_reachable(OLLAMA_VM):
-                  r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-                  if "error" in r:
-                      msg = f":white_check_mark: VM reachable after {(i+1)*5}s\n:x: Container start failed: {r['error']}"
-                  else:
-                      msg = f":white_check_mark: VM reachable after {(i+1)*5}s\n:white_check_mark: Ollama container started"
-                  body = {"channel_id": channel_id, "message": msg}
-                  if root_id:
-                      body["root_id"] = root_id
-                  mm_api("POST", "/posts", bot_headers, json=body)
-                  return
-
-          msg = f":warning: {OLLAMA_VM} not reachable after 120s (may still be booting)"
+      def _gpu_post(channel_id, root_id, bot_headers, msg):
+          """Helper: post a message to channel, optionally in thread."""
           body = {"channel_id": channel_id, "message": msg}
           if root_id:
               body["root_id"] = root_id
           mm_api("POST", "/posts", bot_headers, json=body)
+
+      def _gpu_background(channel_id, root_id, bot_headers):
+          """Background thread: wake VM -> compose up -> poll until Ollama API responds."""
+          # Step 1: Start VM
+          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+          if "error" in r:
+              _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
+              return
+
+          # Step 2: Poll until VM is reachable via WireGuard
+          vm_up = False
+          for i in range(30):
+              time.sleep(5)
+              if _check_vm_reachable(OLLAMA_VM):
+                  vm_up = True
+                  _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
+                  break
+          if not vm_up:
+              _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
+              return
+
+          # Step 3: Start ollama service (compose up, not just container start)
+          r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+          if "error" in r:
+              # Fallback: try container start
+              r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+          if "error" in r:
+              _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
+
+          # Step 4: Poll until Ollama HTTP API responds
+          _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
+          for i in range(24):
+              time.sleep(5)
+              try:
+                  resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                  if resp.ok:
+                      models = [m.get("name", "?") for m in resp.json().get("models", [])]
+                      model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
+                      _gpu_post(channel_id, root_id, bot_headers,
+                          f":white_check_mark: Ollama ready after {(i+1)*5}s\n"
+                          f"**Model:** `{OLLAMA_MODEL}`\n**Available:** {model_list}")
+                      return
+              except Exception:
+                  pass
+          _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
 
       def handle_gpu():
           """Immediate ack — actual wake runs in background thread."""
@@ -573,6 +595,40 @@
           elif cmd == "gpu":
               return handle_gpu()
 
+          elif cmd == "model" and args:
+              new_model = " ".join(args)
+              try:
+                  r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
+                  r.raise_for_status()
+                  available = [m.get("name", "") for m in r.json().get("models", [])]
+                  if new_model not in available and f"{new_model}:latest" not in available:
+                      return f":x: Model `{new_model}` not found.\n**Available:**\n" + "\n".join(f"- `{m}`" for m in available)
+              except Exception:
+                  pass
+              global OLLAMA_MODEL
+              OLLAMA_MODEL = new_model
+              _ollama_contexts.clear()
+              return f":brain: Ollama model set to **`{new_model}`**\nContext cleared for all channels."
+
+          elif cmd == "model" and not args:
+              return f":brain: Current model: **`{OLLAMA_MODEL}`**"
+
+          elif cmd == "models":
+              try:
+                  r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
+                  r.raise_for_status()
+                  models = r.json().get("models", [])
+                  lines = ["| Model | Size | Modified |", "|:---|:---|:---|"]
+                  for m in models:
+                      name = m.get("name", "?")
+                      size = f"{m.get('size', 0) / 1e9:.1f}GB"
+                      modified = m.get("modified_at", "?")[:10]
+                      current = " :white_check_mark:" if name == OLLAMA_MODEL else ""
+                      lines.append(f"| `{name}`{current} | {size} | {modified} |")
+                  return "\n".join(lines)
+              except Exception as e:
+                  return f":x: Cannot reach Ollama: {e}"
+
           else:
               return (
                   "**C3 Infrastructure Commands**\n"
@@ -589,6 +645,8 @@
                   "| `stop <vm> <c>` | Stop a container |\n"
                   "| `restart <vm> <c>` | Restart a container |\n"
                   "| `gpu` | Wake GPU VM + start ollama |\n"
+                  "| `model [name]` | Get/set Ollama model |\n"
+                  "| `models` | List available Ollama models |\n"
                   "| `help` | Show this message |"
               )
 
@@ -704,7 +762,7 @@
               "display_name": "C3 Infrastructure",
               "description": "Control VMs and containers",
               "auto_complete": True,
-              "auto_complete_hint": "[status|vms|wake|sleep|reset|ps|start|stop|restart|gpu|help]",
+              "auto_complete_hint": "[status|vms|wake|sleep|reset|ps|start|stop|restart|gpu|model|models|help]",
           }
           r = mm_api("GET", f"/commands?team_id={team_id}", headers)
           if r.ok:
@@ -1010,44 +1068,68 @@
 
       def ensure_ollama_up():
           """Quick check — returns (ok, message). Does NOT block/poll."""
-          if _check_vm_reachable(OLLAMA_VM):
-              return True, ""
-          # Not reachable — request start, but don't poll
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-          if "error" in r:
-              return False, f":x: Failed to wake {OLLAMA_VM}: {r['error']}"
-          return False, f":hourglass: {OLLAMA_VM} is down — wake requested. Try again in ~60s."
+          if not _check_vm_reachable(OLLAMA_VM):
+              c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+              return False, f":hourglass: {OLLAMA_VM} is down — waking up..."
+          # VM reachable — check if Ollama API actually responds
+          try:
+              resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+              if resp.ok:
+                  return True, ""
+          except Exception:
+              pass
+          # VM up but Ollama not responding — try compose up
+          c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=30)
+          return False, f":hourglass: {OLLAMA_VM} reachable but Ollama not responding — starting service..."
 
       def _ollama_wake_and_reply(channel_id, root_id, user_text, bot_headers):
-          """Background thread: wake VM, wait for it, then send the chat reply."""
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-          wake_msg = None
-          for i in range(24):
-              time.sleep(5)
-              if _check_vm_reachable(OLLAMA_VM):
-                  c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-                  time.sleep(3)
-                  wake_msg = f":rocket: Woke {OLLAMA_VM} ({(i+1)*5}s)"
-                  break
-          if not wake_msg:
-              msg = f":warning: {OLLAMA_VM} not reachable after 120s"
+          """Background thread: wake VM -> compose up -> poll Ollama API -> chat."""
+          def _post(msg):
               body = {"channel_id": channel_id, "message": msg}
               if root_id:
                   body["root_id"] = root_id
               mm_api("POST", "/posts", bot_headers, json=body)
+
+          # Step 1: Start VM
+          c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+
+          # Step 2: Poll until VM reachable via WireGuard
+          vm_up = False
+          for i in range(30):
+              time.sleep(5)
+              if _check_vm_reachable(OLLAMA_VM):
+                  vm_up = True
+                  break
+          if not vm_up:
+              _post(f":warning: {OLLAMA_VM} not reachable after 150s")
+              return
+          _post(f":white_check_mark: {OLLAMA_VM} reachable")
+
+          # Step 3: Start ollama service (compose up)
+          r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+          if "error" in r:
+              c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+
+          # Step 4: Poll until Ollama HTTP API responds
+          _post(":hourglass: Waiting for Ollama API...")
+          ollama_ready = False
+          for i in range(24):
+              time.sleep(5)
+              try:
+                  resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                  if resp.ok:
+                      ollama_ready = True
+                      _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
+                      break
+              except Exception:
+                  pass
+          if not ollama_ready:
+              _post(f":warning: Ollama API not responding after 120s")
               return
 
-          # Post wake notification
-          body = {"channel_id": channel_id, "message": wake_msg}
-          if root_id:
-              body["root_id"] = root_id
-          mm_api("POST", "/posts", bot_headers, json=body)
-          # Now send the actual chat
+          # Step 5: Send the actual chat
           response = ollama_chat(channel_id, user_text)
-          body = {"channel_id": channel_id, "message": response}
-          if root_id:
-              body["root_id"] = root_id
-          mm_api("POST", "/posts", bot_headers, json=body)
+          _post(response)
 
 
       def ollama_chat(channel_id, user_text):
@@ -1182,16 +1264,10 @@
                   def _handle_chat():
                       ok, wake_msg = ensure_ollama_up()
                       if not ok:
-                          # VM down, try waking in background
+                          # VM/Ollama not ready — full wake chain + chat
                           _post_reply(wake_msg)
-                          threading.Thread(
-                              target=_ollama_wake_and_reply,
-                              args=(channel_id, root_id, text, bot_headers),
-                              daemon=True,
-                          ).start()
+                          _ollama_wake_and_reply(channel_id, root_id, text, bot_headers)
                           return
-                      if wake_msg:
-                          _post_reply(wake_msg)
                       response = ollama_chat(channel_id, text)
                       _post_reply(response)
                   threading.Thread(target=_handle_chat, daemon=True).start()
@@ -1270,6 +1346,69 @@
               log.info("Created C3 sidebar category with %s DM", OLLAMA_BOT_USERNAME)
 
 
+      # ── Profile Icons ──────────────────────────────────────────
+
+      def make_brain_svg(letter, color):
+          """Generate a colored circle SVG with a letter overlay."""
+          return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+        <circle cx="64" cy="64" r="60" fill="{color}"/>
+        <text x="64" y="82" text-anchor="middle" font-size="64" font-family="Arial,sans-serif" font-weight="bold" fill="white">{letter}</text>
+      </svg>"""
+
+      def make_gear_svg(color):
+          """Generate a colored circle SVG with a gear icon for bot."""
+          return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+        <circle cx="64" cy="64" r="60" fill="{color}"/>
+        <path d="M64 40a24 24 0 100 48 24 24 0 000-48zm0 38a14 14 0 110-28 14 14 0 010 28z" fill="white"/>
+        <rect x="59" y="24" width="10" height="14" rx="2" fill="white"/>
+        <rect x="59" y="90" width="10" height="14" rx="2" fill="white"/>
+        <rect x="24" y="59" width="14" height="10" rx="2" fill="white"/>
+        <rect x="90" y="59" width="14" height="10" rx="2" fill="white"/>
+        <rect x="33" y="33" width="10" height="14" rx="2" fill="white" transform="rotate(45 38 40)"/>
+        <rect x="85" y="81" width="10" height="14" rx="2" fill="white" transform="rotate(45 90 88)"/>
+        <rect x="33" y="81" width="10" height="14" rx="2" fill="white" transform="rotate(-45 38 88)"/>
+        <rect x="85" y="33" width="10" height="14" rx="2" fill="white" transform="rotate(-45 90 40)"/>
+      </svg>"""
+
+      def make_colored_png(letter, color, size=128):
+          """Generate a simple colored PNG with a letter, using Pillow."""
+          img = Image.new("RGB", (size, size), color)
+          draw = ImageDraw.Draw(img)
+          try:
+              font = ImageFont.load_default(size=80)
+          except TypeError:
+              font = ImageFont.load_default()
+          bbox = draw.textbbox((0, 0), letter, font=font)
+          x = (size - (bbox[2] - bbox[0])) // 2
+          y = (size - (bbox[3] - bbox[1])) // 2
+          draw.text((x, y), letter, fill="white", font=font)
+          buf = io.BytesIO()
+          img.save(buf, format="PNG")
+          return buf.getvalue()
+
+      def set_account_icons(admin_headers, bot_ids, user_ids):
+          """Set profile icons for bots and AI users at bootstrap (all PNG via /users/{id}/image)."""
+          icons = {
+              "c3-bot": ("#00B8D9", "C3"),
+              OLLAMA_BOT_USERNAME: ("#FF1744", "Q"),
+              "claude-opus-ai": ("#FF6B35", "O"),
+              "claude-sonnet-ai": ("#7B61FF", "S"),
+              "claude-haiku-ai": ("#00C853", "H"),
+          }
+          all_ids = {**bot_ids, **user_ids}
+          for username, (color, letter) in icons.items():
+              uid = all_ids.get(username)
+              if not uid:
+                  continue
+              png_data = make_colored_png(letter, color)
+              r = mm_api("POST", f"/users/{uid}/image", admin_headers,
+                         files={"image": ("icon.png", png_data, "image/png")})
+              if r.ok:
+                  log.info("Set icon for %s", username)
+              else:
+                  log.warning("Failed to set icon for %s: %s", username, r.text[:100])
+
+
       def main():
           wait_for_mattermost()
           admin_token = bootstrap_admin()
@@ -1293,9 +1432,16 @@
           threading.Thread(target=server.serve_forever, daemon=True).start()
           log.info("C3 command server listening on :8888")
 
-          # Get all public channels for bot membership
+          # Get ALL channels (public + private) for bot membership
           r = mm_api("GET", f"/teams/{team_id}/channels?per_page=200", headers)
-          all_channel_ids = [ch["id"] for ch in r.json() if ch.get("type") == "O"] if r.ok else []
+          all_channel_ids = [ch["id"] for ch in r.json()] if r.ok else []
+
+          # Also add bot to group DMs the admin is in
+          r = mm_api("GET", f"/users/{user_id}/channels", headers)
+          if r.ok:
+              for ch in r.json():
+                  if ch.get("type") == "G" and ch["id"] not in all_channel_ids:
+                      all_channel_ids.append(ch["id"])
 
           # Create Claude user accounts
           create_claude_users(headers, team_id, all_channel_ids)
@@ -1321,6 +1467,19 @@
               log.info("%s ready — DM @%s or @mention", OLLAMA_BOT_USERNAME, OLLAMA_BOT_USERNAME)
           else:
               log.warning("%s creation failed", OLLAMA_BOT_USERNAME)
+
+          # Set profile icons for bots and AI users
+          bot_ids = {}
+          if bot_user_id:
+              bot_ids["c3-bot"] = bot_user_id
+          if ollama_user_id:
+              bot_ids[OLLAMA_BOT_USERNAME] = ollama_user_id
+          ai_user_ids = {}
+          for info in CLAUDE_USERS:
+              r = mm_api("GET", f"/users/username/{info['username']}", headers)
+              if r.ok:
+                  ai_user_ids[info["username"]] = r.json()["id"]
+          set_account_icons(headers, bot_ids, ai_user_ids)
 
           log.info("Bootstrap complete. Starting ntfy bridge loop.")
 
@@ -1358,6 +1517,7 @@
     mkRequirements = pkgs: pkgs.writeText "requirements-bridge.txt" ''
       requests>=2.31.0
       websocket-client>=1.6.0
+      Pillow>=10.1.0
     '';
 
     # ── Documentation ────────────────────────────────────────────────────
