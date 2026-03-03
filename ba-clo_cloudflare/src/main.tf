@@ -115,16 +115,6 @@ resource "cloudflare_record" "photos" {
   comment = "PhotoPrism via Caddy → oci-apps-1"
 }
 
-resource "cloudflare_record" "sync" {
-  zone_id = var.cloudflare_zone_id
-  name    = "sync"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Syncthing via Caddy → oci-mail"
-}
-
 resource "cloudflare_record" "cal" {
   zone_id = var.cloudflare_zone_id
   name    = "cal"
@@ -242,17 +232,17 @@ resource "cloudflare_record" "api" {
 }
 
 # =============================================================================
-# DNS Records - External services
+# DNS Records - Mattermost Chat
 # =============================================================================
 
-resource "cloudflare_record" "chat_google" {
+resource "cloudflare_record" "chat" {
   zone_id = var.cloudflare_zone_id
   name    = "chat"
-  type    = "CNAME"
-  content = "ghs.googlehosted.com"
-  proxied = true
-  ttl     = 1
-  comment = "Google Chat / Workspace"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Mattermost via Caddy → oci-apps"
 }
 
 # =============================================================================
