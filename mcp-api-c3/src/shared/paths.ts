@@ -3,6 +3,17 @@ import { join } from "path";
 
 export const HOME = homedir();
 export const GIT_BASE = process.env.GIT_BASE ?? join(HOME, "git");
+
+// Android/Termux detection — WireGuard is managed by the Android WG app,
+// so mesh IPs work. Key paths differ from desktop NixOS.
+export const IS_ANDROID = process.env.ANDROID_DATA !== undefined
+  || HOME.includes("com.termux");
+
+// SSH identity key — Android uses ~/.ssh/id_rsa (symlinked from vault)
+// Desktop uses vault path directly (GIT_BASE may point to Mounts/Git)
+export const SSH_IDENTITY = IS_ANDROID
+  ? join(HOME, ".ssh/id_rsa")
+  : join(GIT_BASE, "vault/A0_keys/ssh/id_rsa");
 export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
 export const CONFIG_PATH = process.env.CONFIG_JSON_PATH ?? join(SOLUTIONS_DIR, "..", "config.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");

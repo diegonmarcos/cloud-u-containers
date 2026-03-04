@@ -1,6 +1,7 @@
 import { exec, type ExecResult } from "./exec.js";
 import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
+import { SSH_IDENTITY } from "./paths.js";
 
 export function sshExec(
   vmNameOrAlias: string,
@@ -12,7 +13,7 @@ export function sshExec(
   const config = getConfig();
   const vmConfig = config.vms[vmId];
 
-  // Use user@ip directly — no SSH config needed inside Docker
+  // Use user@ip directly — prefer wg_ip (works on Android via Android WG app, and on desktop)
   const host = vmConfig?.wg_ip || vmConfig?.ip || alias;
   const user = vmConfig?.user || "ubuntu";
   const target = `${user}@${host}`;
@@ -21,7 +22,7 @@ export function sshExec(
     "-o", "ConnectTimeout=10",
     "-o", "StrictHostKeyChecking=no",
     "-o", "UserKnownHostsFile=/dev/null",
-    "-i", "/root/.ssh/vault_id_rsa",
+    "-i", SSH_IDENTITY,
     target, command,
   ], {
     timeout: timeout ?? 30_000,
