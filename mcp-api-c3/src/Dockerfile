@@ -20,11 +20,13 @@ RUN npm install --omit=dev && npm install tsx
 COPY tsconfig.json ./
 COPY shared/ ./src/shared/
 COPY api/ ./src/api/
+COPY mcp/ ./src/mcp/
 
 # SSH: known_hosts for host key verification
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 
 EXPOSE 8080
+EXPOSE 3100
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1

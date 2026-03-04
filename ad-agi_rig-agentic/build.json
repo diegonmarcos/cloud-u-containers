@@ -1,7 +1,7 @@
 {
-  "name": "rig",
-  "description": "Rig Intelligence Framework - Self-healing orchestrator + GraphRAG + Agentic framework",
-  "version": "0.1.0",
+  "name": "rig-agentic",
+  "description": "Rig Agentic AI - Infrastructure agent with DeepSeek + tool calling via C3 API",
+  "version": "0.2.0",
 
   "build": {
     "extra_copy": ["Cargo.toml", "Cargo.lock", "Dockerfile", "src"]
@@ -9,7 +9,7 @@
 
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/rig",
+    "remote_path": "/opt/containers/rig-agentic",
     "excludes": [".secrets"],
     "compose_flags": "--build"
   }

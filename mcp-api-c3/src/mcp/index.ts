@@ -13,6 +13,7 @@ import { registerFinOpsTools } from "./tools/finops.js";
 // ── Extensions ───────────────────────────────────
 import { registerFrontendTools } from "./tools/frontend.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerMattermostTools } from "./tools/mattermost.js";
 
 import { registerResources } from "./resources/index.js";
 import { registerPrompts } from "./prompts/index.js";
@@ -35,6 +36,7 @@ registerFinOpsTools(server);         //  7: OCI + GCP instances, resources, cost
 // ── Extensions ───────────────────────────────────
 registerFrontendTools(server);       //  5: front-end monorepo build/dev/deploy
 registerCrawleeTools(server);        //  7: web scraping actors/runs/results
+registerMattermostTools(server);     //  8: chat read/write/react for agentic bot
 
 // Register resources (7 static + 2 templates = 9 total)
 registerResources(server);             // cloud://config, ssh-config, services-overview, readme, front-projects, c3-api-endpoints, service-apis + templates: services/{name}, vms/{vm_id}

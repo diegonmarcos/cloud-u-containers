@@ -1,5 +1,5 @@
 {
-  description = "Rig Infrastructure Intelligence - Docker Compose configuration";
+  description = "Rig Agentic AI - Infrastructure agent with DeepSeek + tool calling";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -9,24 +9,41 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "rig";
+      container_name = "rig-agentic";
       port = 8090;
+      ollama_url = "http://10.0.0.8:11434";
+      ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
+      c3_api_url = "http://c3-api:8080";
+      c3_mcp_url = "http://c3-api:3100";
+      mattermost_url = "http://mattermost:8065";
     };
 
-    title = "Rig Infrastructure Intelligence";
+    title = "Rig Agentic AI";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       services:
-        rig:
+        rig-agentic:
           build:
             context: .
             dockerfile: Dockerfile
-          image: rig-infra:latest
+          image: rig-agentic:latest
           container_name: ${config.container_name}
           restart: unless-stopped
-          network_mode: host
+          networks:
+            - c3-net
+          ports:
+            - "127.0.0.1:${toString config.port}:${toString config.port}"
           env_file:
             - .secrets
+          environment:
+            - RIG_PORT=${toString config.port}
+            - OLLAMA_URL=${config.ollama_url}
+            - OLLAMA_API_BASE_URL=${config.ollama_url}
+            - OLLAMA_MODEL=${config.ollama_model}
+            - C3_API_URL=${config.c3_api_url}
+            - C3_MCP_URL=${config.c3_mcp_url}
+            - MATTERMOST_URL=${config.mattermost_url}
+            - RUST_LOG=rig_agentic=info
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
           healthcheck:
@@ -35,6 +52,11 @@
             timeout: 10s
             retries: 3
             start_period: 15s
+
+      networks:
+        c3-net:
+          external: true
+          name: mattermost-bots_default
     '';
 
 
@@ -96,7 +118,6 @@
       cp ${specMd} build/src/spec.md
       ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2>/dev/null || true"}
 
-      # Generate configs.md from packages.default output
       echo "# Generated Configuration Files" > build/src/configs.md
       echo "" >> build/src/configs.md
       echo 'These files are produced by nix build and deployed to the VM.' >> build/src/configs.md
@@ -140,7 +161,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "rig-configs" {} ''
+      defaultPkg = pkgs.runCommand "rig-agentic-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';
