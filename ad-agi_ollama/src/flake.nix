@@ -19,6 +19,7 @@
       kv_cache_type = "q4_0";
       models = [
         "deepseek-r1:14b-qwen-distill-q8_0"
+        "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0"
         "qwen2.5:14b-instruct-q8_0"
       ];
     };

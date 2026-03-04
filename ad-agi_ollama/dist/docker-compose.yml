@@ -1,0 +1,24 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "10.0.0.8:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - TZ=America/Chicago
+      - OLLAMA_KEEP_ALIVE=5m
+      - OLLAMA_KV_CACHE_TYPE=q4_0
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  ollama_data:

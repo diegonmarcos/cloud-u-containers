@@ -20,7 +20,7 @@ steps:
         LARGEST=$($SSH $user@$ip "du -sh /opt/containers/*/data 2>/dev/null | sort -rh | head -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    N/A")
         REPORT="${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
       done
-      MSG=$(printf "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
+      MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
       curl -s -X POST "$NTFY_URL/ops_summary" \
         -H "Authorization: Bearer $BEARER_TOKEN" \
         -H "Title: Weekly Capacity Review" \

@@ -24,7 +24,7 @@ services:
       - ./dags:/var/lib/dagu/dags
       - ./base.yaml:/var/lib/dagu/base.yaml:ro
       - ~/.ssh:/root/.ssh:ro
-    mem_limit: 128m
+    mem_limit: 256m
     networks:
       - default
       - mailu_default
