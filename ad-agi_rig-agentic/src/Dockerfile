@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Stage 1: Build (aarch64, on-VM via REMOTE_BUILD)
-FROM rust:1.85-slim AS builder
+FROM rust:latest AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev ca-certificates \
