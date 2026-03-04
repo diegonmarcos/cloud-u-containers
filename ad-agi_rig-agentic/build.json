@@ -10,7 +10,6 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/rig-agentic",
-    "excludes": [".secrets"],
     "compose_flags": "--build"
   }
 }
