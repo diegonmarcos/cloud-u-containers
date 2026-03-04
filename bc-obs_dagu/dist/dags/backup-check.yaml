@@ -28,7 +28,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        MSG=$(printf "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/ops_backups" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Backup Alert" \

@@ -24,7 +24,7 @@ steps:
         fi
       done
       if [ -n "$FAILED" ]; then
-        MSG=$(printf "DOWN endpoints:\n${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "DOWN endpoints:\n${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_endpoints" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Service Endpoint DOWN" \

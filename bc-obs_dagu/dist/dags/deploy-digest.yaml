@@ -17,9 +17,11 @@ steps:
         name=${temp%:*}
         user=${temp#*:}
         RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
-        COUNT=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep -c 'Container.*Started' || echo 0" 2>/dev/null || echo 0)
+        COUNT_RAW=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep -c 'Container.*Started' || echo 0" 2>/dev/null || echo 0)
+        COUNT=$(echo "$COUNT_RAW" | tr -dc '0-9')
+        COUNT=${COUNT:-0}
         TOTAL=$((TOTAL + COUNT))
-        if [ "$COUNT" -gt 0 ] 2>/dev/null; then
+        if [ "${COUNT:-0}" -gt 0 ]; then
           REPORT="${REPORT}$name ($ip): $COUNT restarts\n"
           if [ -n "$RESTARTS" ]; then
             REPORT="${REPORT}$RESTARTS\n"
@@ -27,7 +29,7 @@ steps:
           REPORT="${REPORT}\n"
         fi
       done
-      MSG=$(printf "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
+      MSG=$(echo -e "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
       curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
         -H "Authorization: Bearer $BEARER_TOKEN" \
         -H "Title: Daily Deploy Digest ($TOTAL restarts)" \

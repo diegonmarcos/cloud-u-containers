@@ -23,7 +23,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        MSG=$(printf "High resource usage:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "High resource usage:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_resources" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: System Resources Alert" \

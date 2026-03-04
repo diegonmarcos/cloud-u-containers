@@ -20,7 +20,7 @@ steps:
         fi
       done
       if [ -n "$FAILED" ]; then
-        MSG=$(printf "Unreachable peers:\n${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "Unreachable peers:\n${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_mesh-health" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Mesh Health FAILED" \

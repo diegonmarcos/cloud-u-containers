@@ -4,9 +4,9 @@ Mattermost bots: ntfy bridge + C3 infrastructure bot.
 Bot 1: ntfy bridge — subscribes to ntfy topics, posts to channels via webhook.
 Bot 2: C3 bot — a proper bot account you can DM + /c3 slash command.
 """
-import os, sys, json, time, re, logging, threading, io
+import os, sys, json, time, re, logging, threading, io, socket
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 import requests
 import websocket
 from PIL import Image, ImageDraw, ImageFont
@@ -29,6 +29,7 @@ C3_API_TOKEN = os.environ.get("C3_API_TOKEN", "")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
 OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
+OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"
 _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
 _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
@@ -351,48 +352,91 @@ def _gpu_post(channel_id, root_id, bot_headers, msg):
 
 def _gpu_background(channel_id, root_id, bot_headers):
     """Background thread: wake VM -> compose up -> poll until Ollama API responds."""
-    # Step 1: Start VM
-    r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-    if "error" in r:
-        _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
-        return
+    try:
+        # Step 1: Start VM
+        log.info("GPU: step 1 — starting %s via C3 API", OLLAMA_VM)
+        r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+        log.info("GPU: vm start response: %s", str(r)[:200])
+        if "error" in r:
+            _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
+            return
 
-    # Step 2: Poll until VM is reachable via WireGuard
-    vm_up = False
-    for i in range(30):
-        time.sleep(5)
-        if _check_vm_reachable(OLLAMA_VM):
-            vm_up = True
-            _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
-            break
-    if not vm_up:
-        _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
-        return
+        # Step 2: Poll until VM is reachable via WireGuard
+        log.info("GPU: step 2 — polling VM reachability")
+        vm_up = False
+        for i in range(30):
+            time.sleep(5)
+            if _check_vm_reachable(OLLAMA_VM):
+                vm_up = True
+                log.info("GPU: VM reachable after %ds", (i+1)*5)
+                _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
+                break
+        if not vm_up:
+            log.warning("GPU: VM not reachable after 150s")
+            _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
+            return
 
-    # Step 3: Start ollama service (compose up, not just container start)
-    r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-    if "error" in r:
-        # Fallback: try container start
-        r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-    if "error" in r:
-        _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
+        # Step 3: Start ollama service (compose up, not just container start)
+        log.info("GPU: step 3 — starting ollama service")
+        r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+        log.info("GPU: service start response: %s", str(r)[:200])
+        if "error" in r:
+            # Fallback: try container start
+            log.info("GPU: service start failed, trying container start")
+            r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+            log.info("GPU: container start response: %s", str(r)[:200])
+        if "error" in r:
+            _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
 
-    # Step 4: Poll until Ollama HTTP API responds
-    _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
-    for i in range(24):
-        time.sleep(5)
+        # Step 4: Poll until Ollama HTTP API responds
+        log.info("GPU: step 4 — polling Ollama API at %s", OLLAMA_URL)
+        _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
+        api_ready = False
+        for i in range(24):
+            time.sleep(5)
+            try:
+                resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                if resp.ok:
+                    models = [m.get("name", "?") for m in resp.json().get("models", [])]
+                    model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
+                    log.info("GPU: Ollama API ready after %ds, models: %s", (i+1)*5, model_list)
+                    _gpu_post(channel_id, root_id, bot_headers,
+                        f":white_check_mark: Ollama API up after {(i+1)*5}s — loading model into GPU...")
+                    api_ready = True
+                    break
+            except Exception:
+                pass
+        if not api_ready:
+            log.warning("GPU: Ollama API not responding after 120s")
+            _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
+            return
+
+        # Step 5: Pre-warm model into GPU VRAM (first inference triggers loading)
+        log.info("GPU: step 5 — pre-warming model %s", OLLAMA_MODEL)
         try:
-            resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-            if resp.ok:
-                models = [m.get("name", "?") for m in resp.json().get("models", [])]
-                model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
+            r = requests.post(f"{OLLAMA_URL}/api/chat", json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": "hi"}],
+                "stream": False,
+            }, timeout=300)
+            if r.ok:
+                log.info("GPU: model pre-warmed successfully")
                 _gpu_post(channel_id, root_id, bot_headers,
-                    f":white_check_mark: Ollama ready after {(i+1)*5}s\n"
-                    f"**Model:** `{OLLAMA_MODEL}`\n**Available:** {model_list}")
-                return
+                    f":white_check_mark: **{OLLAMA_MODEL}** loaded and ready\n**Available:** {model_list}")
+            else:
+                log.warning("GPU: pre-warm returned %s", r.status_code)
+                _gpu_post(channel_id, root_id, bot_headers,
+                    f":warning: Model pre-warm returned {r.status_code} — may need a retry")
+        except Exception as e:
+            log.warning("GPU: pre-warm failed: %s", e)
+            _gpu_post(channel_id, root_id, bot_headers,
+                f":warning: Model pre-warm timed out — first chat may be slow")
+    except Exception as e:
+        log.exception("_gpu_background crashed")
+        try:
+            _gpu_post(channel_id, root_id, bot_headers, f":x: GPU wake crashed: {e}")
         except Exception:
-            pass
-    _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
+            log.exception("Failed to post gpu crash to MM")
 
 def handle_gpu():
     """Immediate ack — actual wake runs in background thread."""
@@ -935,13 +979,30 @@ def create_claude_users(admin_headers, team_id, all_channel_ids):
 
 # ── Ollama Bot ────────────────────────────────────────────
 
+def _check_wg_reachable(ip, port=22, timeout=3):
+    """Direct TCP socket check via WireGuard IP."""
+    try:
+        s = socket.create_connection((ip, port), timeout=timeout)
+        s.close()
+        return True
+    except Exception:
+        return False
+
 def _check_vm_reachable(vm):
-    """Quick tier1 check, returns bool."""
+    """Quick tier1 check with WG IP fallback for known VMs."""
     check = c3_req("GET", f"/health/tier1/{vm}")
     if isinstance(check, list):
-        return any(v.get("reachable") for v in check)
+        if any(v.get("reachable") for v in check):
+            return True
     elif isinstance(check, dict):
-        return check.get("reachable", False)
+        if check.get("reachable", False):
+            return True
+    # Fallback: direct WG socket check (handles stale public IPs on spot VMs)
+    if vm == OLLAMA_VM and OLLAMA_WG_IP:
+        wg_ok = _check_wg_reachable(OLLAMA_WG_IP)
+        if wg_ok:
+            log.info("tier1 failed for %s but WG IP %s reachable", vm, OLLAMA_WG_IP)
+        return wg_ok
     return False
 
 def ensure_ollama_up():
@@ -968,46 +1029,65 @@ def _ollama_wake_and_reply(channel_id, root_id, user_text, bot_headers):
             body["root_id"] = root_id
         mm_api("POST", "/posts", bot_headers, json=body)
 
-    # Step 1: Start VM
-    c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+    try:
+        # Step 1: Start VM
+        log.info("OllamaWake: step 1 — starting %s", OLLAMA_VM)
+        r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+        log.info("OllamaWake: vm start response: %s", str(r)[:200])
 
-    # Step 2: Poll until VM reachable via WireGuard
-    vm_up = False
-    for i in range(30):
-        time.sleep(5)
-        if _check_vm_reachable(OLLAMA_VM):
-            vm_up = True
-            break
-    if not vm_up:
-        _post(f":warning: {OLLAMA_VM} not reachable after 150s")
-        return
-    _post(f":white_check_mark: {OLLAMA_VM} reachable")
-
-    # Step 3: Start ollama service (compose up)
-    r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-    if "error" in r:
-        c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-
-    # Step 4: Poll until Ollama HTTP API responds
-    _post(":hourglass: Waiting for Ollama API...")
-    ollama_ready = False
-    for i in range(24):
-        time.sleep(5)
-        try:
-            resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-            if resp.ok:
-                ollama_ready = True
-                _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
+        # Step 2: Poll until VM reachable via WireGuard
+        log.info("OllamaWake: step 2 — polling VM reachability")
+        vm_up = False
+        for i in range(30):
+            time.sleep(5)
+            if _check_vm_reachable(OLLAMA_VM):
+                vm_up = True
                 break
-        except Exception:
-            pass
-    if not ollama_ready:
-        _post(f":warning: Ollama API not responding after 120s")
-        return
+        if not vm_up:
+            log.warning("OllamaWake: VM not reachable after 150s")
+            _post(f":warning: {OLLAMA_VM} not reachable after 150s")
+            return
+        log.info("OllamaWake: VM reachable after %ds", (i+1)*5)
+        _post(f":white_check_mark: {OLLAMA_VM} reachable")
 
-    # Step 5: Send the actual chat
-    response = ollama_chat(channel_id, user_text)
-    _post(response)
+        # Step 3: Start ollama service (compose up)
+        log.info("OllamaWake: step 3 — starting ollama service")
+        r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+        log.info("OllamaWake: service start response: %s", str(r)[:200])
+        if "error" in r:
+            log.info("OllamaWake: service start failed, trying container start")
+            c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+
+        # Step 4: Poll until Ollama HTTP API responds
+        log.info("OllamaWake: step 4 — polling Ollama API at %s", OLLAMA_URL)
+        _post(":hourglass: Waiting for Ollama API...")
+        ollama_ready = False
+        for i in range(24):
+            time.sleep(5)
+            try:
+                resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                if resp.ok:
+                    ollama_ready = True
+                    log.info("OllamaWake: Ollama ready after %ds", (i+1)*5)
+                    _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
+                    break
+            except Exception:
+                pass
+        if not ollama_ready:
+            log.warning("OllamaWake: Ollama API not responding after 120s")
+            _post(f":warning: Ollama API not responding after 120s")
+            return
+
+        # Step 5: Send the actual chat
+        log.info("OllamaWake: step 5 — sending chat")
+        response = ollama_chat(channel_id, user_text)
+        _post(response)
+    except Exception as e:
+        log.exception("_ollama_wake_and_reply crashed")
+        try:
+            _post(f":x: Ollama wake crashed: {e}")
+        except Exception:
+            log.exception("Failed to post ollama crash to MM")
 
 
 def ollama_chat(channel_id, user_text):
@@ -1021,7 +1101,7 @@ def ollama_chat(channel_id, user_text):
             "model": OLLAMA_MODEL,
             "messages": ctx,
             "stream": False,
-        }, timeout=120)
+        }, timeout=300)
         r.raise_for_status()
         content = r.json().get("message", {}).get("content", "")
         content = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
@@ -1140,14 +1220,21 @@ def ollama_ws_listener(bot_user_id, bot_token):
             # Chat request — may need to wake VM + run inference (slow)
             # Run in background thread to not block WebSocket
             def _handle_chat():
-                ok, wake_msg = ensure_ollama_up()
-                if not ok:
-                    # VM/Ollama not ready — full wake chain + chat
-                    _post_reply(wake_msg)
-                    _ollama_wake_and_reply(channel_id, root_id, text, bot_headers)
-                    return
-                response = ollama_chat(channel_id, text)
-                _post_reply(response)
+                try:
+                    ok, wake_msg = ensure_ollama_up()
+                    if not ok:
+                        # VM/Ollama not ready — full wake chain + chat
+                        _post_reply(wake_msg)
+                        _ollama_wake_and_reply(channel_id, root_id, text, bot_headers)
+                        return
+                    response = ollama_chat(channel_id, text)
+                    _post_reply(response)
+                except Exception as e:
+                    log.exception("_handle_chat crashed")
+                    try:
+                        _post_reply(f":x: Chat error: {e}")
+                    except Exception:
+                        log.exception("Failed to post chat crash to MM")
             threading.Thread(target=_handle_chat, daemon=True).start()
 
     def on_open(ws):

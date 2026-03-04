@@ -31,7 +31,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        MSG=$(printf "Container issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "Container issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_containers" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Container Health Issues" \

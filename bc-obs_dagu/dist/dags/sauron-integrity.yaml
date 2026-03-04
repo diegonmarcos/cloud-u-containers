@@ -25,7 +25,7 @@ steps:
         fi
       done
       if [ $RUNNING -lt $TOTAL ]; then
-        MSG=$(printf "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/security_yara" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Sauron Scanner(s) Down" \

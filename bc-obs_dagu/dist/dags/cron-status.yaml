@@ -24,7 +24,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        MSG=$(printf "Failed systemd timers:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'systemctl list-timers --failed'\n  ssh <user>@<ip> 'journalctl -u <timer-name> --since yesterday'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "Failed systemd timers:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'systemctl list-timers --failed'\n  ssh <user>@<ip> 'journalctl -u <timer-name> --since yesterday'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/ops_cron" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -H "Title: Cron/Timer Failures" \
