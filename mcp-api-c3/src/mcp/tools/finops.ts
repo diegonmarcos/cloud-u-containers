@@ -4,6 +4,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as oci from "../../shared/cloud/oci.js";
 import * as gcp from "../../shared/cloud/gcp.js";
+import * as aws from "../../shared/cloud/aws.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
@@ -54,8 +55,29 @@ export function registerFinOpsTools(server: McpServer) {
   );
 
   server.tool(
+    "cloud_aws_instances",
+    "List all AWS EC2 instances",
+    {},
+    async () => jsonText("AWS instances", aws.listInstances()),
+  );
+
+  server.tool(
+    "cloud_aws_resources",
+    "List AWS resources (S3 buckets, VPCs, SES identities)",
+    {},
+    async () => jsonText("AWS resources", aws.listResources()),
+  );
+
+  server.tool(
+    "cloud_aws_costs",
+    "Get AWS usage costs for the current month via Cost Explorer",
+    {},
+    async () => jsonText("AWS costs", aws.getCosts()),
+  );
+
+  server.tool(
     "cloud_summary",
-    "Combined cloud summary — all OCI + GCP instances, resources, and costs in one call",
+    "Combined cloud summary — all OCI + GCP + AWS instances, resources, and costs in one call",
     {},
     async () => {
       const summary = {
@@ -68,6 +90,11 @@ export function registerFinOpsTools(server: McpServer) {
           instances: gcp.listInstances(),
           resources: gcp.listResources(),
           costs: gcp.getCosts(),
+        },
+        aws: {
+          instances: aws.listInstances(),
+          resources: aws.listResources(),
+          costs: aws.getCosts(),
         },
       };
       return jsonText("Cloud summary", summary);
