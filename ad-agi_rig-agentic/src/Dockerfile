@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/build/target \
     cp /build/target/release/rig-agentic /build/rig-agentic-binary
 
 # Stage 2: Runtime
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates docker.io \
