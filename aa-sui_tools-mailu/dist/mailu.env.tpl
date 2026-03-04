@@ -28,7 +28,7 @@ ADMIN=true
 WEBDAV=none
 FETCHMAIL=false
 
-RELAYHOST=[smtp.email.eu-marseille-1.oci.oraclecloud.com]:587
+RELAYHOST=[email-smtp.us-east-1.amazonaws.com]:587
 RELAYUSER=${RELAYUSER}
 RELAYPASSWORD=${RELAYPASSWORD}
 
