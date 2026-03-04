@@ -126,9 +126,9 @@
       Bot 1: ntfy bridge — subscribes to ntfy topics, posts to channels via webhook.
       Bot 2: C3 bot — a proper bot account you can DM + /c3 slash command.
       """
-      import os, sys, json, time, re, logging, threading, io
+      import os, sys, json, time, re, logging, threading, io, socket
       from http.server import HTTPServer, BaseHTTPRequestHandler
-      from urllib.parse import parse_qs
+      from urllib.parse import parse_qs, urlparse
       import requests
       import websocket
       from PIL import Image, ImageDraw, ImageFont
@@ -151,6 +151,7 @@
       OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
       OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
+      OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"
       _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
       _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
@@ -473,48 +474,91 @@
 
       def _gpu_background(channel_id, root_id, bot_headers):
           """Background thread: wake VM -> compose up -> poll until Ollama API responds."""
-          # Step 1: Start VM
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-          if "error" in r:
-              _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
-              return
+          try:
+              # Step 1: Start VM
+              log.info("GPU: step 1 — starting %s via C3 API", OLLAMA_VM)
+              r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+              log.info("GPU: vm start response: %s", str(r)[:200])
+              if "error" in r:
+                  _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
+                  return
 
-          # Step 2: Poll until VM is reachable via WireGuard
-          vm_up = False
-          for i in range(30):
-              time.sleep(5)
-              if _check_vm_reachable(OLLAMA_VM):
-                  vm_up = True
-                  _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
-                  break
-          if not vm_up:
-              _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
-              return
+              # Step 2: Poll until VM is reachable via WireGuard
+              log.info("GPU: step 2 — polling VM reachability")
+              vm_up = False
+              for i in range(30):
+                  time.sleep(5)
+                  if _check_vm_reachable(OLLAMA_VM):
+                      vm_up = True
+                      log.info("GPU: VM reachable after %ds", (i+1)*5)
+                      _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
+                      break
+              if not vm_up:
+                  log.warning("GPU: VM not reachable after 150s")
+                  _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
+                  return
 
-          # Step 3: Start ollama service (compose up, not just container start)
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-          if "error" in r:
-              # Fallback: try container start
-              r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-          if "error" in r:
-              _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
+              # Step 3: Start ollama service (compose up, not just container start)
+              log.info("GPU: step 3 — starting ollama service")
+              r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+              log.info("GPU: service start response: %s", str(r)[:200])
+              if "error" in r:
+                  # Fallback: try container start
+                  log.info("GPU: service start failed, trying container start")
+                  r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+                  log.info("GPU: container start response: %s", str(r)[:200])
+              if "error" in r:
+                  _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
 
-          # Step 4: Poll until Ollama HTTP API responds
-          _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
-          for i in range(24):
-              time.sleep(5)
+              # Step 4: Poll until Ollama HTTP API responds
+              log.info("GPU: step 4 — polling Ollama API at %s", OLLAMA_URL)
+              _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
+              api_ready = False
+              for i in range(24):
+                  time.sleep(5)
+                  try:
+                      resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                      if resp.ok:
+                          models = [m.get("name", "?") for m in resp.json().get("models", [])]
+                          model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
+                          log.info("GPU: Ollama API ready after %ds, models: %s", (i+1)*5, model_list)
+                          _gpu_post(channel_id, root_id, bot_headers,
+                              f":white_check_mark: Ollama API up after {(i+1)*5}s — loading model into GPU...")
+                          api_ready = True
+                          break
+                  except Exception:
+                      pass
+              if not api_ready:
+                  log.warning("GPU: Ollama API not responding after 120s")
+                  _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
+                  return
+
+              # Step 5: Pre-warm model into GPU VRAM (first inference triggers loading)
+              log.info("GPU: step 5 — pre-warming model %s", OLLAMA_MODEL)
               try:
-                  resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-                  if resp.ok:
-                      models = [m.get("name", "?") for m in resp.json().get("models", [])]
-                      model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
+                  r = requests.post(f"{OLLAMA_URL}/api/chat", json={
+                      "model": OLLAMA_MODEL,
+                      "messages": [{"role": "user", "content": "hi"}],
+                      "stream": False,
+                  }, timeout=300)
+                  if r.ok:
+                      log.info("GPU: model pre-warmed successfully")
                       _gpu_post(channel_id, root_id, bot_headers,
-                          f":white_check_mark: Ollama ready after {(i+1)*5}s\n"
-                          f"**Model:** `{OLLAMA_MODEL}`\n**Available:** {model_list}")
-                      return
+                          f":white_check_mark: **{OLLAMA_MODEL}** loaded and ready\n**Available:** {model_list}")
+                  else:
+                      log.warning("GPU: pre-warm returned %s", r.status_code)
+                      _gpu_post(channel_id, root_id, bot_headers,
+                          f":warning: Model pre-warm returned {r.status_code} — may need a retry")
+              except Exception as e:
+                  log.warning("GPU: pre-warm failed: %s", e)
+                  _gpu_post(channel_id, root_id, bot_headers,
+                      f":warning: Model pre-warm timed out — first chat may be slow")
+          except Exception as e:
+              log.exception("_gpu_background crashed")
+              try:
+                  _gpu_post(channel_id, root_id, bot_headers, f":x: GPU wake crashed: {e}")
               except Exception:
-                  pass
-          _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
+                  log.exception("Failed to post gpu crash to MM")
 
       def handle_gpu():
           """Immediate ack — actual wake runs in background thread."""
@@ -1055,15 +1099,32 @@
               log.info("Added %s to team + %d channels", info["username"], len(all_channel_ids))
 
 
-      # ── Ollama Bot ────────────────────────────────────────────
+      # ── Ollama AI ─────────────────────────────────────────────
+
+      def _check_wg_reachable(ip, port=22, timeout=3):
+          """Direct TCP socket check via WireGuard IP."""
+          try:
+              s = socket.create_connection((ip, port), timeout=timeout)
+              s.close()
+              return True
+          except Exception:
+              return False
 
       def _check_vm_reachable(vm):
-          """Quick tier1 check, returns bool."""
+          """Quick tier1 check with WG IP fallback for known VMs."""
           check = c3_req("GET", f"/health/tier1/{vm}")
           if isinstance(check, list):
-              return any(v.get("reachable") for v in check)
+              if any(v.get("reachable") for v in check):
+                  return True
           elif isinstance(check, dict):
-              return check.get("reachable", False)
+              if check.get("reachable", False):
+                  return True
+          # Fallback: direct WG socket check (handles stale public IPs on spot VMs)
+          if vm == OLLAMA_VM and OLLAMA_WG_IP:
+              wg_ok = _check_wg_reachable(OLLAMA_WG_IP)
+              if wg_ok:
+                  log.info("tier1 failed for %s but WG IP %s reachable", vm, OLLAMA_WG_IP)
+              return wg_ok
           return False
 
       def ensure_ollama_up():
@@ -1082,54 +1143,73 @@
           c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=30)
           return False, f":hourglass: {OLLAMA_VM} reachable but Ollama not responding — starting service..."
 
-      def _ollama_wake_and_reply(channel_id, root_id, user_text, bot_headers):
+      def _ollama_wake_and_reply(channel_id, root_id, user_text, post_headers):
           """Background thread: wake VM -> compose up -> poll Ollama API -> chat."""
           def _post(msg):
               body = {"channel_id": channel_id, "message": msg}
               if root_id:
                   body["root_id"] = root_id
-              mm_api("POST", "/posts", bot_headers, json=body)
+              mm_api("POST", "/posts", post_headers, json=body)
 
-          # Step 1: Start VM
-          c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+          try:
+              # Step 1: Start VM
+              log.info("OllamaWake: step 1 — starting %s", OLLAMA_VM)
+              r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
+              log.info("OllamaWake: vm start response: %s", str(r)[:200])
 
-          # Step 2: Poll until VM reachable via WireGuard
-          vm_up = False
-          for i in range(30):
-              time.sleep(5)
-              if _check_vm_reachable(OLLAMA_VM):
-                  vm_up = True
-                  break
-          if not vm_up:
-              _post(f":warning: {OLLAMA_VM} not reachable after 150s")
-              return
-          _post(f":white_check_mark: {OLLAMA_VM} reachable")
-
-          # Step 3: Start ollama service (compose up)
-          r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-          if "error" in r:
-              c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-
-          # Step 4: Poll until Ollama HTTP API responds
-          _post(":hourglass: Waiting for Ollama API...")
-          ollama_ready = False
-          for i in range(24):
-              time.sleep(5)
-              try:
-                  resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-                  if resp.ok:
-                      ollama_ready = True
-                      _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
+              # Step 2: Poll until VM reachable via WireGuard
+              log.info("OllamaWake: step 2 — polling VM reachability")
+              vm_up = False
+              for i in range(30):
+                  time.sleep(5)
+                  if _check_vm_reachable(OLLAMA_VM):
+                      vm_up = True
                       break
-              except Exception:
-                  pass
-          if not ollama_ready:
-              _post(f":warning: Ollama API not responding after 120s")
-              return
+              if not vm_up:
+                  log.warning("OllamaWake: VM not reachable after 150s")
+                  _post(f":warning: {OLLAMA_VM} not reachable after 150s")
+                  return
+              log.info("OllamaWake: VM reachable after %ds", (i+1)*5)
+              _post(f":white_check_mark: {OLLAMA_VM} reachable")
 
-          # Step 5: Send the actual chat
-          response = ollama_chat(channel_id, user_text)
-          _post(response)
+              # Step 3: Start ollama service (compose up)
+              log.info("OllamaWake: step 3 — starting ollama service")
+              r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
+              log.info("OllamaWake: service start response: %s", str(r)[:200])
+              if "error" in r:
+                  log.info("OllamaWake: service start failed, trying container start")
+                  c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
+
+              # Step 4: Poll until Ollama HTTP API responds
+              log.info("OllamaWake: step 4 — polling Ollama API at %s", OLLAMA_URL)
+              _post(":hourglass: Waiting for Ollama API...")
+              ollama_ready = False
+              for i in range(24):
+                  time.sleep(5)
+                  try:
+                      resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
+                      if resp.ok:
+                          ollama_ready = True
+                          log.info("OllamaWake: Ollama ready after %ds", (i+1)*5)
+                          _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
+                          break
+                  except Exception:
+                      pass
+              if not ollama_ready:
+                  log.warning("OllamaWake: Ollama API not responding after 120s")
+                  _post(f":warning: Ollama API not responding after 120s")
+                  return
+
+              # Step 5: Send the actual chat
+              log.info("OllamaWake: step 5 — sending chat")
+              response = ollama_chat(channel_id, user_text)
+              _post(response)
+          except Exception as e:
+              log.exception("_ollama_wake_and_reply crashed")
+              try:
+                  _post(f":x: Ollama wake crashed: {e}")
+              except Exception:
+                  log.exception("Failed to post ollama crash to MM")
 
 
       def ollama_chat(channel_id, user_text):
@@ -1143,7 +1223,7 @@
                   "model": OLLAMA_MODEL,
                   "messages": ctx,
                   "stream": False,
-              }, timeout=120)
+              }, timeout=300)
               r.raise_for_status()
               content = r.json().get("message", {}).get("content", "")
               content = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
@@ -1153,48 +1233,48 @@
               return f":x: Ollama error: {e}"
 
 
-      OLLAMA_BOT_USERNAME = "ollama-14bq8-ai"
+      OLLAMA_AI_USERNAME = "ollama-14bq8-ai"
 
-      def create_ollama_bot(admin_headers, team_id):
-          """Create or find ollama AI account. Returns (bot_user_id, bot_token) or (None, None)."""
-          bot_user_id = None
+      def create_ollama_ai(admin_headers, team_id):
+          """Create or find Ollama AI account. Returns (ai_user_id, ai_token) or (None, None)."""
+          ai_user_id = None
           r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
           if r.ok:
-              for bot in r.json():
-                  if bot.get("username") == OLLAMA_BOT_USERNAME:
-                      bot_user_id = bot["user_id"]
-                      log.info("Found existing %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
+              for entry in r.json():
+                  if entry.get("username") == OLLAMA_AI_USERNAME:
+                      ai_user_id = entry["user_id"]
+                      log.info("Found existing %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
                       break
-          if not bot_user_id:
+          if not ai_user_id:
               r = mm_api("POST", "/bots", admin_headers, json={
-                  "username": OLLAMA_BOT_USERNAME,
+                  "username": OLLAMA_AI_USERNAME,
                   "display_name": "Ollama 14B-Q8 AI",
-                  "description": "Chat with Qwen 2.5 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
+                  "description": "Chat with DeepSeek-R1 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
               })
               if r.ok or r.status_code == 201:
-                  bot_user_id = r.json()["user_id"]
-                  log.info("Created %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
+                  ai_user_id = r.json()["user_id"]
+                  log.info("Created %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
               else:
-                  log.error("Failed to create %s: %s", OLLAMA_BOT_USERNAME, r.text[:200])
+                  log.error("Failed to create %s: %s", OLLAMA_AI_USERNAME, r.text[:200])
                   return None, None
           mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
-              "team_id": team_id, "user_id": bot_user_id,
+              "team_id": team_id, "user_id": ai_user_id,
           })
-          r = mm_api("POST", f"/users/{bot_user_id}/tokens", admin_headers, json={
-              "description": f"{OLLAMA_BOT_USERNAME} runtime",
+          r = mm_api("POST", f"/users/{ai_user_id}/tokens", admin_headers, json={
+              "description": f"{OLLAMA_AI_USERNAME} runtime",
           })
           if not r.ok:
-              log.error("Failed to create %s token: %s", OLLAMA_BOT_USERNAME, r.text[:200])
-              return bot_user_id, None
-          bot_token = r.json()["token"]
-          log.info("Created %s access token", OLLAMA_BOT_USERNAME)
-          return bot_user_id, bot_token
+              log.error("Failed to create %s token: %s", OLLAMA_AI_USERNAME, r.text[:200])
+              return ai_user_id, None
+          ai_token = r.json()["token"]
+          log.info("Created %s access token", OLLAMA_AI_USERNAME)
+          return ai_user_id, ai_token
 
 
-      def ollama_ws_listener(bot_user_id, bot_token):
-          """WebSocket listener for Ollama bot — DMs + @mentions."""
+      def ollama_ws_listener(ai_user_id, ai_token):
+          """WebSocket listener for Ollama AI — DMs + @mentions."""
           ws_url = MM_URL.replace("http://", "ws://").replace("https://", "wss://") + "/api/v4/websocket"
-          bot_headers = {"Authorization": f"Bearer {bot_token}"}
+          ai_headers = {"Authorization": f"Bearer {ai_token}"}
 
           def on_message(ws, message):
               try:
@@ -1209,7 +1289,7 @@
                   post = json.loads(post_data["post"])
               except (KeyError, json.JSONDecodeError):
                   return
-              if post.get("user_id") == bot_user_id:
+              if post.get("user_id") == ai_user_id:
                   return
               text = post.get("message", "").strip()
               if not text:
@@ -1218,21 +1298,21 @@
               is_dm = channel_type == "D"
               if not is_dm:
                   # In channels and group DMs, require explicit @mention in text
-                  if f"@{OLLAMA_BOT_USERNAME}" not in text.lower():
+                  if f"@{OLLAMA_AI_USERNAME}" not in text.lower():
                       return
-                  text = re.sub(rf"@{re.escape(OLLAMA_BOT_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
+                  text = re.sub(rf"@{re.escape(OLLAMA_AI_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
                   if not text:
                       text = "hello"
 
               channel_id = post["channel_id"]
               root_id = post.get("id", "") if not is_dm else ""
-              log.info("%s %s: %s", OLLAMA_BOT_USERNAME, "DM" if is_dm else "mention", text[:80])
+              log.info("%s %s: %s", OLLAMA_AI_USERNAME, "DM" if is_dm else "mention", text[:80])
 
               def _post_reply(msg):
                   body = {"channel_id": channel_id, "message": msg}
                   if root_id:
                       body["root_id"] = root_id
-                  mm_api("POST", "/posts", bot_headers, json=body)
+                  mm_api("POST", "/posts", ai_headers, json=body)
 
               cmd_lower = text.lower().strip()
               if cmd_lower == "clear":
@@ -1262,29 +1342,36 @@
                   # Chat request — may need to wake VM + run inference (slow)
                   # Run in background thread to not block WebSocket
                   def _handle_chat():
-                      ok, wake_msg = ensure_ollama_up()
-                      if not ok:
-                          # VM/Ollama not ready — full wake chain + chat
-                          _post_reply(wake_msg)
-                          _ollama_wake_and_reply(channel_id, root_id, text, bot_headers)
-                          return
-                      response = ollama_chat(channel_id, text)
-                      _post_reply(response)
+                      try:
+                          ok, wake_msg = ensure_ollama_up()
+                          if not ok:
+                              # VM/Ollama not ready — full wake chain + chat
+                              _post_reply(wake_msg)
+                              _ollama_wake_and_reply(channel_id, root_id, text, ai_headers)
+                              return
+                          response = ollama_chat(channel_id, text)
+                          _post_reply(response)
+                      except Exception as e:
+                          log.exception("_handle_chat crashed")
+                          try:
+                              _post_reply(f":x: Chat error: {e}")
+                          except Exception:
+                              log.exception("Failed to post chat crash to MM")
                   threading.Thread(target=_handle_chat, daemon=True).start()
 
           def on_open(ws):
               ws.send(json.dumps({
                   "seq": 1,
                   "action": "authentication_challenge",
-                  "data": {"token": bot_token},
+                  "data": {"token": ai_token},
               }))
-              log.info("%s WebSocket connected", OLLAMA_BOT_USERNAME)
+              log.info("%s WebSocket connected", OLLAMA_AI_USERNAME)
 
           def on_error(ws, error):
-              log.warning("%s WebSocket error: %s", OLLAMA_BOT_USERNAME, error)
+              log.warning("%s WebSocket error: %s", OLLAMA_AI_USERNAME, error)
 
           def on_close(ws, code, msg):
-              log.warning("%s WebSocket closed: %s %s", OLLAMA_BOT_USERNAME, code, msg)
+              log.warning("%s WebSocket closed: %s %s", OLLAMA_AI_USERNAME, code, msg)
 
           while True:
               try:
@@ -1297,18 +1384,18 @@
                   )
                   ws.run_forever(ping_interval=30, ping_timeout=10, origin="https://chat.diegonmarcos.com")
               except Exception as e:
-                  log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_BOT_USERNAME, e)
+                  log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_AI_USERNAME, e)
               time.sleep(5)
 
 
-      def setup_ollama_sidebar(admin_headers, user_id, team_id, bot_user_id):
-          """Create DM channel with ollama AI and put it in the C3 sidebar category."""
-          r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, bot_user_id])
+      def setup_ollama_sidebar(admin_headers, user_id, team_id, ai_user_id):
+          """Create DM channel with Ollama AI and put it in the C3 sidebar category."""
+          r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, ai_user_id])
           if not r.ok:
-              log.warning("Failed to create DM with %s: %s", OLLAMA_BOT_USERNAME, r.text[:100])
+              log.warning("Failed to create DM with %s: %s", OLLAMA_AI_USERNAME, r.text[:100])
               return
           dm_channel_id = r.json()["id"]
-          log.info("DM channel with %s: %s", OLLAMA_BOT_USERNAME, dm_channel_id)
+          log.info("DM channel with %s: %s", OLLAMA_AI_USERNAME, dm_channel_id)
 
           r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers)
           if not r.ok:
@@ -1337,13 +1424,13 @@
                       "id": c3_cat["id"], "user_id": user_id, "team_id": team_id,
                       "display_name": "C3", "type": "custom", "channel_ids": ids,
                   })
-                  log.info("Added %s DM to C3 sidebar category", OLLAMA_BOT_USERNAME)
+                  log.info("Added %s DM to C3 sidebar category", OLLAMA_AI_USERNAME)
           else:
               mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
                   "user_id": user_id, "team_id": team_id,
                   "display_name": "C3", "type": "custom", "channel_ids": [dm_channel_id],
               })
-              log.info("Created C3 sidebar category with %s DM", OLLAMA_BOT_USERNAME)
+              log.info("Created C3 sidebar category with %s DM", OLLAMA_AI_USERNAME)
 
 
       # ── Profile Icons ──────────────────────────────────────────
@@ -1386,18 +1473,17 @@
           img.save(buf, format="PNG")
           return buf.getvalue()
 
-      def set_account_icons(admin_headers, bot_ids, user_ids):
-          """Set profile icons for bots and AI users at bootstrap (all PNG via /users/{id}/image)."""
+      def set_account_icons(admin_headers, account_ids):
+          """Set profile icons for all bot/AI accounts at bootstrap (PNG via /users/{id}/image)."""
           icons = {
               "c3-bot": ("#00B8D9", "C3"),
-              OLLAMA_BOT_USERNAME: ("#FF1744", "Q"),
+              OLLAMA_AI_USERNAME: ("#FF1744", "Q"),
               "claude-opus-ai": ("#FF6B35", "O"),
               "claude-sonnet-ai": ("#7B61FF", "S"),
               "claude-haiku-ai": ("#00C853", "H"),
           }
-          all_ids = {**bot_ids, **user_ids}
           for username, (color, letter) in icons.items():
-              uid = all_ids.get(username)
+              uid = account_ids.get(username)
               if not uid:
                   continue
               png_data = make_colored_png(letter, color)
@@ -1458,28 +1544,27 @@
           else:
               log.warning("C3 bot creation failed — slash command still works")
 
-          # Create ollama bot and start WebSocket listener
-          ollama_user_id, ollama_token = create_ollama_bot(headers, team_id)
+          # Create Ollama AI and start WebSocket listener
+          ollama_user_id, ollama_token = create_ollama_ai(headers, team_id)
           if ollama_user_id and ollama_token:
               add_bot_to_channels(headers, ollama_user_id, all_channel_ids)
               threading.Thread(target=ollama_ws_listener, args=(ollama_user_id, ollama_token), daemon=True).start()
               setup_ollama_sidebar(headers, user_id, team_id, ollama_user_id)
-              log.info("%s ready — DM @%s or @mention", OLLAMA_BOT_USERNAME, OLLAMA_BOT_USERNAME)
+              log.info("%s ready — DM @%s or @mention", OLLAMA_AI_USERNAME, OLLAMA_AI_USERNAME)
           else:
-              log.warning("%s creation failed", OLLAMA_BOT_USERNAME)
+              log.warning("%s creation failed", OLLAMA_AI_USERNAME)
 
-          # Set profile icons for bots and AI users
-          bot_ids = {}
+          # Set profile icons for bots and AI accounts
+          account_ids = {}
           if bot_user_id:
-              bot_ids["c3-bot"] = bot_user_id
+              account_ids["c3-bot"] = bot_user_id
           if ollama_user_id:
-              bot_ids[OLLAMA_BOT_USERNAME] = ollama_user_id
-          ai_user_ids = {}
+              account_ids[OLLAMA_AI_USERNAME] = ollama_user_id
           for info in CLAUDE_USERS:
               r = mm_api("GET", f"/users/username/{info['username']}", headers)
               if r.ok:
-                  ai_user_ids[info["username"]] = r.json()["id"]
-          set_account_icons(headers, bot_ids, ai_user_ids)
+                  account_ids[info["username"]] = r.json()["id"]
+          set_account_icons(headers, account_ids)
 
           log.info("Bootstrap complete. Starting ntfy bridge loop.")
 
