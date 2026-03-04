@@ -4,8 +4,8 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-rig-core = { version = "0.31", features = ["ollama", "rmcp"] }
-rmcp = { version = "0.16", features = ["client", "transport-streamable-http-client", "transport-streamable-http-client-reqwest"] }
+rig-core = { version = "0.31", features = ["rmcp"] }
+rmcp = { version = "0.13", features = ["client", "transport-streamable-http-client", "transport-streamable-http-client-reqwest"] }
 axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
