@@ -1,6 +1,7 @@
 use crate::config::AppConfig;
-use crate::mcp_client::{connect_mcp, list_mcp_tools};
+use crate::mcp_client::connect_mcp;
 use chrono::Utc;
+use rig::client::{CompletionClient, ProviderClient};
 use rig::providers::ollama;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -162,8 +163,7 @@ async fn execute_agent_loop(
 
     // Connect to MCP server (c3-api) and discover tools
     let mcp_url = format!("{}/mcp", config.c3_mcp_url);
-    let mcp_client = connect_mcp(&mcp_url).await?;
-    let tools = list_mcp_tools(&mcp_client).await?;
+    let (tools, peer) = connect_mcp(&mcp_url).await?;
 
     info!(tool_count = tools.len(), "MCP tools loaded");
 
@@ -174,14 +174,13 @@ async fn execute_agent_loop(
     let agent = ollama_client
         .agent(&config.ollama_model)
         .preamble(SYSTEM_PROMPT)
-        .rmcp_tools(tools, mcp_client.peer().to_owned())
+        .rmcp_tools(tools, peer)
         .build();
 
     // Run the prompt with multi-turn tool calling
     let response = agent
         .prompt(task)
-        .multi_turn(max_turns)
-        .send()
+        .max_turns(max_turns)
         .await
         .map_err(|e| format!("Agent prompt failed: {}", e))?;
 
@@ -225,8 +224,7 @@ pub async fn run_agent_chat(
 
     // Connect to MCP server and discover tools
     let mcp_url = format!("{}/mcp", config.c3_mcp_url);
-    let mcp_client = connect_mcp(&mcp_url).await?;
-    let tools = list_mcp_tools(&mcp_client).await?;
+    let (tools, peer) = connect_mcp(&mcp_url).await?;
 
     // Build Ollama client — reads OLLAMA_API_BASE_URL env var
     let ollama_client = ollama::Client::from_env();
@@ -234,7 +232,7 @@ pub async fn run_agent_chat(
     let agent = ollama_client
         .agent(&config.ollama_model)
         .preamble(SYSTEM_PROMPT)
-        .rmcp_tools(tools, mcp_client.peer().to_owned())
+        .rmcp_tools(tools, peer)
         .build();
 
     // Build context from chat history
@@ -252,8 +250,7 @@ pub async fn run_agent_chat(
 
     let response = agent
         .prompt(&context)
-        .multi_turn(15)
-        .send()
+        .max_turns(15)
         .await
         .map_err(|e| {
             error!(error = %e, "Agent chat failed");
