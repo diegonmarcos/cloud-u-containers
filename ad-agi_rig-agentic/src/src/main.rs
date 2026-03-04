@@ -9,6 +9,7 @@ use tracing::{info, warn};
 
 mod agent;
 mod config;
+mod guardrails;
 mod mattermost;
 mod mcp_client;
 mod self_healing;

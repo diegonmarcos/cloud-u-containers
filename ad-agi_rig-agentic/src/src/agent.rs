@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use crate::guardrails::InfraGuardrail;
 use crate::mcp_client::connect_mcp;
 use chrono::Utc;
 use rig::client::{CompletionClient, ProviderClient};
@@ -160,18 +161,28 @@ async fn execute_agent_loop(
     task: &str,
     max_turns: usize,
 ) -> Result<(String, Vec<AgentStep>), String> {
-    info!(task = task, max_turns = max_turns, "Starting agent loop");
+    let guardrail = InfraGuardrail::from_config(config);
+
+    // Use guardrail max_turns as ceiling (request can lower, not raise)
+    let effective_max_turns = max_turns.min(guardrail.max_turns);
+    info!(task = task, max_turns = effective_max_turns, "Starting agent loop");
 
     // Connect to MCP server (c3-api) and discover tools
     let mcp_url = format!("{}/mcp", config.c3_mcp_url);
     let (tools, peer) = connect_mcp(&mcp_url).await?;
 
-    info!(tool_count = tools.len(), "MCP tools loaded");
+    // Apply guardrail: filter denied tools
+    let (tools, denied_count) = guardrail.filter_tools(tools);
+    if denied_count > 0 {
+        info!(denied_count = denied_count, "Tools filtered by guardrail denylist");
+    }
+
+    guardrail.audit_start(task, tools.len());
 
     // Build Ollama client — reads OLLAMA_API_BASE_URL env var
     let ollama_client = ollama::Client::from_env();
 
-    // Build agent with MCP tools
+    // Build agent with filtered MCP tools
     let agent = ollama_client
         .agent(&config.ollama_model)
         .preamble(SYSTEM_PROMPT)
@@ -181,11 +192,14 @@ async fn execute_agent_loop(
     // Run the prompt with multi-turn tool calling
     let response = agent
         .prompt(task)
-        .max_turns(max_turns)
+        .max_turns(effective_max_turns)
         .await
-        .map_err(|e| format!("Agent prompt failed: {}", e))?;
+        .map_err(|e| {
+            guardrail.audit_error(task, &e.to_string());
+            format!("Agent prompt failed: {}", e)
+        })?;
 
-    info!(response_len = response.len(), "Agent completed");
+    guardrail.audit_complete(task, response.len());
 
     let steps = vec![AgentStep {
         iteration: 1,
@@ -223,9 +237,15 @@ pub async fn run_agent_chat(
 ) -> Result<String, String> {
     info!(message = message, "Running agent chat");
 
+    let guardrail = InfraGuardrail::from_config(&config);
+
     // Connect to MCP server and discover tools
     let mcp_url = format!("{}/mcp", config.c3_mcp_url);
     let (tools, peer) = connect_mcp(&mcp_url).await?;
+
+    // Apply guardrail: filter denied tools
+    let (tools, _) = guardrail.filter_tools(tools);
+    guardrail.audit_start(message, tools.len());
 
     // Build Ollama client — reads OLLAMA_API_BASE_URL env var
     let ollama_client = ollama::Client::from_env();
@@ -251,12 +271,14 @@ pub async fn run_agent_chat(
 
     let response = agent
         .prompt(&context)
-        .max_turns(15)
+        .max_turns(guardrail.max_turns)
         .await
         .map_err(|e| {
+            guardrail.audit_error(message, &e.to_string());
             error!(error = %e, "Agent chat failed");
             format!("Agent error: {}", e)
         })?;
 
+    guardrail.audit_complete(message, response.len());
     Ok(response)
 }
