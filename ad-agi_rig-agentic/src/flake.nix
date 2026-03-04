@@ -43,6 +43,8 @@
             - C3_API_URL=${config.c3_api_url}
             - C3_MCP_URL=${config.c3_mcp_url}
             - MATTERMOST_URL=${config.mattermost_url}
+            - GUARDRAIL_MAX_TURNS=20
+            - GUARDRAIL_DENIED_TOOLS=
             - RUST_LOG=rig_agentic=info
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro

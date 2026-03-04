@@ -11,6 +11,8 @@ pub struct AppConfig {
     pub mm_bot_token: Option<String>,
     pub heal_interval_secs: u64,
     pub docker_socket: String,
+    pub guardrail_max_turns: usize,
+    pub guardrail_denied_tools: Vec<String>,
 }
 
 impl AppConfig {
@@ -40,6 +42,16 @@ impl AppConfig {
                 .unwrap_or(300),
             docker_socket: env::var("DOCKER_HOST")
                 .unwrap_or_else(|_| "unix:///var/run/docker.sock".into()),
+            guardrail_max_turns: env::var("GUARDRAIL_MAX_TURNS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(20),
+            guardrail_denied_tools: env::var("GUARDRAIL_DENIED_TOOLS")
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
         }
     }
 }
