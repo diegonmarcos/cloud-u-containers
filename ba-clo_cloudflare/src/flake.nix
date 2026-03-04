@@ -34,7 +34,7 @@
     #     Fallback: forward to diegonmarcos@live.com if smtp-proxy fails
     #
     #   OUTBOUND:
-    #     Mailu → smtp.diegonmarcos.com (oci-mail:465/587) → recipients
+    #     Mailu → AWS SES (email-smtp.us-east-1.amazonaws.com:587) → recipients
     #
     #   EMAIL ROUTING RULES (managed in CF Dashboard, NOT Terraform):
     #     me@diegonmarcos.com → Worker "email-forwarder"  (priority 0)
@@ -96,6 +96,31 @@
         description = "Mailu legacy DKIM key (mail._domainkey)"
         type        = string
         default     = "v=DKIM1; k=rsa; p=CHANGE_ME"
+      }
+
+      # AWS SES verification + DKIM tokens (from terraform output of b_infra/vps_aws/)
+      variable "ses_verification_token" {
+        description = "SES domain verification token (_amazonses TXT record)"
+        type        = string
+        default     = "CHANGE_ME"
+      }
+
+      variable "ses_dkim_token_1" {
+        description = "SES DKIM token 1 of 3"
+        type        = string
+        default     = "CHANGE_ME"
+      }
+
+      variable "ses_dkim_token_2" {
+        description = "SES DKIM token 2 of 3"
+        type        = string
+        default     = "CHANGE_ME"
+      }
+
+      variable "ses_dkim_token_3" {
+        description = "SES DKIM token 3 of 3"
+        type        = string
+        default     = "CHANGE_ME"
       }
 
       # =============================================================================
@@ -410,9 +435,9 @@
         zone_id = var.cloudflare_zone_id
         name    = "@"
         type    = "TXT"
-        content = "v=spf1 include:_spf.mx.cloudflare.net a:smtp.${config.domain} ~all"
+        content = "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com a:smtp.${config.domain} ~all"
         ttl     = 300
-        comment = "SPF: CF Email Routing + Mailu outbound. ONE record only - multiple = permerror"
+        comment = "SPF: CF Email Routing + AWS SES (primary) + OCI relay (fallback) + Mailu outbound. ONE record only - multiple = permerror"
       }
 
       # DMARC
@@ -465,6 +490,69 @@
       }
 
       # =============================================================================
+      # TXT/CNAME Records - AWS SES (domain verification + DKIM + MAIL FROM)
+      # Tokens come from: b_infra/vps_aws/ terraform output
+      # =============================================================================
+
+      # SES domain verification
+      resource "cloudflare_record" "ses_verification" {
+        zone_id = var.cloudflare_zone_id
+        name    = "_amazonses"
+        type    = "TXT"
+        content = var.ses_verification_token
+        ttl     = 300
+        comment = "AWS SES domain verification"
+      }
+
+      # SES Easy DKIM (3 CNAME records)
+      resource "cloudflare_record" "ses_dkim_1" {
+        zone_id = var.cloudflare_zone_id
+        name    = "''${var.ses_dkim_token_1}._domainkey"
+        type    = "CNAME"
+        content = "''${var.ses_dkim_token_1}.dkim.amazonses.com"
+        ttl     = 300
+        comment = "AWS SES DKIM 1/3"
+      }
+
+      resource "cloudflare_record" "ses_dkim_2" {
+        zone_id = var.cloudflare_zone_id
+        name    = "''${var.ses_dkim_token_2}._domainkey"
+        type    = "CNAME"
+        content = "''${var.ses_dkim_token_2}.dkim.amazonses.com"
+        ttl     = 300
+        comment = "AWS SES DKIM 2/3"
+      }
+
+      resource "cloudflare_record" "ses_dkim_3" {
+        zone_id = var.cloudflare_zone_id
+        name    = "''${var.ses_dkim_token_3}._domainkey"
+        type    = "CNAME"
+        content = "''${var.ses_dkim_token_3}.dkim.amazonses.com"
+        ttl     = 300
+        comment = "AWS SES DKIM 3/3"
+      }
+
+      # Custom MAIL FROM — MX + SPF for mail.diegonmarcos.com (SES bounce subdomain)
+      resource "cloudflare_record" "ses_mail_from_mx" {
+        zone_id  = var.cloudflare_zone_id
+        name     = "mail"
+        type     = "MX"
+        content  = "feedback-smtp.us-east-1.amazonses.com"
+        priority = 10
+        ttl      = 300
+        comment  = "AWS SES custom MAIL FROM — bounce handling"
+      }
+
+      resource "cloudflare_record" "ses_mail_from_spf" {
+        zone_id = var.cloudflare_zone_id
+        name    = "mail"
+        type    = "TXT"
+        content = "v=spf1 include:amazonses.com ~all"
+        ttl     = 300
+        comment = "AWS SES custom MAIL FROM — SPF for bounce subdomain"
+      }
+
+      # =============================================================================
       # SSL/TLS Settings
       # =============================================================================
 
@@ -513,6 +601,14 @@
 
       # Get from Mailu admin (legacy selector)
       dkim_mail_public_key   = "v=DKIM1; k=rsa; p=CHANGE_ME"
+
+      # AWS SES — get from: cd b_infra/vps_aws && ./build.sh apply
+      # then: terraform -chdir=dist output ses_verification_token
+      # then: terraform -chdir=dist output ses_dkim_tokens
+      ses_verification_token = "CHANGE_ME"
+      ses_dkim_token_1       = "CHANGE_ME"
+      ses_dkim_token_2       = "CHANGE_ME"
+      ses_dkim_token_3       = "CHANGE_ME"
     '';
 
 

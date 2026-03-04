@@ -24,8 +24,9 @@
       # Public IP (OCI micro)
       public_ip = "130.110.251.193";
 
-      # Oracle Email Delivery relay
-      relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
+      # AWS SES relay (primary)
+      # Fallback: OCI Email Delivery — smtp.email.eu-marseille-1.oci.oraclecloud.com:587
+      relay_host = "email-smtp.us-east-1.amazonaws.com";
       relay_port = "587";
     };
 
