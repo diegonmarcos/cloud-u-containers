@@ -9,3 +9,9 @@ dkim_cf_public_key     = "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAA
 dkim_google_public_key = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwY9rdAqF839ncfW4QhXzfNsa3B4BEnh5gblpdeD9IaOJd13rpv/ZQRcsjq2eAegusEYbkpbbCZscwsbpFM/oGM3+Q8E4fdM8qj5BCdhc5MPrB9U4AZX4c3FyUIedOF740XUoDUSvoG4WphMNheyM5lwQDkm7Mm6I8orxXsbEVMqFa1eueYoQfBS+7zUwAcmh76xUglE2GSHJpTV40jSbfLl8l2D8hMJH7awIZ7vfTUkhZ+7tOdmmmdWIS6CFAO+CoTQ/UjLbUHEj+aupP3sozsNHZCNVRwdcN3a++hW7R8ypZ8t+j+LMSEceKtpRf+msEvVQ7HGRxMUssd5T2gLkTQIDAQAB"
 
 dkim_mail_public_key   = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2gmzNH2aacWMgFxkx8Ju+CebUXbykGKNyLeS40j7ZszwHoiyPHHFn2zLOwGhMj3Wxw2QAN5QWTKFsIyrOe6NhTSCcj7tgP1wQkk8ZM2YSEcI/DlZbHqeD6nJr5+uRUC505MvGgXvsQoPYHbjVKQ2zXVqxbp1DtQ778rXpCosflF/Mx5/1mrh9t7OTy+oXAihjHx5r2QnbkLq3QdQXm5WJuIjYmu51kWcgasP8KDXXMl0r7AHmgtFejdoeolJkH0bpjmAaFTuPjBjqpPgvcrUjmpIvitYTgCywlpC21ok98TGCY7JYGpWAOW+eXGpbWs9xNs3yHMasTdQSEusA8xXYwIDAQAB"
+
+# AWS SES (from b_infra/vps_aws terraform output, 2026-03-04)
+ses_verification_token = "Og1MPle0ftYfioO+jVSEWYFfP6FkbAC7KkrkAN9Lit4="
+ses_dkim_token_1       = "qrsz7u42zhb6kjnkm7ynntzru2ejxjaq"
+ses_dkim_token_2       = "3kv7hkpeckwv2ygbq37vgahud7deq5rz"
+ses_dkim_token_3       = "spbilhxxgd646hch7ewtbiqi34oj375e"
