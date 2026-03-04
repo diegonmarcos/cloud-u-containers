@@ -148,7 +148,7 @@
       # Mailu main configuration file
       DOMAIN=${config.domain}
       HOSTNAMES=imap.${config.domain},smtp.${config.domain}
-      POSTMASTER=admin
+      POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
       SUBNET=${config.subnet}
@@ -181,7 +181,7 @@
 
       MESSAGE_SIZE_LIMIT=${config.message_size_limit}
 
-      INITIAL_ADMIN_ACCOUNT=admin
+      INITIAL_ADMIN_ACCOUNT=me
       INITIAL_ADMIN_DOMAIN=${config.domain}
       INITIAL_ADMIN_PW=''\${INITIAL_ADMIN_PW}
 
@@ -208,7 +208,7 @@
       set -e
       cd "$(dirname "$0")"
 
-      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD'
+      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD $NOREPLY_PASSWORD'
 
       echo "[init] Substituting secrets into mailu.env..."
       # Read .secrets safely (avoid shell interpretation of < > $ in values)
@@ -229,17 +229,32 @@
       echo "[init] Done."
     '';
 
-    # Post-start setup: create aliases and users that must exist
+    # Post-start setup: ensure exactly two accounts exist: me@ and no-reply@
     mkSetupSh = pkgs: pkgs.writeText "setup.sh" ''
       #!/bin/sh
       set -e
+      cd "$(dirname "$0")"
+
+      # Load secrets so NOREPLY_PASSWORD is available
+      if [ -f .secrets ]; then
+        while IFS='=' read -r _key _val; do
+          case "$_key" in ""|\#*) continue ;; esac
+          export "$_key=$_val"
+        done < .secrets
+      fi
+
       echo "[setup] Waiting for admin container..."
       sleep 5
 
-      echo "[setup] Creating no-reply alias..."
-      docker exec mailu-admin-1 flask mailu alias no-reply ${config.domain} me@${config.domain} 2>/dev/null || echo "[setup] Alias already exists"
+      # Ensure no-reply@ user exists (used by Authelia for sending notifications)
+      echo "[setup] Creating no-reply@ user..."
+      docker exec mailu-admin-1 flask mailu user no-reply ${config.domain} "$NOREPLY_PASSWORD" 2>/dev/null || echo "[setup] no-reply@ already exists"
 
-      echo "[setup] Done."
+      # Remove stale admin@ account if it exists
+      echo "[setup] Removing stale admin@ account..."
+      docker exec mailu-admin-1 flask mailu user-delete admin ${config.domain} 2>/dev/null || echo "[setup] admin@ not found, skipping"
+
+      echo "[setup] Done. Active accounts: me@ (superadmin), no-reply@ (SMTP sender)"
     '';
 
 
