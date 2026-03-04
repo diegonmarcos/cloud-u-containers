@@ -2,6 +2,7 @@ use crate::config::AppConfig;
 use crate::mcp_client::connect_mcp;
 use chrono::Utc;
 use rig::client::{CompletionClient, ProviderClient};
+use rig::completion::Prompt;
 use rig::providers::ollama;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
