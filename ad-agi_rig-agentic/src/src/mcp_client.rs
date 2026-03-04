@@ -20,7 +20,7 @@ pub async fn connect_mcp(
             version: "0.2.0".to_string(),
             ..Default::default()
         },
-        meta: None,
+        ..Default::default()
     };
 
     let client = client_info
