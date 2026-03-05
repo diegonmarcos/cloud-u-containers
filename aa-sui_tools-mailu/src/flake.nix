@@ -25,9 +25,12 @@
       public_ip = "130.110.251.193";
 
       # AWS SES relay (primary)
-      # Fallback: OCI Email Delivery — smtp.email.eu-marseille-1.oci.oraclecloud.com:587
       relay_host = "email-smtp.us-east-1.amazonaws.com";
       relay_port = "587";
+
+      # OCI Email Delivery relay (fallback while AWS SES is in sandbox)
+      oci_relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
+      oci_relay_port = "587";
     };
 
     title = "Mailu Mail Server";
@@ -178,6 +181,8 @@
       RELAYHOST=[${config.relay_host}]:${config.relay_port}
       RELAYUSER=''\${RELAYUSER}
       RELAYPASSWORD=''\${RELAYPASSWORD}
+      OCI_RELAYUSER=''\${OCI_RELAYUSER}
+      OCI_RELAYPASSWORD=''\${OCI_RELAYPASSWORD}
 
       MESSAGE_SIZE_LIMIT=${config.message_size_limit}
 
@@ -208,7 +213,7 @@
       set -e
       cd "$(dirname "$0")"
 
-      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD $NOREPLY_PASSWORD'
+      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD $NOREPLY_PASSWORD $OCI_RELAYUSER $OCI_RELAYPASSWORD'
 
       echo "[init] Substituting secrets into mailu.env..."
       # Read .secrets safely (avoid shell interpretation of < > $ in values)
@@ -224,6 +229,16 @@
         mkdir -p dkim
         echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > dkim/${config.domain}.dkim.key
         chmod 600 dkim/${config.domain}.dkim.key
+      fi
+
+      # Generate combined sasl_passwd for postfix (AWS primary + OCI fallback)
+      if [ -n "$RELAYUSER" ] && [ -n "$OCI_RELAYUSER" ]; then
+        echo "[init] Writing combined postfix sasl_passwd (AWS + OCI)..."
+        mkdir -p overrides/postfix
+        printf '[${config.relay_host}]:${config.relay_port} %s:%s\n[${config.oci_relay_host}]:${config.oci_relay_port} %s:%s\n' \
+          "$RELAYUSER" "$RELAYPASSWORD" "$OCI_RELAYUSER" "$OCI_RELAYPASSWORD" \
+          > overrides/postfix/sasl_multi_passwd
+        chmod 600 overrides/postfix/sasl_multi_passwd
       fi
 
       echo "[init] Done."
@@ -371,6 +386,7 @@
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
         cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
+        cp ${./overrides/postfix/postfix.cf} $out/overrides/postfix/postfix.cf
       '';
     in {
       default = defaultPkg;
