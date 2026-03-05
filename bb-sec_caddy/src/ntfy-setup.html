@@ -122,6 +122,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <div class="log" id="log"></div>
   <div class="actions">
     <button class="btn primary" id="subscribe-btn" disabled>Subscribe All</button>
+    <button class="btn secondary" id="android-btn" disabled>Download for Android</button>
     <button class="btn secondary" id="go-btn" onclick="location.href='/'">Open ntfy</button>
   </div>
   <p class="prompt">
@@ -142,6 +143,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
 
   var logEl=document.getElementById('log');
   var btn=document.getElementById('subscribe-btn');
+  var androidBtn=document.getElementById('android-btn');
   var baseUrl=location.origin;
   var topics=[];
 
@@ -172,10 +174,49 @@ a:hover{color:#845ef7;border-color:#845ef7}
       }
       log('ok','Found '+topics.length+' topic(s): '+topics.join(', '));
       btn.disabled=false;
+      androidBtn.disabled=false;
     })
     .catch(function(e){
       log('err','Failed to fetch topics: '+e.message);
     });
+
+  // Android export — generate ntfy Android backup JSON
+  androidBtn.addEventListener('click',function(){
+    var subs=topics.map(function(topic,i){
+      return {
+        id:i+1,
+        baseUrl:baseUrl,
+        topic:topic,
+        instant:false,
+        dedicatedChannels:false,
+        mutedUntil:0,
+        minPriority:null,
+        autoDelete:null,
+        insistent:null,
+        lastNotificationId:null,
+        icon:null,
+        upAppId:null,
+        upConnectorToken:null,
+        displayName:null
+      };
+    });
+    var backup={
+      magic:'ntfy2586',
+      version:1,
+      settings:null,
+      subscriptions:subs,
+      notifications:[],
+      users:[],
+      trustedCertificates:null,
+      clientCertificates:null
+    };
+    var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='ntfy-backup.json';
+    a.click();
+    log('ok','Downloaded ntfy-backup.json — import via ntfy app → Settings → Backup & Restore');
+  });
 
   // Step 2: Subscribe — write into ntfy IndexedDB
   btn.addEventListener('click',function(){
