@@ -24,12 +24,12 @@
       # Public IP (OCI micro)
       public_ip = "130.110.251.193";
 
-      # AWS SES relay (primary)
-      relay_host = "email-smtp.us-east-1.amazonaws.com";
+      # OCI Email Delivery relay (primary while AWS SES is in sandbox)
+      relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
       relay_port = "587";
 
-      # OCI Email Delivery relay (fallback while AWS SES is in sandbox)
-      oci_relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
+      # AWS SES relay (swap back to primary once production access granted)
+      oci_relay_host = "email-smtp.us-east-1.amazonaws.com";
       oci_relay_port = "587";
     };
 
