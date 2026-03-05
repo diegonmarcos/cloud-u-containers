@@ -502,36 +502,6 @@ forward_auth authelia:9091 {
 }
   }
 
-  # Syncthing
-  sync.diegonmarcos.com {
-import security
-import request_limits
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.3:8384
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.3:8384
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
   # Mailu webmail (upstream is HTTPS with self-signed cert)
   mail.diegonmarcos.com {
 import security
@@ -940,7 +910,10 @@ forward_auth authelia:9091 {
 }
   }
 
-  # ntfy notifications
+  # ntfy notifications — 3-tier auth:
+  # 1. Authelia JWT (eyJ...) → introspect-proxy → ntfy
+  # 2. ntfy native tokens (tk_...) → pass through, ntfy validates internally
+  # 3. Browser cookie sessions → Authelia forward_auth → ntfy
   rss.diegonmarcos.com {
 import security
 import request_limits
@@ -953,22 +926,25 @@ forward_auth authelia:9091 {
       rewrite * /ntfy-setup.html
       file_server
     }
-      @bearer header Authorization Bearer*
-  handle @bearer {
+    @authelia_jwt header_regexp Authorization "^Bearer eyJ"
+    handle @authelia_jwt {
 forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy ntfy:80
-  }
-  handle {
+      reverse_proxy ntfy:80
+    }
+    @ntfy_token header_regexp Authorization "^Bearer tk_"
+    handle @ntfy_token {
+      reverse_proxy ntfy:80
+    }
+    handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy ntfy:80
-  }
-
+      reverse_proxy ntfy:80
+    }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {

@@ -15,6 +15,15 @@
       admin_port = 2019;
     };
 
+    # ntfy topics — served as static JSON at /api/topics
+    ntfyTopics = [
+      "syslog"
+      "github-releases"
+      "alerts"
+      "health"
+      "backups"
+    ];
+
     title = "Caddy Reverse Proxy";
 
     # WireGuard IPs
@@ -519,7 +528,10 @@
         ${handleErrors}
       }
 
-      # ntfy notifications
+      # ntfy notifications — 3-tier auth:
+      # 1. Authelia JWT (eyJ...) → introspect-proxy → ntfy
+      # 2. ntfy native tokens (tk_...) → pass through, ntfy validates internally
+      # 3. Browser cookie sessions → Authelia forward_auth → ntfy
       rss.diegonmarcos.com {
     ${sec}
         handle /setup {
@@ -528,13 +540,19 @@
           rewrite * /ntfy-setup.html
           file_server
         }
-        handle /v1/topics {
-    ${authelia}
-          reverse_proxy ntfy:80 {
-            header_up Authorization "Basic {env.NTFY_ADMIN_AUTH}"
-          }
+        @authelia_jwt header_regexp Authorization "^Bearer eyJ"
+        handle @authelia_jwt {
+    ${bearer}
+          reverse_proxy ntfy:80
         }
-        ${mkProtected "ntfy:80"}
+        @ntfy_token header_regexp Authorization "^Bearer tk_"
+        handle @ntfy_token {
+          reverse_proxy ntfy:80
+        }
+        handle {
+    ${authelia}
+          reverse_proxy ntfy:80
+        }
         ${handleErrors}
       }
 
