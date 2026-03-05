@@ -114,22 +114,6 @@
           networks:
             - npm_default
 
-        ntfy-topic-scanner:
-          image: python:3.11-slim
-          container_name: ntfy-topic-scanner
-          command: python -u /app/topic-scanner.py
-          volumes:
-            - ./topic-scanner.py:/app/topic-scanner.py:ro
-            - ./cache:/var/cache/ntfy:ro
-          environment:
-            - TZ=Europe/Paris
-            - PYTHONUNBUFFERED=1
-          depends_on:
-            - ntfy
-          restart: unless-stopped
-          networks:
-            - npm_default
-
       volumes:
         syslog-central-logs:
           external: true
