@@ -1,4 +1,4 @@
-# ntfy server configuration
+# ntfy server configuration (auth enabled)
 base-url: https://rss.diegonmarcos.com
 
 # Cache and retention
@@ -11,8 +11,12 @@ visitor-request-limit-burst: 60
 visitor-request-limit-replenish: 10s
 visitor-message-daily-limit: 0
 
+# Auth — admin API access (Caddy injects credentials, anonymous r/w preserved)
+auth-file: /var/cache/ntfy/auth.db
+auth-default-access: read-write
+
 # Web interface
-enable-login: false
+enable-login: true
 enable-signup: false
 enable-reservations: false
 

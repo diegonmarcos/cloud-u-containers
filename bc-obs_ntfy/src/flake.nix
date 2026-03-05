@@ -36,7 +36,7 @@
       auth-default-access: read-write
 
       # Web interface
-      enable-login: false
+      enable-login: true
       enable-signup: false
       enable-reservations: false
 
