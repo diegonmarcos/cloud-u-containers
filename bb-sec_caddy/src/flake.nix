@@ -530,8 +530,9 @@
         }
         handle /v1/topics {
     ${authelia}
-          header_up Authorization "Basic {env.NTFY_ADMIN_AUTH}"
-          reverse_proxy ntfy:80
+          reverse_proxy ntfy:80 {
+            header_up Authorization "Basic {env.NTFY_ADMIN_AUTH}"
+          }
         }
         ${mkProtected "ntfy:80"}
         ${handleErrors}
