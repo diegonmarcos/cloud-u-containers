@@ -1,7 +1,8 @@
 {
   "name": "caddy",
   "description": "Caddy reverse proxy (replaces NPM on gcp-proxy + oci-mail)",
-
+  "category": "sec",
+  "domain": "proxy.diegonmarcos.com",
   "docker": {
     "registry": "ghcr.io",
     "image": "diegonmarcos/caddy-custom",
@@ -9,13 +10,13 @@
     "binary": "/usr/bin/caddy",
     "binary_name": "caddy-binary"
   },
-
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/caddy",
-    "excludes": ["logs/"]
+    "excludes": [
+      "logs/"
+    ]
   },
-
   "secrets": {
     "escape_dollars": "true"
   }

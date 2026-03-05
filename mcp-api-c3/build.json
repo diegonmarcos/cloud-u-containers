@@ -1,23 +1,21 @@
 {
   "name": "c3-api",
-  "description": "C3 — Cloud Control Center: MCP server + Fastify API (api.diegonmarcos.com)",
-
+  "description": "C3 \u2014 Cloud Control Center: MCP server + Fastify API (api.diegonmarcos.com)",
+  "category": "sec",
+  "domain": "api.diegonmarcos.com/c3-api",
   "docker": {
     "registry": "ghcr.io",
     "image": "diegonmarcos/c3-api",
     "dockerfile": "Dockerfile"
   },
-
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/c3-api",
     "sequential_restart": "true"
   },
-
   "build": {
     "include_config_json": "true"
   },
-
   "secrets": {
     "escape_dollars": "true"
   }

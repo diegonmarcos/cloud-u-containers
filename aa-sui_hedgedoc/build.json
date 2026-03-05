@@ -1,7 +1,8 @@
 {
   "name": "hedgedoc",
   "description": "Collaborative markdown editor",
-
+  "category": "app",
+  "domain": "doc.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/hedgedoc"

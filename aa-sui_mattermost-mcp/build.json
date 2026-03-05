@@ -1,0 +1,9 @@
+{
+  "name": "mattermost-mcp",
+  "description": "Mattermost MCP server",
+  "category": "app",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/mattermost-mcp"
+  }
+}

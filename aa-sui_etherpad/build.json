@@ -1,7 +1,8 @@
 {
   "name": "etherpad",
   "description": "Etherpad collaborative editor (NEW - not deployed yet)",
-
+  "category": "app",
+  "domain": "pad.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/etherpad"

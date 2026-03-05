@@ -1,7 +1,7 @@
 {
   "name": "sauron-forwarder",
   "description": "Alert forwarding to central sauron",
-
+  "category": "tools",
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/sauron-forwarder"

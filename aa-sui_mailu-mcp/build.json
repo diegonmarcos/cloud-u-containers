@@ -1,7 +1,7 @@
 {
   "name": "mailu-mcp",
-  "description": "Mailu mail MCP server — IMAP/SMTP/Admin via MCP protocol",
-
+  "description": "Mailu mail MCP server \u2014 IMAP/SMTP/Admin via MCP protocol",
+  "category": "app",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/mailu-mcp"

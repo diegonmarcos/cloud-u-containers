@@ -1,7 +1,8 @@
 {
   "name": "revealmd",
   "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
-
+  "category": "app",
+  "domain": "slides.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/revealmd"

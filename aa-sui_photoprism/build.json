@@ -1,7 +1,8 @@
 {
   "name": "photoprism",
   "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
-
+  "category": "app",
+  "domain": "photos.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/photoprism",

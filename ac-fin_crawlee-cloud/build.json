@@ -1,7 +1,8 @@
 {
   "name": "crawlee-cloud",
-  "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
-
+  "description": "Self-hosted Crawlee Cloud \u2014 Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+  "category": "fin",
+  "domain": "api.diegonmarcos.com/crawlee/",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/crawlee-cloud"

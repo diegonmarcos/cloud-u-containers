@@ -1,17 +1,25 @@
 {
   "name": "mailu",
   "description": "Mailu mail server stack (mail.diegonmarcos.com)",
-
+  "category": "app",
+  "domain": "mail.diegonmarcos.com",
   "build": {
     "preserve_symlinks": "true"
   },
-
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/mailu",
-    "excludes": ["mail/**", "mailqueue/**", "data/**", "dkim/**", "filter/**", "redis/**", "webmail/**", "certs/**"]
+    "excludes": [
+      "mail/**",
+      "mailqueue/**",
+      "data/**",
+      "dkim/**",
+      "filter/**",
+      "redis/**",
+      "webmail/**",
+      "certs/**"
+    ]
   },
-
   "compose": {
     "pre_hook": "init.sh",
     "post_hook": "setup.sh"

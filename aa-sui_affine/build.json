@@ -1,0 +1,10 @@
+{
+  "name": "affine",
+  "description": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake",
+  "category": "app",
+  "domain": "drive-notes-affine.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/affine"
+  }
+}
