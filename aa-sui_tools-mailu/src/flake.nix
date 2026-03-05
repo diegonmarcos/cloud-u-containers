@@ -362,7 +362,6 @@
     in let
       defaultPkg = pkgs.runCommand "mailu-configs" {} ''
         mkdir -p $out/overrides/dovecot $out/overrides/roundcube $out/overrides/nginx $out/overrides/postfix $out/overrides/rspamd
-        mkdir -p $out/certs
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkMailuEnvTpl pkgs} $out/mailu.env.tpl
         cp ${mkInitSh pkgs} $out/init.sh
@@ -372,8 +371,6 @@
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
         cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
-        ln -s letsencrypt/live/mailu/fullchain.pem $out/certs/cert.pem
-        ln -s letsencrypt/live/mailu/privkey.pem $out/certs/key.pem
       '';
     in {
       default = defaultPkg;
