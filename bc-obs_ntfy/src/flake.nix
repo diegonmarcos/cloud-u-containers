@@ -59,8 +59,8 @@
             - |
               ntfy user add --role=admin admin 2>/dev/null || true
               ntfy user change-pass admin --password="$$NTFY_ADMIN_PASSWORD" 2>/dev/null || true
-              ntfy user add me@diegonmarcos.com 2>/dev/null || true
-              ntfy user change-pass me@diegonmarcos.com --password="$$NTFY_USER_PASSWORD" 2>/dev/null || true
+              ntfy user add diego 2>/dev/null || true
+              ntfy user change-pass diego --password="$$NTFY_USER_PASSWORD" 2>/dev/null || true
               exec ntfy serve
           env_file:
             - .secrets
