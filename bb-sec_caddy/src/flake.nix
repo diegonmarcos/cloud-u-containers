@@ -528,6 +528,11 @@
           rewrite * /ntfy-setup.html
           file_server
         }
+        handle /v1/topics {
+    ${authelia}
+          header_up Authorization "Basic {env.NTFY_ADMIN_AUTH}"
+          reverse_proxy ntfy:80
+        }
         ${mkProtected "ntfy:80"}
         ${handleErrors}
       }
