@@ -1,7 +1,8 @@
 {
   "name": "filebrowser",
   "description": "FileBrowser web file manager (NEW - not deployed yet)",
-
+  "category": "app",
+  "domain": "files.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/filebrowser"

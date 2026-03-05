@@ -1,6 +1,7 @@
 {
   "name": "cloudflare-worker",
   "description": "Cloudflare Email Worker - routes inbound email (me@diegonmarcos.com) to Mailu via SMTP proxy",
+  "category": "cloud",
   "deploy": {
     "host": "local",
     "remote_path": ""

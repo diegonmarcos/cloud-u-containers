@@ -1,12 +1,16 @@
 {
   "name": "rig-agentic",
   "description": "Rig Agentic AI - Infrastructure agent with DeepSeek + tool calling via C3 API",
+  "category": "agi",
   "version": "0.2.0",
-
   "build": {
-    "extra_copy": ["Cargo.toml", "Cargo.lock", "Dockerfile", "src"]
+    "extra_copy": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "Dockerfile",
+      "src"
+    ]
   },
-
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/rig-agentic",

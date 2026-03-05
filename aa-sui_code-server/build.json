@@ -1,7 +1,8 @@
 {
   "name": "code-server",
   "description": "VS Code IDE (ide.diegonmarcos.com)",
-
+  "category": "app",
+  "domain": "ide.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/code-server"

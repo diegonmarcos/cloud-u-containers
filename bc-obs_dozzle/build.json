@@ -1,13 +1,13 @@
 {
   "name": "dozzle",
   "description": "Dozzle - Real-time Docker log viewer",
-
+  "category": "tools",
+  "domain": "logs.diegonmarcos.com",
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },
-
   "secrets": {
     "escape_dollars": "true"
   }

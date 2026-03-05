@@ -1,0 +1,9 @@
+{
+  "name": "alerts-api",
+  "description": "Security Alert Aggregation API",
+  "category": "tools",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/alerts-api"
+  }
+}

@@ -1,7 +1,8 @@
 {
   "name": "gitea",
   "description": "Self-hosted Git service",
-
+  "category": "data",
+  "domain": "git.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/gitea"

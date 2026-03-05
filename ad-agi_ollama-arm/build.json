@@ -1,7 +1,7 @@
 {
   "name": "ollama-arm",
   "description": "Ollama LLM server (ARM CPU, 7b models)",
-
+  "category": "agi",
   "deploy": {
     "host": "oci-apps-2",
     "remote_path": "/opt/containers/ollama-arm"

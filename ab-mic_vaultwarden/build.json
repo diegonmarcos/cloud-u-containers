@@ -1,13 +1,15 @@
 {
   "name": "vaultwarden",
   "description": "Bitwarden password manager",
-
+  "category": "mic",
+  "domain": "vault.diegonmarcos.com",
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/vaultwarden",
-    "excludes": ["data"]
+    "excludes": [
+      "data"
+    ]
   },
-
   "secrets": {
     "escape_dollars": true
   }

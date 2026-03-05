@@ -1,0 +1,10 @@
+{
+  "name": "backup-gitea",
+  "description": "Self-hosted Gitea for git backups and mirroring",
+  "category": "data",
+  "domain": "git.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/backup-gitea"
+  }
+}

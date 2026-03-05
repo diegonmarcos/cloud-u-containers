@@ -1,6 +1,7 @@
 {
   "name": "kg-graph",
   "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
+  "category": "data",
   "version": "0.1.0",
   "deploy": {
     "host": "oci-apps",

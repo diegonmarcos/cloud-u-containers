@@ -1,7 +1,7 @@
 {
   "name": "quant-lab-full",
   "description": "Full quant stack: Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres",
-
+  "category": "fin",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/quant-lab-full"

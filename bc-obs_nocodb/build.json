@@ -1,7 +1,8 @@
 {
   "name": "nocodb",
   "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
-
+  "category": "tools",
+  "domain": "db.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/home/ubuntu/nocodb"

@@ -1,10 +1,13 @@
 {
   "name": "ntfy",
   "description": "Push notification server",
-
+  "category": "tools",
+  "domain": "rss.diegonmarcos.com",
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/ntfy",
-    "excludes": ["cache"]
+    "excludes": [
+      "cache"
+    ]
   }
 }

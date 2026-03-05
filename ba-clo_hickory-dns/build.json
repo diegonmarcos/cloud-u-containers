@@ -1,7 +1,8 @@
 {
   "name": "hickory-dns",
   "description": "Internal DNS server for WireGuard mesh (.internal zone)",
-
+  "category": "cloud",
+  "domain": "dns.internal",
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/hickory-dns"

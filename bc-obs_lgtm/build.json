@@ -1,7 +1,8 @@
 {
   "name": "lgtm",
   "description": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
-
+  "category": "tools",
+  "domain": "grafana.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/lgtm"

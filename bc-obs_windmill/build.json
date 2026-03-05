@@ -1,22 +1,46 @@
 {
   "name": "windmill",
   "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
-
+  "category": "tools",
+  "domain": "windmill.diegonmarcos.com",
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/home/ubuntu/windmill"
   },
-
   "lifecycle": {
     "start": [
-      { "action": "exec", "vm": "oci-analytics", "container": "matomo-hybrid", "script": "/scripts/matomo-sleep.sh" },
-      { "action": "compose_start", "vm": "oci-analytics", "path": "/home/ubuntu/windmill" },
-      { "action": "stats", "vm": "oci-analytics" }
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "matomo-hybrid",
+        "script": "/scripts/matomo-sleep.sh"
+      },
+      {
+        "action": "compose_start",
+        "vm": "oci-analytics",
+        "path": "/home/ubuntu/windmill"
+      },
+      {
+        "action": "stats",
+        "vm": "oci-analytics"
+      }
     ],
     "stop": [
-      { "action": "compose_stop", "vm": "oci-analytics", "path": "/home/ubuntu/windmill" },
-      { "action": "exec", "vm": "oci-analytics", "container": "matomo-hybrid", "script": "/scripts/matomo-wake.sh" },
-      { "action": "stats", "vm": "oci-analytics" }
+      {
+        "action": "compose_stop",
+        "vm": "oci-analytics",
+        "path": "/home/ubuntu/windmill"
+      },
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "matomo-hybrid",
+        "script": "/scripts/matomo-wake.sh"
+      },
+      {
+        "action": "stats",
+        "vm": "oci-analytics"
+      }
     ]
   }
 }
