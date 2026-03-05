@@ -74,6 +74,9 @@ if [ -f "$CONFIG" ]; then
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
 fi
+# SSH multiplexing: one connection reused across all steps, kept alive 120s
+SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-mux-%r@%h:%p -o ControlPersist=120 -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
+
 
 # escape_dollars defaults to false — only enable in build.json for services that need it
 
@@ -97,13 +100,13 @@ step_docker_remote() {
     REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
 
     log "Syncing Docker context to $DEPLOY_HOST:$REMOTE_BUILD_DIR"
-    ssh "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
     rsync -avz --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
 
     log "Building Docker image on $DEPLOY_HOST (remote)"
-    ssh "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE:latest -f $DOCKERFILE ."
+    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE:latest -f $DOCKERFILE ."
 
-    ssh "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
     log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
 }
 
@@ -115,7 +118,7 @@ step_docker_local() {
     # Smart build: hash Dockerfile to skip rebuild when unchanged
     LOCAL_HASH=$(sha256sum "$SRC_DIR/$DOCKERFILE" 2>/dev/null | cut -c1-12)
     if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
-        REMOTE_HASH=$(ssh "$DEPLOY_HOST" "cat $DEPLOY_PATH/.dockerfile-hash 2>/dev/null" 2>/dev/null || true)
+        REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.dockerfile-hash 2>/dev/null" 2>/dev/null || true)
         if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
             log "Dockerfile unchanged (hash: $LOCAL_HASH) -- skipping Docker build"
             return 0
@@ -324,7 +327,7 @@ step_deploy() {
     log "Deploying dist/ -> $DEPLOY_HOST:$DEPLOY_PATH"
 
     # Ensure remote dir exists
-    ssh "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH"
 
     MANIFEST_FILE=".deploy-manifest"
 
@@ -332,7 +335,7 @@ step_deploy() {
     NEW_MANIFEST=$(cd "$DIST_DIR" && find . -type f | sort)
 
     # 2. Read old manifest from remote (may be empty on first deploy)
-    OLD_MANIFEST=$(ssh "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
+    OLD_MANIFEST=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
 
     # 3. Build rsync exclude flags from build.json array
     RSYNC_EXCLUDES=""
@@ -363,8 +366,8 @@ step_deploy() {
         # Write manifests to temp files for reliable comparison (avoids subshell issues)
         OLD_TMP=$(mktemp)
         NEW_TMP=$(mktemp)
-        echo "$OLD_MANIFEST" > "$OLD_TMP"
-        echo "$NEW_MANIFEST" > "$NEW_TMP"
+        echo "$OLD_MANIFEST" | sort > "$OLD_TMP"
+        echo "$NEW_MANIFEST" | sort > "$NEW_TMP"
         # comm -23: lines only in old (stale files)
         STALE_FILES=$(comm -23 "$OLD_TMP" "$NEW_TMP")
         rm -f "$OLD_TMP" "$NEW_TMP"
@@ -372,7 +375,7 @@ step_deploy() {
             echo "$STALE_FILES" | while IFS= read -r f; do
                 [ -z "$f" ] && continue
                 log "  rm stale: $f"
-                ssh "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
+                ssh $SSH_OPTS "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
                 STALE_COUNT=$((STALE_COUNT + 1))
             done
             log "Cleaned stale files from previous deploy"
@@ -380,7 +383,7 @@ step_deploy() {
     fi
 
     # 6. Save new manifest to remote
-    echo "$NEW_MANIFEST" | ssh "$DEPLOY_HOST" "cat > '$DEPLOY_PATH/$MANIFEST_FILE'"
+    echo "$NEW_MANIFEST" | ssh $SSH_OPTS "$DEPLOY_HOST" "cat > '$DEPLOY_PATH/$MANIFEST_FILE'"
 
     log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH"
 }
@@ -393,21 +396,21 @@ step_compose() {
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
     # Image strategy: binary transfer > already local > registry pull
-    if [ -n "$DOCKER_BINARY" ] && ssh "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
+    if [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
         log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
         log "Image built locally"
-    elif [ -n "$FULL_IMAGE" ] && ssh "$DEPLOY_HOST" "docker image inspect $FULL_IMAGE:latest >/dev/null 2>&1" 2>/dev/null; then
+    elif [ -n "$FULL_IMAGE" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "docker image inspect $FULL_IMAGE:latest >/dev/null 2>&1" 2>/dev/null; then
         log "Image already local -- config-only restart"
     elif [ -n "$FULL_IMAGE" ]; then
         log "No local image -- falling back to docker compose pull"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
     fi
 
     # Pre-compose hook (e.g. mailu init.sh)
     if [ -n "$COMPOSE_PRE_HOOK" ]; then
         log "Running pre-compose hook: $COMPOSE_PRE_HOOK"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_PRE_HOOK && ./$COMPOSE_PRE_HOOK"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_PRE_HOOK && ./$COMPOSE_PRE_HOOK"
     fi
 
     ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
@@ -415,22 +418,22 @@ step_compose() {
     if [ "$SEQUENTIAL_RESTART" = "true" ]; then
         # Sequential restart: stop -> settle -> start (avoids CPU spike on low-resource VMs)
         log "Stopping containers on $DEPLOY_HOST"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose stop" || true
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose stop" || true
         log "Waiting for CPU to settle..."
         sleep 5
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d"
     else
         # Standard: down + up with force-recreate
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate $EXTRA_FLAGS"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate $EXTRA_FLAGS"
     fi
 
     # Post-compose hook (e.g. mailu setup.sh)
     if [ -n "$COMPOSE_POST_HOOK" ]; then
         log "Running post-compose hook: $COMPOSE_POST_HOOK"
-        ssh "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_POST_HOOK && ./$COMPOSE_POST_HOOK"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_POST_HOOK && ./$COMPOSE_POST_HOOK"
     fi
 
     log "Container rebuilt and running"
@@ -461,18 +464,18 @@ run_lifecycle() {
         case "$ACTION" in
             compose_stop)
                 log "  Stopping compose at $VM:$COMPOSE_PATH"
-                ssh "$VM" "docker compose -f $COMPOSE_PATH/docker-compose.yml stop" || true
+                ssh $SSH_OPTS "$VM" "docker compose -f $COMPOSE_PATH/docker-compose.yml stop" || true
                 ;;
             compose_start)
                 log "  Starting compose at $VM:$COMPOSE_PATH"
-                ssh "$VM" "docker compose -f $COMPOSE_PATH/docker-compose.yml start"
+                ssh $SSH_OPTS "$VM" "docker compose -f $COMPOSE_PATH/docker-compose.yml start"
                 ;;
             exec)
                 log "  Exec in $CONTAINER on $VM: $SCRIPT"
-                ssh "$VM" "docker exec $CONTAINER $SCRIPT" || true
+                ssh $SSH_OPTS "$VM" "docker exec $CONTAINER $SCRIPT" || true
                 ;;
             stats)
-                ssh "$VM" "free -h && echo '---' && docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}'"
+                ssh $SSH_OPTS "$VM" "free -h && echo '---' && docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}'"
                 ;;
         esac
     done
@@ -489,7 +492,7 @@ step_clean_remote() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set"; return 1; }
 
     MANIFEST_FILE=".deploy-manifest"
-    MANIFEST=$(ssh "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
+    MANIFEST=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat '$DEPLOY_PATH/$MANIFEST_FILE' 2>/dev/null" || true)
 
     if [ -z "$MANIFEST" ]; then
         log "No deploy manifest found — cannot determine engine-owned files"
@@ -498,7 +501,7 @@ step_clean_remote() {
     fi
 
     # List all files on remote, find those NOT in manifest
-    ALL_REMOTE=$(ssh "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && find . -type f | sort")
+    ALL_REMOTE=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && find . -type f | sort")
     MANIFEST_TMP=$(mktemp)
     REMOTE_TMP=$(mktemp)
     KNOWN_TMP=$(mktemp)
@@ -525,7 +528,7 @@ step_clean_remote() {
         log "Removing non-manifest files (--force)"
         echo "$EXTRA_FILES" | while IFS= read -r f; do
             [ -z "$f" ] && continue
-            ssh "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "rm -f '$DEPLOY_PATH/$f'"
         done
         log "Remote cleaned"
     else
