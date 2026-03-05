@@ -18,7 +18,7 @@
     title = "ntfy Push Notifications + syslog-bridge + github-rss";
 
     mkServerConfig = pkgs: pkgs.writeText "server.yml" ''
-      # ntfy server configuration
+      # ntfy server configuration (auth enabled)
       base-url: https://${config.domain}
 
       # Cache and retention
