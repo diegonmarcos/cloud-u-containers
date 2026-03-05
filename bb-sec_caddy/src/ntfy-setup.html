@@ -157,15 +157,15 @@ a:hover{color:#845ef7;border-color:#845ef7}
     logEl.scrollTop=logEl.scrollHeight;
   }
 
-  // Step 1: Fetch topics from scanner
+  // Step 1: Fetch topics from ntfy API (auth injected by Caddy)
   log('info','Fetching active topics...');
-  fetch('/api/topics')
+  fetch('/v1/topics')
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     })
     .then(function(data){
-      topics=data.topics||[];
+      topics=(Array.isArray(data)?data:[]).map(function(t){return t.topic||t});
       if(topics.length===0){
         log('warn','No topics found in cache — publish a message first');
         return;

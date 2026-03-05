@@ -31,8 +31,12 @@
       visitor-request-limit-replenish: 10s
       visitor-message-daily-limit: 0
 
+      # Auth — admin API access (Caddy injects credentials, anonymous r/w preserved)
+      auth-file: /var/cache/ntfy/auth.db
+      auth-default-access: read-write
+
       # Web interface
-      enable-login: false
+      enable-login: true
       enable-signup: false
       enable-reservations: false
 
@@ -49,8 +53,15 @@
         ntfy:
           image: ${config.image}
           container_name: ${config.container_name}
-          command:
-            - serve
+          entrypoint:
+            - /bin/sh
+            - -c
+            - |
+              ntfy user add --role=admin admin 2>/dev/null || true
+              ntfy user change-pass admin --password="$$NTFY_ADMIN_PASSWORD" 2>/dev/null || true
+              exec ntfy serve
+          env_file:
+            - .secrets
           environment:
             - TZ=Europe/Paris
           volumes:
