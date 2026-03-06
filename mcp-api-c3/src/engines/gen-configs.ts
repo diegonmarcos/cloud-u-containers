@@ -1,6 +1,7 @@
 // gen-configs.ts — Generate cloud-configs.json + cloud-configs.md
 //
 // Sources:
+//   cloud-topology.json                             → service inventory (primary)
 //   a_solutions/bb-sec_caddy/dist/Caddyfile        → routes
 //   a_solutions/bb-sec_authelia/dist/config/*.tpl   → ACL rules
 //   a_solutions/ba-clo_hickory-dns/dist/zones/      → DNS records
@@ -11,7 +12,7 @@
 //   cloud-configs.json   → machine-readable per-service configs
 //   cloud-configs.md     → human-readable tables (via Nunjucks)
 
-import { writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import nunjucks from "nunjucks";
@@ -35,6 +36,7 @@ const OUTPUT_MD = join(CLOUD_ROOT, "cloud-configs.md");
 // --- Types ----------------------------------------------------------------
 
 interface CloudConfigs {
+  services: Record<string, unknown>[];
   infra: Record<string, unknown>;
   apps: Record<string, unknown>;
 }
@@ -45,9 +47,28 @@ function main() {
   console.log("gen-configs: scanning sources...");
 
   const configs: CloudConfigs = {
+    services: [],
     infra: {},
     apps: {},
   };
+
+  // 0. Service list from cloud-topology.json
+  const topologyPath = join(CLOUD_ROOT, "cloud-topology.json");
+  if (existsSync(topologyPath)) {
+    const topology = JSON.parse(readFileSync(topologyPath, "utf-8"));
+    if (topology.services) {
+      configs.services = Object.entries(topology.services)
+        .map(([name, svc]: [string, any]) => ({
+          name,
+          category: svc.category ?? "—",
+          vm: svc.vm ?? "—",
+          domain: svc.domain ?? "—",
+          containers: svc.containers ?? [],
+        }))
+        .sort((a, b) => a.vm.localeCompare(b.vm) || a.name.localeCompare(b.name));
+      console.log(`  Topology: ${configs.services.length} services`);
+    }
+  }
 
   // 1. Caddy routes
   const routes = parseCaddyfile(SOLUTIONS_DIR);
@@ -85,8 +106,17 @@ function main() {
   }
 
   // 6. Write cloud-configs.json
-  writeFileSync(OUTPUT_JSON, JSON.stringify(configs, null, 2) + "\n");
-  console.log(`  Written: cloud-configs.json (${Object.keys(configs.infra).length} infra, ${Object.keys(configs.apps).length} apps)`);
+  const output = {
+    _meta: {
+      generated_by: "a_solutions/mcp-api-c3/src/engines/gen-configs.ts",
+      api_route: "GET /c3-api/configs",
+      source: "cloud-topology.json + Caddy/Authelia/DNS flakes",
+      generated_at: new Date().toISOString(),
+    },
+    ...configs,
+  };
+  writeFileSync(OUTPUT_JSON, JSON.stringify(output, null, 2) + "\n");
+  console.log(`  Written: cloud-configs.json (${configs.services.length} services, ${Object.keys(configs.infra).length} infra, ${Object.keys(configs.apps).length} apps)`);
 
   // 7. Render cloud-configs.md
   const templatePath = join(TEMPLATE_DIR, "cloud-configs.md.njk");
