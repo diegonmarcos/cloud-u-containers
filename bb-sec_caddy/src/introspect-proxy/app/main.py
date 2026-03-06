@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
 """
-Authelia Token Introspection Proxy
+JWT Validation Proxy
 
-A lightweight Flask service that validates Bearer tokens via Authelia's
-OIDC introspection endpoint. Used by Caddy's forward_auth directive to
-authenticate CLI/API clients.
+Validates Bearer JWTs locally using Authelia's JWKS public keys.
+No dependency on Authelia's token database — only needs the public key
+to verify RSA signatures.
 
 Architecture:
-    CLI Client -> Caddy (forward_auth) -> This Proxy -> Authelia Introspection
-                                              |
+    CLI Client -> Caddy (forward_auth) -> This Proxy -> Local JWT validation
+                                              |              (JWKS cached)
                                               v
                                         200 OK + headers (valid)
                                         401 Unauthorized (invalid)
 """
 
 import os
+import time
 import logging
+import jwt
 from flask import Flask, request, Response
-import requests
+from jwt import PyJWKClient
 
 # Configuration from environment
-INTROSPECT_URL = os.environ.get(
-    "INTROSPECT_URL",
-    "https://auth.diegonmarcos.com/api/oidc/introspection"
-)
-CLIENT_ID = os.environ.get("CLIENT_ID", "cli")
-CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+JWKS_URL = os.environ.get("JWKS_URL", "https://auth.diegonmarcos.com/jwks.json")
+ISSUER = os.environ.get("ISSUER", "https://auth.diegonmarcos.com")
+REQUIRED_SCOPE = os.environ.get("REQUIRED_SCOPE", "authelia.bearer.authz")
 DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
 
 # Logging setup
@@ -37,11 +36,27 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+# JWKS client with caching (re-fetches on key rotation)
+_jwks_client = None
+_jwks_client_created = 0
+JWKS_CACHE_TTL = 3600  # re-create client every hour
+
+
+def get_jwks_client():
+    """Get or create a cached JWKS client."""
+    global _jwks_client, _jwks_client_created
+    now = time.time()
+    if _jwks_client is None or (now - _jwks_client_created) > JWKS_CACHE_TTL:
+        logger.info(f"Fetching JWKS from {JWKS_URL}")
+        _jwks_client = PyJWKClient(JWKS_URL)
+        _jwks_client_created = now
+    return _jwks_client
+
 
 @app.route("/auth", methods=["GET"])
 def auth():
     """
-    Validates Bearer token via Authelia introspection.
+    Validates Bearer JWT locally using JWKS public key.
 
     Expected by Caddy forward_auth directive:
     - 2xx: Allow request, forward auth headers to backend
@@ -51,7 +66,7 @@ def auth():
         Authorization: Bearer <token>
 
     Response Headers (on success):
-        X-Auth-User: username from token
+        X-Auth-User: client_id from token
         X-Auth-Subject: sub claim from token
         X-Auth-Email: email from token (if available)
     """
@@ -61,45 +76,51 @@ def auth():
         logger.debug("No Bearer token in Authorization header")
         return Response("No Bearer token", status=401)
 
-    token = auth_header[7:]  # Remove "Bearer " prefix
-
-    if not CLIENT_SECRET:
-        logger.error("CLIENT_SECRET not configured")
-        return Response("Server misconfigured", status=500)
+    token = auth_header[7:]
 
     try:
-        resp = requests.post(
-            INTROSPECT_URL,
-            data={"token": token},
-            auth=(CLIENT_ID, CLIENT_SECRET),
-            timeout=10
+        jwks_client = get_jwks_client()
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=ISSUER,
+            options={"verify_aud": False},
         )
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        logger.error(f"Introspection request failed: {e}")
-        return Response("Auth server unavailable", status=502)
+    except jwt.ExpiredSignatureError:
+        logger.debug("Token expired")
+        return Response("Token expired", status=401)
+    except jwt.InvalidIssuerError:
+        logger.debug(f"Invalid issuer")
+        return Response("Invalid token issuer", status=401)
+    except jwt.PyJWKClientError as e:
+        logger.error(f"JWKS fetch failed: {e}")
+        # Reset client so next request retries
+        global _jwks_client
+        _jwks_client = None
+        return Response("Auth key server unavailable", status=502)
+    except jwt.InvalidTokenError as e:
+        logger.debug(f"Invalid token: {e}")
+        return Response("Invalid token", status=401)
 
-    try:
-        data = resp.json()
-    except ValueError:
-        logger.error(f"Invalid JSON from introspection: {resp.text[:200]}")
-        return Response("Invalid auth response", status=502)
+    # Check required scope
+    scopes = payload.get("scp", [])
+    if REQUIRED_SCOPE and REQUIRED_SCOPE not in scopes:
+        logger.debug(f"Missing scope {REQUIRED_SCOPE}, has: {scopes}")
+        return Response("Insufficient scope", status=403)
 
-    if data.get("active"):
-        username = data.get("username", "")
-        subject = data.get("sub", "")
-        email = data.get("email", username)
+    client_id = payload.get("client_id", "")
+    subject = payload.get("sub", "")
 
-        logger.info(f"Token valid for user: {username}")
+    logger.info(f"Token valid for client: {client_id}, sub: {subject}")
 
-        response = Response("OK", status=200)
-        response.headers["X-Auth-User"] = username
-        response.headers["X-Auth-Subject"] = subject
-        response.headers["X-Auth-Email"] = email
-        return response
-    else:
-        logger.debug(f"Token inactive or invalid")
-        return Response("Token invalid or expired", status=401)
+    response = Response("OK", status=200)
+    response.headers["X-Auth-User"] = client_id
+    response.headers["X-Auth-Subject"] = subject
+    response.headers["X-Auth-Email"] = client_id
+    return response
 
 
 @app.route("/health", methods=["GET"])
