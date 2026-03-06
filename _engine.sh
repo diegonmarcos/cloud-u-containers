@@ -4,6 +4,9 @@
 # All behavior driven by build.json — zero hardcoded service names
 set -e
 
+# Auto-confirm guardrail prompts (BLOCKED tier is never bypassed)
+export BUILDSH_GUARDRAIL=1
+
 SERVICE_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_NAME="$(basename "$SERVICE_DIR" | sed 's/^[a-z]*-[a-z]*_//')"
 SRC_DIR="$SERVICE_DIR/src"
