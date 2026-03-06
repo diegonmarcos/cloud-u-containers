@@ -1,7 +1,7 @@
 # Mailu main configuration file
 DOMAIN=diegonmarcos.com
 HOSTNAMES=imap.diegonmarcos.com,smtp.diegonmarcos.com
-POSTMASTER=admin
+POSTMASTER=me
 
 SECRET_KEY=${SECRET_KEY}
 SUBNET=192.168.203.0/24
@@ -28,13 +28,15 @@ ADMIN=true
 WEBDAV=none
 FETCHMAIL=false
 
-RELAYHOST=[email-smtp.us-east-1.amazonaws.com]:587
+RELAYHOST=[smtp.email.eu-marseille-1.oci.oraclecloud.com]:587
 RELAYUSER=${RELAYUSER}
 RELAYPASSWORD=${RELAYPASSWORD}
+OCI_RELAYUSER=${OCI_RELAYUSER}
+OCI_RELAYPASSWORD=${OCI_RELAYPASSWORD}
 
 MESSAGE_SIZE_LIMIT=50000000
 
-INITIAL_ADMIN_ACCOUNT=admin
+INITIAL_ADMIN_ACCOUNT=me
 INITIAL_ADMIN_DOMAIN=diegonmarcos.com
 INITIAL_ADMIN_PW=${INITIAL_ADMIN_PW}
 
