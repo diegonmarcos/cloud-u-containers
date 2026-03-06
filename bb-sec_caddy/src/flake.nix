@@ -240,20 +240,7 @@
         }
 
         # C3 — Cloud Control Center API (replaces Rust API)
-        # Public endpoints (no auth required)
-        handle /c3-api/docs/json {
-          uri strip_prefix /c3-api
-          reverse_proxy ${flex0}:8081
-        }
-        handle /c3-api/dash* {
-          uri strip_prefix /c3-api
-          reverse_proxy ${flex0}:8081
-        }
-        handle /c3-api/health/* {
-          uri strip_prefix /c3-api
-          reverse_proxy ${flex0}:8081
-        }
-        # Protected endpoints (require Authelia or bearer token)
+        # All endpoints protected (require Authelia or bearer token)
         handle_path /c3-api/* {
           ${mkProtected "${flex0}:8081"}
         }
