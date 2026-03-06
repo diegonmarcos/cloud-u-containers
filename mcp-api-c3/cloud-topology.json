@@ -1,0 +1,13 @@
+{
+  "ssh_key": "/data/data/com.termux.nix/files/home/.ssh/id_rsa",
+  "remote_base": "/opt/containers",
+  "vms": {},
+  "vpss": {},
+  "wireguard": {
+    "peers": []
+  },
+  "dns": {
+    "zones": []
+  },
+  "services": {}
+}
