@@ -62,7 +62,10 @@ function main() {
           name,
           category: svc.category ?? "—",
           vm: svc.vm ?? "—",
+          description: svc.description ?? "—",
           domain: svc.domain ?? "—",
+          ports: svc.ports ?? [],
+          networks: svc.networks ?? [],
           containers: svc.containers ?? [],
         }))
         .sort((a, b) => a.vm.localeCompare(b.vm) || a.name.localeCompare(b.name));

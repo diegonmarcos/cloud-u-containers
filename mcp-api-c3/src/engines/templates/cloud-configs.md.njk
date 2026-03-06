@@ -15,6 +15,20 @@
 | {{ loop.index }} | {{ svc.name }} | {{ svc.category }} | {{ svc.vm }} | {{ svc.domain }} | {{ svc.containers | join(", ") if svc.containers and svc.containers.length > 0 else "—" }} |
 {% endfor %}
 
+{% for svc in data.services %}
+### {{ svc.name }}
+
+| Key | Value |
+|-----|-------|
+| Category | {{ svc.category }} |
+| VM | {{ svc.vm }} |
+| Description | {{ svc.description }} |
+| Domain | {{ svc.domain }} |
+| Containers | {{ svc.containers | join(", ") if svc.containers and svc.containers.length > 0 else "—" }} |
+| Ports | {{ svc.ports | join(", ") if svc.ports and svc.ports.length > 0 else "—" }} |
+| Networks | {{ svc.networks | join(", ") if svc.networks and svc.networks.length > 0 else "—" }} |
+
+{% endfor %}
 {% endif %}
 ## Infrastructure
 
