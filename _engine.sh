@@ -187,12 +187,14 @@ step_build() {
         mv "$SERVICE_DIR/.dockerfile-hash-new" "$DIST_DIR/.dockerfile-hash"
     fi
 
-    # Include shared config.json for dynamic VM/service discovery
+    # Include shared cloud-topology.json for dynamic VM/service discovery
     if [ "$INCLUDE_CONFIG_JSON" = "true" ]; then
-        CONFIG_JSON="$SERVICE_DIR/../../config.json"
+        CONFIG_JSON="$SERVICE_DIR/../../cloud-topology.json"
+        # Fallback to old name during migration
+        [ ! -f "$CONFIG_JSON" ] && CONFIG_JSON="$SERVICE_DIR/../../config.json"
         if [ -f "$CONFIG_JSON" ]; then
-            cp "$CONFIG_JSON" "$DIST_DIR/config.json"
-            log "Included config.json in dist/"
+            cp "$CONFIG_JSON" "$DIST_DIR/cloud-topology.json"
+            log "Included cloud-topology.json in dist/"
         fi
     fi
 

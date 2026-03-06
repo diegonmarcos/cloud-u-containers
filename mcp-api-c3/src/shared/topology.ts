@@ -269,16 +269,16 @@ export function getTopologyDrift(): TopologyDrift {
   const parts: string[] = [];
   if (drift.onDiskOnly.length > 0) {
     parts.push(
-      `${drift.onDiskOnly.length} service(s) found on disk but missing from config.json: ${drift.onDiskOnly.join(", ")}`
+      `${drift.onDiskOnly.length} service(s) found on disk but missing from cloud-topology.json: ${drift.onDiskOnly.join(", ")}`
     );
   }
   if (drift.configOnly.length > 0) {
     parts.push(
-      `${drift.configOnly.length} service(s) in config.json but folder missing on disk: ${drift.configOnly.join(", ")}`
+      `${drift.configOnly.length} service(s) in cloud-topology.json but folder missing on disk: ${drift.configOnly.join(", ")}`
     );
   }
   if (parts.length === 0) {
-    parts.push("No drift detected — config.json and on-disk services are in sync.");
+    parts.push("No drift detected — cloud-topology.json and on-disk services are in sync.");
   }
 
   return {

@@ -3,11 +3,13 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 # System deps: SSH for remote VM commands, curl for healthcheck + API calls, ping for WG checks
+# git for read-only repo clones (engines need source files)
 # Build tools for better-sqlite3 (native module) — only needed if prebuilt binaries fail
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     iputils-ping \
     curl \
+    git \
     python3 \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -21,6 +23,11 @@ COPY tsconfig.json ./
 COPY shared/ ./src/shared/
 COPY api/ ./src/api/
 COPY mcp/ ./src/mcp/
+COPY engines/ ./src/engines/
+
+# Entrypoint: clone repos read-only, then start API
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 # SSH: known_hosts for host key verification
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
@@ -31,4 +38,4 @@ EXPOSE 3100
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-CMD ["npx", "tsx", "src/api/index.ts"]
+ENTRYPOINT ["./entrypoint.sh"]

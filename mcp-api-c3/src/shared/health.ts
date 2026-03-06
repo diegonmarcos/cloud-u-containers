@@ -149,7 +149,7 @@ export function healthAlive(): { status: string; version: string } {
 }
 
 /**
- * Returns declared VMs and services from config.json. No network probing.
+ * Returns declared VMs and services from cloud-topology.json. No network probing.
  */
 export function healthDeclared(): HealthDeclaredResult {
   const config = getConfig();
@@ -193,7 +193,7 @@ export function healthDeployed(vmId?: string): DeployedVm[] {
 }
 
 /**
- * Compare declared services (config.json) with deployed containers (docker ps).
+ * Compare declared services (cloud-topology.json) with deployed containers (docker ps).
  * For each service, check if expected containers are running.
  */
 export function healthDrift(): DriftEntry[] {

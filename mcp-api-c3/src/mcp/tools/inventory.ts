@@ -123,7 +123,7 @@ export function registerInventoryTools(server: McpServer) {
     "get_service_detail",
     "Get full service info: folder, flake.nix presence, secrets status, dist files",
     {
-      service: z.string().describe("Service name from config.json"),
+      service: z.string().describe("Service name from cloud-topology.json"),
     },
     async ({ service }) => {
       const config = getConfig();
@@ -186,7 +186,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "reload_config",
-    "Reload config.json from disk and show diff (services/VMs added or removed since last load)",
+    "Reload cloud-topology.json from disk and show diff (services/VMs added or removed since last load)",
     {},
     async () => {
       const oldConfig = getConfig();
@@ -219,10 +219,10 @@ export function registerInventoryTools(server: McpServer) {
       lines.push(`\n--- Drift Report ---`);
       lines.push(`Auto-discovered: ${autoCount} services from build.json`);
       if (drift.onDiskOnly.length) {
-        lines.push(`On disk only (auto-discovered, not in config.json): ${drift.onDiskOnly.join(", ")}`);
+        lines.push(`On disk only (auto-discovered, not in cloud-topology.json): ${drift.onDiskOnly.join(", ")}`);
       }
       if (drift.configOnly.length) {
-        lines.push(`In config.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
+        lines.push(`In cloud-topology.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
       }
       if (!drift.onDiskOnly.length && !drift.configOnly.length) {
         lines.push("Config and disk are in sync.");
@@ -486,7 +486,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_topology_drift",
-    "Compare config.json with on-disk services to find drift",
+    "Compare cloud-topology.json with on-disk services to find drift",
     {},
     async () => jsonText("Topology drift", getTopologyDrift()),
   );
