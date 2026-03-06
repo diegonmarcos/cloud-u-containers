@@ -202,6 +202,7 @@
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
+        debug
         admin localhost:${toString config.admin_port}
         order respond before handle
       }
@@ -610,6 +611,7 @@
             INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
             CLIENT_ID: cli
             CLIENT_SECRET: ''${AUTHELIA_CLI_SECRET}
+            DEBUG: "true"
           networks:
             - npm_default
           deploy:
