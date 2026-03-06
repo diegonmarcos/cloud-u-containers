@@ -1,0 +1,301 @@
+// gen-topology.ts — Generate cloud-topology.json + cloud-topology.md
+//
+// Sources:
+//   ~/.ssh/config                            → VM aliases + WireGuard IPs
+//   a_solutions/{service}/build.json         → service metadata
+//   a_solutions/{service}/dist/compose.yml   → containers, ports, networks
+//   b_infra/home-manager/                    → WireGuard peers
+//   ba-clo_hickory-dns/dist/zones/           → DNS records
+//
+// Outputs:
+//   cloud-topology.json  → machine-readable infrastructure topology
+//   cloud-topology.md    → human-readable tables (via Nunjucks)
+
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { resolve, join } from "path";
+import { homedir } from "os";
+import nunjucks from "nunjucks";
+import { scanBuildJsons, CATEGORY_PREFIX } from "./parsers/build-json.js";
+import { parseCompose } from "./parsers/compose.js";
+import { parseSSHConfig } from "./parsers/ssh-config.js";
+import { parseDNSZones } from "./parsers/dns.js";
+import { parseWireGuard } from "./parsers/wireguard.js";
+
+// --- Paths ----------------------------------------------------------------
+
+const GIT_BASE = process.env.GIT_BASE ?? join(homedir(), "git");
+const CLOUD_ROOT = join(GIT_BASE, "cloud");
+const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
+const ENGINE_DIR = import.meta.dirname!;
+const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
+const SSH_CONFIG = join(homedir(), ".ssh", "config");
+
+const OUTPUT_JSON = join(CLOUD_ROOT, "cloud-topology.json");
+const OUTPUT_MD = join(CLOUD_ROOT, "cloud-topology.md");
+
+// --- Types ----------------------------------------------------------------
+
+interface VM {
+  ip: string;
+  wg_ip: string;
+  user: string;
+  method: string;
+  ssh_alias: string;
+  description: string;
+  containers: string[];
+  ports: string[];
+  networks: string[];
+  [key: string]: unknown;
+}
+
+interface Service {
+  category: string;
+  vm: string;
+  containers: string[];
+  description: string;
+  domain?: string;
+  flake?: string;
+  ports?: string[];
+  networks?: string[];
+  [key: string]: unknown;
+}
+
+interface CloudTopology {
+  ssh_key: string;
+  remote_base: string;
+  vms: Record<string, VM>;
+  vpss: Record<string, unknown>;
+  wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string }> };
+  dns: { zones: Array<{ name: string; records: Array<{ name: string; type: string; value: string; comment?: string }> }> };
+  services: Record<string, Service>;
+}
+
+// --- Main -----------------------------------------------------------------
+
+function main() {
+  console.log("gen-topology: scanning sources...");
+
+  // 1. Load existing config to preserve manual fields
+  const existingPath = existsSync(OUTPUT_JSON)
+    ? OUTPUT_JSON
+    : join(CLOUD_ROOT, "config.json"); // fallback to old name
+  let existing: any = null;
+  if (existsSync(existingPath)) {
+    existing = JSON.parse(readFileSync(existingPath, "utf-8"));
+  }
+
+  // 2. Parse SSH config for VM data
+  const sshHosts = parseSSHConfig(SSH_CONFIG);
+  const aliasToVmId = loadExistingVMMap(existing);
+  console.log(
+    `  SSH config: ${sshHosts.filter((h) => !h.commented).length} active hosts, ${sshHosts.filter((h) => h.commented).length} commented`
+  );
+
+  // 3. Build VMs from SSH config
+  const vms: Record<string, VM> = {};
+  for (const host of sshHosts) {
+    if (host.commented) continue;
+    const vmId = aliasToVmId[host.alias];
+    if (!vmId) {
+      console.warn(`  WARN: SSH alias '${host.alias}' not mapped to a VM ID — skipping`);
+      continue;
+    }
+
+    const existingVm = existing?.vms?.[vmId];
+    vms[vmId] = {
+      ...existingVm,
+      ip: existingVm?.ip || "",
+      wg_ip: host.hostname,
+      user: host.user,
+      method: existingVm?.method || "key",
+      ssh_alias: host.alias,
+      description: existingVm?.description || "",
+      containers: [],
+      ports: [],
+      networks: [],
+    } as VM;
+  }
+
+  // Preserve VMs from existing config not in SSH
+  if (existing?.vms) {
+    for (const [vmId, vm] of Object.entries(existing.vms) as [string, any][]) {
+      if (!vms[vmId]) {
+        vms[vmId] = { ...vm, containers: vm.containers || [], ports: vm.ports || [], networks: vm.networks || [] };
+      }
+    }
+  }
+
+  // 4. Scan build.json files
+  const buildEntries = scanBuildJsons(SOLUTIONS_DIR);
+  console.log(`  build.json: ${buildEntries.length} services found`);
+
+  // 5. Build services map with compose data
+  const services: Record<string, Service> = {};
+
+  for (const entry of buildEntries) {
+    const compose = parseCompose(SOLUTIONS_DIR, entry.folder);
+    const vmId = resolveVmId(entry.vm, aliasToVmId, vms);
+    const existingSvc = existing?.services?.[entry.name];
+
+    const svc: Service = {
+      category: entry.category,
+      vm: vmId,
+      containers: compose.containers.length > 0 ? compose.containers : existingSvc?.containers || [],
+      description: entry.description || existingSvc?.description || "",
+      ...(entry.domain ? { domain: entry.domain } : existingSvc?.domain ? { domain: existingSvc.domain } : {}),
+      ...(entry.flake ? { flake: entry.flake } : existingSvc?.flake ? { flake: existingSvc.flake } : {}),
+      ...(compose.ports.length > 0 ? { ports: compose.ports } : existingSvc?.ports ? { ports: existingSvc.ports } : {}),
+      ...(compose.networks.length > 0 ? { networks: compose.networks } : existingSvc?.networks ? { networks: existingSvc.networks } : {}),
+    };
+
+    // Preserve extra fields from existing
+    if (existingSvc) {
+      for (const [k, v] of Object.entries(existingSvc)) {
+        if (!(k in svc)) (svc as any)[k] = v;
+      }
+    }
+
+    services[entry.name] = svc;
+  }
+
+  // Preserve existing services not covered by build.json
+  if (existing?.services) {
+    for (const [name, svc] of Object.entries(existing.services) as [string, any][]) {
+      if (!services[name]) services[name] = svc;
+    }
+  }
+
+  // 6. Aggregate containers/ports/networks into VMs
+  for (const [, svc] of Object.entries(services)) {
+    const vm = vms[svc.vm];
+    if (!vm) continue;
+    if (svc.containers) {
+      for (const c of svc.containers) {
+        if (!vm.containers.includes(c)) vm.containers.push(c);
+      }
+    }
+    if (svc.ports) {
+      for (const p of svc.ports) {
+        if (!vm.ports.includes(p)) vm.ports.push(p);
+      }
+    }
+    if (svc.networks) {
+      for (const n of svc.networks) {
+        if (!vm.networks.includes(n)) vm.networks.push(n);
+      }
+    }
+  }
+
+  // 7. Parse WireGuard peers
+  const wgPeers = parseWireGuard(GIT_BASE);
+  // Also build peers from VM data if WG parser found nothing
+  if (wgPeers.length === 0) {
+    for (const [, vm] of Object.entries(vms)) {
+      if (vm.wg_ip) {
+        wgPeers.push({
+          name: vm.ssh_alias,
+          wg_ip: vm.wg_ip,
+          endpoint: vm.ip ? `${vm.ip}:51820` : "dynamic",
+          role: vm.ssh_alias === "gcp-proxy" ? "hub" : "spoke",
+        });
+      }
+    }
+  }
+
+  // 8. Parse DNS zones
+  const dnsZones = parseDNSZones(SOLUTIONS_DIR);
+
+  // 9. Assemble topology
+  const topology: CloudTopology = {
+    ssh_key: existing?.ssh_key || detectSSHKey(),
+    remote_base: existing?.remote_base || "/opt/containers",
+    vms,
+    vpss: existing?.vpss || {},
+    wireguard: { peers: wgPeers },
+    dns: { zones: dnsZones },
+    services,
+  };
+
+  // Also keep native section if it existed
+  if (existing?.native) {
+    (topology as any).native = existing.native;
+  }
+
+  // 10. Write cloud-topology.json
+  writeFileSync(OUTPUT_JSON, JSON.stringify(topology, null, 2) + "\n");
+  console.log(`  Written: cloud-topology.json (${Object.keys(services).length} services, ${Object.keys(vms).length} VMs)`);
+
+  // 11. Render cloud-topology.md
+  const templatePath = join(TEMPLATE_DIR, "cloud-topology.md.njk");
+  if (existsSync(templatePath)) {
+    nunjucks.configure(TEMPLATE_DIR, { autoescape: false, trimBlocks: true, lstripBlocks: true });
+    // Pre-group services by category for template
+    const categoryLabels: Record<string, string> = {
+      app: "Suite (aa-sui_*)", mic: "Misc (ab-mic_*)", fin: "Financial (ac-fin_*)",
+      agi: "AI/Agents (ad-agi_*)", cloud: "Cloud Providers (ba-clo_*)",
+      sec: "Security (bb-sec_*)", tools: "Observability (bc-obs_*)", data: "Data & Backups (ca-dat_*)",
+    };
+    const servicesByCategory: Record<string, string> = {};
+    const servicesByCategoryData: Record<string, any[]> = {};
+    for (const [catKey, catLabel] of Object.entries(categoryLabels)) {
+      const svcs = Object.entries(services)
+        .filter(([, s]) => s.category === catKey)
+        .map(([name, s]) => {
+          const prefix = CATEGORY_PREFIX[catKey] || "";
+          return {
+            name,
+            flakeFolder: prefix + (s.flake || name),
+            vmAlias: vms[s.vm]?.ssh_alias || s.vm,
+            domain: s.domain,
+            description: s.description,
+          };
+        });
+      if (svcs.length > 0) {
+        servicesByCategory[catKey] = catLabel;
+        servicesByCategoryData[catKey] = svcs;
+      }
+    }
+
+    const md = nunjucks.render("cloud-topology.md.njk", {
+      data: topology, CATEGORY_PREFIX, servicesByCategory, servicesByCategoryData,
+    });
+    writeFileSync(OUTPUT_MD, md);
+    console.log(`  Written: cloud-topology.md`);
+  } else {
+    console.warn(`  WARN: template not found at ${templatePath}`);
+  }
+
+  console.log("gen-topology: done.");
+}
+
+// --- Helpers --------------------------------------------------------------
+
+function loadExistingVMMap(existing: any): Record<string, string> {
+  if (!existing?.vms) return {};
+  const map: Record<string, string> = {};
+  for (const [vmId, vm] of Object.entries(existing.vms) as [string, any][]) {
+    if (vm.ssh_alias) map[vm.ssh_alias] = vmId;
+  }
+  return map;
+}
+
+function resolveVmId(host: string, aliasMap: Record<string, string>, vms: Record<string, any>): string {
+  if (host === "local" || host === "all") return host;
+  if (aliasMap[host]) return aliasMap[host];
+  for (const [vmId, vm] of Object.entries(vms)) {
+    if (vm.ssh_alias === host) return vmId;
+  }
+  return host;
+}
+
+function detectSSHKey(): string {
+  const home = homedir();
+  const candidates = [
+    join(home, ".ssh", "id_rsa"),
+    join(home, "git", "vault", "A0_keys", "ssh", "id_rsa"),
+    "/home/diego/Mounts/Git/vault/A0_keys/ssh/id_rsa",
+  ];
+  return candidates.find((p) => existsSync(p)) || candidates[0];
+}
+
+main();

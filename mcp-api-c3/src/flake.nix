@@ -31,17 +31,17 @@
             - "${toString config.port}:8080"
             - "127.0.0.1:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
           volumes:
-            - /opt/containers/c3-api/config.json:/app/config/config.json:ro
             - ~/.ssh:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
+            - c3-repos:/app/repos
           env_file:
             - .secrets
           environment:
             - PORT=8080
             - NODE_ENV=production
-            - CONFIG_JSON_PATH=/app/config/config.json
+            - GIT_BASE=/app/repos
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
             - MM_URL=${config.mattermost_url}
             - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -51,6 +51,9 @@
             timeout: 10s
             retries: 3
             start_period: 15s
+
+      volumes:
+        c3-repos:
 
       networks:
         c3-net:
