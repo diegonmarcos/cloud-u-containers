@@ -20,6 +20,7 @@ import { parseCompose } from "./parsers/compose.js";
 import { parseSSHConfig } from "./parsers/ssh-config.js";
 import { parseDNSZones } from "./parsers/dns.js";
 import { parseWireGuard } from "./parsers/wireguard.js";
+import { parseTerraform } from "./parsers/terraform.js";
 
 // --- Paths ----------------------------------------------------------------
 
@@ -35,6 +36,16 @@ const OUTPUT_MD = join(CLOUD_ROOT, "cloud-topology.md");
 
 // --- Types ----------------------------------------------------------------
 
+interface VMSpecs {
+  cpu: number;
+  ram_gb: number;
+  disk_gb: number;
+  shape?: string;
+  machine_type?: string;
+  gpu?: string;
+  gpu_vram?: string;
+}
+
 interface VM {
   ip: string;
   wg_ip: string;
@@ -45,6 +56,7 @@ interface VM {
   containers: string[];
   ports: string[];
   networks: string[];
+  specs?: VMSpecs;
   [key: string]: unknown;
 }
 
@@ -65,6 +77,7 @@ interface CloudTopology {
   remote_base: string;
   vms: Record<string, VM>;
   vpss: Record<string, unknown>;
+  storage: Array<{ provider: string; name: string; tier: string }>;
   wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string }> };
   dns: { zones: Array<{ name: string; records: Array<{ name: string; type: string; value: string; comment?: string }> }> };
   services: Record<string, Service>;
@@ -205,12 +218,60 @@ function main() {
   // 8. Parse DNS zones
   const dnsZones = parseDNSZones(SOLUTIONS_DIR);
 
-  // 9. Assemble topology
+  // 9. Parse Terraform for VM specs + storage
+  const tfData = parseTerraform(join(CLOUD_ROOT, "b_infra"));
+  console.log(
+    `  Terraform: ${Object.keys(tfData.vm_specs).length} VM specs, ${tfData.storage.length} storage buckets, ${tfData.providers.length} providers`
+  );
+
+  // Map terraform instance names → VM IDs
+  // OCI: display_name matches VM ID directly (e.g. "oci-E2-f_0")
+  // GCP: instance name (e.g. "arch-1") needs mapping via gcloud_instance field
+  const tfNameToVmId: Record<string, string> = {};
+
+  // Build reverse map: gcloud_instance name → VM ID
+  for (const [vmId, vm] of Object.entries(vms)) {
+    const gcName = (vm as any).gcloud_instance;
+    if (gcName) tfNameToVmId[gcName] = vmId;
+  }
+  // Also check existing (for VMs not in SSH config)
+  if (existing?.vms) {
+    for (const [vmId, vm] of Object.entries(existing.vms) as [string, any][]) {
+      if (vm.gcloud_instance && !tfNameToVmId[vm.gcloud_instance]) {
+        tfNameToVmId[vm.gcloud_instance] = vmId;
+      }
+    }
+  }
+
+  // Inject specs into VMs
+  for (const [tfName, specs] of Object.entries(tfData.vm_specs)) {
+    const vmId = tfNameToVmId[tfName];
+    if (vmId && vms[vmId]) {
+      vms[vmId].specs = specs;
+    } else if (vms[tfName]) {
+      // Direct match (OCI case — display_name IS the VM ID)
+      vms[tfName].specs = specs;
+    }
+  }
+
+  // Update vpss from terraform providers (merge, don't overwrite)
+  const vpss: Record<string, unknown> = existing?.vpss ? { ...existing.vpss } : {};
+  for (const prov of tfData.providers) {
+    const existingVps = (vpss[prov.name] as any) || {};
+    vpss[prov.name] = {
+      ...existingVps,
+      has_terraform: prov.has_terraform,
+      folder: `b_infra/${prov.folder}`,
+    };
+  }
+
+  // 10. Assemble topology
   const topology: CloudTopology = {
     ssh_key: existing?.ssh_key || detectSSHKey(),
     remote_base: existing?.remote_base || "/opt/containers",
     vms,
-    vpss: existing?.vpss || {},
+    vpss,
+    storage: tfData.storage,
     wireguard: { peers: wgPeers },
     dns: { zones: dnsZones },
     services,
@@ -221,11 +282,11 @@ function main() {
     (topology as any).native = existing.native;
   }
 
-  // 10. Write cloud-topology.json
+  // 11. Write cloud-topology.json
   writeFileSync(OUTPUT_JSON, JSON.stringify(topology, null, 2) + "\n");
   console.log(`  Written: cloud-topology.json (${Object.keys(services).length} services, ${Object.keys(vms).length} VMs)`);
 
-  // 11. Render cloud-topology.md
+  // 12. Render cloud-topology.md
   const templatePath = join(TEMPLATE_DIR, "cloud-topology.md.njk");
   if (existsSync(templatePath)) {
     nunjucks.configure(TEMPLATE_DIR, { autoescape: false, trimBlocks: true, lstripBlocks: true });
