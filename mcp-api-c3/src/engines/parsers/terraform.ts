@@ -31,10 +31,25 @@ export interface VPSProvider {
   services: string[];    // what the provider manages (e.g. "SES email")
 }
 
+export interface FirewallRule {
+  port: number | string;   // e.g. 22, "51820", "80-443"
+  protocol: string;        // "tcp" | "udp" | "all"
+  source: string;          // "0.0.0.0/0" or specific CIDR
+  description?: string;
+  target_tags?: string[];  // GCP only
+}
+
+export interface FirewallData {
+  provider: string;        // "oci" | "gcloud"
+  scope: string;           // "vps" (shared) or VM-specific
+  rules: FirewallRule[];
+}
+
 export interface TerraformData {
   vm_specs: Record<string, VMSpecs>;   // keyed by display_name / instance name
   storage: StorageBucket[];
   providers: VPSProvider[];
+  firewalls: FirewallData[];
 }
 
 // --- Helpers ---
@@ -98,6 +113,56 @@ function extractNestedBlock(body: string, blockName: string): string | null {
 }
 
 // --- OCI Parser ---
+
+function parseOCIFirewalls(hcl: string): FirewallData[] {
+  const firewalls: FirewallData[] = [];
+
+  for (const block of extractBlocks(hcl, "oci_core_default_security_list")) {
+    const rules: FirewallRule[] = [];
+
+    // Extract all ingress_security_rules blocks
+    const ingressRe = /ingress_security_rules\s*\{/g;
+    let m: RegExpExecArray | null;
+    while ((m = ingressRe.exec(block.body)) !== null) {
+      const startIdx = m.index + m[0].length;
+      let depth = 1;
+      let i = startIdx;
+      while (i < block.body.length && depth > 0) {
+        if (block.body[i] === "{") depth++;
+        else if (block.body[i] === "}") depth--;
+        i++;
+      }
+      const ruleBody = block.body.slice(startIdx, i - 1);
+
+      const source = extractField(ruleBody, "source") || "0.0.0.0/0";
+      const protocolNum = extractField(ruleBody, "protocol") || "all";
+      const description = extractField(ruleBody, "description") || undefined;
+
+      // Map OCI protocol numbers to names
+      const protoMap: Record<string, string> = { "6": "tcp", "17": "udp", "1": "icmp" };
+      const protocol = protoMap[protocolNum] || protocolNum;
+
+      // Extract port from tcp_options or udp_options
+      let port: number | string = "all";
+      const tcpOpts = extractNestedBlock(ruleBody, "tcp_options");
+      const udpOpts = extractNestedBlock(ruleBody, "udp_options");
+      const opts = tcpOpts || udpOpts;
+      if (opts) {
+        const min = extractNum(opts, "min");
+        const max = extractNum(opts, "max");
+        port = min === max ? min : `${min}-${max}`;
+      }
+
+      rules.push({ port, protocol, source, ...(description ? { description } : {}) });
+    }
+
+    if (rules.length > 0) {
+      firewalls.push({ provider: "oci", scope: "vps", rules });
+    }
+  }
+
+  return firewalls;
+}
 
 function parseOCI(hcl: string): { specs: Record<string, VMSpecs>; storage: StorageBucket[] } {
   const specs: Record<string, VMSpecs> = {};
@@ -163,6 +228,77 @@ const GCP_SPECS: Record<string, { cpu: number; ram_gb: number }> = {
   "n2-standard-4":  { cpu: 4, ram_gb: 16 },
 };
 
+function parseGCPFirewalls(hcl: string): FirewallData[] {
+  const firewalls: FirewallData[] = [];
+  const vpsRules: FirewallRule[] = [];
+  const taggedRules: Map<string, FirewallRule[]> = new Map();
+
+  for (const block of extractBlocks(hcl, "google_compute_firewall")) {
+    const description = extractField(block.body, "name") || block.name;
+
+    // Extract source_ranges
+    const srcMatch = block.body.match(/source_ranges\s*=\s*\[([^\]]*)\]/);
+    const source = srcMatch
+      ? srcMatch[1].replace(/"/g, "").trim().split(/\s*,\s*/)[0]
+      : "0.0.0.0/0";
+
+    // Extract target_tags
+    const tagMatch = block.body.match(/target_tags\s*=\s*\[([^\]]*)\]/);
+    const targetTags = tagMatch
+      ? tagMatch[1].replace(/"/g, "").trim().split(/\s*,\s*/).filter(Boolean)
+      : [];
+
+    // Extract allow blocks (may have multiple)
+    const allowRe = /allow\s*\{/g;
+    let m: RegExpExecArray | null;
+    while ((m = allowRe.exec(block.body)) !== null) {
+      const startIdx = m.index + m[0].length;
+      let depth = 1;
+      let i = startIdx;
+      while (i < block.body.length && depth > 0) {
+        if (block.body[i] === "{") depth++;
+        else if (block.body[i] === "}") depth--;
+        i++;
+      }
+      const allowBody = block.body.slice(startIdx, i - 1);
+
+      const protocol = extractField(allowBody, "protocol") || "all";
+      const portsMatch = allowBody.match(/ports\s*=\s*\[([^\]]*)\]/);
+      const ports = portsMatch
+        ? portsMatch[1].replace(/"/g, "").trim().split(/\s*,\s*/).filter(Boolean)
+        : ["all"];
+
+      for (const p of ports) {
+        const rule: FirewallRule = {
+          port: /^\d+$/.test(p) ? parseInt(p) : p,
+          protocol,
+          source,
+          description,
+          ...(targetTags.length > 0 ? { target_tags: targetTags } : {}),
+        };
+
+        if (targetTags.length > 0) {
+          for (const tag of targetTags) {
+            if (!taggedRules.has(tag)) taggedRules.set(tag, []);
+            taggedRules.get(tag)!.push(rule);
+          }
+        } else {
+          vpsRules.push(rule);
+        }
+      }
+    }
+  }
+
+  if (vpsRules.length > 0) {
+    firewalls.push({ provider: "gcloud", scope: "vps", rules: vpsRules });
+  }
+  for (const [tag, rules] of Array.from(taggedRules)) {
+    firewalls.push({ provider: "gcloud", scope: tag, rules });
+  }
+
+  return firewalls;
+}
+
 function parseGCP(hcl: string): { specs: Record<string, VMSpecs>; storage: StorageBucket[] } {
   const specs: Record<string, VMSpecs> = {};
 
@@ -220,6 +356,7 @@ export function parseTerraform(infraDir: string): TerraformData {
   const vm_specs: Record<string, VMSpecs> = {};
   const storage: StorageBucket[] = [];
   const providers: VPSProvider[] = [];
+  const firewalls: FirewallData[] = [];
 
   let dirs: string[];
   try {
@@ -227,7 +364,7 @@ export function parseTerraform(infraDir: string): TerraformData {
       .filter((d) => d.isDirectory() && d.name.startsWith("vps_"))
       .map((d) => d.name);
   } catch {
-    return { vm_specs, storage, providers };
+    return { vm_specs, storage, providers, firewalls };
   }
 
   for (const dir of dirs) {
@@ -253,6 +390,7 @@ export function parseTerraform(infraDir: string): TerraformData {
       const result = parseOCI(hcl);
       Object.assign(vm_specs, result.specs);
       storage.push(...result.storage);
+      firewalls.push(...parseOCIFirewalls(hcl));
       provider.services = [
         ...Object.keys(result.specs).map((n) => `instance:${n}`),
         ...result.storage.map((b) => `bucket:${b.name}`),
@@ -262,6 +400,7 @@ export function parseTerraform(infraDir: string): TerraformData {
       // GCP uses instance "name" field, need to map to VM IDs
       Object.assign(vm_specs, result.specs);
       storage.push(...result.storage);
+      firewalls.push(...parseGCPFirewalls(hcl));
       provider.services = [
         ...Object.keys(result.specs).map((n) => `instance:${n}`),
         ...result.storage.map((b) => `bucket:${b.name}`),
@@ -276,5 +415,5 @@ export function parseTerraform(infraDir: string): TerraformData {
     providers.push(provider);
   }
 
-  return { vm_specs, storage, providers };
+  return { vm_specs, storage, providers, firewalls };
 }
