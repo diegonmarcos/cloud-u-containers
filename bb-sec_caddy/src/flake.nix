@@ -287,7 +287,7 @@
       # Radicale CalDAV/CardDAV
       cal.diegonmarcos.com {
     ${sec}
-        reverse_proxy ${flex0}:5232
+        ${mkProtected "${flex0}:5232"}
         ${handleErrors}
       }
 
@@ -309,12 +309,12 @@
         request_body {
           max_size 100MB
         }
-        reverse_proxy ${flex0}:3010 {
+        ${mkProtectedCustom "${flex0}:3010" ''
           transport http {
             read_timeout 3600s
             write_timeout 3600s
           }
-        }
+        ''}
         ${handleErrors}
       }
 
