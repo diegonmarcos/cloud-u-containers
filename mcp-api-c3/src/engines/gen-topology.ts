@@ -19,7 +19,7 @@ import { scanBuildJsons, CATEGORY_PREFIX } from "./parsers/build-json.js";
 import { parseCompose } from "./parsers/compose.js";
 import { parseSSHConfig } from "./parsers/ssh-config.js";
 import { parseDNSZones } from "./parsers/dns.js";
-import { parseWireGuard } from "./parsers/wireguard.js";
+import { parseWireGuard, parseOSFirewalls, type OSFirewall } from "./parsers/wireguard.js";
 import { parseTerraform, type FirewallData } from "./parsers/terraform.js";
 
 // --- Paths ----------------------------------------------------------------
@@ -79,7 +79,8 @@ interface CloudTopology {
   vpss: Record<string, unknown>;
   storage: Array<{ provider: string; name: string; tier: string }>;
   firewalls: FirewallData[];
-  wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string }> };
+  os_firewalls: OSFirewall[];
+  wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string; port?: number }> };
   dns: { zones: Array<{ name: string; records: Array<{ name: string; type: string; value: string; comment?: string }> }> };
   services: Record<string, Service>;
 }
@@ -267,7 +268,14 @@ function main() {
     };
   }
 
-  // 10. Assemble topology
+  // 10. Parse OS-level firewalls from home-manager
+  const osFirewalls = parseOSFirewalls(GIT_BASE);
+  const totalOsRules = osFirewalls.reduce((sum, fw) => sum + fw.rules.length, 0);
+  console.log(
+    `  OS Firewalls: ${osFirewalls.length} VMs, ${totalOsRules} port rules`
+  );
+
+  // 11. Assemble topology
   const topology: CloudTopology = {
     ssh_key: existing?.ssh_key || detectSSHKey(),
     remote_base: existing?.remote_base || "/opt/containers",
@@ -275,6 +283,7 @@ function main() {
     vpss,
     storage: tfData.storage,
     firewalls: tfData.firewalls,
+    os_firewalls: osFirewalls,
     wireguard: { peers: wgPeers },
     dns: { zones: dnsZones },
     services,
