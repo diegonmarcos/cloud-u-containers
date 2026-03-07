@@ -20,7 +20,7 @@ import { parseCompose } from "./parsers/compose.js";
 import { parseSSHConfig } from "./parsers/ssh-config.js";
 import { parseDNSZones } from "./parsers/dns.js";
 import { parseWireGuard } from "./parsers/wireguard.js";
-import { parseTerraform } from "./parsers/terraform.js";
+import { parseTerraform, type FirewallData } from "./parsers/terraform.js";
 
 // --- Paths ----------------------------------------------------------------
 
@@ -78,6 +78,7 @@ interface CloudTopology {
   vms: Record<string, VM>;
   vpss: Record<string, unknown>;
   storage: Array<{ provider: string; name: string; tier: string }>;
+  firewalls: FirewallData[];
   wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string }> };
   dns: { zones: Array<{ name: string; records: Array<{ name: string; type: string; value: string; comment?: string }> }> };
   services: Record<string, Service>;
@@ -220,8 +221,9 @@ function main() {
 
   // 9. Parse Terraform for VM specs + storage
   const tfData = parseTerraform(join(CLOUD_ROOT, "b_infra"));
+  const totalFwRules = tfData.firewalls.reduce((sum, fw) => sum + fw.rules.length, 0);
   console.log(
-    `  Terraform: ${Object.keys(tfData.vm_specs).length} VM specs, ${tfData.storage.length} storage buckets, ${tfData.providers.length} providers`
+    `  Terraform: ${Object.keys(tfData.vm_specs).length} VM specs, ${tfData.storage.length} storage buckets, ${tfData.providers.length} providers, ${totalFwRules} firewall rules`
   );
 
   // Map terraform instance names → VM IDs
@@ -272,6 +274,7 @@ function main() {
     vms,
     vpss,
     storage: tfData.storage,
+    firewalls: tfData.firewalls,
     wireguard: { peers: wgPeers },
     dns: { zones: dnsZones },
     services,
