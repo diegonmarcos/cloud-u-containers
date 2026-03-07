@@ -12,7 +12,7 @@
       domain = "git.diegonmarcos.com";
       container_name = "gitea";
       image = "gitea/gitea:latest";
-      http_port = 3000;
+      http_port = 3002;
       ssh_port = 2222;
       timezone = "Europe/Madrid";
 
