@@ -20,8 +20,7 @@ export function sshExec(
 
   const result = exec("ssh", [
     "-o", "ConnectTimeout=10",
-    "-o", "StrictHostKeyChecking=no",
-    "-o", "UserKnownHostsFile=/dev/null",
+    "-o", "StrictHostKeyChecking=accept-new",
     "-i", SSH_IDENTITY,
     target, command,
   ], {
