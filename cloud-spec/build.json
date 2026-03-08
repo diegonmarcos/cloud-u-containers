@@ -1,8 +1,0 @@
-{
-  "name": "cloud-spec",
-  "description": "Unified Cloud Documentation Portal",
-  "deploy": {
-    "host": "local",
-    "remote_path": ""
-  }
-}
