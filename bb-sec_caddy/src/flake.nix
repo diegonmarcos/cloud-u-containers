@@ -278,12 +278,8 @@
         handle_path /crawlee/* {
           ${mkProtected "${flex0}:3000"}
         }
-        # Cloud Spec — documentation portal (mdbook)
-        handle_path /specs/* {
-          ${mkProtected "${flex0}:3080"}
-        }
         handle {
-          respond "API hub — use /c3-api/, /rust-api/, /flask/, /go/, /crawlee/, /specs/" 404
+          respond "API hub — use /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
         }
         ${handleErrors}
       }
@@ -348,6 +344,12 @@
       # Cloud dashboard
       cloud.diegonmarcos.com {
     ${sec}
+        handle_path /spec/* {
+          ${mkProtected "${flex0}:3080"}
+        }
+        handle /spec {
+          redir /spec/ permanent
+        }
         ${mkGithubProxy "cloud"}
         ${handleErrors}
       }
