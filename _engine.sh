@@ -441,7 +441,22 @@ step_compose() {
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_POST_HOOK && ./$COMPOSE_POST_HOOK"
     fi
 
-    log "Container rebuilt and running"
+    # Verify containers actually started (not just Created)
+    log "Verifying containers are running..."
+    sleep 3
+    local failed_containers
+    failed_containers=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps --format '{{.Name}} {{.State}}' 2>/dev/null | grep -v 'running\|exited' || true")
+    if [ -n "$failed_containers" ]; then
+        log "ERROR: Some containers failed to start:"
+        echo "$failed_containers" | while read -r line; do log "  $line"; done
+        # Show logs of failed containers
+        echo "$failed_containers" | while read -r cname cstate; do
+            log "  Logs for $cname:"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "docker logs --tail 20 $cname 2>&1" | while read -r l; do log "    $l"; done
+        done
+        return 1
+    fi
+    log "All containers running"
 }
 
 # ── Lifecycle commands (driven by build.json) ────────────────────────
