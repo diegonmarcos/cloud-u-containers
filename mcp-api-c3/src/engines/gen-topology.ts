@@ -19,7 +19,7 @@ import { scanBuildJsons, CATEGORY_PREFIX } from "./parsers/build-json.js";
 import { parseCompose } from "./parsers/compose.js";
 import { parseSSHConfig } from "./parsers/ssh-config.js";
 import { parseDNSZones } from "./parsers/dns.js";
-import { parseWireGuard, parseOSFirewalls, type OSFirewall } from "./parsers/wireguard.js";
+import { parseWireGuard, parseOSFirewalls, parseOSFirewallGlobal, type OSFirewall, type OSFirewallGlobal } from "./parsers/wireguard.js";
 import { parseTerraform, type FirewallData } from "./parsers/terraform.js";
 
 // --- Paths ----------------------------------------------------------------
@@ -80,6 +80,7 @@ interface CloudTopology {
   storage: Array<{ provider: string; name: string; tier: string }>;
   firewalls: FirewallData[];
   os_firewalls: OSFirewall[];
+  os_firewall_global: OSFirewallGlobal;
   wireguard: { peers: Array<{ name: string; wg_ip: string; endpoint: string; role: string; port?: number }> };
   dns: { zones: Array<{ name: string; records: Array<{ name: string; type: string; value: string; comment?: string }> }> };
   services: Record<string, Service>;
@@ -275,6 +276,12 @@ function main() {
     `  OS Firewalls: ${osFirewalls.length} VMs, ${totalOsRules} port rules`
   );
 
+  // 10b. Parse global firewall policy (FORWARD, NAT, docker iptables:false)
+  const osFirewallGlobal = parseOSFirewallGlobal(GIT_BASE);
+  console.log(
+    `  Firewall global: docker_iptables=${osFirewallGlobal.docker_iptables}, ${osFirewallGlobal.forward_rules.length} FORWARD rules, ${osFirewallGlobal.nat_rules.length} NAT rules`
+  );
+
   // 11. Assemble topology
   const topology: CloudTopology = {
     ssh_key: existing?.ssh_key || detectSSHKey(),
@@ -284,6 +291,7 @@ function main() {
     storage: tfData.storage,
     firewalls: tfData.firewalls,
     os_firewalls: osFirewalls,
+    os_firewall_global: osFirewallGlobal,
     wireguard: { peers: wgPeers },
     dns: { zones: dnsZones },
     services,
