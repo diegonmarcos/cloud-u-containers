@@ -23,9 +23,26 @@ export interface OSFirewallRule {
   desc: string;
 }
 
+export interface OSFirewallForwardRule {
+  chain: "FORWARD" | "NAT";
+  action: string;
+  source: string;
+  destination: string;
+  desc: string;
+}
+
 export interface OSFirewall {
   vm: string;         // SSH alias (e.g. "oci-apps")
   rules: OSFirewallRule[];
+}
+
+export interface OSFirewallGlobal {
+  docker_iptables: boolean;
+  forward_policy: string;
+  docker_subnet: string;
+  wg_subnet: string;
+  forward_rules: OSFirewallForwardRule[];
+  nat_rules: OSFirewallForwardRule[];
 }
 
 // --- Main ---
@@ -86,6 +103,71 @@ export function parseOSFirewalls(gitBase: string): OSFirewall[] {
   } catch { /* ignore */ }
 
   return firewalls;
+}
+
+/** Parse global firewall policy from _shared/modules/firewall.nix */
+export function parseOSFirewallGlobal(gitBase: string): OSFirewallGlobal {
+  const fwFile = join(gitBase, "cloud", "b_infra", "home-manager", "_shared", "modules", "firewall.nix");
+  const daemonFile = join(gitBase, "cloud", "b_infra", "home-manager", "_shared", "modules", "docker-service.nix");
+
+  const defaults: OSFirewallGlobal = {
+    docker_iptables: true,
+    forward_policy: "DROP",
+    docker_subnet: "172.16.0.0/12",
+    wg_subnet: "10.0.0.0/24",
+    forward_rules: [],
+    nat_rules: [],
+  };
+
+  // Check daemon.json for iptables:false
+  if (existsSync(daemonFile)) {
+    const content = readFileSync(daemonFile, "utf-8");
+    if (content.includes("iptables = false")) {
+      defaults.docker_iptables = false;
+    }
+  }
+
+  if (!existsSync(fwFile)) return defaults;
+  const content = readFileSync(fwFile, "utf-8");
+
+  // Extract subnets
+  const dockerMatch = content.match(/dockerSubnet\s*=\s*"([^"]+)"/);
+  const wgMatch = content.match(/wgSubnet\s*=\s*"([^"]+)"/);
+  if (dockerMatch) defaults.docker_subnet = dockerMatch[1];
+  if (wgMatch) defaults.wg_subnet = wgMatch[1];
+
+  // Parse FORWARD rules from the script
+  const fwRules: OSFirewallForwardRule[] = [];
+  const forwardLines = content.match(/iptables -A FORWARD .+/g) || [];
+  for (const line of forwardLines) {
+    const src = line.match(/-s\s+([\d./]+)/)?.[1] || "*";
+    const dst = line.match(/-d\s+([\d./]+)/)?.[1] || line.match(/! -d\s+([\d./]+)/) ? `!${line.match(/! -d\s+([\d./]+)/)?.[1]}` : "*";
+    const iface = line.match(/-i\s+(\w+)/)?.[1] || "";
+    const oface = line.match(/-o\s+(\w+)/)?.[1] || "";
+    const action = line.includes("-j ACCEPT") ? "ACCEPT" : "DROP";
+    const desc = iface ? `iface:${iface}` : oface ? `oface:${oface}` : `${src}→${dst}`;
+    fwRules.push({ chain: "FORWARD", action, source: src, destination: dst, desc });
+  }
+  defaults.forward_rules = fwRules;
+
+  // Parse NAT rules
+  const natRules: OSFirewallForwardRule[] = [];
+  const natLines = content.match(/iptables -t nat -A POSTROUTING .+/g) || [];
+  for (const line of natLines) {
+    const src = line.match(/-s\s+([\d./]+)/)?.[1] || "*";
+    const dst = line.match(/! -d\s+([\d./]+)/)?.[1] || "*";
+    const oface = line.match(/-o\s+(\w+)/)?.[1] || "*";
+    const action = line.includes("MASQUERADE") ? "MASQUERADE" : "ACCEPT";
+    natRules.push({ chain: "NAT", action, source: src, destination: `!${dst}`, desc: `MASQUERADE via ${oface}` });
+  }
+  defaults.nat_rules = natRules;
+
+  // Check FORWARD policy
+  if (content.includes("iptables -P FORWARD DROP")) {
+    defaults.forward_policy = "DROP";
+  }
+
+  return defaults;
 }
 
 // --- Parsers ---
