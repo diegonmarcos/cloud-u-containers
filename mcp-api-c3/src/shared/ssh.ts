@@ -17,15 +17,24 @@ export function sshExec(
   const host = vmConfig?.wg_ip || vmConfig?.ip || alias;
   const user = vmConfig?.user || "ubuntu";
   const target = `${user}@${host}`;
-
-  const result = exec("ssh", [
+  const sshArgs = [
     "-o", "ConnectTimeout=10",
     "-o", "StrictHostKeyChecking=accept-new",
     "-i", SSH_IDENTITY,
     target, command,
-  ], {
-    timeout: timeout ?? 30_000,
-  });
+  ];
+  const effectiveTimeout = timeout ?? 30_000;
+
+  let result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
+
+  // WG handshake recovery: after idle the first TCP SYN can get dropped
+  // during re-negotiation (ECONNABORTED / exit 255). Retry once after a
+  // short delay to let the handshake complete.
+  if (!result.ok && result.exitCode === 255) {
+    audit("ssh", `${alias}: connection failed (exit 255), retrying after 2s`, result.stderr.trim());
+    exec("sleep", ["2"], { timeout: 3_000 });
+    result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
+  }
 
   audit("ssh", `${alias}: "${command.slice(0, 120)}"`, `exit ${result.exitCode}`);
   return result;
