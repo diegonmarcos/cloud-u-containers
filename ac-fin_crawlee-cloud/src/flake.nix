@@ -63,7 +63,7 @@
           networks:
             - crawlee_network
           healthcheck:
-            test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:3000/health || exit 1"]
+            test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1"]
             interval: 15s
             timeout: 5s
             retries: 3
