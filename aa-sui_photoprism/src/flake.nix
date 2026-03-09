@@ -119,7 +119,7 @@
           networks:
             - dev_network
           healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:2342/api/v1/status']
+            test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:2342/api/v1/status']
             interval: 30s
             timeout: 10s
             retries: 3
