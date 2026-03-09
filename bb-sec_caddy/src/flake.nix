@@ -344,13 +344,15 @@
       # Cloud dashboard
       cloud.diegonmarcos.com {
     ${sec}
-        handle_path /spec/* {
-          ${mkProtected "${flex0}:3080"}
-        }
         handle /spec {
           redir /spec/ permanent
         }
-        ${mkGithubProxy "cloud"}
+        handle_path /spec/* {
+          ${mkProtected "${flex0}:3080"}
+        }
+        handle {
+          ${mkGithubProxy "cloud"}
+        }
         ${handleErrors}
       }
 
