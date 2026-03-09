@@ -2,6 +2,37 @@ import { exec, type ExecResult } from "./exec.js";
 import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
 import { SSH_IDENTITY } from "./paths.js";
+import { mkdirSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+
+// SSH multiplexing — reuse connections to avoid repeated handshakes
+const CONTROL_DIR = join(tmpdir(), "mcp-ssh-mux");
+try { mkdirSync(CONTROL_DIR, { recursive: true, mode: 0o700 }); } catch {}
+
+function controlPath(alias: string): string {
+  return join(CONTROL_DIR, alias);
+}
+
+function ensureMux(alias: string, target: string): void {
+  // Check if master is alive
+  const check = exec("ssh", [
+    "-o", `ControlPath=${controlPath(alias)}`,
+    "-O", "check", target,
+  ], { timeout: 3_000 });
+  if (check.ok) return; // already running
+
+  // Start master in background
+  exec("ssh", [
+    "-o", "ConnectTimeout=10",
+    "-o", "StrictHostKeyChecking=accept-new",
+    "-o", `ControlMaster=auto`,
+    "-o", `ControlPath=${controlPath(alias)}`,
+    "-o", "ControlPersist=300",
+    "-i", SSH_IDENTITY,
+    "-fN", target,
+  ], { timeout: 15_000 });
+}
 
 export function sshExec(
   vmNameOrAlias: string,
@@ -17,9 +48,14 @@ export function sshExec(
   const host = vmConfig?.wg_ip || vmConfig?.ip || alias;
   const user = vmConfig?.user || "ubuntu";
   const target = `${user}@${host}`;
+
+  // Establish multiplexed connection
+  ensureMux(alias, target);
+
   const sshArgs = [
     "-o", "ConnectTimeout=10",
     "-o", "StrictHostKeyChecking=accept-new",
+    "-o", `ControlPath=${controlPath(alias)}`,
     "-i", SSH_IDENTITY,
     target, command,
   ];
@@ -27,12 +63,11 @@ export function sshExec(
 
   let result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
 
-  // WG handshake recovery: after idle the first TCP SYN can get dropped
-  // during re-negotiation (ECONNABORTED / exit 255). Retry once after a
-  // short delay to let the handshake complete.
+  // WG handshake recovery: if mux master died, retry with fresh connection
   if (!result.ok && result.exitCode === 255) {
-    audit("ssh", `${alias}: connection failed (exit 255), retrying after 2s`, result.stderr.trim());
+    audit("ssh", `${alias}: connection failed (exit 255), re-establishing mux`, result.stderr.trim());
     exec("sleep", ["2"], { timeout: 3_000 });
+    ensureMux(alias, target);
     result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
   }
 
