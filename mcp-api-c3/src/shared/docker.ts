@@ -280,6 +280,38 @@ export function logsMulti(
 
 // ── New: Docker System ───────────────────────────────────────────────────
 
+export function composeUpAll(
+  vmNameOrAlias: string,
+): { ok: boolean; output: string; results: { service: string; ok: boolean }[] } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+  const config = getConfig();
+
+  // List all service dirs on the VM
+  const lsResult = sshExec(vmId, `ls -1 ${config.remote_base}/`, 10_000);
+  if (!lsResult.ok) {
+    return { ok: false, output: `Failed to list services: ${lsResult.stderr}`, results: [] };
+  }
+
+  const dirs = lsResult.stdout.trim().split("\n").filter(Boolean);
+  const results: { service: string; ok: boolean }[] = [];
+  const parts: string[] = [];
+
+  for (const dir of dirs) {
+    const cmd = `cd ${config.remote_base}/${dir} && docker compose up -d 2>&1`;
+    const result = sshExec(vmId, cmd, 60_000);
+    const status = result.ok ? "OK" : "FAILED";
+    results.push({ service: dir, ok: result.ok });
+    parts.push(`${dir}: ${status}`);
+    if (!result.ok) parts.push(`  ${result.stderr.trim()}`);
+  }
+
+  const allOk = results.every((r) => r.ok);
+  audit("compose_up_all", `${alias} (${results.length} services)`, allOk ? "OK" : "PARTIAL");
+
+  return { ok: allOk, output: parts.join("\n"), results };
+}
+
 export function dockerSystemDf(
   vmNameOrAlias: string,
 ): { ok: boolean; output: string } {

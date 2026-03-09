@@ -17,6 +17,7 @@ import {
   logsSearch,
   logsMulti,
   dockerSystemDf,
+  composeUpAll,
 } from "../../shared/docker.js";
 import {
   vmStart,
@@ -273,6 +274,26 @@ export function registerOperationsTools(server: McpServer) {
           {
             type: "text",
             text: `docker compose up ${service} on ${getVmSshAlias(vmId)}:\n${result.ok ? "SUCCESS" : "FAILED"}\n\n${result.stdout}${result.stderr}`,
+          },
+        ],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "docker_compose_up_all",
+    "Start all services on a VM by running docker compose up -d in each /opt/containers/* directory",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+    },
+    async ({ vm }) => {
+      const result = composeUpAll(vm);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `compose up all on ${vm}:\n${result.ok ? "ALL OK" : "PARTIAL FAILURE"}\n\n${result.output}`,
           },
         ],
         isError: !result.ok,
