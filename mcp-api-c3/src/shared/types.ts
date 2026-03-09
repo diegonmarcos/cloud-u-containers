@@ -13,6 +13,7 @@ export interface ServiceConfig {
   vm: string;
   flake?: string;
   subfolder?: string;
+  folder?: string;
   description: string;
   discovered?: boolean;
 }

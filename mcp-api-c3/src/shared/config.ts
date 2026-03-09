@@ -111,10 +111,11 @@ function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, Servi
     const name = buildJson.name;
     if (!name) continue;
 
-    // Reverse-map prefix → category
+    // Reverse-map prefix → category (fall back to build.json category)
     const prefix = Object.keys(PREFIX_TO_CATEGORY).find((p) => dirName.startsWith(p));
-    if (!prefix) continue;
-    const category = PREFIX_TO_CATEGORY[prefix];
+    const category = prefix
+      ? PREFIX_TO_CATEGORY[prefix]
+      : ((buildJson as any).category as ServiceConfig["category"]) ?? "tools";
 
     // Map deploy.host alias → VM ID
     const host = buildJson.deploy?.host ?? "local";
@@ -123,6 +124,7 @@ function discoverServicesFromDisk(fileConfig: InfraConfig): Record<string, Servi
     discovered[name] = {
       category,
       vm: vmId,
+      folder: dirName,
       description: buildJson.description ?? "",
       discovered: true,
     };
@@ -135,9 +137,27 @@ export function getServiceFolder(name: string): string {
   const config = getConfig();
   const svc = config.services[name];
   if (!svc) throw new Error(`Unknown service: ${name}`);
+  // Use actual folder from discovery, fall back to prefix+name reconstruction
+  if (svc.folder) return svc.folder;
   const baseName = svc.flake ?? name;
   const prefix = CATEGORY_PREFIX[svc.category] ?? "";
-  return `${prefix}${baseName}`;
+  const constructed = `${prefix}${baseName}`;
+  // Verify constructed path exists, otherwise scan for matching build.json
+  if (existsSync(join(SOLUTIONS_DIR, constructed))) return constructed;
+  try {
+    const dirs = readdirSync(SOLUTIONS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    for (const dir of dirs) {
+      const bjPath = join(SOLUTIONS_DIR, dir, "build.json");
+      if (!existsSync(bjPath)) continue;
+      try {
+        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+        if (bj.name === name) return dir;
+      } catch { continue; }
+    }
+  } catch { /* fall through */ }
+  return constructed;
 }
 
 export function getServiceDir(name: string): string {
