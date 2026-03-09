@@ -29,12 +29,11 @@ services:
     image: introspect-proxy:latest
     container_name: introspect-proxy
     restart: unless-stopped
-    env_file:
-      - .secrets
     environment:
-      INTROSPECT_URL: https://auth.diegonmarcos.com/api/oidc/introspection
-      CLIENT_ID: cli
-      CLIENT_SECRET: ${AUTHELIA_CLI_SECRET}
+      JWKS_URL: https://auth.diegonmarcos.com/jwks.json
+      ISSUER: https://auth.diegonmarcos.com
+      REQUIRED_SCOPE: authelia.bearer.authz
+      DEBUG: "true"
     networks:
       - npm_default
     deploy:

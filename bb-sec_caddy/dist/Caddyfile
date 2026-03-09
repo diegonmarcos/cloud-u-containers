@@ -1,4 +1,5 @@
   {
+    debug
     admin localhost:2019
     order respond before handle
   }
@@ -98,20 +99,7 @@ import request_limits
     }
 
     # C3 — Cloud Control Center API (replaces Rust API)
-    # Public endpoints (no auth required)
-    handle /c3-api/docs/json {
-      uri strip_prefix /c3-api
-      reverse_proxy 10.0.0.6:8081
-    }
-    handle /c3-api/dash* {
-      uri strip_prefix /c3-api
-      reverse_proxy 10.0.0.6:8081
-    }
-    handle /c3-api/health/* {
-      uri strip_prefix /c3-api
-      reverse_proxy 10.0.0.6:8081
-    }
-    # Protected endpoints (require Authelia or bearer token)
+    # All endpoints protected (require Authelia or bearer token)
     handle_path /c3-api/* {
         @bearer header Authorization Bearer*
   handle @bearer {
@@ -226,7 +214,22 @@ forward_auth authelia:9091 {
   cal.diegonmarcos.com {
 import security
 import request_limits
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
     reverse_proxy 10.0.0.6:5232
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:5232
+  }
+
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -278,12 +281,34 @@ import security
     request_body {
       max_size 100MB
     }
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
     reverse_proxy 10.0.0.6:3010 {
       transport http {
-        read_timeout 3600s
-        write_timeout 3600s
-      }
+  read_timeout 3600s
+  write_timeout 3600s
+}
+
     }
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3010 {
+      transport http {
+  read_timeout 3600s
+  write_timeout 3600s
+}
+
+    }
+  }
+
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -345,11 +370,34 @@ reverse_proxy https://diegonmarcos.github.io {
   cloud.diegonmarcos.com {
 import security
 import request_limits
-    rewrite * /cloud{uri}
+    handle /spec {
+      redir /spec/ permanent
+    }
+    handle_path /spec/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3080
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3080
+  }
+
+    }
+    handle {
+      rewrite * /cloud{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
 }
 
+    }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
