@@ -350,6 +350,7 @@
         cp ${mkTempoConfig pkgs}   $out/config/tempo.yaml
         cp ${mkMimirConfig pkgs}   $out/config/mimir.yaml
         cp ${mkDatasources pkgs}   $out/provisioning/datasources/datasources.yml
+        chmod -R a+r $out
       '';
     in {
       default = defaultPkg;
