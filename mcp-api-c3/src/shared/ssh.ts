@@ -14,6 +14,13 @@ function controlPath(alias: string): string {
   return join(CONTROL_DIR, alias);
 }
 
+function killMux(alias: string, target: string): void {
+  exec("ssh", [
+    "-o", `ControlPath=${controlPath(alias)}`,
+    "-O", "exit", target,
+  ], { timeout: 3_000 });
+}
+
 function ensureMux(alias: string, target: string): void {
   // Check if master is alive
   const check = exec("ssh", [
@@ -33,6 +40,16 @@ function ensureMux(alias: string, target: string): void {
     "-fN", target,
   ], { timeout: 15_000 });
 }
+
+function tcpProbe(host: string): { reachable: boolean; detail: string } {
+  const result = exec("ssh-keyscan", ["-T", "5", host], { timeout: 10_000 });
+  if (result.ok && result.stdout.trim().length > 0) {
+    return { reachable: true, detail: "TCP probe: host reachable (SSH port open)" };
+  }
+  return { reachable: false, detail: "TCP probe: host unreachable (SSH port closed or filtered)" };
+}
+
+const WG_RETRY_DELAYS = [2, 3, 4]; // seconds between attempts
 
 export function sshExec(
   vmNameOrAlias: string,
@@ -60,15 +77,28 @@ export function sshExec(
     target, command,
   ];
   const effectiveTimeout = timeout ?? 30_000;
+  const maxAttempts = WG_RETRY_DELAYS.length + 1; // first attempt + retries
 
   let result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
 
-  // WG handshake recovery: if mux master died, retry with fresh connection
-  if (!result.ok && result.exitCode === 255) {
-    audit("ssh", `${alias}: connection failed (exit 255), re-establishing mux`, result.stderr.trim());
-    exec("sleep", ["2"], { timeout: 3_000 });
+  // WG handshake recovery: retry with escalating backoff
+  for (let attempt = 1; attempt < maxAttempts && !result.ok && result.exitCode === 255; attempt++) {
+    const delay = WG_RETRY_DELAYS[attempt - 1];
+    audit("ssh", `${alias}: WG handshake attempt ${attempt}/${maxAttempts - 1}`, result.stderr.trim());
+    killMux(alias, target);
+    exec("sleep", [String(delay)], { timeout: (delay + 1) * 1_000 });
     ensureMux(alias, target);
     result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
+  }
+
+  // Final failure: TCP probe to diagnose connectivity
+  if (!result.ok && result.exitCode === 255) {
+    const probe = tcpProbe(host);
+    audit("ssh", `${alias}: all ${maxAttempts} attempts failed — ${probe.detail}`, result.stderr.trim());
+    result = {
+      ...result,
+      stderr: `${result.stderr}\n[ssh] ${maxAttempts} WG handshake attempts failed for ${alias}. ${probe.detail}`,
+    };
   }
 
   audit("ssh", `${alias}: "${command.slice(0, 120)}"`, `exit ${result.exitCode}`);

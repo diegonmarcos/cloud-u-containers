@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const VmConfigSchema = z.object({
   ip: z.string(),
+  wg_ip: z.string().optional(),
   user: z.string(),
   method: z.enum(["key", "gcloud"]),
   ssh_alias: z.string().optional(),

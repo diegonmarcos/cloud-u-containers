@@ -1,5 +1,6 @@
 export interface VmConfig {
   ip: string;
+  wg_ip?: string;
   user: string;
   method: "key" | "gcloud";
   ssh_alias?: string;
