@@ -95,9 +95,16 @@ fi
 export SOPS_AGE_KEY_FILE
 
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
+log_warn() { printf "\033[0;33m[%s] WARNING: %s\033[0m\n" "$(date '+%H:%M:%S')" "$1"; }
+log_error() { printf "\033[0;31m[%s] ERROR: %s\033[0m\n" "$(date '+%H:%M:%S')" "$1"; }
+
+# Global error handler: print step name on failure
+CURRENT_STEP=""
+trap 'if [ -n "$CURRENT_STEP" ]; then log_error "Step '\''$CURRENT_STEP'\'' failed (exit $?)"; fi' EXIT
 
 # ── Step: Docker image build ─────────────────────────────────────────
 step_docker_remote() {
+    CURRENT_STEP="docker-remote"
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
     REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
@@ -114,6 +121,7 @@ step_docker_remote() {
 }
 
 step_docker_local() {
+    CURRENT_STEP="docker-local"
     DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     SHA_TAG="${GITHUB_SHA:-$(git -C "$SERVICE_DIR" rev-parse HEAD 2>/dev/null || echo local)}"
@@ -168,10 +176,24 @@ step_docker() {
 
 # ── Step: Build nix flake ────────────────────────────────────────────
 step_build() {
+    CURRENT_STEP="build"
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
-    nix build --out-link "$SERVICE_DIR/.result"
+    BUILD_LOG=$(mktemp)
+    nix build --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
+        log_error "nix build failed:"
+        cat "$BUILD_LOG" >&2
+        rm -f "$BUILD_LOG"
+        return 1
+    }
+    # Show warnings from nix build (if any)
+    if [ -s "$BUILD_LOG" ]; then
+        grep -i 'warning\|error\|trace' "$BUILD_LOG" | while IFS= read -r line; do
+            log_warn "$line"
+        done
+    fi
+    rm -f "$BUILD_LOG"
 
     rm -rf "$DIST_DIR"
     mkdir -p "$DIST_DIR"
@@ -226,6 +248,7 @@ step_build() {
 
 # ── Step: Build documentation ────────────────────────────────────────
 step_docs() {
+    CURRENT_STEP="docs"
     log "Building documentation..."
     cd "$SRC_DIR"
 
@@ -241,6 +264,7 @@ step_docs() {
 
 # ── Step: Decrypt secrets ────────────────────────────────────────────
 step_secrets() {
+    CURRENT_STEP="secrets"
     secrets_file="$SRC_DIR/secrets.yaml"
 
     if [ ! -f "$secrets_file" ]; then
@@ -316,6 +340,7 @@ for line in sys.stdin:
 # deployed that are no longer in dist/. Runtime state (DBs, caches, logs)
 # is never touched because it was never in the manifest.
 step_deploy() {
+    CURRENT_STEP="deploy"
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping deploy"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
     [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
@@ -395,6 +420,7 @@ step_deploy() {
 
 # ── Step: Docker compose on VM ───────────────────────────────────────
 step_compose() {
+    CURRENT_STEP="compose"
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping compose"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
@@ -617,4 +643,5 @@ case "${1:-all}" in
         ;;
 esac
 
+CURRENT_STEP=""
 log "Done."
