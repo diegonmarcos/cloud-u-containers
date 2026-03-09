@@ -51,11 +51,12 @@
             - "10.0.0.6:3019:3100"
           volumes:
             - loki_data:/loki
+            - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
           command: -config.file=/etc/loki/local-config.yaml
           networks:
             - dev_network
           healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3100/ready']
+            test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
             interval: 30s
             timeout: 10s
             retries: 5
