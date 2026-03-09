@@ -45,6 +45,8 @@
         redis:
           image: redis:7-bookworm
           container_name: authelia-redis
+          env_file:
+            - .secrets
           command: redis-server --requirepass ''\${AUTHELIA_REDIS_PASSWORD}
           ports:
             - "127.0.0.1:6379:6379"
