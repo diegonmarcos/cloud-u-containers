@@ -29,7 +29,7 @@
         etherpad:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: "no"
+          restart: unless-stopped
           ports:
             - "10.0.0.6:${toString config.port}:9001"
           volumes:
@@ -59,7 +59,7 @@
         postgres:
           image: ${config.db_image}
           container_name: ${config.db_container}
-          restart: "no"
+          restart: unless-stopped
           volumes:
             - postgres_data:/var/lib/postgresql/data
           environment:

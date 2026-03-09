@@ -25,7 +25,7 @@
         revealmd:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: "no"
+          restart: unless-stopped
           ports:
             - "10.0.0.6:${toString config.port}:1948"
           volumes:

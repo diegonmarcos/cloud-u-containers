@@ -30,7 +30,7 @@
         hedgedoc:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: "no"
+          restart: unless-stopped
           ports:
             - "${toString config.port}:3000"
           depends_on:
@@ -62,7 +62,7 @@
         hedgedoc_postgres:
           image: ${config.db_image}
           container_name: ${config.db_container}
-          restart: "no"
+          restart: unless-stopped
           volumes:
             - postgres_data:/var/lib/postgresql/data
           environment:
