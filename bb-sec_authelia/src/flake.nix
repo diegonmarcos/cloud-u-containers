@@ -47,7 +47,7 @@
           container_name: authelia-redis
           env_file:
             - .secrets
-          command: redis-server --requirepass ''\${AUTHELIA_REDIS_PASSWORD}
+          command: sh -c 'redis-server --requirepass $$AUTHELIA_REDIS_PASSWORD'
           ports:
             - "127.0.0.1:6379:6379"
           restart: unless-stopped
