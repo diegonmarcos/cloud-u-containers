@@ -80,7 +80,8 @@ export function composeUp(
   const vmId = svc.vm;
   validatePathComponent(service);
   const remotePath = `${config.remote_base}/${service}`;
-  const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose up -d`;
+  const envFlag = '$([ -f .secrets ] && echo "--env-file .secrets")';
+  const cmd = `cd ${remotePath} && docker compose down 2>/dev/null; docker compose ${envFlag} up -d`;
 
   const result = sshExec(vmId, cmd, 60_000);
   const alias = getVmSshAlias(vmId);
@@ -298,7 +299,8 @@ export function composeUpAll(
   const parts: string[] = [];
 
   for (const dir of dirs) {
-    const cmd = `cd ${config.remote_base}/${dir} && docker compose up -d 2>&1`;
+    const envFlag = '$([ -f .secrets ] && echo "--env-file .secrets")';
+    const cmd = `cd ${config.remote_base}/${dir} && docker compose ${envFlag} up -d 2>&1`;
     const result = sshExec(vmId, cmd, 60_000);
     const status = result.ok ? "OK" : "FAILED";
     results.push({ service: dir, ok: result.ok });

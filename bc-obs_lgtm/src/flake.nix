@@ -58,7 +58,8 @@
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3100/ready']
             interval: 30s
             timeout: 10s
-            retries: 3
+            retries: 5
+            start_period: 120s
 
         tempo:
           image: grafana/tempo:latest

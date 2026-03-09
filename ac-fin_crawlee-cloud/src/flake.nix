@@ -142,10 +142,6 @@
           restart: unless-stopped
           env_file:
             - .secrets
-          environment:
-            POSTGRES_USER: ''${POSTGRES_USER}
-            POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
-            POSTGRES_DB: ''${POSTGRES_DB}
           ports:
             - "${toString config.db_port}:5432"
           volumes:
@@ -153,7 +149,7 @@
           networks:
             - crawlee_network
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U ''${POSTGRES_USER}"]
+            test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
             interval: 5s
             timeout: 5s
             retries: 5
