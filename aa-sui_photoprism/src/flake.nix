@@ -79,7 +79,7 @@
         photoprism:
           image: ${config.app_image}
           container_name: ${config.app_container}
-          restart: "no"
+          restart: unless-stopped
           ports:
             - "10.0.0.6:${toString config.app_port}:2342"
           volumes:
@@ -128,7 +128,7 @@
         mariadb:
           image: ${config.db_image}
           container_name: ${config.db_container}
-          restart: "no"
+          restart: unless-stopped
           volumes:
             - mariadb_data:/var/lib/mysql
           environment:
