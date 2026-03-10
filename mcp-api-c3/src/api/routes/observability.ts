@@ -13,6 +13,8 @@ import {
   checkTier1All,
   checkTier2All,
   checkTier3All,
+  checkUp,
+  checkHealth,
 } from "../../shared/health.js";
 import { profileContainer, profileVm } from "../../shared/diagnostics.js";
 import { runTestSuite } from "../../shared/tests.js";
@@ -179,6 +181,36 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return checkTier3All(vmId);
+    },
+  );
+
+  // ── Generic /up and /health — works for VMs, services, and containers ──
+
+  app.get<{ Params: { target: string } }>(
+    "/up/:target",
+    {
+      schema: {
+        tags: ["Observability"],
+        summary: "Quick TCP check — is the target up? (VM, service, or container)",
+        description: "Fast check: VM=ssh-keyscan, service=VM reachable+containers running, container=docker state",
+      },
+    },
+    async (req) => {
+      return checkUp(req.params.target);
+    },
+  );
+
+  app.get<{ Params: { target: string } }>(
+    "/health/:target",
+    {
+      schema: {
+        tags: ["Observability"],
+        summary: "Full health check — SSH + docker health (VM, service, or container)",
+        description: "Deep check: VM=full SSH auth, service=SSH+docker inspect health, container=docker health status",
+      },
+    },
+    async (req) => {
+      return checkHealth(req.params.target);
     },
   );
 

@@ -515,6 +515,229 @@ export function healthEndpoints(): EndpointHealthResult[] {
   return results;
 }
 
+// ── Generic /up and /health for any target (VM, service, container) ─────
+
+export interface UpResult {
+  target: string;
+  type: "vm" | "service" | "container";
+  up: boolean;
+  latencyMs: number;
+  details?: string;
+  error?: string;
+}
+
+export interface HealthResult extends UpResult {
+  healthy: boolean;
+  status?: string;
+  info?: Record<string, unknown>;
+}
+
+/**
+ * Resolve a target name to its type and VM.
+ * Priority: VM alias/id → service name → container name (requires scanning).
+ */
+function resolveTarget(target: string): { type: "vm" | "service" | "container"; vmId: string; serviceName?: string; containerName?: string } {
+  const config = getConfig();
+  const { aliasToVm } = buildAliasMapPublic();
+
+  // 1. Is it a VM?
+  if (config.vms[target] || aliasToVm[target]) {
+    const vmId = aliasToVm[target] ?? target;
+    return { type: "vm", vmId };
+  }
+
+  // 2. Is it a service?
+  if (config.services[target]) {
+    const svc = config.services[target];
+    return { type: "service", vmId: svc.vm, serviceName: target };
+  }
+
+  // 3. Assume container name — we'll need to find which VM it's on
+  return { type: "container", vmId: "", containerName: target };
+}
+
+function buildAliasMapPublic(): { aliasToVm: Record<string, string> } {
+  const config = getConfig();
+  const aliasToVm: Record<string, string> = {};
+  for (const [vmId, vm] of Object.entries(config.vms)) {
+    const alias = vm.ssh_alias ?? VM_SSH_ALIASES_FALLBACK[vmId] ?? vmId;
+    aliasToVm[alias] = vmId;
+  }
+  return { aliasToVm };
+}
+
+const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
+  "gcp-E2-f_0": "gcp-proxy",
+  "oci-E2-f_0": "oci-mail",
+  "oci-E2-f_1": "oci-analytics",
+  "oci-A1-f_0": "oci-apps",
+};
+
+/**
+ * Find which VM a container is running on by scanning all VMs.
+ */
+function findContainerVm(containerName: string): { vmId: string; status: string } | null {
+  const config = getConfig();
+  for (const vmId of Object.keys(config.vms)) {
+    try {
+      const { containers, ok } = listContainers(vmId);
+      if (!ok) continue;
+      const match = containers.find((c) => c.name === containerName);
+      if (match) return { vmId, status: match.status ?? "" };
+    } catch { /* skip unreachable VMs */ }
+  }
+  return null;
+}
+
+/**
+ * /up/:target — Quick TCP-level check (is the target reachable?)
+ * - VM: ssh-keyscan (tier1)
+ * - Service: tier1 on its VM + check if any matching container exists
+ * - Container: find VM + check docker inspect State.Running
+ */
+export function checkUp(target: string): UpResult {
+  const resolved = resolveTarget(target);
+  const start = Date.now();
+
+  if (resolved.type === "vm") {
+    const t1 = checkTier1All(resolved.vmId);
+    const latencyMs = Date.now() - start;
+    const result = t1[0];
+    return {
+      target,
+      type: "vm",
+      up: result?.reachable ?? false,
+      latencyMs,
+      error: result?.error,
+    };
+  }
+
+  if (resolved.type === "service") {
+    // Check VM reachable + service containers running
+    const vmId = resolved.vmId;
+    if (vmId === "local" || vmId === "all") {
+      return { target, type: "service", up: true, latencyMs: 0, details: "local service" };
+    }
+    const t1 = checkTier1All(vmId);
+    const vmUp = t1[0]?.reachable ?? false;
+    if (!vmUp) {
+      return { target, type: "service", up: false, latencyMs: Date.now() - start, error: "VM unreachable" };
+    }
+    // Check if containers matching service name are running
+    try {
+      const { containers, ok } = listContainers(vmId);
+      if (!ok) {
+        return { target, type: "service", up: false, latencyMs: Date.now() - start, error: "docker ps failed" };
+      }
+      const matching = containers.filter((c) => c.name?.includes(target));
+      const allUp = matching.length > 0 && matching.every((c) => c.status?.toLowerCase().includes("up"));
+      return {
+        target,
+        type: "service",
+        up: allUp,
+        latencyMs: Date.now() - start,
+        details: `${matching.length} container(s): ${matching.map((c) => `${c.name}=${c.status}`).join(", ") || "none found"}`,
+      };
+    } catch (err) {
+      return { target, type: "service", up: false, latencyMs: Date.now() - start, error: String(err) };
+    }
+  }
+
+  // Container — find which VM it's on
+  const found = findContainerVm(target);
+  if (!found) {
+    return { target, type: "container", up: false, latencyMs: Date.now() - start, error: "container not found on any VM" };
+  }
+  const isUp = found.status.toLowerCase().includes("up");
+  return {
+    target,
+    type: "container",
+    up: isUp,
+    latencyMs: Date.now() - start,
+    details: found.status,
+  };
+}
+
+/**
+ * /health/:target — Full health check (SSH + docker health status)
+ * - VM: tier2 (full SSH auth)
+ * - Service: SSH + docker inspect health for all matching containers
+ * - Container: SSH + docker inspect health status
+ */
+export function checkHealth(target: string): HealthResult {
+  const resolved = resolveTarget(target);
+  const start = Date.now();
+
+  if (resolved.type === "vm") {
+    const t2 = checkTier2All(resolved.vmId);
+    const latencyMs = Date.now() - start;
+    const result = t2[0];
+    return {
+      target,
+      type: "vm",
+      up: result?.reachable ?? false,
+      healthy: result?.sshOk ?? false,
+      latencyMs,
+      error: result?.sshError ?? result?.error,
+      info: result ? { ip: result.ip, alias: result.alias } : undefined,
+    };
+  }
+
+  if (resolved.type === "service") {
+    const vmId = resolved.vmId;
+    if (vmId === "local" || vmId === "all") {
+      return { target, type: "service", up: true, healthy: true, latencyMs: 0, details: "local service" };
+    }
+    try {
+      const { containers, ok } = listContainers(vmId);
+      if (!ok) {
+        return { target, type: "service", up: false, healthy: false, latencyMs: Date.now() - start, error: "docker ps failed" };
+      }
+      const matching = containers.filter((c) => c.name?.includes(target));
+      if (matching.length === 0) {
+        return { target, type: "service", up: false, healthy: false, latencyMs: Date.now() - start, error: "no containers found" };
+      }
+      // Check docker health for each container
+      const healthResults = matching.map((c) => {
+        const inspectResult = sshExec(vmId, `docker inspect --format '{{.State.Health.Status}}' ${c.name} 2>/dev/null || echo "no-healthcheck"`, 10_000);
+        const healthStatus = inspectResult.ok ? inspectResult.stdout.trim() : "unknown";
+        return { name: c.name ?? "", status: c.status ?? "", health: healthStatus };
+      });
+      const allUp = matching.every((c) => c.status?.toLowerCase().includes("up"));
+      const allHealthy = healthResults.every((h) => h.health === "healthy" || h.health === "no-healthcheck");
+      return {
+        target,
+        type: "service",
+        up: allUp,
+        healthy: allUp && allHealthy,
+        latencyMs: Date.now() - start,
+        status: allHealthy ? "healthy" : healthResults.find((h) => h.health !== "healthy" && h.health !== "no-healthcheck")?.health,
+        info: { containers: healthResults } as unknown as Record<string, unknown>,
+      };
+    } catch (err) {
+      return { target, type: "service", up: false, healthy: false, latencyMs: Date.now() - start, error: String(err) };
+    }
+  }
+
+  // Container
+  const found = findContainerVm(target);
+  if (!found) {
+    return { target, type: "container", up: false, healthy: false, latencyMs: Date.now() - start, error: "container not found on any VM" };
+  }
+  const isUp = found.status.toLowerCase().includes("up");
+  const inspectResult = sshExec(found.vmId, `docker inspect --format '{{.State.Health.Status}}' ${target} 2>/dev/null || echo "no-healthcheck"`, 10_000);
+  const healthStatus = inspectResult.ok ? inspectResult.stdout.trim() : "unknown";
+  return {
+    target,
+    type: "container",
+    up: isUp,
+    healthy: isUp && (healthStatus === "healthy" || healthStatus === "no-healthcheck"),
+    latencyMs: Date.now() - start,
+    status: healthStatus,
+    details: found.status,
+  };
+}
+
 // ── New: Metrics snapshot ────────────────────────────────────────────────
 
 export interface ContainerMetrics {
