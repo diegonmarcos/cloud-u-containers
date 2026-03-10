@@ -11,11 +11,16 @@ export const GIT_BASE = process.env.GIT_BASE ?? join(HOME, "git");
 export const IS_ANDROID = process.env.ANDROID_DATA !== undefined
   || HOME.includes("com.termux");
 
-// SSH identity key — Android uses ~/.ssh/id_rsa (symlinked from vault)
-// Desktop uses vault path directly (GIT_BASE may point to Mounts/Git)
-export const SSH_IDENTITY = IS_ANDROID
-  ? join(HOME, ".ssh/id_rsa")
-  : join(GIT_BASE, "vault/A0_keys/ssh/id_rsa");
+// SSH identity key — find first available key across environments:
+//   Docker container: ~/.ssh/vault_id_rsa (mounted from VM)
+//   Android/Termux:   ~/.ssh/id_rsa (symlinked from vault)
+//   Desktop NixOS:    vault/A0_keys/ssh/id_rsa
+export const SSH_IDENTITY = [
+  join(HOME, ".ssh/vault_id_rsa"),
+  join(HOME, ".ssh/id_rsa"),
+  join(HOME, ".ssh/id_ed25519"),
+  join(GIT_BASE, "vault/A0_keys/ssh/id_rsa"),
+].find((p) => existsSync(p)) ?? join(HOME, ".ssh/id_rsa");
 export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
 export const CONFIG_PATH = process.env.CONFIG_JSON_PATH
   ?? (existsSync(join(SOLUTIONS_DIR, "..", "cloud-topology.json"))
