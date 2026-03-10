@@ -6,6 +6,7 @@ WORKDIR /app
 # git for read-only repo clones (engines need source files)
 # Build tools for better-sqlite3 (native module) — only needed if prebuilt binaries fail
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     openssh-client \
     iputils-ping \
     curl \
