@@ -6,16 +6,20 @@ import { mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-// Skip ~/.ssh/config when ownership doesn't match (e.g. Docker mount with host UID)
+// Explicitly set SSH config path — SSH binary uses passwd home (/root),
+// but we may have copied keys to a different HOME (e.g. /tmp/c3-home in Docker).
 import { existsSync, statSync } from "fs";
+import { homedir } from "os";
 const SSH_CONFIG_FLAG: string[] = (() => {
-  const cfg = join(process.env.HOME ?? "/root", ".ssh/config");
-  if (!existsSync(cfg)) return [];
-  try {
-    const st = statSync(cfg);
-    if (st.uid !== process.getuid()) return ["-F", "/dev/null"];
-  } catch {}
-  return [];
+  const home = process.env.HOME ?? homedir();
+  const cfg = join(home, ".ssh/config");
+  if (existsSync(cfg)) {
+    try {
+      const st = statSync(cfg);
+      if (st.uid === process.getuid()) return ["-F", cfg];
+    } catch {}
+  }
+  return ["-F", "/dev/null"];
 })();
 
 // SSH multiplexing — reuse connections to avoid repeated handshakes
