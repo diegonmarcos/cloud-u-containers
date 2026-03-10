@@ -176,8 +176,8 @@
         oidc:
           hmac_secret: ''\${AUTHELIA_OIDC_HMAC_SECRET}
           lifespans:
-            access_token: 8760h
-            refresh_token: 8760h
+            access_token: 87600h
+            refresh_token: 87600h
           jwks:
             - key_id: main
               algorithm: RS256
@@ -229,6 +229,32 @@
               require_pushed_authorization_requests: true
               require_pkce: true
               pkce_challenge_method: S256
+
+            - client_id: cloudflare-health-c3-api
+              consent_mode: implicit
+              client_name: Cloudflare Worker Health Check
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET}
+              public: false
+              authorization_policy: two_factor
+              redirect_uris:
+                - http://localhost:8400/callback
+              grant_types:
+                - authorization_code
+                - refresh_token
+              response_types:
+                - code
+              response_modes:
+                - form_post
+              scopes:
+                - offline_access
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              require_pushed_authorization_requests: true
+              require_pkce: true
+              pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
 
             - client_id: cli
               consent_mode: explicit
@@ -310,6 +336,7 @@
         AUTHELIA_REDIS_PASSWORD \
         AUTHELIA_OIDC_HMAC_SECRET \
         AUTHELIA_OIDC_CLIENT_CLI_SECRET \
+        AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET \
         AUTHELIA_OIDC_CLIENT_NPM_SECRET \
         AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
         AUTHELIA_SMTP_PASSWORD
