@@ -11,6 +11,15 @@ const PUBLIC_PATHS = new Set([
   "/docs/yaml",
 ]);
 
+// Paths that accept X-API-Key header (static token for external services like CF Workers)
+function isApiKeyPath(url: string): boolean {
+  return url.startsWith("/up/") || (url.startsWith("/health/") && !url.startsWith("/health/tier") && !url.startsWith("/health/deployed") && !url.startsWith("/health/drift") && !url.startsWith("/health/status") && !url.startsWith("/health/declared"));
+}
+
+function getApiKey(): string | null {
+  return process.env.C3_API_KEY || null;
+}
+
 function isPublicPath(url: string): boolean {
   // Swagger UI assets
   if (url.startsWith("/docs")) return true;
@@ -30,10 +39,18 @@ async function authHook(req: FastifyRequest, reply: FastifyReply) {
   // WireGuard mesh: trusted
   if (isMeshRequest(req)) return;
 
+  // API key auth for /up/ and /health/:target (external services like CF Workers)
+  if (isApiKeyPath(req.url)) {
+    const apiKey = req.headers["x-api-key"] as string | undefined;
+    const validKey = getApiKey();
+    if (validKey && apiKey === validKey) return;
+    // Fall through to bearer token check
+  }
+
   // Bearer token validation (defense-in-depth — Caddy+introspect-proxy handles primary auth)
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
-    reply.code(401).send({ error: "Missing bearer token" });
+    reply.code(401).send({ error: "Missing bearer token or API key" });
     return;
   }
 
