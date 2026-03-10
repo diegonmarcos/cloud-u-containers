@@ -76,6 +76,8 @@ if [ -f "$CONFIG" ]; then
     INCLUDE_CONFIG_JSON="$(get_config build.include_config_json)"
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
+    WRANGLER_DEPLOY="$(get_config deploy.wrangler)"
+    BUILD_COPY_ONLY="$(get_config build.copy_only)"
 fi
 # SSH multiplexing: one connection reused across all steps, kept alive 120s
 SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-mux-%r@%h:%p -o ControlPersist=120 -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
@@ -174,9 +176,22 @@ step_docker() {
     fi
 }
 
-# ── Step: Build nix flake ────────────────────────────────────────────
+# ── Step: Build nix flake (or copy-only for non-nix services) ────────
 step_build() {
     CURRENT_STEP="build"
+
+    # Simple copy mode: no nix, just copy src/ → dist/
+    if [ "$BUILD_COPY_ONLY" = "true" ]; then
+        log "Copying src/ -> dist/ (copy-only mode)"
+        rm -rf "$DIST_DIR"
+        mkdir -p "$DIST_DIR"
+        cp -r "$SRC_DIR/"* "$DIST_DIR/"
+        chmod -R u+w "$DIST_DIR"
+        log "Built files:"
+        find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
+        return 0
+    fi
+
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
@@ -529,6 +544,27 @@ run_lifecycle() {
     log "Lifecycle $COMMAND complete"
 }
 
+# ── Step: Deploy Cloudflare Worker via wrangler ──────────────────────
+step_wrangler() {
+    CURRENT_STEP="wrangler"
+    [ "$WRANGLER_DEPLOY" != "true" ] && { log "No deploy.wrangler -- skipping"; return 0; }
+    [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
+
+    if ! command -v wrangler >/dev/null 2>&1 && ! command -v npx >/dev/null 2>&1; then
+        log_error "wrangler or npx not found. Install: npm install -g wrangler"
+        return 1
+    fi
+
+    log "Deploying Worker to Cloudflare..."
+    cd "$DIST_DIR"
+    if command -v wrangler >/dev/null 2>&1; then
+        wrangler deploy
+    else
+        npx wrangler deploy
+    fi
+    log "Worker deployed to Cloudflare"
+}
+
 # ── Step: Clean remote (remove non-manifest files) ───────────────────
 # For intentional full cleanup of runtime state (DBs, caches, logs).
 # Shows a dry-run first, requires explicit --force to actually delete.
@@ -604,12 +640,16 @@ case "${1:-all}" in
         OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
         if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ]; then
             log "Config unchanged — skipping deploy+compose"
+        elif [ "$WRANGLER_DEPLOY" = "true" ]; then
+            step_wrangler
+            echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
         else
             step_deploy
             step_compose
             echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
         fi
         ;;
+    wrangler) step_wrangler ;;
     redeploy) step_build; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs" "$SERVICE_DIR/.dist-hash"; log "Cleaned" ;;
     clean-remote) step_clean_remote "${2:-}" ;;
@@ -618,13 +658,14 @@ case "${1:-all}" in
         if [ -f "$CONFIG" ] && get_lifecycle "$1" | grep -q .; then
             run_lifecycle "$1"
         else
-            echo "Usage: $0 [docker|build|docs|secrets|deploy|compose|all|ship|redeploy|clean|clean-remote|<lifecycle>]"
+            echo "Usage: $0 [docker|build|docs|secrets|deploy|compose|wrangler|all|ship|redeploy|clean|clean-remote|<lifecycle>]"
             echo "  docker       Build + push Docker image"
             echo "  build        Build nix flake -> dist/"
             echo "  docs         Build documentation -> dist/docs/"
             echo "  secrets      Decrypt secrets -> dist/.secrets"
             echo "  deploy       Rsync dist/ -> VM (manifest-based, no --delete)"
             echo "  compose      Docker compose up on VM"
+            echo "  wrangler     Deploy Cloudflare Worker via wrangler"
             echo "  all          build + docs + secrets (default)"
             echo "  ship         docker + build + secrets + deploy + compose (skips if unchanged)"
             echo "  redeploy     build + secrets + deploy + compose (skip docker)"

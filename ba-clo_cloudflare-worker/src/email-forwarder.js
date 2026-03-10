@@ -18,7 +18,7 @@ export default {
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const healthResp = await fetch(env.C3_HEALTH_URL, {
-        headers: { 'X-API-Key': REDACTED },
+        headers: { 'Authorization': `Bearer ${env.C3_BEARER_TOKEN}` },
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
