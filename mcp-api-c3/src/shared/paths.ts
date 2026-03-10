@@ -1,4 +1,5 @@
 import { existsSync } from "fs";
+import { execSync } from "child_process";
 import { homedir } from "os";
 import { join } from "path";
 
@@ -42,3 +43,27 @@ export const REPOS: Record<string, string> = {
   front: FRONT_DIR,
   tools: join(GIT_BASE, "tools"),
 };
+
+// ── Repo sync: git pull all repos (public HTTPS, read-only) ──────────
+let _lastSync = 0;
+const SYNC_TTL = 5 * 60 * 1000; // 5 minutes
+
+/** Pull all cloned repos if TTL expired. Safe to call frequently. */
+export function syncRepos(force = false): void {
+  const now = Date.now();
+  if (!force && now - _lastSync < SYNC_TTL) return;
+  _lastSync = now;
+
+  for (const [name, dir] of Object.entries(REPOS)) {
+    if (!existsSync(join(dir, ".git"))) continue;
+    try {
+      execSync("git fetch --all -q && git reset --hard origin/main -q", {
+        cwd: dir,
+        timeout: 15000,
+        stdio: "ignore",
+      });
+    } catch {
+      // Non-fatal — use stale data
+    }
+  }
+}

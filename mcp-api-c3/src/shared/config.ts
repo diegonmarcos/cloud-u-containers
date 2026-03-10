@@ -1,26 +1,11 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
-import { execSync } from "child_process";
 import { join } from "path";
 import type { InfraConfig, ServiceConfig } from "./types.js";
-import { CONFIG_PATH, SOLUTIONS_DIR, GIT_BASE } from "./paths.js";
+import { CONFIG_PATH, SOLUTIONS_DIR, syncRepos } from "./paths.js";
 
 let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
 const CONFIG_TTL = 5 * 60 * 1000; // 5 minutes
-
-function pullCloudRepo(): void {
-  const cloudDir = join(GIT_BASE, "cloud");
-  if (!existsSync(join(cloudDir, ".git"))) return;
-  try {
-    execSync("git fetch --all -q && git reset --hard origin/main -q", {
-      cwd: cloudDir,
-      timeout: 15000,
-      stdio: "ignore",
-    });
-  } catch {
-    // Non-fatal — use stale config
-  }
-}
 
 // Hardcoded fallback — used when cloud-topology.json VMs lack ssh_alias
 const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
@@ -34,7 +19,7 @@ const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
 export function getConfig(): InfraConfig {
   const now = Date.now();
   if (!_config || now - _configTimestamp > CONFIG_TTL) {
-    pullCloudRepo();
+    syncRepos();
     const fileConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
     const discovered = discoverServicesFromDisk(fileConfig);
     // Merge: discovered first, then cloud-topology.json overrides win
