@@ -6,6 +6,18 @@ import { mkdirSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
+// Skip ~/.ssh/config when ownership doesn't match (e.g. Docker mount with host UID)
+import { existsSync, statSync } from "fs";
+const SSH_CONFIG_FLAG: string[] = (() => {
+  const cfg = join(process.env.HOME ?? "/root", ".ssh/config");
+  if (!existsSync(cfg)) return [];
+  try {
+    const st = statSync(cfg);
+    if (st.uid !== process.getuid()) return ["-F", "/dev/null"];
+  } catch {}
+  return [];
+})();
+
 // SSH multiplexing — reuse connections to avoid repeated handshakes
 const CONTROL_DIR = join(tmpdir(), "mcp-ssh-mux");
 try { mkdirSync(CONTROL_DIR, { recursive: true, mode: 0o700 }); } catch {}
@@ -16,6 +28,7 @@ function controlPath(alias: string): string {
 
 function killMux(alias: string, target: string): void {
   exec("ssh", [
+    ...SSH_CONFIG_FLAG,
     "-o", `ControlPath=${controlPath(alias)}`,
     "-O", "exit", target,
   ], { timeout: 3_000 });
@@ -24,6 +37,7 @@ function killMux(alias: string, target: string): void {
 function ensureMux(alias: string, target: string): void {
   // Check if master is alive
   const check = exec("ssh", [
+    ...SSH_CONFIG_FLAG,
     "-o", `ControlPath=${controlPath(alias)}`,
     "-O", "check", target,
   ], { timeout: 3_000 });
@@ -31,6 +45,7 @@ function ensureMux(alias: string, target: string): void {
 
   // Start master in background
   exec("ssh", [
+    ...SSH_CONFIG_FLAG,
     "-o", "ConnectTimeout=10",
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", `ControlMaster=auto`,
@@ -70,6 +85,7 @@ export function sshExec(
   ensureMux(alias, target);
 
   const sshArgs = [
+    ...SSH_CONFIG_FLAG,
     "-o", "ConnectTimeout=10",
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", `ControlPath=${controlPath(alias)}`,
