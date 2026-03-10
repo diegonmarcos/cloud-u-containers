@@ -593,7 +593,7 @@ function findContainerVm(containerName: string): { vmId: string; status: string 
   const config = getConfig();
   for (const vmId of Object.keys(config.vms)) {
     try {
-      const { containers, ok } = listContainers(vmId);
+      const { containers, ok } = listContainers(vmId, true);
       if (!ok) continue;
       const match = containers.find((c) => c.name === containerName);
       if (match) return { vmId, status: match.status ?? "" };
@@ -679,7 +679,7 @@ export function checkUp(target: string): UpResult {
  */
 function findContainerOnVm(vmId: string, containerName: string): { vmId: string; status: string } | null {
   try {
-    const { containers, ok } = listContainers(vmId);
+    const { containers, ok } = listContainers(vmId, true);
     if (!ok) return null;
     const match = containers.find((c) => c.name === containerName);
     if (match) return { vmId, status: match.status ?? "" };
