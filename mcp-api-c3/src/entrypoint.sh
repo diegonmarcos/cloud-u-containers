@@ -5,7 +5,9 @@ set -e
 REPOS_DIR="${GIT_BASE:-/app/repos}"
 
 # Clone/pull repos — C3-API is self-contained, generates its own config
-if [ -f /root/.ssh/id_rsa ]; then
+SSH_KEY="$(ls /root/.ssh/id_rsa /root/.ssh/vault_id_rsa /root/.ssh/id_ed25519 2>/dev/null | head -1)"
+if [ -n "$SSH_KEY" ]; then
+  export GIT_SSH_COMMAND="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
   echo "c3-entrypoint: syncing repos to $REPOS_DIR..."
   for repo in cloud unix front; do
     dir="$REPOS_DIR/$repo"
