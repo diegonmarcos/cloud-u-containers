@@ -231,7 +231,7 @@
               pkce_challenge_method: S256
 
             - client_id: cloudflare-health-c3-api
-              consent_mode: implicit
+              consent_mode: explicit
               client_name: Cloudflare Worker Health Check
               client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET}
               public: false
@@ -255,6 +255,121 @@
               access_token_signed_response_alg: RS256
               audience:
                 - https://api.diegonmarcos.com/
+
+            - client_id: claude-admin
+              consent_mode: explicit
+              client_name: Claude AI Agent
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET}
+              public: false
+              authorization_policy: two_factor
+              redirect_uris:
+                - http://localhost:8400/callback
+              grant_types:
+                - authorization_code
+                - refresh_token
+              response_types:
+                - code
+              response_modes:
+                - form_post
+              scopes:
+                - offline_access
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              require_pushed_authorization_requests: true
+              require_pkce: true
+              pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://db.diegonmarcos.com/
+                - https://analytics.diegonmarcos.com/
+                - https://auth.diegonmarcos.com/
+                - https://cal.diegonmarcos.com/
+                - https://ide.diegonmarcos.com/
+                - https://mail.diegonmarcos.com/
+                - https://photos.diegonmarcos.com/
+                - https://proxy.diegonmarcos.com/
+                - https://rss.diegonmarcos.com/
+                - https://sync.diegonmarcos.com/
+                - https://vault.diegonmarcos.com/
+
+            - client_id: dagu-ops
+              consent_mode: explicit
+              client_name: Dagu Workflow Engine
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_DAGU_SECRET}
+              public: false
+              authorization_policy: two_factor
+              redirect_uris:
+                - http://localhost:8400/callback
+              grant_types:
+                - authorization_code
+                - refresh_token
+              response_types:
+                - code
+              response_modes:
+                - form_post
+              scopes:
+                - offline_access
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              require_pushed_authorization_requests: true
+              require_pkce: true
+              pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
+
+            - client_id: monitoring-read
+              consent_mode: explicit
+              client_name: Monitoring Read-Only
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MONITORING_SECRET}
+              public: false
+              authorization_policy: two_factor
+              redirect_uris:
+                - http://localhost:8400/callback
+              grant_types:
+                - authorization_code
+                - refresh_token
+              response_types:
+                - code
+              response_modes:
+                - form_post
+              scopes:
+                - offline_access
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              require_pushed_authorization_requests: true
+              require_pkce: true
+              pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
+
+            - client_id: mattermost-ops
+              consent_mode: explicit
+              client_name: Mattermost Bot
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET}
+              public: false
+              authorization_policy: two_factor
+              redirect_uris:
+                - http://localhost:8400/callback
+              grant_types:
+                - authorization_code
+                - refresh_token
+              response_types:
+                - code
+              response_modes:
+                - form_post
+              scopes:
+                - offline_access
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              require_pushed_authorization_requests: true
+              require_pkce: true
+              pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
+                - https://rss.diegonmarcos.com/
 
             - client_id: cli
               consent_mode: explicit
@@ -337,6 +452,10 @@
         AUTHELIA_OIDC_HMAC_SECRET \
         AUTHELIA_OIDC_CLIENT_CLI_SECRET \
         AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET \
+        AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET \
+        AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
+        AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
+        AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
         AUTHELIA_OIDC_CLIENT_NPM_SECRET \
         AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
         AUTHELIA_SMTP_PASSWORD
