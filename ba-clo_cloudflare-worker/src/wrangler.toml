@@ -6,18 +6,21 @@ account_id = "e5cb0a0c6f448e54f217de484259f0ae"
 # Email Routing architecture:
 #   Internet → Cloudflare MX (route1/2/3.mx.cloudflare.net)
 #     → Email Routing rule: me@diegonmarcos.com → Worker "email-forwarder"
-#     → POST raw email to smtp-proxy on oci-mail:8080
-#     → smtp-proxy relays to Mailu front:25
-#   Fallback: forward to BACKUP_EMAIL if smtp-proxy fails
+#     → Check Mailu health via C3 API (/health/tools-mailu)
+#     → If healthy: POST raw email to smtp-proxy → Mailu front:25
+#     → If unhealthy: forward to BACKUP_EMAIL (diegonmarcos@live.com)
 #
 # Email Routing rules are managed in Cloudflare Dashboard:
 #   Email > Email Routing > Routing Rules
 #   Rule: me@diegonmarcos.com → Send to Worker → email-forwarder
 
 [vars]
-# SMTP Proxy on oci-mail (130.110.251.193:8080) - open to 0.0.0.0/0 in OCI security list
-SMTP_PROXY_URL = "http://smtp.diegonmarcos.com:8080/"
+# C3 API health check — validates Mailu is up + healthy before delivery
+C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-api/health/tools-mailu"
+C3_API_KEY = "<REDACTED-LEAK-2026-04-21>"
+# SMTP Proxy on oci-mail (via Cloudflare Tunnel — avoids non-standard port issues)
+SMTP_PROXY_URL = "https://smtp-proxy.diegonmarcos.com/"
 SMTP_PROXY_KEY = "stalwart-proxy-key-2025"
-# Backup email - only used if smtp-proxy is unreachable
+# Backup email - only used if Mailu is unhealthy or smtp-proxy fails
 # Note: Cannot use me@diegonmarcos.com (would cause Worker routing loop)
 BACKUP_EMAIL = "diegonmarcos@live.com"
