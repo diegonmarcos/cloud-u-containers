@@ -2,8 +2,8 @@
 // Inbound flow: Internet → Cloudflare MX → Worker → smtp-proxy (oci-mail:8080) → Mailu front:25
 // Fallback: if Mailu unhealthy OR smtp-proxy unreachable, forward to BACKUP_EMAIL
 //
-// Health check: GET /c3-api/health/tools-mailu (C3 API on oci-apps)
-// Validates Mailu containers are running + healthy before attempting delivery
+// Health check: GET /c3-api/health/front (single container check via topology)
+// Checks only the SMTP entry point container, not all 8 Mailu containers
 
 export default {
   async email(message, env, ctx) {
