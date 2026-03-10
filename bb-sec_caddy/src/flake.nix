@@ -239,22 +239,7 @@
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
-        # C3 — Cloud Control Center API (replaces Rust API)
-        # /up/* and /health/* bypass Authelia (use X-API-Key, validated by C3 API itself)
-        handle_path /c3-api/up/* {
-          rewrite * /up{uri}
-          reverse_proxy ${flex0}:8081
-        }
-        handle_path /c3-api/health {
-          rewrite * /health{uri}
-          reverse_proxy ${flex0}:8081
-        }
-        @c3_health_target path_regexp c3health ^/c3-api/health/([^/]+)$
-        handle @c3_health_target {
-          uri replace /c3-api/health/ /health/ 1
-          reverse_proxy ${flex0}:8081
-        }
-        # All other C3 API endpoints require Authelia or bearer token
+        # C3 — Cloud Control Center API (all endpoints through Authelia/bearer)
         handle_path /c3-api/* {
           ${mkProtected "${flex0}:8081"}
         }
