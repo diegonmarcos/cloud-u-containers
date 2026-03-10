@@ -290,47 +290,49 @@ step_secrets() {
     log "Decrypting secrets -> dist/.secrets"
     mkdir -p "$DIST_DIR"
 
-    # JWKS filtering: exclude multi-line PEM key from env file
-    if [ -n "$JWKS_FILE" ]; then
-        if command -v yq >/dev/null 2>&1; then
-            sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' \
-                | grep '^[A-Z_]*=' | grep -v '^AUTHELIA_OIDC_JWKS_KEY=' > "$DIST_DIR/.secrets"
-        elif command -v python3 >/dev/null 2>&1; then
-            sops -d "$secrets_file" | python3 -c "
-import sys, yaml
+    # Unified YAML→env conversion: handles multiline values correctly.
+    # Single-line values → .secrets (KEY=VALUE)
+    # Multiline values  → .secrets.d/KEY (one file per key)
+    # JWKS keys are excluded from .secrets (extracted separately below).
+    local exclude_keys="sops"
+    [ -n "$JWKS_FILE" ] && exclude_keys="sops,AUTHELIA_OIDC_JWKS_KEY"
+
+    if command -v python3 >/dev/null 2>&1; then
+        sops -d "$secrets_file" | python3 -c "
+import sys, os, yaml
 data = yaml.safe_load(sys.stdin)
+if not isinstance(data, dict):
+    sys.exit(0)
+exclude = set('$exclude_keys'.split(','))
+dist = '$DIST_DIR'
+secrets_d = os.path.join(dist, '.secrets.d')
+os.makedirs(secrets_d, exist_ok=True)
+env_lines = []
 for k, v in data.items():
-    if k == 'sops' or k == 'AUTHELIA_OIDC_JWKS_KEY':
+    if k in exclude:
         continue
-    if isinstance(v, str):
-        print(f'{k}={v}')
-" > "$DIST_DIR/.secrets"
-        else
-            log "ERROR: No yq or python3 for YAML->env conversion"
-            return 1
-        fi
+    if not isinstance(v, str):
+        v = str(v)
+    if '\n' in v:
+        # Multiline → separate file
+        path = os.path.join(secrets_d, k)
+        with open(path, 'w') as f:
+            f.write(v + '\n')
+        os.chmod(path, 0o600)
+    else:
+        env_lines.append(f'{k}={v}')
+with open(os.path.join(dist, '.secrets'), 'w') as f:
+    f.write('\n'.join(env_lines) + '\n')
+print(f'  {len(env_lines)} env vars, {len(os.listdir(secrets_d))} multiline files', file=sys.stderr)
+"
+    elif command -v yq >/dev/null 2>&1; then
+        # Fallback: yq (single-line values only — multiline will be truncated)
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' \
+            | grep -v "^sops=" > "$DIST_DIR/.secrets"
+        log "WARNING: yq fallback — multiline values may be truncated"
     else
-        if command -v yq >/dev/null 2>&1; then
-            sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' > "$DIST_DIR/.secrets"
-        elif command -v python3 >/dev/null 2>&1; then
-            sops -d "$secrets_file" | python3 -c "
-import sys
-for line in sys.stdin:
-    line = line.strip()
-    if line.startswith('sops:'):
-        break
-    if not line or line.startswith('#'):
-        continue
-    if ':' in line:
-        k, v = line.split(':', 1)
-        k, v = k.strip(), v.strip().strip('\"').strip(\"'\")
-        if v:
-            print(f'{k}={v}')
-" > "$DIST_DIR/.secrets"
-        else
-            log "ERROR: No yq or python3 for YAML->env conversion"
-            return 1
-        fi
+        log "ERROR: No python3 or yq for YAML->env conversion"
+        return 1
     fi
 
     # Escape $ as $$ for docker-compose env_file interpolation
