@@ -23,9 +23,9 @@ for repo in cloud unix front tools; do
 done
 echo "c3-entrypoint: repos ready."
 
-# Generate cloud-topology.json + cloud-configs.json from cloned sources
-echo "c3-entrypoint: generating topology + configs..."
-npx tsx src/engines/gen-topology.ts || echo "  WARN: gen-topology failed"
-npx tsx src/engines/gen-configs.ts || echo "  WARN: gen-configs failed"
+# cloud-topology.json + cloud-configs.json come from the cloned cloud repo.
+# gen-topology/gen-configs are desktop tools — running them in-container
+# overwrites the good files with incomplete output (missing SSH context).
+echo "c3-entrypoint: using topology from cloned cloud repo"
 
 exec npx tsx src/api/index.ts
