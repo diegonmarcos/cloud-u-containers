@@ -7,6 +7,7 @@ export interface VmConfig {
   gcloud_instance?: string;
   gcloud_zone?: string;
   description: string;
+  containers?: string[];
 }
 
 export interface ServiceConfig {
@@ -17,6 +18,7 @@ export interface ServiceConfig {
   folder?: string;
   description: string;
   discovered?: boolean;
+  containers?: string[];
 }
 
 export interface InfraConfig {

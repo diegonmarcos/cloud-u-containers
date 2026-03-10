@@ -552,7 +552,20 @@ function resolveTarget(target: string): { type: "vm" | "service" | "container"; 
     return { type: "service", vmId: svc.vm, serviceName: target };
   }
 
-  // 3. Assume container name — we'll need to find which VM it's on
+  // 3. Container name — look up in topology (services + VMs have containers arrays)
+  // Search services first (maps container → service → VM)
+  for (const [svcName, svc] of Object.entries(config.services)) {
+    if (svc.containers?.includes(target)) {
+      return { type: "container", vmId: svc.vm, serviceName: svcName, containerName: target };
+    }
+  }
+  // Fallback: search VM containers arrays directly
+  for (const [vmId, vm] of Object.entries(config.vms)) {
+    if (vm.containers?.includes(target)) {
+      return { type: "container", vmId, containerName: target };
+    }
+  }
+  // Unknown — return empty vmId (will trigger scanning as last resort)
   return { type: "container", vmId: "", containerName: target };
 }
 
@@ -643,8 +656,11 @@ export function checkUp(target: string): UpResult {
     }
   }
 
-  // Container — find which VM it's on
-  const found = findContainerVm(target);
+  // Container — use topology-resolved VM if available, fallback to scanning
+  const containerName = resolved.containerName ?? target;
+  const found = resolved.vmId
+    ? findContainerOnVm(resolved.vmId, containerName)
+    : findContainerVm(containerName);
   if (!found) {
     return { target, type: "container", up: false, latencyMs: Date.now() - start, error: "container not found on any VM" };
   }
@@ -656,6 +672,19 @@ export function checkUp(target: string): UpResult {
     latencyMs: Date.now() - start,
     details: found.status,
   };
+}
+
+/**
+ * Check a specific container on a known VM (no scanning).
+ */
+function findContainerOnVm(vmId: string, containerName: string): { vmId: string; status: string } | null {
+  try {
+    const { containers, ok } = listContainers(vmId);
+    if (!ok) return null;
+    const match = containers.find((c) => c.name === containerName);
+    if (match) return { vmId, status: match.status ?? "" };
+  } catch { /* VM unreachable */ }
+  return null;
 }
 
 /**
@@ -719,13 +748,16 @@ export function checkHealth(target: string): HealthResult {
     }
   }
 
-  // Container
-  const found = findContainerVm(target);
+  // Container — use topology-resolved VM if available, fallback to scanning
+  const cName = resolved.containerName ?? target;
+  const found = resolved.vmId
+    ? findContainerOnVm(resolved.vmId, cName)
+    : findContainerVm(cName);
   if (!found) {
     return { target, type: "container", up: false, healthy: false, latencyMs: Date.now() - start, error: "container not found on any VM" };
   }
   const isUp = found.status.toLowerCase().includes("up");
-  const inspectResult = sshExec(found.vmId, `docker inspect --format '{{.State.Health.Status}}' ${target} 2>/dev/null || echo "no-healthcheck"`, 10_000);
+  const inspectResult = sshExec(found.vmId, `docker inspect --format '{{.State.Health.Status}}' ${cName} 2>/dev/null || echo "no-healthcheck"`, 10_000);
   const healthStatus = inspectResult.ok ? inspectResult.stdout.trim() : "unknown";
   return {
     target,
