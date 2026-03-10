@@ -15,7 +15,7 @@ for repo in cloud unix front tools; do
       echo "  $repo: fetch failed (non-fatal)"
   else
     echo "  $repo: cloning..."
-    mkdir -p "$dir"
+    rm -rf "$dir"
     git clone --depth 1 --single-branch --branch main \
       https://github.com/diegonmarcos/$repo.git "$dir" 2>/dev/null || \
       echo "  $repo: clone failed (non-fatal)"
