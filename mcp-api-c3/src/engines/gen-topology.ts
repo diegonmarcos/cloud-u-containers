@@ -149,7 +149,7 @@ function main() {
   const services: Record<string, Service> = {};
 
   for (const entry of buildEntries) {
-    const compose = parseCompose(SOLUTIONS_DIR, entry.folder);
+    const compose = parseCompose(SOLUTIONS_DIR, entry.folder, entry.name);
     const vmId = resolveVmId(entry.vm, aliasToVmId, vms);
     const existingSvc = existing?.services?.[entry.name];
 
