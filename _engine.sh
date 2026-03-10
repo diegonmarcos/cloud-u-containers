@@ -555,6 +555,26 @@ step_wrangler() {
         return 1
     fi
 
+    # Source Cloudflare credentials from vault (same auto-detect as SOPS_AGE_KEY_FILE)
+    if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
+        for cf_env in \
+            "$HOME/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env" \
+            "/home/diego/Mounts/Git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
+            if [ -f "$cf_env" ]; then
+                CLOUDFLARE_API_KEY=$(grep '^CF_API_KEY=' "$cf_env" | cut -d= -f2)
+                CLOUDFLARE_EMAIL=$(grep '^CF_API_EMAIL=' "$cf_env" | cut -d= -f2)
+                export CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
+                log "Loaded Cloudflare credentials from vault"
+                break
+            fi
+        done
+    fi
+
+    if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
+        log_error "CLOUDFLARE_API_KEY not set and not found in vault"
+        return 1
+    fi
+
     log "Deploying Worker to Cloudflare..."
     cd "$DIST_DIR"
     if command -v wrangler >/dev/null 2>&1; then
