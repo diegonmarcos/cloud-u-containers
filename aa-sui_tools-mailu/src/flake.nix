@@ -16,7 +16,7 @@
       timezone = "Europe/Madrid";
 
       # Subnet for Mailu internal network
-      subnet = "192.168.203.0/24";
+      subnet = "172.16.203.0/24";
 
       # Message size limit (50MB)
       message_size_limit = "50000000";
@@ -45,7 +45,7 @@
           restart: always
           networks:
             default:
-              ipv4_address: 192.168.203.254
+              ipv4_address: 172.16.203.254
 
         front:
           image: ghcr.io/mailu/nginx:2024.06
@@ -63,7 +63,7 @@
           depends_on:
             - resolver
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
         admin:
           image: ghcr.io/mailu/admin:2024.06
@@ -76,7 +76,7 @@
             - resolver
             - redis
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
         imap:
           image: ghcr.io/mailu/dovecot:2024.06
@@ -89,7 +89,7 @@
             - resolver
             - front
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
         smtp:
           image: ghcr.io/mailu/postfix:2024.06
@@ -102,7 +102,7 @@
             - resolver
             - front
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
         antispam:
           image: ghcr.io/mailu/rspamd:2024.06
@@ -115,7 +115,7 @@
             - resolver
             - front
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
         redis:
           image: redis:7-bookworm
@@ -135,7 +135,7 @@
             - front
             - imap
           dns:
-            - 192.168.203.254
+            - 172.16.203.254
 
       networks:
         default:
