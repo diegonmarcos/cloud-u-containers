@@ -1,7 +1,5 @@
 {
   "name": "smtp-proxy",
-  "description": "SMTP Relay for Cloudflare Email Worker → Mailu",
-  "domain": "smtp-proxy.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/smtp-proxy"

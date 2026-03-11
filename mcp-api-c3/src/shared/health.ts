@@ -1,7 +1,9 @@
+import { readFileSync, existsSync } from "fs";
 import { sshExec, checkVmReachable } from "./ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
 import { listContainers } from "./docker.js";
 import { exec } from "./exec.js";
+import { CONFIGS_PATH } from "./paths.js";
 import type { VmConfig, ServiceConfig } from "./types.js";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -783,15 +785,37 @@ export interface ReachResult {
 }
 
 /**
+ * Look up a service's domain from cloud-configs.json (Caddy routes + services).
+ * Falls back to topology service domain.
+ */
+function resolveServiceDomain(target: string): string | undefined {
+  // 1. cloud-configs.json — has Caddy routes and service domains
+  if (existsSync(CONFIGS_PATH)) {
+    try {
+      const configs = JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
+      // Check services list
+      const svc = configs.services?.find((s: any) => s.name === target);
+      if (svc?.domain && svc.domain !== "\u2014") return svc.domain;
+      // Check Caddy routes
+      const route = configs.infra?.caddy?.routes?.find((r: any) =>
+        r.domain?.includes(target) || r.upstream?.includes(target),
+      );
+      if (route?.domain) return route.domain;
+    } catch { /* parse error — fall through */ }
+  }
+  // 2. Topology service domain
+  const config = getConfig();
+  return config.services[target]?.domain;
+}
+
+/**
  * /reach/:target — Test actual route reachability through Caddy/Cloudflare.
- * Looks up domain from topology, probes HTTPS + HTTP + TCP in parallel.
+ * Looks up domain from cloud-configs.json, probes HTTPS + HTTP + TCP in parallel.
  */
 export function checkReach(target: string): ReachResult {
-  const config = getConfig();
   const start = Date.now();
 
-  const svc = config.services[target];
-  const domain = svc?.domain;
+  const domain = resolveServiceDomain(target);
 
   if (!domain) {
     return {

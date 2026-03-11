@@ -26,6 +26,7 @@ export const CONFIG_PATH = process.env.CONFIG_JSON_PATH
   ?? (existsSync(join(SOLUTIONS_DIR, "..", "cloud-topology.json"))
     ? join(SOLUTIONS_DIR, "..", "cloud-topology.json")
     : join(SOLUTIONS_DIR, "..", "config.json"));
+export const CONFIGS_PATH = join(SOLUTIONS_DIR, "..", "cloud-configs.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/oauth/age_keys.txt");
