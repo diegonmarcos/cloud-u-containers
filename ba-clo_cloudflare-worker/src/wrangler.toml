@@ -6,17 +6,17 @@ account_id = "e5cb0a0c6f448e54f217de484259f0ae"
 # Email Routing architecture:
 #   Internet → Cloudflare MX (route1/2/3.mx.cloudflare.net)
 #     → Email Routing rule: me@diegonmarcos.com → Worker "email-forwarder"
-#     → Check Mailu health via C3 API (/health/mailu-front-1)
-#     → If healthy: POST raw email to smtp-proxy → Mailu front:25
-#     → If unhealthy: forward to BACKUP_EMAIL (diegonmarcos@live.com)
+#     → In parallel: POST to smtp-proxy + check /reach/smtp-proxy
+#     → If delivered: done (send insurance copy if reach says flaky)
+#     → If failed: forward to BACKUP_EMAIL (diegonmarcos@live.com)
 #
 # Email Routing rules are managed in Cloudflare Dashboard:
 #   Email > Email Routing > Routing Rules
 #   Rule: me@diegonmarcos.com → Send to Worker → email-forwarder
 
 [vars]
-# C3 API health check — checks mailu-front-1 container on oci-mail (single container via topology)
-C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-api/health/mailu-front-1"
+# C3 API route reachability — tests full path (Cloudflare → Caddy → smtp-proxy)
+C3_REACH_URL = "https://api.diegonmarcos.com/c3-api/reach/smtp-proxy"
 C3_BEARER_TOKEN = "<REDACTED-LEAK-2026-04-21>.eyJhdWQiOlsiaHR0cHM6Ly9hcGkuZGllZ29ubWFyY29zLmNvbS8iXSwiY2xpZW50X2lkIjoiY2xvdWRmbGFyZS1oZWFsdGgtYzMtYXBpIiwiZXhwIjoyMDg4NTI5ODkyLCJpYXQiOjE3NzMxNjk4OTMsImlzcyI6Imh0dHBzOi8vYXV0aC5kaWVnb25tYXJjb3MuY29tIiwianRpIjoiYzU2ODRlMmMtNDgzYS00ZTA4LWJmZjAtZGZkNjgxYThkOWExIiwibmJmIjoxNzczMTY5ODkzLCJzY3AiOlsib2ZmbGluZV9hY2Nlc3MiLCJhdXRoZWxpYS5iZWFyZXIuYXV0aHoiXSwic3ViIjoiYWUxYzU2MTMtYmJjNC00N2JmLTlhM2ItYmYzODUzMDVjMzEzIn0.sOWP0WbnLDA7DdtzCCLIGH8xITzYGWNHIsWoJmK0SvJZ8DUrRi6ZPQAQ_Bat0-0O-SqBtvVEgUmWQ5f6a2sy86uRIsOfVxYLzh37EQlwG8WIvlhiMlC4HXrvGNLEiQEb9OZq9tQTBj-076GkvXeSwNGU4I0kn3C6gacUJD6J3V-GWvKQYHrfeZJm-WdTZ5PVY4rdtimTf9KvGfX4HF7jz1KqRuzCR7osXfYXmFASlRcv_hQb1h4tK1C6hMnFejLr2QK3yEg9MJsMaiGzh8h3KJQgD81pzKFHvRkHCq-n3wfgYtwhtNquFOO2rwZpzabe5LvoaZiMVA8ETMe3pEQ-9A"
 # SMTP Proxy on oci-mail (via Cloudflare Tunnel — avoids non-standard port issues)
 SMTP_PROXY_URL = "https://smtp-proxy.diegonmarcos.com/"
