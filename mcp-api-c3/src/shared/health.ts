@@ -784,13 +784,12 @@ export interface ReachResult {
 
 /**
  * /reach/:target — Test actual route reachability through Caddy/Cloudflare.
- * Looks up domain from topology, probes HTTPS → HTTP → TCP.
+ * Looks up domain from topology, probes HTTPS + HTTP + TCP in parallel.
  */
 export function checkReach(target: string): ReachResult {
   const config = getConfig();
   const start = Date.now();
 
-  // Find domain from service topology
   const svc = config.services[target];
   const domain = svc?.domain;
 
@@ -803,35 +802,32 @@ export function checkReach(target: string): ReachResult {
     };
   }
 
+  // Run all three probes in parallel via a single shell command
+  // Output: HTTPS_STATUS HTTPS_MS HTTP_STATUS HTTP_MS TCP_OK TCP_MS
+  const probe = exec(
+    `#!/bin/sh
+HTTPS_TMP=$(mktemp) HTTP_TMP=$(mktemp) TCP_TMP=$(mktemp)
+(s=$(date +%s%N); code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 https://${domain}/ 2>/dev/null); e=$(date +%s%N); ms=$(( (e - s) / 1000000 )); echo "$code $ms" > "$HTTPS_TMP") &
+(s=$(date +%s%N); code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 http://${domain}/ 2>/dev/null); e=$(date +%s%N); ms=$(( (e - s) / 1000000 )); echo "$code $ms" > "$HTTP_TMP") &
+(s=$(date +%s%N); timeout 3 bash -c "echo >/dev/tcp/${domain}/443" 2>/dev/null && ok=1 || ok=0; e=$(date +%s%N); ms=$(( (e - s) / 1000000 )); echo "$ok $ms" > "$TCP_TMP") &
+wait
+echo "$(cat "$HTTPS_TMP") $(cat "$HTTP_TMP") $(cat "$TCP_TMP")"
+rm -f "$HTTPS_TMP" "$HTTP_TMP" "$TCP_TMP"`,
+    12_000,
+  );
+
   const result: ReachResult = { target, domain, reachable: false, latencyMs: 0 };
 
-  // HTTPS probe (primary — this is the real user path)
-  const httpsStart = Date.now();
-  const httpsProbe = exec(`curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 https://${domain}/`, 10_000);
-  const httpsMs = Date.now() - httpsStart;
-  if (httpsProbe.ok) {
-    const status = parseInt(httpsProbe.stdout.trim(), 10);
-    result.https = { ok: status > 0 && status < 500, status, latencyMs: httpsMs };
-  } else {
-    result.https = { ok: false, latencyMs: httpsMs, error: httpsProbe.stderr?.trim() || "timeout" };
-  }
+  if (probe.ok) {
+    const parts = probe.stdout.trim().split(/\s+/);
+    const [httpsCode, httpsMs, httpCode, httpMs, tcpOk, tcpMs] = parts.map(Number);
 
-  // HTTP probe (fallback check)
-  const httpStart = Date.now();
-  const httpProbe = exec(`curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 http://${domain}/`, 10_000);
-  const httpMs = Date.now() - httpStart;
-  if (httpProbe.ok) {
-    const status = parseInt(httpProbe.stdout.trim(), 10);
-    result.http = { ok: status > 0 && status < 500, status, latencyMs: httpMs };
+    result.https = { ok: httpsCode > 0 && httpsCode < 500, status: httpsCode, latencyMs: httpsMs || 0 };
+    result.http = { ok: httpCode > 0 && httpCode < 500, status: httpCode, latencyMs: httpMs || 0 };
+    result.tcp = { ok: tcpOk === 1, latencyMs: tcpMs || 0, ...(tcpOk === 1 ? {} : { error: "connection refused or timeout" }) };
   } else {
-    result.http = { ok: false, latencyMs: httpMs, error: httpProbe.stderr?.trim() || "timeout" };
+    result.https = { ok: false, latencyMs: 0, error: probe.stderr?.trim() || "probe failed" };
   }
-
-  // TCP probe on port 443
-  const tcpStart = Date.now();
-  const tcpProbe = exec(`timeout 3 bash -c 'echo >/dev/tcp/${domain}/443' 2>&1 || curl -s --max-time 3 --connect-timeout 3 -o /dev/null https://${domain}/`, 5_000);
-  const tcpMs = Date.now() - tcpStart;
-  result.tcp = { ok: tcpProbe.ok, latencyMs: tcpMs, ...(tcpProbe.ok ? {} : { error: "connection refused or timeout" }) };
 
   result.reachable = result.https?.ok || result.http?.ok || false;
   result.latencyMs = Date.now() - start;
