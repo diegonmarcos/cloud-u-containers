@@ -19,6 +19,8 @@ export interface ServiceConfig {
   description: string;
   discovered?: boolean;
   containers?: string[];
+  domain?: string;
+  ports?: string[];
 }
 
 export interface InfraConfig {
