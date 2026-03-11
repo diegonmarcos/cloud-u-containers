@@ -15,6 +15,7 @@ import {
   checkTier3All,
   checkUp,
   checkHealth,
+  checkReach,
 } from "../../shared/health.js";
 import { profileContainer, profileVm } from "../../shared/diagnostics.js";
 import { runTestSuite } from "../../shared/tests.js";
@@ -211,6 +212,20 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     },
     async (req) => {
       return checkHealth(req.params.target);
+    },
+  );
+
+  app.get<{ Params: { target: string } }>(
+    "/reach/:target",
+    {
+      schema: {
+        tags: ["Observability"],
+        summary: "Route reachability — probe HTTPS/HTTP/TCP through Caddy",
+        description: "Tests actual route: looks up service domain from topology, probes HTTPS → HTTP → TCP. Verifies the full path (Cloudflare → Caddy → service) is working.",
+      },
+    },
+    async (req) => {
+      return checkReach(req.params.target);
     },
   );
 

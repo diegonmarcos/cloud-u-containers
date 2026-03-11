@@ -770,6 +770,75 @@ export function checkHealth(target: string): HealthResult {
   };
 }
 
+// ── /reach/:target — Route reachability (HTTPS/HTTP/TCP through Caddy) ───
+
+export interface ReachResult {
+  target: string;
+  domain?: string;
+  https?: { ok: boolean; status?: number; latencyMs: number; error?: string };
+  http?: { ok: boolean; status?: number; latencyMs: number; error?: string };
+  tcp?: { ok: boolean; latencyMs: number; error?: string };
+  reachable: boolean;
+  latencyMs: number;
+}
+
+/**
+ * /reach/:target — Test actual route reachability through Caddy/Cloudflare.
+ * Looks up domain from topology, probes HTTPS → HTTP → TCP.
+ */
+export function checkReach(target: string): ReachResult {
+  const config = getConfig();
+  const start = Date.now();
+
+  // Find domain from service topology
+  const svc = config.services[target];
+  const domain = svc?.domain;
+
+  if (!domain) {
+    return {
+      target,
+      reachable: false,
+      latencyMs: Date.now() - start,
+      https: { ok: false, latencyMs: 0, error: `no domain found for service '${target}'` },
+    };
+  }
+
+  const result: ReachResult = { target, domain, reachable: false, latencyMs: 0 };
+
+  // HTTPS probe (primary — this is the real user path)
+  const httpsStart = Date.now();
+  const httpsProbe = exec(`curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 https://${domain}/`, 10_000);
+  const httpsMs = Date.now() - httpsStart;
+  if (httpsProbe.ok) {
+    const status = parseInt(httpsProbe.stdout.trim(), 10);
+    result.https = { ok: status > 0 && status < 500, status, latencyMs: httpsMs };
+  } else {
+    result.https = { ok: false, latencyMs: httpsMs, error: httpsProbe.stderr?.trim() || "timeout" };
+  }
+
+  // HTTP probe (fallback check)
+  const httpStart = Date.now();
+  const httpProbe = exec(`curl -s -o /dev/null -w '%{http_code}' --max-time 5 --connect-timeout 3 http://${domain}/`, 10_000);
+  const httpMs = Date.now() - httpStart;
+  if (httpProbe.ok) {
+    const status = parseInt(httpProbe.stdout.trim(), 10);
+    result.http = { ok: status > 0 && status < 500, status, latencyMs: httpMs };
+  } else {
+    result.http = { ok: false, latencyMs: httpMs, error: httpProbe.stderr?.trim() || "timeout" };
+  }
+
+  // TCP probe on port 443
+  const tcpStart = Date.now();
+  const tcpProbe = exec(`timeout 3 bash -c 'echo >/dev/tcp/${domain}/443' 2>&1 || curl -s --max-time 3 --connect-timeout 3 -o /dev/null https://${domain}/`, 5_000);
+  const tcpMs = Date.now() - tcpStart;
+  result.tcp = { ok: tcpProbe.ok, latencyMs: tcpMs, ...(tcpProbe.ok ? {} : { error: "connection refused or timeout" }) };
+
+  result.reachable = result.https?.ok || result.http?.ok || false;
+  result.latencyMs = Date.now() - start;
+
+  return result;
+}
+
 // ── New: Metrics snapshot ────────────────────────────────────────────────
 
 export interface ContainerMetrics {
