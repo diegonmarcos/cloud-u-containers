@@ -28,6 +28,12 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
+variable "cloudflare_account_id" {
+  description = "Cloudflare Account ID"
+  type        = string
+  default     = "e5cb0a0c6f448e54f217de484259f0ae"
+}
+
 variable "dkim_mailu_public_key" {
   description = "Mailu DKIM public key (dkim._domainkey) - get from Mailu admin > Domains"
   type        = string
@@ -80,7 +86,7 @@ variable "ses_dkim_token_3" {
 
 resource "cloudflare_record" "root" {
   zone_id = var.cloudflare_zone_id
-  name    = "@"
+  name    = "diegonmarcos.com"
   type    = "A"
   content = "35.226.147.64"
   proxied = false
@@ -312,24 +318,61 @@ resource "cloudflare_record" "smtp_proxy_tunnel" {
   content = "90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com"
   proxied = true
   ttl     = 1
-  comment = "Cloudflare Tunnel → smtp-proxy on oci-mail (alternative to direct port 8080)"
+  comment = "Cloudflare Tunnel → smtp-proxy on oci-mail"
+}
+
+# Tunnel ingress config — routes smtp-proxy.diegonmarcos.com → localhost:8080
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "smtp_proxy" {
+  account_id = var.cloudflare_account_id
+  tunnel_id  = "90b644ed-1339-4fbe-a467-687012aa84ae"
+
+  config {
+    ingress_rule {
+      hostname = "smtp-proxy.diegonmarcos.com"
+      service  = "http://localhost:8080"
+    }
+    # Catch-all (required by Cloudflare)
+    ingress_rule {
+      service = "http_status:404"
+    }
+  }
 }
 
 # =============================================================================
-# MX Records - Managed by Cloudflare Email Routing (NOT Terraform)
+# Email Routing - Declarative (previously Dashboard-only)
 #
-# CF Email Routing auto-manages: route1/2/3.mx.cloudflare.net
-# These records CANNOT be modified/deleted while Email Routing is enabled.
+# MX records (route1/2/3.mx.cloudflare.net) are auto-managed by CF Email Routing.
 #
 # EMAIL FLOW:
-#   INBOUND:  Sender → CF MX (route1/2/3.mx.cloudflare.net)
-#             → Email Routing Worker "email-forwarder"
+#   INBOUND:  Sender → CF MX → Email Routing Rule → Worker "email-forwarder"
 #             → smtp-proxy (oci-mail:8080) → Mailu front:25
 #   OUTBOUND: Mailu → AWS SES relay (email-smtp.us-east-1.amazonaws.com:587)
-#
-# Email Routing rules are in CF Dashboard (not Terraform):
-#   me@diegonmarcos.com → Worker "email-forwarder"
 # =============================================================================
+
+# Verified destination for backup forwarding
+resource "cloudflare_email_routing_address" "backup" {
+  account_id = var.cloudflare_account_id
+  email      = "diegonmarcos@live.com"
+}
+
+# Route me@diegonmarcos.com → Worker "email-forwarder"
+resource "cloudflare_email_routing_rule" "me_to_worker" {
+  zone_id  = var.cloudflare_zone_id
+  name     = "Forward to Worker (Gmail + Stalwart)"
+  enabled  = true
+  priority = 0
+
+  matcher {
+    type  = "literal"
+    field = "to"
+    value = "me@diegonmarcos.com"
+  }
+
+  action {
+    type  = "worker"
+    value = ["email-forwarder"]
+  }
+}
 
 # =============================================================================
 # TXT Records - Email Authentication
@@ -342,7 +385,7 @@ resource "cloudflare_record" "smtp_proxy_tunnel" {
 # - a:smtp.diegonmarcos.com                 → authorizes direct Mailu outbound
 resource "cloudflare_record" "spf" {
   zone_id = var.cloudflare_zone_id
-  name    = "@"
+  name    = "diegonmarcos.com"
   type    = "TXT"
   content = "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com a:smtp.diegonmarcos.com ~all"
   ttl     = 300
@@ -469,7 +512,7 @@ resource "cloudflare_record" "ses_mail_from_spf" {
 # CAA - Only Let's Encrypt may issue TLS certificates for this domain
 resource "cloudflare_record" "caa_letsencrypt" {
   zone_id = var.cloudflare_zone_id
-  name    = "@"
+  name    = "diegonmarcos.com"
   type    = "CAA"
   data {
     flags = "0"

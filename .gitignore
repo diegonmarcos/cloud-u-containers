@@ -28,9 +28,7 @@ result-*
 *.pem
 **/*.pem
 
-# Terraform state (contains secrets)
-*.tfstate
-*.tfstate.backup
+# Terraform
 .terraform/
 *.tfvars
 !*.tfvars.template

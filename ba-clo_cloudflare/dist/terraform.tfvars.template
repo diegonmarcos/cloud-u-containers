@@ -1,9 +1,17 @@
-# Cloudflare Configuration
-# Get API token from: https://dash.cloudflare.com/profile/api-tokens
-# Required permissions: Zone:DNS:Edit, Zone:Settings:Edit
+cloudflare_api_key   = "INJECTED_FROM_SECRETS"
+cloudflare_email     = "me@diegonmarcos.com"
+cloudflare_zone_id   = "ff4335cc9c7de42e580d0dff9a0d70eb"
 
-cloudflare_api_token = "CHANGE_ME_API_TOKEN"
-cloudflare_zone_id   = "CHANGE_ME_ZONE_ID"
+dkim_mailu_public_key  = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmWJtaKXcpc/IizfCWA3/0P7AZwHVFsDUBwNLcI2h9cB5PcjM6INJBvKLKKrXxwoTGUuyezz8mKR6/3qWQw3tI52ulsbe8xkR3UkxhVVxrYbQrvd7jZW4JUMYiJFsyTWReucOrCieyjTWSwM7Rv03w5wL8M7BqPxt1E5B7UYGGJK7sHns8CrRTN9VAfb/YJSUl0LhxPglyuThnRmUW7bvVWe3EPG8zbt1xYrW8ea8Kd4SSS0X1yEI56g0YaLq/StSF1LAHzivfNey+KEvZ36YNkns8sPQw+7D6tCwpRwWJ7TJeRgYMzIQCpZqqHcx2HntBZsq9IslLRtvQXQzXvyoCQIDAQAB"
 
-# DKIM key from Mailu: cat /opt/mailu/dkim/diegonmarcos.com.dkim.key
-dkim_public_key = "v=DKIM1; k=rsa; p=CHANGE_ME_DKIM_KEY"
+dkim_cf_public_key     = "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiweykoi+o48IOGuP7GR3X0MOExCUDY/BCRHoWBnh3rChl7WhdyCxW3jgq1daEjPPqoi7sJvdg5hEQVsgVRQP4DcnQDVjGMbASQtrY4WmB1VebF+RPJB2ECPsEDTpeiI5ZyUAwJaVX7r6bznU67g7LvFq35yIo4sdlmtZGV+i0H4cpYH9+3JJ78km4KXwaf9xUJCWF6nxeD+qG6Fyruw1Qlbds2r85U9dkNDVAS3gioCvELryh1TxKGiVTkg4wqHTyHfWsp7KD3WQHYJn0RyfJJu6YEmL77zonn7p2SRMvTMP3ZEXibnC9gz3nnhR6wcYL8Q7zXypKTMD58bTixDSJwIDAQAB"
+
+dkim_google_public_key = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwY9rdAqF839ncfW4QhXzfNsa3B4BEnh5gblpdeD9IaOJd13rpv/ZQRcsjq2eAegusEYbkpbbCZscwsbpFM/oGM3+Q8E4fdM8qj5BCdhc5MPrB9U4AZX4c3FyUIedOF740XUoDUSvoG4WphMNheyM5lwQDkm7Mm6I8orxXsbEVMqFa1eueYoQfBS+7zUwAcmh76xUglE2GSHJpTV40jSbfLl8l2D8hMJH7awIZ7vfTUkhZ+7tOdmmmdWIS6CFAO+CoTQ/UjLbUHEj+aupP3sozsNHZCNVRwdcN3a++hW7R8ypZ8t+j+LMSEceKtpRf+msEvVQ7HGRxMUssd5T2gLkTQIDAQAB"
+
+dkim_mail_public_key   = "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2gmzNH2aacWMgFxkx8Ju+CebUXbykGKNyLeS40j7ZszwHoiyPHHFn2zLOwGhMj3Wxw2QAN5QWTKFsIyrOe6NhTSCcj7tgP1wQkk8ZM2YSEcI/DlZbHqeD6nJr5+uRUC505MvGgXvsQoPYHbjVKQ2zXVqxbp1DtQ778rXpCosflF/Mx5/1mrh9t7OTy+oXAihjHx5r2QnbkLq3QdQXm5WJuIjYmu51kWcgasP8KDXXMl0r7AHmgtFejdoeolJkH0bpjmAaFTuPjBjqpPgvcrUjmpIvitYTgCywlpC21ok98TGCY7JYGpWAOW+eXGpbWs9xNs3yHMasTdQSEusA8xXYwIDAQAB"
+
+# AWS SES (from b_infra/vps_aws terraform output, 2026-03-04)
+ses_verification_token = "Og1MPle0ftYfioO+jVSEWYFfP6FkbAC7KkrkAN9Lit4="
+ses_dkim_token_1       = "qrsz7u42zhb6kjnkm7ynntzru2ejxjaq"
+ses_dkim_token_2       = "3kv7hkpeckwv2ygbq37vgahud7deq5rz"
+ses_dkim_token_3       = "spbilhxxgd646hch7ewtbiqi34oj375e"

@@ -1,9 +1,16 @@
 {
   "name": "cloudflare",
-  "description": "Cloudflare DNS records and configuration (Terraform)",
+  "description": "Cloudflare DNS, Email Routing, Tunnel config (Terraform)",
   "category": "cloud",
+  "build": {
+    "copy_only": true
+  },
   "deploy": {
     "host": "local",
-    "remote_path": ""
+    "remote_path": "",
+    "terraform": true
+  },
+  "terraform": {
+    "tfvars_template": "terraform.tfvars.template"
   }
 }
