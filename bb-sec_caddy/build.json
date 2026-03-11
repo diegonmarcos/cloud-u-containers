@@ -1,6 +1,6 @@
 {
   "name": "caddy",
-  "description": "Caddy reverse proxy (replaces NPM on gcp-proxy + oci-mail)",
+  "description": "Caddy reverse proxy + security dashboard (gcp-proxy)",
   "category": "sec",
   "domain": "proxy.diegonmarcos.com",
   "docker": {
