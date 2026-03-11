@@ -77,6 +77,8 @@ if [ -f "$CONFIG" ]; then
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
     WRANGLER_DEPLOY="$(get_config deploy.wrangler)"
+    TERRAFORM_DEPLOY="$(get_config deploy.terraform)"
+    TERRAFORM_TFVARS_TEMPLATE="$(get_config terraform.tfvars_template)"
     BUILD_COPY_ONLY="$(get_config build.copy_only)"
 fi
 # SSH multiplexing: one connection reused across all steps, kept alive 120s
@@ -183,9 +185,23 @@ step_build() {
     # Simple copy mode: no nix, just copy src/ → dist/
     if [ "$BUILD_COPY_ONLY" = "true" ]; then
         log "Copying src/ -> dist/ (copy-only mode)"
+        # Preserve terraform state if present
+        if [ "$TERRAFORM_DEPLOY" = "true" ] && [ -d "$DIST_DIR" ]; then
+            TF_BACKUP=$(mktemp -d)
+            for f in terraform.tfstate terraform.tfstate.backup terraform.tfvars .terraform; do
+                [ -e "$DIST_DIR/$f" ] && mv "$DIST_DIR/$f" "$TF_BACKUP/"
+            done
+            # Also preserve any .tfstate backups
+            find "$DIST_DIR" -name '*.backup' -exec mv {} "$TF_BACKUP/" \; 2>/dev/null || true
+        fi
         rm -rf "$DIST_DIR"
         mkdir -p "$DIST_DIR"
         cp -r "$SRC_DIR/"* "$DIST_DIR/"
+        # Restore terraform state
+        if [ -n "${TF_BACKUP:-}" ] && [ -d "$TF_BACKUP" ]; then
+            cp -a "$TF_BACKUP/"* "$DIST_DIR/" 2>/dev/null || true
+            rm -rf "$TF_BACKUP"
+        fi
         chmod -R u+w "$DIST_DIR"
         log "Built files:"
         find "$DIST_DIR" -type f | sed "s|$DIST_DIR/|  |"
@@ -297,7 +313,25 @@ step_secrets() {
     local exclude_keys="sops"
     [ -n "$JWKS_FILE" ] && exclude_keys="sops,AUTHELIA_OIDC_JWKS_KEY"
 
-    if command -v python3 >/dev/null 2>&1; then
+    if command -v yq >/dev/null 2>&1; then
+        sops -d "$secrets_file" | yq -r 'to_entries | .[] | select(.key != "sops") | "\(.key)=\(.value)"' \
+            > "$DIST_DIR/.secrets"
+        # Multiline values → .secrets.d/KEY (one file per key)
+        mkdir -p "$DIST_DIR/.secrets.d"
+        while IFS= read -r line; do
+            key="${line%%=*}"
+            val="${line#*=}"
+            case "$key" in "") continue ;; esac
+            case "$val" in *"
+"*)
+                printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
+                chmod 600 "$DIST_DIR/.secrets.d/$key"
+                # Remove from .secrets (env_file can't handle multiline)
+                sed -i "/^${key}=/d" "$DIST_DIR/.secrets"
+                ;;
+            esac
+        done < "$DIST_DIR/.secrets"
+    elif command -v python3 >/dev/null 2>&1 && python3 -c "import yaml" 2>/dev/null; then
         sops -d "$secrets_file" | python3 -c "
 import sys, os, yaml
 data = yaml.safe_load(sys.stdin)
@@ -314,7 +348,6 @@ for k, v in data.items():
     if not isinstance(v, str):
         v = str(v)
     if '\n' in v:
-        # Multiline → separate file
         path = os.path.join(secrets_d, k)
         with open(path, 'w') as f:
             f.write(v + '\n')
@@ -325,13 +358,8 @@ with open(os.path.join(dist, '.secrets'), 'w') as f:
     f.write('\n'.join(env_lines) + '\n')
 print(f'  {len(env_lines)} env vars, {len(os.listdir(secrets_d))} multiline files', file=sys.stderr)
 "
-    elif command -v yq >/dev/null 2>&1; then
-        # Fallback: yq (single-line values only — multiline will be truncated)
-        sops -d "$secrets_file" | yq -r 'to_entries | .[] | "\(.key)=\(.value)"' \
-            | grep -v "^sops=" > "$DIST_DIR/.secrets"
-        log "WARNING: yq fallback — multiline values may be truncated"
     else
-        log "ERROR: No python3 or yq for YAML->env conversion"
+        log "ERROR: No yq or python3 for YAML->env conversion"
         return 1
     fi
 
@@ -587,6 +615,66 @@ step_wrangler() {
     log "Worker deployed to Cloudflare"
 }
 
+# ── Step: Terraform (init + apply in dist/) ──────────────────────────
+step_terraform() {
+    CURRENT_STEP="terraform"
+    [ "$TERRAFORM_DEPLOY" != "true" ] && { log "No deploy.terraform -- skipping"; return 0; }
+    [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
+
+    if ! command -v terraform >/dev/null 2>&1; then
+        log_error "terraform not found on PATH"
+        return 1
+    fi
+
+    # Generate terraform.tfvars from template + secrets (if template exists)
+    TFVARS_TEMPLATE="$SRC_DIR/${TERRAFORM_TFVARS_TEMPLATE:-terraform.tfvars.template}"
+    if [ -f "$TFVARS_TEMPLATE" ] && [ -f "$DIST_DIR/.secrets" ]; then
+        log "Generating terraform.tfvars from template + secrets"
+        cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
+        while IFS='=' read -r key val; do
+            case "$key" in "") continue ;; esac
+            sed -i "s|^${key}.*= \"INJECTED_FROM_SECRETS\"|${key} = \"${val}\"|" "$DIST_DIR/terraform.tfvars"
+        done < "$DIST_DIR/.secrets"
+        log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
+    fi
+
+    log "terraform init"
+    (cd "$DIST_DIR" && terraform init -upgrade -input=false)
+    log "terraform plan"
+    (cd "$DIST_DIR" && terraform plan)
+    log "terraform apply -auto-approve"
+    (cd "$DIST_DIR" && terraform apply -auto-approve)
+    log "Terraform applied"
+}
+
+# ── Step: Terraform plan (non-destructive) ───────────────────────────
+step_terraform_plan() {
+    CURRENT_STEP="terraform-plan"
+    [ "$TERRAFORM_DEPLOY" != "true" ] && { log "No deploy.terraform -- skipping"; return 0; }
+    [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
+
+    if ! command -v terraform >/dev/null 2>&1; then
+        log_error "terraform not found on PATH"
+        return 1
+    fi
+
+    # Generate tfvars if needed (same as step_terraform)
+    TFVARS_TEMPLATE="$SRC_DIR/${TERRAFORM_TFVARS_TEMPLATE:-terraform.tfvars.template}"
+    if [ -f "$TFVARS_TEMPLATE" ] && [ -f "$DIST_DIR/.secrets" ] && [ ! -f "$DIST_DIR/terraform.tfvars" ]; then
+        log "Generating terraform.tfvars from template + secrets"
+        cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
+        while IFS='=' read -r key val; do
+            case "$key" in "") continue ;; esac
+            sed -i "s|^${key}.*= \"INJECTED_FROM_SECRETS\"|${key} = \"${val}\"|" "$DIST_DIR/terraform.tfvars"
+        done < "$DIST_DIR/.secrets"
+    fi
+
+    log "terraform init"
+    (cd "$DIST_DIR" && terraform init -upgrade -input=false) >/dev/null 2>&1
+    log "terraform plan $*"
+    (cd "$DIST_DIR" && terraform plan "$@")
+}
+
 # ── Step: Clean remote (remove non-manifest files) ───────────────────
 # For intentional full cleanup of runtime state (DBs, caches, logs).
 # Shows a dry-run first, requires explicit --force to actually delete.
@@ -665,6 +753,9 @@ case "${1:-all}" in
         elif [ "$WRANGLER_DEPLOY" = "true" ]; then
             step_wrangler
             echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
+        elif [ "$TERRAFORM_DEPLOY" = "true" ]; then
+            step_terraform
+            echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
         else
             step_deploy
             step_compose
@@ -672,6 +763,8 @@ case "${1:-all}" in
         fi
         ;;
     wrangler) step_wrangler ;;
+    terraform) step_terraform ;;
+    tf-plan) shift; step_build; step_secrets; step_terraform_plan "$@" ;;
     redeploy) step_build; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs" "$SERVICE_DIR/.dist-hash"; log "Cleaned" ;;
     clean-remote) step_clean_remote "${2:-}" ;;
@@ -688,6 +781,8 @@ case "${1:-all}" in
             echo "  deploy       Rsync dist/ -> VM (manifest-based, no --delete)"
             echo "  compose      Docker compose up on VM"
             echo "  wrangler     Deploy Cloudflare Worker via wrangler"
+            echo "  terraform    Terraform init + apply in dist/"
+            echo "  tf-plan      build + secrets + terraform plan"
             echo "  all          build + docs + secrets (default)"
             echo "  ship         docker + build + secrets + deploy + compose (skips if unchanged)"
             echo "  redeploy     build + secrets + deploy + compose (skip docker)"
