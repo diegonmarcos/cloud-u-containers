@@ -111,7 +111,7 @@ function main() {
   // 6. Write cloud-configs.json
   const output = {
     _meta: {
-      generated_by: "a_solutions/mcp-api-c3/src/engines/gen-configs.ts",
+      generated_by: "a_solutions/c3-mcp-api/src/engines/gen-configs.ts",
       api_route: "GET /c3-api/configs",
       source: "cloud-topology.json + Caddy/Authelia/DNS flakes",
       generated_at: new Date().toISOString(),

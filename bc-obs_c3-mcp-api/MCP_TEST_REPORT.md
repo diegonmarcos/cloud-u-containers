@@ -1,5 +1,5 @@
 # MCP Server Test Report
-## mcp-api-c3 (cloud-infra v3.0.0)
+## c3-mcp-api (cloud-infra v3.0.0)
 
 ### Server Status: ✅ OPERATIONAL
 
@@ -201,7 +201,7 @@
 
 ### Recommended Next Steps
 
-1. **Update MCP config**: Update `.mcp.json` source in home-manager flake to point to new `mcp-api-c3` path (currently points to old `bb-sec_mcp-server-skills`)
+1. **Update MCP config**: Update `.mcp.json` source in home-manager flake to point to new `c3-mcp-api` path (currently points to old `bb-sec_mcp-server-skills`)
 2. **Restart session**: Restart Claude Code session to load MCP server with updated path
 3. **Service dependencies**: Document any service-specific requirements (e.g., Crawlee Cloud needs to be running for `crawlee_*` tools)
 
