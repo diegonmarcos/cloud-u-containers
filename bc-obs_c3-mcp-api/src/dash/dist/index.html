@@ -14,28 +14,45 @@
 <p class="subtitle"><em>api.diegonmarcos.com/c3-api</em> — live infrastructure dashboard</p>
 <hr>
 
-<div class="tab-bar">
-  <div class="tab-row">
-    <button class="tab-btn active" data-tab="topology">Topology</button>
-    <button class="tab-btn" data-tab="configs">Configs</button>
-  </div>
-  <div class="tab-row">
-    <button class="tab-btn" data-tab="services">Services</button>
-    <button class="tab-btn" data-tab="vmcontainers">VM/Containers</button>
-    <button class="tab-btn" data-tab="cloud">Cloud</button>
-  </div>
-  <div class="tab-row">
-    <button class="tab-btn" data-tab="up">Up</button>
-    <button class="tab-btn" data-tab="health">Health</button>
-    <button class="tab-btn" data-tab="control">Control</button>
-    <button class="tab-btn" data-tab="files">Files</button>
-  </div>
-  <div class="tab-row">
-    <button class="tab-btn" data-tab="tests">Tests</button>
-    <button class="tab-btn" data-tab="workflows">Workflows</button>
-    <button class="tab-btn" data-tab="swagger">Swagger</button>
-  </div>
-</div>
+<table class="tab-table">
+  <tr>
+    <td class="tab-label">Inventory</td>
+    <td class="tab-cell">
+      <button class="tab-btn active" data-tab="topology">Topology</button>
+      <button class="tab-btn" data-tab="configs">Configs</button>
+      <button class="tab-btn" data-tab="services">Services</button>
+      <button class="tab-btn" data-tab="vmcontainers">VM/Containers</button>
+      <button class="tab-btn" data-tab="cloud">Cloud</button>
+    </td>
+  </tr>
+  <tr>
+    <td class="tab-label">Ops</td>
+    <td class="tab-cell">
+      <button class="tab-btn" data-tab="up">Up</button>
+      <button class="tab-btn" data-tab="health">Health</button>
+      <button class="tab-btn" data-tab="control">Control</button>
+      <button class="tab-btn" data-tab="files">Files</button>
+    </td>
+  </tr>
+  <tr>
+    <td class="tab-label">Security</td>
+    <td class="tab-cell">
+      <button class="tab-btn" data-tab="sec-caddy">Web Server</button>
+      <button class="tab-btn" data-tab="sec-authelia">Auth</button>
+      <button class="tab-btn" data-tab="sec-proxy">Rev Proxy</button>
+      <button class="tab-btn" data-tab="sec-wg">VPN (WG)</button>
+      <button class="tab-btn" data-tab="sec-docker">Docker Net</button>
+    </td>
+  </tr>
+  <tr>
+    <td class="tab-label">CI/CD</td>
+    <td class="tab-cell">
+      <button class="tab-btn" data-tab="tests">Tests</button>
+      <button class="tab-btn" data-tab="workflows">Workflows</button>
+      <button class="tab-btn" data-tab="swagger">Swagger</button>
+    </td>
+  </tr>
+</table>
 
 <!-- ═══ TAB: Topology ═══ -->
 <div class="tab-content active" id="tab-topology">
@@ -216,6 +233,66 @@
       <button class="rbtn blue" id="btn-file-load" disabled>Load</button>
     </div>
     <div id="out-files"><span class="st-off">Select category, target, then Load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Security — Web Server (Caddy) ═══ -->
+<div class="tab-content" id="tab-sec-caddy">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Web Server — Caddy</h2>
+    <button class="rbtn blue" id="btn-sec-caddy">Refresh</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>TLS Certificates &amp; Listeners</h3></div>
+    <div id="out-sec-caddy"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Security — Auth (Authelia) ═══ -->
+<div class="tab-content" id="tab-sec-authelia">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Authentication — Authelia</h2>
+    <button class="rbtn blue" id="btn-sec-authelia">Refresh</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Auth Config &amp; Protected Routes</h3></div>
+    <div id="out-sec-authelia"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Security — Rev Proxy (Caddy) ═══ -->
+<div class="tab-content" id="tab-sec-proxy">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Reverse Proxy — Caddy Routes</h2>
+    <button class="rbtn blue" id="btn-sec-proxy">Refresh</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Route Map &amp; Upstream Targets</h3></div>
+    <div id="out-sec-proxy"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Security — VPN (WireGuard) ═══ -->
+<div class="tab-content" id="tab-sec-wg">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">VPN — WireGuard Mesh</h2>
+    <button class="rbtn blue" id="btn-sec-wg">Refresh</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Peers &amp; Tunnel Status</h3></div>
+    <div id="out-sec-wg"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Security — Docker Network ═══ -->
+<div class="tab-content" id="tab-sec-docker">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Container — Docker Networks</h2>
+    <button class="rbtn blue" id="btn-sec-docker">Refresh</button>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Network Isolation &amp; Port Exposure</h3></div>
+    <div id="out-sec-docker"><span class="st-off">Click Refresh to load</span></div>
   </div>
 </div>
 

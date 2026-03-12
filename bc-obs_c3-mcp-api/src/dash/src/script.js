@@ -866,6 +866,162 @@
   }
 
   /* ═══════════════════════════════════════════
+     SECURITY TABS
+     ═══════════════════════════════════════════ */
+
+  // ── Web Server (Caddy) — TLS + exposed services ──
+  document.getElementById('btn-sec-caddy').addEventListener('click',loadSecCaddy);
+  function loadSecCaddy(){
+    var el=document.getElementById('out-sec-caddy');
+    el.innerHTML='<span class="loading">loading Caddy info...</span>';
+    apiFetch('/topology/security',{timeout:20000}).then(function(d){
+      console.log('[Sec-Caddy]',d);
+      var svcs=d.exposedServices||[];
+      if(svcs.length===0){ el.innerHTML='<span class="st-off">No exposed services found</span>'; return; }
+      var h='<table><tr><th>Service</th><th>Domain</th><th>VM</th><th>TLS</th></tr>';
+      for(var i=0;i<svcs.length;i++){
+        var s=svcs[i];
+        h+='<tr><td><code>'+esc(s.name)+'</code></td>';
+        h+='<td>'+esc(s.domain)+'</td>';
+        h+='<td>'+esc(s.vm||'')+'</td>';
+        h+='<td class="st-ok">Let\'s Encrypt</td></tr>';
+      }
+      h+='</table>';
+      h+='<p style="font-size:.65rem;color:#495057;margin-top:.5rem">'+esc(d.summary||'')+'</p>';
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+  }
+
+  // ── Auth (Authelia) — token status + secrets ──
+  document.getElementById('btn-sec-authelia').addEventListener('click',loadSecAuthelia);
+  function loadSecAuthelia(){
+    var el=document.getElementById('out-sec-authelia');
+    el.innerHTML='<span class="loading">loading auth info...</span>';
+    Promise.all([
+      apiFetch('/security/tokens',{timeout:10000}),
+      apiFetch('/topology/security',{timeout:15000})
+    ]).then(function(arr){
+      var tok=arr[0], sec=arr[1];
+      console.log('[Sec-Authelia] tokens:',tok,'security:',sec);
+      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Bearer Token</h4>';
+      if(tok.hasToken){
+        var cls=tok.isExpired?'st-err':'st-ok';
+        h+='<p>Status: <span class="'+cls+'">'+(tok.isExpired?'EXPIRED':'VALID')+'</span></p>';
+        if(tok.expiresAt) h+='<p style="font-size:.7rem">Expires: '+esc(tok.expiresAt)+'</p>';
+        if(tok.remainingSeconds!==undefined) h+='<p style="font-size:.7rem">Remaining: '+Math.floor(tok.remainingSeconds/3600)+'h '+Math.floor((tok.remainingSeconds%3600)/60)+'m</p>';
+      }else{
+        h+='<p class="st-warn">No bearer token found</p>';
+      }
+      h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Secrets Status</h4>';
+      var secrets=sec.secretsStatus||[];
+      var withSecrets=secrets.filter(function(s){return s.hasSecrets});
+      h+='<table><tr><th>Service</th><th>Encrypted</th><th>Decrypted</th></tr>';
+      for(var i=0;i<withSecrets.length;i++){
+        var s=withSecrets[i];
+        h+='<tr><td><code>'+esc(s.service)+'</code></td>';
+        h+='<td class="'+(s.hasSecrets?'st-ok':'st-off')+'">'+(s.hasSecrets?'yes':'no')+'</td>';
+        h+='<td class="'+(s.hasSecretsFile?'st-ok':'st-warn')+'">'+(s.hasSecretsFile?'yes':'no')+'</td></tr>';
+      }
+      h+='</table>';
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+  }
+
+  // ── Rev Proxy (Caddy routes) ──
+  document.getElementById('btn-sec-proxy').addEventListener('click',loadSecProxy);
+  function loadSecProxy(){
+    var el=document.getElementById('out-sec-proxy');
+    el.innerHTML='<span class="loading">loading proxy routes...</span>';
+    apiFetch('/topology/security',{timeout:20000}).then(function(d){
+      console.log('[Sec-Proxy]',d);
+      var svcs=d.exposedServices||[];
+      var vms=d.vms||[];
+      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Reverse Proxy Routes (Caddy → WireGuard → VM)</h4>';
+      h+='<table><tr><th>Domain</th><th>Service</th><th>Target VM</th><th>Auth</th></tr>';
+      for(var i=0;i<svcs.length;i++){
+        var s=svcs[i];
+        h+='<tr><td><code>'+esc(s.domain)+'</code></td>';
+        h+='<td>'+esc(s.name)+'</td>';
+        h+='<td>'+esc(s.vm||'')+'</td>';
+        h+='<td class="st-ok">Authelia 2FA</td></tr>';
+      }
+      h+='</table>';
+      h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">VMs (SSH access)</h4>';
+      h+='<table><tr><th>VM</th><th>Alias</th><th>IP</th><th>Method</th></tr>';
+      for(var i=0;i<vms.length;i++){
+        var v=vms[i];
+        h+='<tr><td><code>'+esc(v.id)+'</code></td>';
+        h+='<td>'+esc(v.alias)+'</td>';
+        h+='<td>'+esc(v.ip)+'</td>';
+        h+='<td>'+esc(v.method)+'</td></tr>';
+      }
+      h+='</table>';
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+  }
+
+  // ── VPN (WireGuard) ──
+  document.getElementById('btn-sec-wg').addEventListener('click',loadSecWg);
+  function loadSecWg(){
+    var el=document.getElementById('out-sec-wg');
+    el.innerHTML='<span class="loading">loading WireGuard status... (may take ~30s)</span>';
+    apiFetch('/security/wireguard',{timeout:60000}).then(function(d){
+      console.log('[Sec-WG]',d);
+      if(!Array.isArray(d)||d.length===0){ el.innerHTML='<span class="st-off">No WireGuard data</span>'; return; }
+      var h='';
+      for(var i=0;i<d.length;i++){
+        var vm=d[i];
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .3rem">'+esc(vm.vm)+'</h4>';
+        if(vm.peers.length===0){
+          h+='<p class="st-warn" style="font-size:.7rem">No peers / unreachable</p>';
+          continue;
+        }
+        h+='<table><tr><th>Endpoint</th><th>Allowed IPs</th><th>Handshake</th><th>Transfer</th></tr>';
+        for(var j=0;j<vm.peers.length;j++){
+          var p=vm.peers[j];
+          var hsCls=p.latestHandshake?'st-ok':'st-warn';
+          h+='<tr><td style="font-size:.65rem">'+esc(p.endpoint||'—')+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(p.allowedIps||'—')+'</td>';
+          h+='<td class="'+hsCls+'" style="font-size:.65rem">'+esc(p.latestHandshake||'never')+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(p.transfer||'—')+'</td></tr>';
+        }
+        h+='</table>';
+      }
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+  }
+
+  // ── Docker Networks ──
+  document.getElementById('btn-sec-docker').addEventListener('click',loadSecDocker);
+  function loadSecDocker(){
+    var el=document.getElementById('out-sec-docker');
+    el.innerHTML='<span class="loading">loading Docker networks... (may take ~30s)</span>';
+    apiFetch('/topology/network',{timeout:60000}).then(function(d){
+      console.log('[Sec-Docker]',d);
+      if(!Array.isArray(d)||d.length===0){ el.innerHTML='<span class="st-off">No network data</span>'; return; }
+      var h='';
+      for(var i=0;i<d.length;i++){
+        var vm=d[i];
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .3rem">'+esc(vm.vm)+'</h4>';
+        if(!vm.networks||vm.networks.length===0){
+          h+='<p class="st-warn" style="font-size:.7rem">No networks / unreachable</p>';
+          continue;
+        }
+        h+='<table><tr><th>Network</th><th>Driver</th><th>Containers</th></tr>';
+        for(var j=0;j<vm.networks.length;j++){
+          var n=vm.networks[j];
+          var containers=n.containers&&n.containers.length?n.containers.join(', '):'—';
+          h+='<tr><td><code>'+esc(n.name)+'</code></td>';
+          h+='<td>'+esc(n.driver)+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(containers)+'</td></tr>';
+        }
+        h+='</table>';
+      }
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+  }
+
+  /* ═══════════════════════════════════════════
      SWAGGER TAB — full HTTP GET/POST to real API
      ═══════════════════════════════════════════ */
   var SWAGGER_BASE=API_BASE;

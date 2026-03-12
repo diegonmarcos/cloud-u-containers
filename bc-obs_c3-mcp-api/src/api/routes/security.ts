@@ -5,9 +5,10 @@ import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
-import { getSecurityTopology } from "../../shared/topology.js";
+import { getSecurityTopology, networkTopology } from "../../shared/topology.js";
+import { sshExec } from "../../shared/ssh.js";
+import { getConfig, getVmSshAlias, resolveVmId } from "../../shared/config.js";
 import { getSecretsStatus } from "../../shared/files.js";
-import { resolveVmId } from "../../shared/config.js";
 
 const securityScanSchema = z.object({
   vm: z.string().optional(),
@@ -90,6 +91,49 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     { schema: { tags: ["Security"] } },
     async () => {
       return getSecurityTopology();
+    }
+  );
+
+  // ── Network topology (Docker networks per VM) ──
+
+  app.get(
+    "/topology/network",
+    { schema: { tags: ["Security"], summary: "Docker networks and container isolation per VM" } },
+    async () => {
+      return networkTopology();
+    }
+  );
+
+  // ── WireGuard mesh status ──
+
+  app.get(
+    "/security/wireguard",
+    { schema: { tags: ["Security"], summary: "WireGuard peer status across all VMs" } },
+    async () => {
+      const config = getConfig();
+      const results: Array<{ vm: string; peers: Array<{ endpoint: string; allowedIps: string; latestHandshake: string; transfer: string }> }> = [];
+      for (const vmId of Object.keys(config.vms)) {
+        const alias = getVmSshAlias(vmId);
+        const r = sshExec(vmId, "sudo wg show all 2>/dev/null || echo 'no-wg'", 8_000);
+        if (!r.ok || r.stdout.includes("no-wg")) {
+          results.push({ vm: alias, peers: [] });
+          continue;
+        }
+        const peers: Array<{ endpoint: string; allowedIps: string; latestHandshake: string; transfer: string }> = [];
+        const blocks = r.stdout.split(/\npeer: /);
+        for (let i = 1; i < blocks.length; i++) {
+          const b = blocks[i];
+          const get = (k: string) => { const m = b.match(new RegExp(k + ":\\s*(.+)")); return m ? m[1].trim() : ""; };
+          peers.push({
+            endpoint: get("endpoint"),
+            allowedIps: get("allowed ips"),
+            latestHandshake: get("latest handshake"),
+            transfer: get("transfer"),
+          });
+        }
+        results.push({ vm: alias, peers });
+      }
+      return results;
     }
   );
 
