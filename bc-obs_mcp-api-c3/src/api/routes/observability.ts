@@ -283,6 +283,31 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     });
   }
 
+  // ── Workflows (GitHub Actions) ──
+
+  app.get("/workflows", { schema: { tags: ["Observability"] } }, async () => {
+    try {
+      const resp = await fetch(
+        "https://api.github.com/repos/diegonmarcos/cloud/actions/runs?per_page=15",
+        { headers: { Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(10000) },
+      );
+      if (!resp.ok) return { runs: [], error: `GitHub API ${resp.status}` };
+      const data = await resp.json() as { workflow_runs: Array<Record<string, unknown>> };
+      return {
+        runs: (data.workflow_runs || []).map((r: Record<string, unknown>) => ({
+          name: r.name,
+          branch: r.head_branch,
+          status: r.status,
+          conclusion: r.conclusion,
+          created_at: r.created_at,
+          url: r.html_url,
+        })),
+      };
+    } catch (e: unknown) {
+      return { runs: [], error: e instanceof Error ? e.message : String(e) };
+    }
+  });
+
   // ── Files: logs, status, reports (from files.ts) ──
 
   app.get<{ Params: { vmId: string; container: string }; Querystring: { lines?: string; since?: string } }>(
