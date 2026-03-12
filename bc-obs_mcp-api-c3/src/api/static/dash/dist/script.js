@@ -1,321 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>C3 — Cloud Control Center</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  background:#0a0a0f;
-  color:#c0c0c0;
-  font-family:'Courier New',monospace;
-  min-height:100vh;
-  overflow-x:hidden;
-  position:relative;
-  padding:2rem 1rem;
-}
-.stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite alternate}
-@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
-.container{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:1rem}
-h1{
-  font-size:clamp(1.5rem,4vw,2.5rem);
-  font-weight:bold;
-  background:linear-gradient(135deg,#845ef7,#339af0,#51cf66);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-  text-align:center;
-  margin-bottom:.3rem;
-}
-.subtitle{text-align:center;color:#495057;font-size:.8rem;margin-bottom:1.5rem}
-h2{color:#845ef7;font-size:1.1rem;margin:1.5rem 0 .75rem;border-bottom:1px solid #1a1a2e;padding-bottom:.3rem}
-h3{color:#339af0;font-size:.9rem;margin:1rem 0 .5rem}
-p,li{line-height:1.6;margin:.3rem 0}
-em{color:#fcc419;font-style:normal}
-strong{color:#ff6b6b}
-code{color:#51cf66;background:#0d0d15;padding:.15rem .4rem;border-radius:3px;font-size:.85em}
-pre{
-  background:#0d0d15;border:1px solid #1a1a2e;border-radius:4px;
-  padding:1rem;overflow-x:auto;font-size:.75rem;line-height:1.5;
-  color:#868e96;margin:.75rem 0;max-height:500px;overflow-y:auto;
-  white-space:pre-wrap;word-break:break-word;
-}
-pre code{background:none;padding:0;color:inherit}
-a{color:#339af0;text-decoration:none;border-bottom:1px dashed #339af0;transition:color .2s}
-a:hover{color:#845ef7;border-color:#845ef7}
-hr{border:none;border-top:1px solid #1a1a2e;margin:1.5rem 0}
-table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.75rem;display:block;overflow-x:auto}
-th{background:#0d0d15;color:#51cf66;text-align:left;padding:.5rem .6rem;border:1px solid #1a1a2e;white-space:nowrap}
-td{padding:.4rem .6rem;border:1px solid #1a1a2e;white-space:nowrap}
-tr:hover td{background:#0d0d15}
-.tab-bar{display:flex;justify-content:center;gap:.4rem;margin:1.5rem 0;flex-wrap:wrap}
-.tab-btn{
-  background:#1a1a2e;color:#c0c0c0;border:1px solid #1a1a2e;
-  padding:.4rem .8rem;border-radius:3px;cursor:pointer;
-  font-family:inherit;font-size:.72rem;transition:all .2s;
-  border-bottom:2px solid transparent;
-}
-.tab-btn:hover{color:#fff;border-bottom-color:#339af0}
-.tab-btn.active{color:#fff;border-bottom:2px solid;border-image:linear-gradient(135deg,#845ef7,#339af0,#51cf66) 1}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.st-ok{color:#51cf66}
-.st-warn{color:#fcc419}
-.st-err{color:#ff6b6b}
-.st-off{color:#495057}
-.loading{color:#339af0;font-style:italic}
-.rbtn{
-  background:#1a1a2e;color:#51cf66;border:1px solid #51cf66;
-  padding:.25rem .6rem;border-radius:3px;cursor:pointer;
-  font-family:inherit;font-size:.7rem;transition:all .2s;
-}
-.rbtn:hover{background:#51cf66;color:#0a0a0f}
-.rbtn:disabled{opacity:.4;cursor:not-allowed}
-.rbtn.warn{border-color:#fcc419;color:#fcc419}
-.rbtn.warn:hover{background:#fcc419;color:#0a0a0f}
-.rbtn.danger{border-color:#ff6b6b;color:#ff6b6b}
-.rbtn.danger:hover{background:#ff6b6b;color:#0a0a0f}
-.rbtn.blue{border-color:#339af0;color:#339af0}
-.rbtn.blue:hover{background:#339af0;color:#0a0a0f}
-.card{border:1px solid #1a1a2e;border-radius:4px;padding:.75rem 1rem;margin:.5rem 0}
-.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
-.card-hdr h3{margin:0}
-.badge{display:inline-block;padding:.1rem .4rem;border-radius:2px;font-size:.65rem;font-weight:bold;margin-left:.4rem}
-.badge-ok{background:#51cf6633;color:#51cf66;border:1px solid #51cf6644}
-.badge-warn{background:#fcc41933;color:#fcc419;border:1px solid #fcc41944}
-.badge-err{background:#ff6b6b33;color:#ff6b6b;border:1px solid #ff6b6b44}
-.badge-off{background:#49505733;color:#495057;border:1px solid #49505744}
-.badge-purple{background:#845ef733;color:#845ef7;border:1px solid #845ef744}
-.tier-lbl{color:#495057;font-size:.65rem;margin-left:.4rem}
-.flex-row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-.flex-row .rbtn{margin:0}
-select,input[type="text"]{
-  background:#0d0d15;color:#c0c0c0;border:1px solid #1a1a2e;
-  padding:.3rem .5rem;border-radius:3px;font-family:inherit;font-size:.75rem;
-}
-select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
-.modal-overlay{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(10,10,15,0.85);z-index:100;display:flex;
-  align-items:center;justify-content:center;
-}
-.modal{
-  background:#0d0d15;border:1px solid #1a1a2e;border-radius:6px;
-  padding:1.5rem;max-width:400px;width:90%;
-}
-.modal h3{color:#ff6b6b;margin-bottom:.75rem}
-.modal p{margin-bottom:1rem;font-size:.8rem}
-.modal .flex-row{justify-content:flex-end}
-.hidden{display:none}
-.auto-refresh{font-size:.65rem;color:#495057}
-.auto-refresh.active{color:#339af0}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-@media(max-width:700px){
-  table{font-size:.65rem}
-  pre{font-size:.65rem}
-  .tab-btn{font-size:.6rem;padding:.3rem .5rem}
-  .grid-2{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-<div class="stars" id="stars"></div>
-<div class="container">
-
-<h1>C3 — Cloud Control Center</h1>
-<p class="subtitle"><em>api.diegonmarcos.com/c3-api</em> — live infrastructure dashboard</p>
-<hr>
-
-<div class="tab-bar">
-  <button class="tab-btn active" data-tab="health">Health</button>
-  <button class="tab-btn" data-tab="topology">Topology</button>
-  <button class="tab-btn" data-tab="tests">Tests</button>
-  <button class="tab-btn" data-tab="services">Services</button>
-  <button class="tab-btn" data-tab="cloud">Cloud</button>
-  <button class="tab-btn" data-tab="files">Files</button>
-  <button class="tab-btn" data-tab="control">Control</button>
-</div>
-
-<!-- ═══ TAB: Health ═══ -->
-<div class="tab-content active" id="tab-health">
-  <div class="card-hdr">
-    <h2>Health Dashboard</h2>
-    <div class="flex-row">
-      <button class="rbtn blue" id="btn-health-refresh-all">Refresh All</button>
-      <span class="auto-refresh" id="ar-label">Auto-refresh: OFF</span>
-      <button class="rbtn blue" id="btn-ar-toggle">Enable 30s</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Status Overview <span class="tier-lbl">declared + deployed + drift</span></h3>
-      <button class="rbtn" id="btn-health-status">Refresh</button>
-    </div>
-    <div id="out-health-status"><span class="st-off">Click Refresh to load</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Tier 1 — Reachability <span class="tier-lbl">TCP/keyscan ~2s</span></h3>
-      <button class="rbtn" id="btn-tier1">Refresh</button>
-    </div>
-    <div id="out-tier1"><span class="st-off">—</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Tier 2 — SSH Auth <span class="tier-lbl">full SSH ~5s</span></h3>
-      <button class="rbtn" id="btn-tier2">Refresh</button>
-    </div>
-    <div id="out-tier2"><span class="st-off">—</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Tier 3 — Resources <span class="tier-lbl">resources + docker ~8s</span></h3>
-      <button class="rbtn warn" id="btn-tier3">Refresh</button>
-    </div>
-    <div id="out-tier3"><span class="st-off">—</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Topology ═══ -->
-<div class="tab-content" id="tab-topology">
-  <div class="card-hdr" style="margin-bottom:1rem">
-    <h2 style="margin:0;border:none;padding:0">Topology</h2>
-    <button class="rbtn blue" id="btn-topo-refresh-all">Refresh All</button>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Infrastructure Map</h3>
-      <button class="rbtn" id="btn-topo">Load</button>
-    </div>
-    <div id="out-topo"><span class="st-off">Click Load</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Security Topology</h3>
-      <button class="rbtn" id="btn-topo-sec">Load</button>
-    </div>
-    <div id="out-topo-sec"><span class="st-off">Click Load</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Config Drift</h3>
-      <button class="rbtn" id="btn-topo-drift">Load</button>
-    </div>
-    <div id="out-topo-drift"><span class="st-off">Click Load</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Tests ═══ -->
-<div class="tab-content" id="tab-tests">
-  <h2>Infrastructure Tests</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Run Test Suite</h3>
-      <div class="flex-row">
-        <select id="test-suite">
-          <option value="connectivity">connectivity</option>
-          <option value="dns">dns</option>
-          <option value="tls">tls</option>
-          <option value="routes">routes</option>
-          <option value="containers">containers</option>
-          <option value="wireguard">wireguard</option>
-          <option value="full">full (all suites)</option>
-        </select>
-        <button class="rbtn" id="btn-test-run">Run</button>
-      </div>
-    </div>
-    <div id="out-tests"><span class="st-off">Select a suite and click Run</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Services ═══ -->
-<div class="tab-content" id="tab-services">
-  <h2>Services</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Service Registry</h3>
-      <button class="rbtn" id="btn-services">Refresh</button>
-    </div>
-    <div id="out-services"><span class="st-off">Click Refresh to load</span></div>
-  </div>
-  <div class="card hidden" id="svc-detail-card">
-    <div class="card-hdr">
-      <h3 id="svc-detail-title">Service Detail</h3>
-      <button class="rbtn" id="btn-svc-close">Close</button>
-    </div>
-    <div id="out-svc-detail"></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Cloud ═══ -->
-<div class="tab-content" id="tab-cloud">
-  <h2>Cloud Providers</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>OCI + GCP Summary</h3>
-      <button class="rbtn" id="btn-cloud">Refresh</button>
-    </div>
-    <div id="out-cloud"><span class="st-off">Click Refresh to load</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Files ═══ -->
-<div class="tab-content" id="tab-files">
-  <h2>Files & Logs</h2>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>File Browser</h3>
-    </div>
-    <div class="flex-row" style="margin-bottom:.5rem">
-      <select id="file-category">
-        <option value="">-- category --</option>
-        <option value="config">Service Config</option>
-        <option value="logs">Container Logs</option>
-        <option value="status">VM Status</option>
-        <option value="report">Reports</option>
-        <option value="secrets">Secrets Status</option>
-      </select>
-      <select id="file-target" disabled><option value="">-- target --</option></select>
-      <select id="file-sub" class="hidden"><option value="">-- file --</option></select>
-      <button class="rbtn blue" id="btn-file-load" disabled>Load</button>
-    </div>
-    <div id="out-files"><span class="st-off">Select category, target, then Load</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Control ═══ -->
-<div class="tab-content" id="tab-control">
-  <h2>Control Panel</h2>
-  <p style="font-size:.75rem;color:#495057;margin-bottom:.75rem">Start/stop VMs and containers. Actions require confirmation.</p>
-
-  <div id="out-control"><span class="st-off">Loading...</span></div>
-</div>
-
-</div><!-- /.container -->
-
-<!-- Confirmation modal -->
-<div class="modal-overlay hidden" id="confirm-modal">
-  <div class="modal">
-    <h3 id="confirm-title">Confirm Action</h3>
-    <p id="confirm-msg"></p>
-    <div class="flex-row">
-      <button class="rbtn" id="confirm-cancel">Cancel</button>
-      <button class="rbtn danger" id="confirm-ok">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<script>
 (function(){
   /* ═══ Stars ═══ */
   var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
@@ -417,12 +99,10 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
 
   function renderHealthStatus(el,d){
     var h='';
-    // Handle different response formats
     var declared=d.declared||{};
     var deployed=d.deployed||{};
     var drift=d.drift||[];
 
-    // Declared VMs
     var dvms=declared.vms||{};
     var totals=declared.totals||declared.counts||{};
     h+='<h3>Declared</h3>';
@@ -435,7 +115,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     h+='</table>';
     if(totals.vms!=null)h+='<p style="font-size:.7rem">'+totals.vms+' VMs, '+totals.services+' services, '+totals.containers+' containers</p>';
 
-    // Deployed
     var depVms=deployed.vms||deployed;
     if(typeof depVms==='object'&&!Array.isArray(depVms)){
       h+='<h3>Deployed</h3>';
@@ -448,7 +127,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
       }
     }
 
-    // Drift
     if(drift.length>0||Array.isArray(drift)){
       h+='<h3>Drift</h3>';
       var hasDrift=false;
@@ -556,7 +234,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     el.innerHTML='<span class="loading">loading topology...</span>';
     apiFetch('/topology',{timeout:15000}).then(function(d){
       var h='';
-      // VMs
       var vms=d.vms||[];
       if(vms.length>0){
         h+='<h3>VMs ('+vms.length+')</h3>';
@@ -578,7 +255,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
         }
       }
 
-      // Services table
       var services=d.services||[];
       if(services.length>0){
         h+='<h3>Services ('+services.length+')</h3>';
@@ -698,7 +374,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     el.innerHTML='<span class="loading">loading services...</span>';
     apiFetch('/services',{timeout:15000}).then(function(d){
       var svcs=Array.isArray(d)?d:(d.services||[]);
-      // Sort by name
       svcs.sort(function(a,b){return(a.name||'').localeCompare(b.name||'')});
       var h='<table><tr><th>Name</th><th>Domain</th><th>VM</th><th>Category</th><th>API Spec</th><th></th></tr>';
       for(var i=0;i<svcs.length;i++){
@@ -716,7 +391,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
   }
 
-  // Service detail (delegated click)
   document.getElementById('out-services').addEventListener('click',function(e){
     var btn=e.target.closest('[data-svc-detail]');
     if(!btn)return;
@@ -760,7 +434,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     el.innerHTML='<span class="loading">loading cloud summary...</span>';
     apiFetch('/cloud/summary',{timeout:30000}).then(function(d){
       var h='';
-      // OCI
       h+='<h3>OCI (Oracle Cloud)</h3>';
       var oci=d.oci||{};
       var ociI=oci.instances;
@@ -786,7 +459,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
         else h+='<pre style="font-size:.65rem">'+esc(JSON.stringify(oci.costs,null,2))+'</pre>';
       }
 
-      // GCP
       h+='<h3>GCP (Google Cloud)</h3>';
       var gcp=d.gcp||{};
       var gcpI=gcp.instances;
@@ -878,11 +550,9 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     fileSub.classList.add('hidden');
     fileBtn.disabled=!tgt;
 
-    // For logs, we need a container name sub-selector
     if(cat==='logs'&&tgt){
       fileSub.classList.remove('hidden');
       fileSub.innerHTML='<option value="">-- container (leave empty for all) --</option>';
-      // Try to get containers for this VM
       apiFetch('/health/deployed/'+encodeURIComponent(tgt),{timeout:10000}).then(function(d){
         var containers=(d.containers||[]);
         for(var i=0;i<containers.length;i++){
@@ -892,7 +562,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
       }).catch(function(){});
     }
 
-    // For config, offer sub-file selection
     if(cat==='config'&&tgt){
       fileSub.classList.remove('hidden');
       fileSub.innerHTML='<option value="">all (default)</option>';
@@ -961,14 +630,12 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
         h+='</div>';
         h+='</div>';
 
-        // Container list
         var svcs=vm.services||{};
         var allContainers=[];
         for(var sn in svcs){
           var cs=svcs[sn];
           if(Array.isArray(cs))for(var i=0;i<cs.length;i++)allContainers.push(cs[i]);
         }
-        // Also add any deployed containers not in declared
         for(var k=0;k<containers.length;k++){
           if(allContainers.indexOf(containers[k].name)===-1)allContainers.push(containers[k].name);
         }
@@ -995,7 +662,6 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
   }
 
-  // Delegated click handlers for control actions
   document.getElementById('out-control').addEventListener('click',function(e){
     var btn=e.target.closest('[data-vm-action]');
     if(btn){
@@ -1030,16 +696,11 @@ select:focus,input[type="text"]:focus{outline:none;border-color:#339af0}
   });
 
   /* ═══ Init ═══ */
-  // Load initial health status
   loadHealthStatus();
 
-  // Lazy-load control panel when tab is activated
   var controlLoaded=false;
   document.querySelector('[data-tab="control"]').addEventListener('click',function(){
     if(!controlLoaded){controlLoaded=true;loadControlPanel()}
   });
 
 })();
-</script>
-</body>
-</html>
