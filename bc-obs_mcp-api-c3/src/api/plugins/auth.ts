@@ -22,8 +22,9 @@ function isMeshRequest(req: FastifyRequest): boolean {
 }
 
 function isCaddyAuthenticated(req: FastifyRequest): boolean {
-  // Caddy's introspect-proxy sets X-Auth-User on successful JWT validation
-  return !!req.headers["x-auth-user"];
+  // Bearer path: introspect-proxy sets X-Auth-User
+  // Cookie path: Authelia forward_auth sets Remote-User
+  return !!(req.headers["x-auth-user"] || req.headers["remote-user"]);
 }
 
 async function authHook(req: FastifyRequest, reply: FastifyReply) {
@@ -33,9 +34,16 @@ async function authHook(req: FastifyRequest, reply: FastifyReply) {
   // WireGuard mesh: trusted
   if (isMeshRequest(req)) return;
 
-  // Caddy already validated the JWT via introspect-proxy
+  // Caddy already validated via introspect-proxy or Authelia
   if (isCaddyAuthenticated(req)) return;
 
+  req.log.warn({
+    url: req.url,
+    ip: req.ip,
+    hasXAuthUser: !!req.headers["x-auth-user"],
+    hasRemoteUser: !!req.headers["remote-user"],
+    headers: Object.keys(req.headers),
+  }, "AUTH REJECTED — 401");
   reply.code(401).send({ error: "Unauthorized — use bearer token via Caddy" });
 }
 
