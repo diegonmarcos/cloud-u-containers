@@ -457,7 +457,7 @@
       app.diegonmarcos.com {
     ${sec}
         handle_path /windmill/* {
-          ${mkProtected "${analytics}:8000"}
+          ${mkProtected "${flex0}:8000"}
         }
         handle_path /etherpad/* {
           ${mkProtected "${flex0}:3012"}
