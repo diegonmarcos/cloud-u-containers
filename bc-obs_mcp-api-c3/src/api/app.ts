@@ -49,7 +49,7 @@ export async function buildApp() {
   // Dashboard — serve static files at /dash
   const __dirname = dirname(fileURLToPath(import.meta.url));
   await app.register(fastifyStatic, {
-    root: join(__dirname, "static", "dash", "dist"),
+    root: join(__dirname, "..", "dash", "dist"),
     prefix: "/dash/",
     decorateReply: false,
   });

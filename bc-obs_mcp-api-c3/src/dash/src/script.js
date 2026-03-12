@@ -10,6 +10,7 @@
 
   /* ═══ API Base ═══ */
   var API_BASE=window.location.pathname.replace(/\/dash\/?$/,'');
+  if(!API_BASE||API_BASE==='/') API_BASE='/c3-api';
 
   /* ═══ Fetch helper ═══ */
   function apiFetch(path,opts){

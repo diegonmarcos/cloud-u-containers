@@ -25,6 +25,7 @@ COPY shared/ ./src/shared/
 COPY api/ ./src/api/
 COPY mcp/ ./src/mcp/
 COPY engines/ ./src/engines/
+COPY dash/ ./src/dash/
 
 # Entrypoint: clone repos read-only, then start API
 COPY entrypoint.sh ./
