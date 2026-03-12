@@ -33,6 +33,7 @@
   <div class="tab-row">
     <button class="tab-btn" data-tab="tests">Tests</button>
     <button class="tab-btn" data-tab="workflows">Workflows</button>
+    <button class="tab-btn" data-tab="swagger">Swagger</button>
   </div>
 </div>
 
@@ -254,6 +255,19 @@
     </div>
     <div id="out-workflows"><span class="st-off">Click Refresh to load</span></div>
   </div>
+</div>
+
+<!-- ═══ TAB: Swagger ═══ -->
+<div class="tab-content" id="tab-swagger">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Swagger</h2>
+    <div class="flex-row">
+      <button class="rbtn blue" id="btn-swagger-load">Load Spec</button>
+      <button class="rbtn blue" id="btn-swagger-run-all">Run All GET</button>
+    </div>
+  </div>
+  <p class="subtitle">Full HTTP calls to <code>https://api.diegonmarcos.com/c3-api</code> — auth via Authelia session</p>
+  <div id="out-swagger"><span class="st-off">Click "Load Spec" to parse OpenAPI endpoints</span></div>
 </div>
 
 </div><!-- /.container -->
