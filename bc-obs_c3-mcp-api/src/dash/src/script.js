@@ -804,10 +804,10 @@
   /* ═══════════════════════════════════════════
      WORKFLOWS TAB
      ═══════════════════════════════════════════ */
-  document.getElementById('btn-wf-refresh').addEventListener('click',loadWorkflows);
+  document.getElementById('btn-wf-refresh').addEventListener('click',function(){ loadWorkflows(); loadDagu(); });
   function loadWorkflows(){
     var el=document.getElementById('out-workflows');
-    el.innerHTML='<span class="loading">loading workflow runs...</span>';
+    el.innerHTML='<span class="loading">loading GitHub Actions...</span>';
     apiFetch('/workflows',{timeout:15000}).then(function(d){
       var runs=Array.isArray(d)?d:(d.runs||d.workflow_runs||[]);
       if(runs.length===0){
@@ -827,7 +827,41 @@
       h+='</table>';
       el.innerHTML=h;
     }).catch(function(e){
-      el.innerHTML='<span class="st-off">Workflows endpoint not available (MCP-only)</span>';
+      el.innerHTML='<span class="st-off">GitHub Actions: '+esc(e.message)+'</span>';
+    });
+  }
+
+  function loadDagu(){
+    var el=document.getElementById('out-dagu');
+    el.innerHTML='<span class="loading">loading Dagu DAGs...</span>';
+    apiFetch('/workflows/dagu',{timeout:15000}).then(function(d){
+      console.log('[Dagu] response:',d);
+      var dags=d.dags||[];
+      if(d.error){
+        el.innerHTML='<span class="st-off">Dagu: '+esc(d.error)+'</span>';
+        return;
+      }
+      if(dags.length===0){
+        el.innerHTML='<span class="st-off">No Dagu DAGs found</span>';
+        return;
+      }
+      var statusMap={0:'not started',1:'running',2:'error',3:'cancelled',4:'success',5:'skipped'};
+      var h='<table><tr><th>DAG</th><th>Schedule</th><th>Status</th><th>Last Run</th><th>Description</th></tr>';
+      for(var i=0;i<dags.length;i++){
+        var dag=dags[i];
+        var st=dag.status!==null?(statusMap[dag.status]||String(dag.status)):'—';
+        var stCls=st==='success'?'st-ok':st==='running'?'st-warn':st==='error'?'st-err':'';
+        var lastRun=dag.startedAt?dag.startedAt.replace('T',' ').replace(/\.\d+Z$/,'Z'):'—';
+        h+='<tr><td><code>'+esc(dag.name||'')+'</code></td>';
+        h+='<td style="font-size:.65rem">'+esc(dag.schedule||'—')+'</td>';
+        h+='<td class="'+stCls+'">'+esc(st)+'</td>';
+        h+='<td style="font-size:.65rem">'+esc(lastRun)+'</td>';
+        h+='<td style="font-size:.65rem">'+esc(dag.description||'')+'</td></tr>';
+      }
+      h+='</table>';
+      el.innerHTML=h;
+    }).catch(function(e){
+      el.innerHTML='<span class="st-off">Dagu: '+esc(e.message)+'</span>';
     });
   }
 
