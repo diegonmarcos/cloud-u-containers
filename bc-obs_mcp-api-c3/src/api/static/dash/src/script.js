@@ -14,7 +14,7 @@
   /* ═══ Fetch helper ═══ */
   function apiFetch(path,opts){
     opts=opts||{};
-    opts.credentials='include'; // Send cookies (Authelia session)
+    opts.credentials='include';
     if(!opts.signal)opts.signal=AbortSignal.timeout(opts.timeout||30000);
     delete opts.timeout;
     return fetch(API_BASE+path,opts).then(function(r){
@@ -60,6 +60,327 @@
     if(l==='degraded'||l==='warning'||l==='warn'||l==='partial')return'st-warn';
     if(l==='down'||l==='error'||l==='exited'||l==='stopped'||l==='false'||l==='unreachable'||l==='fail')return'st-err';
     return'st-off';
+  }
+
+  /* ═══════════════════════════════════════════
+     TOPOLOGY TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-topo-refresh-all').addEventListener('click',function(){
+    document.getElementById('btn-topo').click();
+    document.getElementById('btn-topo-sec').click();
+    document.getElementById('btn-topo-drift').click();
+  });
+
+  document.getElementById('btn-topo').addEventListener('click',function(){
+    var el=document.getElementById('out-topo');
+    el.innerHTML='<span class="loading">loading topology...</span>';
+    apiFetch('/topology',{timeout:15000}).then(function(d){
+      var h='';
+      var vms=d.vms||[];
+      if(vms.length>0){
+        h+='<h3>VMs ('+vms.length+')</h3>';
+        for(var i=0;i<vms.length;i++){
+          var vm=vms[i];
+          h+='<div class="card" style="margin:.3rem 0;padding:.5rem .75rem">';
+          h+='<strong>'+esc(vm.alias||vm.id)+'</strong>';
+          if(vm.ip)h+=' <code>'+esc(vm.ip)+'</code>';
+          if(vm.method)h+=' <span class="badge badge-purple">'+esc(vm.method)+'</span>';
+          var svcs=vm.services||[];
+          if(svcs.length>0){
+            h+='<div style="margin-top:.3rem;font-size:.7rem">';
+            for(var j=0;j<svcs.length;j++){
+              h+='<code style="margin-right:.3rem">'+esc(svcs[j])+'</code>';
+            }
+            h+='</div>';
+          }
+          h+='</div>';
+        }
+      }
+
+      var services=d.services||[];
+      if(services.length>0){
+        h+='<h3>Services ('+services.length+')</h3>';
+        h+='<table><tr><th>Name</th><th>Category</th><th>VM</th><th>Domain</th><th>On-Disk</th></tr>';
+        for(var i=0;i<services.length;i++){
+          var svc=services[i];
+          h+='<tr><td><code>'+esc(svc.name)+'</code></td><td>'+esc(svc.category||'')+'</td>';
+          h+='<td>'+esc(svc.vmAlias||svc.vm||'')+'</td>';
+          h+='<td>'+(svc.domain?'<a href="https://'+esc(svc.domain)+'" target="_blank">'+esc(svc.domain)+'</a>':'—')+'</td>';
+          h+='<td class="'+stClass(svc.discovered?'ok':'fail')+'">'+(svc.discovered?'YES':'NO')+'</td></tr>';
+        }
+        h+='</table>';
+      }
+
+      if(d.summary)h+='<pre>'+esc(typeof d.summary==='string'?d.summary:JSON.stringify(d.summary,null,2))+'</pre>';
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  });
+
+  document.getElementById('btn-topo-sec').addEventListener('click',function(){
+    var el=document.getElementById('out-topo-sec');
+    el.innerHTML='<span class="loading">loading security topology...</span>';
+    apiFetch('/topology/security',{timeout:15000}).then(function(d){
+      var h='';
+      var exposed=d.exposedServices||[];
+      if(exposed.length>0){
+        h+='<h3>Exposed Services ('+exposed.length+')</h3>';
+        h+='<table><tr><th>Name</th><th>Domain</th><th>Auth</th><th>VM</th></tr>';
+        for(var i=0;i<exposed.length;i++){
+          var s=exposed[i];
+          h+='<tr><td><code>'+esc(s.name)+'</code></td><td>'+esc(s.domain||'')+'</td>';
+          h+='<td>'+esc(s.auth||'')+'</td><td>'+esc(s.vm||'')+'</td></tr>';
+        }
+        h+='</table>';
+      }
+      var secrets=d.secretsStatus||[];
+      if(secrets.length>0){
+        h+='<h3>Secrets Status</h3>';
+        h+='<table><tr><th>Service</th><th>Has Secrets</th><th>Encrypted</th></tr>';
+        for(var i=0;i<secrets.length;i++){
+          var s=secrets[i];
+          h+='<tr><td><code>'+esc(s.name||s.service)+'</code></td>';
+          h+='<td class="'+stClass(s.hasSecrets?'ok':'off')+'">'+(s.hasSecrets?'YES':'NO')+'</td>';
+          h+='<td class="'+stClass(s.encrypted?'ok':(s.hasSecrets?'fail':'off'))+'">'+(s.encrypted?'YES':(s.hasSecrets?'NO':'N/A'))+'</td></tr>';
+        }
+        h+='</table>';
+      }
+      if(d.summary)h+='<pre>'+esc(typeof d.summary==='string'?d.summary:JSON.stringify(d.summary,null,2))+'</pre>';
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  });
+
+  document.getElementById('btn-topo-drift').addEventListener('click',function(){
+    var el=document.getElementById('out-topo-drift');
+    el.innerHTML='<span class="loading">checking drift...</span>';
+    apiFetch('/topology/drift',{timeout:15000}).then(function(d){
+      var h='';
+      var onDisk=d.onDiskOnly||[];
+      var config=d.configOnly||[];
+      if(onDisk.length>0){
+        h+='<h3>On Disk Only <span class="badge badge-warn">'+onDisk.length+'</span></h3>';
+        h+='<p style="font-size:.7rem">Directories found on disk but not in config.json:</p><ul>';
+        for(var i=0;i<onDisk.length;i++)h+='<li><code>'+esc(onDisk[i])+'</code></li>';
+        h+='</ul>';
+      }
+      if(config.length>0){
+        h+='<h3>Config Only <span class="badge badge-err">'+config.length+'</span></h3>';
+        h+='<p style="font-size:.7rem">In config.json but no directory on disk:</p><ul>';
+        for(var i=0;i<config.length;i++)h+='<li><code>'+esc(config[i])+'</code></li>';
+        h+='</ul>';
+      }
+      if(onDisk.length===0&&config.length===0){
+        h+='<p class="st-ok">No drift detected — config matches disk.</p>';
+      }
+      if(d.summary)h+='<pre>'+esc(d.summary)+'</pre>';
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  });
+
+  /* ═══════════════════════════════════════════
+     CONFIGS TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-configs-refresh').addEventListener('click',loadConfigs);
+  function loadConfigs(){
+    var el=document.getElementById('out-configs');
+    el.innerHTML='<span class="loading">loading configs...</span>';
+    apiFetch('/configs',{timeout:15000}).then(function(d){
+      var services=Array.isArray(d)?d:(d.services||d.configs||[]);
+      if(services.length>0){
+        var h='<table><tr><th>Service</th><th>VM</th><th>Category</th><th>Remote Path</th><th>Has Secrets</th></tr>';
+        for(var i=0;i<services.length;i++){
+          var s=services[i];
+          h+='<tr><td><code>'+esc(s.name)+'</code></td>';
+          h+='<td>'+esc(s.deploy&&s.deploy.host||s.vm||s.host||'')+'</td>';
+          h+='<td>'+esc(s.category||'')+'</td>';
+          h+='<td><code>'+esc(s.deploy&&s.deploy.remote_path||s.remotePath||'')+'</code></td>';
+          h+='<td class="'+stClass(s.hasSecrets?'ok':'off')+'">'+(s.hasSecrets?'YES':'—')+'</td></tr>';
+        }
+        h+='</table>';
+        h+='<p style="font-size:.7rem;color:#495057">'+services.length+' services configured</p>';
+        el.innerHTML=h;
+      }else{
+        el.innerHTML='<pre>'+esc(typeof d==='string'?d:JSON.stringify(d,null,2))+'</pre>';
+      }
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  }
+
+  /* ═══════════════════════════════════════════
+     SERVICES TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-services').addEventListener('click',loadServices);
+  function loadServices(){
+    var el=document.getElementById('out-services');
+    el.innerHTML='<span class="loading">loading services...</span>';
+    apiFetch('/services',{timeout:15000}).then(function(d){
+      var svcs=Array.isArray(d)?d:(d.services||[]);
+      svcs.sort(function(a,b){return(a.name||'').localeCompare(b.name||'')});
+      var h='<table><tr><th>Name</th><th>Domain</th><th>VM</th><th>Category</th><th>API Spec</th><th></th></tr>';
+      for(var i=0;i<svcs.length;i++){
+        var s=svcs[i];
+        h+='<tr><td><code>'+esc(s.name)+'</code></td>';
+        h+='<td>'+(s.domain?'<a href="https://'+esc(s.domain)+'" target="_blank">'+esc(s.domain)+'</a>':'—')+'</td>';
+        h+='<td>'+esc(s.alias||s.vm||'')+'</td>';
+        h+='<td>'+esc(s.category||'')+'</td>';
+        h+='<td class="'+stClass(s.hasSpec?'ok':'off')+'">'+(s.hasSpec?'YES':'—')+'</td>';
+        h+='<td><button class="rbtn blue" style="padding:.15rem .4rem;font-size:.6rem" data-svc-detail="'+esc(s.name)+'">Details</button></td></tr>';
+      }
+      h+='</table>';
+      h+='<p style="font-size:.7rem;color:#495057">'+svcs.length+' services</p>';
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  }
+
+  document.getElementById('out-services').addEventListener('click',function(e){
+    var btn=e.target.closest('[data-svc-detail]');
+    if(!btn)return;
+    var name=btn.dataset.svcDetail;
+    var card=document.getElementById('svc-detail-card');
+    var el=document.getElementById('out-svc-detail');
+    document.getElementById('svc-detail-title').textContent=name;
+    card.classList.remove('hidden');
+    el.innerHTML='<span class="loading">loading...</span>';
+    apiFetch('/services/'+encodeURIComponent(name),{timeout:15000}).then(function(d){
+      var h='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';
+      if(d.hasSpec||d.specUrl){
+        h+='<button class="rbtn blue" id="btn-load-spec" data-spec-svc="'+esc(name)+'" style="margin-top:.5rem">Load API Spec</button>';
+        h+='<div id="out-spec"></div>';
+      }
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  });
+
+  document.getElementById('out-svc-detail').addEventListener('click',function(e){
+    var btn=e.target.closest('[data-spec-svc]');
+    if(!btn)return;
+    var name=btn.dataset.specSvc;
+    var el=document.getElementById('out-spec');
+    if(!el)return;
+    el.innerHTML='<span class="loading">fetching spec...</span>';
+    apiFetch('/services/'+encodeURIComponent(name)+'/spec',{timeout:15000}).then(function(d){
+      el.innerHTML='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';
+    }).catch(function(e2){el.innerHTML='<span class="st-err">'+esc(e2.message)+'</span>'});
+  });
+
+  document.getElementById('btn-svc-close').addEventListener('click',function(){
+    document.getElementById('svc-detail-card').classList.add('hidden');
+  });
+
+  /* ═══════════════════════════════════════════
+     VM/CONTAINERS TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-vmct').addEventListener('click',loadVMContainers);
+  function loadVMContainers(){
+    var el=document.getElementById('out-vmcontainers');
+    el.innerHTML='<span class="loading">loading deployed state...</span>';
+    apiFetch('/health/deployed',{timeout:15000}).then(function(d){
+      var depVms=d.vms||d;
+      var h='';
+      for(var vmId in depVms){
+        var dep=depVms[vmId];
+        var containers=dep.containers||[];
+        h+='<div class="card" style="margin:.3rem 0">';
+        h+='<div class="card-hdr"><h3>'+esc(vmId);
+        h+=' <span class="badge badge-ok">'+(dep.running||0)+' running</span>';
+        if(dep.stopped>0)h+=' <span class="badge badge-warn">'+dep.stopped+' stopped</span>';
+        h+='</h3></div>';
+        if(containers.length>0){
+          h+='<table><tr><th>Container</th><th>State</th><th>Image</th></tr>';
+          for(var j=0;j<containers.length;j++){
+            var c=containers[j];
+            h+='<tr><td><code>'+esc(c.name)+'</code></td>';
+            h+='<td class="'+stClass(c.state||c.status)+'">'+esc(c.state||c.status)+'</td>';
+            h+='<td style="font-size:.65rem">'+esc(c.image||'')+'</td></tr>';
+          }
+          h+='</table>';
+        }
+        h+='</div>';
+      }
+      el.innerHTML=h||'<span class="st-off">No deployed data</span>';
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  }
+
+  /* ═══════════════════════════════════════════
+     CLOUD TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-cloud').addEventListener('click',function(){
+    var el=document.getElementById('out-cloud');
+    el.innerHTML='<span class="loading">loading cloud summary...</span>';
+    apiFetch('/cloud/summary',{timeout:30000}).then(function(d){
+      var h='';
+      h+='<h3>OCI (Oracle Cloud)</h3>';
+      var oci=d.oci||{};
+      var ociI=oci.instances;
+      if(ociI){
+        if(ociI.error){
+          h+='<p class="st-warn">Instances: '+esc(ociI.error)+'</p>';
+        }else{
+          var instances=Array.isArray(ociI)?ociI:(ociI.instances||[]);
+          if(instances.length>0){
+            h+='<table><tr><th>Name</th><th>Shape</th><th>State</th><th>Public IP</th></tr>';
+            for(var i=0;i<instances.length;i++){
+              var inst=instances[i];
+              h+='<tr><td>'+esc(inst.displayName||inst.name)+'</td><td>'+esc(inst.shape||'')+'</td>';
+              h+='<td class="'+stClass(inst.lifecycleState||inst.state)+'">'+esc(inst.lifecycleState||inst.state)+'</td>';
+              h+='<td><code>'+esc(inst.publicIp||inst.ip||'—')+'</code></td></tr>';
+            }
+            h+='</table>';
+          }else{h+='<p style="font-size:.7rem">No instances data</p>'}
+        }
+      }
+      if(oci.costs){
+        if(oci.costs.error)h+='<p class="st-warn" style="font-size:.7rem">Costs: '+esc(oci.costs.error)+'</p>';
+        else h+='<pre style="font-size:.65rem">'+esc(JSON.stringify(oci.costs,null,2))+'</pre>';
+      }
+
+      h+='<h3>GCP (Google Cloud)</h3>';
+      var gcp=d.gcp||{};
+      var gcpI=gcp.instances;
+      if(gcpI){
+        if(gcpI.error){
+          h+='<p class="st-warn">Instances: '+esc(gcpI.error)+'</p>';
+        }else{
+          var gInstances=Array.isArray(gcpI)?gcpI:(gcpI.instances||[]);
+          if(gInstances.length>0){
+            h+='<table><tr><th>Name</th><th>Zone</th><th>Status</th><th>IP</th></tr>';
+            for(var i=0;i<gInstances.length;i++){
+              var gi=gInstances[i];
+              h+='<tr><td>'+esc(gi.name)+'</td><td>'+esc(gi.zone||'')+'</td>';
+              h+='<td class="'+stClass(gi.status)+'">'+esc(gi.status)+'</td>';
+              h+='<td><code>'+esc(gi.natIP||gi.ip||'—')+'</code></td></tr>';
+            }
+            h+='</table>';
+          }else{h+='<p style="font-size:.7rem">No instances data</p>'}
+        }
+      }
+      if(gcp.costs){
+        if(gcp.costs.error)h+='<p class="st-warn" style="font-size:.7rem">Costs: '+esc(gcp.costs.error)+'</p>';
+        else h+='<pre style="font-size:.65rem">'+esc(JSON.stringify(gcp.costs,null,2))+'</pre>';
+      }
+
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  });
+
+  /* ═══════════════════════════════════════════
+     UP TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-up-refresh').addEventListener('click',loadUp);
+  function loadUp(){
+    var el=document.getElementById('out-up');
+    el.innerHTML='<span class="loading">probing reachability...</span>';
+    apiFetch('/health/tier1',{timeout:15000}).then(function(d){
+      var rows=Array.isArray(d)?d:(d.results||[d]);
+      var h='<table><tr><th>VM</th><th>Alias</th><th>IP</th><th>Up</th><th>Latency</th></tr>';
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        h+='<tr><td><code>'+esc(r.vm||r.vmId)+'</code></td><td>'+esc(r.alias||'')+'</td>';
+        h+='<td><code>'+esc(r.ip||'')+'</code></td>';
+        h+='<td class="'+stClass(r.reachable?'ok':'fail')+'">'+(r.reachable?'UP':'DOWN')+'</td>';
+        h+='<td>'+(r.latencyMs!=null?r.latencyMs+'ms':'—')+'</td></tr>';
+      }
+      h+='</table>';
+      el.innerHTML=h;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
   }
 
   /* ═══════════════════════════════════════════
@@ -221,271 +542,100 @@
   });
 
   /* ═══════════════════════════════════════════
-     TOPOLOGY TAB
+     CONTROL TAB
      ═══════════════════════════════════════════ */
-  document.getElementById('btn-topo-refresh-all').addEventListener('click',function(){
-    document.getElementById('btn-topo').click();
-    document.getElementById('btn-topo-sec').click();
-    document.getElementById('btn-topo-drift').click();
-  });
+  function loadControlPanel(){
+    var el=document.getElementById('out-control');
+    el.innerHTML='<span class="loading">loading VM and container state...</span>';
 
-  document.getElementById('btn-topo').addEventListener('click',function(){
-    var el=document.getElementById('out-topo');
-    el.innerHTML='<span class="loading">loading topology...</span>';
-    apiFetch('/topology',{timeout:15000}).then(function(d){
+    Promise.all([
+      apiFetch('/health/declared',{timeout:10000}).catch(function(){return{vms:{}}}),
+      apiFetch('/health/deployed',{timeout:15000}).catch(function(){return{vms:{}}})
+    ]).then(function(res){
+      var declared=res[0],deployed=res[1];
+      var dvms=declared.vms||{};
+      var depVms=deployed.vms||{};
       var h='';
-      var vms=d.vms||[];
-      if(vms.length>0){
-        h+='<h3>VMs ('+vms.length+')</h3>';
-        for(var i=0;i<vms.length;i++){
-          var vm=vms[i];
-          h+='<div class="card" style="margin:.3rem 0;padding:.5rem .75rem">';
-          h+='<strong>'+esc(vm.alias||vm.id)+'</strong>';
-          if(vm.ip)h+=' <code>'+esc(vm.ip)+'</code>';
-          if(vm.method)h+=' <span class="badge badge-purple">'+esc(vm.method)+'</span>';
-          var svcs=vm.services||[];
-          if(svcs.length>0){
-            h+='<div style="margin-top:.3rem;font-size:.7rem">';
-            for(var j=0;j<svcs.length;j++){
-              h+='<code style="margin-right:.3rem">'+esc(svcs[j])+'</code>';
-            }
-            h+='</div>';
+
+      for(var vmId in dvms){
+        var vm=dvms[vmId];
+        var dep=depVms[vmId]||{};
+        var containers=dep.containers||[];
+        var stMap={};
+        for(var k=0;k<containers.length;k++)stMap[containers[k].name]=containers[k].state;
+
+        h+='<div class="card">';
+        h+='<div class="card-hdr">';
+        h+='<h3>'+esc(vmId)+' <span class="badge '+(dep.running!=null?'badge-ok':'badge-off')+'">'+((dep.running||0))+' running</span></h3>';
+        h+='<div class="flex-row">';
+        h+='<button class="rbtn" data-vm-action="start" data-vm="'+esc(vmId)+'">Start VM</button>';
+        h+='<button class="rbtn warn" data-vm-action="stop" data-vm="'+esc(vmId)+'">Stop VM</button>';
+        h+='</div>';
+        h+='</div>';
+
+        var svcs=vm.services||{};
+        var allContainers=[];
+        for(var sn in svcs){
+          var cs=svcs[sn];
+          if(Array.isArray(cs))for(var i=0;i<cs.length;i++)allContainers.push(cs[i]);
+        }
+        for(var k=0;k<containers.length;k++){
+          if(allContainers.indexOf(containers[k].name)===-1)allContainers.push(containers[k].name);
+        }
+
+        if(allContainers.length>0){
+          h+='<table><tr><th>Container</th><th>State</th><th>Actions</th></tr>';
+          for(var i=0;i<allContainers.length;i++){
+            var cn=allContainers[i];
+            var state=stMap[cn]||'not deployed';
+            h+='<tr><td><code>'+esc(cn)+'</code></td>';
+            h+='<td class="'+stClass(state)+'">'+esc(state)+'</td>';
+            h+='<td class="flex-row">';
+            h+='<button class="rbtn" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="start" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Start</button>';
+            h+='<button class="rbtn warn" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="stop" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Stop</button>';
+            h+='<button class="rbtn blue" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="restart" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Restart</button>';
+            h+='</td></tr>';
           }
-          h+='</div>';
+          h+='</table>';
         }
+        h+='</div>';
       }
 
-      var services=d.services||[];
-      if(services.length>0){
-        h+='<h3>Services ('+services.length+')</h3>';
-        h+='<table><tr><th>Name</th><th>Category</th><th>VM</th><th>Domain</th><th>On-Disk</th></tr>';
-        for(var i=0;i<services.length;i++){
-          var svc=services[i];
-          h+='<tr><td><code>'+esc(svc.name)+'</code></td><td>'+esc(svc.category||'')+'</td>';
-          h+='<td>'+esc(svc.vmAlias||svc.vm||'')+'</td>';
-          h+='<td>'+(svc.domain?'<a href="https://'+esc(svc.domain)+'" target="_blank">'+esc(svc.domain)+'</a>':'—')+'</td>';
-          h+='<td class="'+stClass(svc.discovered?'ok':'fail')+'">'+(svc.discovered?'YES':'NO')+'</td></tr>';
-        }
-        h+='</table>';
-      }
-
-      if(d.summary)h+='<pre>'+esc(typeof d.summary==='string'?d.summary:JSON.stringify(d.summary,null,2))+'</pre>';
-      el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
-  });
-
-  document.getElementById('btn-topo-sec').addEventListener('click',function(){
-    var el=document.getElementById('out-topo-sec');
-    el.innerHTML='<span class="loading">loading security topology...</span>';
-    apiFetch('/topology/security',{timeout:15000}).then(function(d){
-      var h='';
-      var exposed=d.exposedServices||[];
-      if(exposed.length>0){
-        h+='<h3>Exposed Services ('+exposed.length+')</h3>';
-        h+='<table><tr><th>Name</th><th>Domain</th><th>Auth</th><th>VM</th></tr>';
-        for(var i=0;i<exposed.length;i++){
-          var s=exposed[i];
-          h+='<tr><td><code>'+esc(s.name)+'</code></td><td>'+esc(s.domain||'')+'</td>';
-          h+='<td>'+esc(s.auth||'')+'</td><td>'+esc(s.vm||'')+'</td></tr>';
-        }
-        h+='</table>';
-      }
-      var secrets=d.secretsStatus||[];
-      if(secrets.length>0){
-        h+='<h3>Secrets Status</h3>';
-        h+='<table><tr><th>Service</th><th>Has Secrets</th><th>Encrypted</th></tr>';
-        for(var i=0;i<secrets.length;i++){
-          var s=secrets[i];
-          h+='<tr><td><code>'+esc(s.name||s.service)+'</code></td>';
-          h+='<td class="'+stClass(s.hasSecrets?'ok':'off')+'">'+(s.hasSecrets?'YES':'NO')+'</td>';
-          h+='<td class="'+stClass(s.encrypted?'ok':(s.hasSecrets?'fail':'off'))+'">'+(s.encrypted?'YES':(s.hasSecrets?'NO':'N/A'))+'</td></tr>';
-        }
-        h+='</table>';
-      }
-      if(d.summary)h+='<pre>'+esc(typeof d.summary==='string'?d.summary:JSON.stringify(d.summary,null,2))+'</pre>';
-      el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
-  });
-
-  document.getElementById('btn-topo-drift').addEventListener('click',function(){
-    var el=document.getElementById('out-topo-drift');
-    el.innerHTML='<span class="loading">checking drift...</span>';
-    apiFetch('/topology/drift',{timeout:15000}).then(function(d){
-      var h='';
-      var onDisk=d.onDiskOnly||[];
-      var config=d.configOnly||[];
-      if(onDisk.length>0){
-        h+='<h3>On Disk Only <span class="badge badge-warn">'+onDisk.length+'</span></h3>';
-        h+='<p style="font-size:.7rem">Directories found on disk but not in config.json:</p><ul>';
-        for(var i=0;i<onDisk.length;i++)h+='<li><code>'+esc(onDisk[i])+'</code></li>';
-        h+='</ul>';
-      }
-      if(config.length>0){
-        h+='<h3>Config Only <span class="badge badge-err">'+config.length+'</span></h3>';
-        h+='<p style="font-size:.7rem">In config.json but no directory on disk:</p><ul>';
-        for(var i=0;i<config.length;i++)h+='<li><code>'+esc(config[i])+'</code></li>';
-        h+='</ul>';
-      }
-      if(onDisk.length===0&&config.length===0){
-        h+='<p class="st-ok">No drift detected — config matches disk.</p>';
-      }
-      if(d.summary)h+='<pre>'+esc(d.summary)+'</pre>';
-      el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
-  });
-
-  /* ═══════════════════════════════════════════
-     TESTS TAB
-     ═══════════════════════════════════════════ */
-  document.getElementById('btn-test-run').addEventListener('click',function(){
-    var suite=document.getElementById('test-suite').value;
-    var el=document.getElementById('out-tests');
-    var btn=this;
-    btn.disabled=true;
-    el.innerHTML='<span class="loading">running '+esc(suite)+' tests...</span>';
-    apiFetch('/tests/'+suite,{timeout:120000}).then(function(d){
-      var tests=d.tests||d.results||[];
-      var h='<div class="flex-row" style="margin-bottom:.5rem">';
-      h+='<span class="badge badge-ok">'+esc(d.passed||0)+' passed</span>';
-      h+='<span class="badge badge-err">'+esc(d.failed||0)+' failed</span>';
-      h+='<span class="badge badge-off">'+esc(d.total||tests.length)+' total</span>';
-      if(d.timeMs!=null)h+='<span style="font-size:.65rem;color:#495057">'+d.timeMs+'ms</span>';
-      h+='</div>';
-      h+='<table><tr><th>Test</th><th>Target</th><th>Result</th><th>Time</th><th>Details</th></tr>';
-      for(var i=0;i<tests.length;i++){
-        var t=tests[i];
-        h+='<tr><td>'+esc(t.name)+'</td><td>'+esc(t.target||'')+'</td>';
-        h+='<td class="'+stClass(t.passed?'ok':'fail')+'">'+(t.passed?'PASS':'FAIL')+'</td>';
-        h+='<td>'+(t.timeMs!=null?t.timeMs+'ms':'—')+'</td>';
-        h+='<td style="white-space:normal;max-width:300px;font-size:.65rem">'+esc(t.details||t.error||'')+'</td></tr>';
-      }
-      h+='</table>';
-      el.innerHTML=h;
-      btn.disabled=false;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';btn.disabled=false});
-  });
-
-  /* ═══════════════════════════════════════════
-     SERVICES TAB
-     ═══════════════════════════════════════════ */
-  document.getElementById('btn-services').addEventListener('click',loadServices);
-  function loadServices(){
-    var el=document.getElementById('out-services');
-    el.innerHTML='<span class="loading">loading services...</span>';
-    apiFetch('/services',{timeout:15000}).then(function(d){
-      var svcs=Array.isArray(d)?d:(d.services||[]);
-      svcs.sort(function(a,b){return(a.name||'').localeCompare(b.name||'')});
-      var h='<table><tr><th>Name</th><th>Domain</th><th>VM</th><th>Category</th><th>API Spec</th><th></th></tr>';
-      for(var i=0;i<svcs.length;i++){
-        var s=svcs[i];
-        h+='<tr><td><code>'+esc(s.name)+'</code></td>';
-        h+='<td>'+(s.domain?'<a href="https://'+esc(s.domain)+'" target="_blank">'+esc(s.domain)+'</a>':'—')+'</td>';
-        h+='<td>'+esc(s.alias||s.vm||'')+'</td>';
-        h+='<td>'+esc(s.category||'')+'</td>';
-        h+='<td class="'+stClass(s.hasSpec?'ok':'off')+'">'+(s.hasSpec?'YES':'—')+'</td>';
-        h+='<td><button class="rbtn blue" style="padding:.15rem .4rem;font-size:.6rem" data-svc-detail="'+esc(s.name)+'">Details</button></td></tr>';
-      }
-      h+='</table>';
-      h+='<p style="font-size:.7rem;color:#495057">'+svcs.length+' services</p>';
       el.innerHTML=h;
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
   }
 
-  document.getElementById('out-services').addEventListener('click',function(e){
-    var btn=e.target.closest('[data-svc-detail]');
-    if(!btn)return;
-    var name=btn.dataset.svcDetail;
-    var card=document.getElementById('svc-detail-card');
-    var el=document.getElementById('out-svc-detail');
-    document.getElementById('svc-detail-title').textContent=name;
-    card.classList.remove('hidden');
-    el.innerHTML='<span class="loading">loading...</span>';
-    apiFetch('/services/'+encodeURIComponent(name),{timeout:15000}).then(function(d){
-      var h='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';
-      if(d.hasSpec||d.specUrl){
-        h+='<button class="rbtn blue" id="btn-load-spec" data-spec-svc="'+esc(name)+'" style="margin-top:.5rem">Load API Spec</button>';
-        h+='<div id="out-spec"></div>';
-      }
-      el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
-  });
-
-  document.getElementById('out-svc-detail').addEventListener('click',function(e){
-    var btn=e.target.closest('[data-spec-svc]');
-    if(!btn)return;
-    var name=btn.dataset.specSvc;
-    var el=document.getElementById('out-spec');
-    if(!el)return;
-    el.innerHTML='<span class="loading">fetching spec...</span>';
-    apiFetch('/services/'+encodeURIComponent(name)+'/spec',{timeout:15000}).then(function(d){
-      el.innerHTML='<pre>'+esc(JSON.stringify(d,null,2))+'</pre>';
-    }).catch(function(e2){el.innerHTML='<span class="st-err">'+esc(e2.message)+'</span>'});
-  });
-
-  document.getElementById('btn-svc-close').addEventListener('click',function(){
-    document.getElementById('svc-detail-card').classList.add('hidden');
-  });
-
-  /* ═══════════════════════════════════════════
-     CLOUD TAB
-     ═══════════════════════════════════════════ */
-  document.getElementById('btn-cloud').addEventListener('click',function(){
-    var el=document.getElementById('out-cloud');
-    el.innerHTML='<span class="loading">loading cloud summary...</span>';
-    apiFetch('/cloud/summary',{timeout:30000}).then(function(d){
-      var h='';
-      h+='<h3>OCI (Oracle Cloud)</h3>';
-      var oci=d.oci||{};
-      var ociI=oci.instances;
-      if(ociI){
-        if(ociI.error){
-          h+='<p class="st-warn">Instances: '+esc(ociI.error)+'</p>';
-        }else{
-          var instances=Array.isArray(ociI)?ociI:(ociI.instances||[]);
-          if(instances.length>0){
-            h+='<table><tr><th>Name</th><th>Shape</th><th>State</th><th>Public IP</th></tr>';
-            for(var i=0;i<instances.length;i++){
-              var inst=instances[i];
-              h+='<tr><td>'+esc(inst.displayName||inst.name)+'</td><td>'+esc(inst.shape||'')+'</td>';
-              h+='<td class="'+stClass(inst.lifecycleState||inst.state)+'">'+esc(inst.lifecycleState||inst.state)+'</td>';
-              h+='<td><code>'+esc(inst.publicIp||inst.ip||'—')+'</code></td></tr>';
-            }
-            h+='</table>';
-          }else{h+='<p style="font-size:.7rem">No instances data</p>'}
-        }
-      }
-      if(oci.costs){
-        if(oci.costs.error)h+='<p class="st-warn" style="font-size:.7rem">Costs: '+esc(oci.costs.error)+'</p>';
-        else h+='<pre style="font-size:.65rem">'+esc(JSON.stringify(oci.costs,null,2))+'</pre>';
-      }
-
-      h+='<h3>GCP (Google Cloud)</h3>';
-      var gcp=d.gcp||{};
-      var gcpI=gcp.instances;
-      if(gcpI){
-        if(gcpI.error){
-          h+='<p class="st-warn">Instances: '+esc(gcpI.error)+'</p>';
-        }else{
-          var gInstances=Array.isArray(gcpI)?gcpI:(gcpI.instances||[]);
-          if(gInstances.length>0){
-            h+='<table><tr><th>Name</th><th>Zone</th><th>Status</th><th>IP</th></tr>';
-            for(var i=0;i<gInstances.length;i++){
-              var gi=gInstances[i];
-              h+='<tr><td>'+esc(gi.name)+'</td><td>'+esc(gi.zone||'')+'</td>';
-              h+='<td class="'+stClass(gi.status)+'">'+esc(gi.status)+'</td>';
-              h+='<td><code>'+esc(gi.natIP||gi.ip||'—')+'</code></td></tr>';
-            }
-            h+='</table>';
-          }else{h+='<p style="font-size:.7rem">No instances data</p>'}
-        }
-      }
-      if(gcp.costs){
-        if(gcp.costs.error)h+='<p class="st-warn" style="font-size:.7rem">Costs: '+esc(gcp.costs.error)+'</p>';
-        else h+='<pre style="font-size:.65rem">'+esc(JSON.stringify(gcp.costs,null,2))+'</pre>';
-      }
-
-      el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
+  document.getElementById('out-control').addEventListener('click',function(e){
+    var btn=e.target.closest('[data-vm-action]');
+    if(btn){
+      var vm=btn.dataset.vm, action=btn.dataset.vmAction;
+      showConfirm('VM '+action.toUpperCase(), action+' VM "'+vm+'"? This affects all services on this VM.',function(){
+        var el=btn.parentElement;
+        el.innerHTML='<span class="loading">'+action+'ing...</span>';
+        apiFetch('/vms/'+encodeURIComponent(vm)+'/'+action,{method:'POST',timeout:60000}).then(function(d){
+          el.innerHTML='<span class="st-ok">'+action+' OK</span>';
+          setTimeout(loadControlPanel,3000);
+        }).catch(function(err){
+          el.innerHTML='<span class="st-err">'+esc(err.message)+'</span>';
+        });
+      });
+      return;
+    }
+    var ctBtn=e.target.closest('[data-ct-action]');
+    if(ctBtn){
+      var vm=ctBtn.dataset.ctVm, name=ctBtn.dataset.ctName, action=ctBtn.dataset.ctAction;
+      showConfirm('Container '+action.toUpperCase(), action+' container "'+name+'" on '+vm+'?',function(){
+        var row=ctBtn.closest('tr');
+        var cells=row.querySelectorAll('td');
+        if(cells[1])cells[1].innerHTML='<span class="loading">'+action+'ing...</span>';
+        apiFetch('/vms/'+encodeURIComponent(vm)+'/containers/'+encodeURIComponent(name)+'/'+action,{method:'POST',timeout:30000}).then(function(d){
+          if(cells[1])cells[1].innerHTML='<span class="st-ok">'+action+' OK</span>';
+          setTimeout(loadControlPanel,2000);
+        }).catch(function(err){
+          if(cells[1])cells[1].innerHTML='<span class="st-err">'+esc(err.message)+'</span>';
+        });
+      });
+    }
   });
 
   /* ═══════════════════════════════════════════
@@ -599,105 +749,67 @@
   });
 
   /* ═══════════════════════════════════════════
-     CONTROL TAB
+     TESTS TAB
      ═══════════════════════════════════════════ */
-  function loadControlPanel(){
-    var el=document.getElementById('out-control');
-    el.innerHTML='<span class="loading">loading VM and container state...</span>';
-
-    Promise.all([
-      apiFetch('/health/declared',{timeout:10000}).catch(function(){return{vms:{}}}),
-      apiFetch('/health/deployed',{timeout:15000}).catch(function(){return{vms:{}}})
-    ]).then(function(res){
-      var declared=res[0],deployed=res[1];
-      var dvms=declared.vms||{};
-      var depVms=deployed.vms||{};
-      var h='';
-
-      for(var vmId in dvms){
-        var vm=dvms[vmId];
-        var dep=depVms[vmId]||{};
-        var containers=dep.containers||[];
-        var stMap={};
-        for(var k=0;k<containers.length;k++)stMap[containers[k].name]=containers[k].state;
-
-        h+='<div class="card">';
-        h+='<div class="card-hdr">';
-        h+='<h3>'+esc(vmId)+' <span class="badge '+(dep.running!=null?'badge-ok':'badge-off')+'">'+((dep.running||0))+' running</span></h3>';
-        h+='<div class="flex-row">';
-        h+='<button class="rbtn" data-vm-action="start" data-vm="'+esc(vmId)+'">Start VM</button>';
-        h+='<button class="rbtn warn" data-vm-action="stop" data-vm="'+esc(vmId)+'">Stop VM</button>';
-        h+='</div>';
-        h+='</div>';
-
-        var svcs=vm.services||{};
-        var allContainers=[];
-        for(var sn in svcs){
-          var cs=svcs[sn];
-          if(Array.isArray(cs))for(var i=0;i<cs.length;i++)allContainers.push(cs[i]);
-        }
-        for(var k=0;k<containers.length;k++){
-          if(allContainers.indexOf(containers[k].name)===-1)allContainers.push(containers[k].name);
-        }
-
-        if(allContainers.length>0){
-          h+='<table><tr><th>Container</th><th>State</th><th>Actions</th></tr>';
-          for(var i=0;i<allContainers.length;i++){
-            var cn=allContainers[i];
-            var state=stMap[cn]||'not deployed';
-            h+='<tr><td><code>'+esc(cn)+'</code></td>';
-            h+='<td class="'+stClass(state)+'">'+esc(state)+'</td>';
-            h+='<td class="flex-row">';
-            h+='<button class="rbtn" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="start" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Start</button>';
-            h+='<button class="rbtn warn" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="stop" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Stop</button>';
-            h+='<button class="rbtn blue" style="padding:.15rem .4rem;font-size:.6rem" data-ct-action="restart" data-ct-vm="'+esc(vmId)+'" data-ct-name="'+esc(cn)+'">Restart</button>';
-            h+='</td></tr>';
-          }
-          h+='</table>';
-        }
-        h+='</div>';
+  document.getElementById('btn-test-run').addEventListener('click',function(){
+    var suite=document.getElementById('test-suite').value;
+    var el=document.getElementById('out-tests');
+    var btn=this;
+    btn.disabled=true;
+    el.innerHTML='<span class="loading">running '+esc(suite)+' tests...</span>';
+    apiFetch('/tests/'+suite,{timeout:120000}).then(function(d){
+      var tests=d.tests||d.results||[];
+      var h='<div class="flex-row" style="margin-bottom:.5rem">';
+      h+='<span class="badge badge-ok">'+esc(d.passed||0)+' passed</span>';
+      h+='<span class="badge badge-err">'+esc(d.failed||0)+' failed</span>';
+      h+='<span class="badge badge-off">'+esc(d.total||tests.length)+' total</span>';
+      if(d.timeMs!=null)h+='<span style="font-size:.65rem;color:#495057">'+d.timeMs+'ms</span>';
+      h+='</div>';
+      h+='<table><tr><th>Test</th><th>Target</th><th>Result</th><th>Time</th><th>Details</th></tr>';
+      for(var i=0;i<tests.length;i++){
+        var t=tests[i];
+        h+='<tr><td>'+esc(t.name)+'</td><td>'+esc(t.target||'')+'</td>';
+        h+='<td class="'+stClass(t.passed?'ok':'fail')+'">'+(t.passed?'PASS':'FAIL')+'</td>';
+        h+='<td>'+(t.timeMs!=null?t.timeMs+'ms':'—')+'</td>';
+        h+='<td style="white-space:normal;max-width:300px;font-size:.65rem">'+esc(t.details||t.error||'')+'</td></tr>';
       }
-
+      h+='</table>';
       el.innerHTML=h;
-    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'});
-  }
-
-  document.getElementById('out-control').addEventListener('click',function(e){
-    var btn=e.target.closest('[data-vm-action]');
-    if(btn){
-      var vm=btn.dataset.vm, action=btn.dataset.vmAction;
-      showConfirm('VM '+action.toUpperCase(), action+' VM "'+vm+'"? This affects all services on this VM.',function(){
-        var el=btn.parentElement;
-        el.innerHTML='<span class="loading">'+action+'ing...</span>';
-        apiFetch('/vms/'+encodeURIComponent(vm)+'/'+action,{method:'POST',timeout:60000}).then(function(d){
-          el.innerHTML='<span class="st-ok">'+action+' OK</span>';
-          setTimeout(loadControlPanel,3000);
-        }).catch(function(err){
-          el.innerHTML='<span class="st-err">'+esc(err.message)+'</span>';
-        });
-      });
-      return;
-    }
-    var ctBtn=e.target.closest('[data-ct-action]');
-    if(ctBtn){
-      var vm=ctBtn.dataset.ctVm, name=ctBtn.dataset.ctName, action=ctBtn.dataset.ctAction;
-      showConfirm('Container '+action.toUpperCase(), action+' container "'+name+'" on '+vm+'?',function(){
-        var row=ctBtn.closest('tr');
-        var cells=row.querySelectorAll('td');
-        if(cells[1])cells[1].innerHTML='<span class="loading">'+action+'ing...</span>';
-        apiFetch('/vms/'+encodeURIComponent(vm)+'/containers/'+encodeURIComponent(name)+'/'+action,{method:'POST',timeout:30000}).then(function(d){
-          if(cells[1])cells[1].innerHTML='<span class="st-ok">'+action+' OK</span>';
-          setTimeout(loadControlPanel,2000);
-        }).catch(function(err){
-          if(cells[1])cells[1].innerHTML='<span class="st-err">'+esc(err.message)+'</span>';
-        });
-      });
-    }
+      btn.disabled=false;
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';btn.disabled=false});
   });
 
-  /* ═══ Init ═══ */
-  loadHealthStatus();
+  /* ═══════════════════════════════════════════
+     WORKFLOWS TAB
+     ═══════════════════════════════════════════ */
+  document.getElementById('btn-wf-refresh').addEventListener('click',loadWorkflows);
+  function loadWorkflows(){
+    var el=document.getElementById('out-workflows');
+    el.innerHTML='<span class="loading">loading workflow runs...</span>';
+    apiFetch('/workflows',{timeout:15000}).then(function(d){
+      var runs=Array.isArray(d)?d:(d.runs||d.workflow_runs||[]);
+      if(runs.length===0){
+        el.innerHTML='<span class="st-off">No workflow data available</span>';
+        return;
+      }
+      var h='<table><tr><th>Workflow</th><th>Branch</th><th>Status</th><th>Conclusion</th><th>Started</th></tr>';
+      for(var i=0;i<runs.length;i++){
+        var r=runs[i];
+        var conclusion=r.conclusion||r.result||'—';
+        h+='<tr><td><code>'+esc(r.name||r.workflow||'')+'</code></td>';
+        h+='<td>'+esc(r.branch||r.head_branch||'')+'</td>';
+        h+='<td class="'+stClass(r.status)+'">'+esc(r.status||'')+'</td>';
+        h+='<td class="'+stClass(conclusion)+'">'+esc(conclusion)+'</td>';
+        h+='<td style="font-size:.65rem">'+esc(r.created_at||r.started||'')+'</td></tr>';
+      }
+      h+='</table>';
+      el.innerHTML=h;
+    }).catch(function(e){
+      el.innerHTML='<span class="st-off">Workflows endpoint not available (MCP-only)</span>';
+    });
+  }
 
+  /* ═══ Init ═══ */
   var controlLoaded=false;
   document.querySelector('[data-tab="control"]').addEventListener('click',function(){
     if(!controlLoaded){controlLoaded=true;loadControlPanel()}
