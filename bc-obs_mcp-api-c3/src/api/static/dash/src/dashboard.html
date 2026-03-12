@@ -15,17 +15,134 @@
 <hr>
 
 <div class="tab-bar">
-  <button class="tab-btn active" data-tab="health">Health</button>
-  <button class="tab-btn" data-tab="topology">Topology</button>
-  <button class="tab-btn" data-tab="tests">Tests</button>
-  <button class="tab-btn" data-tab="services">Services</button>
-  <button class="tab-btn" data-tab="cloud">Cloud</button>
-  <button class="tab-btn" data-tab="files">Files</button>
-  <button class="tab-btn" data-tab="control">Control</button>
+  <div class="tab-row">
+    <button class="tab-btn active" data-tab="topology">Topology</button>
+    <button class="tab-btn" data-tab="configs">Configs</button>
+  </div>
+  <div class="tab-row">
+    <button class="tab-btn" data-tab="services">Services</button>
+    <button class="tab-btn" data-tab="vmcontainers">VM/Containers</button>
+    <button class="tab-btn" data-tab="cloud">Cloud</button>
+  </div>
+  <div class="tab-row">
+    <button class="tab-btn" data-tab="up">Up</button>
+    <button class="tab-btn" data-tab="health">Health</button>
+    <button class="tab-btn" data-tab="control">Control</button>
+    <button class="tab-btn" data-tab="files">Files</button>
+  </div>
+  <div class="tab-row">
+    <button class="tab-btn" data-tab="tests">Tests</button>
+    <button class="tab-btn" data-tab="workflows">Workflows</button>
+  </div>
+</div>
+
+<!-- ═══ TAB: Topology ═══ -->
+<div class="tab-content active" id="tab-topology">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Topology</h2>
+    <button class="rbtn blue" id="btn-topo-refresh-all">Refresh All</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Infrastructure Map</h3>
+      <button class="rbtn" id="btn-topo">Load</button>
+    </div>
+    <div id="out-topo"><span class="st-off">Click Load</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Security Topology</h3>
+      <button class="rbtn" id="btn-topo-sec">Load</button>
+    </div>
+    <div id="out-topo-sec"><span class="st-off">Click Load</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Config Drift</h3>
+      <button class="rbtn" id="btn-topo-drift">Load</button>
+    </div>
+    <div id="out-topo-drift"><span class="st-off">Click Load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Configs ═══ -->
+<div class="tab-content" id="tab-configs">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Configs</h2>
+    <button class="rbtn blue" id="btn-configs-refresh">Refresh</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Service Configurations <span class="tier-lbl">cloud-configs.json</span></h3>
+    </div>
+    <div id="out-configs"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Services ═══ -->
+<div class="tab-content" id="tab-services">
+  <h2>Services</h2>
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Service Registry</h3>
+      <button class="rbtn" id="btn-services">Refresh</button>
+    </div>
+    <div id="out-services"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+  <div class="card hidden" id="svc-detail-card">
+    <div class="card-hdr">
+      <h3 id="svc-detail-title">Service Detail</h3>
+      <button class="rbtn" id="btn-svc-close">Close</button>
+    </div>
+    <div id="out-svc-detail"></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: VM/Containers ═══ -->
+<div class="tab-content" id="tab-vmcontainers">
+  <h2>VM / Containers</h2>
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Deployed State</h3>
+      <button class="rbtn" id="btn-vmct">Refresh</button>
+    </div>
+    <div id="out-vmcontainers"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Cloud ═══ -->
+<div class="tab-content" id="tab-cloud">
+  <h2>Cloud Providers</h2>
+  <div class="card">
+    <div class="card-hdr">
+      <h3>OCI + GCP Summary</h3>
+      <button class="rbtn" id="btn-cloud">Refresh</button>
+    </div>
+    <div id="out-cloud"><span class="st-off">Click Refresh to load</span></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Up ═══ -->
+<div class="tab-content" id="tab-up">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Up</h2>
+    <button class="rbtn blue" id="btn-up-refresh">Refresh</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Reachability <span class="tier-lbl">TCP probe ~2s</span></h3>
+    </div>
+    <div id="out-up"><span class="st-off">Click Refresh to load</span></div>
+  </div>
 </div>
 
 <!-- ═══ TAB: Health ═══ -->
-<div class="tab-content active" id="tab-health">
+<div class="tab-content" id="tab-health">
   <div class="card-hdr">
     <h2>Health Dashboard</h2>
     <div class="flex-row">
@@ -68,90 +185,12 @@
   </div>
 </div>
 
-<!-- ═══ TAB: Topology ═══ -->
-<div class="tab-content" id="tab-topology">
-  <div class="card-hdr" style="margin-bottom:1rem">
-    <h2 style="margin:0;border:none;padding:0">Topology</h2>
-    <button class="rbtn blue" id="btn-topo-refresh-all">Refresh All</button>
-  </div>
+<!-- ═══ TAB: Control ═══ -->
+<div class="tab-content" id="tab-control">
+  <h2>Control Panel</h2>
+  <p style="font-size:.75rem;color:#495057;margin-bottom:.75rem">Start/stop VMs and containers. Actions require confirmation.</p>
 
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Infrastructure Map</h3>
-      <button class="rbtn" id="btn-topo">Load</button>
-    </div>
-    <div id="out-topo"><span class="st-off">Click Load</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Security Topology</h3>
-      <button class="rbtn" id="btn-topo-sec">Load</button>
-    </div>
-    <div id="out-topo-sec"><span class="st-off">Click Load</span></div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Config Drift</h3>
-      <button class="rbtn" id="btn-topo-drift">Load</button>
-    </div>
-    <div id="out-topo-drift"><span class="st-off">Click Load</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Tests ═══ -->
-<div class="tab-content" id="tab-tests">
-  <h2>Infrastructure Tests</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Run Test Suite</h3>
-      <div class="flex-row">
-        <select id="test-suite">
-          <option value="connectivity">connectivity</option>
-          <option value="dns">dns</option>
-          <option value="tls">tls</option>
-          <option value="routes">routes</option>
-          <option value="containers">containers</option>
-          <option value="wireguard">wireguard</option>
-          <option value="full">full (all suites)</option>
-        </select>
-        <button class="rbtn" id="btn-test-run">Run</button>
-      </div>
-    </div>
-    <div id="out-tests"><span class="st-off">Select a suite and click Run</span></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Services ═══ -->
-<div class="tab-content" id="tab-services">
-  <h2>Services</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>Service Registry</h3>
-      <button class="rbtn" id="btn-services">Refresh</button>
-    </div>
-    <div id="out-services"><span class="st-off">Click Refresh to load</span></div>
-  </div>
-  <div class="card hidden" id="svc-detail-card">
-    <div class="card-hdr">
-      <h3 id="svc-detail-title">Service Detail</h3>
-      <button class="rbtn" id="btn-svc-close">Close</button>
-    </div>
-    <div id="out-svc-detail"></div>
-  </div>
-</div>
-
-<!-- ═══ TAB: Cloud ═══ -->
-<div class="tab-content" id="tab-cloud">
-  <h2>Cloud Providers</h2>
-  <div class="card">
-    <div class="card-hdr">
-      <h3>OCI + GCP Summary</h3>
-      <button class="rbtn" id="btn-cloud">Refresh</button>
-    </div>
-    <div id="out-cloud"><span class="st-off">Click Refresh to load</span></div>
-  </div>
+  <div id="out-control"><span class="st-off">Loading...</span></div>
 </div>
 
 <!-- ═══ TAB: Files ═══ -->
@@ -179,12 +218,42 @@
   </div>
 </div>
 
-<!-- ═══ TAB: Control ═══ -->
-<div class="tab-content" id="tab-control">
-  <h2>Control Panel</h2>
-  <p style="font-size:.75rem;color:#495057;margin-bottom:.75rem">Start/stop VMs and containers. Actions require confirmation.</p>
+<!-- ═══ TAB: Tests ═══ -->
+<div class="tab-content" id="tab-tests">
+  <h2>Infrastructure Tests</h2>
+  <div class="card">
+    <div class="card-hdr">
+      <h3>Run Test Suite</h3>
+      <div class="flex-row">
+        <select id="test-suite">
+          <option value="connectivity">connectivity</option>
+          <option value="dns">dns</option>
+          <option value="tls">tls</option>
+          <option value="routes">routes</option>
+          <option value="containers">containers</option>
+          <option value="wireguard">wireguard</option>
+          <option value="full">full (all suites)</option>
+        </select>
+        <button class="rbtn" id="btn-test-run">Run</button>
+      </div>
+    </div>
+    <div id="out-tests"><span class="st-off">Select a suite and click Run</span></div>
+  </div>
+</div>
 
-  <div id="out-control"><span class="st-off">Loading...</span></div>
+<!-- ═══ TAB: Workflows ═══ -->
+<div class="tab-content" id="tab-workflows">
+  <div class="card-hdr" style="margin-bottom:1rem">
+    <h2 style="margin:0;border:none;padding:0">Workflows</h2>
+    <button class="rbtn blue" id="btn-wf-refresh">Refresh</button>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <h3>GitHub Actions <span class="tier-lbl">last 10 runs</span></h3>
+    </div>
+    <div id="out-workflows"><span class="st-off">Click Refresh to load</span></div>
+  </div>
 </div>
 
 </div><!-- /.container -->
