@@ -1328,6 +1328,74 @@
           - name: collect-and-email
             command: bash /var/lib/dagu/dags/daily-report.sh
       '';
+
+      # ═══════════════════════════════════════════════════════════════════
+      # DATA SYNC
+      # ═══════════════════════════════════════════════════════════════════
+
+      cloud-data-sync = pkgs.writeText "cloud-data-sync.yaml" ''
+        schedule: "*/5 * * * *"
+        env:
+          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - C3_API: http://10.0.0.6:8080/c3-api
+          - REPO_DIR: /var/lib/dagu/data/cloud-data
+          - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
+          - NTFY_URL: http://10.0.0.1:8090
+        mailOn:
+          failure: true
+          success: false
+        steps:
+          - name: ensure-clone
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              if [ ! -d "$REPO_DIR/.git" ]; then
+                git clone "$REPO_URL" "$REPO_DIR"
+                cd "$REPO_DIR"
+                git config user.name "dagu-bot"
+                git config user.email "no-reply@diegonmarcos.com"
+              fi
+          - name: pull-rebase
+            depends:
+              - ensure-clone
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              cd "$REPO_DIR"
+              git pull --rebase origin main || {
+                echo "Rebase conflict — resetting to remote"
+                git rebase --abort 2>/dev/null
+                git reset --hard origin/main
+              }
+          - name: fetch-topology
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
+              mv "$REPO_DIR/cloud-topology.json.tmp" "$REPO_DIR/cloud-topology.json"
+              echo "Fetched cloud-topology.json ($(wc -c < "$REPO_DIR/cloud-topology.json") bytes)"
+          - name: fetch-configs
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
+              mv "$REPO_DIR/cloud-configs.json.tmp" "$REPO_DIR/cloud-configs.json"
+              echo "Fetched cloud-configs.json ($(wc -c < "$REPO_DIR/cloud-configs.json") bytes)"
+          - name: commit-and-push
+            depends:
+              - fetch-topology
+              - fetch-configs
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              cd "$REPO_DIR"
+              git add cloud-topology.json cloud-configs.json
+              if git diff --cached --quiet; then
+                echo "No changes — skipping commit"
+                exit 0
+              fi
+              STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+              git commit -m "sync: cloud-topology + cloud-configs ''${STAMP}"
+              git push origin main
+              echo "Pushed changes at ''${STAMP}"
+      '';
     };
 
     # ── Documentation ────────────────────────────────────────────────────
@@ -1453,6 +1521,7 @@
         cp ${dags.capacity-review} $out/dags/capacity-review.yaml
         cp ${dags.daily-report} $out/dags/daily-report.yaml
         cp ${dags.daily-report-script} $out/dags/daily-report.sh
+        cp ${dags.cloud-data-sync} $out/dags/cloud-data-sync.yaml
       '';
     in {
       default = defaultPkg;
