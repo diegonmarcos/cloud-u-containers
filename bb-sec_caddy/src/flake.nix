@@ -239,13 +239,13 @@
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
-        # C3 Dashboard — public shortcut at /dash
+        # C3 Dashboard — shortcut at /dash (same auth as /c3-api)
         handle /dash {
-          reverse_proxy ${flex0}:8081
+          ${mkProtected "${flex0}:8081"}
         }
         handle /dash/* {
           uri strip_prefix /dash
-          reverse_proxy ${flex0}:8081
+          ${mkProtected "${flex0}:8081"}
         }
 
         # C3 — Cloud Control Center API (all endpoints through Authelia/bearer)
