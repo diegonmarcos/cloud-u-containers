@@ -104,6 +104,14 @@ const pruneSchema = z.object({
 type SuiteName = "connectivity" | "dns" | "tls" | "routes" | "containers" | "wireguard" | "full";
 const VALID_SUITES = new Set<string>(["connectivity", "dns", "tls", "routes", "containers", "wireguard", "full"]);
 
+const P_vmId = { type: "object" as const, properties: { vmId: { type: "string" as const } }, required: ["vmId"] };
+const P_target = { type: "object" as const, properties: { target: { type: "string" as const } }, required: ["target"] };
+const P_container = { type: "object" as const, properties: { container: { type: "string" as const } }, required: ["container"] };
+const P_suite = { type: "object" as const, properties: { suite: { type: "string" as const } }, required: ["suite"] };
+const P_suiteTarget = { type: "object" as const, properties: { suite: { type: "string" as const }, target: { type: "string" as const } }, required: ["suite", "target"] };
+const P_vmContainer = { type: "object" as const, properties: { vmId: { type: "string" as const }, container: { type: "string" as const } }, required: ["vmId", "container"] };
+const P_type = { type: "object" as const, properties: { type: { type: "string" as const } }, required: ["type"] };
+
 export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
   // ── Health (from health.ts) ──
 
@@ -121,7 +129,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/health/deployed/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return healthDeployed(vmId);
@@ -138,7 +146,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/health/status/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return healthStatus(vmId);
@@ -152,7 +160,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/health/tier1/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return checkTier1All(vmId);
@@ -165,7 +173,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/health/tier2/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return checkTier2All(vmId);
@@ -178,7 +186,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/health/tier3/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return checkTier3All(vmId);
@@ -192,6 +200,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     {
       schema: {
         tags: ["Observability"],
+        params: P_target,
         summary: "Quick TCP check — is the target up? (VM, service, or container)",
         description: "Fast check: VM=ssh-keyscan, service=VM reachable+containers running, container=docker state",
       },
@@ -206,6 +215,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     {
       schema: {
         tags: ["Observability"],
+        params: P_target,
         summary: "Full health check — SSH + docker health (VM, service, or container)",
         description: "Deep check: VM=full SSH auth, service=SSH+docker inspect health, container=docker health status",
       },
@@ -220,6 +230,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     {
       schema: {
         tags: ["Observability"],
+        params: P_target,
         summary: "Route reachability — probe HTTPS/HTTP/TCP through Caddy",
         description: "Tests actual route: looks up service domain from topology, probes HTTPS → HTTP → TCP. Verifies the full path (Cloudflare → Caddy → service) is working.",
       },
@@ -233,7 +244,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { container: string } }>(
     "/profiling/:container",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_container } },
     async (req) => {
       return profileContainer(req.params.container);
     },
@@ -241,7 +252,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/profiling/vm/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return profileVm(vmId);
@@ -252,7 +263,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { suite: string } }>(
     "/tests/run/:suite",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_suite } },
     async (req, reply) => {
       const { suite } = req.params;
       if (!VALID_SUITES.has(suite)) {
@@ -265,7 +276,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { suite: string; target: string } }>(
     "/tests/run/:suite/:target",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_suiteTarget } },
     async (req, reply) => {
       const { suite, target } = req.params;
       if (!VALID_SUITES.has(suite)) {
@@ -312,7 +323,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string; container: string }; Querystring: { lines?: string; since?: string } }>(
     "/files/logs/:vmId/:container",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmContainer } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       const lines = req.query.lines ? parseInt(req.query.lines, 10) : undefined;
@@ -322,7 +333,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { vmId: string } }>(
     "/files/status/:vmId",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_vmId } },
     async (req) => {
       const vmId = resolveVmId(req.params.vmId);
       return { content: getVmStatus(vmId) };
@@ -331,7 +342,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { type: string } }>(
     "/files/report/:type",
-    { schema: { tags: ["Observability"] } },
+    { schema: { tags: ["Observability"], params: P_type } },
     async (req) => {
       return { content: getReport(req.params.type) };
     },

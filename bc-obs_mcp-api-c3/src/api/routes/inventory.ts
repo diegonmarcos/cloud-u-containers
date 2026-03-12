@@ -18,7 +18,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { service: string } }>(
     "/services/:service",
-    { schema: { tags: ["Inventory"] } },
+    { schema: { tags: ["Inventory"], params: { type: "object" as const, properties: { service: { type: "string" as const } }, required: ["service"] } } },
     async (req, reply) => {
       const info = getService(req.params.service);
       if (!info) {
@@ -31,7 +31,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { service: string } }>(
     "/services/:service/spec",
-    { schema: { tags: ["Inventory"] } },
+    { schema: { tags: ["Inventory"], params: { type: "object" as const, properties: { service: { type: "string" as const } }, required: ["service"] } } },
     async (req, reply) => {
       const result = probeSpec(req.params.service);
       if (!result.ok) {
@@ -72,7 +72,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { service: string } }>(
     "/files/config/:service",
-    { schema: { tags: ["Inventory"] } },
+    { schema: { tags: ["Inventory"], params: { type: "object" as const, properties: { service: { type: "string" as const } }, required: ["service"] } } },
     async (req) => {
       return { content: getConfigFile(req.params.service) };
     },
@@ -80,7 +80,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { service: string; file: string } }>(
     "/files/config/:service/:file",
-    { schema: { tags: ["Inventory"] } },
+    { schema: { tags: ["Inventory"], params: { type: "object" as const, properties: { service: { type: "string" as const }, file: { type: "string" as const } }, required: ["service", "file"] } } },
     async (req) => {
       return { content: getConfigFile(req.params.service, req.params.file) };
     },

@@ -97,7 +97,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get<{ Params: { service: string } }>(
     "/files/secrets/:service",
-    { schema: { tags: ["Security"] } },
+    { schema: { tags: ["Security"], params: { type: "object" as const, properties: { service: { type: "string" as const } }, required: ["service"] } } },
     async (req) => {
       return { content: getSecretsStatus(req.params.service) };
     },
