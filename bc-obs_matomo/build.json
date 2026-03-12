@@ -11,11 +11,6 @@
   "lifecycle": {
     "wake": [
       {
-        "action": "compose_stop",
-        "vm": "oci-analytics",
-        "path": "/home/ubuntu/windmill"
-      },
-      {
         "action": "exec",
         "vm": "oci-analytics",
         "container": "matomo-hybrid",
@@ -32,11 +27,6 @@
         "vm": "oci-analytics",
         "container": "matomo-hybrid",
         "script": "/scripts/matomo-sleep.sh"
-      },
-      {
-        "action": "compose_start",
-        "vm": "oci-analytics",
-        "path": "/home/ubuntu/windmill"
       },
       {
         "action": "stats",

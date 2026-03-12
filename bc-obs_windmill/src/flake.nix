@@ -16,8 +16,8 @@
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # Windmill Workflow Orchestration Platform
-      # Deploy on: oci-E2-f_1 (129.151.228.66)
-      # Port: 8000 (internal, proxied via NPM)
+      # Deploy on: oci-A1-f_0 (oci-apps, 10.0.0.6)
+      # Port: 8000 (internal, proxied via Caddy)
 
       services:
         windmill-db:
@@ -68,7 +68,7 @@
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
           ports:
-            - "10.0.0.4:8000:8000"
+            - "10.0.0.6:8000:8000"
           depends_on:
             windmill-db:
               condition: service_healthy
@@ -111,7 +111,7 @@
           volumes:
             - windmill-worker-data:/tmp/windmill
             - /var/run/docker.sock:/var/run/docker.sock
-            - /home/ubuntu/.ssh:/home/windmill/.ssh:ro
+            - ~/.ssh:/home/windmill/.ssh:ro
           networks:
             - windmill-net
           deploy:
