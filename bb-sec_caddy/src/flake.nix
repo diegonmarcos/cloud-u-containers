@@ -239,12 +239,12 @@
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
-        # C3 Dashboard — public shortcut at /dash/
-        @dash-no-slash path /dash
-        handle @dash-no-slash {
-          redir /dash/ permanent
+        # C3 Dashboard — public shortcut at /dash
+        handle /dash {
+          reverse_proxy ${flex0}:8081
         }
-        handle_path /dash/* {
+        handle /dash/* {
+          uri strip_prefix /dash
           reverse_proxy ${flex0}:8081
         }
 
