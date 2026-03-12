@@ -68,7 +68,7 @@
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
           ports:
-            - "127.0.0.1:8000:8000"
+            - "10.0.0.4:8000:8000"
           depends_on:
             windmill-db:
               condition: service_healthy
