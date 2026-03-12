@@ -319,6 +319,36 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  // ── Workflows (Dagu DAGs) ──
+
+  app.get("/workflows/dagu", { schema: { tags: ["Observability"] } }, async () => {
+    try {
+      const resp = await fetch(
+        "http://10.0.0.3:8070/api/v1/dags",
+        { signal: AbortSignal.timeout(10000) },
+      );
+      if (!resp.ok) return { dags: [], error: `Dagu API ${resp.status}` };
+      const data = await resp.json() as { DAGs?: Array<Record<string, unknown>> };
+      return {
+        dags: (data.DAGs || []).map((d: Record<string, unknown>) => {
+          const dag = d.DAG as Record<string, unknown> | undefined;
+          const status = d.Status as Record<string, unknown> | undefined;
+          return {
+            name: dag?.Name ?? d.File,
+            description: dag?.Description ?? "",
+            schedule: dag?.Schedule ? (dag.Schedule as Array<Record<string, unknown>>).map((s) => s.Expression).join(", ") : "",
+            status: status?.Status !== undefined ? status.Status : null,
+            startedAt: status?.StartedAt ?? null,
+            finishedAt: status?.FinishedAt ?? null,
+            pid: status?.Pid ?? null,
+          };
+        }),
+      };
+    } catch (e: unknown) {
+      return { dags: [], error: e instanceof Error ? e.message : String(e) };
+    }
+  });
+
   // ── Files: logs, status, reports (from files.ts) ──
 
   app.get<{ Params: { vmId: string; container: string }; Querystring: { lines?: string; since?: string } }>(
