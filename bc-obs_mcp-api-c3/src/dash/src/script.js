@@ -29,8 +29,15 @@
     var fullUrl=API_BASE+path;
     console.log('[API] →',fullUrl);
     return fetch(fullUrl,opts).then(function(r){
-      console.log('[API] ←',fullUrl,'HTTP',r.status);
-      if(!r.ok){console.error('[API] FAIL',fullUrl,'HTTP',r.status);throw new Error('HTTP '+r.status)}
+      console.log('[API] ←',fullUrl,'HTTP',r.status,'headers:',Object.fromEntries(r.headers.entries()));
+      if(!r.ok){
+        return r.text().then(function(body){
+          console.error('[API] FAIL',fullUrl,'HTTP',r.status,'body:',body);
+          var detail='HTTP '+r.status;
+          try{var j=JSON.parse(body);if(j.error)detail+=' — '+j.error}catch(e){}
+          throw new Error(detail);
+        });
+      }
       var ct=r.headers.get('content-type')||'';
       if(ct.indexOf('application/json')>=0)return r.json();
       return r.text();
