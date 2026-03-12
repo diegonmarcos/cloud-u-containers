@@ -9,8 +9,16 @@
   }
 
   /* ═══ API Base ═══ */
-  var API_BASE=window.location.pathname.replace(/\/dash\/?$/,'');
-  if(!API_BASE||API_BASE==='/') API_BASE='/c3-api';
+  var h=window.location.hostname;
+  if(h==='localhost'||h==='127.0.0.1'){
+    var API_BASE='https://api.diegonmarcos.com/c3-api';
+    console.log('[C3] LOCAL mode — API_BASE =',API_BASE);
+  }else{
+    var API_BASE=window.location.pathname.replace(/\/dash\/?$/,'');
+    if(!API_BASE||API_BASE==='/') API_BASE='/c3-api';
+    console.log('[C3] DEPLOYED mode — API_BASE =',API_BASE);
+  }
+  console.log('[C3] hostname=',h,'pathname=',window.location.pathname);
 
   /* ═══ Fetch helper ═══ */
   function apiFetch(path,opts){
@@ -18,11 +26,17 @@
     opts.credentials='include';
     if(!opts.signal)opts.signal=AbortSignal.timeout(opts.timeout||30000);
     delete opts.timeout;
-    return fetch(API_BASE+path,opts).then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
+    var fullUrl=API_BASE+path;
+    console.log('[API] →',fullUrl);
+    return fetch(fullUrl,opts).then(function(r){
+      console.log('[API] ←',fullUrl,'HTTP',r.status);
+      if(!r.ok){console.error('[API] FAIL',fullUrl,'HTTP',r.status);throw new Error('HTTP '+r.status)}
       var ct=r.headers.get('content-type')||'';
       if(ct.indexOf('application/json')>=0)return r.json();
       return r.text();
+    }).catch(function(e){
+      console.error('[API] ERROR',fullUrl,e.message,e);
+      throw e;
     });
   }
 
@@ -809,6 +823,154 @@
       el.innerHTML='<span class="st-off">Workflows endpoint not available (MCP-only)</span>';
     });
   }
+
+  /* ═══════════════════════════════════════════
+     SWAGGER TAB — full HTTP GET/POST to real API
+     ═══════════════════════════════════════════ */
+  var SWAGGER_BASE=API_BASE;
+  var swaggerSpec=null;
+
+  function swaggerFetch(url,opts){
+    opts=opts||{};
+    opts.credentials='include';
+    if(!opts.signal)opts.signal=AbortSignal.timeout(30000);
+    console.log('[Swagger] →',url);
+    return fetch(url,opts).then(function(r){
+      console.log('[Swagger] ←',url,'HTTP',r.status);
+      var ct=r.headers.get('content-type')||'';
+      if(ct.indexOf('json')>=0) return r.json().then(function(d){return{status:r.status,data:d}});
+      return r.text().then(function(t){return{status:r.status,data:t}});
+    }).catch(function(e){
+      console.error('[Swagger] FAIL',url,e.message,e);
+      return{status:0,data:e.message};
+    });
+  }
+
+  document.getElementById('btn-swagger-load').addEventListener('click',loadSwaggerSpec);
+  function loadSwaggerSpec(){
+    var el=document.getElementById('out-swagger');
+    el.innerHTML='<span class="loading">fetching OpenAPI spec...</span>';
+    swaggerFetch(SWAGGER_BASE+'/docs/json').then(function(res){
+      if(res.status!==200){el.innerHTML='<span class="st-err">Failed to load spec: HTTP '+res.status+'</span>';return}
+      swaggerSpec=res.data;
+      renderSwaggerEndpoints(el,swaggerSpec);
+    });
+  }
+
+  function renderSwaggerEndpoints(el,spec){
+    var paths=spec.paths||{};
+    var gets=[],posts=[];
+    var idx=0;
+    for(var path in paths){
+      var methods=paths[path];
+      for(var method in methods){
+        var op=methods[method];
+        var entry={idx:idx,method:method.toUpperCase(),path:path,op:op};
+        if(entry.method==='GET')gets.push(entry);
+        else posts.push(entry);
+        idx++;
+      }
+    }
+    console.log('[Swagger] parsed',gets.length,'GET +',posts.length,'POST/other endpoints');
+
+    function renderGroup(list){
+      var out='';
+      for(var k=0;k<list.length;k++){
+        var e=list[k];
+        var tags=(e.op.tags||[]).join(', ');
+        var params=e.op.parameters||[];
+        var pathParams=params.filter(function(p){return p.in==='path'});
+        var queryParams=params.filter(function(p){return p.in==='query'});
+        var mid='sw-'+e.idx;
+        var mClass=e.method==='GET'?'badge-ok':e.method==='POST'?'badge-warn':e.method==='DELETE'?'badge-err':'badge-off';
+
+        out+='<div class="card" style="margin:.3rem 0;padding:.5rem .75rem">';
+        out+='<div class="card-hdr">';
+        out+='<div><span class="badge '+mClass+'" style="font-size:.65rem">'+e.method+'</span> ';
+        out+='<code style="font-size:.75rem">'+esc(e.path)+'</code>';
+        if(tags)out+=' <span style="font-size:.6rem;color:#495057">['+esc(tags)+']</span>';
+        out+='</div>';
+        out+='<button class="rbtn" data-sw-run="'+e.idx+'" data-sw-method="'+e.method+'" data-sw-path="'+esc(e.path)+'" style="padding:.15rem .5rem;font-size:.65rem">Run</button>';
+        out+='</div>';
+
+        for(var i=0;i<pathParams.length;i++){
+          var p=pathParams[i];
+          out+='<div style="margin:.2rem 0"><label style="font-size:.65rem;color:#aaa">:'+esc(p.name)+'</label> ';
+          out+='<input type="text" id="'+mid+'-p-'+esc(p.name)+'" placeholder="'+esc(p.name)+'" style="width:200px;padding:.2rem;font-size:.7rem;background:#1a1a2e;color:#e0e0e0;border:1px solid #333"></div>';
+        }
+        for(var i=0;i<queryParams.length;i++){
+          var q=queryParams[i];
+          out+='<div style="margin:.2rem 0"><label style="font-size:.65rem;color:#aaa">?'+esc(q.name)+'</label> ';
+          out+='<input type="text" id="'+mid+'-q-'+esc(q.name)+'" placeholder="'+esc(q.name)+(q.required?'':' (optional)')+'" style="width:200px;padding:.2rem;font-size:.7rem;background:#1a1a2e;color:#e0e0e0;border:1px solid #333"></div>';
+        }
+
+        out+='<div id="'+mid+'-out" style="margin-top:.3rem"></div>';
+        out+='</div>';
+      }
+      return out;
+    }
+
+    var h='<h3 style="color:#28a745">GET Endpoints ('+gets.length+')</h3>';
+    h+=renderGroup(gets);
+    h+='<h3 style="color:#ffc107;margin-top:1rem">POST / Other Endpoints ('+posts.length+')</h3>';
+    h+=renderGroup(posts);
+    h+='<p style="font-size:.7rem;color:#495057">'+idx+' total endpoints from OpenAPI spec</p>';
+    el.innerHTML=h;
+  }
+
+  document.getElementById('out-swagger').addEventListener('click',function(e){
+    var btn=e.target.closest('[data-sw-run]');
+    if(!btn)return;
+    var idx=btn.dataset.swRun;
+    var method=btn.dataset.swMethod;
+    var pathTemplate=btn.dataset.swPath;
+    runSwaggerEndpoint(idx,method,pathTemplate);
+  });
+
+  function runSwaggerEndpoint(idx,method,pathTemplate){
+    var mid='sw-'+idx;
+    var el=document.getElementById(mid+'-out');
+    el.innerHTML='<span class="loading">calling...</span>';
+
+    var resolvedPath=pathTemplate.replace(/\{([^}]+)\}/g,function(_,name){
+      var inp=document.getElementById(mid+'-p-'+name);
+      return inp?encodeURIComponent(inp.value||name):name;
+    });
+
+    var queryParts=[];
+    var qInputs=document.querySelectorAll('[id^="'+mid+'-q-"]');
+    qInputs.forEach(function(inp){
+      if(inp.value){
+        var qname=inp.id.replace(mid+'-q-','');
+        queryParts.push(encodeURIComponent(qname)+'='+encodeURIComponent(inp.value));
+      }
+    });
+    var url=SWAGGER_BASE+resolvedPath;
+    if(queryParts.length>0)url+='?'+queryParts.join('&');
+
+    var opts={method:method};
+    swaggerFetch(url,opts).then(function(res){
+      var cls=res.status>=200&&res.status<300?'st-ok':(res.status>=400?'st-err':'st-warn');
+      var out='<span class="'+cls+'" style="font-size:.65rem">HTTP '+res.status+'</span> ';
+      out+='<code style="font-size:.6rem;color:#495057">'+esc(url)+'</code>';
+      var body=typeof res.data==='string'?res.data:JSON.stringify(res.data,null,2);
+      out+='<pre style="max-height:300px;overflow:auto;font-size:.65rem;margin:.3rem 0">'+esc(body)+'</pre>';
+      el.innerHTML=out;
+    });
+  }
+
+  document.getElementById('btn-swagger-run-all').addEventListener('click',function(){
+    if(!swaggerSpec){loadSwaggerSpec();return}
+    var btns=document.querySelectorAll('[data-sw-run]');
+    btns.forEach(function(btn){
+      if(btn.dataset.swMethod==='GET'){
+        var pathTemplate=btn.dataset.swPath;
+        if(pathTemplate.indexOf('{')===-1){
+          runSwaggerEndpoint(btn.dataset.swRun,btn.dataset.swMethod,pathTemplate);
+        }
+      }
+    });
+  });
 
   /* ═══ Init ═══ */
   var controlLoaded=false;

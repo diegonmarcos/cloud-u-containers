@@ -21,7 +21,7 @@ export async function buildApp() {
   });
 
   // CORS
-  await app.register(cors, { origin: true });
+  await app.register(cors, { origin: true, credentials: true });
 
   // OpenAPI / Swagger
   await app.register(swagger, {
