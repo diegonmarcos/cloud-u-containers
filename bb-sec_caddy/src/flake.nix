@@ -239,6 +239,15 @@
           redir https://diegonmarcos.github.io/api/ permanent
         }
 
+        # C3 Dashboard — public shortcut at /dash/
+        @dash-no-slash path /dash
+        handle @dash-no-slash {
+          redir /dash/ permanent
+        }
+        handle_path /dash/* {
+          reverse_proxy ${flex0}:8081
+        }
+
         # C3 — Cloud Control Center API (all endpoints through Authelia/bearer)
         handle_path /c3-api/* {
           ${mkProtected "${flex0}:8081"}
@@ -278,7 +287,7 @@
           ${mkProtected "${flex0}:3000"}
         }
         handle {
-          respond "API hub — use /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
+          respond "API hub — use /dash/, /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
         }
         ${handleErrors}
       }
