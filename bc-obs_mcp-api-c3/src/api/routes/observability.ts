@@ -356,7 +356,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Send a push notification",
-        body: zodToJsonSchema(sendSchema, "sendSchema"),
+        body: zodToJsonSchema(sendSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -372,7 +372,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Alert for VM/service down",
-        body: zodToJsonSchema(healthDownSchema, "healthDownSchema"),
+        body: zodToJsonSchema(healthDownSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -388,7 +388,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Alert for VM/service recovery",
-        body: zodToJsonSchema(healthRecoveredSchema, "healthRecoveredSchema"),
+        body: zodToJsonSchema(healthRecoveredSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -404,7 +404,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Alert for expiring TLS certificate",
-        body: zodToJsonSchema(certExpiringSchema, "certExpiringSchema"),
+        body: zodToJsonSchema(certExpiringSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -420,7 +420,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Alert for disk space warning",
-        body: zodToJsonSchema(diskFullSchema, "diskFullSchema"),
+        body: zodToJsonSchema(diskFullSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -438,7 +438,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Get health check history for a VM",
-        querystring: zodToJsonSchema(healthHistorySchema, "healthHistorySchema"),
+        querystring: zodToJsonSchema(healthHistorySchema),
         response: { 200: { type: "array" } },
       },
     },
@@ -454,7 +454,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Get uptime statistics for a VM",
-        querystring: zodToJsonSchema(uptimeReportSchema, "uptimeReportSchema"),
+        querystring: zodToJsonSchema(uptimeReportSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -470,7 +470,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Get audit log entries",
-        querystring: zodToJsonSchema(auditLogSchema, "auditLogSchema"),
+        querystring: zodToJsonSchema(auditLogSchema),
         response: { 200: { type: "array" } },
       },
     },
@@ -486,7 +486,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Get deployment history",
-        querystring: zodToJsonSchema(deployHistorySchema, "deployHistorySchema"),
+        querystring: zodToJsonSchema(deployHistorySchema),
         response: { 200: { type: "array" } },
       },
     },
@@ -502,7 +502,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Get current alert state",
-        querystring: zodToJsonSchema(alertStateSchema, "alertStateSchema"),
+        querystring: zodToJsonSchema(alertStateSchema),
         response: { 200: { type: "object", nullable: true } },
       },
     },
@@ -518,7 +518,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Update alert state",
-        body: zodToJsonSchema(alertUpdateSchema, "alertUpdateSchema"),
+        body: zodToJsonSchema(alertUpdateSchema),
         response: { 200: { type: "object" } },
       },
     },
@@ -535,7 +535,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         tags: ["Observability"],
         summary: "Remove old records from database",
-        body: zodToJsonSchema(pruneSchema, "pruneSchema"),
+        body: zodToJsonSchema(pruneSchema),
         response: { 200: { type: "object" } },
       },
     },
