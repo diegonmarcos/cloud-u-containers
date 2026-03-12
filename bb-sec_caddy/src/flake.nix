@@ -244,7 +244,6 @@
           ${mkProtected "${flex0}:8081"}
         }
         handle /dash/* {
-          uri strip_prefix /dash
           ${mkProtected "${flex0}:8081"}
         }
 
