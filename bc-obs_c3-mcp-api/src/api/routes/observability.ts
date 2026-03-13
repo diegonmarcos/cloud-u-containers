@@ -17,6 +17,12 @@ import {
   checkHealth,
   checkReach,
 } from "../../shared/health.js";
+import {
+  up, upAll, upAllContainers,
+  health, healthAll,
+  profile, profileAll, profileAllContainers,
+} from "../../shared/obs.js";
+import { cacheRead, cachePrune, startCacheCleanup } from "../../shared/cache.js";
 import { profileContainer, profileVm } from "../../shared/diagnostics.js";
 import { runTestSuite } from "../../shared/tests.js";
 import { getContainerLog, getVmStatus, getReport } from "../../shared/files.js";
@@ -575,4 +581,67 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
       return { ok: true, ...result };
     }
   );
+
+  // ── v2: Async observability engine ──────────────────────────────────────
+
+  startCacheCleanup();
+
+  // UP
+  app.get("/v2/up/:target", {
+    schema: { tags: ["Observability v2"], summary: "Fast UP check (TCP+HTTP+ping+docker)", params: P_target },
+  }, async (req) => up((req.params as { target: string }).target));
+
+  app.get("/v2/up/all-services", {
+    schema: { tags: ["Observability v2"], summary: "UP check all services in parallel" },
+  }, async () => upAll());
+
+  app.get("/v2/up/all-containers", {
+    schema: { tags: ["Observability v2"], summary: "UP check all containers in parallel" },
+  }, async () => upAllContainers());
+
+  // HEALTH
+  app.get("/v2/health/:target", {
+    schema: { tags: ["Observability v2"], summary: "Health check with auto-profiling on failure", params: P_target },
+  }, async (req) => health((req.params as { target: string }).target));
+
+  app.get("/v2/health/all-services", {
+    schema: { tags: ["Observability v2"], summary: "Health check all services" },
+  }, async () => healthAll());
+
+  // PROFILING
+  app.get("/v2/profiling/:target", {
+    schema: { tags: ["Observability v2"], summary: "Deep 4-engine profiling", params: P_target },
+  }, async (req) => profile((req.params as { target: string }).target));
+
+  app.get("/v2/profiling/all-services", {
+    schema: { tags: ["Observability v2"], summary: "Profile all services" },
+  }, async () => profileAll());
+
+  app.get("/v2/profiling/all-containers", {
+    schema: { tags: ["Observability v2"], summary: "Profile all containers" },
+  }, async () => profileAllContainers());
+
+  // CACHE
+  app.get("/v2/cache", {
+    schema: { tags: ["Observability v2"], summary: "List cached results" },
+  }, async (req) => {
+    const endpoint = (req.query as { endpoint?: string }).endpoint;
+    const target = (req.query as { target?: string }).target;
+    const limit = parseInt((req.query as { limit?: string }).limit ?? "10", 10);
+    return cacheRead(endpoint ?? "*", target ?? "*", limit);
+  });
+
+  app.get("/v2/cache/:endpoint/:target", {
+    schema: { tags: ["Observability v2"], summary: "Get cached results for endpoint+target" },
+  }, async (req) => {
+    const { endpoint, target } = req.params as { endpoint: string; target: string };
+    return cacheRead(endpoint, target, 10);
+  });
+
+  app.post("/v2/cache/prune", {
+    schema: { tags: ["Observability v2"], summary: "Prune cached files older than 7 days" },
+  }, async () => {
+    const pruned = cachePrune();
+    return { ok: true, pruned };
+  });
 };
