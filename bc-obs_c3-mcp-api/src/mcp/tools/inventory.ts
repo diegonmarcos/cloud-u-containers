@@ -26,14 +26,7 @@ import {
   allServiceVersions,
 } from "../../shared/discovery.js";
 import { rawHttpRequest, getBearerToken } from "../../shared/http.js";
-import {
-  assembleTopology,
-  getTopologyDrift,
-  networkTopology,
-  volumeTopology,
-  imageTopology,
-  dependencyTopology,
-} from "../../shared/topology.js";
+import { CONFIG_PATH } from "../../shared/paths.js";
 import { getConfigFile } from "../../shared/files.js";
 
 // ── Helpers ──
@@ -481,42 +474,79 @@ export function registerInventoryTools(server: McpServer) {
     "c3_topology",
     "Unified topology view of all VMs, services, and networks from declarative config",
     {},
-    async () => jsonText("Topology", assembleTopology()),
+    async () => jsonText("Topology", JSON.parse(readFileSync(CONFIG_PATH, "utf-8"))),
   );
 
   server.tool(
     "c3_topology_drift",
     "Compare cloud-topology.json with on-disk services to find drift",
     {},
-    async () => jsonText("Topology drift", getTopologyDrift()),
+    async () => {
+      const drift = getDriftReport();
+      const parts: string[] = [];
+      if (drift.onDiskOnly.length > 0) parts.push(`${drift.onDiskOnly.length} on disk only: ${drift.onDiskOnly.join(", ")}`);
+      if (drift.configOnly.length > 0) parts.push(`${drift.configOnly.length} in config only: ${drift.configOnly.join(", ")}`);
+      if (parts.length === 0) parts.push("No drift detected.");
+      return jsonText("Topology drift", { ...drift, summary: parts.join(" | ") });
+    },
   );
 
   server.tool(
     "c3_topology_network",
     "Show Docker networks per VM with connected containers",
     {},
-    async () => jsonText("Network topology", networkTopology()),
+    async () => {
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const result = Object.entries(topo.vms).map(([id, vm]) => {
+        const vmSvcs = Object.entries(topo.services).filter(([, s]) => s.vm === id);
+        const netMap: Record<string, string[]> = {};
+        for (const [name, svc] of vmSvcs) {
+          for (const n of svc.networks || []) {
+            if (!netMap[n]) netMap[n] = [];
+            netMap[n].push(name);
+          }
+        }
+        return { vm: vm.ssh_alias, networks: Object.entries(netMap).map(([n, svcs]) => ({ name: n, services: svcs })) };
+      });
+      return jsonText("Network topology", result);
+    },
   );
 
   server.tool(
     "c3_topology_volumes",
-    "Show Docker volumes per VM",
+    "Show Docker volumes per VM (from cloud-topology.json)",
     {},
-    async () => jsonText("Volume topology", volumeTopology()),
+    async () => {
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      return jsonText("Volume topology (declarative — from compose files)", topo.services);
+    },
   );
 
   server.tool(
     "c3_topology_images",
-    "Show Docker images per VM",
+    "Show Docker images per VM (from cloud-topology.json containers)",
     {},
-    async () => jsonText("Image topology", imageTopology()),
+    async () => {
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const result = Object.entries(topo.vms).map(([id, vm]) => ({
+        vm: vm.ssh_alias, containers: vm.containers, ports: vm.ports,
+      }));
+      return jsonText("Image/container topology", result);
+    },
   );
 
   server.tool(
     "c3_topology_dependencies",
-    "Show service dependencies (depends_on from compose files)",
+    "Show service dependencies (from cloud-topology.json)",
     {},
-    async () => jsonText("Dependency topology", dependencyTopology()),
+    async () => {
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      // Services sharing networks are implicitly dependent
+      const result = Object.entries(topo.services)
+        .filter(([, s]) => s.networks && s.networks.length > 0)
+        .map(([name, s]) => ({ service: name, networks: s.networks, vm: s.vm }));
+      return jsonText("Dependency topology (network-based)", result);
+    },
   );
 
   // ── Files (1 tool, from c3.ts) ──
