@@ -869,156 +869,237 @@
      SECURITY TABS
      ═══════════════════════════════════════════ */
 
-  // ── Web Server (Caddy) — TLS + exposed services ──
+  // ── Shared cache for /configs and /topology (the two consolidated JSONs) ──
+  var _secCache={configs:null,topology:null};
+  function secData(){
+    return Promise.all([
+      _secCache.configs||apiFetch('/configs',{timeout:20000}).then(function(d){_secCache.configs=d;return d}),
+      _secCache.topology||apiFetch('/topology',{timeout:20000}).then(function(d){_secCache.topology=d;return d})
+    ]).then(function(arr){return{conf:arr[0],topo:arr[1]}});
+  }
+
+  // ── Web Server (Caddy) — TLS certs & listeners from cloud-configs.json ──
   document.getElementById('btn-sec-caddy').addEventListener('click',loadSecCaddy);
   function loadSecCaddy(){
     var el=document.getElementById('out-sec-caddy');
-    el.innerHTML='<span class="loading">loading Caddy info...</span>';
-    apiFetch('/topology/security',{timeout:20000}).then(function(d){
-      console.log('[Sec-Caddy]',d);
-      var svcs=d.exposedServices||[];
-      if(svcs.length===0){ el.innerHTML='<span class="st-off">No exposed services found</span>'; return; }
-      var h='<table><tr><th>Service</th><th>Domain</th><th>VM</th><th>TLS</th></tr>';
-      for(var i=0;i<svcs.length;i++){
-        var s=svcs[i];
-        h+='<tr><td><code>'+esc(s.name)+'</code></td>';
-        h+='<td>'+esc(s.domain)+'</td>';
-        h+='<td>'+esc(s.vm||'')+'</td>';
-        h+='<td class="st-ok">Let\'s Encrypt</td></tr>';
+    el.innerHTML='<span class="loading">loading Caddy TLS info...</span>';
+    secData().then(function(d){
+      var routes=(d.conf.infra&&d.conf.infra.caddy&&d.conf.infra.caddy.routes)||[];
+      if(routes.length===0){el.innerHTML='<span class="st-off">No Caddy routes in configs</span>';return;}
+      var h='<table><tr><th>Domain</th><th>Upstream</th><th>TLS</th><th>Auth</th></tr>';
+      for(var i=0;i<routes.length;i++){
+        var r=routes[i];
+        var authCls=r.auth==='none'?'st-warn':r.auth==='authelia+bearer'?'st-ok':'st-ok';
+        h+='<tr><td><code>'+esc(r.domain||'')+'</code></td>';
+        h+='<td>'+esc(r.upstream||'')+'</td>';
+        h+='<td class="st-ok">Let\'s Encrypt</td>';
+        h+='<td class="'+authCls+'">'+esc(r.auth||'—')+'</td></tr>';
       }
       h+='</table>';
-      h+='<p style="font-size:.65rem;color:#495057;margin-top:.5rem">'+esc(d.summary||'')+'</p>';
+      h+='<p style="font-size:.65rem;color:#495057;margin-top:.5rem">'+routes.length+' routes — all TLS via Caddy automatic HTTPS (Let\'s Encrypt / ZeroSSL)</p>';
       el.innerHTML=h;
-    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── Auth (Authelia) — token status + secrets ──
+  // ── Auth (Authelia) — ACL rules from cloud-configs.json + secrets status ──
   document.getElementById('btn-sec-authelia').addEventListener('click',loadSecAuthelia);
   function loadSecAuthelia(){
     var el=document.getElementById('out-sec-authelia');
-    el.innerHTML='<span class="loading">loading auth info...</span>';
-    Promise.all([
-      apiFetch('/security/tokens',{timeout:10000}),
-      apiFetch('/topology/security',{timeout:15000})
-    ]).then(function(arr){
-      var tok=arr[0], sec=arr[1];
-      console.log('[Sec-Authelia] tokens:',tok,'security:',sec);
-      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Bearer Token</h4>';
-      if(tok.hasToken){
-        var cls=tok.isExpired?'st-err':'st-ok';
-        h+='<p>Status: <span class="'+cls+'">'+(tok.isExpired?'EXPIRED':'VALID')+'</span></p>';
-        if(tok.expiresAt) h+='<p style="font-size:.7rem">Expires: '+esc(tok.expiresAt)+'</p>';
-        if(tok.remainingSeconds!==undefined) h+='<p style="font-size:.7rem">Remaining: '+Math.floor(tok.remainingSeconds/3600)+'h '+Math.floor((tok.remainingSeconds%3600)/60)+'m</p>';
+    el.innerHTML='<span class="loading">loading Authelia ACL...</span>';
+    secData().then(function(d){
+      var acl=(d.conf.infra&&d.conf.infra.authelia&&d.conf.infra.authelia.acl)||[];
+      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Access Control Rules</h4>';
+      if(acl.length>0){
+        h+='<table><tr><th>Domain</th><th>Policy</th><th>Subject</th><th>Resources</th></tr>';
+        for(var i=0;i<acl.length;i++){
+          var rule=acl[i];
+          var pol=rule.policy||'—';
+          var polCls=pol==='bypass'?'st-warn':pol==='one_factor'?'st-ok':pol==='two_factor'?'st-ok':'st-off';
+          var subj=Array.isArray(rule.subject)?rule.subject.join(', '):(rule.subject||'any');
+          var res=Array.isArray(rule.resources)?rule.resources.join(', '):(rule.resources||'all');
+          var dom=Array.isArray(rule.domain)?rule.domain.join(', '):(rule.domain||'*');
+          h+='<tr><td style="font-size:.65rem"><code>'+esc(dom)+'</code></td>';
+          h+='<td class="'+polCls+'">'+esc(pol)+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(subj)+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(res)+'</td></tr>';
+        }
+        h+='</table>';
       }else{
-        h+='<p class="st-warn">No bearer token found</p>';
+        h+='<p class="st-off">No ACL rules found in configs</p>';
       }
-      h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Secrets Status</h4>';
-      var secrets=sec.secretsStatus||[];
+      // Secrets status from topology
+      var secrets=(d.topo.secretsStatus)||[];
       var withSecrets=secrets.filter(function(s){return s.hasSecrets});
-      h+='<table><tr><th>Service</th><th>Encrypted</th><th>Decrypted</th></tr>';
-      for(var i=0;i<withSecrets.length;i++){
-        var s=withSecrets[i];
-        h+='<tr><td><code>'+esc(s.service)+'</code></td>';
-        h+='<td class="'+(s.hasSecrets?'st-ok':'st-off')+'">'+(s.hasSecrets?'yes':'no')+'</td>';
-        h+='<td class="'+(s.hasSecretsFile?'st-ok':'st-warn')+'">'+(s.hasSecretsFile?'yes':'no')+'</td></tr>';
+      if(withSecrets.length>0){
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Secrets Status (sops/age)</h4>';
+        h+='<table><tr><th>Service</th><th>Encrypted</th><th>Deployed</th><th>Status</th></tr>';
+        for(var i=0;i<withSecrets.length;i++){
+          var s=withSecrets[i];
+          var depCls=s.hasSecretsFile?'st-ok':'st-err';
+          var stTxt=s.hasSecrets&&s.hasSecretsFile?'OK':s.hasSecrets&&!s.hasSecretsFile?'NOT DEPLOYED':'NO SOURCE';
+          var stCls=stTxt==='OK'?'st-ok':stTxt==='NOT DEPLOYED'?'st-err':'st-warn';
+          h+='<tr><td><code>'+esc(s.service)+'</code></td>';
+          h+='<td class="st-ok">yes</td>';
+          h+='<td class="'+depCls+'">'+(s.hasSecretsFile?'yes':'no')+'</td>';
+          h+='<td class="'+stCls+'">'+stTxt+'</td></tr>';
+        }
+        h+='</table>';
       }
-      h+='</table>';
       el.innerHTML=h;
-    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── Rev Proxy (Caddy routes) ──
+  // ── Rev Proxy — Caddy routes: domain → upstream → auth ──
   document.getElementById('btn-sec-proxy').addEventListener('click',loadSecProxy);
   function loadSecProxy(){
     var el=document.getElementById('out-sec-proxy');
     el.innerHTML='<span class="loading">loading proxy routes...</span>';
-    apiFetch('/topology/security',{timeout:20000}).then(function(d){
-      console.log('[Sec-Proxy]',d);
-      var svcs=d.exposedServices||[];
-      var vms=d.vms||[];
-      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Reverse Proxy Routes (Caddy → WireGuard → VM)</h4>';
-      h+='<table><tr><th>Domain</th><th>Service</th><th>Target VM</th><th>Auth</th></tr>';
-      for(var i=0;i<svcs.length;i++){
-        var s=svcs[i];
-        h+='<tr><td><code>'+esc(s.domain)+'</code></td>';
-        h+='<td>'+esc(s.name)+'</td>';
-        h+='<td>'+esc(s.vm||'')+'</td>';
-        h+='<td class="st-ok">Authelia 2FA</td></tr>';
+    secData().then(function(d){
+      var routes=(d.conf.infra&&d.conf.infra.caddy&&d.conf.infra.caddy.routes)||[];
+      var h='<h4 style="color:#339af0;font-size:.8rem;margin:.5rem 0">Caddy Reverse Proxy Routes</h4>';
+      if(routes.length>0){
+        h+='<table><tr><th>Domain</th><th>Upstream</th><th>Auth</th></tr>';
+        for(var i=0;i<routes.length;i++){
+          var r=routes[i];
+          var authCls=r.auth==='none'?'st-warn':r.auth==='authelia+bearer'?'st-ok':'st-ok';
+          h+='<tr><td><code>'+esc(r.domain||'')+'</code></td>';
+          h+='<td>'+esc(r.upstream||'')+'</td>';
+          h+='<td class="'+authCls+'">'+esc(r.auth||'—')+'</td></tr>';
+        }
+        h+='</table>';
+      }else{
+        h+='<p class="st-off">No routes found</p>';
       }
-      h+='</table>';
-      h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">VMs (SSH access)</h4>';
-      h+='<table><tr><th>VM</th><th>Alias</th><th>IP</th><th>Method</th></tr>';
-      for(var i=0;i<vms.length;i++){
-        var v=vms[i];
-        h+='<tr><td><code>'+esc(v.id)+'</code></td>';
-        h+='<td>'+esc(v.alias)+'</td>';
-        h+='<td>'+esc(v.ip)+'</td>';
-        h+='<td>'+esc(v.method)+'</td></tr>';
+      // Docker port bindings from configs services
+      var svcs=d.conf.services||[];
+      var portRows=[];
+      for(var si=0;si<svcs.length;si++){
+        var s=svcs[si];
+        var ports=s.ports||[];
+        for(var j=0;j<ports.length;j++){
+          portRows.push({service:s.name,port:ports[j],vm:s.vm||'—'});
+        }
       }
-      h+='</table>';
+      if(portRows.length>0){
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Docker Port Bindings</h4>';
+        h+='<table><tr><th>Service</th><th>VM</th><th>Port Mapping</th></tr>';
+        for(var i=0;i<portRows.length;i++){
+          var p=portRows[i];
+          h+='<tr><td><code>'+esc(p.service)+'</code></td>';
+          h+='<td>'+esc(p.vm)+'</td>';
+          h+='<td>'+esc(p.port)+'</td></tr>';
+        }
+        h+='</table>';
+      }
       el.innerHTML=h;
-    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── VPN (WireGuard) ──
+  // ── VPN (WireGuard) — from cloud-topology.json wireguard + os_firewalls ──
   document.getElementById('btn-sec-wg').addEventListener('click',loadSecWg);
   function loadSecWg(){
     var el=document.getElementById('out-sec-wg');
-    el.innerHTML='<span class="loading">loading WireGuard status... (may take ~30s)</span>';
-    apiFetch('/security/wireguard',{timeout:60000}).then(function(d){
-      console.log('[Sec-WG]',d);
-      if(!Array.isArray(d)||d.length===0){ el.innerHTML='<span class="st-off">No WireGuard data</span>'; return; }
-      var h='';
-      for(var i=0;i<d.length;i++){
-        var vm=d[i];
-        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .3rem">'+esc(vm.vm)+'</h4>';
-        if(vm.peers.length===0){
-          h+='<p class="st-warn" style="font-size:.7rem">No peers / unreachable</p>';
-          continue;
+    el.innerHTML='<span class="loading">loading WireGuard mesh...</span>';
+    secData().then(function(d){
+      var wg=d.topo.wireguard||{};
+      var peers=wg.peers||[];
+      if(peers.length===0){el.innerHTML='<span class="st-off">No WireGuard data in topology</span>';return;}
+      var h='<p style="font-size:.7rem;color:#495057;margin-bottom:.5rem">Hub-and-spoke mesh: gcp-proxy is hub, all others connect through it</p>';
+      h+='<table><tr><th>Peer</th><th>WG IP</th><th>Role</th><th>Endpoint</th></tr>';
+      for(var i=0;i<peers.length;i++){
+        var p=peers[i];
+        var roleCls=p.role==='hub'?'st-ok':p.role==='spoke'?'st-ok':'st-warn';
+        h+='<tr><td><code>'+esc(p.name||'')+'</code></td>';
+        h+='<td>'+esc(p.wg_ip||'')+'</td>';
+        h+='<td class="'+roleCls+'">'+esc(p.role||'')+'</td>';
+        h+='<td style="font-size:.65rem">'+esc(p.endpoint||'—')+'</td></tr>';
+      }
+      h+='</table>';
+      // OS firewalls
+      var osFw=d.topo.os_firewalls||[];
+      if(osFw.length>0){
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">OS Firewalls (iptables)</h4>';
+        h+='<table><tr><th>VM</th><th>Port</th><th>Proto</th><th>Source</th><th>Comment</th></tr>';
+        for(var i=0;i<osFw.length;i++){
+          var fw=osFw[i];
+          var rules=fw.rules||[];
+          for(var j=0;j<rules.length;j++){
+            var r=rules[j];
+            h+='<tr><td><code>'+esc(fw.alias||fw.vm||'')+'</code></td>';
+            h+='<td>'+esc(String(r.port||''))+'</td>';
+            h+='<td>'+esc(r.proto||'tcp')+'</td>';
+            h+='<td style="font-size:.65rem">'+esc(r.source||'any')+'</td>';
+            h+='<td style="font-size:.65rem">'+esc(r.comment||'')+'</td></tr>';
+          }
         }
-        h+='<table><tr><th>Endpoint</th><th>Allowed IPs</th><th>Handshake</th><th>Transfer</th></tr>';
-        for(var j=0;j<vm.peers.length;j++){
-          var p=vm.peers[j];
-          var hsCls=p.latestHandshake?'st-ok':'st-warn';
-          h+='<tr><td style="font-size:.65rem">'+esc(p.endpoint||'—')+'</td>';
-          h+='<td style="font-size:.65rem">'+esc(p.allowedIps||'—')+'</td>';
-          h+='<td class="'+hsCls+'" style="font-size:.65rem">'+esc(p.latestHandshake||'never')+'</td>';
-          h+='<td style="font-size:.65rem">'+esc(p.transfer||'—')+'</td></tr>';
+        h+='</table>';
+      }
+      // Cloud firewalls
+      var cFw=d.topo.firewalls||[];
+      if(cFw.length>0){
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Cloud Firewalls (VPS)</h4>';
+        h+='<table><tr><th>Provider</th><th>Name</th><th>VM</th><th>Rules</th></tr>';
+        for(var i=0;i<cFw.length;i++){
+          var f=cFw[i];
+          var rulesSummary=(f.rules||[]).map(function(r){return r.port+'/'+r.protocol}).join(', ');
+          h+='<tr><td>'+esc(f.provider||'')+'</td>';
+          h+='<td><code>'+esc(f.name||'')+'</code></td>';
+          h+='<td>'+esc(f.vm||'')+'</td>';
+          h+='<td style="font-size:.65rem">'+esc(rulesSummary||'—')+'</td></tr>';
         }
         h+='</table>';
       }
       el.innerHTML=h;
-    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── Docker Networks ──
+  // ── Docker Networks — from cloud-configs.json services[].networks + ports ──
   document.getElementById('btn-sec-docker').addEventListener('click',loadSecDocker);
   function loadSecDocker(){
     var el=document.getElementById('out-sec-docker');
-    el.innerHTML='<span class="loading">loading Docker networks... (may take ~30s)</span>';
-    apiFetch('/topology/network',{timeout:60000}).then(function(d){
-      console.log('[Sec-Docker]',d);
-      if(!Array.isArray(d)||d.length===0){ el.innerHTML='<span class="st-off">No network data</span>'; return; }
-      var h='';
-      for(var i=0;i<d.length;i++){
-        var vm=d[i];
-        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .3rem">'+esc(vm.vm)+'</h4>';
-        if(!vm.networks||vm.networks.length===0){
-          h+='<p class="st-warn" style="font-size:.7rem">No networks / unreachable</p>';
-          continue;
+    el.innerHTML='<span class="loading">loading Docker networks...</span>';
+    secData().then(function(d){
+      var svcs=d.conf.services||[];
+      // Build network → services map (same logic as connect.sh section F)
+      var netMap={};
+      for(var i=0;i<svcs.length;i++){
+        var s=svcs[i];
+        var nets=s.networks||[];
+        for(var j=0;j<nets.length;j++){
+          var n=nets[j];
+          if(!netMap[n])netMap[n]=[];
+          netMap[n].push(s.name);
         }
-        h+='<table><tr><th>Network</th><th>Driver</th><th>Containers</th></tr>';
-        for(var j=0;j<vm.networks.length;j++){
-          var n=vm.networks[j];
-          var containers=n.containers&&n.containers.length?n.containers.join(', '):'—';
-          h+='<tr><td><code>'+esc(n.name)+'</code></td>';
-          h+='<td>'+esc(n.driver)+'</td>';
-          h+='<td style="font-size:.65rem">'+esc(containers)+'</td></tr>';
+      }
+      var netKeys=Object.keys(netMap).sort();
+      if(netKeys.length===0){el.innerHTML='<span class="st-off">No Docker network data</span>';return;}
+      var h='<table><tr><th>Network</th><th>Services</th></tr>';
+      for(var i=0;i<netKeys.length;i++){
+        var nk=netKeys[i];
+        h+='<tr><td><code>'+esc(nk)+'</code></td>';
+        h+='<td style="font-size:.65rem">'+esc(netMap[nk].join(', '))+'</td></tr>';
+      }
+      h+='</table>';
+      // Per-service port exposure
+      var portRows=[];
+      for(var i=0;i<svcs.length;i++){
+        var s=svcs[i];
+        var ports=s.ports||[];
+        if(ports.length>0) portRows.push({service:s.name,ports:ports.join(', '),vm:s.vm||'—'});
+      }
+      if(portRows.length>0){
+        h+='<h4 style="color:#339af0;font-size:.8rem;margin:.75rem 0 .5rem">Port Exposure</h4>';
+        h+='<table><tr><th>Service</th><th>VM</th><th>Ports</th></tr>';
+        for(var i=0;i<portRows.length;i++){
+          var p=portRows[i];
+          h+='<tr><td><code>'+esc(p.service)+'</code></td>';
+          h+='<td>'+esc(p.vm)+'</td>';
+          h+='<td>'+esc(p.ports)+'</td></tr>';
         }
         h+='</table>';
       }
       el.innerHTML=h;
-    }).catch(function(e){ el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>'; });
+    }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
   /* ═══════════════════════════════════════════

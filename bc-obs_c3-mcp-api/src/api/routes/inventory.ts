@@ -2,12 +2,11 @@
 // Service catalog, topology, config, and discovery
 
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
 import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
-import { assembleTopology, getTopologyDrift } from "../../shared/topology.js";
+import { getDriftReport } from "../../shared/config.js";
 import { getConfigFile } from "../../shared/files.js";
-import { SOLUTIONS_DIR } from "../../shared/paths.js";
+import { CONFIG_PATH, CONFIGS_PATH } from "../../shared/paths.js";
 
 export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Services (from services.ts) ──
@@ -46,26 +45,27 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     return getAllSpecs();
   });
 
-  // ── Topology (from topology.ts, minus security which goes to security routes) ──
+  // ── Topology (serves cloud-topology.json directly) ──
 
-  app.get("/topology", { schema: { tags: ["Inventory"] } }, async () => {
-    return assembleTopology();
+  app.get("/topology", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    return JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
   });
 
   app.get("/topology/drift", { schema: { tags: ["Inventory"] } }, async () => {
-    return getTopologyDrift();
+    const drift = getDriftReport();
+    const parts: string[] = [];
+    if (drift.onDiskOnly.length > 0) parts.push(`${drift.onDiskOnly.length} on disk only: ${drift.onDiskOnly.join(", ")}`);
+    if (drift.configOnly.length > 0) parts.push(`${drift.configOnly.length} in config only: ${drift.configOnly.join(", ")}`);
+    if (parts.length === 0) parts.push("No drift detected.");
+    return { onDiskOnly: drift.onDiskOnly, configOnly: drift.configOnly, summary: parts.join(" | ") };
   });
 
-  // ── Configs (per-service configs from cloud-configs.json) ──
+  // ── Configs (serves cloud-configs.json directly) ──
 
-  app.get("/configs", { schema: { tags: ["Inventory"] } }, async (req, reply) => {
-    const cloudRoot = join(SOLUTIONS_DIR, "..");
-    const configsPath = join(cloudRoot, "cloud-configs.json");
-    if (!existsSync(configsPath)) {
-      reply.code(404).send({ error: "cloud-configs.json not generated yet" });
-      return;
-    }
-    return JSON.parse(readFileSync(configsPath, "utf-8"));
+  app.get("/configs", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIGS_PATH)) { reply.code(404).send({ error: "cloud-configs.json not generated yet" }); return; }
+    return JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
   });
 
   // ── Files: config (from files.ts) ──

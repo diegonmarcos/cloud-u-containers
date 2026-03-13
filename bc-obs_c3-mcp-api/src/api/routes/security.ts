@@ -5,10 +5,11 @@ import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
-import { getSecurityTopology, networkTopology } from "../../shared/topology.js";
 import { sshExec } from "../../shared/ssh.js";
 import { getConfig, getVmSshAlias, resolveVmId } from "../../shared/config.js";
 import { getSecretsStatus } from "../../shared/files.js";
+import { CONFIG_PATH } from "../../shared/paths.js";
+import { readFileSync } from "fs";
 
 const securityScanSchema = z.object({
   vm: z.string().optional(),
@@ -84,23 +85,41 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // ── Security topology (from topology.ts) ──
+  // ── Security topology (derived from cloud-topology.json) ──
 
   app.get(
     "/topology/security",
     { schema: { tags: ["Security"] } },
     async () => {
-      return getSecurityTopology();
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const exposed = Object.entries(topo.services as Record<string, any>)
+        .filter(([, s]) => s.domain)
+        .map(([name, s]: [string, any]) => ({ name, domain: s.domain, vm: s.vm }));
+      return { exposedServices: exposed, vms: Object.entries(topo.vms as Record<string, any>).map(([id, vm]: [string, any]) => ({ id, alias: vm.ssh_alias, ip: vm.ip, method: vm.method })) };
     }
   );
 
-  // ── Network topology (Docker networks per VM) ──
+  // ── Network topology (from cloud-topology.json — networks per VM) ──
 
   app.get(
     "/topology/network",
     { schema: { tags: ["Security"], summary: "Docker networks and container isolation per VM" } },
     async () => {
-      return networkTopology();
+      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      return Object.entries(topo.vms as Record<string, any>).map(([id, vm]: [string, any]) => {
+        const vmServices = Object.entries(topo.services as Record<string, any>).filter(([, s]: [string, any]) => s.vm === id);
+        const netMap: Record<string, string[]> = {};
+        for (const [name, svc] of vmServices) {
+          for (const n of (svc as any).networks || []) {
+            if (!netMap[n]) netMap[n] = [];
+            netMap[n].push(name);
+          }
+        }
+        return {
+          vm: vm.ssh_alias,
+          networks: Object.entries(netMap).map(([name, svcs]) => ({ name, driver: "bridge", containers: svcs })),
+        };
+      });
     }
   );
 
