@@ -118,7 +118,7 @@
           volumes:
             - windmill-worker-data:/tmp/windmill
             - /var/run/docker.sock:/var/run/docker.sock
-            # SSH keys deployed into container by ssh-keys.nix activation (docker cp + chown)
+            - /opt/ssh-keys/windmill-worker:/home/windmill/.ssh:ro
           networks:
             - windmill-net
           deploy:

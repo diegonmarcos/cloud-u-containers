@@ -31,7 +31,7 @@
             dockerfile: Dockerfile
           image: dagu-ssh:local
           container_name: ${config.container_name}
-          entrypoint: ["dagu", "start-all"]
+          entrypoint: ["sh", "/var/lib/dagu/fetch-token.sh"]
           restart: unless-stopped
           ports:
             - "10.0.0.3:${toString config.port}:8080"
@@ -44,12 +44,15 @@
             - DAGU_AUTH_BASIC_USERNAME=''${DAGU_USERNAME}
             - DAGU_AUTH_BASIC_PASSWORD=''${DAGU_PASSWORD}
             - DAGU_TZ=Europe/Berlin
-            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN}
+            - AUTHELIA_OIDC_CLIENT_ID=dagu-ops
+            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_DAGU_SECRET}
+            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
           volumes:
             - ./data:/var/lib/dagu/data
             - ./dags:/var/lib/dagu/dags
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
-            # SSH keys deployed into container by ssh-keys.nix activation (docker cp + chown)
+            - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
+            - /opt/ssh-keys/dagu:/root/.ssh:ro
           mem_limit: 256m
           networks:
             - default
@@ -86,6 +89,30 @@
         to:
           - me@diegonmarcos.com
         prefix: "[Dagu OK]"
+    '';
+
+    # ── OIDC token fetch entrypoint ───────────────────────────────────────
+    mkFetchToken = pkgs: pkgs.writeText "fetch-token.sh" ''
+      #!/bin/sh
+      set -e
+
+      # Fetch OIDC token via client_credentials grant, export as AUTHELIA_BEARER_TOKEN
+      # so all existing DAG workflows keep working without changes.
+      echo "[fetch-token] Requesting OIDC token from $AUTHELIA_TOKEN_URL ..."
+      RESPONSE=$(curl -s -f -X POST "$AUTHELIA_TOKEN_URL" \
+        -u "$AUTHELIA_OIDC_CLIENT_ID:$AUTHELIA_OIDC_CLIENT_SECRET" \
+        -d "grant_type=client_credentials&scope=authelia.bearer.authz")
+
+      TOKEN=$(echo "$RESPONSE" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+      if [ -z "$TOKEN" ]; then
+        echo "[fetch-token] ERROR: Failed to get OIDC token"
+        echo "[fetch-token] Response: $RESPONSE"
+        exit 1
+      fi
+
+      export AUTHELIA_BEARER_TOKEN="$TOKEN"
+      echo "[fetch-token] Token acquired (${#TOKEN} chars), starting dagu..."
+      exec dagu start-all
     '';
 
     # ── SSH shorthand used across all workflows ──────────────────────────
@@ -1511,6 +1538,8 @@
         mkdir -p $out/dags
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkBaseConfig pkgs} $out/base.yaml
+        cp ${mkFetchToken pkgs} $out/fetch-token.sh
+        chmod +x $out/fetch-token.sh
         cp ${./Dockerfile} $out/Dockerfile
         cp ${dags.healthcheck} $out/dags/healthcheck.yaml
         cp ${dags.system-check} $out/dags/system-check.yaml
