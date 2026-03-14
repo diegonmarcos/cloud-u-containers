@@ -16,6 +16,13 @@
     title = "Sauron Forwarder - Alert forwarding to central sauron via netcat";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-forwarder/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_sauron-forwarder/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         sauron-forwarder:
           image: ${config.image}

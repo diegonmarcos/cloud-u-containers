@@ -16,6 +16,13 @@
     title = "Bup - Git-based backup server for database dumps (SSH receiver)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-bup/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-bup/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # bup - Git-based backup for database dumps
       # Deploy to: oci-A1-f_1
       # Receives dumps from all servers via SSH

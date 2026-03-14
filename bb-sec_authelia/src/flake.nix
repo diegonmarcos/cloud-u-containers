@@ -22,6 +22,13 @@
 
     # Generate docker-compose.yml (authelia + redis)
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bb-sec_authelia/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_authelia/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         authelia:
           image: ${config.image}

@@ -194,6 +194,13 @@
     '';
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bb-sec_orchestrator/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_orchestrator/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         orchestrator:
           build: .

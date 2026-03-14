@@ -16,6 +16,13 @@
     title = "Borg - Binary backup server for media files (SSH receiver)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-borg/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-borg/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Borg - Binary backup for media/large files
       # Deploy to: oci-A1-f_1
       # SSH server for borg clients

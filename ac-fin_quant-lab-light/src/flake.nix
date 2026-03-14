@@ -20,6 +20,13 @@
     title = "Quant Lab Light - Jupyter + NautilusTrader + Postgres";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
           image: ${config.research_image}

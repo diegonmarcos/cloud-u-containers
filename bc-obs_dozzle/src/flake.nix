@@ -17,6 +17,13 @@
     title = "Dozzle - Real-time Docker log viewer";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_dozzle/src/flake.nix     ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_dozzle/build.sh ship    ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         dozzle:
           image: ${config.image}

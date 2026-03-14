@@ -18,6 +18,13 @@
     title = "Radicale Calendar/Contacts (CalDAV/CardDAV)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_radicale/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_radicale/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         radicale:
           image: ${config.image}

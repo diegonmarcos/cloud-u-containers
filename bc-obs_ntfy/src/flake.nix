@@ -45,6 +45,13 @@
     '';
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_ntfy/src/flake.nix       ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_ntfy/build.sh ship      ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # ntfy - Push Notification Server
       # Deployed on: gcp-E2-f_0 (35.226.147.64)
       # Domain: ${config.domain}

@@ -21,6 +21,13 @@
     title = "Rig Agentic AI";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ad-agi_rig-agentic/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ad-agi_rig-agentic/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         rig-agentic:
           build:

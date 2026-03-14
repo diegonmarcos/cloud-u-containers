@@ -20,6 +20,13 @@
     title = "Syncthing File Sync";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ab-mic_syncthing/src/flake.nix  ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ab-mic_syncthing/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         syncthing:
           image: ${config.image}

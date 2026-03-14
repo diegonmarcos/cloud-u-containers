@@ -18,6 +18,13 @@
     title = "Filebrowser - Web file manager";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_filebrowser/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_filebrowser/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Filebrowser - Web file manager
       # Deployed on: oci-A1-f_1 (Oracle Flex)
 

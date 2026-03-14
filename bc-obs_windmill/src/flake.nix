@@ -15,6 +15,13 @@
     title = "Windmill - Workflow orchestration platform";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_windmill/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_windmill/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Windmill Workflow Orchestration Platform
       # Deploy on: oci-A1-f_0 (oci-apps, 10.0.0.6)
       # Port: 8000 (internal, proxied via Caddy)

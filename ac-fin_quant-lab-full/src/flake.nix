@@ -24,6 +24,13 @@
     title = "Quant Lab Full - Research + Analytics + ML + Risk + Trading + Postgres";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
           image: ${config.research_image}
