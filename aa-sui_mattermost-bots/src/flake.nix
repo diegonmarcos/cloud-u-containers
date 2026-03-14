@@ -115,14 +115,8 @@
             - OLLAMA_VM=${config.ollama_vm}
           networks:
             - default
-            - c3-mcp-api
           depends_on:
             - mattermost
-
-      networks:
-        c3-mcp-api:
-          external: true
-          name: c3-mcp-api_default
     '';
 
     # ── ntfy bridge script ──────────────────────────────────────
