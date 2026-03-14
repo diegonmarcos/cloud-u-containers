@@ -69,12 +69,49 @@ function httpRequest(
   };
 }
 
+// Module-level OIDC token cache
+let _oidcTokenCache: string | null = null;
+
+function fetchOidcToken(): string | null {
+  const clientId = process.env.AUTHELIA_OIDC_CLIENT_ID;
+  const clientSecret = process.env.AUTHELIA_OIDC_CLIENT_SECRET;
+  const tokenUrl = process.env.AUTHELIA_TOKEN_URL;
+
+  if (!clientId || !clientSecret || !tokenUrl) return null;
+
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const result = exec("curl", [
+    "-s", "-f", "-X", "POST", tokenUrl,
+    "-H", `Authorization: Basic ${credentials}`,
+    "-d", "grant_type=client_credentials&scope=authelia.bearer.authz",
+  ], { timeout: 10_000 });
+
+  if (!result.ok) return null;
+
+  try {
+    const parsed = JSON.parse(result.stdout);
+    return parsed.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
 export function getBearerToken(): string | null {
-  // Container: token from env var
+  // 1. Return cached OIDC token
+  if (_oidcTokenCache) return _oidcTokenCache;
+
+  // 2. Try OIDC client_credentials flow
+  const oidcToken = fetchOidcToken();
+  if (oidcToken) {
+    _oidcTokenCache = oidcToken;
+    return oidcToken;
+  }
+
+  // 3. Legacy: static token from env var
   const envToken = process.env.AUTHELIA_BEARER_TOKEN;
   if (envToken) return envToken;
 
-  // Local: token from file
+  // 4. Local dev: token from file
   try {
     const tokens = JSON.parse(readFileSync(AUTHELIA_TOKEN_PATH, "utf-8"));
     return tokens.access_token || null;

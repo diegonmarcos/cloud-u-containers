@@ -310,6 +310,7 @@
               grant_types:
                 - authorization_code
                 - refresh_token
+                - client_credentials
               response_types:
                 - code
               response_modes:
@@ -362,6 +363,7 @@
               grant_types:
                 - authorization_code
                 - refresh_token
+                - client_credentials
               response_types:
                 - code
               response_modes:
@@ -377,6 +379,19 @@
               audience:
                 - https://api.diegonmarcos.com/
                 - https://rss.diegonmarcos.com/
+
+            - client_id: c3-mcp-api
+              client_name: C3 MCP API
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET}
+              public: false
+              grant_types:
+                - client_credentials
+              scopes:
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
 
             - client_id: cli
               consent_mode: explicit
@@ -463,6 +478,7 @@
         AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
         AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
         AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
+        AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET \
         AUTHELIA_OIDC_CLIENT_NPM_SECRET \
         AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
         AUTHELIA_SMTP_PASSWORD

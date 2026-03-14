@@ -113,6 +113,9 @@
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_MODEL=${config.ollama_model}
             - OLLAMA_VM=${config.ollama_vm}
+            - AUTHELIA_OIDC_CLIENT_ID=mattermost-ops
+            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_MATTERMOST_SECRET}
+            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
           networks:
             - default
           depends_on:
@@ -148,7 +151,30 @@
       MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
       MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
       C3_API_URL = os.environ.get("C3_API_URL", "http://c3-mcp-api:8080")
-      C3_API_TOKEN = os.environ.get("C3_API_TOKEN", "")
+
+
+      def fetch_oidc_token():
+          """Fetch OIDC token via client_credentials grant."""
+          client_id = os.environ.get("AUTHELIA_OIDC_CLIENT_ID", "")
+          client_secret = os.environ.get("AUTHELIA_OIDC_CLIENT_SECRET", "")
+          token_url = os.environ.get("AUTHELIA_TOKEN_URL", "")
+          if not (client_id and client_secret and token_url):
+              return ""
+          try:
+              r = requests.post(token_url, auth=(client_id, client_secret),
+                                data={"grant_type": "client_credentials", "scope": "authelia.bearer.authz"},
+                                timeout=10)
+              r.raise_for_status()
+              token = r.json().get("access_token", "")
+              if token:
+                  log.info("OIDC token acquired via client_credentials (%d chars)", len(token))
+              return token
+          except Exception as e:
+              log.warning("OIDC token fetch failed: %s", e)
+              return ""
+
+
+      C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
       OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
       OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
