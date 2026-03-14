@@ -31,7 +31,7 @@
             dockerfile: Dockerfile
           image: dagu-ssh:local
           container_name: ${config.container_name}
-          entrypoint: ["sh", "/var/lib/dagu/fetch-token.sh"]
+          entrypoint: ["dagu", "start-all"]
           restart: unless-stopped
           ports:
             - "10.0.0.3:${toString config.port}:8080"
@@ -44,9 +44,8 @@
             - DAGU_AUTH_BASIC_USERNAME=''${DAGU_USERNAME}
             - DAGU_AUTH_BASIC_PASSWORD=''${DAGU_PASSWORD}
             - DAGU_TZ=Europe/Berlin
-            - AUTHELIA_OIDC_CLIENT_ID=dagu-ops
-            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_DAGU_SECRET}
-            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
+          env_file:
+            - .secrets
           volumes:
             - ./data:/var/lib/dagu/data
             - ./dags:/var/lib/dagu/dags
