@@ -306,8 +306,10 @@ step_secrets() {
     log "Decrypting secrets -> dist/.secrets"
     mkdir -p "$DIST_DIR"
 
-    # Decrypt once, split into single-line (.secrets) and multiline (.secrets.d/)
-    # JWKS keys excluded from .secrets (extracted separately below).
+    # Decrypt → write ALL keys to both:
+    #   .secrets     = KEY=VALUE lines (docker-compose env_file)
+    #   .secrets.d/  = one raw file per key (ssh-keys.nix, file mounts)
+    # JWKS keys excluded (extracted separately below).
     if ! command -v yq >/dev/null 2>&1; then
         log "ERROR: yq required for YAML->env conversion"
         return 1
@@ -315,22 +317,18 @@ step_secrets() {
 
     mkdir -p "$DIST_DIR/.secrets.d"
     DECRYPTED=$(sops -d "$secrets_file")
-    ENV_COUNT=0
-    MULTI_COUNT=0
+    KEY_COUNT=0
     : > "$DIST_DIR/.secrets"
 
     for key in $(printf '%s' "$DECRYPTED" | yq -r 'keys | .[] | select(. != "sops")'); do
-        # Skip JWKS key (extracted separately below)
         [ -n "$JWKS_FILE" ] && [ "$key" = "AUTHELIA_OIDC_JWKS_KEY" ] && continue
         val=$(printf '%s' "$DECRYPTED" | yq -r ".[\"$key\"]")
-        if printf '%s' "$val" | grep -q "$(printf '\n')"; then
-            printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
-            chmod 600 "$DIST_DIR/.secrets.d/$key"
-            MULTI_COUNT=$((MULTI_COUNT + 1))
-        else
-            printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets"
-            ENV_COUNT=$((ENV_COUNT + 1))
-        fi
+        # .secrets.d/KEY — raw file
+        printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
+        chmod 600 "$DIST_DIR/.secrets.d/$key"
+        # .secrets — KEY=VALUE
+        printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets"
+        KEY_COUNT=$((KEY_COUNT + 1))
     done
 
     # Escape $ as $$ for docker-compose env_file interpolation
