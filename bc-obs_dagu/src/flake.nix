@@ -1344,7 +1344,7 @@
         schedule: "*/5 * * * *"
         env:
           - BEARER_TOKEN: ''${BEARER_TOKEN}
-          - C3_API: http://10.0.0.6:8080/c3-api
+          - C3_API: http://10.0.0.6:8081
           - REPO_DIR: /var/lib/dagu/data/cloud-data
           - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
           - NTFY_URL: http://10.0.0.1:8090
@@ -1376,14 +1376,14 @@
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
+              curl -sf -H "Authorization: Bearer $BEARER_TOKEN" "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
               mv "$REPO_DIR/cloud-topology.json.tmp" "$REPO_DIR/cloud-topology.json"
               echo "Fetched cloud-topology.json ($(wc -c < "$REPO_DIR/cloud-topology.json") bytes)"
           - name: fetch-configs
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
+              curl -sf -H "Authorization: Bearer $BEARER_TOKEN" "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
               mv "$REPO_DIR/cloud-configs.json.tmp" "$REPO_DIR/cloud-configs.json"
               echo "Fetched cloud-configs.json ($(wc -c < "$REPO_DIR/cloud-configs.json") bytes)"
           - name: commit-and-push
