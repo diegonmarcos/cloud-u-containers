@@ -10,7 +10,7 @@
 
     config = {
       container_name = "c3-mcp-api";
-      image = "ghcr.io/diegonmarcos/c3-api:latest";
+      image = "ghcr.io/diegonmarcos/c3-mcp-api:latest";
       port = 8081;   # parallel with Rust API on 8080 — swap to 8080 after cutover
       mcp_http_port = 3100;
       mattermost_url = "http://mattermost:8065";

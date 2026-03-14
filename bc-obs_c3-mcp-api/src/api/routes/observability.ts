@@ -20,7 +20,7 @@ import {
 import {
   up, upAll, upAllContainers,
   health, healthAll,
-  profile, profileAll, profileAllContainers,
+  profile, profileAllServices, profileAllContainers,
 } from "../../shared/obs.js";
 import { cacheRead, cachePrune, startCacheCleanup } from "../../shared/cache.js";
 import { profileContainer, profileVm } from "../../shared/diagnostics.js";
@@ -615,7 +615,7 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/v2/profiling/all-services", {
     schema: { tags: ["Observability v2"], summary: "Profile all services" },
-  }, async () => profileAll());
+  }, async () => profileAllServices());
 
   app.get("/v2/profiling/all-containers", {
     schema: { tags: ["Observability v2"], summary: "Profile all containers" },
