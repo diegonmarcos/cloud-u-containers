@@ -1419,13 +1419,17 @@
             command: |
               export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
               cd "$REPO_DIR"
-              git add cloud-topology.json cloud-configs.json
+              # Auto-generate manifest from all *.json (excluding manifest itself)
+              ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
+                awk '{name=$0; gsub(/-/," ",name); for(i=1;i<=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i<=length(a);i++) name=name (i>1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
+                jq -s '.' > manifest.json
+              git add cloud-topology.json cloud-configs.json manifest.json
               if git diff --cached --quiet; then
                 echo "No changes — skipping commit"
                 exit 0
               fi
               STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-              git commit -m "sync: cloud-topology + cloud-configs ''${STAMP}"
+              git commit -m "sync: cloud data ''${STAMP}"
               git push origin main
               echo "Pushed changes at ''${STAMP}"
       '';
