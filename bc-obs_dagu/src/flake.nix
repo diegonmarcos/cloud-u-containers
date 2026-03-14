@@ -44,7 +44,7 @@
             - DAGU_AUTH_BASIC_USERNAME=''${DAGU_USERNAME}
             - DAGU_AUTH_BASIC_PASSWORD=''${DAGU_PASSWORD}
             - DAGU_TZ=Europe/Berlin
-            - BEARER_TOKEN=''${BEARER_TOKEN}
+            - AUTHELIA_BEARER_TOKEN=''${AUTHELIA_BEARER_TOKEN}
           volumes:
             - ./data:/var/lib/dagu/data
             - ./dags:/var/lib/dagu/dags
@@ -104,7 +104,7 @@
         schedule: "*/5 * * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -125,7 +125,7 @@
               if [ -n "$FAILED" ]; then
                 MSG=$(echo -e "Unreachable peers:\n''${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_mesh-health" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Mesh Health FAILED" \
                   -H "Priority: 5" \
                   -H "Tags: rotating_light" \
@@ -138,7 +138,7 @@
         schedule: "*/5 * * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -163,7 +163,7 @@
               if [ -n "$FAILED" ]; then
                 MSG=$(echo -e "DOWN endpoints:\n''${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_endpoints" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Service Endpoint DOWN" \
                   -H "Priority: 5" \
                   -H "Tags: rotating_light" \
@@ -176,7 +176,7 @@
         schedule: "0 8 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -193,7 +193,7 @@
               if [ -n "$FAILED" ]; then
                 MSG=$(echo -e "DNS resolution failures:\n''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_dns" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: DNS Resolution FAILED" \
                   -H "Priority: 5" \
                   -H "Tags: rotating_light" \
@@ -206,7 +206,7 @@
         schedule: "0 9 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -230,7 +230,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "High resource usage:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_resources" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: System Resources Alert" \
                   -H "Priority: 4" \
                   -H "Tags: warning,chart_with_upwards_trend" \
@@ -243,7 +243,7 @@
         schedule: "0 10 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -275,7 +275,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "Container issues:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_containers" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Container Health Issues" \
                   -H "Priority: 4" \
                   -H "Tags: whale,warning" \
@@ -292,7 +292,7 @@
         schedule: "0 12 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -320,7 +320,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "Suspicious auth activity:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'fail2ban-client status sshd'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/security_audit" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Security Audit Alert" \
                   -H "Priority: 5" \
                   -H "Tags: lock,rotating_light" \
@@ -333,7 +333,7 @@
         schedule: "0 8 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -357,7 +357,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "TLS certificates expiring soon:\n''${ALERTS}\nAction:\n  openssl s_client -connect <domain>:443 </dev/null 2>/dev/null | openssl x509 -noout -dates\n  ssh gcp-proxy 'docker exec caddy caddy reload'\n  Check Let's Encrypt / Caddy auto-renewal logs\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/security_tls" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: TLS Certificate Expiring" \
                   -H "Priority: 4" \
                   -H "Tags: warning,lock" \
@@ -370,7 +370,7 @@
         schedule: "0 9 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -395,7 +395,7 @@
               done
               MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n''${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: http://10.0.0.3:8070")
               curl -s -X POST "$NTFY_URL/security_connections" \
-                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                 -H "Title: Daily Connection Report" \
                 -H "Priority: 2" \
                 -H "Tags: key,shield" \
@@ -406,7 +406,7 @@
         schedule: "0 3 * * 0"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -432,7 +432,7 @@
               if [ $RUNNING -lt $TOTAL ]; then
                 MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n''${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/security_yara" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Sauron Scanner(s) Down" \
                   -H "Priority: 4" \
                   -H "Tags: warning,eye" \
@@ -449,7 +449,7 @@
         schedule: "0 18 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -471,7 +471,7 @@
               done
               MSG=$(echo -e "Daily Ops Summary:\n\n''${REPORT}Dagu: http://10.0.0.3:8070")
               curl -s -X POST "$NTFY_URL/ops_summary" \
-                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                 -H "Title: Daily Ops Summary" \
                 -H "Priority: 2" \
                 -H "Tags: chart_with_upwards_trend" \
@@ -482,7 +482,7 @@
         schedule: "0 11 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -511,7 +511,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "Backup freshness issues:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/ops_backups" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Backup Alert" \
                   -H "Priority: 4" \
                   -H "Tags: floppy_disk,warning" \
@@ -524,7 +524,7 @@
         schedule: "0 7 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -549,7 +549,7 @@
               if [ -n "$ALERTS" ]; then
                 MSG=$(echo -e "Failed systemd timers:\n''${ALERTS}\nAction:\n  ssh <user>@<ip> 'systemctl list-timers --failed'\n  ssh <user>@<ip> 'journalctl -u <timer-name> --since yesterday'\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/ops_cron" \
-                  -H "Authorization: Bearer $BEARER_TOKEN" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Cron/Timer Failures" \
                   -H "Priority: 4" \
                   -H "Tags: warning,clock1" \
@@ -562,7 +562,7 @@
         schedule: "0 19 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -592,7 +592,7 @@
               done
               MSG=$(echo -e "Deploy Digest (24h): $TOTAL total restarts\n\n''${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
               curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
-                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                 -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
                 -H "Priority: 2" \
                 -H "Tags: rocket" \
@@ -603,7 +603,7 @@
         schedule: "0 9 * * 1"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: false
           success: false
@@ -624,7 +624,7 @@
               done
               MSG=$(echo -e "Weekly Capacity Review:\n\n''${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
               curl -s -X POST "$NTFY_URL/ops_summary" \
-                -H "Authorization: Bearer $BEARER_TOKEN" \
+                -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                 -H "Title: Weekly Capacity Review" \
                 -H "Priority: 2" \
                 -H "Tags: bar_chart" \
@@ -1327,7 +1327,7 @@
         schedule: "0 7 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
         mailOn:
           failure: true
           success: false
@@ -1343,7 +1343,7 @@
       cloud-data-sync = pkgs.writeText "cloud-data-sync.yaml" ''
         schedule: "*/5 * * * *"
         env:
-          - BEARER_TOKEN: ''${BEARER_TOKEN}
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
           - C3_API: http://10.0.0.6:8081
           - REPO_DIR: /var/lib/dagu/data/cloud-data
           - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
@@ -1376,14 +1376,14 @@
             depends:
               - pull-rebase
             command: |
-              curl -sf -H "Authorization: Bearer $BEARER_TOKEN" "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
+              curl -sf "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
               mv "$REPO_DIR/cloud-topology.json.tmp" "$REPO_DIR/cloud-topology.json"
               echo "Fetched cloud-topology.json ($(wc -c < "$REPO_DIR/cloud-topology.json") bytes)"
           - name: fetch-configs
             depends:
               - pull-rebase
             command: |
-              curl -sf -H "Authorization: Bearer $BEARER_TOKEN" "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
+              curl -sf "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
               mv "$REPO_DIR/cloud-configs.json.tmp" "$REPO_DIR/cloud-configs.json"
               echo "Fetched cloud-configs.json ($(wc -c < "$REPO_DIR/cloud-configs.json") bytes)"
           - name: commit-and-push
