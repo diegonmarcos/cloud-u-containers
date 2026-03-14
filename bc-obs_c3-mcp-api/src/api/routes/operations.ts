@@ -1,5 +1,5 @@
 // ── Operations Routes — "How we run it" ──
-// VM, container, and service lifecycle control
+// VM, container, and service lifecycle control + push events
 
 import type { FastifyInstance } from "fastify";
 import {
@@ -7,6 +7,7 @@ import {
   containerStart, containerStop, containerRestart,
   serviceStart, serviceStop,
 } from "../../shared/control.js";
+import { handlePushEvent } from "../../shared/ops.js";
 
 const vmIdParams = { type: "object" as const, properties: { vmId: { type: "string" as const } }, required: ["vmId"] };
 const vmContainerParams = { type: "object" as const, properties: { vmId: { type: "string" as const }, name: { type: "string" as const } }, required: ["vmId", "name"] };
@@ -62,5 +63,35 @@ export async function registerOperationsRoutes(app: FastifyInstance) {
     "/vms/:vmId/services/:service/stop",
     { schema: { tags: ["Operations"], params: vmServiceParams } },
     async (req) => serviceStop(req.params.vmId, req.params.service),
+  );
+
+  // ── Push event (GHA → C3 → Dagu) ──
+
+  app.post<{ Body: {
+    ref?: string;
+    repo?: string;
+    sender?: string;
+    head_commit?: { id: string; message: string; timestamp: string };
+    commits?: Array<{ id: string; message: string; added: string[]; modified: string[]; removed: string[] }>;
+    modified_files?: string[];
+  } }>(
+    "/ops/push-event",
+    {
+      schema: {
+        tags: ["Operations"],
+        body: {
+          type: "object" as const,
+          properties: {
+            ref: { type: "string" as const },
+            repo: { type: "string" as const },
+            sender: { type: "string" as const },
+            head_commit: { type: "object" as const },
+            commits: { type: "array" as const },
+            modified_files: { type: "array" as const, items: { type: "string" as const } },
+          },
+        },
+      },
+    },
+    async (req) => handlePushEvent(req.body),
   );
 }
