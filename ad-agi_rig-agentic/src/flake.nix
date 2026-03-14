@@ -13,8 +13,8 @@
       port = 8090;
       ollama_url = "http://10.0.0.8:11434";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
-      c3_api_url = "http://c3-api:8080";
-      c3_mcp_url = "http://c3-api:3100";
+      c3_api_url = "http://c3-mcp-api:8080";
+      c3_mcp_url = "http://c3-mcp-api:3100";
       mattermost_url = "http://mattermost:8065";
     };
 

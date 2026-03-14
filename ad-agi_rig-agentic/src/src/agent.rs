@@ -155,7 +155,7 @@ pub async fn run_agent(
     }
 }
 
-/// Execute the rig-core agent with Ollama + MCP tools from c3-api.
+/// Execute the rig-core agent with Ollama + MCP tools from c3-mcp-api.
 async fn execute_agent_loop(
     config: &AppConfig,
     task: &str,
@@ -167,7 +167,7 @@ async fn execute_agent_loop(
     let effective_max_turns = max_turns.min(guardrail.max_turns);
     info!(task = task, max_turns = effective_max_turns, "Starting agent loop");
 
-    // Connect to MCP server (c3-api) and discover tools
+    // Connect to MCP server (c3-mcp-api) and discover tools
     let mcp_url = format!("{}/mcp", config.c3_mcp_url);
     let (tools, peer) = connect_mcp(&mcp_url).await?;
 
