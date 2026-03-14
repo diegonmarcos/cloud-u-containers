@@ -43,6 +43,7 @@ import {
   pruneOldRecords,
 } from "../../shared/db.js";
 import { resolveVmId } from "../../shared/config.js";
+import { DAGU_API, daguHeaders } from "../../shared/ops.js";
 
 // ── Zod schemas for validated endpoints ──
 
@@ -330,8 +331,8 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
   app.get("/workflows/dagu", { schema: { tags: ["Observability"] } }, async () => {
     try {
       const resp = await fetch(
-        "http://10.0.0.3:8070/api/v1/dags",
-        { signal: AbortSignal.timeout(10000) },
+        `${DAGU_API}/api/v1/dags`,
+        { signal: AbortSignal.timeout(10000), headers: daguHeaders() },
       );
       if (!resp.ok) return { dags: [], error: `Dagu API ${resp.status}` };
       const data = await resp.json() as { DAGs?: Array<Record<string, unknown>> };
