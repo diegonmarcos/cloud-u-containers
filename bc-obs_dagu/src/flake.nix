@@ -111,7 +111,7 @@
       fi
 
       export AUTHELIA_BEARER_TOKEN="$TOKEN"
-      echo "[fetch-token] Token acquired (${#TOKEN} chars), starting dagu..."
+      echo "[fetch-token] Token acquired (''${#TOKEN} chars), starting dagu..."
       exec dagu start-all
     '';
 
