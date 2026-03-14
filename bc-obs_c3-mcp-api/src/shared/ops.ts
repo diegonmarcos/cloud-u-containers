@@ -90,13 +90,13 @@ export function daguHeaders(): Record<string, string> {
 /** Dagu API base URL */
 export { DAGU_API };
 
-async function triggerDag(name: string): Promise<{ ok: boolean; error?: string }> {
-  const url = `${DAGU_API}/api/v1/dags/${name}`;
+async function triggerDag(name: string): Promise<{ ok: boolean; dagRunId?: string; error?: string }> {
+  const url = `${DAGU_API}/api/v2/dags/${name}/start`;
 
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...daguHeaders() },
-    body: JSON.stringify({ action: "start" }),
+    body: JSON.stringify({}),
     signal: AbortSignal.timeout(15000),
   });
 
@@ -105,5 +105,6 @@ async function triggerDag(name: string): Promise<{ ok: boolean; error?: string }
     return { ok: false, error: `Dagu API ${resp.status}: ${body}` };
   }
 
-  return { ok: true };
+  const data = await resp.json().catch(() => ({})) as { dagRunId?: string };
+  return { ok: true, dagRunId: data.dagRunId };
 }
