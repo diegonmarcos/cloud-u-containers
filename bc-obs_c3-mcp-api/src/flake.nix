@@ -38,7 +38,7 @@
             - "${toString config.port}:8080"
             - "127.0.0.1:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
           volumes:
-            # SSH keys deployed into container by ssh-keys.nix activation (docker cp + chown)
+            - /opt/ssh-keys/c3-mcp-api:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
@@ -51,6 +51,9 @@
             - GIT_BASE=/app/repos
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
             - MM_URL=${config.mattermost_url}
+            - AUTHELIA_OIDC_CLIENT_ID=c3-mcp-api
+            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_C3_MCP_SECRET}
+            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
             - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
