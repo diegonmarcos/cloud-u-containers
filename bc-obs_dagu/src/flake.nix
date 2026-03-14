@@ -42,7 +42,7 @@
             - ./data:/var/lib/dagu/data
             - ./dags:/var/lib/dagu/dags
             - ./base.yaml:/var/lib/dagu/base.yaml:ro
-            - ~/.ssh:/root/.ssh:ro
+            # SSH keys deployed into container by ssh-keys.nix activation (docker cp + chown)
           mem_limit: 256m
           networks:
             - default
