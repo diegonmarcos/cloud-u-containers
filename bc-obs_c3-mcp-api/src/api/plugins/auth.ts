@@ -18,7 +18,8 @@ function isPublicPath(url: string): boolean {
 
 function isMeshRequest(req: FastifyRequest): boolean {
   const ip = req.ip;
-  return ip.startsWith("10.0.0.") || ip === "127.0.0.1" || ip === "::1";
+  // 10.0.0.x = WireGuard mesh, 172.x = Docker bridge (host/other VMs via WG)
+  return ip.startsWith("10.0.0.") || ip.startsWith("172.") || ip === "127.0.0.1" || ip === "::1";
 }
 
 function isCaddyAuthenticated(req: FastifyRequest): boolean {
