@@ -331,23 +331,23 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
   app.get("/workflows/dagu", { schema: { tags: ["Observability"] } }, async () => {
     try {
       const resp = await fetch(
-        `${DAGU_API}/api/v1/dags`,
+        `${DAGU_API}/api/v2/dags`,
         { signal: AbortSignal.timeout(10000), headers: daguHeaders() },
       );
       if (!resp.ok) return { dags: [], error: `Dagu API ${resp.status}` };
-      const data = await resp.json() as { DAGs?: Array<Record<string, unknown>> };
+      const data = await resp.json() as { dags?: Array<Record<string, unknown>> };
       return {
-        dags: (data.DAGs || []).map((d: Record<string, unknown>) => {
-          const dag = d.DAG as Record<string, unknown> | undefined;
-          const status = d.Status as Record<string, unknown> | undefined;
+        dags: (data.dags || []).map((d: Record<string, unknown>) => {
+          const dag = d.dag as Record<string, unknown> | undefined;
+          const run = d.latestDAGRun as Record<string, unknown> | undefined;
           return {
-            name: dag?.Name ?? d.File,
-            description: dag?.Description ?? "",
-            schedule: dag?.Schedule ? (dag.Schedule as Array<Record<string, unknown>>).map((s) => s.Expression).join(", ") : "",
-            status: status?.Status !== undefined ? status.Status : null,
-            startedAt: status?.StartedAt ?? null,
-            finishedAt: status?.FinishedAt ?? null,
-            pid: status?.Pid ?? null,
+            name: dag?.name ?? d.fileName,
+            schedule: dag?.schedule ? (dag.schedule as Array<Record<string, unknown>>).map((s) => s.expression).join(", ") : "",
+            status: run?.statusLabel ?? null,
+            startedAt: run?.startedAt ?? null,
+            finishedAt: run?.finishedAt ?? null,
+            dagRunId: run?.dagRunId ?? null,
+            suspended: d.suspended ?? false,
           };
         }),
       };
