@@ -16,6 +16,13 @@
     title = "Fluent Bit - Log processor and forwarder";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_fluent-bit/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_fluent-bit/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         fluent-bit:
           image: ${config.image}

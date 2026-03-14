@@ -28,6 +28,13 @@
 
     # Generate docker-compose.yml
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ad-agi_ollama/src/flake.nix     ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ad-agi_ollama/build.sh ship    ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         ollama:
           image: ${config.image}

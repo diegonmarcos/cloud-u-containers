@@ -28,6 +28,13 @@
     title = "Gitea - Lightweight self-hosted Git server";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-gitea/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-gitea/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Gitea - Self-hosted Git server for code mirrors
       # Deploy to: oci-A1-f_1
 

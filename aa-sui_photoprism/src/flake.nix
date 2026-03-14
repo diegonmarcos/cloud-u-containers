@@ -29,6 +29,13 @@
     title = "PhotoPrism Photo Gallery";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_photoprism/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_photoprism/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # PhotoPrism - AI-powered photo management
       # Deployed on: oci-A1-f_1 (Oracle Flex)
       # Originals mounted from OCI Object Storage via rclone

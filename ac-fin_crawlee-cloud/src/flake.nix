@@ -24,6 +24,13 @@
     title = "Crawlee Cloud - Self-hosted Apify-compatible scraping platform";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ac-fin_crawlee-cloud/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_crawlee-cloud/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         # ═══ CORE (built from source) ═══
 

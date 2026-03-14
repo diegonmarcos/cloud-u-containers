@@ -18,6 +18,13 @@
     title = "RevealMD - Markdown to reveal.js presentations";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_revealmd/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_revealmd/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # RevealMD - Markdown to reveal.js presentations
       # Deployed on: oci-A1-f_1 (Oracle Flex)
 

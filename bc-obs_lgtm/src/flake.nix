@@ -17,6 +17,13 @@
 
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_lgtm/src/flake.nix       ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_lgtm/build.sh ship      ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # LGTM Stack - Grafana Labs Observability
       # Deployed on: oci-A1-f_0 (Oracle Flex — consolidated)
       services:

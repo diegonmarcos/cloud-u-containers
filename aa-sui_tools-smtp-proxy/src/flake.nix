@@ -16,6 +16,13 @@
     title = "SMTP Proxy/Relay";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-smtp-proxy/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_tools-smtp-proxy/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         smtp-proxy:
           build: .

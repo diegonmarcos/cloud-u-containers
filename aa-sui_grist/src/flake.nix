@@ -18,6 +18,13 @@
     title = "Grist - Modern collaborative spreadsheet (Google Sheets alternative)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_grist/src/flake.nix      ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_grist/build.sh ship     ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Grist - Modern collaborative spreadsheet
       # Deployed on: oci-A1-f_1 (Oracle Flex)
 

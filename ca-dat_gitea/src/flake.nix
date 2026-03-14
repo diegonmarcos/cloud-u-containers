@@ -18,6 +18,13 @@
     title = "Gitea - Lightweight self-hosted Git service";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ca-dat_gitea/src/flake.nix      ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_gitea/build.sh ship     ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         gitea:
           image: ${config.image}

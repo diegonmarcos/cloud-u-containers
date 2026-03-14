@@ -19,6 +19,13 @@
     title = "Photos Webhook - PostgreSQL + webhook processor for PhotoPrism";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_photos-webhook/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_photos-webhook/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         photos-db:
           image: ${config.db_image}

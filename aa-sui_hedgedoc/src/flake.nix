@@ -22,6 +22,13 @@
     title = "HedgeDoc - Real-time collaborative markdown editor";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/aa-sui_hedgedoc/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_hedgedoc/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         hedgedoc:
           image: ${config.image}

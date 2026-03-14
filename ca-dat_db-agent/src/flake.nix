@@ -15,6 +15,13 @@
     title = "db-agent - Central database backup service (all VMs)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/ca-dat_db-agent/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_db-agent/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # db-agent - Central database backup service
       # Deploy to: ALL VMs
       # Runs daily, auto-detects databases, dumps + logs

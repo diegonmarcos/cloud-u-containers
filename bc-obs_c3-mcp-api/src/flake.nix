@@ -20,6 +20,13 @@
 
     # ── docker-compose.yml for C3 API deployment ────────────────────────
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-mcp-api/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-mcp-api/build.sh ship ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         c3-api:
           image: ${config.image}

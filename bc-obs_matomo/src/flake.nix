@@ -17,6 +17,13 @@
     title = "Matomo Analytics (Hybrid Container)";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_matomo/src/flake.nix     ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_matomo/build.sh ship    ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       # Matomo Hybrid Container
       # VM: oci-E2-f_1 (129.151.228.66)
       # Domain: ${config.domain}

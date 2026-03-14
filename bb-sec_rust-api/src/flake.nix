@@ -17,6 +17,13 @@
     title = "Cloud Rust API";
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
+      # ╔══════════════════════════════════════════════════════════════════╗
+      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+      # ╠══════════════════════════════════════════════════════════════════╣
+      # ║ Source: ~/git/cloud/a_solutions/bb-sec_rust-api/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_rust-api/build.sh ship  ║
+      # ╚══════════════════════════════════════════════════════════════════╝
       services:
         rust-api:
           image: ghcr.io/diegonmarcos/rust-api:latest
