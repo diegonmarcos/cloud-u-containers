@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "c3-api";
+      container_name = "c3-mcp-api";
       image = "ghcr.io/diegonmarcos/c3-api:latest";
       port = 8081;   # parallel with Rust API on 8080 — swap to 8080 after cutover
       mcp_http_port = 3100;
@@ -28,7 +28,7 @@
       # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-mcp-api/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        c3-api:
+        c3-mcp-api:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
@@ -38,7 +38,7 @@
             - "${toString config.port}:8080"
             - "127.0.0.1:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
           volumes:
-            - ~/.ssh:/root/.ssh:ro
+            # SSH keys deployed into container by ssh-keys.nix activation (docker cp + chown)
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud

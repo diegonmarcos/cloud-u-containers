@@ -18,9 +18,9 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn from_env() -> Self {
         let c3_api_url = env::var("C3_API_URL")
-            .unwrap_or_else(|_| "http://c3-api:8080".into());
+            .unwrap_or_else(|_| "http://c3-mcp-api:8080".into());
         let c3_mcp_url = env::var("C3_MCP_URL")
-            .unwrap_or_else(|_| "http://c3-api:3100".into());
+            .unwrap_or_else(|_| "http://c3-mcp-api:3100".into());
 
         Self {
             port: env::var("RIG_PORT")

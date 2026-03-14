@@ -13,7 +13,7 @@
       postgres_container = "mattermost-postgres";
       bridge_container = "mattermost-bots";
       image = "ngrie/mattermost-team-edition-arm:10.11";
-      c3_api = "http://c3-api:8080";
+      c3_api = "http://c3-mcp-api:8080";
       c3_port = 8888;
       postgres_image = "postgres:16-alpine";
       bridge_image = "python:3.12-slim";
@@ -115,14 +115,14 @@
             - OLLAMA_VM=${config.ollama_vm}
           networks:
             - default
-            - c3-api
+            - c3-mcp-api
           depends_on:
             - mattermost
 
       networks:
-        c3-api:
+        c3-mcp-api:
           external: true
-          name: c3-api_default
+          name: c3-mcp-api_default
     '';
 
     # ── ntfy bridge script ──────────────────────────────────────
@@ -153,7 +153,7 @@
       MM_ADMIN_EMAIL = os.environ["MM_ADMIN_EMAIL"]
       MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
       MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
-      C3_API_URL = os.environ.get("C3_API_URL", "http://c3-api:8080")
+      C3_API_URL = os.environ.get("C3_API_URL", "http://c3-mcp-api:8080")
       C3_API_TOKEN = os.environ.get("C3_API_TOKEN", "")
       OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
