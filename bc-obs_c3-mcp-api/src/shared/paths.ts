@@ -11,6 +11,14 @@ export const GIT_BASE = process.env.GIT_BASE ?? join(HOME, "git");
 export const IS_ANDROID = process.env.ANDROID_DATA !== undefined
   || HOME.includes("com.termux");
 
+// Server mode = Docker container on VM (repos are disposable clones).
+// Client mode = local machine (Termux/desktop) where repos are working copies.
+// In client mode, NEVER run destructive git ops — the user's working copy IS truth.
+export const IS_SERVER = existsSync("/.dockerenv")
+  || process.env.CONTAINER === "true"
+  || process.env.MCP_SERVER_MODE === "true";
+export const IS_CLIENT = !IS_SERVER;
+
 // SSH identity key — find first available key across environments:
 //   Docker container: ~/.ssh/vault_id_rsa (mounted from VM)
 //   Android/Termux:   ~/.ssh/id_rsa (symlinked from vault)
@@ -50,12 +58,20 @@ export const REPOS: Record<string, string> = {
   tools: join(GIT_BASE, "tools"),
 };
 
-// ── Repo sync: git pull all repos (public HTTPS, read-only) ──────────
+// ── Repo sync ────────────────────────────────────────────────────────
 let _lastSync = 0;
 const SYNC_TTL = 5 * 60 * 1000; // 5 minutes
 
-/** Pull all cloned repos if TTL expired. Safe to call frequently. */
+/**
+ * Sync repos to latest remote state.
+ *
+ * SERVER mode (Docker): `git fetch + reset --hard` — repos are disposable clones.
+ * CLIENT mode (local):  no-op — the user's working copy is the source of truth.
+ *                       Never run destructive git commands on working repos.
+ */
 export function syncRepos(force = false): void {
+  if (IS_CLIENT) return; // Never touch the user's working repos
+
   const now = Date.now();
   if (!force && now - _lastSync < SYNC_TTL) return;
   _lastSync = now;
