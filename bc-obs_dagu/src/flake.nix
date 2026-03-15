@@ -44,6 +44,9 @@
             - DAGU_AUTH_BASIC_USERNAME=''${DAGU_USERNAME}
             - DAGU_AUTH_BASIC_PASSWORD=''${DAGU_PASSWORD}
             - DAGU_TZ=Europe/Berlin
+            - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
+            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_DAGU_SECRET}
+            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
           env_file:
             - .secrets
           volumes:
