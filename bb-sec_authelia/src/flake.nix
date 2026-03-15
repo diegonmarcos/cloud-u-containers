@@ -310,7 +310,6 @@
               grant_types:
                 - authorization_code
                 - refresh_token
-                - client_credentials
               response_types:
                 - code
               response_modes:
@@ -322,6 +321,20 @@
               require_pushed_authorization_requests: true
               require_pkce: true
               pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
+
+            - client_id: dagu-cc
+              client_name: Dagu Service Account
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET}
+              public: false
+              authorization_policy: one_factor
+              grant_types:
+                - client_credentials
+              scopes:
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
               access_token_signed_response_alg: RS256
               audience:
                 - https://api.diegonmarcos.com/
@@ -363,7 +376,6 @@
               grant_types:
                 - authorization_code
                 - refresh_token
-                - client_credentials
               response_types:
                 - code
               response_modes:
@@ -375,6 +387,21 @@
               require_pushed_authorization_requests: true
               require_pkce: true
               pkce_challenge_method: S256
+              access_token_signed_response_alg: RS256
+              audience:
+                - https://api.diegonmarcos.com/
+                - https://rss.diegonmarcos.com/
+
+            - client_id: mattermost-cc
+              client_name: Mattermost Service Account
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET}
+              public: false
+              authorization_policy: one_factor
+              grant_types:
+                - client_credentials
+              scopes:
+                - authelia.bearer.authz
+              token_endpoint_auth_method: client_secret_basic
               access_token_signed_response_alg: RS256
               audience:
                 - https://api.diegonmarcos.com/
@@ -478,6 +505,8 @@
         AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
         AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
         AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
+        AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET \
+        AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET \
         AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET \
         AUTHELIA_OIDC_CLIENT_NPM_SECRET \
         AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \

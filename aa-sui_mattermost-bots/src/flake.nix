@@ -113,7 +113,7 @@
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_MODEL=${config.ollama_model}
             - OLLAMA_VM=${config.ollama_vm}
-            - AUTHELIA_OIDC_CLIENT_ID=mattermost-ops
+            - AUTHELIA_OIDC_CLIENT_ID=mattermost-cc
             - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_MATTERMOST_SECRET}
             - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
           networks:
