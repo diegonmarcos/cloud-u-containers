@@ -79,19 +79,29 @@ function fetchOidcToken(): string | null {
 
   if (!clientId || !clientSecret || !tokenUrl) return null;
 
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const result = exec("curl", [
-    "-s", "-f", "-X", "POST", tokenUrl,
-    "-H", `Authorization: Basic ${credentials}`,
-    "-d", "grant_type=client_credentials&scope=authelia.bearer.authz",
-  ], { timeout: 10_000 });
-
-  if (!result.ok) return null;
-
   try {
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    const result = exec("curl", [
+      "-s", "--max-time", "10", "-X", "POST", tokenUrl,
+      "-H", `Authorization: Basic ${credentials}`,
+      "-d", "grant_type=client_credentials&scope=authelia.bearer.authz",
+    ], { timeout: 15_000 });
+
+    if (!result.ok) {
+      console.error(`[OIDC] Token fetch failed: ${result.stderr || "curl error"}`);
+      return null;
+    }
+
     const parsed = JSON.parse(result.stdout);
-    return parsed.access_token || null;
-  } catch {
+    const token = parsed.access_token || null;
+    if (token) {
+      console.log(`[OIDC] Token acquired via client_credentials (${token.length} chars)`);
+    } else {
+      console.error(`[OIDC] No access_token in response: ${result.stdout.slice(0, 200)}`);
+    }
+    return token;
+  } catch (e) {
+    console.error(`[OIDC] Token fetch error: ${e}`);
     return null;
   }
 }
