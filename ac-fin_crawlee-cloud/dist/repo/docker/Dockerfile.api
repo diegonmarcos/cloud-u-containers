@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 
-RUN npm ci --workspace=@crawlee-cloud/api --ignore-scripts
+RUN npm install --workspace=@crawlee-cloud/api --ignore-scripts
 
 # Copy source and build
 COPY tsconfig.base.json ./
@@ -35,7 +35,7 @@ COPY --from=builder /app/packages/api/package*.json ./packages/api/
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
 
 # Install production dependencies only
-RUN npm ci --omit=dev --workspace=@crawlee-cloud/api --ignore-scripts
+RUN npm install --omit=dev --workspace=@crawlee-cloud/api --ignore-scripts
 
 USER nodejs
 
