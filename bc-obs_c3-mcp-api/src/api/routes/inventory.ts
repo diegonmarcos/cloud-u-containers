@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
 import { getDriftReport } from "../../shared/config.js";
 import { getConfigFile } from "../../shared/files.js";
-import { CONFIG_PATH, CONFIGS_PATH } from "../../shared/paths.js";
+import { CONFIG_PATH, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH } from "../../shared/paths.js";
 
 export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Services (from services.ts) ──
@@ -66,6 +66,30 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   app.get("/configs", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
     if (!existsSync(CONFIGS_PATH)) { reply.code(404).send({ error: "cloud-configs.json not generated yet" }); return; }
     return JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
+  });
+
+  // ── Deps (serves cloud-deps.json — consolidated node packages grouped by language) ──
+
+  app.get("/deps", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-deps.json not generated yet. Run: build.sh config" }); return; }
+    return JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+  });
+
+  app.get("/deps/node", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-deps.json not generated yet" }); return; }
+    const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+    return deps.node ?? {};
+  });
+
+  app.get("/deps/node/merged", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-deps.json not generated yet" }); return; }
+    const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+    return deps.node?.merged ?? {};
+  });
+
+  app.get("/deps/front", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(FRONT_DEPS_PATH)) { reply.code(404).send({ error: "front-deps.json not generated yet. Run: front/build.sh deps or cloud build.sh config" }); return; }
+    return JSON.parse(readFileSync(FRONT_DEPS_PATH, "utf-8"));
   });
 
   // ── Files: config (from files.ts) ──
