@@ -247,13 +247,25 @@
           ${mkProtected "${flex0}:8081"}
         }
 
-        # C3 — Cloud Control Center API (all endpoints through Authelia/bearer)
+        # C3 — Cloud Control Center API
+        # Public: OpenAPI spec (CORS for Swagger UI on GitHub Pages)
+        handle /c3-api/docs/json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
+          uri strip_prefix /c3-api
+          reverse_proxy ${flex0}:8081
+        }
+        # Protected: all other endpoints through Authelia/bearer
         handle_path /c3-api/* {
           ${mkProtected "${flex0}:8081"}
         }
 
         # Rust API (legacy/backup) — needs /api prefix restored after handle_path strips /rust-api
         handle /rust-api/docs/openapi.json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           rewrite * /api/docs/openapi.json
           reverse_proxy ${flex0}:8080
         }
@@ -263,6 +275,9 @@
         }
 
         handle /flask/apispec.json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           uri strip_prefix /flask
           reverse_proxy ${gcp}:5000
         }
@@ -279,6 +294,9 @@
           reverse_proxy go-api:8090
         }
         handle /crawlee/openapi.json {
+          header Access-Control-Allow-Origin "*"
+          header Access-Control-Allow-Methods "GET, OPTIONS"
+          header Access-Control-Allow-Headers "Content-Type"
           uri strip_prefix /crawlee
           reverse_proxy ${flex0}:3000
         }
