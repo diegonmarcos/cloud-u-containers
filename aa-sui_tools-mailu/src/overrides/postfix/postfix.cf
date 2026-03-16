@@ -1,3 +1,7 @@
+# Enable SASL authentication for outbound relay
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+
 # AWS SES fallback relay (OCI Email Delivery is primary via RELAYHOST)
 fallback_relay = [email-smtp.us-east-1.amazonaws.com]:587
 
