@@ -24,6 +24,7 @@ import {
   getAllSpecs,
   serviceVersion,
   allServiceVersions,
+  SERVICE_BASE_PATHS,
 } from "../../shared/discovery.js";
 import { rawHttpRequest, getBearerToken } from "../../shared/http.js";
 import { CONFIG_PATH } from "../../shared/paths.js";
@@ -423,7 +424,8 @@ export function registerInventoryTools(server: McpServer) {
       }
 
       const httpMethod = method ?? "GET";
-      const url = `https://${domain}${path}`;
+      const basePath = SERVICE_BASE_PATHS[service] ?? "";
+      const url = `https://${domain}${basePath}${path}`;
 
       let extraHeaders: Record<string, string> | undefined;
       if (headers) {

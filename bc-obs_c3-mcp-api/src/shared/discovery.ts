@@ -36,6 +36,19 @@ const SERVICE_DOMAINS: Record<string, string> = {
   affine: "drive-notes-affine.diegonmarcos.com",
   windmill: "windmill.diegonmarcos.com",
   "c3-api": "api.diegonmarcos.com",
+  "rust-api": "api.diegonmarcos.com",
+  flask: "api.diegonmarcos.com",
+  go: "api.diegonmarcos.com",
+  crawlee: "api.diegonmarcos.com",
+};
+
+// Base path prefix for services behind path-based routing on a shared domain
+const SERVICE_BASE_PATHS: Record<string, string> = {
+  "c3-api": "/c3-api",
+  "rust-api": "/rust-api",
+  flask: "/flask",
+  go: "/go",
+  crawlee: "/crawlee",
 };
 
 // Known spec paths per service
@@ -222,5 +235,5 @@ export function allServiceVersions(): ServiceVersion[] {
     .map((name) => serviceVersion(name));
 }
 
-/** Expose SERVICE_DOMAINS for other modules */
-export { SERVICE_DOMAINS };
+/** Expose SERVICE_DOMAINS and SERVICE_BASE_PATHS for other modules */
+export { SERVICE_DOMAINS, SERVICE_BASE_PATHS };
