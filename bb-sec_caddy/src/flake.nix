@@ -265,38 +265,6 @@
           ${mkProtected "${flex0}:8081"}
         }
 
-        # Rust API (legacy/backup) — needs /api prefix restored after handle_path strips /rust-api
-        handle /rust-api/docs/openapi.json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          rewrite * /api/docs/openapi.json
-          reverse_proxy ${flex0}:8080
-        }
-        handle_path /rust-api/* {
-          uri replace / /api/ 1
-          ${mkProtected "${flex0}:8080"}
-        }
-
-        handle /flask/apispec.json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          uri strip_prefix /flask
-          reverse_proxy ${gcp}:5000
-        }
-        handle_path /flask/* {
-          ${mkProtected "${gcp}:5000"}
-        }
-        handle /go/docs/openapi.json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
-          reverse_proxy go-api:8090
-        }
-        handle /go/* {
-          reverse_proxy go-api:8090
-        }
         handle /crawlee/openapi.json {
           header Access-Control-Allow-Origin "*"
           header Access-Control-Allow-Methods "GET, OPTIONS"
