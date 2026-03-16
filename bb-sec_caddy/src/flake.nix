@@ -554,6 +554,38 @@
       }
 
       # ════════════════════════════════════════════════════════════
+      # MCP — Streamable HTTP endpoints for Claude Code MCP clients
+      # ════════════════════════════════════════════════════════════
+
+      mcp.diegonmarcos.com {
+    ${sec}
+        # C3 MCP — cloud-infra (oci-apps:3100)
+        handle_path /c3-mcp/* {
+          ${mkProtected "${flex0}:3100"}
+        }
+
+        # C3 Services MCP — cloud-services (oci-apps:3101)
+        handle_path /c3-services-mcp/* {
+          ${mkProtected "${flex0}:3101"}
+        }
+
+        # Mattermost MCP (oci-apps:3102 — to be deployed)
+        handle_path /mattermost-mcp/* {
+          ${mkProtected "${flex0}:3102"}
+        }
+
+        # Mailu MCP (oci-apps:3103 — to be deployed)
+        handle_path /mailu-mcp/* {
+          ${mkProtected "${flex0}:3103"}
+        }
+
+        handle {
+          respond "MCP Hub — use /c3-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp" 200
+        }
+        ${handleErrors}
+      }
+
+      # ════════════════════════════════════════════════════════════
       # CATCH-ALL — Custom error page for unknown/unconfigured domains
       # ════════════════════════════════════════════════════════════
 
