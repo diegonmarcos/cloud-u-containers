@@ -35,15 +35,10 @@
           ports:
             - "${toString config.port}:8080"
             - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
-          env_file:
-            - .secrets
           environment:
             - PORT=8080
             - NODE_ENV=production
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
-            - AUTHELIA_OIDC_CLIENT_ID=c3-services-mcp-api
-            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_C3_SERVICES_SECRET}
-            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 30s

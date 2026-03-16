@@ -15,8 +15,5 @@
   },
   "build": {
     "include_config_json": "false"
-  },
-  "secrets": {
-    "escape_dollars": "true"
   }
 }
