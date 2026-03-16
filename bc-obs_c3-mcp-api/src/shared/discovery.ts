@@ -35,6 +35,7 @@ const SERVICE_DOMAINS: Record<string, string> = {
   "code-server": "ide.diegonmarcos.com",
   affine: "drive-notes-affine.diegonmarcos.com",
   windmill: "windmill.diegonmarcos.com",
+  "c3-api": "api.diegonmarcos.com",
 };
 
 // Known spec paths per service
@@ -46,6 +47,7 @@ const SPEC_PATHS: Record<string, string> = {
   nocodb: "/api/v1/meta/tables",
   syncthing: "/rest/system/config",
   authelia: "/api/configuration",
+  "c3-api": "/c3-api/docs",
 };
 
 export function listServices(): ServiceInfo[] {
