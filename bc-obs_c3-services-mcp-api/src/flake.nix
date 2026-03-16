@@ -59,7 +59,7 @@
 
   in {
     packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.''${system};
+      pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "c3-services-configs" {} ''
         mkdir -p $out
