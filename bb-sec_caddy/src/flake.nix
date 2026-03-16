@@ -239,16 +239,12 @@
           ${mkGithubProxy "api"}
         }
 
-        # C3 Dashboard — shortcut at /dash (same auth as /c3-api)
-        @dash_trailing path /dash/
-        handle @dash_trailing {
-          redir /dash permanent
-        }
+        # C3 Dashboard — public (no auth, static HTML served by Fastify)
         handle /dash {
-          ${mkProtected "${flex0}:8081"}
+          reverse_proxy ${flex0}:8081
         }
         handle /dash/* {
-          ${mkProtected "${flex0}:8081"}
+          reverse_proxy ${flex0}:8081
         }
 
         # C3 — Cloud Control Center API
@@ -407,10 +403,10 @@
       # PhotoPrism
       photos.diegonmarcos.com {
     ${sec}
-        # Root path → landing page (replaces Cloudflare redirect rule)
+        # Root path → landing page (proxied, keeps our domain)
         @root path /
         handle @root {
-          redir https://diegonmarcos.github.io/myphotos/ permanent
+          ${mkGithubProxy "myphotos"}
         }
 
         # All other paths → auth + PhotoPrism
@@ -421,10 +417,10 @@
       # Mailu webmail (upstream is HTTPS with self-signed cert)
       mail.diegonmarcos.com {
     ${sec}
-        # Root path → landing page (replaces Cloudflare redirect rule)
+        # Root path → landing page (proxied, keeps our domain)
         @root path /
         handle @root {
-          redir https://diegonmarcos.github.io/mymail/ permanent
+          ${mkGithubProxy "mymail"}
         }
 
         # All other paths → auth + Mailu
