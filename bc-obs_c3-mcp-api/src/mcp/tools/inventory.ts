@@ -1,4 +1,4 @@
-// ── Inventory Pillar — "What exists" (21 tools) ──
+// ── Inventory Pillar — "What exists" (23 tools) ──
 // Config, topology, discovery, repos, files
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -15,7 +15,7 @@ import {
   getServicesForVm,
   resolveVmId,
 } from "../../shared/config.js";
-import { SOLUTIONS_DIR, REPOS } from "../../shared/paths.js";
+import { SOLUTIONS_DIR, REPOS, DEPS_PATH } from "../../shared/paths.js";
 import { exec } from "../../shared/exec.js";
 import {
   listServices as listServiceApis,
@@ -548,6 +548,33 @@ export function registerInventoryTools(server: McpServer) {
         .filter(([, s]) => s.networks && s.networks.length > 0)
         .map(([name, s]) => ({ service: name, networks: s.networks, vm: s.vm }));
       return jsonText("Dependency topology (network-based)", result);
+    },
+  );
+
+  // ── Deps (2 tools) ──
+
+  server.tool(
+    "c3_deps",
+    "Get consolidated node dependencies across all cloud services (from cloud-deps.json). Grouped by language for home-manager consumption.",
+    {},
+    async () => {
+      if (!existsSync(DEPS_PATH)) {
+        return plainText("cloud-deps.json not generated yet. Run: build.sh config");
+      }
+      return jsonText("Cloud deps", JSON.parse(readFileSync(DEPS_PATH, "utf-8")));
+    },
+  );
+
+  server.tool(
+    "c3_deps_node_merged",
+    "Get merged node package.json (dependencies + devDependencies) across all cloud services — ready for ~/.node_modules/",
+    {},
+    async () => {
+      if (!existsSync(DEPS_PATH)) {
+        return plainText("cloud-deps.json not generated yet. Run: build.sh config");
+      }
+      const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+      return jsonText("Merged node deps", deps.node?.merged ?? {});
     },
   );
 
