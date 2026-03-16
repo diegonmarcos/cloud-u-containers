@@ -252,11 +252,8 @@
         }
 
         # C3 — Cloud Control Center API
-        # Public: OpenAPI spec (CORS for Swagger UI on GitHub Pages)
+        # Public: OpenAPI spec (CORS handled by upstream @fastify/cors)
         handle /c3-api/docs/json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
           uri strip_prefix /c3-api
           reverse_proxy ${flex0}:8081
         }
@@ -266,9 +263,6 @@
         }
 
         handle /crawlee/openapi.json {
-          header Access-Control-Allow-Origin "*"
-          header Access-Control-Allow-Methods "GET, OPTIONS"
-          header Access-Control-Allow-Headers "Content-Type"
           uri strip_prefix /crawlee
           reverse_proxy ${flex0}:3000
         }
