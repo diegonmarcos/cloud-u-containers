@@ -335,10 +335,54 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "crawlee-cloud-configs" {} ''
+      defaultPkg = pkgs.runCommand "crawlee-cloud-configs" {
+        nativeBuildInputs = [ pkgs.jq ];
+      } ''
         mkdir -p $out/repo
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp -r ${crawlee-src}/. $out/repo/
+        chmod -R u+w $out/repo
+
+        # ── Patch: Add @fastify/swagger for OpenAPI spec generation ──
+
+        # 1. Add swagger deps to packages/api/package.json
+        jq '.dependencies["@fastify/swagger"] = "^9.4.0" | .dependencies["@fastify/swagger-ui"] = "^5.2.0"' \
+          $out/repo/packages/api/package.json > $out/repo/packages/api/package.json.tmp
+        mv $out/repo/packages/api/package.json.tmp $out/repo/packages/api/package.json
+
+        # 2. Patch index.ts — add swagger imports and registration after cors
+        sed -i "s|import cors from '@fastify/cors';|import cors from '@fastify/cors';\nimport swagger from '@fastify/swagger';\nimport swaggerUi from '@fastify/swagger-ui';|" \
+          $out/repo/packages/api/src/index.ts
+
+        sed -i "/await app.register(cors, { origin: true });/a\\
+\\
+// OpenAPI spec generation\\
+await app.register(swagger, {\\
+  openapi: {\\
+    info: {\\
+      title: 'Crawlee Cloud API',\\
+      version: '1.0.0',\\
+      description: 'Self-hosted Apify-compatible web scraping platform — actors, runs, datasets, key-value stores, and request queues.',\\
+    },\\
+    tags: [\\
+      { name: 'Actors', description: 'Actor management and execution' },\\
+      { name: 'Runs', description: 'Actor run status and lifecycle' },\\
+      { name: 'Datasets', description: 'Crawl result datasets' },\\
+      { name: 'Key-Value Stores', description: 'Key-value storage' },\\
+      { name: 'Request Queues', description: 'URL queue management' },\\
+      { name: 'Registry', description: 'Actor registry' },\\
+      { name: 'Auth', description: 'Authentication and API keys' },\\
+      { name: 'Users', description: 'User management' },\\
+    ],\\
+  },\\
+});\\
+await app.register(swaggerUi, { routePrefix: '/docs' });" \
+          $out/repo/packages/api/src/index.ts
+
+        # 3. Patch Dockerfile.api — use npm install instead of npm ci
+        #    (lockfile won't have new swagger deps, npm ci would fail)
+        sed -i 's/npm ci /npm install /g' \
+          $out/repo/docker/Dockerfile.api
       '';
     in {
       default = defaultPkg;

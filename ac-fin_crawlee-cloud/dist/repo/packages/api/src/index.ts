@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import compress from '@fastify/compress';
 import { config } from './config.js';
 import { initDatabase } from './db/index.js';
@@ -23,6 +25,28 @@ const app = Fastify({
 });
 
 await app.register(cors, { origin: true });
+
+// OpenAPI spec generation
+await app.register(swagger, {
+  openapi: {
+    info: {
+      title: 'Crawlee Cloud API',
+      version: '1.0.0',
+      description: 'Self-hosted Apify-compatible web scraping platform — actors, runs, datasets, key-value stores, and request queues.',
+    },
+    tags: [
+      { name: 'Actors', description: 'Actor management and execution' },
+      { name: 'Runs', description: 'Actor run status and lifecycle' },
+      { name: 'Datasets', description: 'Crawl result datasets' },
+      { name: 'Key-Value Stores', description: 'Key-value storage' },
+      { name: 'Request Queues', description: 'URL queue management' },
+      { name: 'Registry', description: 'Actor registry' },
+      { name: 'Auth', description: 'Authentication and API keys' },
+      { name: 'Users', description: 'User management' },
+    ],
+  },
+});
+await app.register(swaggerUi, { routePrefix: '/docs' });
 
 // Enable compression/decompression (handles gzip request bodies from SDK)
 await app.register(compress, { global: true });
