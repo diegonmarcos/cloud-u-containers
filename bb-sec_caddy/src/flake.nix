@@ -236,7 +236,7 @@
     ${sec}
         @root path /
         handle @root {
-          redir https://diegonmarcos.github.io/api/ permanent
+          ${mkGithubProxy "api"}
         }
 
         # C3 Dashboard — shortcut at /dash (same auth as /c3-api)
@@ -308,7 +308,7 @@
           ${mkProtected "${flex0}:3000"}
         }
         handle {
-          respond "API hub — use /dash/, /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
+          ${mkGithubProxy "api"}
         }
         ${handleErrors}
       }
