@@ -25,12 +25,12 @@
       public_ip = "130.110.251.193";
 
       # OCI Email Delivery relay (primary while AWS SES is in sandbox)
-      relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
-      relay_port = "587";
-
-      # AWS SES relay (swap back to primary once production access granted)
-      oci_relay_host = "email-smtp.us-east-1.amazonaws.com";
+      oci_relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
       oci_relay_port = "587";
+
+      # AWS SES relay (fallback, swap to primary once production access granted)
+      aws_relay_host = "email-smtp.us-east-1.amazonaws.com";
+      aws_relay_port = "587";
     };
 
     title = "Mailu Mail Server";
@@ -185,11 +185,11 @@
       WEBDAV=none
       FETCHMAIL=false
 
-      RELAYHOST=[${config.relay_host}]:${config.relay_port}
-      RELAYUSER=''\${RELAYUSER}
-      RELAYPASSWORD=''\${RELAYPASSWORD}
+      RELAYHOST=[${config.oci_relay_host}]:${config.oci_relay_port}
       OCI_RELAYUSER=''\${OCI_RELAYUSER}
       OCI_RELAYPASSWORD=''\${OCI_RELAYPASSWORD}
+      AWS_RELAYUSER=''\${AWS_RELAYUSER}
+      AWS_RELAYPASSWORD=''\${AWS_RELAYPASSWORD}
 
       MESSAGE_SIZE_LIMIT=${config.message_size_limit}
 
@@ -220,7 +220,7 @@
       set -e
       cd "$(dirname "$0")"
 
-      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $RELAYUSER $RELAYPASSWORD $NOREPLY_PASSWORD $OCI_RELAYUSER $OCI_RELAYPASSWORD'
+      ENV_VARS='$SECRET_KEY $INITIAL_ADMIN_PW $OCI_RELAYUSER $OCI_RELAYPASSWORD $NOREPLY_PASSWORD $AWS_RELAYUSER $AWS_RELAYPASSWORD'
 
       echo "[init] Substituting secrets into mailu.env..."
       # Read .secrets safely (avoid shell interpretation of < > $ in values)
@@ -238,12 +238,12 @@
         chmod 600 dkim/${config.domain}.dkim.key
       fi
 
-      # Generate combined sasl_passwd for postfix (AWS primary + OCI fallback)
-      if [ -n "$RELAYUSER" ] && [ -n "$OCI_RELAYUSER" ]; then
-        echo "[init] Writing combined postfix sasl_passwd (AWS + OCI)..."
+      # Generate combined sasl_passwd for postfix (OCI primary + AWS fallback)
+      if [ -n "$OCI_RELAYUSER" ] && [ -n "$AWS_RELAYUSER" ]; then
+        echo "[init] Writing combined postfix sasl_passwd (OCI + AWS)..."
         mkdir -p overrides/postfix
-        printf '[${config.relay_host}]:${config.relay_port} %s:%s\n[${config.oci_relay_host}]:${config.oci_relay_port} %s:%s\n' \
-          "$RELAYUSER" "$RELAYPASSWORD" "$OCI_RELAYUSER" "$OCI_RELAYPASSWORD" \
+        printf '[${config.oci_relay_host}]:${config.oci_relay_port} %s:%s\n[${config.aws_relay_host}]:${config.aws_relay_port} %s:%s\n' \
+          "$OCI_RELAYUSER" "$OCI_RELAYPASSWORD" "$AWS_RELAYUSER" "$AWS_RELAYPASSWORD" \
           > overrides/postfix/sasl_multi_passwd
         chmod 600 overrides/postfix/sasl_multi_passwd
       fi
