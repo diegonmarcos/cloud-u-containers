@@ -3,7 +3,6 @@ import fp from "fastify-plugin";
 
 const PUBLIC_PATHS = new Set([
   "/health",
-  "/dash",
   "/docs",
   "/docs/",
   "/docs/json",
@@ -12,7 +11,6 @@ const PUBLIC_PATHS = new Set([
 
 function isPublicPath(url: string): boolean {
   if (url.startsWith("/docs")) return true;
-  if (url.startsWith("/dash")) return true;
   return PUBLIC_PATHS.has(url);
 }
 
