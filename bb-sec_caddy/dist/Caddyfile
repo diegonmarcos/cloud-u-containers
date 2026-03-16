@@ -95,11 +95,31 @@ import security
 import request_limits
     @root path /
     handle @root {
-      redir https://diegonmarcos.github.io/api/ permanent
+      rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
     }
 
-    # C3 — Cloud Control Center API (replaces Rust API)
-    # All endpoints protected (require Authelia or bearer token)
+    # C3 Dashboard — served from GitHub Pages (front/d-Cloud/mcp-api-swagger)
+    handle /dash {
+      redir /dash/ permanent
+    }
+    handle_path /dash/* {
+      rewrite * /mcp-api-swagger/{path}
+      reverse_proxy https://diegonmarcos.github.io {
+        header_up Host diegonmarcos.github.io
+      }
+    }
+
+    # C3 — Cloud Control Center API
+    # Public: OpenAPI spec (CORS handled by upstream @fastify/cors)
+    handle /c3-api/docs/json {
+      uri strip_prefix /c3-api
+      reverse_proxy 10.0.0.6:8081
+    }
+    # Protected: all other endpoints through Authelia/bearer
     handle_path /c3-api/* {
         @bearer header Authorization Bearer*
   handle @bearer {
@@ -119,62 +139,32 @@ forward_auth authelia:9091 {
 
     }
 
-    # Rust API (legacy/backup) — needs /api prefix restored after handle_path strips /rust-api
-    handle /rust-api/docs/openapi.json {
-      rewrite * /api/docs/openapi.json
-      reverse_proxy 10.0.0.6:8080
+    # C3 Services — Unified Service API Gateway
+    # Public: OpenAPI spec (CORS handled by upstream @fastify/cors)
+    handle /services/docs/json {
+      uri strip_prefix /services
+      reverse_proxy 10.0.0.6:8082
     }
-    handle_path /rust-api/* {
-      uri replace / /api/ 1
+    # Protected: all other endpoints through Authelia/bearer
+    handle_path /services/* {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:8080
+    reverse_proxy 10.0.0.6:8082
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:8080
+    reverse_proxy 10.0.0.6:8082
   }
 
     }
 
-    handle /flask/apispec.json {
-      uri strip_prefix /flask
-      reverse_proxy 10.0.0.1:5000
-    }
-    handle_path /flask/* {
-        @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.1:5000
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.1:5000
-  }
-
-    }
-    handle /go/docs/openapi.json {
-      header Access-Control-Allow-Origin "*"
-      header Access-Control-Allow-Methods "GET, OPTIONS"
-      header Access-Control-Allow-Headers "Content-Type"
-      reverse_proxy go-api:8090
-    }
-    handle /go/* {
-      reverse_proxy go-api:8090
-    }
     handle /crawlee/openapi.json {
       uri strip_prefix /crawlee
       reverse_proxy 10.0.0.6:3000
@@ -198,7 +188,11 @@ forward_auth authelia:9091 {
 
     }
     handle {
-      respond "API hub — use /c3-api/, /rust-api/, /flask/, /go/, /crawlee/" 404
+      rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -517,10 +511,14 @@ forward_auth authelia:9091 {
   photos.diegonmarcos.com {
 import security
 import request_limits
-    # Root path → landing page (replaces Cloudflare redirect rule)
+    # Root path → landing page (proxied, keeps our domain)
     @root path /
     handle @root {
-      redir https://diegonmarcos.github.io/myphotos/ permanent
+      rewrite * /myphotos{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
     }
 
     # All other paths → auth + PhotoPrism
@@ -554,10 +552,14 @@ forward_auth authelia:9091 {
   mail.diegonmarcos.com {
 import security
 import request_limits
-    # Root path → landing page (replaces Cloudflare redirect rule)
+    # Root path → landing page (proxied, keeps our domain)
     @root path /
     handle @root {
-      redir https://diegonmarcos.github.io/mymail/ permanent
+      rewrite * /mymail{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
     }
 
     # All other paths → auth + Mailu
@@ -696,14 +698,14 @@ forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.4:8000
+    reverse_proxy 10.0.0.6:8000
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.4:8000
+    reverse_proxy 10.0.0.6:8000
   }
 
     }
@@ -992,6 +994,106 @@ forward_auth authelia:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
       reverse_proxy ntfy:80
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # ════════════════════════════════════════════════════════════
+  # MCP — Streamable HTTP endpoints for Claude Code MCP clients
+  # ════════════════════════════════════════════════════════════
+
+  mcp.diegonmarcos.com {
+import security
+import request_limits
+    # C3 MCP — cloud-infra (oci-apps:3100)
+    handle_path /c3-mcp/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3100
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3100
+  }
+
+    }
+
+    # C3 Services MCP — cloud-services (oci-apps:3101)
+    handle_path /c3-services-mcp/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3101
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3101
+  }
+
+    }
+
+    # Mattermost MCP (oci-apps:3102 — to be deployed)
+    handle_path /mattermost-mcp/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3102
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3102
+  }
+
+    }
+
+    # Mailu MCP (oci-apps:3103 — to be deployed)
+    handle_path /mailu-mcp/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy:4182 {
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3103
+  }
+  handle {
+forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3103
+  }
+
+    }
+
+    handle {
+      respond "MCP Hub — use /c3-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp" 200
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
