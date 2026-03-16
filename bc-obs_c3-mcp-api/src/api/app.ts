@@ -1,8 +1,5 @@
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import fastifyStatic from "@fastify/static";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { authPlugin } from "./plugins/auth.js";
@@ -44,17 +41,6 @@ export async function buildApp() {
 
   await app.register(swaggerUi, {
     routePrefix: "/docs",
-  });
-
-  // Dashboard — serve static files at /dash
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  await app.register(fastifyStatic, {
-    root: join(__dirname, "..", "dash", "dist"),
-    prefix: "/dash/",
-    decorateReply: false,
-  });
-  app.get("/dash", async (_req, reply) => {
-    reply.redirect("/dash/");
   });
 
   // Auth

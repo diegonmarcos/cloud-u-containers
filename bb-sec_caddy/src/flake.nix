@@ -239,12 +239,12 @@
           ${mkGithubProxy "api"}
         }
 
-        # C3 Dashboard — public (no auth, static HTML served by Fastify)
-        handle /dash {
-          reverse_proxy ${flex0}:8081
+        # C3 Dashboard — served from GitHub Pages (front/d-Cloud/mcp-api-swagger)
+        handle_path /dash/* {
+          ${mkGithubProxy "mcp-api-swagger"}
         }
-        handle /dash/* {
-          reverse_proxy ${flex0}:8081
+        handle /dash {
+          redir /dash/ permanent
         }
 
         # C3 — Cloud Control Center API
