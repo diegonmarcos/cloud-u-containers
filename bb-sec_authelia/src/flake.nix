@@ -293,6 +293,7 @@
                 - https://cal.diegonmarcos.com/
                 - https://ide.diegonmarcos.com/
                 - https://mail.diegonmarcos.com/
+                - https://mcp.diegonmarcos.com/
                 - https://photos.diegonmarcos.com/
                 - https://proxy.diegonmarcos.com/
                 - https://rss.diegonmarcos.com/
