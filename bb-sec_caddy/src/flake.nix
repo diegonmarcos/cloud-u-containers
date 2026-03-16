@@ -262,6 +262,17 @@
           ${mkProtected "${flex0}:8081"}
         }
 
+        # C3 Services — Unified Service API Gateway
+        # Public: OpenAPI spec (CORS handled by upstream @fastify/cors)
+        handle /services/docs/json {
+          uri strip_prefix /services
+          reverse_proxy ${flex0}:8082
+        }
+        # Protected: all other endpoints through Authelia/bearer
+        handle_path /services/* {
+          ${mkProtected "${flex0}:8082"}
+        }
+
         handle /crawlee/openapi.json {
           uri strip_prefix /crawlee
           reverse_proxy ${flex0}:3000
