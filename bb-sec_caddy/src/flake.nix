@@ -240,6 +240,10 @@
         }
 
         # C3 Dashboard — shortcut at /dash (same auth as /c3-api)
+        @dash_trailing path /dash/
+        handle @dash_trailing {
+          redir /dash permanent
+        }
         handle /dash {
           ${mkProtected "${flex0}:8081"}
         }
