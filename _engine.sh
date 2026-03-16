@@ -7,6 +7,9 @@ set -e
 # Auto-confirm guardrail prompts (BLOCKED tier is never bypassed)
 export BUILDSH_GUARDRAIL=1
 
+# Shared node_modules — ESM resolution needs NODE_PATH
+export NODE_PATH="${NODE_PATH:-$HOME/.node_modules/node_modules}"
+
 SERVICE_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_NAME="$(basename "$SERVICE_DIR" | sed 's/^[a-z]*-[a-z]*_//')"
 SRC_DIR="$SERVICE_DIR/src"
