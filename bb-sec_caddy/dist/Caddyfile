@@ -1021,14 +1021,18 @@ forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3100
+    reverse_proxy 10.0.0.6:3100 {
+      flush_interval -1
+    }
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3100
+    reverse_proxy 10.0.0.6:3100 {
+      flush_interval -1
+    }
   }
 
     }
@@ -1041,14 +1045,18 @@ forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3101
+    reverse_proxy 10.0.0.6:3101 {
+      flush_interval -1
+    }
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3101
+    reverse_proxy 10.0.0.6:3101 {
+      flush_interval -1
+    }
   }
 
     }
@@ -1061,14 +1069,18 @@ forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3102
+    reverse_proxy 10.0.0.6:3102 {
+      flush_interval -1
+    }
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3102
+    reverse_proxy 10.0.0.6:3102 {
+      flush_interval -1
+    }
   }
 
     }
@@ -1081,14 +1093,18 @@ forward_auth introspect-proxy:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3103
+    reverse_proxy 10.0.0.6:3103 {
+      flush_interval -1
+    }
   }
   handle {
 forward_auth authelia:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3103
+    reverse_proxy 10.0.0.6:3103 {
+      flush_interval -1
+    }
   }
 
     }
