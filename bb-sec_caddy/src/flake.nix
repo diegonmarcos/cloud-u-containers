@@ -240,11 +240,14 @@
         }
 
         # C3 Dashboard — served from GitHub Pages (front/d-Cloud/mcp-api-swagger)
-        handle_path /dash/* {
-          ${mkGithubProxy "mcp-api-swagger"}
-        }
         handle /dash {
           redir /dash/ permanent
+        }
+        handle_path /dash/* {
+          rewrite * /mcp-api-swagger/{path}
+          reverse_proxy https://diegonmarcos.github.io {
+            header_up Host diegonmarcos.github.io
+          }
         }
 
         # C3 — Cloud Control Center API
