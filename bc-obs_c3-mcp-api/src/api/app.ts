@@ -14,7 +14,6 @@ import { registerOperationsRoutes } from "./routes/operations.js";
 import { registerObservabilityRoutes } from "./routes/observability.js";
 import { registerSecurityRoutes } from "./routes/security.js";
 import { registerFinOpsRoutes } from "./routes/finops.js";
-import { registerCrawleeRoutes } from "./routes/crawlee.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -39,7 +38,6 @@ export async function buildApp() {
         { name: "Observability", description: "Health, profiling, diagnostics, testing, and alerting" },
         { name: "Security", description: "Security scanning, auditing, and compliance" },
         { name: "FinOps", description: "Cloud provider operations and cost tracking" },
-        { name: "Crawlee", description: "Web scraping — actors, runs, datasets (proxied from Crawlee Cloud)" },
       ],
     },
   });
@@ -72,7 +70,6 @@ export async function buildApp() {
   await app.register(registerObservabilityRoutes);
   await app.register(registerSecurityRoutes);
   await app.register(registerFinOpsRoutes);
-  await app.register(registerCrawleeRoutes);
 
   return app;
 }
