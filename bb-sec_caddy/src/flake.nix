@@ -240,8 +240,9 @@
         }
 
         # C3 Dashboard — served from GitHub Pages (front/d-Cloud/mcp-api-swagger)
-        handle /dash {
-          redir /dash/ permanent
+        @dash path /dash
+        handle @dash {
+          redir {path}/ permanent
         }
         handle_path /dash/* {
           rewrite * /mcp-api-swagger/{path}
