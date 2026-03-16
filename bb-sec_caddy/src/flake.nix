@@ -562,22 +562,22 @@
     ${sec}
         # C3 MCP — cloud-infra (oci-apps:3100)
         handle_path /c3-mcp/* {
-          ${mkProtected "${flex0}:3100"}
+          ${mkProtectedCustom "${flex0}:3100" "flush_interval -1"}
         }
 
         # C3 Services MCP — cloud-services (oci-apps:3101)
         handle_path /c3-services-mcp/* {
-          ${mkProtected "${flex0}:3101"}
+          ${mkProtectedCustom "${flex0}:3101" "flush_interval -1"}
         }
 
         # Mattermost MCP (oci-apps:3102 — to be deployed)
         handle_path /mattermost-mcp/* {
-          ${mkProtected "${flex0}:3102"}
+          ${mkProtectedCustom "${flex0}:3102" "flush_interval -1"}
         }
 
         # Mailu MCP (oci-apps:3103 — to be deployed)
         handle_path /mailu-mcp/* {
-          ${mkProtected "${flex0}:3103"}
+          ${mkProtectedCustom "${flex0}:3103" "flush_interval -1"}
         }
 
         handle {
