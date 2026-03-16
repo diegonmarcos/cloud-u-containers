@@ -21,6 +21,14 @@ if [ -d /root/.ssh ]; then
 fi
 
 # Clone/pull repos — public HTTPS, no SSH key needed
+# Map local dir name → GitHub repo name (when they differ)
+repo_url() {
+  case "$1" in
+    front) echo "https://github.com/diegonmarcos/diegonmarcos.github.io.git" ;;
+    *)     echo "https://github.com/diegonmarcos/$1.git" ;;
+  esac
+}
+
 echo "c3-entrypoint: syncing repos to $REPOS_DIR..."
 for repo in cloud unix front tools; do
   dir="$REPOS_DIR/$repo"
@@ -33,7 +41,7 @@ for repo in cloud unix front tools; do
     echo "  $repo: cloning..."
     rm -rf "$dir"
     git clone --depth 1 --single-branch --branch main \
-      https://github.com/diegonmarcos/$repo.git "$dir" 2>/dev/null || \
+      "$(repo_url "$repo")" "$dir" 2>/dev/null || \
       echo "  $repo: clone failed (non-fatal)"
   fi
 done
@@ -43,5 +51,9 @@ echo "c3-entrypoint: repos ready."
 # gen-topology/gen-configs are desktop tools — running them in-container
 # overwrites the good files with incomplete output (missing SSH context).
 echo "c3-entrypoint: using topology from cloned cloud repo"
+
+# Generate cloud-deps.json + front-deps.json (scans package.json across repos)
+echo "c3-entrypoint: generating deps..."
+npx tsx src/engines/gen-deps.ts 2>&1 || echo "c3-entrypoint: gen-deps failed (non-fatal)"
 
 exec npx tsx src/api/index.ts
