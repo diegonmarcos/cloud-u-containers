@@ -6,6 +6,6 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
 COPY tsconfig.json ./
-COPY mcp/ ./mcp/
+COPY *.ts ./
 
-CMD ["npx", "tsx", "mcp/index.ts", "--http"]
+CMD ["npx", "tsx", "index.ts", "--http"]
