@@ -144,6 +144,7 @@
     # Bearer token auth via introspect-proxy sidecar (OIDC token introspection)
     bearer = ''
         forward_auth introspect-proxy:4182 {
+          method GET
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
         }'';

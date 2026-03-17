@@ -53,7 +53,7 @@ def get_jwks_client():
     return _jwks_client
 
 
-@app.route("/auth", methods=["GET"])
+@app.route("/auth", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 def auth():
     """
     Validates Bearer JWT locally using JWKS public key.
@@ -76,7 +76,11 @@ def auth():
         logger.debug("No Bearer token in Authorization header")
         return Response("No Bearer token", status=401)
 
-    token = auth_header[7:]
+    token = auth_header[7:].strip()
+    # JWT tokens are always ASCII — reject non-ASCII bytes
+    if not token.isascii():
+        logger.warning(f"Non-ASCII chars in token (len={len(token)}), stripping")
+        token = token.encode('ascii', errors='ignore').decode('ascii')
 
     try:
         jwks_client = get_jwks_client()
