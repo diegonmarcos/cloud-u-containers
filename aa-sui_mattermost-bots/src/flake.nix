@@ -13,7 +13,7 @@
       postgres_container = "mattermost-postgres";
       bridge_container = "mattermost-bots";
       image = "ngrie/mattermost-team-edition-arm:10.11";
-      c3_api = "http://c3-mcp-api:8080";
+      c3_api = "http://c3-infra-mcp-api:8080";
       c3_port = 8888;
       postgres_image = "postgres:16-alpine";
       bridge_image = "python:3.12-slim";
@@ -150,7 +150,7 @@
       MM_ADMIN_EMAIL = os.environ["MM_ADMIN_EMAIL"]
       MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
       MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
-      C3_API_URL = os.environ.get("C3_API_URL", "http://c3-mcp-api:8080")
+      C3_API_URL = os.environ.get("C3_API_URL", "http://c3-infra-mcp-api:8080")
 
 
       def fetch_oidc_token():

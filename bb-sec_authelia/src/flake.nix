@@ -560,9 +560,9 @@
                 - https://api.diegonmarcos.com/
                 - https://rss.diegonmarcos.com/
 
-            - client_id: c3-mcp-api
-              client_name: C3 MCP API
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET}
+            - client_id: c3-infra-mcp-api
+              client_name: C3 Infra MCP API
+              client_secret: ''\${AUTHELIA_OIDC_CLIENT_C3_INFRA_MCP_SECRET}
               public: false
               grant_types:
                 - client_credentials

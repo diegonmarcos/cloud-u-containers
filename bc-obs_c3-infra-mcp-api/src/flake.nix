@@ -1,5 +1,5 @@
 {
-  description = "Rig Agentic AI - Infrastructure agent with DeepSeek + tool calling";
+  description = "C3 — Cloud Control Center: MCP server + Fastify API";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -9,65 +9,68 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "rig-agentic";
-      port = 8090;
-      ollama_url = "http://10.0.0.8:11434";
-      ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
-      c3_api_url = "http://c3-infra-mcp-api:8080";
-      c3_mcp_url = "http://c3-infra-mcp-api:3100";
+      container_name = "c3-infra-mcp-api";
+      image = "ghcr.io/diegonmarcos/c3-infra-mcp-api:latest";
+      port = 8081;   # parallel with Rust API on 8080 — swap to 8080 after cutover
+      mcp_http_port = 3100;
       mattermost_url = "http://mattermost:8065";
     };
 
-    title = "Rig Agentic AI";
+    title = "C3 — Cloud Control Center";
 
+    # ── docker-compose.yml for C3 API deployment ────────────────────────
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/ad-agi_rig-agentic/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/ad-agi_rig-agentic/build.sh ship ║
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-infra-mcp-api/src/flake.nix ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-infra-mcp-api/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        rig-agentic:
-          build:
-            context: .
-            dockerfile: Dockerfile
-          image: rig-agentic:latest
+        c3-infra-mcp-api:
+          image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
           networks:
             - c3-net
           ports:
-            - "127.0.0.1:${toString config.port}:${toString config.port}"
+            - "${toString config.port}:8080"
+            - "${toString config.mcp_http_port}:${toString config.mcp_http_port}"
+          volumes:
+            - /opt/ssh-keys/c3-infra-mcp-api:/root/.ssh:ro
+            - /nix/store:/nix/store:ro
+            - ~/.nix-profile/bin:/usr/local/nix-bin:ro
+            - ~/.config/gcloud:/root/.config/gcloud
+            - c3-repos:/app/repos
           env_file:
             - .secrets
           environment:
-            - RIG_PORT=${toString config.port}
-            - OLLAMA_URL=${config.ollama_url}
-            - OLLAMA_API_BASE_URL=${config.ollama_url}
-            - OLLAMA_MODEL=${config.ollama_model}
-            - C3_API_URL=${config.c3_api_url}
-            - C3_MCP_URL=${config.c3_mcp_url}
-            - MATTERMOST_URL=${config.mattermost_url}
-            - GUARDRAIL_MAX_TURNS=20
-            - GUARDRAIL_DENIED_TOOLS=
-            - RUST_LOG=rig_agentic=info
-          volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - PORT=8080
+            - NODE_ENV=production
+            - GIT_BASE=/app/repos
+            - MCP_HTTP_PORT=${toString config.mcp_http_port}
+            - MM_URL=${config.mattermost_url}
+            - AUTHELIA_OIDC_CLIENT_ID=c3-infra-mcp-api
+            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_C3_INFRA_MCP_SECRET}
+            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
+            - DAGU_API=http://10.0.0.3:8070
+            - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           healthcheck:
-            test: ["CMD", "curl", "-sf", "http://localhost:${toString config.port}/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
             interval: 30s
             timeout: 10s
             retries: 3
             start_period: 15s
+
+      volumes:
+        c3-repos:
 
       networks:
         c3-net:
           external: true
           name: mattermost-bots_default
     '';
-
 
     # ── Documentation ────────────────────────────────────────────────────
     mkDocs = pkgs: defaultPkg: let
@@ -127,6 +130,7 @@
       cp ${specMd} build/src/spec.md
       ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2>/dev/null || true"}
 
+      # Generate configs.md from packages.default output
       echo "# Generated Configuration Files" > build/src/configs.md
       echo "" >> build/src/configs.md
       echo 'These files are produced by nix build and deployed to the VM.' >> build/src/configs.md
@@ -170,7 +174,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "rig-agentic-configs" {} ''
+      defaultPkg = pkgs.runCommand "c3-api-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';
