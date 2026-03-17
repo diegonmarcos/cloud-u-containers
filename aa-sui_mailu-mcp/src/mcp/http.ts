@@ -49,6 +49,9 @@ async function handleMcpRequest(
     const server = createMcpServer();
     await server.connect(transport);
 
+    // handleRequest must run first — it generates the sessionId
+    await transport.handleRequest(req, res);
+
     const sid = transport.sessionId!;
     sessions.set(sid, { transport, server });
     log(`New MCP session: ${sid}`);
@@ -57,8 +60,6 @@ async function handleMcpRequest(
       sessions.delete(sid);
       log(`Session closed: ${sid}`);
     };
-
-    await transport.handleRequest(req, res);
   } else if (sessionId && sessions.has(sessionId)) {
     const session = sessions.get(sessionId)!;
     await session.transport.handleRequest(req, res);
