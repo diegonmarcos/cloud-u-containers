@@ -1,52 +1,28 @@
 /**
- * MCP Streamable HTTP Server — exposes the MCP server over HTTP
- * so that rig-agentic (Rust MCP client) can connect over the Docker network.
- *
- * Runs on a separate port (default 3100) alongside the Fastify REST API.
- * Stateless mode — no session management needed for single-client use.
+ * MCP Streamable HTTP Server for Mailu MCP
+ * Runs on port 3103, session-managed HTTP transport.
  */
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { randomUUID } from "node:crypto";
+import { registerInboxTools } from "./tools/inbox.js";
+import { registerComposeTools } from "./tools/compose.js";
+import { registerAdminTools } from "./tools/admin.js";
 
-// ── Same tool registrations as stdio server ──
-import { registerInventoryTools } from "./tools/inventory.js";
-import { registerDeliveryTools } from "./tools/delivery.js";
-import { registerOperationsTools } from "./tools/operations.js";
-import { registerObservabilityTools } from "./tools/observability.js";
-import { registerSecurityTools } from "./tools/security.js";
-import { registerFinOpsTools } from "./tools/finops.js";
-import { registerFrontendTools } from "./tools/frontend.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
-import { registerMattermostTools } from "./tools/mattermost.js";
-import { registerResources } from "./resources/index.js";
-import { registerPrompts } from "./prompts/index.js";
-
-const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[mailu-http] ${msg}\n`);
 
 function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: "cloud-infra",
-    version: "3.0.0",
+    name: "mailu-mcp",
+    version: "1.0.0",
   });
-
-  registerInventoryTools(server);
-  registerDeliveryTools(server);
-  registerOperationsTools(server);
-  registerObservabilityTools(server);
-  registerSecurityTools(server);
-  registerFinOpsTools(server);
-  registerFrontendTools(server);
-  registerCrawleeTools(server);
-  registerMattermostTools(server);
-  registerResources(server);
-  registerPrompts(server);
-
+  registerInboxTools(server);
+  registerComposeTools(server);
+  registerAdminTools(server);
   return server;
 }
 
-// Track active sessions: sessionId → { transport, server }
 const sessions = new Map<
   string,
   { transport: StreamableHTTPServerTransport; server: McpServer }
@@ -56,7 +32,6 @@ async function handleMcpRequest(
   req: IncomingMessage,
   res: ServerResponse
 ): Promise<void> {
-  // Only handle /mcp path
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   if (url.pathname !== "/mcp") {
     res.writeHead(404, { "Content-Type": "application/json" });
@@ -67,7 +42,6 @@ async function handleMcpRequest(
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (req.method === "POST" && !sessionId) {
-    // New session — create transport + server
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     });
@@ -86,15 +60,13 @@ async function handleMcpRequest(
 
     await transport.handleRequest(req, res);
   } else if (sessionId && sessions.has(sessionId)) {
-    // Existing session
     const session = sessions.get(sessionId)!;
     await session.transport.handleRequest(req, res);
   } else if (req.method === "DELETE" && sessionId) {
-    // Session cleanup
-    const session = sessions.get(sessionId!);
+    const session = sessions.get(sessionId);
     if (session) {
       await session.transport.close();
-      sessions.delete(sessionId!);
+      sessions.delete(sessionId);
       log(`Session deleted: ${sessionId}`);
     }
     res.writeHead(200);
@@ -109,7 +81,7 @@ async function handleMcpRequest(
   }
 }
 
-export function startMcpHttpServer(port: number = 3100): Promise<void> {
+export function startMcpHttpServer(port: number = 3103): Promise<void> {
   return new Promise((resolve) => {
     const httpServer = createServer(async (req, res) => {
       try {
