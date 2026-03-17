@@ -403,7 +403,15 @@
           reverse_proxy ${analytics}:3000
         }
         handle_path /umami/* {
-          ${mkProtected "${analytics}:3000"}
+          @umami_bearer header Authorization Bearer*
+          handle @umami_bearer {
+        ${bearer}
+            reverse_proxy ${analytics}:3000
+          }
+          handle {
+        ${authelia}
+            reverse_proxy ${analytics}:3000
+          }
         }
         @umami_root path /umami
         handle @umami_root {
