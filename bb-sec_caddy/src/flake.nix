@@ -401,6 +401,26 @@
       }
 
       # ════════════════════════════════════════════════════════════
+      # ANALYTICS — Umami (public tracking + protected dashboard)
+      # ════════════════════════════════════════════════════════════
+
+      umami.diegonmarcos.com {
+    ${sec}
+        # Public: tracking script + collect endpoint (no auth)
+        @tracking_umami {
+          path /script.js /api/send
+        }
+        handle @tracking_umami {
+          reverse_proxy ${analytics}:3000
+        }
+
+        # Protected: dashboard (Authelia)
+        ${mkProtected "${analytics}:3000"}
+
+        ${handleErrors}
+      }
+
+      # ════════════════════════════════════════════════════════════
       # AUTHELIA-PROTECTED (bearer token bypass for CLI/API)
       # ════════════════════════════════════════════════════════════
 
