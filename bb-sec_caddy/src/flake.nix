@@ -585,7 +585,10 @@
 
       mcp.diegonmarcos.com {
     ${sec}
-        # TEMPORARY: public MCP (no auth) for debugging Claude Code connection
+        # WireGuard-only: reject non-WG traffic
+        @not_wg not remote_ip 10.0.0.0/24
+        respond @not_wg "Forbidden — WireGuard access only" 403
+
         handle_path /c3-mcp/* {
           reverse_proxy ${flex0}:3100 {
             flush_interval -1
