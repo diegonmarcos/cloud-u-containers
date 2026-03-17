@@ -587,16 +587,24 @@
     ${sec}
         # TEMPORARY: public MCP (no auth) for debugging Claude Code connection
         handle_path /c3-mcp/* {
-          reverse_proxy ${flex0}:3100 { flush_interval -1 }
+          reverse_proxy ${flex0}:3100 {
+            flush_interval -1
+          }
         }
         handle_path /c3-services-mcp/* {
-          reverse_proxy ${flex0}:3101 { flush_interval -1 }
+          reverse_proxy ${flex0}:3101 {
+            flush_interval -1
+          }
         }
         handle_path /mattermost-mcp/* {
-          reverse_proxy ${flex0}:3102 { flush_interval -1 }
+          reverse_proxy ${flex0}:3102 {
+            flush_interval -1
+          }
         }
         handle_path /mailu-mcp/* {
-          reverse_proxy ${flex0}:3103 { flush_interval -1 }
+          reverse_proxy ${flex0}:3103 {
+            flush_interval -1
+          }
         }
 
         handle {
