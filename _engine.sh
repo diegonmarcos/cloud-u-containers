@@ -469,12 +469,12 @@ step_compose() {
         log "Waiting for CPU to settle..."
         sleep 5
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d --build"
     else
-        # Standard: down + up with force-recreate
+        # Standard: down + up with force-recreate (--build rebuilds Dockerfile-based services)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate $EXTRA_FLAGS"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate --build $EXTRA_FLAGS"
     fi
 
     # Post-compose hook (e.g. mailu setup.sh)
