@@ -1,7 +1,11 @@
 {
   "name": "mattermost-mcp",
-  "description": "Mattermost MCP server",
+  "description": "Mattermost MCP server — chat tools via HTTP transport",
   "category": "app",
+  "docker": {
+    "image": "mattermost-mcp",
+    "dockerfile": "Dockerfile"
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mattermost-mcp"
