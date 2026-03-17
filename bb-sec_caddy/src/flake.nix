@@ -394,15 +394,20 @@
           reverse_proxy ${analytics}:8080
         }
 
-        # Umami Analytics (path-based, public tracking + protected dashboard)
-        @umami_tracking {
+        # Umami Analytics (path-based, strip /umami prefix before proxying)
+        @umami_public {
           path /umami/script.js /umami/api/send
         }
-        handle @umami_tracking {
+        handle @umami_public {
+          uri strip_prefix /umami
           reverse_proxy ${analytics}:3000
         }
-        handle /umami* {
+        handle_path /umami/* {
           ${mkProtected "${analytics}:3000"}
+        }
+        @umami_root path /umami
+        handle @umami_root {
+          redir /umami/ permanent
         }
 
         # Protected Matomo admin dashboard (catch-all for non-umami, non-tracking)

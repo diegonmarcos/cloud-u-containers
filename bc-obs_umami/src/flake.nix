@@ -48,7 +48,7 @@
             umami-db:
               condition: service_healthy
           healthcheck:
-            test: ["CMD-SHELL", "curl -sf http://localhost:3000/umami/api/heartbeat || exit 1"]
+            test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/heartbeat || exit 1"]
             interval: 15s
             timeout: 5s
             retries: 5
@@ -109,7 +109,7 @@
       # Configures admin credentials + creates website
       set -e
 
-      UMAMI_URL="http://umami:3000/umami"
+      UMAMI_URL="http://umami:3000"
       echo "[umami-setup] Starting..."
 
       # Login with default credentials (admin/umami)
