@@ -604,7 +604,14 @@ step_terraform() {
         cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
         while IFS='=' read -r key val; do
             case "$key" in "") continue ;; esac
-            sed -i "s|^${key}.*= \"INJECTED_FROM_SECRETS\"|${key} = \"${val}\"|" "$DIST_DIR/terraform.tfvars"
+            awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
+                if (index($0, key) == 1 && index($0, pat)) {
+                    print key " = \"" val "\""
+                } else {
+                    print
+                }
+            }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
+            mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
         done < "$DIST_DIR/.secrets"
         log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
     fi
@@ -636,7 +643,14 @@ step_terraform_plan() {
         cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
         while IFS='=' read -r key val; do
             case "$key" in "") continue ;; esac
-            sed -i "s|^${key}.*= \"INJECTED_FROM_SECRETS\"|${key} = \"${val}\"|" "$DIST_DIR/terraform.tfvars"
+            awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
+                if (index($0, key) == 1 && index($0, pat)) {
+                    print key " = \"" val "\""
+                } else {
+                    print
+                }
+            }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
+            mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
         done < "$DIST_DIR/.secrets"
     fi
 

@@ -7,9 +7,9 @@
 //   b_infra/home-manager/                    → WireGuard peers
 //   ba-clo_hickory-dns/dist/zones/           → DNS records
 //
-// Outputs:
-//   cloud-topology.json  → machine-readable infrastructure topology
-//   cloud-topology.md    → human-readable tables (via Nunjucks)
+// Outputs (written directly to cloud-data/ submodule, symlinked from repo root):
+//   cloud-data/cloud-topology.json  → machine-readable infrastructure topology
+//   cloud-data/cloud-topology.md    → human-readable tables (via Nunjucks)
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve, join } from "path";
@@ -31,8 +31,9 @@ const ENGINE_DIR = import.meta.dirname!;
 const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
 const SSH_CONFIG = join(homedir(), ".ssh", "config");
 
-const OUTPUT_JSON = join(CLOUD_ROOT, "cloud-topology.json");
-const OUTPUT_MD = join(CLOUD_ROOT, "cloud-topology.md");
+const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
+const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-topology.json");
+const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-topology.md");
 
 // --- Types ----------------------------------------------------------------
 
