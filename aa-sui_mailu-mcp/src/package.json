@@ -1,7 +1,6 @@
 {
   "name": "mailu-mcp",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "start": "tsx mcp/index.ts"
   },
