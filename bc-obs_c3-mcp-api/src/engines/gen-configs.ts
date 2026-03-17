@@ -8,9 +8,9 @@
 //   a_solutions/bc-obs_ntfy/dist/etc/server.yml     → ntfy config
 //   a_solutions/aa-sui_tools-mailu/src/flake.nix    → mailu config
 //
-// Outputs:
-//   cloud-configs.json   → machine-readable per-service configs
-//   cloud-configs.md     → human-readable tables (via Nunjucks)
+// Outputs (written directly to cloud-data/ submodule, symlinked from repo root):
+//   cloud-data/cloud-configs.json   → machine-readable per-service configs
+//   cloud-data/cloud-configs.md     → human-readable tables (via Nunjucks)
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
@@ -30,8 +30,9 @@ const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
 const ENGINE_DIR = import.meta.dirname!;
 const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
 
-const OUTPUT_JSON = join(CLOUD_ROOT, "cloud-configs.json");
-const OUTPUT_MD = join(CLOUD_ROOT, "cloud-configs.md");
+const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
+const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-configs.json");
+const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-configs.md");
 
 // --- Types ----------------------------------------------------------------
 

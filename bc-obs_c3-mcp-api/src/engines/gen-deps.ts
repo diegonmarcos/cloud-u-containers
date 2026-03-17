@@ -3,16 +3,15 @@
 // Sources:
 //   cloud/a_solutions/*/src/package.json    → per-service node dependencies
 //   cloud/a_solutions/*/build.json          → service metadata (name, category)
-//   cloud/deps.json                         → repo-level node requirements
+//   cloud/config.json .deps.node             → repo-level node requirements
 //   front/**/package.json                   → per-project node dependencies
 //   front/**/build.json                     → project metadata
 //
-// Outputs:
-//   cloud-deps.json   → consolidated cloud deps grouped by language
-//   front-deps.json   → consolidated front deps grouped by language (in front/ root)
+// Outputs (written directly to data submodules, symlinked from repo roots):
+//   cloud-data/cloud-deps.json   → consolidated cloud deps grouped by language
+//   front-data/front-deps.json   → consolidated front deps grouped by language
 //
 // Consumed by:
-//   Dagu cloud-data-sync  → syncs to cloud-data/ + front-data/ repos
 //   Home-manager           → reads node section to populate ~/.node_modules/
 //   C3 API GET /deps       → serves live
 
@@ -27,10 +26,12 @@ const GIT_BASE = process.env.GIT_BASE ?? join(homedir(), "git");
 const CLOUD_ROOT = join(GIT_BASE, "cloud");
 const FRONT_ROOT = join(GIT_BASE, "front");
 const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
-const DEPS_JSON = join(CLOUD_ROOT, "deps.json");
+const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
 
-const CLOUD_OUTPUT = join(CLOUD_ROOT, "cloud-deps.json");
-const FRONT_OUTPUT = join(FRONT_ROOT, "front-deps.json");
+const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
+const FRONT_DATA_DIR = join(FRONT_ROOT, "front-data");
+const CLOUD_OUTPUT = join(CLOUD_DATA_DIR, "cloud-deps.json");
+const FRONT_OUTPUT = join(FRONT_DATA_DIR, "front-deps.json");
 
 // --- Types ----------------------------------------------------------------
 
@@ -150,18 +151,18 @@ function scanCloud(): RepoDeps {
     }
   }
 
-  // Include repo-level deps.json node requirements
-  if (existsSync(DEPS_JSON)) {
+  // Include repo-level config.json deps.node requirements
+  if (existsSync(CONFIG_JSON)) {
     try {
-      const repoLevel = readJson(DEPS_JSON) as { node?: { required?: string[] } };
-      const required = repoLevel.node?.required ?? [];
+      const config = readJson(CONFIG_JSON) as { deps?: { node?: { required?: string[] } } };
+      const required = config.deps?.node?.required ?? [];
       for (const pkg of required) {
         if (!mergedDeps[pkg] && !mergedDevDeps[pkg]) {
           mergedDeps[pkg] = "latest";
         }
       }
       if (required.length > 0) {
-        console.log(`  deps.json: ${required.length} engine packages`);
+        console.log(`  config.json: ${required.length} engine packages`);
       }
     } catch { /* skip */ }
   }
