@@ -6,5 +6,15 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/umami"
+  },
+  "lifecycle": {
+    "site-id": [
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "umami-setup",
+        "script": "cat /output/site_id"
+      }
+    ]
   }
 }
