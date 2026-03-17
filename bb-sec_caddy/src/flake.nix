@@ -394,28 +394,19 @@
           reverse_proxy ${analytics}:8080
         }
 
-        # Protected admin dashboard
-        ${mkProtected "${analytics}:8080"}
-
-        ${handleErrors}
-      }
-
-      # ════════════════════════════════════════════════════════════
-      # ANALYTICS — Umami (public tracking + protected dashboard)
-      # ════════════════════════════════════════════════════════════
-
-      umami.diegonmarcos.com {
-    ${sec}
-        # Public: tracking script + collect endpoint (no auth)
-        @tracking_umami {
-          path /script.js /api/send
+        # Umami Analytics (path-based, public tracking + protected dashboard)
+        @umami_tracking {
+          path /umami/script.js /umami/api/send
         }
-        handle @tracking_umami {
+        handle @umami_tracking {
           reverse_proxy ${analytics}:3000
         }
+        handle /umami* {
+          ${mkProtected "${analytics}:3000"}
+        }
 
-        # Protected: dashboard (Authelia)
-        ${mkProtected "${analytics}:3000"}
+        # Protected Matomo admin dashboard (catch-all for non-umami, non-tracking)
+        ${mkProtected "${analytics}:8080"}
 
         ${handleErrors}
       }

@@ -2,7 +2,7 @@
   "name": "umami",
   "description": "Umami Analytics - lightweight privacy-focused web analytics",
   "category": "tools",
-  "domain": "umami.diegonmarcos.com",
+  "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/umami"

@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      domain = "umami.diegonmarcos.com";
+      domain = "analytics.diegonmarcos.com/umami";
       container_name = "umami";
       port = 3000;
       db_container = "umami-db";
@@ -25,9 +25,9 @@
       # ║ Source: ~/git/cloud/a_solutions/bc-obs_umami/src/flake.nix     ║
       # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_umami/build.sh ship    ║
       # ╚══════════════════════════════════════════════════════════════════╝
-      # Umami Analytics
+      # Umami Analytics (lightweight, always-on)
       # VM: oci-E2-f_1 (129.151.228.66)
-      # Domain: ${config.domain}
+      # URL: https://${config.domain}
 
       services:
         umami:
@@ -36,14 +36,23 @@
           restart: unless-stopped
           ports:
             - "10.0.0.4:${toString config.port}:3000"
+          env_file:
+            - .secrets
           environment:
-            - DATABASE_URL=postgresql://umami:''${DB_PASSWORD}@umami-db:5432/umami
-            - DATABASE_TYPE=postgresql
-            - APP_SECRET=''${APP_SECRET}
-            - DISABLE_TELEMETRY=1
+            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@umami-db:5432/umami
+            DATABASE_TYPE: postgresql
+            APP_SECRET: ''${APP_SECRET}
+            BASE_PATH: /umami
+            DISABLE_TELEMETRY: "1"
           depends_on:
             umami-db:
               condition: service_healthy
+          healthcheck:
+            test: ["CMD-SHELL", "curl -sf http://localhost:3000/umami/api/heartbeat || exit 1"]
+            interval: 15s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
           deploy:
             resources:
               limits:
@@ -56,9 +65,9 @@
           container_name: ${config.db_container}
           restart: unless-stopped
           environment:
-            - POSTGRES_DB=umami
-            - POSTGRES_USER=umami
-            - POSTGRES_PASSWORD=''${DB_PASSWORD}
+            POSTGRES_DB: umami
+            POSTGRES_USER: umami
+            POSTGRES_PASSWORD: ''${DB_PASSWORD}
           volumes:
             - umami_db_data:/var/lib/postgresql/data
           healthcheck:
@@ -73,9 +82,103 @@
               reservations:
                 memory: 32M
 
+        umami-setup:
+          image: curlimages/curl:latest
+          container_name: umami-setup
+          restart: "no"
+          env_file:
+            - .secrets
+          depends_on:
+            umami:
+              condition: service_healthy
+          entrypoint: ["/bin/sh", "/setup/setup.sh"]
+          volumes:
+            - ./setup.sh:/setup/setup.sh:ro
+
       volumes:
         umami_db_data:
           name: umami_db_data
+    '';
+
+    mkSetupScript = pkgs: pkgs.writeText "setup.sh" ''
+      #!/bin/sh
+      # Umami declarative setup — runs once after first deploy
+      # Configures admin credentials + creates website
+      set -e
+
+      UMAMI_URL="http://umami:3000/umami"
+      echo "[umami-setup] Starting..."
+
+      # Login with default credentials (admin/umami)
+      echo "[umami-setup] Attempting default login..."
+      RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d '{"username":"admin","password":"umami"}' 2>/dev/null || echo "")
+      TOKEN=$(echo "$RESP" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+      if [ -z "$TOKEN" ]; then
+        # Default login failed — try configured credentials
+        echo "[umami-setup] Default login failed, trying configured credentials..."
+        RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
+          -H "Content-Type: application/json" \
+          -d "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" 2>/dev/null || echo "")
+        TOKEN=$(echo "$RESP" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+
+        if [ -z "$TOKEN" ]; then
+          echo "[umami-setup] ERROR: Cannot authenticate"
+          exit 1
+        fi
+        echo "[umami-setup] Already configured, verifying website..."
+      else
+        # Change admin password
+        echo "[umami-setup] Changing admin password..."
+        curl -sf "$UMAMI_URL/api/me/password" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $TOKEN" \
+          -d "{\"currentPassword\":\"umami\",\"newPassword\":\"$ADMIN_PASSWORD\"}" >/dev/null
+
+        # Change admin username
+        echo "[umami-setup] Setting admin username to $ADMIN_USERNAME..."
+        curl -sf "$UMAMI_URL/api/me" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $TOKEN" \
+          -d "{\"username\":\"$ADMIN_USERNAME\"}" >/dev/null
+
+        # Re-login with new credentials
+        RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
+          -H "Content-Type: application/json" \
+          -d "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" 2>/dev/null || echo "")
+        TOKEN=$(echo "$RESP" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+        echo "[umami-setup] Admin credentials updated"
+      fi
+
+      # Check if website exists
+      SITES=$(curl -sf "$UMAMI_URL/api/websites" \
+        -H "Authorization: Bearer $TOKEN" 2>/dev/null || echo "")
+
+      if echo "$SITES" | grep -q "diegonmarcos.com"; then
+        echo "[umami-setup] Website diegonmarcos.com already exists"
+        SITE_ID=$(echo "$SITES" | sed -n 's/.*"websiteId":"\([^"]*\)".*"domain":"diegonmarcos.com".*/\1/p')
+        # Try alternative field order
+        [ -z "$SITE_ID" ] && SITE_ID=$(echo "$SITES" | sed -n 's/.*"domain":"diegonmarcos.com".*"websiteId":"\([^"]*\)".*/\1/p')
+      else
+        echo "[umami-setup] Creating website diegonmarcos.com..."
+        RESP=$(curl -sf "$UMAMI_URL/api/websites" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $TOKEN" \
+          -d '{"name":"Diego Portfolio","domain":"diegonmarcos.com"}' 2>/dev/null || echo "")
+        SITE_ID=$(echo "$RESP" | sed -n 's/.*"websiteId":"\([^"]*\)".*/\1/p')
+      fi
+
+      echo ""
+      echo "========================================="
+      echo "  Umami Setup Complete"
+      echo "  Login:      https://analytics.diegonmarcos.com/umami"
+      echo "  User:       $ADMIN_USERNAME"
+      echo "  Website ID: $SITE_ID"
+      echo "========================================="
     '';
 
 
@@ -184,6 +287,7 @@
       defaultPkg = pkgs.runCommand "umami-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkSetupScript pkgs} $out/setup.sh
       '';
     in {
       default = defaultPkg;
