@@ -32,7 +32,7 @@
           environment:
             MAIL_HOST: ${config.mail_host}
           ports:
-            - "10.0.0.6:3103:3103"
+            - "3103:3103"
     '';
 
   in {

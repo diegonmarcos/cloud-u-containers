@@ -34,7 +34,7 @@
             - c3-net
           ports:
             - "${toString config.port}:8080"
-            - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
+            - "${toString config.mcp_http_port}:${toString config.mcp_http_port}"
           environment:
             - PORT=8080
             - NODE_ENV=production

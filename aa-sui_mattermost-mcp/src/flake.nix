@@ -34,7 +34,7 @@
             MM_ADMIN_USERNAME: me@diegonmarcos.com
             CLAUDE_MODEL: opus
           ports:
-            - "10.0.0.6:3102:3102"
+            - "3102:3102"
     '';
 
   in {
