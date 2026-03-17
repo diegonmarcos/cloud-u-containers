@@ -94,10 +94,13 @@
           entrypoint: ["/bin/sh", "/setup/setup.sh"]
           volumes:
             - ./setup.sh:/setup/setup.sh:ro
+            - umami_config:/output
 
       volumes:
         umami_db_data:
           name: umami_db_data
+        umami_config:
+          name: umami_config
     '';
 
     mkSetupScript = pkgs: pkgs.writeText "setup.sh" ''
@@ -172,12 +175,17 @@
         SITE_ID=$(echo "$RESP" | sed -n 's/.*"websiteId":"\([^"]*\)".*/\1/p')
       fi
 
+      # Write SITE_ID to persistent volume for declarative retrieval
+      echo "$SITE_ID" > /output/site_id
+      echo "{\"umami_site_id\":\"$SITE_ID\",\"umami_url\":\"https://analytics.diegonmarcos.com/umami\"}" > /output/analytics.json
+
       echo ""
       echo "========================================="
       echo "  Umami Setup Complete"
       echo "  Login:      https://analytics.diegonmarcos.com/umami"
       echo "  User:       $ADMIN_USERNAME"
       echo "  Website ID: $SITE_ID"
+      echo "  Config:     /output/analytics.json"
       echo "========================================="
     '';
 
