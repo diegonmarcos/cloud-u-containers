@@ -585,24 +585,18 @@
 
       mcp.diegonmarcos.com {
     ${sec}
-        # C3 MCP — cloud-infra (oci-apps:3100)
+        # TEMPORARY: public MCP (no auth) for debugging Claude Code connection
         handle_path /c3-mcp/* {
-          ${mkProtectedCustom "${flex0}:3100" "flush_interval -1"}
+          reverse_proxy ${flex0}:3100 { flush_interval -1 }
         }
-
-        # C3 Services MCP — cloud-services (oci-apps:3101)
         handle_path /c3-services-mcp/* {
-          ${mkProtectedCustom "${flex0}:3101" "flush_interval -1"}
+          reverse_proxy ${flex0}:3101 { flush_interval -1 }
         }
-
-        # Mattermost MCP (oci-apps:3102 — to be deployed)
         handle_path /mattermost-mcp/* {
-          ${mkProtectedCustom "${flex0}:3102" "flush_interval -1"}
+          reverse_proxy ${flex0}:3102 { flush_interval -1 }
         }
-
-        # Mailu MCP (oci-apps:3103 — to be deployed)
         handle_path /mailu-mcp/* {
-          ${mkProtectedCustom "${flex0}:3103" "flush_interval -1"}
+          reverse_proxy ${flex0}:3103 { flush_interval -1 }
         }
 
         handle {
