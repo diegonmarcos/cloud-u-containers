@@ -125,6 +125,7 @@ reverse_proxy https://diegonmarcos.github.io {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -151,6 +152,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -174,6 +176,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -212,6 +215,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -247,6 +251,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -279,6 +284,7 @@ import security
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -372,6 +378,7 @@ import request_limits
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -476,10 +483,42 @@ import request_limits
       reverse_proxy 10.0.0.4:8080
     }
 
-    # Protected admin dashboard
+    # Umami Analytics (path-based, strip /umami prefix before proxying)
+    @umami_public {
+      path /umami/script.js /umami/api/send
+    }
+    handle @umami_public {
+      uri strip_prefix /umami
+      reverse_proxy 10.0.0.4:3000
+    }
+    handle_path /umami/* {
+      @umami_bearer header Authorization Bearer*
+      handle @umami_bearer {
+    forward_auth introspect-proxy:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+        reverse_proxy 10.0.0.4:3000
+      }
+      handle {
+    forward_auth authelia:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+        reverse_proxy 10.0.0.4:3000
+      }
+    }
+    @umami_root path /umami
+    handle @umami_root {
+      redir /umami/ permanent
+    }
+
+    # Protected Matomo admin dashboard (catch-all for non-umami, non-tracking)
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -526,6 +565,7 @@ reverse_proxy https://diegonmarcos.github.io {
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -567,6 +607,7 @@ reverse_proxy https://diegonmarcos.github.io {
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -605,6 +646,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -635,6 +677,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -665,6 +708,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -696,6 +740,7 @@ import request_limits
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -714,6 +759,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -732,6 +778,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -750,6 +797,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -768,6 +816,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -786,6 +835,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -804,6 +854,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -822,6 +873,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -840,6 +892,7 @@ forward_auth authelia:9091 {
         @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -874,6 +927,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -904,6 +958,7 @@ import request_limits
     @bearer header Authorization Bearer*
     handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -938,6 +993,7 @@ import request_limits
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -980,6 +1036,7 @@ forward_auth authelia:9091 {
     @authelia_jwt header_regexp Authorization "^Bearer eyJ"
     handle @authelia_jwt {
 forward_auth introspect-proxy:4182 {
+  method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
@@ -1013,100 +1070,18 @@ forward_auth authelia:9091 {
   mcp.diegonmarcos.com {
 import security
 import request_limits
-    # C3 MCP — cloud-infra (oci-apps:3100)
+    # TEMPORARY: public MCP (no auth) for debugging Claude Code connection
     handle_path /c3-mcp/* {
-        @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3100 {
-      flush_interval -1
+      reverse_proxy 10.0.0.6:3100 { flush_interval -1 }
     }
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3100 {
-      flush_interval -1
-    }
-  }
-
-    }
-
-    # C3 Services MCP — cloud-services (oci-apps:3101)
     handle_path /c3-services-mcp/* {
-        @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3101 {
-      flush_interval -1
+      reverse_proxy 10.0.0.6:3101 { flush_interval -1 }
     }
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3101 {
-      flush_interval -1
-    }
-  }
-
-    }
-
-    # Mattermost MCP (oci-apps:3102 — to be deployed)
     handle_path /mattermost-mcp/* {
-        @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3102 {
-      flush_interval -1
+      reverse_proxy 10.0.0.6:3102 { flush_interval -1 }
     }
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3102 {
-      flush_interval -1
-    }
-  }
-
-    }
-
-    # Mailu MCP (oci-apps:3103 — to be deployed)
     handle_path /mailu-mcp/* {
-        @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy:4182 {
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3103 {
-      flush_interval -1
-    }
-  }
-  handle {
-forward_auth authelia:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3103 {
-      flush_interval -1
-    }
-  }
-
+      reverse_proxy 10.0.0.6:3103 { flush_interval -1 }
     }
 
     handle {

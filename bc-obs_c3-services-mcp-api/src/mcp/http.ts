@@ -7,27 +7,29 @@ import { registerRegistryTools } from "./tools/registry.js";
 import { registerProxyTools } from "./tools/proxy.js";
 import { registerMatomoTools } from "./tools/matomo.js";
 import { registerSyncthingTools } from "./tools/syncthing.js";
-import { registerMailuTools } from "./tools/mailu.js";
 import { registerNtfyTools } from "./tools/ntfy.js";
 import { registerOllamaTools } from "./tools/ollama.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
+import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 
-function createMcpServer(): McpServer {
+async function createMcpServer(): Promise<McpServer> {
   const server = new McpServer({
     name: "c3-services",
-    version: "1.0.0",
+    version: "1.1.0",
   });
 
   registerRegistryTools(server);
   registerProxyTools(server);
   registerMatomoTools(server);
   registerSyncthingTools(server);
-  registerMailuTools(server);
   registerNtfyTools(server);
   registerOllamaTools(server);
   registerRadicaleTools(server);
+
+  // Proxy tools from child MCPs (mattermost-mcp, mailu-mcp)
+  await registerProxiedTools(server);
 
   return server;
 }
@@ -55,7 +57,7 @@ async function handleMcpRequest(
       sessionIdGenerator: () => randomUUID(),
     });
 
-    const server = createMcpServer();
+    const server = await createMcpServer();
     await server.connect(transport);
 
     // handleRequest must run first — it generates the sessionId
