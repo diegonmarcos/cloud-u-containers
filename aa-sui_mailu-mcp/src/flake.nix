@@ -11,7 +11,7 @@
     config = {
       container_name = "mailu-mcp";
       image = "mailu-mcp:latest";
-      mail_host = "10.0.0.3";
+      mail_host = "mail.diegonmarcos.com";
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
