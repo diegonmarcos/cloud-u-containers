@@ -1,0 +1,13 @@
+{
+  "name": "google-workspace-mcp",
+  "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
+  "category": "app",
+  "docker": {
+    "image": "google-workspace-mcp",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/google-workspace-mcp"
+  }
+}
