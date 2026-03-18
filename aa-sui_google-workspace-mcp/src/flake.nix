@@ -40,7 +40,7 @@
           networks:
             - c3-net
           ports:
-            - "${toString config.port}:${toString config.internal_port}"
+            - "10.0.0.6:${toString config.port}:${toString config.internal_port}"
           volumes:
             - google-workspace-data:/app/credentials
           healthcheck:
