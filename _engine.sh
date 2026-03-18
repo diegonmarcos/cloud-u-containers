@@ -476,8 +476,10 @@ step_compose() {
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d --build"
     else
-        # Standard: down + up with force-recreate (--build rebuilds Dockerfile-based services)
+        # Standard: pull first (while old containers run), then down + up (instant, no pulling)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
+        log "Pulling images on $DEPLOY_HOST (old containers keep running)"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG pull --ignore-buildable 2>/dev/null" || true
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate --build $EXTRA_FLAGS"
     fi
