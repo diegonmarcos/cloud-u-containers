@@ -47,15 +47,21 @@
 
       services:
         resolver:
-          image: ghcr.io/mailu/unbound:2024.06
+          image: ghcr.io/mailu/unbound:2024.06.48
           env_file: mailu.env
           restart: always
+          healthcheck:
+            test: ["CMD", "dig", "+short", "@127.0.0.1", "google.com"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
           networks:
             default:
               ipv4_address: 172.16.203.254
 
         front:
-          image: ghcr.io/mailu/nginx:2024.06
+          image: ghcr.io/mailu/nginx:2024.06.48
           env_file: mailu.env
           restart: always
           ports:
@@ -68,59 +74,68 @@
             - "./certs:/certs"
             - "./overrides/nginx:/overrides:ro"
           depends_on:
-            - resolver
+            resolver:
+              condition: service_healthy
           dns:
             - 172.16.203.254
 
         admin:
-          image: ghcr.io/mailu/admin:2024.06
+          image: ghcr.io/mailu/admin:2024.06.48
           env_file: mailu.env
           restart: always
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
           depends_on:
-            - resolver
-            - redis
+            resolver:
+              condition: service_healthy
+            redis:
+              condition: service_started
           dns:
             - 172.16.203.254
 
         imap:
-          image: ghcr.io/mailu/dovecot:2024.06
+          image: ghcr.io/mailu/dovecot:2024.06.48
           env_file: mailu.env
           restart: always
           volumes:
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
           depends_on:
-            - resolver
-            - front
+            resolver:
+              condition: service_healthy
+            front:
+              condition: service_started
           dns:
             - 172.16.203.254
 
         smtp:
-          image: ghcr.io/mailu/postfix:2024.06
+          image: ghcr.io/mailu/postfix:2024.06.48
           env_file: mailu.env
           restart: always
           volumes:
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
           depends_on:
-            - resolver
-            - front
+            resolver:
+              condition: service_healthy
+            front:
+              condition: service_started
           dns:
             - 172.16.203.254
 
         antispam:
-          image: ghcr.io/mailu/rspamd:2024.06
+          image: ghcr.io/mailu/rspamd:2024.06.48
           env_file: mailu.env
           restart: always
           volumes:
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
           depends_on:
-            - resolver
-            - front
+            resolver:
+              condition: service_healthy
+            front:
+              condition: service_started
           dns:
             - 172.16.203.254
 
@@ -131,16 +146,19 @@
             - "./redis:/data"
 
         webmail:
-          image: ghcr.io/mailu/webmail:2024.06
+          image: ghcr.io/mailu/webmail:2024.06.48
           env_file: mailu.env
           restart: always
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
           depends_on:
-            - resolver
-            - front
-            - imap
+            resolver:
+              condition: service_healthy
+            front:
+              condition: service_started
+            imap:
+              condition: service_started
           dns:
             - 172.16.203.254
 
