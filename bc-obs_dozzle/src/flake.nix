@@ -30,7 +30,7 @@
           container_name: ${config.container_name}
           restart: unless-stopped
           ports:
-            - "${toString config.port}:8080"
+            - "10.0.0.1:${toString config.port}:8080"
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
           environment:
