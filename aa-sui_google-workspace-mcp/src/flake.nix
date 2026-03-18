@@ -28,29 +28,23 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          env_file:
-            - .secrets
           environment:
             WORKSPACE_MCP_HOST: "0.0.0.0"
             WORKSPACE_MCP_PORT: "${toString config.internal_port}"
-            WORKSPACE_EXTERNAL_URL: "https://mcp.diegonmarcos.com/g-workspace"
-            GOOGLE_OAUTH_REDIRECT_URI: "https://mcp.diegonmarcos.com/g-workspace/oauth2callback"
             USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
+            GOOGLE_SERVICE_ACCOUNT_KEY_PATH: "/run/secrets/service-account-key.json"
           networks:
             - c3-net
           ports:
             - "10.0.0.6:${toString config.port}:${toString config.internal_port}"
           volumes:
-            - google-workspace-data:/app/credentials
+            - ./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:${toString config.internal_port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3
             start_period: 15s
-
-      volumes:
-        google-workspace-data:
 
       networks:
         c3-net:
