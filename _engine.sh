@@ -330,8 +330,8 @@ step_secrets() {
         printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
         chmod 600 "$DIST_DIR/.secrets.d/$key"
         # .secrets — KEY=VALUE (skip multiline values — they break env_file parsing)
-        line_count=$(printf '%s\n' "$val" | wc -l)
-        if [ "$line_count" -gt 1 ]; then
+        line_count=$(printf '%s' "$val" | wc -l)
+        if [ "$line_count" -gt 0 ]; then
             log "  $key: multiline — .secrets.d only"
         else
             printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets"
