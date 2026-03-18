@@ -46,69 +46,11 @@
       "6" = "oci-apps";
     };
 
-    # ── Zone file generators ───────────────────────────────────────────
-    # Hickory serves .internal zone only. All public domains forward to Cloudflare.
-
-    mkForwardZone = pkgs: let
-      records = builtins.concatStringsSep "\n" (
-        nixpkgs.lib.mapAttrsToList (name: svc:
-          "${name}          IN  A     ${svc.ip}    ; ${svc.desc}"
-        ) services
-      );
-    in pkgs.writeText "internal.zone" ''
-      $TTL 3600
-      @   IN  SOA   dns.internal. admin.internal. (
-                    2026021601  ; serial (YYYYMMDDNN)
-                    3600        ; refresh
-                    900         ; retry
-                    604800      ; expire
-                    300 )       ; negative cache TTL
-
-          IN  NS    dns.internal.
-
-      ; ── Service A records ──
-      ${records}
-
-      ; ── Wildcard (unmatched → Caddy) ──
-      *            IN  A     10.0.0.1
-    '';
-
-    mkReverseZone = pkgs: let
-      ptrRecords = builtins.concatStringsSep "\n" (
-        nixpkgs.lib.mapAttrsToList (octet: hostname:
-          "${octet}    IN  PTR   ${hostname}.internal."
-        ) vms
-      );
-    in pkgs.writeText "0.0.10.in-addr.arpa.zone" ''
-      $TTL 3600
-      @   IN  SOA   dns.internal. admin.internal. (
-                    2026021601  ; serial
-                    3600        ; refresh
-                    900         ; retry
-                    604800      ; expire
-                    300 )       ; negative cache TTL
-
-          IN  NS    dns.internal.
-
-      ; ── PTR records ──
-      ${ptrRecords}
-    '';
-
     # ── Hickory DNS named.toml ─────────────────────────────────────────
+    # Pure forwarder — NO local zones. ALL queries go to Cloudflare/Google.
     mkNamedToml = pkgs: pkgs.writeText "named.toml" ''
       listen_addrs_ipv4 = ["0.0.0.0"]
       listen_port = 53
-      directory = "/var/named"
-
-      [[zones]]
-      zone = "internal"
-      zone_type = "Primary"
-      file = "internal.zone"
-
-      [[zones]]
-      zone = "0.0.10.in-addr.arpa"
-      zone_type = "Primary"
-      file = "0.0.10.in-addr.arpa.zone"
 
       [[zones]]
       zone = "."
@@ -147,7 +89,6 @@
             - "10.0.0.1:53:53/udp"
           volumes:
             - ./config/named.toml:/etc/named.toml:ro
-            - ./zones:/var/named:ro
           dns:
             - 1.1.1.1
             - 8.8.8.8
@@ -261,11 +202,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "hickory-dns-configs" {} ''
-        mkdir -p $out/config $out/zones
+        mkdir -p $out/config
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkNamedToml pkgs} $out/config/named.toml
-        cp ${mkForwardZone pkgs} $out/zones/internal.zone
-        cp ${mkReverseZone pkgs} $out/zones/0.0.10.in-addr.arpa.zone
       '';
     in {
       default = defaultPkg;
