@@ -399,7 +399,7 @@ step_deploy() {
 
     # 4. Additive rsync (NO --delete) — adds/updates files, never removes
     if command -v rsync >/dev/null 2>&1; then
-        eval rsync -avz $RSYNC_EXCLUDES '"$DIST_DIR/"' '"$DEPLOY_HOST:$DEPLOY_PATH/"'
+        eval rsync -az --compress-level=9 --checksum --partial --inplace --exclude='docs/' $RSYNC_EXCLUDES '"$DIST_DIR/"' '"$DEPLOY_HOST:$DEPLOY_PATH/"'
     elif command -v rclone >/dev/null 2>&1; then
         rclone copy "$DIST_DIR/" ":sftp:$DEPLOY_PATH/" \
             --sftp-host="$(ssh -G "$DEPLOY_HOST" | grep '^hostname ' | awk '{print $2}')" \
@@ -817,7 +817,12 @@ case "${1:-all}" in
         step_secrets
         # Skip deploy+compose if dist/ output is unchanged since last ship
         NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
-        OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
+        # Read hash from VM (persists across ephemeral GHA runners)
+        if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
+            OLD_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat '$DEPLOY_PATH/.dist-hash' 2>/dev/null" 2>/dev/null || true)
+        else
+            OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
+        fi
         if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ]; then
             log "Config unchanged — skipping deploy+compose"
         elif [ "$WRANGLER_DEPLOY" = "true" ]; then
@@ -829,7 +834,11 @@ case "${1:-all}" in
         else
             step_deploy
             step_compose
+            # Write hash to both local and VM (VM hash survives ephemeral runners)
             echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
+            if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
+                ssh $SSH_OPTS "$DEPLOY_HOST" "echo '$NEW_HASH' > '$DEPLOY_PATH/.dist-hash'" 2>/dev/null || true
+            fi
         fi
         ;;
     wrangler) step_wrangler ;;
