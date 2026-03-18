@@ -1,0 +1,165 @@
+/**
+ * Knowledge retrieval tools — on-demand context from config, topology, service specs.
+ * Acts as a lightweight RAG layer for cloud infrastructure knowledge.
+ */
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+import { getConfig, getVmSshAlias } from "../config.js";
+
+function getSolutionsDir(): string {
+  const configPath = process.env.CONFIG_PATH;
+  if (!configPath) return "";
+  // config.json is at repo root, solutions at a_solutions/
+  return join(configPath, "..", "a_solutions");
+}
+
+const CATEGORY_PREFIX: Record<string, string> = {
+  app: "aa-sui_", mic: "ab-mic_", fin: "ac-fin_", agi: "ad-agi_",
+  cloud: "ba-clo_", sec: "bb-sec_", tools: "bc-obs_", data: "ca-dat_",
+};
+
+export function registerKnowledgeTools(server: McpServer) {
+
+  // ── Service spec lookup ─────────────────────────────────────────────
+  server.tool(
+    "knowledge_service_spec",
+    "Get a service's build.json config + flake.nix header. Use when you need to understand a specific service before modifying or debugging it.",
+    { name: z.string().describe("Service name (e.g. 'caddy', 'mailu', 'c3-infra-mcp-api')") },
+    async ({ name }) => {
+      const config = getConfig();
+      const svc = config.services[name];
+      const solDir = getSolutionsDir();
+
+      // Find the folder — try direct match, then prefix+name
+      let folder = "";
+      if (svc?.folder) {
+        folder = svc.folder;
+      } else {
+        const prefix = svc ? (CATEGORY_PREFIX[svc.category] ?? "") : "";
+        const candidate = `${prefix}${svc?.flake ?? name}`;
+        if (existsSync(join(solDir, candidate))) {
+          folder = candidate;
+        } else {
+          // Scan for matching build.json
+          try {
+            const { readdirSync } = await import("fs");
+            for (const d of readdirSync(solDir, { withFileTypes: true })) {
+              if (!d.isDirectory()) continue;
+              const bjPath = join(solDir, d.name, "build.json");
+              if (!existsSync(bjPath)) continue;
+              try {
+                const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+                if (bj.name === name) { folder = d.name; break; }
+              } catch { continue; }
+            }
+          } catch { /* no-op */ }
+        }
+      }
+
+      if (!folder) {
+        return { content: [{ type: "text" as const, text: `Service "${name}" not found in config or on disk.` }] };
+      }
+
+      const parts: string[] = [`# Service: ${name}\n`];
+
+      // build.json
+      const bjPath = join(solDir, folder, "build.json");
+      if (existsSync(bjPath)) {
+        parts.push(`## build.json\n\`\`\`json\n${readFileSync(bjPath, "utf-8")}\`\`\`\n`);
+      }
+
+      // Config entry
+      if (svc) {
+        parts.push(`## Topology\n- **VM**: ${svc.vm} (${getVmSshAlias(svc.vm)})\n- **Category**: ${svc.category}\n- **Domain**: ${svc.domain ?? "none"}\n- **Containers**: ${svc.containers?.join(", ") ?? "auto"}\n`);
+      }
+
+      // flake.nix header (first 30 lines — config block)
+      const flakePath = join(solDir, folder, "src", "flake.nix");
+      if (existsSync(flakePath)) {
+        const lines = readFileSync(flakePath, "utf-8").split("\n").slice(0, 30);
+        parts.push(`## flake.nix (config)\n\`\`\`nix\n${lines.join("\n")}\n\`\`\`\n`);
+      }
+
+      return { content: [{ type: "text" as const, text: parts.join("\n") }] };
+    }
+  );
+
+  // ── VM info lookup ──────────────────────────────────────────────────
+  server.tool(
+    "knowledge_vm_info",
+    "Get details about a specific VM — IP, services running on it, SSH alias. Use before VM-specific operations.",
+    { vm: z.string().describe("VM ID (e.g. 'oci-A1-f_0') or SSH alias (e.g. 'oci-apps')") },
+    async ({ vm }) => {
+      const config = getConfig();
+
+      // Resolve alias to VM ID
+      let vmId = vm;
+      if (!config.vms[vm]) {
+        for (const [id, v] of Object.entries(config.vms)) {
+          if (v.ssh_alias === vm || getVmSshAlias(id) === vm) {
+            vmId = id;
+            break;
+          }
+        }
+      }
+
+      const vmConfig = config.vms[vmId];
+      if (!vmConfig) {
+        return { content: [{ type: "text" as const, text: `VM "${vm}" not found.` }] };
+      }
+
+      const services = Object.entries(config.services)
+        .filter(([, s]) => s.vm === vmId)
+        .map(([name, s]) => `- **${name}** (${s.category}) — ${s.domain ?? "no domain"}`)
+        .join("\n");
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `# VM: ${vmId} (${getVmSshAlias(vmId)})
+
+- **IP**: ${vmConfig.ip}
+- **WireGuard**: ${vmConfig.wg_ip ?? "n/a"}
+- **User**: ${vmConfig.user}
+- **Description**: ${vmConfig.description ?? ""}
+- **SSH**: \`ssh ${getVmSshAlias(vmId)}\`
+
+## Services on this VM
+${services || "No services declared."}`,
+        }],
+      };
+    }
+  );
+
+  // ── Service list by category ────────────────────────────────────────
+  server.tool(
+    "knowledge_services_by_category",
+    "List all services grouped by category with VM and domain info. Quick overview of the entire infrastructure.",
+    {},
+    async () => {
+      const config = getConfig();
+      const categories = new Map<string, string[]>();
+
+      for (const [name, svc] of Object.entries(config.services)) {
+        const cat = svc.category;
+        if (!categories.has(cat)) categories.set(cat, []);
+        const domain = svc.domain ? ` → ${svc.domain}` : "";
+        categories.get(cat)!.push(`${name} (${getVmSshAlias(svc.vm)})${domain}`);
+      }
+
+      const text = [...categories.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([cat, svcs]) => `## ${cat}\n${svcs.map(s => `- ${s}`).join("\n")}`)
+        .join("\n\n");
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `# Services (${Object.keys(config.services).length})\n\n${text}`,
+        }],
+      };
+    }
+  );
+}
