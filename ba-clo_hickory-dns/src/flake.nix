@@ -47,6 +47,27 @@
     };
 
     # ── Zone file generators ───────────────────────────────────────────
+
+    # Public domain zone — WG clients resolve diegonmarcos.com subdomains
+    # directly to Caddy WG IP (10.0.0.1), bypassing external DNS + public IP.
+    # Caddy is the routing source of truth — Hickory just points to it.
+    mkPublicZone = pkgs: pkgs.writeText "diegonmarcos.com.zone" ''
+      $TTL 300
+      @   IN  SOA   dns.internal. admin.diegonmarcos.com. (
+                    2026031801  ; serial (YYYYMMDDNN)
+                    3600        ; refresh
+                    900         ; retry
+                    604800      ; expire
+                    300 )       ; negative cache TTL
+
+          IN  NS    dns.internal.
+
+      ; All subdomains → Caddy on gcp-proxy (WG IP)
+      ; Caddy Caddyfile + L4 config determines final routing
+      @            IN  A     10.0.0.1
+      *            IN  A     10.0.0.1
+    '';
+
     mkForwardZone = pkgs: let
       records = builtins.concatStringsSep "\n" (
         nixpkgs.lib.mapAttrsToList (name: svc:
@@ -97,6 +118,11 @@
       listen_addrs_ipv4 = ["0.0.0.0"]
       listen_port = 53
       directory = "/var/named"
+
+      [[zones]]
+      zone = "diegonmarcos.com"
+      zone_type = "Primary"
+      file = "diegonmarcos.com.zone"
 
       [[zones]]
       zone = "internal"
@@ -258,6 +284,7 @@
         mkdir -p $out/config $out/zones
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkNamedToml pkgs} $out/config/named.toml
+        cp ${mkPublicZone pkgs} $out/zones/diegonmarcos.com.zone
         cp ${mkForwardZone pkgs} $out/zones/internal.zone
         cp ${mkReverseZone pkgs} $out/zones/0.0.10.in-addr.arpa.zone
       '';
