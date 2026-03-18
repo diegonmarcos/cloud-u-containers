@@ -3,13 +3,13 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
-    curl git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
 
-# Clone the repo (pinned to main — update hash to pin a release)
-RUN git clone --depth 1 https://github.com/taylorwilsdon/google_workspace_mcp.git .
+# Vendored source (no git clone at build time)
+COPY app/ .
 
 # Install dependencies
 RUN uv sync --frozen --no-dev --extra disk
