@@ -605,8 +605,13 @@
             flush_interval -1
           }
         }
+        handle_path /g-workspace/* {
+          reverse_proxy ${flex0}:3104 {
+            flush_interval -1
+          }
+        }
         handle {
-          respond "MCP Hub — use /c3-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp" 200
+          respond "MCP Hub — use /c3-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp, /g-workspace/mcp" 200
         }
         ${handleErrors}
       }
