@@ -157,7 +157,7 @@
     mkMailuEnvTpl = pkgs: pkgs.writeText "mailu.env.tpl" ''
       # Mailu main configuration file
       DOMAIN=${config.domain}
-      HOSTNAMES=imap.${config.domain},smtp.${config.domain}
+      HOSTNAMES=${config.mail_domain},imap.${config.domain},smtp.${config.domain}
       POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
