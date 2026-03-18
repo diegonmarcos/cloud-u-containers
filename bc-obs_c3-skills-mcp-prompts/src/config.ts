@@ -3,6 +3,7 @@
  * Reads config.json directly via CONFIG_PATH env var.
  */
 import { readFileSync } from "fs";
+import { join } from "path";
 
 export interface VmConfig {
   ip: string;
@@ -42,6 +43,12 @@ function getConfigPath(): string {
   const p = process.env.CONFIG_PATH;
   if (!p) throw new Error("CONFIG_PATH env var not set — point it at ~/git/cloud/config.json");
   return p;
+}
+
+export function getRepoRoot(): string {
+  const configPath = getConfigPath();
+  // config.json is at repo root
+  return join(configPath, "..");
 }
 
 export function getConfig(): InfraConfig {

@@ -1,6 +1,6 @@
 /**
  * Skill tools — inject domain knowledge into Claude's context on-demand.
- * Claude calls these when it needs context for a specific domain.
+ * These are the "persona" tools: Claude calls them to understand HOW to work.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -17,7 +17,7 @@ export function registerSkillTools(server: McpServer) {
       const config = getConfig();
 
       const vmTable = Object.entries(config.vms)
-        .map(([id, vm]) => `| ${id} | ${getVmSshAlias(id)} | ${vm.ip} | ${vm.user} | ${vm.description ?? ""} |`)
+        .map(([id, vm]) => `| ${id} | ${getVmSshAlias(id)} | ${vm.ip} | ${vm.wg_ip ?? ""} | ${vm.user} | ${vm.description ?? ""} |`)
         .join("\n");
 
       const categories = new Map<string, string[]>();
@@ -37,8 +37,8 @@ export function registerSkillTools(server: McpServer) {
 
 ## VMs (${Object.keys(config.vms).length})
 
-| VM ID | Alias | IP | User | Description |
-|-------|-------|----|------|-------------|
+| VM ID | Alias | IP | WG IP | User | Description |
+|-------|-------|----|-------|------|-------------|
 ${vmTable}
 
 ## Services (${Object.keys(config.services).length})
@@ -114,14 +114,14 @@ ${serviceList}
 
 ### TypeScript (Strict Mode)
 - No \`any\`, handle \`null\`/\`undefined\` explicitly
-- DOM: cast elements, check null (\`querySelector\` returns \`Element | null\`)
+- DOM: cast elements, check null
 - ES Modules: \`import\`/\`export\`, no CommonJS
 
 ### Svelte 5 (Runes Mode) — CRITICAL
 \`\`\`typescript
-let { propName }: { propName: Type } = $props();  // Props
-let count = $state(0);                             // State
-let doubled = $derived(count * 2);                 // Computed
+let { propName }: { propName: Type } = $props();
+let count = $state(0);
+let doubled = $derived(count * 2);
 // Events: standard HTML (onclick, not on:click)
 \`\`\`
 
@@ -134,34 +134,20 @@ const user = ref<User | null>(null);
 
 ### SCSS (ITCSS)
 \`\`\`scss
-@include mq(sm|md|lg|xl)                // Breakpoints
-@include flex-center;                    // Center anything
-@include flex-row(justify, align, gap);  // Row layout
-@include grid-auto-fit(min-size, gap);   // Auto grid
+@include mq(sm|md|lg|xl)
+@include flex-center;
+@include flex-row(justify, align, gap);
+@include grid-auto-fit(min-size, gap);
 \`\`\`
 
 ### CRITICAL Rules
 - **NEVER** use \`style=""\` inline CSS — ALL styling via SCSS classes
-- Semantic HTML: <header>, <nav>, <main>, <section>, <article>, <footer>
+- Semantic HTML: header, nav, main, section, article, footer
 - <a> for navigation, <button> for actions
 - All <img> need alt, inputs need <label>
 
 ### Matomo (required in every HTML <head>)
-\`\`\`html
-<script>
-var _mtm = window._mtm = window._mtm || [];
-_mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
-(function() {
-  var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-  g.async=true; g.src='https://analytics.diegonmarcos.com/js/container_odwLIyPV.js';
-  s.parentNode.insertBefore(g,s);
-})();
-</script>
-\`\`\`
-
-## MCP Tools
-- front_list_projects, front_get_project, front_build, front_dev_server, front_deploy
-- read_file / search_repos — read source files across repos`,
+Include the container_odwLIyPV.js tag manager snippet from analytics.diegonmarcos.com.`,
       }],
     })
   );
@@ -185,45 +171,24 @@ _mtm.push({'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start'});
 ## VMs: ${vmAliases}
 
 ## Debug Workflow
-
-### Step 1: Observe
-health_status → full dashboard (declared vs deployed, drift detection)
-
-### Step 2: Identify
-profile_container → CPU, memory, network, disk, ports, health, processes
-docker_ps (add all=true for stopped containers)
-
-### Step 3: Investigate
-docker_logs (use since='1h' or since='30m')
-ssh_exec → journalctl, nft, systemctl
-read_file → inspect config files in repos
-
-### Step 4: Act
-container_restart → single container
-service_start / service_stop → lifecycle via C3 API
-docker_compose_up → recreate all from compose file
-docker_control → direct SSH (when API is down)
-
-### Step 5: Deploy Fix
-build_ship → full pipeline: build → secrets → deploy → compose
+1. **Observe**: health_status → full dashboard
+2. **Identify**: profile_container → CPU/mem/net/disk/ports
+3. **Investigate**: docker_logs (since='1h'), ssh_exec, read_file
+4. **Act**: container_restart, service_start/stop, docker_compose_up
+5. **Deploy Fix**: build_ship → build → secrets → deploy → compose
 
 ## Common Issues
 
 ### Container not starting
-1. docker_logs — config/permission errors
-2. docker_ps all=true — exit code
-3. profile_container — port conflicts, resource usage
+docker_logs → docker_ps all=true → profile_container
 
 ### Service unreachable
-1. health_status — running? drift?
-2. check_vm — reachable? memory/disk?
-3. ssh_exec: nft list ruleset — firewall
-4. ssh_exec: wg show — WireGuard tunnel
+health_status → check_vm → ssh_exec: nft list ruleset → wg show
 
-### WireGuard gotchas
+### WireGuard
 - /etc/wireguard/ is 700 root:root — need sudo
-- Docker nftables DNAT handles wg0 traffic (Docker 29+)
-- nft list ruleset > iptables -S (may miss raw table)
+- Docker nftables DNAT handles wg0 (Docker 29+)
+- nft list ruleset > iptables -S
 
 ### Mailu/SMTP
 - Port 587 disabled, use 465 (implicit TLS)
@@ -231,15 +196,9 @@ build_ship → full pipeline: build → secrets → deploy → compose
 - TLS server_name must match cert SAN
 
 ### Memory (1GB VMs)
-- Nix evaluation needs 2-3GB swap
+- Nix eval needs 2-3GB swap
 - nix-store --verify --repair for corruption
-- Docker build: --jobs 1, lto = false
-
-## Principles
-1. OBSERVE before ACTING
-2. Check VM reachability before SSH
-3. Read configs/logs before changes
-4. Never expose secrets`,
+- Docker build: --jobs 1, lto = false`,
         }],
       };
     }
@@ -255,30 +214,22 @@ build_ship → full pipeline: build → secrets → deploy → compose
         type: "text" as const,
         text: `# Crawlee Cloud Scraping Context
 
-## Setup
-- Hosted on oci-apps, proxied via api.diegonmarcos.com/crawlee/
-- Actors are pre-configured scraping templates (Cheerio, Playwright, etc.)
-
 ## Workflow
 1. crawlee_list_actors → get actor IDs
-2. crawlee_run_actor (actorId, input JSON) → returns runId
-3. crawlee_get_run (runId) → poll status (READY, RUNNING, SUCCEEDED, FAILED)
+2. crawlee_run_actor (actorId, input JSON) → runId
+3. crawlee_get_run (runId) → poll status
 4. crawlee_get_results (runId) → scraped items
 5. crawlee_abort_run (runId) → stop if needed
 
 ## Input Schema
 \`\`\`json
-{
-  "startUrls": [{ "url": "https://example.com" }],
-  "maxCrawlPages": 100,
-  "maxConcurrency": 5
-}
+{ "startUrls": [{ "url": "..." }], "maxCrawlPages": 100, "maxConcurrency": 5 }
 \`\`\`
 
 ## Tips
-- Always check actor list first — don't guess IDs
-- Start with low maxCrawlPages for testing
-- Check logs immediately if a run fails`,
+- Always list actors first — don't guess IDs
+- Start with low maxCrawlPages
+- Check logs on failure`,
       }],
     })
   );
