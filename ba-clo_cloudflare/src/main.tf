@@ -288,7 +288,7 @@ resource "cloudflare_record" "mail" {
   content = "35.226.147.64"
   proxied = false
   ttl     = 300
-  comment = "Mailu webmail via Caddy → oci-mail"
+  comment = "Mailu — webmail (HTTPS) + IMAP (993) + SMTP (465) via Caddy L4 → oci-mail"
 }
 
 resource "cloudflare_record" "smtp" {
