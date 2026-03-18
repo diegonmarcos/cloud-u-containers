@@ -681,6 +681,45 @@ step_terraform() {
         return 1
     fi
 
+    # Export env vars from build.json terraform.env
+    # Two modes: terraform.env = {VAR: "~/path"} → export VAR=expanded_path (credential files)
+    #            terraform.env_content = {VAR: "~/path"} → export VAR=$(cat expanded_path) (file content as value)
+    if [ -f "$CONFIG" ]; then
+        for _section in env env_content; do
+            _tf_env=""
+            if command -v node >/dev/null 2>&1; then
+                _tf_env=$(node -e "
+                    const c=require('$CONFIG');
+                    const e=c.terraform&&c.terraform['$_section']||{};
+                    Object.entries(e).forEach(([k,v])=>console.log(k+'='+v.replace(/^~/,'$HOME')))
+                " 2>/dev/null || true)
+            elif command -v python3 >/dev/null 2>&1; then
+                _tf_env=$(python3 -c "
+import json,os
+c=json.load(open('$CONFIG'))
+e=c.get('terraform',{}).get('$_section',{})
+for k,v in e.items(): print(f'{k}={v.replace(chr(126),os.environ[\"HOME\"])}')
+                " 2>/dev/null || true)
+            fi
+            for _line in $_tf_env; do
+                _key="${_line%%=*}"
+                _val="${_line#*=}"
+                if [ -z "$_key" ] || [ -z "$_val" ]; then continue; fi
+                if [ ! -f "$_val" ]; then
+                    log_warn "Terraform $_section file not found: $_val ($_key)"
+                    continue
+                fi
+                if [ "$_section" = "env_content" ]; then
+                    export "$_key=$(cat "$_val")"
+                    log "Terraform env (content): $_key ← $_val"
+                else
+                    export "$_key=$_val"
+                    log "Terraform env: $_key → $_val"
+                fi
+            done
+        done
+    fi
+
     # Generate terraform.tfvars from template + secrets (if template exists)
     TFVARS_TEMPLATE="$SRC_DIR/${TERRAFORM_TFVARS_TEMPLATE:-terraform.tfvars.template}"
     if [ -f "$TFVARS_TEMPLATE" ] && [ -f "$DIST_DIR/.secrets" ]; then
