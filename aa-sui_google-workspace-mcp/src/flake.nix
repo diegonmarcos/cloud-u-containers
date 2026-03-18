@@ -33,10 +33,10 @@
           environment:
             WORKSPACE_MCP_HOST: "0.0.0.0"
             WORKSPACE_MCP_PORT: "${toString config.internal_port}"
-            WORKSPACE_EXTERNAL_URL: "https://mcp.diegonmarcos.com/google-workspace-mcp"
-            GOOGLE_OAUTH_REDIRECT_URI: "https://mcp.diegonmarcos.com/google-workspace-mcp/oauth2callback"
-            MCP_ENABLE_OAUTH21: "true"
-            WORKSPACE_MCP_STATELESS_MODE: "true"
+            WORKSPACE_EXTERNAL_URL: "http://10.0.0.6:${toString config.port}"
+            GOOGLE_OAUTH_REDIRECT_URI: "http://10.0.0.6:${toString config.port}/oauth2callback"
+            USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
+            OAUTHLIB_INSECURE_TRANSPORT: "1"
           networks:
             - c3-net
           ports:
