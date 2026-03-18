@@ -1,33 +1,58 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerSkillTools } from "./tools/skills.js";
-import { registerKnowledgeTools } from "./tools/knowledge.js";
-import { registerDataTools } from "./tools/data.js";
+import { registerSpecTools } from "./tools/specs.js";
 import { registerDocsTools } from "./tools/docs.js";
+import { registerSkillTools } from "./tools/skills.js";
+import { buildContextSummary } from "./context.js";
 
 const server = new McpServer({
-  name: "cloud-skills",
-  version: "3.0.0",
+  name: "cloud-specs-docs",
+  version: "4.0.0",
 });
 
-// 4 skill tools — domain personas (architect, frontend, debug, scraping)
-registerSkillTools(server);
+// ── Resources ─────────────────────────────────────────────────────────
+server.resource(
+  "context-compact",
+  "cloud://context/compact",
+  { description: "Compact infrastructure context (~10k tokens) — VM table, service table, architecture, tool index" },
+  async () => ({
+    contents: [{
+      uri: "cloud://context/compact",
+      mimeType: "text/markdown",
+      text: buildContextSummary("compact"),
+    }],
+  })
+);
 
-// 3 knowledge tools — service spec, VM info, category overview
-registerKnowledgeTools(server);
+server.resource(
+  "context-full",
+  "cloud://context/full",
+  { description: "Full infrastructure context (~50k tokens) — everything from compact + topology.md, configs.md, README, deps" },
+  async () => ({
+    contents: [{
+      uri: "cloud://context/full",
+      mimeType: "text/markdown",
+      text: buildContextSummary("full"),
+    }],
+  })
+);
 
-// 6 data tools — cloud-topology, cloud-configs, cloud-deps (JSON + MD), front-deps
-registerDataTools(server);
+// ── Tools ─────────────────────────────────────────────────────────────
+// A: Specs — 9 tools (topology, configs, deps, service spec, VM info, categories)
+registerSpecTools(server);
 
-// 3 docs tools — cloud-spec overview, service docs, README
+// B: Docs — 4 tools (overview, service docs, README, cloud_context)
 registerDocsTools(server);
 
-const log = (msg: string) => process.stderr.write(`[cloud-skills] ${msg}\n`);
+// C: Skills — 4 tools (architect, frontend, debug, scraping)
+registerSkillTools(server);
+
+const log = (msg: string) => process.stderr.write(`[cloud-specs-docs] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-skills MCP server v3.0.0 (16 tools: 4 skills, 3 knowledge, 6 data, 3 docs)...");
+  log("Starting cloud-specs-docs MCP server v4.0.0 (17 tools, 2 resources: 9 specs, 4 docs, 4 skills)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }

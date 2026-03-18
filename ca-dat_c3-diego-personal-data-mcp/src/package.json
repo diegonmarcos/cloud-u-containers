@@ -1,7 +1,7 @@
 {
-  "name": "c3-specs-docs-mcp",
-  "version": "4.0.0",
-  "description": "MCP stdio server — cloud specs, docs, and skills (17 tools, 2 resources)",
+  "name": "c3-diego-personal-data-mcp",
+  "version": "1.0.0",
+  "description": "MCP stdio server — Diego's personal data (READ-ONLY, redacted)",
   "type": "module",
   "scripts": {
     "start": "tsx index.ts"

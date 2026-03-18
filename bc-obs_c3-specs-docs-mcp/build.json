@@ -1,5 +1,5 @@
 {
-  "name": "c3-skills-mcp-prompts",
-  "description": "MCP prompts — cloud-architect, frontend-developer, debug-ops, crawlee-scraping",
+  "name": "c3-specs-docs-mcp",
+  "description": "MCP server — cloud specs (topology, configs, deps), docs (overview, service, README), skills (architect, frontend, debug, scraping)",
   "category": "obs"
 }

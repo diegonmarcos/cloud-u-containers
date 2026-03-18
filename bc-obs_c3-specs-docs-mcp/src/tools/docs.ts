@@ -1,5 +1,5 @@
 /**
- * Docs tools — expose cloud-spec documentation (cloud.diegonmarcos.com/docs).
+ * Docs tools — expose cloud-spec documentation + dynamic context summaries.
  * Reads the mdBook source files for service documentation.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -7,6 +7,7 @@ import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { getRepoRoot } from "../config.js";
+import { buildContextSummary } from "../context.js";
 
 function getCloudSpecDir(): string {
   return join(getRepoRoot(), "a_solutions", "bc-obs_cloud-spec");
@@ -110,5 +111,15 @@ export function registerDocsTools(server: McpServer) {
       }
       return { content: [{ type: "text" as const, text: readFileSync(readmePath, "utf-8") }] };
     }
+  );
+
+  // ── Cloud Context ─────────────────────────────────────────────────
+  server.tool(
+    "cloud_context",
+    "Get a dynamic infrastructure context summary. 'compact' (~10k tokens): VM table, services, architecture, tool index. 'full' (~50k tokens): everything + topology.md, configs.md, README, deps.",
+    { size: z.enum(["compact", "full"]).describe("Summary size: 'compact' or 'full'") },
+    async ({ size }) => ({
+      content: [{ type: "text" as const, text: buildContextSummary(size) }],
+    })
   );
 }
