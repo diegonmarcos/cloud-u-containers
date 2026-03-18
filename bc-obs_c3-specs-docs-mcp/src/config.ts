@@ -20,6 +20,7 @@ export interface ServiceConfig {
   domain?: string;
   description?: string;
   flake?: string;
+  folder?: string;
 }
 
 export interface InfraConfig {
