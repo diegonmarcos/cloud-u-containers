@@ -116,8 +116,20 @@ resource "cloudflare_record" "wildcard" {
 # DNS Records - Service Subdomains
 # All subdomains resolved by wildcard → gcp-proxy (Caddy is routing source of truth)
 # Individual A records REMOVED — wildcard catches everything.
-# Caddy Caddyfile defines which subdomain routes to which WG backend.
+# EXCEPTION: subdomains with existing MX/TXT records need explicit A records
+# because DNS wildcards don't apply to names that have ANY record type.
 # =============================================================================
+
+# mail subdomain has SES MAIL FROM MX + SPF TXT records → wildcard won't catch it
+resource "cloudflare_record" "mail" {
+  zone_id = var.cloudflare_zone_id
+  name    = "mail"
+  type    = "A"
+  content = "35.226.147.64"
+  proxied = false
+  ttl     = 300
+  comment = "Caddy L4: webmail+IMAP+SMTP (needs A, wildcard skips)"
+}
 
 resource "cloudflare_record" "smtp_proxy_tunnel" {
   zone_id = var.cloudflare_zone_id
