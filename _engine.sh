@@ -842,7 +842,7 @@ case "${1:-all}" in
         fi
         ;;
     wrangler) step_wrangler ;;
-    terraform) step_terraform ;;
+    terraform) step_build; step_secrets; step_terraform ;;
     tf-plan) shift; step_build; step_secrets; step_terraform_plan "$@" ;;
     redeploy) step_build; step_secrets; step_deploy; step_compose ;;
     clean)    rm -rf "$DIST_DIR" "$SERVICE_DIR/.result" "$SERVICE_DIR/.result-docs" "$SERVICE_DIR/.dist-hash"; log "Cleaned" ;;
