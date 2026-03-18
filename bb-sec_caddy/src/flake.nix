@@ -206,21 +206,24 @@
         debug
         admin localhost:${toString config.admin_port}
         order respond before handle
-      }
 
-      # ════════════════════════════════════════════════════════════
-      # L4 LISTENERS — TCP/TLS passthrough (Mail → oci-mail via WG)
-      # ════════════════════════════════════════════════════════════
-
-      :993 {
-        route {
-          proxy ${mail}:993
-        }
-      }
-
-      :465 {
-        route {
-          proxy ${mail}:465
+        layer4 {
+          # IMAPS — TLS passthrough to oci-mail via WireGuard
+          :993 {
+            route {
+              proxy {
+                upstream ${mail}:993
+              }
+            }
+          }
+          # SMTPS — TLS passthrough to oci-mail via WireGuard
+          :465 {
+            route {
+              proxy {
+                upstream ${mail}:465
+              }
+            }
+          }
         }
       }
 
