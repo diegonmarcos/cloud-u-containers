@@ -1166,7 +1166,7 @@ async def get_authenticated_google_service(
         log_user_email = user_google_email
 
         # Try to get email from credentials if needed for validation
-        if credentials and credentials.id_token:
+        if credentials and not is_service_account and getattr(credentials, "id_token", None):
             try:
                 # Decode without verification (just to get email for logging)
                 decoded_token = jwt.decode(
