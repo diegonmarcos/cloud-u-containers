@@ -38,7 +38,7 @@
             - photos_db_data:/var/lib/postgresql/data
             - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
           ports:
-            - "5432:5432"
+            - "10.0.0.6:5432:5432"
           networks:
             - photos_net
           restart: unless-stopped
@@ -64,7 +64,7 @@
             S3_BUCKET: photos
             WEBHOOK_PORT: 5001
           ports:
-            - "5001:5001"
+            - "10.0.0.6:5001:5001"
           depends_on:
             photos-db:
               condition: service_healthy

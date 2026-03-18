@@ -42,7 +42,7 @@
             - ./config:/config
           entrypoint: ["sh", "/config/init.sh"]
           ports:
-            - "${toString config.port}:9091"
+            - "10.0.0.1:${toString config.port}:9091"
           networks:
             - auth-net
             - npm_default

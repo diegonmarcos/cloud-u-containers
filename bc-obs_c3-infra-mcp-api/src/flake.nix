@@ -35,8 +35,8 @@
           networks:
             - c3-net
           ports:
-            - "${toString config.port}:8080"
-            - "${toString config.mcp_http_port}:${toString config.mcp_http_port}"
+            - "10.0.0.6:${toString config.port}:8080"
+            - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
           volumes:
             - /opt/ssh-keys/c3-infra-mcp-api:/root/.ssh:ro
             - /nix/store:/nix/store:ro
