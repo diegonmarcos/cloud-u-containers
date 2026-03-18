@@ -224,6 +224,14 @@
               }
             }
           }
+          # SMTP Submission (STARTTLS) — TCP passthrough to oci-mail via WireGuard
+          :587 {
+            route {
+              proxy {
+                upstream ${mail}:587
+              }
+            }
+          }
         }
       }
 
@@ -672,6 +680,7 @@
             - "${toString config.https_port}:443/udp"
             - "993:993"
             - "465:465"
+            - "587:587"
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - ./error.html:/srv/error.html:ro
