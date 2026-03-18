@@ -29,8 +29,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD sh -c 'curl -f http://localhost:${PORT:-8000}/health || exit 1'
 
-ENV TOOL_TIER=""
-ENV TOOLS=""
-
-ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["uv run main.py --transport streamable-http ${TOOL_TIER:+--tool-tier \"$TOOL_TIER\"} ${TOOLS:+--tools $TOOLS}"]
+CMD ["uv", "run", "main.py", "--transport", "streamable-http", "--tool-tier", "complete"]
