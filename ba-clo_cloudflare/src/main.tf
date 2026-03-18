@@ -113,203 +113,11 @@ resource "cloudflare_record" "wildcard" {
 }
 
 # =============================================================================
-# DNS Records - Service Subdomains (via GCP Caddy → WireGuard → target VM)
+# DNS Records - Service Subdomains
+# All subdomains resolved by wildcard → gcp-proxy (Caddy is routing source of truth)
+# Individual A records REMOVED — wildcard catches everything.
+# Caddy Caddyfile defines which subdomain routes to which WG backend.
 # =============================================================================
-
-resource "cloudflare_record" "auth" {
-  zone_id = var.cloudflare_zone_id
-  name    = "auth"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Authelia 2FA"
-}
-
-resource "cloudflare_record" "analytics" {
-  zone_id = var.cloudflare_zone_id
-  name    = "analytics"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Matomo Analytics via Caddy → oci-analytics"
-}
-
-resource "cloudflare_record" "photos" {
-  zone_id = var.cloudflare_zone_id
-  name    = "photos"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "PhotoPrism via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "cal" {
-  zone_id = var.cloudflare_zone_id
-  name    = "cal"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Radicale Calendar via Caddy → oci-mail"
-}
-
-resource "cloudflare_record" "ide" {
-  zone_id = var.cloudflare_zone_id
-  name    = "ide"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Code Server IDE via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "db" {
-  zone_id = var.cloudflare_zone_id
-  name    = "db"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "NocoDB via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "rss" {
-  zone_id = var.cloudflare_zone_id
-  name    = "rss"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Ntfy push notifications via Caddy on GCP"
-}
-
-resource "cloudflare_record" "proxy" {
-  zone_id = var.cloudflare_zone_id
-  name    = "proxy"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Caddy admin"
-}
-
-resource "cloudflare_record" "vault" {
-  zone_id = var.cloudflare_zone_id
-  name    = "vault"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Vaultwarden via Caddy on GCP"
-}
-
-resource "cloudflare_record" "drive_notes_affine" {
-  zone_id = var.cloudflare_zone_id
-  name    = "drive-notes-affine"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "AFFiNE workspace via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "suite" {
-  zone_id = var.cloudflare_zone_id
-  name    = "suite"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "linktree" {
-  zone_id = var.cloudflare_zone_id
-  name    = "linktree"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "cloud" {
-  zone_id = var.cloudflare_zone_id
-  name    = "cloud"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "nexus" {
-  zone_id = var.cloudflare_zone_id
-  name    = "nexus"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "api" {
-  zone_id = var.cloudflare_zone_id
-  name    = "api"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Flask + Rust API via Caddy on GCP"
-}
-
-# =============================================================================
-# DNS Records - Mattermost Chat
-# =============================================================================
-
-resource "cloudflare_record" "chat" {
-  zone_id = var.cloudflare_zone_id
-  name    = "chat"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Mattermost via Caddy → oci-apps"
-}
-
-# =============================================================================
-# DNS Records - Mail (direct to oci-mail - 130.110.251.193)
-# Cannot proxy SMTP ports through Cloudflare
-# =============================================================================
-
-resource "cloudflare_record" "mail" {
-  zone_id = var.cloudflare_zone_id
-  name    = "mail"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Mailu — webmail (HTTPS) + IMAP (993) + SMTP (465) via Caddy L4 → oci-mail"
-}
-
-resource "cloudflare_record" "smtp" {
-  zone_id = var.cloudflare_zone_id
-  name    = "smtp"
-  type    = "A"
-  content = "130.110.251.193"
-  proxied = false
-  ttl     = 300
-  comment = "SMTP direct to oci-mail - used in SPF + outbound SMTP client config"
-}
-
-resource "cloudflare_record" "imap" {
-  zone_id = var.cloudflare_zone_id
-  name    = "imap"
-  type    = "A"
-  content = "130.110.251.193"
-  proxied = false
-  ttl     = 300
-  comment = "IMAP direct to oci-mail"
-}
 
 resource "cloudflare_record" "smtp_proxy_tunnel" {
   zone_id = var.cloudflare_zone_id
@@ -382,14 +190,13 @@ resource "cloudflare_email_routing_rule" "me_to_worker" {
 # - include:_spf.mx.cloudflare.net          → authorizes CF Email Routing forwarding
 # - include:amazonses.com                   → authorizes AWS SES relay (primary)
 # - include:eu.rp.oracleemaildelivery.com   → authorizes OCI Email Delivery (fallback)
-# - a:smtp.diegonmarcos.com                 → authorizes direct Mailu outbound
 resource "cloudflare_record" "spf" {
   zone_id = var.cloudflare_zone_id
   name    = "diegonmarcos.com"
   type    = "TXT"
-  content = "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com a:smtp.diegonmarcos.com ~all"
+  content = "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com ~all"
   ttl     = 300
-  comment = "SPF: CF Email Routing + AWS SES (primary) + OCI relay (fallback) + Mailu."
+  comment = "SPF: CF Email Routing + AWS SES (primary) + OCI relay (fallback). Outbound via relays only."
 }
 
 # DMARC - reject emails failing SPF+DKIM (domain spoofing protection)

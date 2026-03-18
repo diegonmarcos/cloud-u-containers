@@ -166,7 +166,7 @@
           password: ''\${AUTHELIA_SMTP_PASSWORD}
           sender: "Authelia <no-reply@diegonmarcos.com>"
           tls:
-            server_name: smtp.diegonmarcos.com
+            server_name: mail.diegonmarcos.com
 
       webauthn:
         disable: false
