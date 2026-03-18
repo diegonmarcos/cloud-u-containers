@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerPrompts } from "./prompts/index.js";
+import { registerSkillTools } from "./tools/skills.js";
+import { registerKnowledgeTools } from "./tools/knowledge.js";
 
 const server = new McpServer({
   name: "cloud-skills",
-  version: "1.0.0",
+  version: "2.0.0",
 });
 
-registerPrompts(server);
+registerSkillTools(server);
+registerKnowledgeTools(server);
 
 const log = (msg: string) => process.stderr.write(`[cloud-skills] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-skills MCP server v1.0.0 (4 prompts)...");
+  log("Starting cloud-skills MCP server v2.0.0 (skill tools + knowledge retrieval)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
