@@ -35,6 +35,7 @@
             WORKSPACE_MCP_PORT: "${toString config.internal_port}"
             WORKSPACE_EXTERNAL_URL: "https://mcp.diegonmarcos.com/google-workspace-mcp"
             GOOGLE_OAUTH_REDIRECT_URI: "https://mcp.diegonmarcos.com/google-workspace-mcp/oauth2callback"
+            MCP_ENABLE_OAUTH21: "true"
             WORKSPACE_MCP_STATELESS_MODE: "true"
             TOOL_TIER: "full"
           networks:
