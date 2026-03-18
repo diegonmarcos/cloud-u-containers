@@ -22,8 +22,6 @@ RUN mkdir -p /app/store_creds \
     && chown -R app:app /app/store_creds \
     && chmod 755 /app/store_creds
 
-USER app
-
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
