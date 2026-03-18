@@ -47,7 +47,7 @@
 
       services:
         resolver:
-          image: ghcr.io/mailu/unbound:2024.06.48
+          image: ghcr.io/mailu/unbound:2024.06
           env_file: mailu.env
           restart: always
           healthcheck:
@@ -61,7 +61,7 @@
               ipv4_address: 172.16.203.254
 
         front:
-          image: ghcr.io/mailu/nginx:2024.06.48
+          image: ghcr.io/mailu/nginx:2024.06
           env_file: mailu.env
           restart: always
           ports:
@@ -80,7 +80,7 @@
             - 172.16.203.254
 
         admin:
-          image: ghcr.io/mailu/admin:2024.06.48
+          image: ghcr.io/mailu/admin:2024.06
           env_file: mailu.env
           restart: always
           volumes:
@@ -95,7 +95,7 @@
             - 172.16.203.254
 
         imap:
-          image: ghcr.io/mailu/dovecot:2024.06.48
+          image: ghcr.io/mailu/dovecot:2024.06
           env_file: mailu.env
           restart: always
           volumes:
@@ -110,7 +110,7 @@
             - 172.16.203.254
 
         smtp:
-          image: ghcr.io/mailu/postfix:2024.06.48
+          image: ghcr.io/mailu/postfix:2024.06
           env_file: mailu.env
           restart: always
           volumes:
@@ -125,7 +125,7 @@
             - 172.16.203.254
 
         antispam:
-          image: ghcr.io/mailu/rspamd:2024.06.48
+          image: ghcr.io/mailu/rspamd:2024.06
           env_file: mailu.env
           restart: always
           volumes:
@@ -146,7 +146,7 @@
             - "./redis:/data"
 
         webmail:
-          image: ghcr.io/mailu/webmail:2024.06.48
+          image: ghcr.io/mailu/webmail:2024.06
           env_file: mailu.env
           restart: always
           volumes:
