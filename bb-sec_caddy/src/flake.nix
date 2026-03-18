@@ -209,6 +209,22 @@
       }
 
       # ════════════════════════════════════════════════════════════
+      # L4 LISTENERS — TCP/TLS passthrough (Mail → oci-mail via WG)
+      # ════════════════════════════════════════════════════════════
+
+      :993 {
+        route {
+          proxy ${mail}:993
+        }
+      }
+
+      :465 {
+        route {
+          proxy ${mail}:465
+        }
+      }
+
+      # ════════════════════════════════════════════════════════════
       # SECURITY SNIPPETS
       # ════════════════════════════════════════════════════════════
 
@@ -642,7 +658,7 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         caddy:
-          image: ghcr.io/diegonmarcos/caddy-custom:latest
+          image: ghcr.io/diegonmarcos/caddy-l4:latest
           container_name: ${config.container_name}
           restart: unless-stopped
           env_file:
@@ -651,6 +667,8 @@
             - "${toString config.http_port}:80"
             - "${toString config.https_port}:443"
             - "${toString config.https_port}:443/udp"
+            - "993:993"
+            - "465:465"
           volumes:
             - ./Caddyfile:/etc/caddy/Caddyfile:ro
             - ./error.html:/srv/error.html:ro
