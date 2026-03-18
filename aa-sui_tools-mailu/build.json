@@ -9,6 +9,7 @@
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/mailu",
+    "sequential_restart": true,
     "excludes": [
       "mail/**",
       "mailqueue/**",
