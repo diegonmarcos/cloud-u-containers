@@ -331,7 +331,7 @@ step_secrets() {
         chmod 600 "$DIST_DIR/.secrets.d/$key"
         # .secrets — KEY=VALUE (skip multiline values — they break env_file parsing)
         case "$val" in
-            *"$(printf '\n')"*) log_verbose "  $key: multiline — .secrets.d only" ;;
+            *"$(printf '\n')"*) log "  $key: multiline — .secrets.d only" ;;
             *) printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets" ;;
         esac
         KEY_COUNT=$((KEY_COUNT + 1))
