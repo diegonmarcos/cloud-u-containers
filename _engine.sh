@@ -326,11 +326,14 @@ step_secrets() {
     for key in $(printf '%s' "$DECRYPTED" | yq -r 'keys | .[] | select(. != "sops")'); do
         [ -n "$JWKS_FILE" ] && [ "$key" = "AUTHELIA_OIDC_JWKS_KEY" ] && continue
         val=$(printf '%s' "$DECRYPTED" | yq -r ".[\"$key\"]")
-        # .secrets.d/KEY — raw file
+        # .secrets.d/KEY — raw file (always written)
         printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
         chmod 600 "$DIST_DIR/.secrets.d/$key"
-        # .secrets — KEY=VALUE
-        printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets"
+        # .secrets — KEY=VALUE (skip multiline values — they break env_file parsing)
+        case "$val" in
+            *"$(printf '\n')"*) log_verbose "  $key: multiline — .secrets.d only" ;;
+            *) printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets" ;;
+        esac
         KEY_COUNT=$((KEY_COUNT + 1))
     done
 
