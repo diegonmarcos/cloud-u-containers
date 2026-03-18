@@ -43,7 +43,7 @@
             SHOW_PASSWORD_HINT: ${config.show_password_hint}
             WEBSOCKET_ENABLED: "true"
             LOG_LEVEL: warn
-            SMTP_HOST: smtp.diegonmarcos.com
+            SMTP_HOST: 10.0.0.3
             SMTP_FROM: noreply@diegonmarcos.com
             SMTP_PORT: "465"
             SMTP_SECURITY: force_tls
