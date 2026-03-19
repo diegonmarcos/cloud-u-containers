@@ -47,11 +47,44 @@
       "6" = "oci-apps";
     };
 
+    # ── .internal zone file ────────────────────────────────────────────
+    # A record per service: <name>.internal → WG IP
+    # Used with DNS search domain "internal" so Caddy can use plain names.
+    mkZoneFile = pkgs:
+      let
+        # Sort names for stable output
+        names = builtins.attrNames services;
+        records = builtins.concatStringsSep "\n" (
+          map (name: "${name}\t\tIN A\t${services.${name}.ip}") names
+        );
+      in pkgs.writeText "internal.zone" ''
+        $ORIGIN internal.
+        $TTL 60
+        @  IN SOA  dns.internal. admin.internal. (
+                   1        ; serial
+                   3600     ; refresh
+                   900      ; retry
+                   604800   ; expire
+                   60 )     ; minimum
+        @  IN NS   dns.internal.
+
+        ; Auto-generated from services registry
+        ${records}
+      '';
+
     # ── Hickory DNS named.toml ─────────────────────────────────────────
-    # Pure forwarder — NO local zones. ALL queries go to Cloudflare/Google.
+    # Local .internal zone + forward all other queries to Cloudflare/Google.
     mkNamedToml = pkgs: pkgs.writeText "named.toml" ''
       listen_addrs_ipv4 = ["0.0.0.0"]
       listen_port = 53
+
+      [[zones]]
+      zone = "internal"
+      zone_type = "Primary"
+
+      [zones.stores]
+      type = "file"
+      zone_file_path = "/etc/zones/internal.zone"
 
       [[zones]]
       zone = "."
@@ -83,7 +116,10 @@
             "10.0.0.1:53:53/tcp"
             "10.0.0.1:53:53/udp"
           ];
-          volumes = ["./config/named.toml:/etc/named.toml:ro"];
+          volumes = [
+          "./config/named.toml:/etc/named.toml:ro"
+          "./config/zones:/etc/zones:ro"
+        ];
           dns = ["1.1.1.1" "8.8.8.8"];
           memLimit = "64M";
         };
@@ -95,9 +131,10 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "hickory-dns-configs" {} ''
-        mkdir -p $out/config
+        mkdir -p $out/config/zones
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkNamedToml pkgs} $out/config/named.toml
+        cp ${mkZoneFile pkgs} $out/config/zones/internal.zone
       '';
     in {
       default = defaultPkg;
