@@ -135,15 +135,16 @@
 
     # ── Auth snippets ────────────────────────────────────────────
     # Authelia forward_auth (cookie-based, for browser sessions)
+    # With network_mode: host, containers share the host network — use 127.0.0.1
     authelia = ''
-        forward_auth authelia:9091 {
+        forward_auth 127.0.0.1:9091 {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
         }'';
 
     # Bearer token auth via introspect-proxy sidecar (OIDC token introspection)
     bearer = ''
-        forward_auth introspect-proxy:4182 {
+        forward_auth 127.0.0.1:4182 {
           method GET
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -570,11 +571,11 @@
         ${handleErrors}
       }
 
-      # Vaultwarden — reachable via npm_default docker network
+      # Vaultwarden — host networking, listens on port 8880
       # Authelia access_control handles: API/identity/icons bypass, admin two_factor
       vault.diegonmarcos.com {
     ${sec}
-        ${mkProtected "vaultwarden:80"}
+        ${mkProtected "127.0.0.1:8880"}
         ${handleErrors}
       }
 
@@ -593,15 +594,15 @@
         @authelia_jwt header_regexp Authorization "^Bearer eyJ"
         handle @authelia_jwt {
     ${bearer}
-          reverse_proxy ntfy:80
+          reverse_proxy 127.0.0.1:8090
         }
         @ntfy_token header_regexp Authorization "^Bearer tk_"
         handle @ntfy_token {
-          reverse_proxy ntfy:80
+          reverse_proxy 127.0.0.1:8090
         }
         handle {
     ${authelia}
-          reverse_proxy ntfy:80
+          reverse_proxy 127.0.0.1:8090
         }
         ${handleErrors}
       }
@@ -668,16 +669,8 @@
         name = "caddy";
         image = "ghcr.io/diegonmarcos/caddy-l4:latest";
         container_name = config.container_name;
+        networkMode = "host";
         env_file = [ ".secrets" ];
-        ports = [
-          "${toString config.http_port}:80"
-          "${toString config.https_port}:443"
-          "${toString config.https_port}:443/udp"
-          "993:993"
-          "465:465"
-          "587:587"
-        ];
-        allowPublicPorts = true;  # edge proxy — must bind public ports
         volumes = [
           "./Caddyfile:/etc/caddy/Caddyfile:ro"
           "./error.html:/srv/error.html:ro"
@@ -688,7 +681,6 @@
           "caddy_data:/data"
           "caddy_config:/config"
         ];
-        networks = [ "npm_default" ];
         startAfter = [ "introspect-proxy" ];
         capAdd = [ "NET_BIND_SERVICE" ];  # needed for ports 80/443
         skipReadOnly = true;  # caddy writes to /data, /config, /var/log
@@ -698,13 +690,13 @@
         name = "introspect-proxy";
         build = "./introspect-proxy";
         image = "introspect-proxy:latest";
+        networkMode = "host";
         environment = {
           JWKS_URL = "https://auth.diegonmarcos.com/jwks.json";
           ISSUER = "https://auth.diegonmarcos.com";
           REQUIRED_SCOPE = "authelia.bearer.authz";
           DEBUG = "\"true\"";
         };
-        networks = [ "npm_default" ];
         memLimit = "96M";
         memReservation = "48M";
         healthcheck = {
@@ -718,7 +710,6 @@
 
       volumes.caddy_data = { driver = "local"; };
       volumes.caddy_config = { driver = "local"; };
-      networks.npm_default = { external = true; };
     };
 
   in {

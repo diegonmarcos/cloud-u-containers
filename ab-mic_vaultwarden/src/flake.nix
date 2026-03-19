@@ -29,10 +29,12 @@
         name = "vaultwarden";
         image = config.image;
         container_name = config.container_name;
+        networkMode = "host";
 
         env_file = [ ".secrets" ];
         environment = {
           DOMAIN = "https://${config.domain}";
+          ROCKET_PORT = "\"8880\"";
           SIGNUPS_ALLOWED = config.signups_allowed;
           INVITATIONS_ALLOWED = config.invitations_allowed;
           SHOW_PASSWORD_HINT = config.show_password_hint;
@@ -47,10 +49,7 @@
           ADMIN_TOKEN = "\${ADMIN_TOKEN}";
         };
         volumes = [ "./data:/data" ];
-        networks = [ "npm_default" ];
       };
-
-      networks.npm_default = { external = true; };
     };
 
   in {

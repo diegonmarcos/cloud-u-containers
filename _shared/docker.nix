@@ -98,6 +98,7 @@ in {
     command ? null,           # string or list — overrides image CMD
 
     # Networking
+    networkMode ? null,       # "host" = use host network stack (no ports/networks needed)
     ports ? [],               # list of "ip:host:container" strings
     networks ? [],
     expose ? [],              # internal-only ports
@@ -240,11 +241,17 @@ in {
       commandLine = if command == null then ""
         else "${i2}command: ${command}";
 
+      # ── Network mode ──
+      # host networking: skip ports/networks/expose (container uses host stack)
+      isHostMode = networkMode == "host";
+      networkModeLine = if networkMode != null then "${i2}network_mode: ${networkMode}" else "";
+
       # Collect all non-empty sections
       sections = builtins.filter (s: s != "") [
         imageLine
         buildLines
         "${i2}container_name: ${container_name}"
+        networkModeLine
         entrypointLine
         commandLine
         restartLine
@@ -255,11 +262,11 @@ in {
         dnsLines
         envFileLines
         envLines
-        portLines
-        exposeLines
+        (if isHostMode then "" else portLines)
+        (if isHostMode then "" else exposeLines)
         dependsLines
         volumeLines
-        networkLines
+        (if isHostMode then "" else networkLines)
         healthLines
         pidsLine
         deployLines
