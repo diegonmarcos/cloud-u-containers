@@ -220,7 +220,9 @@
             retries = 3;
             start_period = "15s";
           };
-          networks = ["dev_network"];
+          networks = ["infra"];
+          networkIps = { infra = "172.21.0.63"; };
+          dns = [ "172.21.0.2" ];
           skipReadOnly = true;
           skipSecurity = true;
         };
@@ -230,7 +232,7 @@
         orchestrator_logs = {};
       };
       networks = {
-        dev_network = { external = true; name = "dev_network"; };
+        infra = { external = true; };
       };
     };
 

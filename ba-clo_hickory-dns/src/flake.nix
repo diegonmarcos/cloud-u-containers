@@ -84,10 +84,13 @@
             "10.0.0.1:53:53/udp"
           ];
           volumes = ["./config/named.toml:/etc/named.toml:ro"];
+          networks = [ "infra" ];
+          networkIps = { infra = "172.20.0.15"; };
           dns = ["1.1.1.1" "8.8.8.8"];
           memLimit = "64M";
         };
       };
+      networks.infra = { external = true; };
     };
 
   in {

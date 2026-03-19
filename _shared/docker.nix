@@ -135,6 +135,10 @@ in {
     skipLogging ? false,      # true = don't inject logging config
     skipSecurity ? false,     # true = don't inject security_opt + cap_drop
 
+    # Fixed IP on a named network — e.g. { infra = "172.20.0.10"; }
+    # Generates dict-style networks block instead of list-style
+    networkIps ? {},
+
     # Raw escape hatch — appended verbatim inside the service block
     extraYaml ? "",
   }:
@@ -158,8 +162,14 @@ in {
         else "${i2}expose:\n" + builtins.concatStringsSep "\n" (map (p: "${i3}- \"${toString p}\"") expose);
 
       # ── Networks ──
+      # Dict-style (with ipv4_address) when networkIps has an entry for that network;
+      # list-style otherwise. Both can coexist in the same service.
       networkLines = if networks == [] then ""
-        else "${i2}networks:\n" + builtins.concatStringsSep "\n" (map (n: "${i3}- ${n}") networks);
+        else "${i2}networks:\n" + builtins.concatStringsSep "\n" (map (n:
+          if builtins.hasAttr n networkIps
+          then "${i3}${n}:\n${i3}  ipv4_address: ${networkIps.${n}}"
+          else "${i3}- ${n}"
+        ) networks);
 
       # ── Volumes ──
       volumeLines = if volumes == [] then ""

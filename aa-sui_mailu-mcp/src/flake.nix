@@ -31,15 +31,17 @@
             - .secrets
           environment:
             MAIL_HOST: ${config.mail_host}
+          dns:
+            - 172.21.0.2
           networks:
-            - c3-net
+            infra:
+              ipv4_address: 172.21.0.82
           ports:
             - "3103:3103"
 
       networks:
-        c3-net:
+        infra:
           external: true
-          name: mattermost-bots_default
     '';
 
   in {
