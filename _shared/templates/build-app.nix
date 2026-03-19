@@ -23,7 +23,7 @@ docker:
   # Networking
   port ? null,                   # { host; container; }
   wgIp ? null,
-  networkName ? "npm_default",   # default for build services
+  networkName ? "infra",          # default for build services
   networkExternal ? true,
 
   # Container

@@ -30,7 +30,9 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:80" ];
-            networks = [ "dev_network" ];
+            networks = [ "infra" ];
+            networkIps = { infra = "172.21.0.73"; };
+            dns = [ "172.21.0.2" ];
             volumes = [
               "filebrowser_data:/srv"
               "filebrowser_db:/database"
@@ -53,9 +55,8 @@
           };
         };
         networks = {
-          dev_network = {
+          infra = {
             external = true;
-            name = "dev_network";
           };
         };
         volumes = {

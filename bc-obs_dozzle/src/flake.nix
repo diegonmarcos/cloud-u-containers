@@ -28,13 +28,15 @@
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
           environment = ["DOZZLE_LEVEL=info"];
           memLimit = "64m";
-          networks = ["npm_default"];
+          networks = ["infra"];
+          networkIps = { infra = "172.23.0.13"; };
+          dns = ["172.23.0.2"];
           skipReadOnly = true;
           skipSecurity = true;
         };
       };
       networks = {
-        npm_default = { external = true; };
+        infra = { external = true; };
       };
     };
 

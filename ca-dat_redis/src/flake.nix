@@ -40,11 +40,14 @@
             interval: 30s
             timeout: 10s
             retries: 3
+          dns:
+            - 172.20.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.20.0.16
 
       networks:
-        dev_network:
+        infra:
           external: true
     '';
 

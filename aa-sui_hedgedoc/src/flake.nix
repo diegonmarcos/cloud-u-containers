@@ -54,8 +54,11 @@
           depends_on:
             postgres:
               condition: service_healthy
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.78
 
         postgres:
           image: ${config.db_image}
@@ -68,8 +71,11 @@
             - POSTGRES_PASSWORD=${config.db_user}
             - POSTGRES_DB=${config.db_name}
             - PGDATA=/var/lib/postgresql/data/pgdata
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.79
           healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U ${config.db_user}']
             interval: 10s
@@ -77,7 +83,7 @@
             retries: 5
 
       networks:
-        dev_network:
+        infra:
           external: true
 
       volumes:

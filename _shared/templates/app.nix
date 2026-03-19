@@ -18,7 +18,7 @@ docker:
   # Networking
   port ? null,                   # { host = 3015; container = 80; } or null
   wgIp ? null,                   # WireGuard IP (e.g. "10.0.0.6") — required if port is set
-  networkName ? "dev_network",   # docker network to join
+  networkName ? "infra",          # docker network to join
   networkExternal ? true,        # is it an external network?
 
   # Container

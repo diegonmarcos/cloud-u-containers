@@ -74,8 +74,11 @@
             --vfs-read-chunk-size-limit 256M
             --dir-cache-time 5m
             --log-level INFO
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.52
           healthcheck:
             test: ['CMD', 'ls', '/data']
             interval: 30s
@@ -123,8 +126,11 @@
               condition: service_healthy
             rclone:
               condition: service_healthy
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.50
           healthcheck:
             test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:2342/api/v1/status']
             interval: 30s
@@ -145,8 +151,11 @@
             - MARIADB_USER=''${MARIADB_USER:-photoprism}
             - MARIADB_PASSWORD=''${MARIADB_PASSWORD:-changeme}
             - MARIADB_ROOT_PASSWORD=''${MARIADB_ROOT_PASSWORD:-changeme}
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.51
           healthcheck:
             test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
             interval: 10s
@@ -154,9 +163,8 @@
             retries: 5
 
       networks:
-        dev_network:
+        infra:
           external: true
-          name: dev_network
 
       volumes:
         photoprism_storage:

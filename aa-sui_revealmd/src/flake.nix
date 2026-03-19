@@ -38,8 +38,11 @@
           volumes:
             - slides_data:/slides
           command: /slides --watch
+          dns:
+            - 172.21.0.2
           networks:
-            - dev_network
+            infra:
+              ipv4_address: 172.21.0.77
           healthcheck:
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1948']
             interval: 30s
@@ -47,9 +50,8 @@
             retries: 3
 
       networks:
-        dev_network:
+        infra:
           external: true
-          name: dev_network
 
       volumes:
         slides_data:

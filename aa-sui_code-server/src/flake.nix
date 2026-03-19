@@ -31,7 +31,9 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8443" ];
-            networks = [ "dev_network" ];
+            networks = [ "infra" ];
+            networkIps = { infra = "172.21.0.61"; };
+            dns = [ "172.21.0.2" ];
             volumes = [
               "./config:/config"
               "/home/ubuntu/workspace:/workspace"
@@ -46,7 +48,7 @@
           };
         };
         networks = {
-          dev_network = {
+          infra = {
             external = true;
           };
         };
