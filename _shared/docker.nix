@@ -42,7 +42,7 @@ let
     if deps == {} then ""
     else "${i2}depends_on:\n" + builtins.concatStringsSep "\n"
       (builtins.attrValues (builtins.mapAttrs (name: val:
-        if builtins.isAttrs val then
+        if builtins.isAttrs val && val ? condition then
           "${i3}${name}:\n${i3}  condition: ${val.condition}"
         else
           "${i3}${name}:\n${i3}  condition: service_started"
