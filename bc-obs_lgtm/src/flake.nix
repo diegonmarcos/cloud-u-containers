@@ -42,11 +42,8 @@
             - GF_SERVER_ROOT_URL=https://${config.domain}
           depends_on:
             - loki
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.40
+            - dev_network
           healthcheck:
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
             interval: 30s
@@ -63,11 +60,8 @@
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
           command: -config.file=/etc/loki/local-config.yaml
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.41
+            - dev_network
           healthcheck:
             test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
             interval: 30s
@@ -87,11 +81,8 @@
             - tempo_data:/var/tempo
             - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
           command: ["-config.file=/etc/tempo/tempo.yaml"]
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.43
+            - dev_network
 
         mimir:
           image: grafana/mimir:latest
@@ -103,15 +94,13 @@
             - mimir_data:/data
             - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
           command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.42
+            - dev_network
 
       networks:
-        infra:
+        dev_network:
           external: true
+          name: dev_network
 
       volumes:
         grafana_data:

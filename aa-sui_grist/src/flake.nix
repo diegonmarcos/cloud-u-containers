@@ -30,9 +30,7 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8484" ];
-            networks = [ "infra" ];
-            networkIps = { infra = "172.21.0.72"; };
-            dns = [ "172.21.0.2" ];
+            networks = [ "dev_network" ];
             volumes = [
               "grist_data:/persist"
             ];
@@ -53,8 +51,9 @@
           };
         };
         networks = {
-          infra = {
+          dev_network = {
             external = true;
+            name = "dev_network";
           };
         };
         volumes = {

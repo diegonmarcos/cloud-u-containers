@@ -31,9 +31,7 @@
             "DB_PATH=/data/alerts.db"
             "NTFY_URL=https://rss.diegonmarcos.com"
           ];
-          networks = ["infra"];
-          networkIps = { infra = "172.23.0.14"; };
-          dns = ["172.23.0.2"];
+          networks = ["npm_default"];
           healthcheck = {
             test = ''["CMD", "curl", "-f", "http://localhost:5000/api/health"]'';
             interval = "30s";
@@ -47,7 +45,7 @@
         alerts-data = {};
       };
       networks = {
-        infra = { external = true; };
+        npm_default = { external = true; };
       };
     };
 

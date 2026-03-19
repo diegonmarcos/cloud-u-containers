@@ -32,11 +32,8 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.10
+            - c3-net
           ports:
             - "10.0.0.6:${toString config.port}:8080"
             - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
@@ -70,8 +67,9 @@
         c3-repos:
 
       networks:
-        infra:
+        c3-net:
           external: true
+          name: mattermost-bots_default
     '';
 
     # ── Documentation ────────────────────────────────────────────────────

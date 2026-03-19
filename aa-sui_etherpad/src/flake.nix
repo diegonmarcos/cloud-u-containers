@@ -34,9 +34,7 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:9001" ];
-            networks = [ "infra" ];
-            networkIps = { infra = "172.21.0.74"; };
-            dns = [ "172.21.0.2" ];
+            networks = [ "dev_network" ];
             volumes = [
               "etherpad_data:/opt/etherpad-lite/var"
             ];
@@ -69,9 +67,7 @@
             name = "postgres";
             image = config.db_image;
             container_name = config.db_container;
-            networks = [ "infra" ];
-            networkIps = { infra = "172.21.0.75"; };
-            dns = [ "172.21.0.2" ];
+            networks = [ "dev_network" ];
             volumes = [
               "postgres_data:/var/lib/postgresql/data"
             ];
@@ -90,8 +86,9 @@
           };
         };
         networks = {
-          infra = {
+          dev_network = {
             external = true;
+            name = "dev_network";
           };
         };
         volumes = {

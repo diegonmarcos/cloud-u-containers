@@ -35,13 +35,10 @@
             - /var/log:/var/log:ro
             - fluent-bit-db:/fluent-bit/db
           networks:
-            infra:
-              ipv4_address: 172.23.0.12
-          dns:
-            - 172.23.0.2
+            - dev_network
 
       networks:
-        infra:
+        dev_network:
           external: true
 
       volumes:
