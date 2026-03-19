@@ -34,9 +34,12 @@
           environment = { TZ = config.timezone; };
           volumes = ["./config:/config"];
           ports = ["10.0.0.1:${toString config.port}:9091"];
-          networks = ["auth-net" "npm_default"];
+          networks = ["auth-net" "infra"];
+          networkIps = { infra = "172.20.0.11"; };
+          dns = ["172.20.0.2"];
           depends_on = { redis = {}; };
           skipReadOnly = true;
+          capAdd = ["DAC_OVERRIDE"];
         };
         redis = docker.mkService {
           name = "redis";
@@ -51,7 +54,7 @@
       };
       networks = {
         auth-net = { driver = "bridge"; };
-        npm_default = { external = true; };
+        infra = { external = true; };
       };
     };
 
