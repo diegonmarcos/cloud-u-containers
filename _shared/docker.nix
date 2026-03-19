@@ -185,19 +185,22 @@ in {
         else "${i2}healthcheck:\n${i3}test: ${healthcheck.test}\n${i3}interval: ${healthcheck.interval or "30s"}\n${i3}timeout: ${healthcheck.timeout or "10s"}\n${i3}retries: ${toString (healthcheck.retries or 3)}"
           + (if healthcheck ? start_period then "\n${i3}start_period: ${healthcheck.start_period}" else "");
 
-      # ── PID limit (top-level — works across all Compose versions) ──
-      # Using top-level pids_limit instead of deploy.resources.limits.pids
-      # to avoid Docker Compose 2.30.x bug where both syntaxes conflict.
-      pidsLine = if pidsLimit == 0 then "" else "${i2}pids_limit: ${toString pidsLimit}";
-
       # ── Resource limits (deploy.resources syntax — Compose v2) ──
       hasLimits = memLimit != null || cpuLimit != null;
       hasReservations = memReservation != null;
+
+      # ── PID limit ──
+      # Docker Compose 2.30.x rejects having BOTH top-level pids_limit AND
+      # deploy.resources.limits.*. So: when a limits block exists, put pids
+      # inside it; otherwise use top-level pids_limit.
+      pidsLine = if pidsLimit == 0 || hasLimits then "" else "${i2}pids_limit: ${toString pidsLimit}";
+
       deployLines = if !hasLimits && !hasReservations then ""
         else "${i2}deploy:\n${i3}resources:"
           + (if hasLimits then "\n${i3}  limits:"
             + (if memLimit != null then "\n${i3}    memory: ${memLimit}" else "")
             + (if cpuLimit != null then "\n${i3}    cpus: \"${cpuLimit}\"" else "")
+            + (if pidsLimit != 0 then "\n${i3}    pids: ${toString pidsLimit}" else "")
             else "")
           + (if hasReservations then "\n${i3}  reservations:"
             + (if memReservation != null then "\n${i3}    memory: ${memReservation}" else "")
