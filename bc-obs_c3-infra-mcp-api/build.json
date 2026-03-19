@@ -14,7 +14,7 @@
     "sequential_restart": "true"
   },
   "build": {
-    "include_config_json": "true"
+    "include_cloud_data": "true"
   },
   "secrets": {
     "escape_dollars": "true"
