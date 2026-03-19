@@ -1,3 +1,10 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_dagu/src/flake.nix       ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_dagu/build.sh ship      ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   dagu:
     build:
@@ -18,11 +25,17 @@ services:
       - DAGU_AUTH_BASIC_USERNAME=${DAGU_USERNAME}
       - DAGU_AUTH_BASIC_PASSWORD=${DAGU_PASSWORD}
       - DAGU_TZ=Europe/Berlin
-      - BEARER_TOKEN=${BEARER_TOKEN}
+      - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
+      - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_DAGU_SECRET}
+      - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
+    env_file:
+      - .secrets
     volumes:
       - ./data:/var/lib/dagu/data
       - ./dags:/var/lib/dagu/dags
       - ./base.yaml:/var/lib/dagu/base.yaml:ro
+      - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
+      - /opt/ssh-keys/dagu:/root/.ssh:ro
     mem_limit: 256m
     networks:
       - default

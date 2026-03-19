@@ -1,7 +1,7 @@
 schedule: "0 18 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -23,7 +23,7 @@ steps:
       done
       MSG=$(echo -e "Daily Ops Summary:\n\n${REPORT}Dagu: http://10.0.0.3:8070")
       curl -s -X POST "$NTFY_URL/ops_summary" \
-        -H "Authorization: Bearer $BEARER_TOKEN" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Ops Summary" \
         -H "Priority: 2" \
         -H "Tags: chart_with_upwards_trend" \

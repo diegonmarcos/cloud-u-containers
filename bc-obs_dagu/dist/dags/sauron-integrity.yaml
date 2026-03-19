@@ -1,7 +1,7 @@
 schedule: "0 3 * * 0"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -27,7 +27,7 @@ steps:
       if [ $RUNNING -lt $TOTAL ]; then
         MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/security_yara" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Sauron Scanner(s) Down" \
           -H "Priority: 4" \
           -H "Tags: warning,eye" \

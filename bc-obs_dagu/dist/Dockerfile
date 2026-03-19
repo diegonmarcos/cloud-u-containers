@@ -7,4 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     openssl \
     dnsutils \
+    git \
+    jq \
+    yq \
     && rm -rf /var/lib/apt/lists/*

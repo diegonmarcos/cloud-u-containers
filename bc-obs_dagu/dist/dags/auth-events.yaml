@@ -1,7 +1,7 @@
 schedule: "0 9 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -26,7 +26,7 @@ steps:
       done
       MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh <user>@<ip> 'journalctl -u ssh --since yesterday'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'ss -tunap'\n\nDagu: http://10.0.0.3:8070")
       curl -s -X POST "$NTFY_URL/security_connections" \
-        -H "Authorization: Bearer $BEARER_TOKEN" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily Connection Report" \
         -H "Priority: 2" \
         -H "Tags: key,shield" \
