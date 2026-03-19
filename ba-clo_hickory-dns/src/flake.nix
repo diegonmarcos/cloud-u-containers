@@ -1,5 +1,5 @@
 {
-  description = "Hickory DNS - Internal DNS server for WireGuard mesh (.internal zone)";
+  description = "Hickory DNS - Internal DNS server for WireGuard mesh (per-service .app zones)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -13,30 +13,36 @@
     title = "Hickory DNS";
     docker = import ../../_shared/docker.nix;
 
+    # DNS suffix for service resolution
+    suffix = "app";
+
     # ── Service registry (single source of truth) ──────────────────────
+    # Each entry becomes a per-service zone: <name>.app → WG IP
+    # Per-service zones mean unknown .app names fall through to the root
+    # forwarder (Cloudflare) — no TLD hijacking.
     services = {
       # gcp-proxy (10.0.0.1)
-      caddy    = { ip = "10.0.0.1"; desc = "Reverse proxy"; };
-      auth     = { ip = "10.0.0.1"; desc = "Authelia 2FA"; };
-      vault    = { ip = "10.0.0.1"; desc = "Vaultwarden"; };
-      api      = { ip = "10.0.0.1"; desc = "API gateway"; };
-      ntfy     = { ip = "10.0.0.1"; desc = "Push notifications"; };
-      dns      = { ip = "10.0.0.1"; desc = "Hickory DNS"; };
+      caddy           = { ip = "10.0.0.1"; desc = "Reverse proxy"; };
+      authelia        = { ip = "10.0.0.1"; desc = "Authelia 2FA"; };
+      introspect-proxy = { ip = "10.0.0.1"; desc = "OIDC introspect sidecar"; };
+      vaultwarden     = { ip = "10.0.0.1"; desc = "Vaultwarden"; };
+      ntfy            = { ip = "10.0.0.1"; desc = "Push notifications"; };
+      hickory-dns     = { ip = "10.0.0.1"; desc = "Hickory DNS"; };
 
       # oci-apps (10.0.0.6)
-      photos   = { ip = "10.0.0.6"; desc = "PhotoPrism"; };
-      db       = { ip = "10.0.0.6"; desc = "NocoDB"; };
-      ide      = { ip = "10.0.0.6"; desc = "Code Server"; };
-      affine   = { ip = "10.0.0.6"; desc = "AFFiNE"; };
+      photos          = { ip = "10.0.0.6"; desc = "PhotoPrism"; };
+      db              = { ip = "10.0.0.6"; desc = "NocoDB"; };
+      ide             = { ip = "10.0.0.6"; desc = "Code Server"; };
+      affine          = { ip = "10.0.0.6"; desc = "AFFiNE"; };
 
       # oci-mail (10.0.0.3)
-      mail     = { ip = "10.0.0.3"; desc = "Mailu"; };
-      sync     = { ip = "10.0.0.3"; desc = "Syncthing"; };
-      cal      = { ip = "10.0.0.3"; desc = "Radicale"; };
+      mail            = { ip = "10.0.0.3"; desc = "Mailu"; };
+      sync            = { ip = "10.0.0.3"; desc = "Syncthing"; };
+      cal             = { ip = "10.0.0.3"; desc = "Radicale"; };
 
       # oci-analytics (10.0.0.4)
-      matomo   = { ip = "10.0.0.4"; desc = "Matomo analytics"; };
-      windmill = { ip = "10.0.0.4"; desc = "Windmill workflows"; };
+      matomo          = { ip = "10.0.0.4"; desc = "Matomo analytics"; };
+      windmill        = { ip = "10.0.0.4"; desc = "Windmill workflows"; };
     };
 
     # VM reverse map for PTR records
@@ -47,45 +53,40 @@
       "6" = "oci-apps";
     };
 
-    # ── .internal zone file ────────────────────────────────────────────
-    # A record per service: <name>.internal → WG IP
-    # Used with DNS search domain "internal" so Caddy can use plain names.
-    mkZoneFile = pkgs:
-      let
-        # Sort names for stable output
-        names = builtins.attrNames services;
-        records = builtins.concatStringsSep "\n" (
-          map (name: "${name}\t\tIN A\t${services.${name}.ip}") names
-        );
-      in pkgs.writeText "internal.zone" ''
-        $ORIGIN internal.
-        $TTL 60
-        @  IN SOA  dns.internal. admin.internal. (
-                   1        ; serial
-                   3600     ; refresh
-                   900      ; retry
-                   604800   ; expire
-                   60 )     ; minimum
-        @  IN NS   dns.internal.
-
-        ; Auto-generated from services registry
-        ${records}
-      '';
+    # ── Per-service zone files ─────────────────────────────────────────
+    # Each service gets its own zone: authelia.app, vaultwarden.app, etc.
+    # Unknown .app names (google.app) have no zone → root forwarder → Cloudflare.
+    mkServiceZone = pkgs: name: ip:
+      pkgs.writeText "${name}.${suffix}.zone" ''
+$ORIGIN ${name}.${suffix}.
+$TTL 60
+@  IN SOA  hickory-dns.${suffix}. admin.${suffix}. 1 3600 900 604800 60
+@  IN NS   hickory-dns.${suffix}.
+@  IN A    ${ip}
+'';
 
     # ── Hickory DNS named.toml ─────────────────────────────────────────
-    # Local .internal zone + forward all other queries to Cloudflare/Google.
-    mkNamedToml = pkgs: pkgs.writeText "named.toml" ''
-      listen_addrs_ipv4 = ["0.0.0.0"]
-      listen_port = 53
-
+    # Per-service zones + root forwarder for everything else.
+    mkNamedToml = pkgs:
+      let
+        names = builtins.attrNames services;
+        zoneBlocks = builtins.concatStringsSep "\n" (
+          map (name: ''
       [[zones]]
-      zone = "internal"
+      zone = "${name}.${suffix}"
       zone_type = "Primary"
 
       [zones.stores]
       type = "file"
-      zone_file_path = "/etc/zones/internal.zone"
+      zone_file_path = "/etc/zones/${name}.${suffix}.zone"
+'') names);
+      in pkgs.writeText "named.toml" ''
+      listen_addrs_ipv4 = ["0.0.0.0"]
+      listen_port = 53
 
+      # ── Per-service zones (<name>.app → WG IP) ──
+${zoneBlocks}
+      # ── Fallback forwarder (everything else → Cloudflare/Google) ──
       [[zones]]
       zone = "."
       zone_type = "External"
@@ -117,9 +118,9 @@
             "10.0.0.1:53:53/udp"
           ];
           volumes = [
-          "./config/named.toml:/etc/named.toml:ro"
-          "./config/zones:/etc/zones:ro"
-        ];
+            "./config/named.toml:/etc/named.toml:ro"
+            "./config/zones:/etc/zones:ro"
+          ];
           dns = ["1.1.1.1" "8.8.8.8"];
           memLimit = "64M";
         };
@@ -130,11 +131,15 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
+      names = builtins.attrNames services;
+      zoneFiles = map (name:
+        "cp ${mkServiceZone pkgs name services.${name}.ip} $out/config/zones/${name}.${suffix}.zone"
+      ) names;
       defaultPkg = pkgs.runCommand "hickory-dns-configs" {} ''
         mkdir -p $out/config/zones
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkNamedToml pkgs} $out/config/named.toml
-        cp ${mkZoneFile pkgs} $out/config/zones/internal.zone
+        ${builtins.concatStringsSep "\n" zoneFiles}
       '';
     in {
       default = defaultPkg;
