@@ -527,7 +527,7 @@
           ${mkProtected "${flex0}:3014"}
         }
         handle_path /dozzle/* {
-          ${mkProtected "${gcp}:9999"}
+          ${mkProtected "${analytics}:9999"}
         }
         handle_path /grafana/* {
           ${mkProtected "${flex0}:3016"}
