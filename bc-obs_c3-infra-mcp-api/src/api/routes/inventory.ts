@@ -92,6 +92,48 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     return JSON.parse(readFileSync(FRONT_DEPS_PATH, "utf-8"));
   });
 
+  // ── DNS Registry (container name → WG IP, for Hickory DNS auto-generation) ──
+
+  app.get("/dns-registry", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    const services: Record<string, { ip: string; desc: string }> = {};
+    const vms: Record<string, string> = {};
+
+    // Derive container_name → WG IP from topology
+    // topology.services[svcName].vm → topology.vms[vmId].wg_ip
+    // topology.services[svcName].containers[] → each container gets the VM's WG IP
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const vm = topo.vms?.[s.vm];
+      if (!vm?.wg_ip) continue;
+      const ip: string = vm.wg_ip;
+      const desc: string = s.description ?? svcName;
+      // Register each container name
+      for (const container of (s.containers ?? [])) {
+        if (container) services[container] = { ip, desc };
+      }
+      // Also register the service name itself (folder name, e.g. "c3-infra-mcp-api")
+      services[svcName] = { ip, desc };
+    }
+
+    // PTR reverse map: last WG octet → VM alias (for Hickory vms attrset)
+    for (const [, vm] of Object.entries(topo.vms ?? {})) {
+      const v = vm as any;
+      if (!v.wg_ip) continue;
+      const lastOctet = v.wg_ip.split(".").pop();
+      if (lastOctet) vms[lastOctet] = v.ssh_alias ?? "";
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /dns-registry",
+      suffix: "app",
+      services,
+      vms,
+    };
+  });
+
   // ── Files: config (from files.ts) ──
 
   app.get<{ Params: { service: string } }>(
