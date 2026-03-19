@@ -1,0 +1,55 @@
+schedule: "*/5 * * * *"
+env:
+  - C3_API: http://10.0.0.6:8081
+  - REPO_DIR: /var/lib/dagu/data/front-data
+  - REPO_URL: git@github.com:diegonmarcos/front-data.git
+  - NTFY_URL: http://10.0.0.1:8090
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$REPO_DIR/.git" ]; then
+        git clone "$REPO_URL" "$REPO_DIR"
+        cd "$REPO_DIR"
+        git config user.name "dagu-bot"
+        git config user.email "no-reply@diegonmarcos.com"
+      fi
+  - name: pull-rebase
+    depends:
+      - ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      git pull --rebase origin main || {
+        echo "Rebase conflict — resetting to remote"
+        git rebase --abort 2>/dev/null
+        git reset --hard origin/main
+      }
+  - name: fetch-front-deps
+    depends:
+      - pull-rebase
+    command: |
+      curl -sf "$C3_API/deps/front" | jq '.' > "$REPO_DIR/front-deps.json.tmp"
+      mv "$REPO_DIR/front-deps.json.tmp" "$REPO_DIR/front-deps.json"
+      echo "Fetched front-deps.json ($(wc -c < "$REPO_DIR/front-deps.json") bytes)"
+  - name: commit-and-push
+    depends:
+      - fetch-front-deps
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
+        awk '{name=$0; gsub(/-/," ",name); for(i=1;i<=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i<=length(a);i++) name=name (i>1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
+        jq -s '.' > manifest.json
+      git add front-deps.json manifest.json
+      if git diff --cached --quiet; then
+        echo "No changes — skipping commit"
+        exit 0
+      fi
+      STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      git commit -m "sync: front data ${STAMP}"
+      git push origin main
+      echo "Pushed changes at ${STAMP}"

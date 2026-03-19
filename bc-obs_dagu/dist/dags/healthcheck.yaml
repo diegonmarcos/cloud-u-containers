@@ -1,7 +1,7 @@
 schedule: "*/5 * * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -22,7 +22,7 @@ steps:
       if [ -n "$FAILED" ]; then
         MSG=$(echo -e "Unreachable peers:\n${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_mesh-health" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mesh Health FAILED" \
           -H "Priority: 5" \
           -H "Tags: rotating_light" \

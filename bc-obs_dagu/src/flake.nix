@@ -1245,6 +1245,58 @@
           echo '</div>' >> "$F"
         done
 
+        # ── Dagu Workflows Status ──
+        DAGU_API="http://localhost:8080/api/v1/dags"
+        DAGU_JSON=$(curl -sf -u "$DAGU_AUTH_BASIC_USERNAME:$DAGU_AUTH_BASIC_PASSWORD" "$DAGU_API" 2>/dev/null || echo "")
+
+        if [ -n "$DAGU_JSON" ]; then
+          cat >> "$F" <<'EOWF1'
+        <div style="margin-top:16px;font-weight:bold;color:#e0e0e0;font-size:13px;margin-bottom:6px;font-family:'Courier New',monospace;">Dagu Workflows</div>
+        <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+        <th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Workflow</th>
+        <th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Schedule</th>
+        <th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Last Status</th>
+        <th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Last Run</th>
+        </tr>
+        EOWF1
+
+          echo "$DAGU_JSON" | jq -r '
+            .DAGs[] |
+            [
+              (.DAG.Name // .File // "unknown"),
+              (.DAG.Schedule[0].Expression // "-"),
+              (.Status.StatusText // "none"),
+              (.Status.StartedAt // "-")
+            ] | join("|")
+          ' 2>/dev/null | sort | while IFS='|' read -r wf_name wf_sched wf_status wf_started; do
+            [ -z "$wf_name" ] && continue
+            case "$wf_status" in
+              finished|success) wf_color=$C_OK ;;
+              error|failed)     wf_color=$C_CRIT ;;
+              running)          wf_color=$C_WARN ;;
+              cancel*)          wf_color=$C_WARN ;;
+              *)                wf_color=$C_DIM ;;
+            esac
+            if [ "$wf_started" != "-" ] && [ "$wf_started" != "null" ]; then
+              wf_time=$(date -d "$wf_started" '+%Y-%m-%d %H:%M' 2>/dev/null || echo "$wf_started")
+            else
+              wf_time="-"
+            fi
+            cat >> "$F" <<EOWFROW
+        <tr>
+        <td style="padding:3px 8px;color:#e0e0e0;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_name</td>
+        <td style="padding:3px 8px;color:#8899aa;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_sched</td>
+        <td style="padding:3px 8px;color:$wf_color;font-size:11px;font-weight:bold;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_status</td>
+        <td style="padding:3px 8px;color:#8899aa;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_time</td>
+        </tr>
+        EOWFROW
+          done
+          echo '</table>' >> "$F"
+        else
+          echo '<div style="margin-top:16px;color:#8899aa;font-size:12px;font-style:italic;font-family:'"'"'Courier New'"'"',monospace;">Could not fetch Dagu workflow status</div>' >> "$F"
+        fi
+
         cat >> "$F" <<'EODEL2'
         <div style="margin-top:8px;padding:8px;background:rgba(15,52,96,0.3);border-radius:4px;">
         <span style="color:#8899aa;font-size:12px;font-family:'Courier New',monospace;">Dagu Dashboard: </span>
@@ -1502,6 +1554,106 @@
               git push origin main
               echo "Pushed changes at ''${STAMP}"
       '';
+
+      # ═══════════════════════════════════════════════════════════════════
+      # SECRETS SYNC
+      # ═══════════════════════════════════════════════════════════════════
+
+      secrets-sync = pkgs.writeText "secrets-sync.yaml" ''
+        schedule: "0 * * * *"
+        env:
+          - CLOUD_DATA_DIR: /var/lib/dagu/data/cloud-data
+          - CLOUD_SOURCE_DIR: /var/lib/dagu/data/cloud-source
+          - CLOUD_DATA_REPO: git@github.com:diegonmarcos/cloud-data.git
+          - CLOUD_SOURCE_REPO: git@github.com:diegonmarcos/cloud.git
+          - NTFY_URL: http://10.0.0.1:8090
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+        mailOn:
+          failure: true
+          success: false
+        steps:
+          - name: ensure-cloud-data
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              if [ ! -d "$CLOUD_DATA_DIR/.git" ]; then
+                git clone "$CLOUD_DATA_REPO" "$CLOUD_DATA_DIR"
+                cd "$CLOUD_DATA_DIR"
+                git config user.name "dagu-bot"
+                git config user.email "no-reply@diegonmarcos.com"
+              fi
+          - name: ensure-cloud-source
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              if [ ! -d "$CLOUD_SOURCE_DIR/.git" ]; then
+                git clone --depth 1 "$CLOUD_SOURCE_REPO" "$CLOUD_SOURCE_DIR"
+              else
+                cd "$CLOUD_SOURCE_DIR"
+                git fetch --depth 1 origin main
+                git reset --hard origin/main
+              fi
+          - name: pull-cloud-data
+            depends:
+              - ensure-cloud-data
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              cd "$CLOUD_DATA_DIR"
+              git pull --rebase origin main || {
+                echo "Rebase conflict — resetting to remote"
+                git rebase --abort 2>/dev/null
+                git reset --hard origin/main
+              }
+          - name: sync-secrets
+            depends:
+              - ensure-cloud-source
+              - pull-cloud-data
+            command: |
+              mkdir -p "$CLOUD_DATA_DIR/secrets"
+              # Clear stale secrets (service may have been removed)
+              rm -f "$CLOUD_DATA_DIR/secrets/"*.yaml
+              # Scan a_solutions, b_infra/home-manager, b_infra/vps_* for secrets
+              find "$CLOUD_SOURCE_DIR/a_solutions" \
+                   "$CLOUD_SOURCE_DIR/b_infra/home-manager" \
+                   "$CLOUD_SOURCE_DIR/b_infra" \
+                -name "secrets*.yaml" \
+                -not -path "*/z_archive/*" -not -path "*/node_modules/*" \
+                -not -path "*/dist/*" \
+                -type f 2>/dev/null | sort -u | while read -r src; do
+                # Build name from path relative to repo root
+                # a_solutions/bb-sec_authelia/src/secrets.yaml -> bb-sec_authelia-secrets.yaml
+                # b_infra/home-manager/_shared/secrets.yaml -> home-manager--_shared-secrets.yaml
+                rel=''${src#$CLOUD_SOURCE_DIR/}
+                # Strip leading a_solutions/ or b_infra/
+                rel=''${rel#a_solutions/}
+                rel=''${rel#b_infra/}
+                # Strip /src/ or trailing /secrets*.yaml dirname component
+                rel=$(echo "$rel" | awk -F/ '{
+                  out=""
+                  for(i=1;i<NF;i++) {
+                    if($i=="src") continue
+                    out=(out=="" ? $i : out"-"$i)
+                  }
+                  print out"-"$NF
+                }')
+                cp "$src" "$CLOUD_DATA_DIR/secrets/$rel"
+              done
+              COUNT=$(ls "$CLOUD_DATA_DIR/secrets/"*.yaml 2>/dev/null | wc -l)
+              echo "Synced $COUNT secret files to cloud-data/secrets/"
+          - name: commit-and-push
+            depends:
+              - sync-secrets
+            command: |
+              export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              cd "$CLOUD_DATA_DIR"
+              git add secrets/
+              if git diff --cached --quiet; then
+                echo "No secret changes — skipping commit"
+                exit 0
+              fi
+              STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+              git commit -m "sync: secrets ''${STAMP}"
+              git push origin main
+              echo "Pushed secrets at ''${STAMP}"
+      '';
     };
 
     # ── Documentation ────────────────────────────────────────────────────
@@ -1631,6 +1783,7 @@
         cp ${dags.daily-report-script} $out/dags/daily-report.sh
         cp ${dags.cloud-data-sync} $out/dags/cloud-data-sync.yaml
         cp ${dags.front-data-sync} $out/dags/front-data-sync.yaml
+        cp ${dags.secrets-sync} $out/dags/secrets-sync.yaml
       '';
     in {
       default = defaultPkg;

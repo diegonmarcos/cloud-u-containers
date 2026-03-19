@@ -1,7 +1,7 @@
 schedule: "0 9 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -25,7 +25,7 @@ steps:
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "High resource usage:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'df -h && free -h && top -bn1 | head -15'\n  ssh <user>@<ip> 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_resources" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: System Resources Alert" \
           -H "Priority: 4" \
           -H "Tags: warning,chart_with_upwards_trend" \

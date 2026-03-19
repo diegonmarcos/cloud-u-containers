@@ -1,7 +1,7 @@
 schedule: "*/5 * * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -26,7 +26,7 @@ steps:
       if [ -n "$FAILED" ]; then
         MSG=$(echo -e "DOWN endpoints:\n${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_endpoints" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Service Endpoint DOWN" \
           -H "Priority: 5" \
           -H "Tags: rotating_light" \

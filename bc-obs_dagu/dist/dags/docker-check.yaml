@@ -1,7 +1,7 @@
 schedule: "0 10 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -33,7 +33,7 @@ steps:
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "Container issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/infra_containers" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Container Health Issues" \
           -H "Priority: 4" \
           -H "Tags: whale,warning" \

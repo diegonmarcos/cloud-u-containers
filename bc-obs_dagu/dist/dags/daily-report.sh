@@ -578,6 +578,58 @@ EOBKROW
   echo '</div>' >> "$F"
 done
 
+# ── Dagu Workflows Status ──
+DAGU_API="http://localhost:8080/api/v1/dags"
+DAGU_JSON=$(curl -sf -u "$DAGU_AUTH_BASIC_USERNAME:$DAGU_AUTH_BASIC_PASSWORD" "$DAGU_API" 2>/dev/null || echo "")
+
+if [ -n "$DAGU_JSON" ]; then
+  cat >> "$F" <<'EOWF1'
+<div style="margin-top:16px;font-weight:bold;color:#e0e0e0;font-size:13px;margin-bottom:6px;font-family:'Courier New',monospace;">Dagu Workflows</div>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Workflow</th>
+<th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Schedule</th>
+<th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Last Status</th>
+<th style="text-align:left;color:#8899aa;font-size:11px;padding:4px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Last Run</th>
+</tr>
+EOWF1
+
+  echo "$DAGU_JSON" | jq -r '
+    .DAGs[] |
+    [
+      (.DAG.Name // .File // "unknown"),
+      (.DAG.Schedule[0].Expression // "-"),
+      (.Status.StatusText // "none"),
+      (.Status.StartedAt // "-")
+    ] | join("|")
+  ' 2>/dev/null | sort | while IFS='|' read -r wf_name wf_sched wf_status wf_started; do
+    [ -z "$wf_name" ] && continue
+    case "$wf_status" in
+      finished|success) wf_color=$C_OK ;;
+      error|failed)     wf_color=$C_CRIT ;;
+      running)          wf_color=$C_WARN ;;
+      cancel*)          wf_color=$C_WARN ;;
+      *)                wf_color=$C_DIM ;;
+    esac
+    if [ "$wf_started" != "-" ] && [ "$wf_started" != "null" ]; then
+      wf_time=$(date -d "$wf_started" '+%Y-%m-%d %H:%M' 2>/dev/null || echo "$wf_started")
+    else
+      wf_time="-"
+    fi
+    cat >> "$F" <<EOWFROW
+<tr>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_name</td>
+<td style="padding:3px 8px;color:#8899aa;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_sched</td>
+<td style="padding:3px 8px;color:$wf_color;font-size:11px;font-weight:bold;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_status</td>
+<td style="padding:3px 8px;color:#8899aa;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$wf_time</td>
+</tr>
+EOWFROW
+  done
+  echo '</table>' >> "$F"
+else
+  echo '<div style="margin-top:16px;color:#8899aa;font-size:12px;font-style:italic;font-family:'"'"'Courier New'"'"',monospace;">Could not fetch Dagu workflow status</div>' >> "$F"
+fi
+
 cat >> "$F" <<'EODEL2'
 <div style="margin-top:8px;padding:8px;background:rgba(15,52,96,0.3);border-radius:4px;">
 <span style="color:#8899aa;font-size:12px;font-family:'Courier New',monospace;">Dagu Dashboard: </span>

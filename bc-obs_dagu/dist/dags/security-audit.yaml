@@ -1,7 +1,7 @@
 schedule: "0 12 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -29,7 +29,7 @@ steps:
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "Suspicious auth activity:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'fail2ban-client status sshd'\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/security_audit" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Security Audit Alert" \
           -H "Priority: 5" \
           -H "Tags: lock,rotating_light" \

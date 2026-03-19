@@ -1,7 +1,7 @@
 schedule: "0 8 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - BEARER_TOKEN: ${BEARER_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: false
   success: false
@@ -25,7 +25,7 @@ steps:
       if [ -n "$ALERTS" ]; then
         MSG=$(echo -e "TLS certificates expiring soon:\n${ALERTS}\nAction:\n  openssl s_client -connect <domain>:443 </dev/null 2>/dev/null | openssl x509 -noout -dates\n  ssh gcp-proxy 'docker exec caddy caddy reload'\n  Check Let's Encrypt / Caddy auto-renewal logs\n\nDagu: http://10.0.0.3:8070")
         curl -s -X POST "$NTFY_URL/security_tls" \
-          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: TLS Certificate Expiring" \
           -H "Priority: 4" \
           -H "Tags: warning,lock" \
