@@ -35,14 +35,11 @@
             - SMTP_PORT=25
             - API_KEY=stalwart-proxy-key-2025
             - LISTEN_PORT=8080
-          dns:
-            - 172.22.0.2
           networks:
-            infra:
-              ipv4_address: 172.22.0.22
+            - mailu_default
 
       networks:
-        infra:
+        mailu_default:
           external: true
     '';
 

@@ -47,12 +47,10 @@
           ADMIN_TOKEN = "\${ADMIN_TOKEN}";
         };
         volumes = [ "./data:/data" ];
-        networks = [ "infra" ];
-        networkIps = { infra = "172.20.0.13"; };
-        dns = [ "172.20.0.2" ];
+        networks = [ "npm_default" ];
       };
 
-      networks.infra = { external = true; };
+      networks.npm_default = { external = true; };
     };
 
   in {

@@ -46,10 +46,7 @@
             - db-agent-data:/backup
             - db-agent-logs:/var/log/db-agent
           networks:
-            infra:
-              ipv4_address: 172.23.0.15
-          dns:
-            - 172.23.0.2
+            - npm_default
           healthcheck:
             test: ["CMD", "test", "-f", "/var/log/db-agent/last-run.json"]
             interval: 60s
@@ -69,7 +66,7 @@
           name: db-agent-logs
 
       networks:
-        infra:
+        npm_default:
           external: true
     '';
 

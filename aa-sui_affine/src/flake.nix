@@ -47,9 +47,7 @@
           "CMD_EMAIL=true"
           "CMD_ALLOW_EMAIL_REGISTER=true"
         ];
-        networks = [ "infra" ];
-        networkIps = { infra = "172.21.0.70"; };
-        dns = [ "172.21.0.2" ];
+        networks = [ "dev_network" ];
         healthcheck = {
           test = "['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/status']";
           interval = "30s";
@@ -70,9 +68,7 @@
           "POSTGRES_DB=${config.db_name}"
           "PGDATA=/var/lib/postgresql/data/pgdata"
         ];
-        networks = [ "infra" ];
-        networkIps = { infra = "172.21.0.71"; };
-        dns = [ "172.21.0.2" ];
+        networks = [ "dev_network" ];
         healthcheck = {
           test = "['CMD-SHELL', 'pg_isready -U ${config.db_user}']";
           interval = "10s";
@@ -81,7 +77,7 @@
         };
       };
 
-      networks.infra = { external = true; };
+      networks.dev_network = { external = true; name = "dev_network"; };
 
       volumes.hedgedoc_uploads = { driver = "local"; };
       volumes.postgres_data = { driver = "local"; };

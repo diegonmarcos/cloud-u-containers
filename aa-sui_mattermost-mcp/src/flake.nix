@@ -33,17 +33,15 @@
             MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
             MM_ADMIN_USERNAME: me@diegonmarcos.com
             CLAUDE_MODEL: opus
-          dns:
-            - 172.21.0.2
           networks:
-            infra:
-              ipv4_address: 172.21.0.83
+            - c3-net
           ports:
             - "3102:3102"
 
       networks:
-        infra:
+        c3-net:
           external: true
+          name: mattermost-bots_default
     '';
 
   in {

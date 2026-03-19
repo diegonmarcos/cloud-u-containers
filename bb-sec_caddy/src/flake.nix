@@ -570,7 +570,7 @@
         ${handleErrors}
       }
 
-      # Vaultwarden — reachable via infra docker network
+      # Vaultwarden — reachable via npm_default docker network
       # Authelia access_control handles: API/identity/icons bypass, admin two_factor
       vault.diegonmarcos.com {
     ${sec}
@@ -688,9 +688,7 @@
           "caddy_data:/data"
           "caddy_config:/config"
         ];
-        networks = [ "infra" ];
-        networkIps = { infra = "172.20.0.10"; };
-        dns = [ "172.20.0.2" ];
+        networks = [ "npm_default" ];
         startAfter = [ "introspect-proxy" ];
         capAdd = [ "NET_BIND_SERVICE" ];  # needed for ports 80/443
         skipReadOnly = true;  # caddy writes to /data, /config, /var/log
@@ -706,9 +704,7 @@
           REQUIRED_SCOPE = "authelia.bearer.authz";
           DEBUG = "\"true\"";
         };
-        networks = [ "infra" ];
-        networkIps = { infra = "172.20.0.12"; };
-        dns = [ "172.20.0.2" ];
+        networks = [ "npm_default" ];
         memLimit = "96M";
         memReservation = "48M";
         healthcheck = {
@@ -722,7 +718,7 @@
 
       volumes.caddy_data = { driver = "local"; };
       volumes.caddy_config = { driver = "local"; };
-      networks.infra = { external = true; };
+      networks.npm_default = { external = true; };
     };
 
   in {

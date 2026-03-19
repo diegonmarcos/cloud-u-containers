@@ -49,12 +49,9 @@
             - /mnt/gcloud-sqlite:/sqlite:ro
           ports:
             - "10.0.0.6:${toString config.port}:8080"
-          dns:
-            - 172.21.0.2
           networks:
-            nocodb_network:
-            infra:
-              ipv4_address: 172.21.0.12
+            - nocodb_network
+            - dev_network
           depends_on:
             nocodb-db:
               condition: service_healthy
@@ -75,12 +72,8 @@
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
           volumes:
             - nocodb_postgres:/var/lib/postgresql/data
-          dns:
-            - 172.21.0.2
           networks:
-            nocodb_network:
-            infra:
-              ipv4_address: 172.21.0.13
+            - nocodb_network
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb"]
             interval: 10s
@@ -101,7 +94,7 @@
           ipam:
             config:
               - subnet: 172.25.0.0/24
-        infra:
+        dev_network:
           external: true
     '';
 

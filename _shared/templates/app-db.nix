@@ -22,7 +22,7 @@ docker:
   # Networking
   port ? null,                   # { host; container; }
   wgIp ? null,
-  networkName ? "infra",
+  networkName ? "dev_network",
   networkExternal ? true,
 
   # App container

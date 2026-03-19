@@ -56,14 +56,12 @@
             - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
             - /opt/ssh-keys/dagu:/root/.ssh:ro
           mem_limit: 256m
-          dns:
-            - 172.22.0.2
           networks:
-            infra:
-              ipv4_address: 172.22.0.23
+            - default
+            - mailu_default
 
       networks:
-        infra:
+        mailu_default:
           external: true
     '';
 
