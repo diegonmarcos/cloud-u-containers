@@ -94,6 +94,8 @@ in {
 
     # Container identity
     container_name ? name,
+    entrypoint ? null,        # string or list — overrides image ENTRYPOINT
+    command ? null,           # string or list — overrides image CMD
 
     # Networking
     ports ? [],               # list of "ip:host:container" strings
@@ -183,14 +185,16 @@ in {
         else "${i2}healthcheck:\n${i3}test: ${healthcheck.test}\n${i3}interval: ${healthcheck.interval or "30s"}\n${i3}timeout: ${healthcheck.timeout or "10s"}\n${i3}retries: ${toString (healthcheck.retries or 3)}"
           + (if healthcheck ? start_period then "\n${i3}start_period: ${healthcheck.start_period}" else "");
 
-      # ── Resource limits (deploy syntax) ──
-      hasLimits = memLimit != null || cpuLimit != null;
+      # ── Resource limits (deploy.resources syntax — Compose v2) ──
+      # pids_limit goes here too (not top-level, which conflicts with deploy)
+      hasLimits = memLimit != null || cpuLimit != null || pidsLimit != 0;
       hasReservations = memReservation != null;
       deployLines = if !hasLimits && !hasReservations then ""
         else "${i2}deploy:\n${i3}resources:"
           + (if hasLimits then "\n${i3}  limits:"
             + (if memLimit != null then "\n${i3}    memory: ${memLimit}" else "")
             + (if cpuLimit != null then "\n${i3}    cpus: \"${cpuLimit}\"" else "")
+            + (if pidsLimit != 0 then "\n${i3}    pids: ${toString pidsLimit}" else "")
             else "")
           + (if hasReservations then "\n${i3}  reservations:"
             + (if memReservation != null then "\n${i3}    memory: ${memReservation}" else "")
@@ -205,9 +209,6 @@ in {
       readOnlyLine = if skipReadOnly then "" else "${i2}read_only: true";
       tmpfsLines = if skipReadOnly || tmpfs == [] then ""
         else "${i2}tmpfs:\n" + builtins.concatStringsSep "\n" (map (t: "${i3}- ${t}") tmpfs);
-
-      # pids_limit (fork bomb protection)
-      pidsLine = if pidsLimit == 0 then "" else "${i2}pids_limit: ${toString pidsLimit}";
 
       # ulimits (file descriptor cap)
       ulimitsLines = "${i2}ulimits:\n${i3}nofile:\n${i3}  soft: 65536\n${i3}  hard: 65536";
@@ -226,16 +227,24 @@ in {
 
       userLine = if user != null then "${i2}user: \"${user}\"" else "";
 
+      # entrypoint / command
+      entrypointLine = if entrypoint == null then ""
+        else if builtins.isList entrypoint then "${i2}entrypoint: [${builtins.concatStringsSep ", " (map (e: "\"${e}\"") entrypoint)}]"
+        else "${i2}entrypoint: ${entrypoint}";
+      commandLine = if command == null then ""
+        else "${i2}command: ${command}";
+
       # Collect all non-empty sections
       sections = builtins.filter (s: s != "") [
         imageLine
         buildLines
         "${i2}container_name: ${container_name}"
+        entrypointLine
+        commandLine
         restartLine
         stopLine
         readOnlyLine
         tmpfsLines
-        pidsLine
         ulimitsLines
         dnsLines
         envFileLines
