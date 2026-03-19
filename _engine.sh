@@ -478,8 +478,8 @@ step_compose() {
     else
         # Standard: pull first (while old containers run), then down + up (instant, no pulling)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
-        log "Pulling images on $DEPLOY_HOST (old containers keep running)"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG pull --ignore-buildable 2>/dev/null" || true
+        log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && for svc in \$(docker compose config --services 2>/dev/null); do echo \"  pull: \$svc\"; docker compose $ENV_FILE_FLAG pull --ignore-buildable \$svc 2>/dev/null || true; done"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate --build $EXTRA_FLAGS"
     fi
