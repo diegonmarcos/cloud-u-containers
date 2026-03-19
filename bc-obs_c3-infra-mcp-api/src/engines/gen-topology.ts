@@ -121,8 +121,8 @@ function main() {
     const existingVm = existing?.vms?.[vmId];
     vms[vmId] = {
       ...existingVm,
-      ip: existingVm?.ip || "",
-      wg_ip: host.hostname,
+      ip: existingVm?.ip || host.hostname,
+      wg_ip: existingVm?.wg_ip || host.hostname,
       user: host.user,
       method: existingVm?.method || "key",
       ssh_alias: host.alias,
