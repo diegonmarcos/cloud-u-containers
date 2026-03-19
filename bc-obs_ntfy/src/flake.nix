@@ -40,6 +40,9 @@
       enable-signup: false
       enable-reservations: false
 
+      # Listen on non-default port (host networking — port 80 is Caddy's)
+      listen-http: :${toString config.port}
+
       # Behind reverse proxy (Authelia handles auth)
       behind-proxy: true
     '';
@@ -80,10 +83,10 @@
             - '10.0.0.1:${toString config.port}:80'
           restart: unless-stopped
           dns:
-            - 8.8.8.8
-            - 1.1.1.1
+            - 172.20.0.2
           networks:
-            - npm_default
+            infra:
+              ipv4_address: 172.20.0.14
 
         syslog-bridge:
           image: python:3.11-slim
@@ -100,9 +103,9 @@
             - ntfy
           restart: unless-stopped
           dns:
-            - 8.8.8.8
+            - 172.20.0.2
           networks:
-            - npm_default
+            - infra
 
         github-rss:
           image: python:3.11-slim
@@ -118,17 +121,16 @@
             - ntfy
           restart: unless-stopped
           dns:
-            - 8.8.8.8
-            - 1.1.1.1
+            - 172.20.0.2
           networks:
-            - npm_default
+            - infra
 
       volumes:
         syslog-central-logs:
           external: true
 
       networks:
-        npm_default:
+        infra:
           external: true
     '';
 
