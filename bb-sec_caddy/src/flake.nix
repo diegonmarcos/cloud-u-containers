@@ -698,6 +698,7 @@
         name = "introspect-proxy";
         build = "./introspect-proxy";
         image = "introspect-proxy:latest";
+        pidsLimit = 0;  # disable — Docker 27.5 conflicts pids_limit vs deploy.resources.limits.pids
         environment = {
           JWKS_URL = "https://auth.diegonmarcos.com/jwks.json";
           ISSUER = "https://auth.diegonmarcos.com";
