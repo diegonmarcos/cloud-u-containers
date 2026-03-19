@@ -14,6 +14,7 @@
     };
 
     title = "Container Orchestrator";
+    docker = import ../../_shared/docker.nix;
 
     # ── Manifest: resource budgets for all services ──────────────────────
     mkManifest = pkgs: pkgs.writeText "manifest.json" (builtins.toJSON {
@@ -193,54 +194,45 @@
       ENTRYPOINT ["/bin/sh", "/app/orchestrator.sh"]
     '';
 
-    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-      # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bb-sec_orchestrator/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_orchestrator/build.sh ship ║
-      # ╚══════════════════════════════════════════════════════════════════╝
-      services:
-        orchestrator:
-          build: .
-          image: orchestrator:local
-          container_name: ${config.container_name}
-          restart: unless-stopped
-          ports:
-            - "127.0.0.1:${toString config.api_port}:${toString config.api_port}"
-          volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - ./orchestrator.sh:/app/orchestrator.sh:ro
-            - ./manifest.json:/app/manifest.json:ro
-            - orchestrator_state:/app/state
-            - orchestrator_logs:/app/logs
-          environment:
-            - API_PORT=${toString config.api_port}
-          deploy:
-            resources:
-              limits:
-                memory: 64M
-              reservations:
-                memory: 32M
-          healthcheck:
-            test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:${toString config.api_port}/health"]
-            interval: 30s
-            timeout: 5s
-            retries: 3
-            start_period: 15s
-          networks:
-            - dev_network
-
-      volumes:
-        orchestrator_state:
-        orchestrator_logs:
-
-      networks:
-        dev_network:
-          external: true
-          name: dev_network
-    '';
+    mkDockerCompose = pkgs: docker.mkCompose pkgs {
+      banner = docker.banner "~/git/cloud/a_solutions/bb-sec_orchestrator/src/flake.nix";
+      services = {
+        orchestrator = docker.mkService {
+          name = "orchestrator";
+          build = ".";
+          image = "orchestrator:local";
+          container_name = config.container_name;
+          ports = ["127.0.0.1:${toString config.api_port}:${toString config.api_port}"];
+          volumes = [
+            "/var/run/docker.sock:/var/run/docker.sock"
+            "./orchestrator.sh:/app/orchestrator.sh:ro"
+            "./manifest.json:/app/manifest.json:ro"
+            "orchestrator_state:/app/state"
+            "orchestrator_logs:/app/logs"
+          ];
+          environment = ["API_PORT=${toString config.api_port}"];
+          memLimit = "64M";
+          memReservation = "32M";
+          healthcheck = {
+            test = ''["CMD", "wget", "-q", "--spider", "http://127.0.0.1:${toString config.api_port}/health"]'';
+            interval = "30s";
+            timeout = "5s";
+            retries = 3;
+            start_period = "15s";
+          };
+          networks = ["dev_network"];
+          skipReadOnly = true;
+          skipSecurity = true;
+        };
+      };
+      volumes = {
+        orchestrator_state = {};
+        orchestrator_logs = {};
+      };
+      networks = {
+        dev_network = { external = true; name = "dev_network"; };
+      };
+    };
 
   in {
     packages = forAllSystems (system: let
