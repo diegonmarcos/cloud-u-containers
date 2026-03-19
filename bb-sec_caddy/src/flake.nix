@@ -134,17 +134,16 @@
         import security'';
 
     # ── Auth snippets ────────────────────────────────────────────
-    # Authelia forward_auth (cookie-based, for browser sessions)
-    # "authelia" resolves via Hickory DNS .internal zone + search domain
+    # Authelia forward_auth — resolves via Hickory per-service zone (authelia.app)
     authelia = ''
-        forward_auth authelia:9091 {
+        forward_auth authelia.app:9091 {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
         }'';
 
-    # Bearer token auth via introspect-proxy sidecar (OIDC token introspection)
+    # Bearer token auth via introspect-proxy — resolves via Hickory (introspect-proxy.app)
     bearer = ''
-        forward_auth introspect-proxy:4182 {
+        forward_auth introspect-proxy.app:4182 {
           method GET
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -253,11 +252,10 @@
       # PUBLIC / BYPASS (no auth)
       # ════════════════════════════════════════════════════════════
 
-      # Authelia itself — must be public (bypass policy in Authelia config)
-      # "authelia" resolves via Hickory .internal zone (search domain = internal)
+      # Authelia itself — resolves via Hickory per-service zone (authelia.app)
       auth.diegonmarcos.com {
     ${sec}
-        reverse_proxy authelia:9091
+        reverse_proxy authelia.app:9091
         ${handleErrors}
       }
 
@@ -572,10 +570,10 @@
         ${handleErrors}
       }
 
-      # Vaultwarden — host networking, listens on port 8880 (avoids Caddy's 80)
+      # Vaultwarden — resolves via Hickory (vaultwarden.app), port 8880 avoids Caddy's 80
       vault.diegonmarcos.com {
     ${sec}
-        ${mkProtected "vaultwarden:8880"}
+        ${mkProtected "vaultwarden.app:8880"}
         ${handleErrors}
       }
 
@@ -594,15 +592,15 @@
         @authelia_jwt header_regexp Authorization "^Bearer eyJ"
         handle @authelia_jwt {
     ${bearer}
-          reverse_proxy ntfy:8090
+          reverse_proxy ntfy.app:8090
         }
         @ntfy_token header_regexp Authorization "^Bearer tk_"
         handle @ntfy_token {
-          reverse_proxy ntfy:8090
+          reverse_proxy ntfy.app:8090
         }
         handle {
     ${authelia}
-          reverse_proxy ntfy:8090
+          reverse_proxy ntfy.app:8090
         }
         ${handleErrors}
       }
