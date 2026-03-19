@@ -110,6 +110,7 @@ in {
 
     # Dependencies
     depends_on ? {},          # { service_name = { condition = "service_healthy"; }; }
+    startAfter ? [],          # list of service names — auto-generates depends_on with service_healthy
 
     # Resource limits (Docker Compose v2 deploy syntax)
     memLimit ? null,          # e.g. "256M"
@@ -121,10 +122,14 @@ in {
     capAdd ? [],              # explicit capabilities to add back
     user ? null,              # e.g. "1000:1000" — opt-in per service
     allowPublicPorts ? false, # true = allow 0.0.0.0 port bindings
+    skipReadOnly ? false,     # true = don't set read_only (services that write to root fs)
+    tmpfs ? [ "/tmp" ],       # tmpfs mounts for read_only containers (override if needed)
 
     # Policy overrides
     restart ? "unless-stopped",
     stopGracePeriod ? "30s",
+    pidsLimit ? 256,          # max processes per container (0 = no limit)
+    dns ? [],                 # DNS servers — e.g. ["10.0.0.1"] for Hickory
     skipLogging ? false,      # true = don't inject logging config
     skipSecurity ? false,     # true = don't inject security_opt + cap_drop
 
@@ -165,8 +170,13 @@ in {
       envFileLines = if env_file == [] then ""
         else "${i2}env_file:\n" + builtins.concatStringsSep "\n" (map (f: "${i3}- ${f}") env_file);
 
-      # ── Depends on ──
-      dependsLines = renderDependsOn depends_on;
+      # ── Depends on (merge explicit depends_on + startAfter chain) ──
+      startAfterDeps = builtins.listToAttrs (map (svc: {
+        name = svc;
+        value = { condition = "service_healthy"; };
+      }) startAfter);
+      mergedDeps = startAfterDeps // depends_on;  # explicit depends_on wins on conflict
+      dependsLines = renderDependsOn mergedDeps;
 
       # ── Healthcheck ──
       healthLines = if healthcheck == null then ""
@@ -191,6 +201,21 @@ in {
       restartLine = "${i2}restart: ${restart}";
       stopLine = "${i2}stop_grace_period: ${stopGracePeriod}";
 
+      # read_only + tmpfs (writable scratch dirs for read-only containers)
+      readOnlyLine = if skipReadOnly then "" else "${i2}read_only: true";
+      tmpfsLines = if skipReadOnly || tmpfs == [] then ""
+        else "${i2}tmpfs:\n" + builtins.concatStringsSep "\n" (map (t: "${i3}- ${t}") tmpfs);
+
+      # pids_limit (fork bomb protection)
+      pidsLine = if pidsLimit == 0 then "" else "${i2}pids_limit: ${toString pidsLimit}";
+
+      # ulimits (file descriptor cap)
+      ulimitsLines = "${i2}ulimits:\n${i3}nofile:\n${i3}  soft: 65536\n${i3}  hard: 65536";
+
+      # DNS (force internal resolver)
+      dnsLines = if dns == [] then ""
+        else "${i2}dns:\n" + builtins.concatStringsSep "\n" (map (d: "${i3}- ${d}") dns);
+
       loggingLines = if skipLogging then ""
         else "${i2}logging:\n${i3}driver: \"json-file\"\n${i3}options:\n${i3}  max-size: \"10m\"\n${i3}  max-file: \"3\"";
 
@@ -208,6 +233,11 @@ in {
         "${i2}container_name: ${container_name}"
         restartLine
         stopLine
+        readOnlyLine
+        tmpfsLines
+        pidsLine
+        ulimitsLines
+        dnsLines
         envFileLines
         envLines
         portLines
