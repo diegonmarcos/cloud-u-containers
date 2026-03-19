@@ -24,7 +24,7 @@
           name = "dozzle";
           image = config.image;
           container_name = config.container_name;
-          ports = ["10.0.0.1:${toString config.port}:8080"];
+          ports = ["10.0.0.4:${toString config.port}:8080"];
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
           environment = ["DOZZLE_LEVEL=info"];
           memLimit = "64m";

@@ -4,7 +4,7 @@
   "category": "tools",
   "domain": "logs.diegonmarcos.com",
   "deploy": {
-    "host": "gcp-proxy",
+    "host": "oci-analytics",
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },

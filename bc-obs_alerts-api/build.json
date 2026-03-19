@@ -3,7 +3,7 @@
   "description": "Security Alert Aggregation API",
   "category": "tools",
   "deploy": {
-    "host": "gcp-proxy",
+    "host": "oci-analytics",
     "remote_path": "/opt/containers/alerts-api"
   }
 }

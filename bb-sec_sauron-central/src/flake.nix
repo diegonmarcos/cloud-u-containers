@@ -20,14 +20,15 @@
       # ║ Source: ~/git/cloud/a_solutions/bb-sec_sauron-central/src/flake.nix ║
       # ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_sauron-central/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
-      # Central Syslog Collector - Deploy on GCP arch-1
+      # Central Syslog Collector - Deploy on oci-analytics
       # Receives alerts from all VMs, stores in SQLite
+      # Dormant by default — start manually: docker compose up -d
 
       services:
         syslog-central:
           image: balabit/syslog-ng:4.4.0
           container_name: syslog-central
-          restart: unless-stopped
+          restart: "no"
           ports:
             - "5514:5514/tcp"
           volumes:
@@ -39,7 +40,7 @@
         siem-api:
           image: python:3.11-slim
           container_name: siem-api
-          restart: unless-stopped
+          restart: "no"
           build:
             context: .
             dockerfile: Dockerfile.api
