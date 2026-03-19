@@ -77,6 +77,7 @@ if [ -f "$CONFIG" ]; then
     JWKS_DEST="$(get_config secrets.jwks_dest)"
     PRESERVE_SYMLINKS="$(get_config build.preserve_symlinks)"
     INCLUDE_CONFIG_JSON="$(get_config build.include_config_json)"
+    INCLUDE_CLOUD_DATA="$(get_config build.include_cloud_data)"
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
     WRANGLER_DEPLOY="$(get_config deploy.wrangler)"
@@ -211,6 +212,23 @@ step_build() {
         return 0
     fi
 
+    # Pre-build: copy cloud-data/ files into src/ so nix can read them
+    # (nix flakes can't see git submodule contents — this bridges the gap)
+    CLOUD_DATA_STAGED=""
+    if [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
+        CLOUD_DATA_DIR="$SERVICE_DIR/../../cloud-data"
+        if [ -d "$CLOUD_DATA_DIR" ]; then
+            for f in "$CLOUD_DATA_DIR"/*.json; do
+                [ -f "$f" ] || continue
+                BASENAME=$(basename "$f")
+                cp "$f" "$SRC_DIR/$BASENAME"
+                git -C "$SERVICE_DIR/../.." add -f "$(realpath --relative-to="$SERVICE_DIR/../.." "$SRC_DIR/$BASENAME")" 2>/dev/null || true
+                CLOUD_DATA_STAGED="$CLOUD_DATA_STAGED $SRC_DIR/$BASENAME"
+            done
+            log "Staged cloud-data/*.json into src/ for nix build"
+        fi
+    fi
+
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
@@ -219,6 +237,11 @@ step_build() {
         log_error "nix build failed:"
         cat "$BUILD_LOG" >&2
         rm -f "$BUILD_LOG"
+        # Clean up staged cloud-data files on failure
+        for f in $CLOUD_DATA_STAGED; do
+            git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+            rm -f "$f"
+        done
         return 1
     }
     # Show warnings from nix build (if any)
@@ -240,6 +263,12 @@ step_build() {
     fi
     chmod -R u+w "$DIST_DIR"
     rm -f "$SERVICE_DIR/.result"
+
+    # Post-build: unstage and remove cloud-data files from src/
+    for f in $CLOUD_DATA_STAGED; do
+        git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+        rm -f "$f"
+    done
 
     # Carry over dockerfile hash from step_docker (if image was rebuilt)
     if [ -f "$SERVICE_DIR/.dockerfile-hash-new" ]; then
