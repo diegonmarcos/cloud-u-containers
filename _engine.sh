@@ -76,7 +76,6 @@ if [ -f "$CONFIG" ]; then
     JWKS_FILE="$(get_config secrets.jwks_file)"
     JWKS_DEST="$(get_config secrets.jwks_dest)"
     PRESERVE_SYMLINKS="$(get_config build.preserve_symlinks)"
-    INCLUDE_CONFIG_JSON="$(get_config build.include_config_json)"
     INCLUDE_CLOUD_DATA="$(get_config build.include_cloud_data)"
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
@@ -275,14 +274,15 @@ step_build() {
         mv "$SERVICE_DIR/.dockerfile-hash-new" "$DIST_DIR/.dockerfile-hash"
     fi
 
-    # Include shared cloud-topology.json for dynamic VM/service discovery
-    if [ "$INCLUDE_CONFIG_JSON" = "true" ]; then
-        CONFIG_JSON="$SERVICE_DIR/../../cloud-topology.json"
-        # Fallback to old name during migration
-        [ ! -f "$CONFIG_JSON" ] && CONFIG_JSON="$SERVICE_DIR/../../config.json"
-        if [ -f "$CONFIG_JSON" ]; then
-            cp "$CONFIG_JSON" "$DIST_DIR/cloud-topology.json"
-            log "Included cloud-topology.json in dist/"
+    # Include cloud-data/*.json in dist/ for runtime use (e.g. C3 API needs topology)
+    if [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
+        CLOUD_DATA_DIR="$SERVICE_DIR/../../cloud-data"
+        if [ -d "$CLOUD_DATA_DIR" ]; then
+            for f in "$CLOUD_DATA_DIR"/*.json; do
+                [ -f "$f" ] || continue
+                cp "$f" "$DIST_DIR/"
+            done
+            log "Included cloud-data/*.json in dist/"
         fi
     fi
 
