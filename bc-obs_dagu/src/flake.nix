@@ -1474,11 +1474,19 @@
               curl -sf "$C3_API/deps" | jq '.' > "$REPO_DIR/cloud-deps.json.tmp"
               mv "$REPO_DIR/cloud-deps.json.tmp" "$REPO_DIR/cloud-deps.json"
               echo "Fetched cloud-deps.json ($(wc -c < "$REPO_DIR/cloud-deps.json") bytes)"
+          - name: fetch-dns-registry
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/dns-registry" | jq '.' > "$REPO_DIR/dns-services.json.tmp"
+              mv "$REPO_DIR/dns-services.json.tmp" "$REPO_DIR/dns-services.json"
+              echo "Fetched dns-services.json ($(wc -c < "$REPO_DIR/dns-services.json") bytes)"
           - name: commit-and-push
             depends:
               - fetch-topology
               - fetch-configs
               - fetch-deps
+              - fetch-dns-registry
             command: |
               export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
               cd "$REPO_DIR"
@@ -1486,7 +1494,7 @@
               ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
                 awk '{name=$0; gsub(/-/," ",name); for(i=1;i<=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i<=length(a);i++) name=name (i>1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
                 jq -s '.' > manifest.json
-              git add cloud-topology.json cloud-configs.json cloud-deps.json manifest.json
+              git add cloud-topology.json cloud-configs.json cloud-deps.json dns-services.json manifest.json
               if git diff --cached --quiet; then
                 echo "No changes — skipping commit"
                 exit 0
