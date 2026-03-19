@@ -135,16 +135,16 @@
 
     # ── Auth snippets ────────────────────────────────────────────
     # Authelia forward_auth (cookie-based, for browser sessions)
-    # With network_mode: host, containers share the host network — use 127.0.0.1
+    # "authelia" resolves via Hickory DNS .internal zone + search domain
     authelia = ''
-        forward_auth 127.0.0.1:9091 {
+        forward_auth authelia:9091 {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
         }'';
 
     # Bearer token auth via introspect-proxy sidecar (OIDC token introspection)
     bearer = ''
-        forward_auth 127.0.0.1:4182 {
+        forward_auth introspect-proxy:4182 {
           method GET
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -254,6 +254,7 @@
       # ════════════════════════════════════════════════════════════
 
       # Authelia itself — must be public (bypass policy in Authelia config)
+      # "authelia" resolves via Hickory .internal zone (search domain = internal)
       auth.diegonmarcos.com {
     ${sec}
         reverse_proxy authelia:9091
@@ -571,11 +572,10 @@
         ${handleErrors}
       }
 
-      # Vaultwarden — host networking, listens on port 8880
-      # Authelia access_control handles: API/identity/icons bypass, admin two_factor
+      # Vaultwarden — host networking, listens on port 8880 (avoids Caddy's 80)
       vault.diegonmarcos.com {
     ${sec}
-        ${mkProtected "127.0.0.1:8880"}
+        ${mkProtected "vaultwarden:8880"}
         ${handleErrors}
       }
 
@@ -594,15 +594,15 @@
         @authelia_jwt header_regexp Authorization "^Bearer eyJ"
         handle @authelia_jwt {
     ${bearer}
-          reverse_proxy 127.0.0.1:8090
+          reverse_proxy ntfy:8090
         }
         @ntfy_token header_regexp Authorization "^Bearer tk_"
         handle @ntfy_token {
-          reverse_proxy 127.0.0.1:8090
+          reverse_proxy ntfy:8090
         }
         handle {
     ${authelia}
-          reverse_proxy 127.0.0.1:8090
+          reverse_proxy ntfy:8090
         }
         ${handleErrors}
       }
