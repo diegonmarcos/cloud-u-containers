@@ -70,6 +70,13 @@ interface Service {
   flake?: string;
   ports?: string[];
   networks?: string[];
+  // Declarative infrastructure fields (from build.json)
+  proxy?: import("./parsers/build-json.js").ProxyConfig;
+  health?: import("./parsers/build-json.js").HealthConfig;
+  monitoring?: import("./parsers/build-json.js").MonitoringConfig;
+  backup?: import("./parsers/build-json.js").BackupConfig;
+  notifications?: import("./parsers/build-json.js").NotificationsConfig;
+  declared_ports?: Record<string, import("./parsers/build-json.js").PortConfig>;
   [key: string]: unknown;
 }
 
@@ -163,6 +170,13 @@ function main() {
       ...(entry.flake ? { flake: entry.flake } : existingSvc?.flake ? { flake: existingSvc.flake } : {}),
       ...(compose.ports.length > 0 ? { ports: compose.ports } : existingSvc?.ports ? { ports: existingSvc.ports } : {}),
       ...(compose.networks.length > 0 ? { networks: compose.networks } : existingSvc?.networks ? { networks: existingSvc.networks } : {}),
+      // Declarative infrastructure fields (pass through from build.json)
+      ...(entry.proxy ? { proxy: entry.proxy } : {}),
+      ...(entry.ports ? { declared_ports: entry.ports } : {}),
+      ...(entry.health ? { health: entry.health } : {}),
+      ...(entry.monitoring ? { monitoring: entry.monitoring } : {}),
+      ...(entry.backup ? { backup: entry.backup } : {}),
+      ...(entry.notifications ? { notifications: entry.notifications } : {}),
     };
 
     // Preserve extra fields from existing
