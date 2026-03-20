@@ -148,7 +148,30 @@ ${mkResourceLines rule.resources_two_factor}
       access_control:
         default_policy: two_factor
         rules:
-${accessControlYaml}
+          - domain: ${config.domain}
+            policy: bypass
+          - domain: vault.${config.base_domain}
+            resources:
+              - "^/api.*"
+              - "^/identity.*"
+              - "^/icons.*"
+              - "^/notifications.*"
+              - "^/attachments.*"
+            policy: bypass
+          - domain: vault.${config.base_domain}
+            resources:
+              - "^/admin.*"
+            policy: two_factor
+          - domain: vault.${config.base_domain}
+            policy: bypass
+          - domain: db.${config.base_domain}
+            resources:
+              - "^/api/.*"
+            policy: bypass
+          - domain: db.${config.base_domain}
+            policy: two_factor
+          - domain: "*.${config.base_domain}"
+            policy: two_factor
 
       session:
         name: authelia_session
