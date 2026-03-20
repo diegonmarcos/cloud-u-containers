@@ -1,6 +1,60 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
 
+export interface ProxyPathOverride {
+  upstream?: string;
+  auth?: string;
+  strip_prefix?: boolean;
+}
+
+export interface ProxyConfig {
+  upstream?: string;
+  auth?: string;
+  paths?: Record<string, ProxyPathOverride>;
+  github_pages?: string;
+  landing_page?: string;
+  tls_skip_verify?: boolean;
+  max_upload?: string;
+  streaming?: boolean;
+  timeout?: string;
+  type?: "subdomain" | "path" | "l4";
+  parent_domain?: string;
+  base_path?: string;
+}
+
+export interface PortConfig {
+  container: number;
+  host?: number;
+  proto?: "tcp" | "udp";
+  public?: boolean;
+}
+
+export interface HealthConfig {
+  path?: string;
+  interval?: string;
+  timeout?: string;
+  expected_status?: number;
+}
+
+export interface MonitoringConfig {
+  tls_check?: boolean;
+  dns_check?: boolean;
+  endpoint_check?: boolean;
+}
+
+export interface BackupConfig {
+  enabled?: boolean;
+  volumes?: string[];
+  schedule?: string;
+  retention?: string;
+}
+
+export interface NotificationsConfig {
+  topic?: string;
+  on_failure?: boolean;
+  on_recovery?: boolean;
+}
+
 export interface BuildJsonEntry {
   name: string;
   category: string;
@@ -9,6 +63,13 @@ export interface BuildJsonEntry {
   description: string;
   flake?: string;
   folder: string;
+  // Declarative infrastructure fields
+  proxy?: ProxyConfig;
+  ports?: Record<string, PortConfig>;
+  health?: HealthConfig;
+  monitoring?: MonitoringConfig;
+  backup?: BackupConfig;
+  notifications?: NotificationsConfig;
 }
 
 const CATEGORY_PREFIX: Record<string, string> = {
@@ -75,6 +136,13 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         description: bj.description || "",
         flake,
         folder,
+        // Pass through declarative infrastructure fields if present
+        ...(bj.proxy ? { proxy: bj.proxy } : {}),
+        ...(bj.ports ? { ports: bj.ports } : {}),
+        ...(bj.health ? { health: bj.health } : {}),
+        ...(bj.monitoring ? { monitoring: bj.monitoring } : {}),
+        ...(bj.backup ? { backup: bj.backup } : {}),
+        ...(bj.notifications ? { notifications: bj.notifications } : {}),
       });
     } catch {
       console.warn(`  WARN: invalid build.json in ${folder}`);
