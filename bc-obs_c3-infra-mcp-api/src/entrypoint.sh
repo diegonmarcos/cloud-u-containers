@@ -20,11 +20,11 @@ if [ -d /root/.ssh ]; then
   echo "c3-entrypoint: SSH keys copied to $SSH_DIR (fixed permissions)"
 fi
 
-# Clone/pull repos — public HTTPS, no SSH key needed
-# Map local dir name → GitHub repo name (when they differ)
+# Clone/pull repos — public via HTTPS, private (vault) via SSH
 repo_url() {
   case "$1" in
     front) echo "https://github.com/diegonmarcos/diegonmarcos.github.io.git" ;;
+    # vault is private — secrets injected via .secrets env file instead
     *)     echo "https://github.com/diegonmarcos/$1.git" ;;
   esac
 }

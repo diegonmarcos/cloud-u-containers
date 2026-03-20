@@ -370,78 +370,65 @@ function mailuOutboundTest(): Check[] {
 
 // ── Registration ─────────────────────────────────────────────────────────
 
+function safeTool(fn: () => string): { content: [{ type: "text"; text: string }] } {
+  try {
+    return { content: [{ type: "text" as const, text: fn() }] };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    return { content: [{ type: "text" as const, text: `ERROR: ${msg}` }] };
+  }
+}
+
 export function registerHealthMailuTools(server: McpServer): void {
   server.tool(
     "mailu_up",
     "Quick UP check: containers, TLS ports (993/465/587), webmail, MX record",
     {},
-    async () => {
-      const checks = mailuUp();
-      return { content: [{ type: "text" as const, text: formatChecks("Mailu UP Check", checks) }] };
-    },
+    async () => safeTool(() => formatChecks("Mailu UP Check", mailuUp())),
   );
 
   server.tool(
     "mailu_profile",
     "Deep profile all 8 Mailu containers (CPU, memory, network, disk, ports, health)",
     {},
-    async () => {
-      const profiles = mailuProfile();
-      return {
-        content: [{
-          type: "text" as const,
-          text: `Mailu Container Profiles\n${"─".repeat(60)}\n\n${JSON.stringify(profiles, null, 2)}`,
-        }],
-      };
-    },
+    async () => safeTool(() =>
+      `Mailu Container Profiles\n${"─".repeat(60)}\n\n${JSON.stringify(mailuProfile(), null, 2)}`
+    ),
   );
 
   server.tool(
     "mailu_send_test",
     "Inbound delivery test: send email via Resend API → Mailu mailbox",
     {},
-    async () => {
-      const checks = mailuSendTestResend();
-      return { content: [{ type: "text" as const, text: formatChecks("Mailu Inbound Send Test", checks) }] };
-    },
+    async () => safeTool(() => formatChecks("Mailu Inbound Send Test", mailuSendTestResend())),
   );
 
   server.tool(
     "mailu_outbound_test",
     "Outbound + DNS auth: SMTP relay, DKIM, SPF, DMARC records",
     {},
-    async () => {
-      const checks = mailuOutboundTest();
-      return { content: [{ type: "text" as const, text: formatChecks("Mailu Outbound & DNS Auth", checks) }] };
-    },
+    async () => safeTool(() => formatChecks("Mailu Outbound & DNS Auth", mailuOutboundTest())),
   );
 
   server.tool(
     "mailu_full",
     "Full mail health pipeline: UP + profile + inbound send test + outbound + DNS auth + CF Worker logs",
     {},
-    async () => {
-      const upChecks = mailuUp();
-      const outboundChecks = mailuOutboundTest();
-      const sendChecks = mailuSendTestResend();
-      const profiles = mailuProfile();
-      const workerLogs = fetchWorkerLogs();
-
+    async () => safeTool(() => {
       const sections = [
-        formatChecks("1. UP CHECK", upChecks),
+        formatChecks("1. UP CHECK", mailuUp()),
         "",
-        formatChecks("2. OUTBOUND & DNS AUTH", outboundChecks),
+        formatChecks("2. OUTBOUND & DNS AUTH", mailuOutboundTest()),
         "",
-        formatChecks("3. INBOUND SEND TEST (Resend → Mailu)", sendChecks),
+        formatChecks("3. INBOUND SEND TEST (Resend → Mailu)", mailuSendTestResend()),
         "",
         `4. CONTAINER PROFILES\n${"─".repeat(60)}`,
-        JSON.stringify(profiles, null, 2),
+        JSON.stringify(mailuProfile(), null, 2),
         "",
         `5. CF WORKER LOGS (email-forwarder, last 6h)\n${"─".repeat(60)}`,
-        JSON.stringify(workerLogs, null, 2),
+        JSON.stringify(fetchWorkerLogs(), null, 2),
       ];
-
-      return { content: [{ type: "text" as const, text: sections.join("\n") }] };
-    },
+      return sections.join("\n");
+    }),
   );
 }

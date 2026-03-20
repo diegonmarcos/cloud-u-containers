@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     python3 \
     build-essential \
+    dnsutils \
+    openssl \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Install npm dependencies (src/package.json is the Docker-context copy)
