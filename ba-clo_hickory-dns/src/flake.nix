@@ -94,6 +94,9 @@ ${zoneBlocks}
             "10.0.0.1:53:53/tcp"
             "10.0.0.1:53:53/udp"
           ];
+          environment = [
+            "RUST_LOG=hickory_dns=info,hickory_server=info"
+          ];
           volumes = [
             "./config/named.toml:/etc/named.toml:ro"
             "./config/zones:/etc/zones:ro"
