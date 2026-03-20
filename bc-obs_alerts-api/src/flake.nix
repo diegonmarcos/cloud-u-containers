@@ -30,8 +30,9 @@
           environment = [
             "DB_PATH=/data/alerts.db"
             "NTFY_URL=https://rss.diegonmarcos.com"
+            "LOG_LEVEL=info"
           ];
-          networks = ["npm_default"];
+          networks = [];
           healthcheck = {
             test = ''["CMD", "curl", "-f", "http://localhost:5000/api/health"]'';
             interval = "30s";
@@ -43,9 +44,6 @@
       };
       volumes = {
         alerts-data = {};
-      };
-      networks = {
-        npm_default = { external = true; };
       };
     };
 

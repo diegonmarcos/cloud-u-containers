@@ -220,7 +220,6 @@
             retries = 3;
             start_period = "15s";
           };
-          networks = ["dev_network"];
           skipReadOnly = true;
           skipSecurity = true;
         };
@@ -228,9 +227,6 @@
       volumes = {
         orchestrator_state = {};
         orchestrator_logs = {};
-      };
-      networks = {
-        dev_network = { external = true; name = "dev_network"; };
       };
     };
 

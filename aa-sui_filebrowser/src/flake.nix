@@ -30,7 +30,6 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:80" ];
-            networks = [ "dev_network" ];
             volumes = [
               "filebrowser_data:/srv"
               "filebrowser_db:/database"
@@ -43,6 +42,7 @@
               "FB_CONFIG=/config/settings.json"
               "FB_ROOT=/srv"
               "FB_NOAUTH=false"
+              "FB_LOG=stdout"
             ];
             healthcheck = {
               test = "['CMD', 'wget', '-q', '--spider', 'http://localhost:80/health']";
@@ -50,12 +50,6 @@
               timeout = "10s";
               retries = 3;
             };
-          };
-        };
-        networks = {
-          dev_network = {
-            external = true;
-            name = "dev_network";
           };
         };
         volumes = {

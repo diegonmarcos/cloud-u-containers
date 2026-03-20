@@ -34,7 +34,7 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:9001" ];
-            networks = [ "dev_network" ];
+            networks = [ "etherpad_net" ];
             volumes = [
               "etherpad_data:/opt/etherpad-lite/var"
             ];
@@ -49,6 +49,7 @@
               "DB_USER=${config.db_user}"
               "DB_PASS=${config.db_user}"
               "TRUST_PROXY=true"
+              "LOGLEVEL=INFO"
             ];
             healthcheck = {
               test = "['CMD', 'curl', '-f', 'http://localhost:9001/']";
@@ -67,7 +68,7 @@
             name = "postgres";
             image = config.db_image;
             container_name = config.db_container;
-            networks = [ "dev_network" ];
+            networks = [ "etherpad_net" ];
             volumes = [
               "postgres_data:/var/lib/postgresql/data"
             ];
@@ -86,10 +87,7 @@
           };
         };
         networks = {
-          dev_network = {
-            external = true;
-            name = "dev_network";
-          };
+          etherpad_net = {};
         };
         volumes = {
           etherpad_data = {};

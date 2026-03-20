@@ -30,7 +30,6 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8484" ];
-            networks = [ "dev_network" ];
             volumes = [
               "grist_data:/persist"
             ];
@@ -40,6 +39,7 @@
               "GRIST_DEFAULT_EMAIL=\${GRIST_ADMIN_EMAIL:-admin@diegonmarcos.com}"
               "APP_HOME_URL=https://${config.domain}"
               "GRIST_SANDBOX_FLAVOR=unsandboxed"
+              "GRIST_LOG_LEVEL=info"
             ];
             restart = "always";
             healthcheck = {
@@ -48,12 +48,6 @@
               timeout = "10s";
               retries = 3;
             };
-          };
-        };
-        networks = {
-          dev_network = {
-            external = true;
-            name = "dev_network";
           };
         };
         volumes = {

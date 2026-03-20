@@ -31,7 +31,6 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8443" ];
-            networks = [ "dev_network" ];
             volumes = [
               "./config:/config"
               "/home/ubuntu/workspace:/workspace"
@@ -43,11 +42,6 @@
               DEFAULT_WORKSPACE = "/workspace";
             };
             skipReadOnly = true;
-          };
-        };
-        networks = {
-          dev_network = {
-            external = true;
           };
         };
       };
