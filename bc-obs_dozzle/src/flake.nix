@@ -28,13 +28,9 @@
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
           environment = ["DOZZLE_LEVEL=info"];
           memLimit = "64m";
-          networks = ["npm_default"];
           skipReadOnly = true;
           skipSecurity = true;
         };
-      };
-      networks = {
-        npm_default = { external = true; };
       };
     };
 

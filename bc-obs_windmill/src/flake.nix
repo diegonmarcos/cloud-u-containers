@@ -74,6 +74,7 @@
             - SMTP_FROM=''${SMTP_FROM:-}
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
+            - RUST_LOG=info
           ports:
             - "10.0.0.6:8000:8000"
           depends_on:
@@ -112,6 +113,7 @@
             - DISABLE_NUSER=true
             - KEEP_JOB_DIR=false
             - METRICS_ENABLED=false
+            - RUST_LOG=info
           depends_on:
             windmill-server:
               condition: service_healthy

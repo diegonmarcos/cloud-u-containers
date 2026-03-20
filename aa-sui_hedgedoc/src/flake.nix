@@ -51,6 +51,7 @@
             - CMD_DEFAULT_PERMISSION=freely
             - CMD_SESSION_SECRET=''${CMD_SESSION_SECRET:-hedgedoc-secret-change-me}
             - CMD_TRUST_PROXY=true
+            - CMD_LOGLEVEL=info
           depends_on:
             postgres:
               condition: service_healthy
