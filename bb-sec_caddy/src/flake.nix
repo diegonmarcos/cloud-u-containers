@@ -198,6 +198,7 @@
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
+        # DNS: all .app upstreams resolved by Hickory DNS (10.0.0.1:53)
         debug
         admin localhost:${toString config.admin_port}
         order respond before handle
