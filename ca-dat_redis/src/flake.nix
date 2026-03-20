@@ -40,12 +40,7 @@
             interval: 30s
             timeout: 10s
             retries: 3
-          networks:
-            - dev_network
 
-      networks:
-        dev_network:
-          external: true
     '';
 
 

@@ -82,11 +82,6 @@
           ports:
             - '10.0.0.1:${toString config.port}:80'
           restart: unless-stopped
-          dns:
-            - 172.20.0.2
-          networks:
-            infra:
-              ipv4_address: 172.20.0.14
 
         syslog-bridge:
           image: python:3.11-slim
@@ -102,10 +97,6 @@
           depends_on:
             - ntfy
           restart: unless-stopped
-          dns:
-            - 172.20.0.2
-          networks:
-            - infra
 
         github-rss:
           image: python:3.11-slim
@@ -120,18 +111,11 @@
           depends_on:
             - ntfy
           restart: unless-stopped
-          dns:
-            - 172.20.0.2
-          networks:
-            - infra
 
       volumes:
         syslog-central-logs:
           external: true
 
-      networks:
-        infra:
-          external: true
     '';
 
 

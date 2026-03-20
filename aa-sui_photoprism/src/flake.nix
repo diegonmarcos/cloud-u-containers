@@ -75,7 +75,7 @@
             --dir-cache-time 5m
             --log-level INFO
           networks:
-            - dev_network
+            - photoprism_net
           healthcheck:
             test: ['CMD', 'ls', '/data']
             interval: 30s
@@ -124,7 +124,7 @@
             rclone:
               condition: service_healthy
           networks:
-            - dev_network
+            - photoprism_net
           healthcheck:
             test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:2342/api/v1/status']
             interval: 30s
@@ -146,7 +146,7 @@
             - MARIADB_PASSWORD=''${MARIADB_PASSWORD:-changeme}
             - MARIADB_ROOT_PASSWORD=''${MARIADB_ROOT_PASSWORD:-changeme}
           networks:
-            - dev_network
+            - photoprism_net
           healthcheck:
             test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
             interval: 10s
@@ -154,9 +154,7 @@
             retries: 5
 
       networks:
-        dev_network:
-          external: true
-          name: dev_network
+        photoprism_net:
 
       volumes:
         photoprism_storage:

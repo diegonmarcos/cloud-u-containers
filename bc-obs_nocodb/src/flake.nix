@@ -51,7 +51,6 @@
             - "10.0.0.6:${toString config.port}:8080"
           networks:
             - nocodb_network
-            - dev_network
           depends_on:
             nocodb-db:
               condition: service_healthy
@@ -94,8 +93,6 @@
           ipam:
             config:
               - subnet: 172.25.0.0/24
-        dev_network:
-          external: true
     '';
 
 

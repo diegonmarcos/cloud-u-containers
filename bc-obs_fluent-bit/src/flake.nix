@@ -34,12 +34,6 @@
             - /var/lib/docker/containers:/var/lib/docker/containers:ro
             - /var/log:/var/log:ro
             - fluent-bit-db:/fluent-bit/db
-          networks:
-            - dev_network
-
-      networks:
-        dev_network:
-          external: true
 
       volumes:
         fluent-bit-db:

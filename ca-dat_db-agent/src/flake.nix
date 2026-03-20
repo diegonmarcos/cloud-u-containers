@@ -45,8 +45,6 @@
             - /var/run/docker.sock:/var/run/docker.sock:ro
             - db-agent-data:/backup
             - db-agent-logs:/var/log/db-agent
-          networks:
-            - npm_default
           healthcheck:
             test: ["CMD", "test", "-f", "/var/log/db-agent/last-run.json"]
             interval: 60s
@@ -65,9 +63,6 @@
         db-agent-logs:
           name: db-agent-logs
 
-      networks:
-        npm_default:
-          external: true
     '';
 
 

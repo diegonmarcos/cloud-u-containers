@@ -30,8 +30,6 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          networks:
-            - c3-net
           ports:
             - "${toString config.port}:8080"
             - "${toString config.mcp_http_port}:${toString config.mcp_http_port}"
@@ -46,10 +44,6 @@
             retries: 3
             start_period: 10s
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
   in {

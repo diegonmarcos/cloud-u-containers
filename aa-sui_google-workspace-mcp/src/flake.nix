@@ -33,8 +33,6 @@
             WORKSPACE_MCP_PORT: "${toString config.internal_port}"
             USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
             GOOGLE_SERVICE_ACCOUNT_KEY_PATH: "/run/secrets/service-account-key.json"
-          networks:
-            - c3-net
           ports:
             - "10.0.0.6:${toString config.port}:${toString config.internal_port}"
           volumes:
@@ -46,10 +44,6 @@
             retries: 3
             start_period: 15s
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
   in {

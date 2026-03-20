@@ -56,13 +56,7 @@
             - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
             - /opt/ssh-keys/dagu:/root/.ssh:ro
           mem_limit: 256m
-          networks:
-            - default
-            - mailu_default
 
-      networks:
-        mailu_default:
-          external: true
     '';
 
     # ── Base config: SMTP + default notifications ────────────────────────
@@ -70,7 +64,7 @@
       shell: /bin/bash
 
       smtp:
-        host: mailu-smtp-1
+        host: mailu.app
         port: "25"
         username: ""
         password: ""

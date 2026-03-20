@@ -43,8 +43,6 @@
             - "10.0.0.3:${toString config.web_port}:8384"
             - "0.0.0.0:${toString config.sync_port}:22000"
             - "0.0.0.0:${toString config.discovery_port}:21027/udp"
-          networks:
-            - matomo_default
           deploy:
             resources:
               limits:
@@ -52,9 +50,6 @@
               reservations:
                 memory: 50M
 
-      networks:
-        matomo_default:
-          external: true
     '';
 
 
