@@ -1481,12 +1481,52 @@
               curl -sf "$C3_API/dns-registry" | jq '.' > "$REPO_DIR/dns-services.json.tmp"
               mv "$REPO_DIR/dns-services.json.tmp" "$REPO_DIR/dns-services.json"
               echo "Fetched dns-services.json ($(wc -c < "$REPO_DIR/dns-services.json") bytes)"
+          - name: fetch-caddy-routes
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/caddy-routes" | jq '.' > "$REPO_DIR/caddy-routes.json.tmp"
+              mv "$REPO_DIR/caddy-routes.json.tmp" "$REPO_DIR/caddy-routes.json"
+              echo "Fetched caddy-routes.json ($(wc -c < "$REPO_DIR/caddy-routes.json") bytes)"
+          - name: fetch-authelia-acl
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/authelia-acl" | jq '.' > "$REPO_DIR/authelia-acl.json.tmp"
+              mv "$REPO_DIR/authelia-acl.json.tmp" "$REPO_DIR/authelia-acl.json"
+              echo "Fetched authelia-acl.json ($(wc -c < "$REPO_DIR/authelia-acl.json") bytes)"
+          - name: fetch-monitoring-targets
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/monitoring-targets" | jq '.' > "$REPO_DIR/monitoring-targets.json.tmp"
+              mv "$REPO_DIR/monitoring-targets.json.tmp" "$REPO_DIR/monitoring-targets.json"
+              echo "Fetched monitoring-targets.json ($(wc -c < "$REPO_DIR/monitoring-targets.json") bytes)"
+          - name: fetch-firewall-rules
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/firewall-rules" | jq '.' > "$REPO_DIR/firewall-rules.json.tmp"
+              mv "$REPO_DIR/firewall-rules.json.tmp" "$REPO_DIR/firewall-rules.json"
+              echo "Fetched firewall-rules.json ($(wc -c < "$REPO_DIR/firewall-rules.json") bytes)"
+          - name: fetch-backup-targets
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/backup-targets" | jq '.' > "$REPO_DIR/backup-targets.json.tmp"
+              mv "$REPO_DIR/backup-targets.json.tmp" "$REPO_DIR/backup-targets.json"
+              echo "Fetched backup-targets.json ($(wc -c < "$REPO_DIR/backup-targets.json") bytes)"
           - name: commit-and-push
             depends:
               - fetch-topology
               - fetch-configs
               - fetch-deps
               - fetch-dns-registry
+              - fetch-caddy-routes
+              - fetch-authelia-acl
+              - fetch-monitoring-targets
+              - fetch-firewall-rules
+              - fetch-backup-targets
             command: |
               export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
               cd "$REPO_DIR"
@@ -1494,7 +1534,7 @@
               ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
                 awk '{name=$0; gsub(/-/," ",name); for(i=1;i<=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i<=length(a);i++) name=name (i>1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
                 jq -s '.' > manifest.json
-              git add cloud-topology.json cloud-configs.json cloud-deps.json dns-services.json manifest.json
+              git add -A *.json manifest.json
               if git diff --cached --quiet; then
                 echo "No changes — skipping commit"
                 exit 0

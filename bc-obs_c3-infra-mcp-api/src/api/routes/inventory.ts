@@ -134,6 +134,253 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
+  // ── Caddy Routes (derived from topology proxy fields → caddy-routes.json) ──
+
+  app.get("/caddy-routes", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const routes: any[] = [];
+    const path_routes: any[] = [];
+    const github_pages_proxies: any[] = [];
+    const l4_routes: any[] = [];
+    const mcp_routes: any[] = [];
+    const special: Record<string, any> = {};
+
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const proxy = s.proxy;
+      if (!proxy) continue;
+
+      const domain = s.domain;
+      const route: any = {
+        service: svcName,
+        domain,
+        upstream: proxy.upstream,
+        auth: proxy.auth ?? "two_factor",
+        description: s.description ?? "",
+      };
+
+      // Optional fields
+      if (proxy.landing_page) route.landing_page = proxy.landing_page;
+      if (proxy.tls_skip_verify) route.tls_skip_verify = true;
+      if (proxy.max_upload) route.max_upload = proxy.max_upload;
+      if (proxy.timeout) route.timeout = proxy.timeout;
+      if (proxy.streaming) route.streaming = true;
+      if (proxy.paths) route.paths = proxy.paths;
+      if (proxy.github_pages) route.github_pages = proxy.github_pages;
+
+      // L4 TCP passthrough (mail ports)
+      if (proxy.l4_ports) {
+        for (const l4 of proxy.l4_ports) {
+          l4_routes.push({ port: l4.port, upstream: l4.upstream, service: svcName, comment: l4.comment ?? "" });
+        }
+      }
+
+      // Route type classification
+      const type = proxy.type ?? "subdomain";
+
+      if (type === "path" && proxy.streaming) {
+        // MCP streaming endpoints
+        mcp_routes.push({
+          service: svcName,
+          path: proxy.base_path,
+          upstream: proxy.upstream,
+          parent_domain: proxy.parent_domain,
+        });
+      } else if (type === "path") {
+        path_routes.push({
+          ...route,
+          parent_domain: proxy.parent_domain,
+          base_path: proxy.base_path,
+        });
+      } else if (proxy.github_pages && !proxy.upstream) {
+        github_pages_proxies.push({
+          service: svcName,
+          domain,
+          path: proxy.github_pages,
+        });
+      } else if (proxy.auth === "ntfy-3tier") {
+        special.ntfy = route;
+      } else {
+        routes.push(route);
+      }
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /caddy-routes",
+      routes,
+      path_routes,
+      github_pages_proxies,
+      l4_routes,
+      mcp_routes,
+      special,
+    };
+  });
+
+  // ── Authelia ACL (derived from topology proxy.auth fields → authelia-acl.json) ──
+
+  app.get("/authelia-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const rules: any[] = [];
+
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const proxy = s.proxy;
+      if (!proxy || !s.domain) continue;
+
+      const domain = s.domain;
+      const auth = proxy.auth ?? "two_factor";
+      if (auth === "ntfy-3tier") continue; // ntfy has custom auth, not Authelia-managed
+
+      const rule: any = { domain, policy: auth, service: svcName };
+
+      // Path-specific overrides (e.g. /api/* bypass, /admin two_factor)
+      if (proxy.paths) {
+        const bypass_resources: string[] = [];
+        const two_factor_resources: string[] = [];
+        for (const [path, override] of Object.entries(proxy.paths)) {
+          const o = override as any;
+          const pathAuth = o.auth ?? "two_factor";
+          const regex = "^" + path.replace(/\*/g, ".*");
+          if (pathAuth === "bypass" || pathAuth === "public") bypass_resources.push(regex);
+          else if (pathAuth === "two_factor") two_factor_resources.push(regex);
+        }
+        if (bypass_resources.length > 0) rule.resources_bypass = bypass_resources;
+        if (two_factor_resources.length > 0) rule.resources_two_factor = two_factor_resources;
+      }
+
+      rules.push(rule);
+    }
+
+    // Default catch-all
+    rules.push({ domain: "*.diegonmarcos.com", policy: "two_factor", service: "_default" });
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /authelia-acl",
+      rules,
+    };
+  });
+
+  // ── Monitoring Targets (derived from topology health/monitoring fields) ──
+
+  app.get("/monitoring-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const endpoint_checks: any[] = [];
+    const dns_checks: string[] = [];
+    const tls_checks: string[] = [];
+    const vms: any[] = [];
+
+    // VM-level checks
+    for (const [, vm] of Object.entries(topo.vms ?? {})) {
+      const v = vm as any;
+      if (!v.wg_ip) continue;
+      vms.push({ ip: v.wg_ip, name: v.ssh_alias ?? "", user: v.user ?? "diego" });
+    }
+
+    // Service-level checks
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const domain = s.domain;
+      if (!domain) continue;
+
+      const monitoring = s.monitoring ?? {};
+      const health = s.health ?? {};
+
+      if (monitoring.endpoint_check !== false && health.path) {
+        endpoint_checks.push({
+          url: `https://${domain}${health.path}`,
+          name: s.description ?? svcName,
+          expected_status: health.expected_status ?? 200,
+        });
+      }
+
+      if (monitoring.dns_check) dns_checks.push(domain);
+      if (monitoring.tls_check) tls_checks.push(domain);
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /monitoring-targets",
+      endpoint_checks,
+      dns_checks,
+      tls_checks,
+      vms,
+    };
+  });
+
+  // ── Firewall Rules (aggregated ports per VM from topology) ──
+
+  app.get("/firewall-rules", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const vms: Record<string, { ingress: any[] }> = {};
+
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const vm = topo.vms?.[s.vm];
+      if (!vm?.ssh_alias) continue;
+
+      const alias = vm.ssh_alias;
+      if (!vms[alias]) vms[alias] = { ingress: [] };
+
+      const declaredPorts = s.declared_ports ?? {};
+      for (const [, portCfg] of Object.entries(declaredPorts)) {
+        const p = portCfg as any;
+        if (p.public) {
+          vms[alias].ingress.push({
+            port: p.host ?? p.container,
+            proto: p.proto ?? "tcp",
+            service: svcName,
+          });
+        }
+      }
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /firewall-rules",
+      vms,
+    };
+  });
+
+  // ── Backup Targets (services with backup.enabled) ──
+
+  app.get("/backup-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const targets: any[] = [];
+
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const backup = s.backup;
+      if (!backup?.enabled) continue;
+
+      const vm = topo.vms?.[s.vm];
+      targets.push({
+        service: svcName,
+        vm: vm?.ssh_alias ?? s.vm,
+        volumes: backup.volumes ?? [],
+        schedule: backup.schedule ?? "0 3 * * *",
+        retention: backup.retention ?? "30d",
+      });
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /backup-targets",
+      targets,
+    };
+  });
+
   // ── Files: config (from files.ts) ──
 
   app.get<{ Params: { service: string } }>(
