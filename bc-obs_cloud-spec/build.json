@@ -4,5 +4,12 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/cloud-spec"
+  },
+  "proxy": {
+    "upstream": "c3-spec.app:3080",
+    "auth": "two_factor",
+    "type": "path",
+    "parent_domain": "cloud.diegonmarcos.com",
+    "base_path": "/spec"
   }
 }

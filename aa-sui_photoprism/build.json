@@ -7,5 +7,10 @@
     "host": "oci-apps",
     "remote_path": "/opt/containers/photoprism",
     "compose_flags": "--build"
+  },
+  "proxy": {
+    "upstream": "photoprism.app:3013",
+    "auth": "two_factor",
+    "landing_page": "myphotos"
   }
 }

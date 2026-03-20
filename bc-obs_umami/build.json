@@ -16,5 +16,20 @@
         "script": "cat /output/site_id"
       }
     ]
+  },
+  "proxy": {
+    "upstream": "umami.app:3000",
+    "auth": "two_factor",
+    "type": "path",
+    "parent_domain": "analytics.diegonmarcos.com",
+    "base_path": "/umami",
+    "paths": {
+      "/script.js": {
+        "auth": "public"
+      },
+      "/api/send": {
+        "auth": "public"
+      }
+    }
   }
 }

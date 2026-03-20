@@ -1,6 +1,6 @@
 {
   "name": "c3-infra-mcp-api",
-  "description": "C3 \u2014 Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)",
+  "description": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)",
   "category": "sec",
   "domain": "api.diegonmarcos.com/c3-api",
   "docker": {
@@ -18,5 +18,17 @@
   },
   "secrets": {
     "escape_dollars": "true"
+  },
+  "proxy": {
+    "upstream": "c3-api.app:8081",
+    "auth": "two_factor",
+    "type": "path",
+    "parent_domain": "api.diegonmarcos.com",
+    "base_path": "/c3-api",
+    "paths": {
+      "/docs/json": {
+        "auth": "public"
+      }
+    }
   }
 }

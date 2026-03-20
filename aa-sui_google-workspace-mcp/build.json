@@ -9,5 +9,12 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/google-workspace-mcp"
+  },
+  "proxy": {
+    "upstream": "g-workspace-mcp.app:3104",
+    "streaming": true,
+    "type": "path",
+    "parent_domain": "mcp.diegonmarcos.com",
+    "base_path": "/g-workspace"
   }
 }

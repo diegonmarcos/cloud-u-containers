@@ -6,5 +6,9 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/code-server"
+  },
+  "proxy": {
+    "upstream": "code-server.app:8443",
+    "auth": "two_factor"
   }
 }
