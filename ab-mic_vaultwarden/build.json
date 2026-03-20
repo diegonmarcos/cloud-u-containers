@@ -12,5 +12,9 @@
   },
   "secrets": {
     "escape_dollars": true
+  },
+  "proxy": {
+    "upstream": "vaultwarden.app:8880",
+    "auth": "two_factor"
   }
 }

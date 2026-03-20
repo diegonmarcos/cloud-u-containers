@@ -24,5 +24,25 @@
   "compose": {
     "pre_hook": "init.sh",
     "post_hook": "setup.sh"
+  },
+  "proxy": {
+    "upstream": "https://mailu.app:8444",
+    "auth": "two_factor",
+    "tls_skip_verify": true,
+    "landing_page": "mymail",
+    "l4_ports": [
+      {
+        "port": 993,
+        "upstream": "mailu.app:993"
+      },
+      {
+        "port": 465,
+        "upstream": "mailu.app:465"
+      },
+      {
+        "port": 587,
+        "upstream": "mailu.app:587"
+      }
+    ]
   }
 }

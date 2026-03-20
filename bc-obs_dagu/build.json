@@ -9,5 +9,9 @@
     "excludes": [
       "data"
     ]
+  },
+  "proxy": {
+    "upstream": "dagu.app:8070",
+    "auth": "two_factor"
   }
 }

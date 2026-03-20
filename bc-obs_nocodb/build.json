@@ -6,5 +6,9 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/home/ubuntu/nocodb"
+  },
+  "proxy": {
+    "upstream": "nocodb.app:8085",
+    "auth": "two_factor"
   }
 }

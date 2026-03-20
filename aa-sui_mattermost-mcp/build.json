@@ -9,5 +9,12 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mattermost-mcp"
+  },
+  "proxy": {
+    "upstream": "mattermost-mcp.app:3102",
+    "streaming": true,
+    "type": "path",
+    "parent_domain": "mcp.diegonmarcos.com",
+    "base_path": "/mattermost-mcp"
   }
 }

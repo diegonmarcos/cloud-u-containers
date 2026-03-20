@@ -6,5 +6,12 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/windmill"
+  },
+  "proxy": {
+    "upstream": "windmill-app.app:8000",
+    "auth": "two_factor",
+    "type": "path",
+    "parent_domain": "app.diegonmarcos.com",
+    "base_path": "/windmill"
   }
 }

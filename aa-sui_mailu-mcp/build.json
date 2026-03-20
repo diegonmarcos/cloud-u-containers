@@ -9,5 +9,12 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mailu-mcp"
+  },
+  "proxy": {
+    "upstream": "mailu-mcp.app:3103",
+    "streaming": true,
+    "type": "path",
+    "parent_domain": "mcp.diegonmarcos.com",
+    "base_path": "/mailu-mcp"
   }
 }

@@ -8,5 +8,14 @@
   },
   "compose": {
     "pre_hook": "init-dirs.sh"
+  },
+  "proxy": {
+    "upstream": "mattermost.app:8065",
+    "auth": "two_factor",
+    "paths": {
+      "/api/v4/*": {
+        "auth": "bypass"
+      }
+    }
   }
 }

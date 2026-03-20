@@ -9,5 +9,9 @@
     "excludes": [
       "cache"
     ]
+  },
+  "proxy": {
+    "upstream": "ntfy.app:8090",
+    "auth": "ntfy-3tier"
   }
 }

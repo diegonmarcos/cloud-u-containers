@@ -6,5 +6,11 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/affine"
+  },
+  "proxy": {
+    "upstream": "affine.app:3010",
+    "auth": "two_factor",
+    "max_upload": "100MB",
+    "timeout": "3600s"
   }
 }
