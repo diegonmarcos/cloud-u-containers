@@ -12,5 +12,17 @@
     "auth": "two_factor",
     "max_upload": "100MB",
     "timeout": "3600s"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["affine_data"]
   }
 }

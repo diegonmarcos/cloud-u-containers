@@ -10,5 +10,13 @@
   "proxy": {
     "upstream": "radicale.app:5232",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/.web/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

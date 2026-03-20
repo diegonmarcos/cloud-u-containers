@@ -44,5 +44,17 @@
         "upstream": "mailu.app:587"
       }
     ]
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["mailu_data", "mailu_mail"]
   }
 }

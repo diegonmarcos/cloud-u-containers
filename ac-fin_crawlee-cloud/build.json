@@ -18,5 +18,13 @@
         "auth": "public"
       }
     }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

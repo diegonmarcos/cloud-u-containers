@@ -16,5 +16,17 @@
   "proxy": {
     "upstream": "vaultwarden.app:8880",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/alive"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["vaultwarden_data"]
   }
 }

@@ -13,5 +13,13 @@
   "proxy": {
     "upstream": "ntfy.app:8090",
     "auth": "ntfy-3tier"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

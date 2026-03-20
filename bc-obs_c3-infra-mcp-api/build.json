@@ -30,5 +30,13 @@
         "auth": "public"
       }
     }
+  },
+  "health": {
+    "path": "/c3-api/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }
