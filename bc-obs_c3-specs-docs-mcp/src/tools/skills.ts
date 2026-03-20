@@ -48,7 +48,7 @@ ${vmTable}
 ${serviceList}
 
 ## Architecture
-- Nix flakes → Docker Compose stacks, cloud-topology.json is source of truth
+- Nix flakes → Docker Compose stacks, cloud-data-topology.json is source of truth
 - Per-service build.sh: build → secrets (sops) → deploy (rsync) → compose
 - WireGuard mesh 10.0.0.0/24 connects all VMs
 - GCP proxy (gcp-E2-f_0): Caddy + Authelia entry point

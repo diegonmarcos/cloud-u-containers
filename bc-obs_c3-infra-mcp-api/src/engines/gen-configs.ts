@@ -1,7 +1,7 @@
-// gen-configs.ts — Generate cloud-configs.json + cloud-configs.md
+// gen-configs.ts — Generate cloud-data-configs.json + cloud-data-configs.md
 //
 // Sources:
-//   cloud-topology.json                             → service inventory (primary)
+//   cloud-data-topology.json                        → service inventory (primary)
 //   a_solutions/bb-sec_caddy/dist/Caddyfile        → routes
 //   a_solutions/bb-sec_authelia/dist/config/*.tpl   → ACL rules
 //   a_solutions/ba-clo_hickory-dns/dist/zones/      → DNS records
@@ -9,8 +9,8 @@
 //   a_solutions/aa-sui_tools-mailu/src/flake.nix    → mailu config
 //
 // Outputs (written directly to cloud-data/ submodule, symlinked from repo root):
-//   cloud-data/cloud-configs.json   → machine-readable per-service configs
-//   cloud-data/cloud-configs.md     → human-readable tables (via Nunjucks)
+//   cloud-data/cloud-data-configs.json   → machine-readable per-service configs
+//   cloud-data/cloud-data-configs.md     → human-readable tables (via Nunjucks)
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
@@ -31,8 +31,8 @@ const ENGINE_DIR = import.meta.dirname!;
 const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
-const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-configs.json");
-const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-configs.md");
+const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-data-configs.json");
+const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-data-configs.md");
 
 // --- Types ----------------------------------------------------------------
 
@@ -53,8 +53,8 @@ function main() {
     apps: {},
   };
 
-  // 0. Service list from cloud-topology.json
-  const topologyPath = join(CLOUD_ROOT, "cloud-topology.json");
+  // 0. Service list from cloud-data-topology.json
+  const topologyPath = join(CLOUD_ROOT, "cloud-data-topology.json");
   if (existsSync(topologyPath)) {
     const topology = JSON.parse(readFileSync(topologyPath, "utf-8"));
     if (topology.services) {
@@ -109,18 +109,18 @@ function main() {
     console.log(`  Mailu: ${mailu.mailboxes.length} mailboxes`);
   }
 
-  // 6. Write cloud-configs.json
+  // 6. Write cloud-data-configs.json
   const output = {
     _meta: {
       generated_by: "a_solutions/c3-infra-mcp-api/src/engines/gen-configs.ts",
-      api_route: "GET /c3-api/configs",
-      source: "cloud-topology.json + Caddy/Authelia/DNS flakes",
+      api_route: "GET /c3-api/cloud-data/configs",
+      source: "cloud-data-topology.json + Caddy/Authelia/DNS flakes",
       generated_at: new Date().toISOString(),
     },
     ...configs,
   };
   writeFileSync(OUTPUT_JSON, JSON.stringify(output, null, 2) + "\n");
-  console.log(`  Written: cloud-configs.json (${configs.services.length} services, ${Object.keys(configs.infra).length} infra, ${Object.keys(configs.apps).length} apps)`);
+  console.log(`  Written: cloud-data-configs.json (${configs.services.length} services, ${Object.keys(configs.infra).length} infra, ${Object.keys(configs.apps).length} apps)`);
 
   // 7. Render cloud-configs.md
   const templatePath = join(TEMPLATE_DIR, "cloud-configs.md.njk");
@@ -128,7 +128,7 @@ function main() {
     nunjucks.configure(TEMPLATE_DIR, { autoescape: false, trimBlocks: true, lstripBlocks: true });
     const md = nunjucks.render("cloud-configs.md.njk", { data: configs });
     writeFileSync(OUTPUT_MD, md);
-    console.log(`  Written: cloud-configs.md`);
+    console.log(`  Written: cloud-data-configs.md`);
   } else {
     console.warn(`  WARN: template not found at ${templatePath}`);
   }

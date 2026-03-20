@@ -21,11 +21,11 @@
     title = "Authelia 2FA Authentication";
     docker = import ../../_shared/docker.nix;
 
-    # ACL rules from external JSON (authelia-acl.json)
+    # ACL rules from external JSON (cloud-data-authelia-acl.json)
     # Falls back to a minimal default if the file doesn't exist
     autheliaAcl =
-      if builtins.pathExists ./authelia-acl.json
-      then builtins.fromJSON (builtins.readFile ./authelia-acl.json)
+      if builtins.pathExists ./cloud-data-authelia-acl.json
+      then builtins.fromJSON (builtins.readFile ./cloud-data-authelia-acl.json)
       else { rules = [{ domain = "*.diegonmarcos.com"; policy = "two_factor"; service = "_default"; }]; };
 
     # Generate YAML access_control rules from the JSON structure

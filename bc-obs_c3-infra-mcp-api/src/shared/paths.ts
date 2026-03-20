@@ -31,11 +31,11 @@ export const SSH_IDENTITY = [
 ].find((p) => existsSync(p)) ?? join(HOME, ".ssh/id_rsa");
 export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
 export const CONFIG_PATH = process.env.CONFIG_JSON_PATH
-  ?? (existsSync(join(SOLUTIONS_DIR, "..", "cloud-topology.json"))
-    ? join(SOLUTIONS_DIR, "..", "cloud-topology.json")
+  ?? (existsSync(join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"))
+    ? join(SOLUTIONS_DIR, "..", "cloud-data-topology.json")
     : join(SOLUTIONS_DIR, "..", "config.json"));
-export const CONFIGS_PATH = join(SOLUTIONS_DIR, "..", "cloud-configs.json");
-export const DEPS_PATH = join(SOLUTIONS_DIR, "..", "cloud-deps.json");
+export const CONFIGS_PATH = join(SOLUTIONS_DIR, "..", "cloud-data-configs.json");
+export const DEPS_PATH = join(SOLUTIONS_DIR, "..", "cloud-data-deps.json");
 export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");

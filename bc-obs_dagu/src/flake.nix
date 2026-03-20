@@ -120,7 +120,7 @@
     # ── SSH shorthand used across all workflows ──────────────────────────
     sshCmd = "ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
     # VM list derived from monitoring-targets.json at runtime (fallback to hardcoded)
-    monTargets = "/var/lib/dagu/data/cloud-data/monitoring-targets.json";
+    monTargets = "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json";
     vmListCmd = ''
       if [ -f "${monTargets}" ]; then
         jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "${monTargets}" | tr '\n' ' '
@@ -136,7 +136,7 @@
       # INFRASTRUCTURE
       # ═══════════════════════════════════════════════════════════════════
 
-      healthcheck = pkgs.writeText "healthcheck.yaml" ''
+      "health_mesh-connectivity" = pkgs.writeText "health_mesh-connectivity.yaml" ''
         schedule: "*/5 * * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -170,7 +170,7 @@
               fi
       '';
 
-      service-endpoints = pkgs.writeText "service-endpoints.yaml" ''
+      "health_service-endpoints" = pkgs.writeText "health_service-endpoints.yaml" ''
         schedule: "*/5 * * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -207,7 +207,7 @@
               fi
       '';
 
-      dns-resolution = pkgs.writeText "dns-resolution.yaml" ''
+      "health_dns-resolution" = pkgs.writeText "health_dns-resolution.yaml" ''
         schedule: "0 8 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -239,7 +239,7 @@
               fi
       '';
 
-      system-check = pkgs.writeText "system-check.yaml" ''
+      "health_system-resources" = pkgs.writeText "health_system-resources.yaml" ''
         schedule: "0 9 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -278,7 +278,7 @@
               fi
       '';
 
-      docker-check = pkgs.writeText "docker-check.yaml" ''
+      "health_docker-containers" = pkgs.writeText "health_docker-containers.yaml" ''
         schedule: "0 10 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -329,7 +329,7 @@
       # SECURITY
       # ═══════════════════════════════════════════════════════════════════
 
-      security-audit = pkgs.writeText "security-audit.yaml" ''
+      "security_ssh-audit" = pkgs.writeText "security_ssh-audit.yaml" ''
         schedule: "0 12 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -372,7 +372,7 @@
               fi
       '';
 
-      tls-expiry = pkgs.writeText "tls-expiry.yaml" ''
+      "security_tls-expiry" = pkgs.writeText "security_tls-expiry.yaml" ''
         schedule: "0 8 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -411,7 +411,7 @@
               fi
       '';
 
-      auth-events = pkgs.writeText "auth-events.yaml" ''
+      "security_auth-events" = pkgs.writeText "security_auth-events.yaml" ''
         schedule: "0 9 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -449,7 +449,7 @@
                 -d "$MSG"
       '';
 
-      sauron-integrity = pkgs.writeText "sauron-integrity.yaml" ''
+      "security_sauron-integrity" = pkgs.writeText "security_sauron-integrity.yaml" ''
         schedule: "0 3 * * 0"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -494,7 +494,7 @@
       # OPERATIONS
       # ═══════════════════════════════════════════════════════════════════
 
-      ops-summary = pkgs.writeText "ops-summary.yaml" ''
+      ops_summary = pkgs.writeText "ops_summary.yaml" ''
         schedule: "0 18 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -529,13 +529,13 @@
                 -d "$MSG"
       '';
 
-      backup-check = pkgs.writeText "backup-check.yaml" ''
+      "ops_backup-check" = pkgs.writeText "ops_backup-check.yaml" ''
         schedule: "0 11 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
           - MON_TARGETS: ${monTargets}
-          - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/backup-targets.json
+          - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
         mailOn:
           failure: false
           success: false
@@ -574,7 +574,7 @@
               fi
       '';
 
-      cron-status = pkgs.writeText "cron-status.yaml" ''
+      "ops_cron-status" = pkgs.writeText "ops_cron-status.yaml" ''
         schedule: "0 7 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -614,7 +614,7 @@
               fi
       '';
 
-      deploy-digest = pkgs.writeText "deploy-digest.yaml" ''
+      "ops_deploy-digest" = pkgs.writeText "ops_deploy-digest.yaml" ''
         schedule: "0 19 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -657,7 +657,7 @@
                 -d "$MSG"
       '';
 
-      capacity-review = pkgs.writeText "capacity-review.yaml" ''
+      "ops_capacity-review" = pkgs.writeText "ops_capacity-review.yaml" ''
         schedule: "0 9 * * 1"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -695,7 +695,7 @@
       # DAILY EMAIL REPORT
       # ═══════════════════════════════════════════════════════════════════
 
-      daily-report-script = pkgs.writeText "daily-report.sh" ''
+      "report_daily-script" = pkgs.writeText "report_daily.sh" ''
         #!/bin/bash
         SSH="${sshCmd}"
         DATE=$(date '+%Y-%m-%d')
@@ -1436,7 +1436,7 @@
         echo "C3 Daily Ops Report sent for $DATE"
       '';
 
-      daily-report = pkgs.writeText "daily-report.yaml" ''
+      report_daily = pkgs.writeText "report_daily.yaml" ''
         schedule: "0 7 * * *"
         env:
           - NTFY_URL: http://10.0.0.1:8090
@@ -1446,14 +1446,14 @@
           success: false
         steps:
           - name: collect-and-email
-            command: bash /var/lib/dagu/dags/daily-report.sh
+            command: bash /var/lib/dagu/dags/report_daily.sh
       '';
 
       # ═══════════════════════════════════════════════════════════════════
       # DATA SYNC
       # ═══════════════════════════════════════════════════════════════════
 
-      cloud-data-sync = pkgs.writeText "cloud-data-sync.yaml" ''
+      "cloud-data_sync" = pkgs.writeText "cloud-data_sync.yaml" ''
         schedule: "*/5 * * * *"
         env:
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
@@ -1485,128 +1485,128 @@
                 git rebase --abort 2>/dev/null
                 git reset --hard origin/main
               }
-          - name: fetch-topology
+          - name: fetch-cloud-data-topology
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/topology" | jq '.' > "$REPO_DIR/cloud-topology.json.tmp"
-              mv "$REPO_DIR/cloud-topology.json.tmp" "$REPO_DIR/cloud-topology.json"
-              echo "Fetched cloud-topology.json ($(wc -c < "$REPO_DIR/cloud-topology.json") bytes)"
-          - name: fetch-configs
+              curl -sf "$C3_API/cloud-data/topology" | jq '.' > "$REPO_DIR/cloud-data-topology.json.tmp"
+              mv "$REPO_DIR/cloud-data-topology.json.tmp" "$REPO_DIR/cloud-data-topology.json"
+              echo "Fetched cloud-data-topology.json ($(wc -c < "$REPO_DIR/cloud-data-topology.json") bytes)"
+          - name: fetch-cloud-data-configs
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/configs" | jq '.' > "$REPO_DIR/cloud-configs.json.tmp"
-              mv "$REPO_DIR/cloud-configs.json.tmp" "$REPO_DIR/cloud-configs.json"
-              echo "Fetched cloud-configs.json ($(wc -c < "$REPO_DIR/cloud-configs.json") bytes)"
-          - name: fetch-deps
+              curl -sf "$C3_API/cloud-data/configs" | jq '.' > "$REPO_DIR/cloud-data-configs.json.tmp"
+              mv "$REPO_DIR/cloud-data-configs.json.tmp" "$REPO_DIR/cloud-data-configs.json"
+              echo "Fetched cloud-data-configs.json ($(wc -c < "$REPO_DIR/cloud-data-configs.json") bytes)"
+          - name: fetch-cloud-data-deps
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/deps" | jq '.' > "$REPO_DIR/cloud-deps.json.tmp"
-              mv "$REPO_DIR/cloud-deps.json.tmp" "$REPO_DIR/cloud-deps.json"
-              echo "Fetched cloud-deps.json ($(wc -c < "$REPO_DIR/cloud-deps.json") bytes)"
-          - name: fetch-dns-registry
+              curl -sf "$C3_API/cloud-data/deps" | jq '.' > "$REPO_DIR/cloud-data-deps.json.tmp"
+              mv "$REPO_DIR/cloud-data-deps.json.tmp" "$REPO_DIR/cloud-data-deps.json"
+              echo "Fetched cloud-data-deps.json ($(wc -c < "$REPO_DIR/cloud-data-deps.json") bytes)"
+          - name: fetch-cloud-data-dns-services
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/dns-registry" | jq '.' > "$REPO_DIR/dns-services.json.tmp"
-              mv "$REPO_DIR/dns-services.json.tmp" "$REPO_DIR/dns-services.json"
-              echo "Fetched dns-services.json ($(wc -c < "$REPO_DIR/dns-services.json") bytes)"
-          - name: fetch-caddy-routes
+              curl -sf "$C3_API/cloud-data/dns-services" | jq '.' > "$REPO_DIR/cloud-data-dns-services.json.tmp"
+              mv "$REPO_DIR/cloud-data-dns-services.json.tmp" "$REPO_DIR/cloud-data-dns-services.json"
+              echo "Fetched cloud-data-dns-services.json ($(wc -c < "$REPO_DIR/cloud-data-dns-services.json") bytes)"
+          - name: fetch-cloud-data-caddy-routes
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/caddy-routes" | jq '.' > "$REPO_DIR/caddy-routes.json.tmp"
-              mv "$REPO_DIR/caddy-routes.json.tmp" "$REPO_DIR/caddy-routes.json"
-              echo "Fetched caddy-routes.json ($(wc -c < "$REPO_DIR/caddy-routes.json") bytes)"
-          - name: fetch-authelia-acl
+              curl -sf "$C3_API/cloud-data/caddy-routes" | jq '.' > "$REPO_DIR/cloud-data-caddy-routes.json.tmp"
+              mv "$REPO_DIR/cloud-data-caddy-routes.json.tmp" "$REPO_DIR/cloud-data-caddy-routes.json"
+              echo "Fetched cloud-data-caddy-routes.json ($(wc -c < "$REPO_DIR/cloud-data-caddy-routes.json") bytes)"
+          - name: fetch-cloud-data-authelia-acl
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/authelia-acl" | jq '.' > "$REPO_DIR/authelia-acl.json.tmp"
-              mv "$REPO_DIR/authelia-acl.json.tmp" "$REPO_DIR/authelia-acl.json"
-              echo "Fetched authelia-acl.json ($(wc -c < "$REPO_DIR/authelia-acl.json") bytes)"
-          - name: fetch-monitoring-targets
+              curl -sf "$C3_API/cloud-data/authelia-acl" | jq '.' > "$REPO_DIR/cloud-data-authelia-acl.json.tmp"
+              mv "$REPO_DIR/cloud-data-authelia-acl.json.tmp" "$REPO_DIR/cloud-data-authelia-acl.json"
+              echo "Fetched cloud-data-authelia-acl.json ($(wc -c < "$REPO_DIR/cloud-data-authelia-acl.json") bytes)"
+          - name: fetch-cloud-data-monitoring-targets
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/monitoring-targets" | jq '.' > "$REPO_DIR/monitoring-targets.json.tmp"
-              mv "$REPO_DIR/monitoring-targets.json.tmp" "$REPO_DIR/monitoring-targets.json"
-              echo "Fetched monitoring-targets.json ($(wc -c < "$REPO_DIR/monitoring-targets.json") bytes)"
-          - name: fetch-firewall-rules
+              curl -sf "$C3_API/cloud-data/monitoring-targets" | jq '.' > "$REPO_DIR/cloud-data-monitoring-targets.json.tmp"
+              mv "$REPO_DIR/cloud-data-monitoring-targets.json.tmp" "$REPO_DIR/cloud-data-monitoring-targets.json"
+              echo "Fetched cloud-data-monitoring-targets.json ($(wc -c < "$REPO_DIR/cloud-data-monitoring-targets.json") bytes)"
+          - name: fetch-cloud-data-firewall-rules
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/firewall-rules" | jq '.' > "$REPO_DIR/firewall-rules.json.tmp"
-              mv "$REPO_DIR/firewall-rules.json.tmp" "$REPO_DIR/firewall-rules.json"
-              echo "Fetched firewall-rules.json ($(wc -c < "$REPO_DIR/firewall-rules.json") bytes)"
-          - name: fetch-backup-targets
+              curl -sf "$C3_API/cloud-data/firewall-rules" | jq '.' > "$REPO_DIR/cloud-data-firewall-rules.json.tmp"
+              mv "$REPO_DIR/cloud-data-firewall-rules.json.tmp" "$REPO_DIR/cloud-data-firewall-rules.json"
+              echo "Fetched cloud-data-firewall-rules.json ($(wc -c < "$REPO_DIR/cloud-data-firewall-rules.json") bytes)"
+          - name: fetch-cloud-data-backup-targets
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/backup-targets" | jq '.' > "$REPO_DIR/backup-targets.json.tmp"
-              mv "$REPO_DIR/backup-targets.json.tmp" "$REPO_DIR/backup-targets.json"
-              echo "Fetched backup-targets.json ($(wc -c < "$REPO_DIR/backup-targets.json") bytes)"
-          - name: fetch-wireguard-peers
+              curl -sf "$C3_API/cloud-data/backup-targets" | jq '.' > "$REPO_DIR/cloud-data-backup-targets.json.tmp"
+              mv "$REPO_DIR/cloud-data-backup-targets.json.tmp" "$REPO_DIR/cloud-data-backup-targets.json"
+              echo "Fetched cloud-data-backup-targets.json ($(wc -c < "$REPO_DIR/cloud-data-backup-targets.json") bytes)"
+          - name: fetch-cloud-data-wireguard-peers
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/wireguard-peers" | jq '.' > "$REPO_DIR/wireguard-peers.json.tmp"
-              mv "$REPO_DIR/wireguard-peers.json.tmp" "$REPO_DIR/wireguard-peers.json"
-              echo "Fetched wireguard-peers.json ($(wc -c < "$REPO_DIR/wireguard-peers.json") bytes)"
-          - name: fetch-ntfy-acl
+              curl -sf "$C3_API/cloud-data/wireguard-peers" | jq '.' > "$REPO_DIR/cloud-data-wireguard-peers.json.tmp"
+              mv "$REPO_DIR/cloud-data-wireguard-peers.json.tmp" "$REPO_DIR/cloud-data-wireguard-peers.json"
+              echo "Fetched cloud-data-wireguard-peers.json ($(wc -c < "$REPO_DIR/cloud-data-wireguard-peers.json") bytes)"
+          - name: fetch-cloud-data-ntfy-acl
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/ntfy-acl" | jq '.' > "$REPO_DIR/ntfy-acl.json.tmp"
-              mv "$REPO_DIR/ntfy-acl.json.tmp" "$REPO_DIR/ntfy-acl.json"
-              echo "Fetched ntfy-acl.json ($(wc -c < "$REPO_DIR/ntfy-acl.json") bytes)"
-          - name: fetch-cloudflare-dns
+              curl -sf "$C3_API/cloud-data/ntfy-acl" | jq '.' > "$REPO_DIR/cloud-data-ntfy-acl.json.tmp"
+              mv "$REPO_DIR/cloud-data-ntfy-acl.json.tmp" "$REPO_DIR/cloud-data-ntfy-acl.json"
+              echo "Fetched cloud-data-ntfy-acl.json ($(wc -c < "$REPO_DIR/cloud-data-ntfy-acl.json") bytes)"
+          - name: fetch-cloud-data-cloudflare-dns
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/cloudflare-dns" | jq '.' > "$REPO_DIR/cloudflare-dns.json.tmp"
-              mv "$REPO_DIR/cloudflare-dns.json.tmp" "$REPO_DIR/cloudflare-dns.json"
-              echo "Fetched cloudflare-dns.json ($(wc -c < "$REPO_DIR/cloudflare-dns.json") bytes)"
-          - name: fetch-matomo-sites
+              curl -sf "$C3_API/cloud-data/cloudflare-dns" | jq '.' > "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp"
+              mv "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp" "$REPO_DIR/cloud-data-cloudflare-dns.json"
+              echo "Fetched cloud-data-cloudflare-dns.json ($(wc -c < "$REPO_DIR/cloud-data-cloudflare-dns.json") bytes)"
+          - name: fetch-cloud-data-matomo-sites
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/matomo-sites" | jq '.' > "$REPO_DIR/matomo-sites.json.tmp"
-              mv "$REPO_DIR/matomo-sites.json.tmp" "$REPO_DIR/matomo-sites.json"
-              echo "Fetched matomo-sites.json ($(wc -c < "$REPO_DIR/matomo-sites.json") bytes)"
-          - name: fetch-container-resources
+              curl -sf "$C3_API/cloud-data/matomo-sites" | jq '.' > "$REPO_DIR/cloud-data-matomo-sites.json.tmp"
+              mv "$REPO_DIR/cloud-data-matomo-sites.json.tmp" "$REPO_DIR/cloud-data-matomo-sites.json"
+              echo "Fetched cloud-data-matomo-sites.json ($(wc -c < "$REPO_DIR/cloud-data-matomo-sites.json") bytes)"
+          - name: fetch-cloud-data-container-resources
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/container-resources" | jq '.' > "$REPO_DIR/container-resources.json.tmp"
-              mv "$REPO_DIR/container-resources.json.tmp" "$REPO_DIR/container-resources.json"
-              echo "Fetched container-resources.json ($(wc -c < "$REPO_DIR/container-resources.json") bytes)"
-          - name: fetch-log-routing
+              curl -sf "$C3_API/cloud-data/container-resources" | jq '.' > "$REPO_DIR/cloud-data-container-resources.json.tmp"
+              mv "$REPO_DIR/cloud-data-container-resources.json.tmp" "$REPO_DIR/cloud-data-container-resources.json"
+              echo "Fetched cloud-data-container-resources.json ($(wc -c < "$REPO_DIR/cloud-data-container-resources.json") bytes)"
+          - name: fetch-cloud-data-log-routing
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/log-routing" | jq '.' > "$REPO_DIR/log-routing.json.tmp"
-              mv "$REPO_DIR/log-routing.json.tmp" "$REPO_DIR/log-routing.json"
-              echo "Fetched log-routing.json ($(wc -c < "$REPO_DIR/log-routing.json") bytes)"
+              curl -sf "$C3_API/cloud-data/log-routing" | jq '.' > "$REPO_DIR/cloud-data-log-routing.json.tmp"
+              mv "$REPO_DIR/cloud-data-log-routing.json.tmp" "$REPO_DIR/cloud-data-log-routing.json"
+              echo "Fetched cloud-data-log-routing.json ($(wc -c < "$REPO_DIR/cloud-data-log-routing.json") bytes)"
           - name: commit-and-push
             depends:
-              - fetch-topology
-              - fetch-configs
-              - fetch-deps
-              - fetch-dns-registry
-              - fetch-caddy-routes
-              - fetch-authelia-acl
-              - fetch-monitoring-targets
-              - fetch-firewall-rules
-              - fetch-backup-targets
-              - fetch-wireguard-peers
-              - fetch-ntfy-acl
-              - fetch-cloudflare-dns
-              - fetch-matomo-sites
-              - fetch-container-resources
-              - fetch-log-routing
+              - fetch-cloud-data-topology
+              - fetch-cloud-data-configs
+              - fetch-cloud-data-deps
+              - fetch-cloud-data-dns-services
+              - fetch-cloud-data-caddy-routes
+              - fetch-cloud-data-authelia-acl
+              - fetch-cloud-data-monitoring-targets
+              - fetch-cloud-data-firewall-rules
+              - fetch-cloud-data-backup-targets
+              - fetch-cloud-data-wireguard-peers
+              - fetch-cloud-data-ntfy-acl
+              - fetch-cloud-data-cloudflare-dns
+              - fetch-cloud-data-matomo-sites
+              - fetch-cloud-data-container-resources
+              - fetch-cloud-data-log-routing
             command: |
               export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
               cd "$REPO_DIR"
@@ -1625,7 +1625,7 @@
               echo "Pushed changes at ''${STAMP}"
       '';
 
-      front-data-sync = pkgs.writeText "front-data-sync.yaml" ''
+      "cloud-data_front-sync" = pkgs.writeText "cloud-data_front-sync.yaml" ''
         schedule: "*/5 * * * *"
         env:
           - C3_API: http://10.0.0.6:8081
@@ -1660,7 +1660,7 @@
             depends:
               - pull-rebase
             command: |
-              curl -sf "$C3_API/deps/front" | jq '.' > "$REPO_DIR/front-deps.json.tmp"
+              curl -sf "$C3_API/cloud-data/deps/front" | jq '.' > "$REPO_DIR/front-deps.json.tmp"
               mv "$REPO_DIR/front-deps.json.tmp" "$REPO_DIR/front-deps.json"
               echo "Fetched front-deps.json ($(wc -c < "$REPO_DIR/front-deps.json") bytes)"
           - name: commit-and-push
@@ -1687,7 +1687,7 @@
       # SECRETS SYNC
       # ═══════════════════════════════════════════════════════════════════
 
-      secrets-sync = pkgs.writeText "secrets-sync.yaml" ''
+      "cloud-data_secrets-sync" = pkgs.writeText "cloud-data_secrets-sync.yaml" ''
         schedule: "0 * * * *"
         env:
           - CLOUD_DATA_DIR: /var/lib/dagu/data/cloud-data
@@ -1893,25 +1893,25 @@
         cp ${mkFetchToken pkgs} $out/fetch-token.sh
         chmod +x $out/fetch-token.sh
         cp ${./Dockerfile} $out/Dockerfile
-        cp ${dags.healthcheck} $out/dags/healthcheck.yaml
-        cp ${dags.system-check} $out/dags/system-check.yaml
-        cp ${dags.docker-check} $out/dags/docker-check.yaml
-        cp ${dags.backup-check} $out/dags/backup-check.yaml
-        cp ${dags.security-audit} $out/dags/security-audit.yaml
-        cp ${dags.ops-summary} $out/dags/ops-summary.yaml
-        cp ${dags.service-endpoints} $out/dags/service-endpoints.yaml
-        cp ${dags.tls-expiry} $out/dags/tls-expiry.yaml
-        cp ${dags.dns-resolution} $out/dags/dns-resolution.yaml
-        cp ${dags.auth-events} $out/dags/auth-events.yaml
-        cp ${dags.cron-status} $out/dags/cron-status.yaml
-        cp ${dags.deploy-digest} $out/dags/deploy-digest.yaml
-        cp ${dags.sauron-integrity} $out/dags/sauron-integrity.yaml
-        cp ${dags.capacity-review} $out/dags/capacity-review.yaml
-        cp ${dags.daily-report} $out/dags/daily-report.yaml
-        cp ${dags.daily-report-script} $out/dags/daily-report.sh
-        cp ${dags.cloud-data-sync} $out/dags/cloud-data-sync.yaml
-        cp ${dags.front-data-sync} $out/dags/front-data-sync.yaml
-        cp ${dags.secrets-sync} $out/dags/secrets-sync.yaml
+        cp ${dags."health_mesh-connectivity"} $out/dags/health_mesh-connectivity.yaml
+        cp ${dags."health_system-resources"} $out/dags/health_system-resources.yaml
+        cp ${dags."health_docker-containers"} $out/dags/health_docker-containers.yaml
+        cp ${dags."ops_backup-check"} $out/dags/ops_backup-check.yaml
+        cp ${dags."security_ssh-audit"} $out/dags/security_ssh-audit.yaml
+        cp ${dags.ops_summary} $out/dags/ops_summary.yaml
+        cp ${dags."health_service-endpoints"} $out/dags/health_service-endpoints.yaml
+        cp ${dags."security_tls-expiry"} $out/dags/security_tls-expiry.yaml
+        cp ${dags."health_dns-resolution"} $out/dags/health_dns-resolution.yaml
+        cp ${dags."security_auth-events"} $out/dags/security_auth-events.yaml
+        cp ${dags."ops_cron-status"} $out/dags/ops_cron-status.yaml
+        cp ${dags."ops_deploy-digest"} $out/dags/ops_deploy-digest.yaml
+        cp ${dags."security_sauron-integrity"} $out/dags/security_sauron-integrity.yaml
+        cp ${dags."ops_capacity-review"} $out/dags/ops_capacity-review.yaml
+        cp ${dags.report_daily} $out/dags/report_daily.yaml
+        cp ${dags."report_daily-script"} $out/dags/report_daily.sh
+        cp ${dags."cloud-data_sync"} $out/dags/cloud-data_sync.yaml
+        cp ${dags."cloud-data_front-sync"} $out/dags/cloud-data_front-sync.yaml
+        cp ${dags."cloud-data_secrets-sync"} $out/dags/cloud-data_secrets-sync.yaml
       '';
     in {
       default = defaultPkg;

@@ -37,7 +37,7 @@ function buildServiceTable(): string {
 
 function buildArchitectureSummary(): string {
   return `## Architecture
-- Nix flakes → Docker Compose stacks, cloud-topology.json is source of truth
+- Nix flakes → Docker Compose stacks, cloud-data-topology.json is source of truth
 - Per-service build.sh: build → secrets (sops) → deploy (rsync) → compose
 - WireGuard mesh 10.0.0.0/24 connects all VMs
 - GCP proxy (gcp-E2-f_0): Caddy + Authelia entry point
@@ -50,9 +50,9 @@ function buildToolIndex(): string {
 ### A: Specs (9 tools)
 | Tool | Description |
 |------|-------------|
-| c3_topology | cloud-topology.json — VMs, services, networking |
-| c3_configs | cloud-configs.json — domains, ports, images, routes |
-| c3_deps | cloud-deps.json — npm dependencies per cloud service |
+| c3_topology | cloud-data-topology.json — VMs, services, networking |
+| c3_configs | cloud-data-configs.json — domains, ports, images, routes |
+| c3_deps | cloud-data-deps.json — npm dependencies per cloud service |
 | c3_topology_md | cloud-topology.md — human-readable topology |
 | c3_configs_md | cloud-configs.md — Caddy routes, Authelia clients, DNS |
 | c3_deps_front | front-deps.json — front-end project dependencies |
@@ -95,11 +95,11 @@ export function buildContextSummary(size: "compact" | "full"): string {
     const repoRoot = getRepoRoot();
 
     // Add topology markdown
-    const topoMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-topology.md"));
+    const topoMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-topology.md"));
     if (topoMd) parts.push(`## Full Topology\n\n${topoMd}`);
 
     // Add configs markdown
-    const configsMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-configs.md"));
+    const configsMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-configs.md"));
     if (configsMd) parts.push(`## Full Configs\n\n${configsMd}`);
 
     // Add README
@@ -107,7 +107,7 @@ export function buildContextSummary(size: "compact" | "full"): string {
     if (readme) parts.push(`## README\n\n${readme}`);
 
     // Add deps summary
-    const deps = readFileSafe(join(repoRoot, "cloud-data", "cloud-deps.json"));
+    const deps = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-deps.json"));
     if (deps) {
       try {
         const parsed = JSON.parse(deps);

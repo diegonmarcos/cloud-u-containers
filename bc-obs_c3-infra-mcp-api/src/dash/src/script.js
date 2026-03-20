@@ -96,7 +96,7 @@
   document.getElementById('btn-topo').addEventListener('click',function(){
     var el=document.getElementById('out-topo');
     el.innerHTML='<span class="loading">loading topology...</span>';
-    apiFetch('/topology',{timeout:15000}).then(function(d){
+    apiFetch('/cloud-data/topology',{timeout:15000}).then(function(d){
       var h='';
       var vms=d.vms||[];
       if(vms.length>0){
@@ -141,7 +141,7 @@
   document.getElementById('btn-topo-sec').addEventListener('click',function(){
     var el=document.getElementById('out-topo-sec');
     el.innerHTML='<span class="loading">loading security topology...</span>';
-    apiFetch('/topology/security',{timeout:15000}).then(function(d){
+    apiFetch('/cloud-data/topology/security',{timeout:15000}).then(function(d){
       var h='';
       var exposed=d.exposedServices||[];
       if(exposed.length>0){
@@ -174,7 +174,7 @@
   document.getElementById('btn-topo-drift').addEventListener('click',function(){
     var el=document.getElementById('out-topo-drift');
     el.innerHTML='<span class="loading">checking drift...</span>';
-    apiFetch('/topology/drift',{timeout:15000}).then(function(d){
+    apiFetch('/cloud-data/topology/drift',{timeout:15000}).then(function(d){
       var h='';
       var onDisk=d.onDiskOnly||[];
       var config=d.configOnly||[];
@@ -205,7 +205,7 @@
   function loadConfigs(){
     var el=document.getElementById('out-configs');
     el.innerHTML='<span class="loading">loading configs...</span>';
-    apiFetch('/configs',{timeout:15000}).then(function(d){
+    apiFetch('/cloud-data/configs',{timeout:15000}).then(function(d){
       var services=Array.isArray(d)?d:(d.services||d.configs||[]);
       if(services.length>0){
         var h='<table><tr><th>Service</th><th>VM</th><th>Category</th><th>Remote Path</th><th>Has Secrets</th></tr>';
@@ -873,12 +873,12 @@
   var _secCache={configs:null,topology:null};
   function secData(){
     return Promise.all([
-      _secCache.configs||apiFetch('/configs',{timeout:20000}).then(function(d){_secCache.configs=d;return d}),
-      _secCache.topology||apiFetch('/topology',{timeout:20000}).then(function(d){_secCache.topology=d;return d})
+      _secCache.configs||apiFetch('/cloud-data/configs',{timeout:20000}).then(function(d){_secCache.configs=d;return d}),
+      _secCache.topology||apiFetch('/cloud-data/topology',{timeout:20000}).then(function(d){_secCache.topology=d;return d})
     ]).then(function(arr){return{conf:arr[0],topo:arr[1]}});
   }
 
-  // ── Web Server (Caddy) — TLS certs & listeners from cloud-configs.json ──
+  // ── Web Server (Caddy) — TLS certs & listeners from cloud-data-configs.json ──
   document.getElementById('btn-sec-caddy').addEventListener('click',loadSecCaddy);
   function loadSecCaddy(){
     var el=document.getElementById('out-sec-caddy');
@@ -901,7 +901,7 @@
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── Auth (Authelia) — ACL rules from cloud-configs.json + secrets status ──
+  // ── Auth (Authelia) — ACL rules from cloud-data-configs.json + secrets status ──
   document.getElementById('btn-sec-authelia').addEventListener('click',loadSecAuthelia);
   function loadSecAuthelia(){
     var el=document.getElementById('out-sec-authelia');
@@ -995,7 +995,7 @@
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── VPN (WireGuard) — from cloud-topology.json wireguard + os_firewalls ──
+  // ── VPN (WireGuard) — from cloud-data-topology.json wireguard + os_firewalls ──
   document.getElementById('btn-sec-wg').addEventListener('click',loadSecWg);
   function loadSecWg(){
     var el=document.getElementById('out-sec-wg');
@@ -1053,7 +1053,7 @@
     }).catch(function(e){el.innerHTML='<span class="st-err">'+esc(e.message)+'</span>';});
   }
 
-  // ── Docker Networks — from cloud-configs.json services[].networks + ports ──
+  // ── Docker Networks — from cloud-data-configs.json services[].networks + ports ──
   document.getElementById('btn-sec-docker').addEventListener('click',loadSecDocker);
   function loadSecDocker(){
     var el=document.getElementById('out-sec-docker');

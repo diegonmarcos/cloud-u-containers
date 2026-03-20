@@ -1,4 +1,4 @@
-// gen-deps.ts — Generate cloud-deps.json + front-deps.json from package.json files
+// gen-deps.ts — Generate cloud-data-deps.json + front-deps.json from package.json files
 //
 // Sources:
 //   cloud/a_solutions/*/src/package.json    → per-service node dependencies
@@ -8,7 +8,7 @@
 //   front/**/build.json                     → project metadata
 //
 // Outputs (written directly to data submodules, symlinked from repo roots):
-//   cloud-data/cloud-deps.json   → consolidated cloud deps grouped by language
+//   cloud-data/cloud-data-deps.json   → consolidated cloud deps grouped by language
 //   front-data/front-deps.json   → consolidated front deps grouped by language
 //
 // Consumed by:
@@ -30,7 +30,7 @@ const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
 const FRONT_DATA_DIR = join(FRONT_ROOT, "front-data");
-const CLOUD_OUTPUT = join(CLOUD_DATA_DIR, "cloud-deps.json");
+const CLOUD_OUTPUT = join(CLOUD_DATA_DIR, "cloud-data-deps.json");
 const FRONT_OUTPUT = join(FRONT_DATA_DIR, "front-deps.json");
 
 // --- Types ----------------------------------------------------------------
@@ -169,7 +169,7 @@ function scanCloud(): RepoDeps {
 
   return buildOutput(
     "c3-infra-mcp-api/src/engines/gen-deps.ts",
-    "GET /c3-api/deps",
+    "GET /c3-api/cloud-data/deps",
     mergedDeps,
     mergedDevDeps,
     perService,
@@ -238,7 +238,7 @@ function scanFront(): RepoDeps | null {
 
   return buildOutput(
     "c3-infra-mcp-api/src/engines/gen-deps.ts",
-    "GET /c3-api/deps/front",
+    "GET /c3-api/cloud-data/deps/front",
     mergedDeps,
     mergedDevDeps,
     perService,
@@ -251,7 +251,7 @@ function main() {
   // Cloud deps
   const cloudDeps = scanCloud();
   writeFileSync(CLOUD_OUTPUT, JSON.stringify(cloudDeps, null, 2) + "\n");
-  console.log(`\ngen-deps [cloud]: written cloud-deps.json (${cloudDeps._meta.total_services} services, ${cloudDeps._meta.total_packages} packages)`);
+  console.log(`\ngen-deps [cloud]: written cloud-data-deps.json (${cloudDeps._meta.total_services} services, ${cloudDeps._meta.total_packages} packages)`);
 
   // Front deps
   const frontDeps = scanFront();
