@@ -13,16 +13,17 @@ import { registerFinOpsTools } from "./tools/finops.js";
 // ── Extensions ───────────────────────────────────
 import { registerFrontendTools } from "./tools/frontend.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
-import { registerMattermostTools } from "./tools/mattermost.js";
+import { registerMattermostTools } from "./tools/health_mattermost.js";
+import { registerHealthMailuTools } from "./tools/health_mailu.js";
 
 import { registerResources } from "./resources/index.js";
 
 const server = new McpServer({
   name: "cloud-infra",
-  version: "3.1.0",
+  version: "3.2.0",
 });
 
-// Register all tools (115+ total — comprehensive C3 Cloud Control Center)
+// Register all tools (120+ total — comprehensive C3 Cloud Control Center)
 
 // ── 6 Pillars ────────────────────────────────────
 registerInventoryTools(server);      // 21: config, topology, discovery, repos, files
@@ -36,6 +37,7 @@ registerFinOpsTools(server);         //  7: OCI + GCP instances, resources, cost
 registerFrontendTools(server);       //  5: front-end monorepo build/dev/deploy
 registerCrawleeTools(server);        //  7: web scraping actors/runs/results
 registerMattermostTools(server);     //  8: chat read/write/react for agentic bot
+registerHealthMailuTools(server);    //  5: mail UP, profiling, inbound/outbound tests, full pipeline
 
 // Register resources (7 static + 2 templates = 9 total)
 registerResources(server);             // cloud://config, ssh-config, services-overview, readme, front-projects, c3-api-endpoints, service-apis + templates: services/{name}, vms/{vm_id}
@@ -45,7 +47,7 @@ const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-infra MCP server v3.1.0 (115+ tools, 9 resources)...");
+  log("Starting cloud-infra MCP server v3.2.0 (120+ tools, 9 resources)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
