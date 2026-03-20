@@ -39,7 +39,7 @@ export const DEPS_PATH = join(SOLUTIONS_DIR, "..", "cloud-data-deps.json");
 export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
-export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/oauth/age_keys.txt");
+export const SOPS_AGE_KEY_FILE = join(GIT_BASE, "vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt");
 export const AUTHELIA_TOKEN_PATH = join(GIT_BASE, "vault/A0_keys/providers/authelia/oauth/authelia_tokens.json");
 export const CRAWLEE_API_TOKEN_PATH = process.env.CRAWLEE_API_TOKEN
   ? ""  // token provided via env, no file needed

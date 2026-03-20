@@ -94,10 +94,10 @@ SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-mux-%r@%h:%p -o ControlP
 : "${DOCKER_BINARY_NAME:=${SERVICE_NAME}-binary}"
 
 # Age key - auto-detect mobile vs desktop
-if [ -f "$HOME/git/vault/A0_keys/providers/system/oauth/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=$HOME/git/vault/A0_keys/providers/system/oauth/age_keys.txt}"
-elif [ -f "/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/providers/system/oauth/age_keys.txt}"
+if [ -f "$HOME/git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt" ]; then
+    : "${SOPS_AGE_KEY_FILE:=$HOME/git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt}"
+elif [ -f "/home/diego/Mounts/Git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt" ]; then
+    : "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt}"
 fi
 export SOPS_AGE_KEY_FILE
 
