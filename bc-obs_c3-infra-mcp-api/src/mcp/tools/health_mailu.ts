@@ -57,6 +57,25 @@ function getResendApiKey(): string | null {
   return match ? match[1].trim() : null;
 }
 
+/** DNS lookup with dig → nslookup fallback (Termux may lack dig) */
+function dnsLookup(type: string, name: string): string {
+  // Try dig first
+  const dig = exec("bash", ["-c", `command -v dig >/dev/null 2>&1 && dig +short ${type} ${name} 2>&1`]);
+  if (dig.ok && dig.stdout.trim()) return dig.stdout.trim();
+  // Fallback: nslookup
+  if (type === "MX") {
+    const r = exec("nslookup", ["-type=mx", name], { timeout: 10_000 });
+    const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("mail exchanger"));
+    return lines.map((l) => l.replace(/.*mail exchanger = /, "").trim()).join("\n") || "";
+  }
+  if (type === "TXT") {
+    const r = exec("nslookup", ["-type=txt", name], { timeout: 10_000 });
+    const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("text =") || l.includes("v="));
+    return lines.map((l) => l.replace(/.*text = /, "").trim()).join("\n") || "";
+  }
+  return "";
+}
+
 function formatChecks(title: string, checks: Check[]): string {
   const passed = checks.filter((c) => c.passed).length;
   const total = checks.length;
@@ -132,9 +151,9 @@ function mailuUp(): Check[] {
 
   // MX DNS record
   checks.push(timed("MX DNS record", () => {
-    const r = exec("bash", ["-c", `dig +short MX diegonmarcos.com 2>&1`]);
-    const hasMx = r.stdout.includes("diegonmarcos.com");
-    return { passed: hasMx, details: r.stdout.trim().split("\n")[0] || "no MX" };
+    const out = dnsLookup("MX", "diegonmarcos.com");
+    const hasMx = out.includes("diegonmarcos.com");
+    return { passed: hasMx, details: out.split("\n")[0] || "no MX" };
   }));
 
   return checks;
@@ -203,23 +222,23 @@ function mailuOutboundTest(): Check[] {
 
   // DKIM check
   checks.push(timed("DKIM record", () => {
-    const r = exec("bash", ["-c", `dig +short TXT dkim._domainkey.diegonmarcos.com 2>&1`]);
-    const hasDkim = r.stdout.includes("v=DKIM1");
+    const out = dnsLookup("TXT", "dkim._domainkey.diegonmarcos.com");
+    const hasDkim = out.includes("v=DKIM1");
     return { passed: hasDkim, details: hasDkim ? "DKIM1 present" : "missing or unresolvable" };
   }));
 
   // SPF check
   checks.push(timed("SPF record", () => {
-    const r = exec("bash", ["-c", `dig +short TXT diegonmarcos.com 2>&1`]);
-    const hasSpf = r.stdout.includes("v=spf1");
-    return { passed: hasSpf, details: r.stdout.split("\n").find((l) => l.includes("spf1"))?.trim() || "missing" };
+    const out = dnsLookup("TXT", "diegonmarcos.com");
+    const hasSpf = out.includes("v=spf1");
+    return { passed: hasSpf, details: out.split("\n").find((l) => l.includes("spf1"))?.trim() || "missing" };
   }));
 
   // DMARC check
   checks.push(timed("DMARC record", () => {
-    const r = exec("bash", ["-c", `dig +short TXT _dmarc.diegonmarcos.com 2>&1`]);
-    const hasDmarc = r.stdout.includes("v=DMARC1");
-    return { passed: hasDmarc, details: r.stdout.trim().split("\n")[0] || "missing" };
+    const out = dnsLookup("TXT", "_dmarc.diegonmarcos.com");
+    const hasDmarc = out.includes("v=DMARC1");
+    return { passed: hasDmarc, details: out.trim().split("\n")[0] || "missing" };
   }));
 
   return checks;
