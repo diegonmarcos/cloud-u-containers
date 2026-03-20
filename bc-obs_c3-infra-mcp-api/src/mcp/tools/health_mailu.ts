@@ -20,7 +20,7 @@ const MAILU_CONTAINERS = [
   "mailu-antispam-1", "mailu-webmail-1", "mailu-resolver-1", "mailu-redis-1",
 ];
 const RESEND_ENV_PATH = join(GIT_BASE, "vault/A0_keys/providers/resend/resend.env");
-const TEST_FROM = "health@mail.diegonmarcos.com";
+const TEST_FROM = "health@mails.diegonmarcos.com";
 const TEST_TO = "me@diegonmarcos.com";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
