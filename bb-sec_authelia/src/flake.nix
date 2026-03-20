@@ -21,6 +21,64 @@
     title = "Authelia 2FA Authentication";
     docker = import ../../_shared/docker.nix;
 
+    # ACL rules from external JSON (authelia-acl.json)
+    # Falls back to a minimal default if the file doesn't exist
+    autheliaAcl =
+      if builtins.pathExists ./authelia-acl.json
+      then builtins.fromJSON (builtins.readFile ./authelia-acl.json)
+      else { rules = [{ domain = "*.diegonmarcos.com"; policy = "two_factor"; service = "_default"; }]; };
+
+    # Generate YAML access_control rules from the JSON structure
+    # Each rule can have: domain, policy, resources_bypass, resources_two_factor
+    # A rule with resources_bypass produces a bypass rule with those resources
+    # A rule with resources_two_factor produces a two_factor rule with those resources
+    # A plain rule (no resources_*) produces a single rule with domain+policy
+    lib = nixpkgs.lib;
+
+    indent = n: str: let pad = lib.concatStrings (lib.genList (_: " ") n); in "${pad}${str}";
+
+    mkResourceLines = resources:
+      lib.concatMapStringsSep "\n" (r: indent 8 "- \"${r}\"") resources;
+
+    mkRuleYaml = rule:
+      let
+        hasBypass = rule ? resources_bypass && rule.resources_bypass != [];
+        hasTwoFactor = rule ? resources_two_factor && rule.resources_two_factor != [];
+        # Plain rule (no resource splits)
+        plainRule =
+          if !hasBypass && !hasTwoFactor then
+            indent 4 "- domain: ${rule.domain}\n" +
+            indent 6 "policy: ${rule.policy}"
+          else "";
+        # Bypass rule with resources
+        bypassRule =
+          if hasBypass then
+            indent 4 "- domain: ${rule.domain}\n" +
+            indent 6 "resources:\n" +
+            mkResourceLines rule.resources_bypass + "\n" +
+            indent 6 "policy: bypass"
+          else "";
+        # Two-factor rule with resources
+        twoFactorRule =
+          if hasTwoFactor then
+            indent 4 "- domain: ${rule.domain}\n" +
+            indent 6 "resources:\n" +
+            mkResourceLines rule.resources_two_factor + "\n" +
+            indent 6 "policy: two_factor"
+          else "";
+        # For services with both resources_bypass and resources_two_factor but also
+        # a base policy (e.g. vault has bypass as base policy for non-resource paths)
+        baseRule =
+          if hasBypass && rule ? policy && rule.policy != "" then
+            indent 4 "- domain: ${rule.domain}\n" +
+            indent 6 "policy: ${rule.policy}"
+          else "";
+        parts = builtins.filter (s: s != "") [ bypassRule twoFactorRule baseRule plainRule ];
+      in lib.concatStringsSep "\n" parts;
+
+    accessControlYaml =
+      lib.concatStringsSep "\n" (map mkRuleYaml autheliaAcl.rules);
+
     # Generate docker-compose.yml (authelia + redis)
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/bb-sec_authelia/src/flake.nix";
@@ -95,30 +153,7 @@
       access_control:
         default_policy: two_factor
         rules:
-          - domain: ${config.domain}
-            policy: bypass
-          - domain: vault.${config.base_domain}
-            resources:
-              - "^/api.*"
-              - "^/identity.*"
-              - "^/icons.*"
-              - "^/notifications.*"
-              - "^/attachments.*"
-            policy: bypass
-          - domain: vault.${config.base_domain}
-            resources:
-              - "^/admin.*"
-            policy: two_factor
-          - domain: vault.${config.base_domain}
-            policy: bypass
-          - domain: db.${config.base_domain}
-            resources:
-              - "^/api/.*"
-            policy: bypass
-          - domain: db.${config.base_domain}
-            policy: two_factor
-          - domain: "*.${config.base_domain}"
-            policy: two_factor
+      ${accessControlYaml}
 
       session:
         name: authelia_session
