@@ -497,9 +497,10 @@ step_compose() {
     ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
 
     if [ "$SEQUENTIAL_RESTART" = "true" ]; then
-        # Sequential restart: stop -> settle -> start (avoids CPU spike on low-resource VMs)
+        # Sequential restart: down -> settle -> start (avoids CPU spike on low-resource VMs)
+        # Uses 'down' not 'stop' to release port bindings (stop keeps them bound)
         log "Stopping containers on $DEPLOY_HOST"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose stop" || true
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans" || true
         log "Waiting for CPU to settle..."
         sleep 5
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"

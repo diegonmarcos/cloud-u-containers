@@ -381,6 +381,186 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
+  // ── WireGuard Peers (derived from topology VMs with wg_ip) ──
+
+  app.get("/wireguard-peers", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const peers: any[] = [];
+    for (const [vmId, vm] of Object.entries(topo.vms ?? {})) {
+      const v = vm as any;
+      if (!v.wg_ip) continue;
+      peers.push({
+        vm_id: vmId,
+        name: v.ssh_alias ?? vmId,
+        wg_ip: v.wg_ip,
+        public_ip: v.ip ?? "",
+        user: v.user ?? "diego",
+      });
+    }
+
+    // WireGuard mesh config from topology
+    const wg = topo.wireguard ?? topo.native?.wireguard ?? {};
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /wireguard-peers",
+      hub: wg.hub ?? null,
+      peers: wg.peers ?? peers,
+      mesh_peers: peers,
+    };
+  });
+
+  // ── ntfy ACL (derived from topology notifications fields) ──
+
+  app.get("/ntfy-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const topics: Record<string, { publishers: string[]; desc: string }> = {};
+
+    // System topics (always present)
+    for (const t of ["syslog", "github-releases", "alerts", "health", "backups"]) {
+      topics[t] = { publishers: ["system"], desc: `System topic: ${t}` };
+    }
+
+    // Service-declared topics
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const topic = s.notifications?.topic;
+      if (!topic) continue;
+      if (!topics[topic]) topics[topic] = { publishers: [], desc: "" };
+      topics[topic].publishers.push(svcName);
+      if (!topics[topic].desc) topics[topic].desc = `Topic for ${svcName}`;
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /ntfy-acl",
+      topics,
+    };
+  });
+
+  // ── Cloudflare DNS (derived from topology services with domains) ──
+
+  app.get("/cloudflare-dns", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const records: any[] = [];
+    const seenDomains = new Set<string>();
+
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      let domain = s.domain;
+      if (!domain) continue;
+
+      // Extract just the subdomain from full domain (e.g. "api.diegonmarcos.com/c3-api" → "api.diegonmarcos.com")
+      domain = domain.split("/")[0];
+      if (seenDomains.has(domain)) continue;
+      seenDomains.add(domain);
+
+      // Path-based routes use parent_domain
+      const proxyDomain = s.proxy?.parent_domain ?? domain;
+      if (proxyDomain !== domain) {
+        if (seenDomains.has(proxyDomain)) continue;
+        seenDomains.add(proxyDomain);
+        records.push({ name: proxyDomain, type: "CNAME", content: "diegonmarcos.com", proxied: true, service: svcName });
+      } else {
+        records.push({ name: domain, type: "CNAME", content: "diegonmarcos.com", proxied: true, service: svcName });
+      }
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /cloudflare-dns",
+      zone: "diegonmarcos.com",
+      records,
+    };
+  });
+
+  // ── Matomo Sites (services with domains that have analytics tracking) ──
+
+  app.get("/matomo-sites", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const sites: any[] = [];
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      if (!s.domain) continue;
+      const domain = s.domain.split("/")[0];
+      sites.push({
+        name: s.description ?? svcName,
+        url: `https://${domain}`,
+        service: svcName,
+      });
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /matomo-sites",
+      sites,
+    };
+  });
+
+  // ── Container Resources (derived from topology — mem/cpu per service) ──
+
+  app.get("/container-resources", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const services: Record<string, any> = {};
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const vm = topo.vms?.[s.vm];
+      if (!vm) continue;
+      services[svcName] = {
+        vm: vm.ssh_alias ?? s.vm,
+        vm_ram_gb: vm.specs?.ram_gb ?? null,
+        vm_cpu: vm.specs?.cpu ?? null,
+        containers: s.containers ?? [],
+        resources: s.resources ?? null,
+      };
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /container-resources",
+      services,
+    };
+  });
+
+  // ── Log Routing (derived from topology — container → log config) ──
+
+  app.get("/log-routing", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+
+    const routes: Record<string, any[]> = {};
+    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+      const s = svc as any;
+      const vm = topo.vms?.[s.vm];
+      if (!vm?.ssh_alias) continue;
+      const alias = vm.ssh_alias;
+      if (!routes[alias]) routes[alias] = [];
+      for (const container of (s.containers ?? [])) {
+        routes[alias].push({
+          container,
+          service: svcName,
+          log_level: s.log_level ?? "info",
+        });
+      }
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "cloud-topology.json via /log-routing",
+      vms: routes,
+    };
+  });
+
   // ── Files: config (from files.ts) ──
 
   app.get<{ Params: { service: string } }>(
