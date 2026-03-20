@@ -93,12 +93,8 @@ SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-mux-%r@%h:%p -o ControlP
 # Binary name for deploy payload (default: SERVICE_NAME-binary)
 : "${DOCKER_BINARY_NAME:=${SERVICE_NAME}-binary}"
 
-# Age key - auto-detect mobile vs desktop
-if [ -f "$HOME/git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=$HOME/git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt}"
-elif [ -f "/home/diego/Mounts/Git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt" ]; then
-    : "${SOPS_AGE_KEY_FILE:=/home/diego/Mounts/Git/vault/A0_keys/providers/system/ssh_asymmetric/age_keys.txt}"
-fi
+# Age key — use dotfile symlink set up by vault/build.sh setup system
+: "${SOPS_AGE_KEY_FILE:=$HOME/.config/sops/age/keys.txt}"
 export SOPS_AGE_KEY_FILE
 
 log() { printf "[%s] %s\n" "$(date '+%H:%M:%S')" "$1"; }
