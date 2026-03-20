@@ -117,7 +117,7 @@ export function registerInventoryTools(server: McpServer) {
     "get_service_detail",
     "Get full service info: folder, flake.nix presence, secrets status, dist files",
     {
-      service: z.string().describe("Service name from cloud-topology.json"),
+      service: z.string().describe("Service name from cloud-data-topology.json"),
     },
     async ({ service }) => {
       const config = getConfig();
@@ -180,7 +180,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "reload_config",
-    "Reload cloud-topology.json from disk and show diff (services/VMs added or removed since last load)",
+    "Reload cloud-data-topology.json from disk and show diff (services/VMs added or removed since last load)",
     {},
     async () => {
       const oldConfig = getConfig();
@@ -213,10 +213,10 @@ export function registerInventoryTools(server: McpServer) {
       lines.push(`\n--- Drift Report ---`);
       lines.push(`Auto-discovered: ${autoCount} services from build.json`);
       if (drift.onDiskOnly.length) {
-        lines.push(`On disk only (auto-discovered, not in cloud-topology.json): ${drift.onDiskOnly.join(", ")}`);
+        lines.push(`On disk only (auto-discovered, not in cloud-data-topology.json): ${drift.onDiskOnly.join(", ")}`);
       }
       if (drift.configOnly.length) {
-        lines.push(`In cloud-topology.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
+        lines.push(`In cloud-data-topology.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
       }
       if (!drift.onDiskOnly.length && !drift.configOnly.length) {
         lines.push("Config and disk are in sync.");
@@ -481,7 +481,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_topology_drift",
-    "Compare cloud-topology.json with on-disk services to find drift",
+    "Compare cloud-data-topology.json with on-disk services to find drift",
     {},
     async () => {
       const drift = getDriftReport();
@@ -516,7 +516,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_topology_volumes",
-    "Show Docker volumes per VM (from cloud-topology.json)",
+    "Show Docker volumes per VM (from cloud-data-topology.json)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
@@ -526,7 +526,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_topology_images",
-    "Show Docker images per VM (from cloud-topology.json containers)",
+    "Show Docker images per VM (from cloud-data-topology.json containers)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
@@ -539,7 +539,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_topology_dependencies",
-    "Show service dependencies (from cloud-topology.json)",
+    "Show service dependencies (from cloud-data-topology.json)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
@@ -555,11 +555,11 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "c3_deps",
-    "Get consolidated node dependencies across all cloud services (from cloud-deps.json). Grouped by language for home-manager consumption.",
+    "Get consolidated node dependencies across all cloud services (from cloud-data-deps.json). Grouped by language for home-manager consumption.",
     {},
     async () => {
       if (!existsSync(DEPS_PATH)) {
-        return plainText("cloud-deps.json not generated yet. Run: build.sh config");
+        return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
       }
       return jsonText("Cloud deps", JSON.parse(readFileSync(DEPS_PATH, "utf-8")));
     },
@@ -571,7 +571,7 @@ export function registerInventoryTools(server: McpServer) {
     {},
     async () => {
       if (!existsSync(DEPS_PATH)) {
-        return plainText("cloud-deps.json not generated yet. Run: build.sh config");
+        return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
       }
       const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
       return jsonText("Merged node deps", deps.node?.merged ?? {});

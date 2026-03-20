@@ -27,7 +27,7 @@
 
     # ── Route data from JSON ────────────────────────────────────
     caddyRoutes =
-      let jsonPath = ./caddy-routes.json;
+      let jsonPath = ./cloud-data-caddy-routes.json;
       in if builtins.pathExists jsonPath
          then builtins.fromJSON (builtins.readFile jsonPath)
          else { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; };

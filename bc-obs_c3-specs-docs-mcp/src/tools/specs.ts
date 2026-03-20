@@ -27,12 +27,12 @@ export function registerSpecTools(server: McpServer) {
   // ── Cloud Topology ──────────────────────────────────────────────────
   server.tool(
     "c3_topology",
-    "Get cloud-topology.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
+    "Get cloud-data-topology.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
     {},
     async () => {
-      const path = join(getRepoRoot(), "cloud-data", "cloud-topology.json");
+      const path = join(getRepoRoot(), "cloud-data", "cloud-data-topology.json");
       const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: "cloud-topology.json not found" }] };
+      if (!data) return { content: [{ type: "text" as const, text: "cloud-data-topology.json not found" }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     }
   );
@@ -40,12 +40,12 @@ export function registerSpecTools(server: McpServer) {
   // ── Cloud Configs ───────────────────────────────────────────────────
   server.tool(
     "c3_configs",
-    "Get cloud-configs.json — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
+    "Get cloud-data-configs.json — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
     {},
     async () => {
-      const path = join(getRepoRoot(), "cloud-data", "cloud-configs.json");
+      const path = join(getRepoRoot(), "cloud-data", "cloud-data-configs.json");
       const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: "cloud-configs.json not found" }] };
+      if (!data) return { content: [{ type: "text" as const, text: "cloud-data-configs.json not found" }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     }
   );
@@ -53,12 +53,12 @@ export function registerSpecTools(server: McpServer) {
   // ── Cloud Deps ──────────────────────────────────────────────────────
   server.tool(
     "c3_deps",
-    "Get cloud-deps.json — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
+    "Get cloud-data-deps.json — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
     {},
     async () => {
-      const path = join(getRepoRoot(), "cloud-data", "cloud-deps.json");
+      const path = join(getRepoRoot(), "cloud-data", "cloud-data-deps.json");
       const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: "cloud-deps.json not found" }] };
+      if (!data) return { content: [{ type: "text" as const, text: "cloud-data-deps.json not found" }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     }
   );
@@ -66,11 +66,11 @@ export function registerSpecTools(server: McpServer) {
   // ── Cloud Topology Markdown ─────────────────────────────────────────
   server.tool(
     "c3_topology_md",
-    "Get cloud-topology.md — human-readable topology overview with service tables, VM assignments, and networking.",
+    "Get cloud-data-topology.md — human-readable topology overview with service tables, VM assignments, and networking.",
     {},
     async () => {
-      const path = join(getRepoRoot(), "cloud-data", "cloud-topology.md");
-      if (!existsSync(path)) return { content: [{ type: "text" as const, text: "cloud-topology.md not found" }] };
+      const path = join(getRepoRoot(), "cloud-data", "cloud-data-topology.md");
+      if (!existsSync(path)) return { content: [{ type: "text" as const, text: "cloud-data-topology.md not found" }] };
       return { content: [{ type: "text" as const, text: readFileSync(path, "utf-8") }] };
     }
   );
@@ -78,11 +78,11 @@ export function registerSpecTools(server: McpServer) {
   // ── Cloud Configs Markdown ──────────────────────────────────────────
   server.tool(
     "c3_configs_md",
-    "Get cloud-configs.md — human-readable config overview with Caddy routes, Authelia clients, DNS zones.",
+    "Get cloud-data-configs.md — human-readable config overview with Caddy routes, Authelia clients, DNS zones.",
     {},
     async () => {
-      const path = join(getRepoRoot(), "cloud-data", "cloud-configs.md");
-      if (!existsSync(path)) return { content: [{ type: "text" as const, text: "cloud-configs.md not found" }] };
+      const path = join(getRepoRoot(), "cloud-data", "cloud-data-configs.md");
+      if (!existsSync(path)) return { content: [{ type: "text" as const, text: "cloud-data-configs.md not found" }] };
       return { content: [{ type: "text" as const, text: readFileSync(path, "utf-8") }] };
     }
   );

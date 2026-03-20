@@ -85,10 +85,10 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // ── Security topology (derived from cloud-topology.json) ──
+  // ── Security topology (derived from cloud-data-topology.json) ──
 
   app.get(
-    "/topology/security",
+    "/cloud-data/topology/security",
     { schema: { tags: ["Security"] } },
     async () => {
       const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
@@ -99,10 +99,10 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // ── Network topology (from cloud-topology.json — networks per VM) ──
+  // ── Network topology (from cloud-data-topology.json — networks per VM) ──
 
   app.get(
-    "/topology/network",
+    "/cloud-data/topology/network",
     { schema: { tags: ["Security"], summary: "Docker networks and container isolation per VM" } },
     async () => {
       const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));

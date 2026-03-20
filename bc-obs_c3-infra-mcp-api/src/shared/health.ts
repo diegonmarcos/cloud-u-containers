@@ -151,7 +151,7 @@ export function healthAlive(): { status: string; version: string } {
 }
 
 /**
- * Returns declared VMs and services from cloud-topology.json. No network probing.
+ * Returns declared VMs and services from cloud-data-topology.json. No network probing.
  */
 export function healthDeclared(): HealthDeclaredResult {
   const config = getConfig();
@@ -195,7 +195,7 @@ export function healthDeployed(vmId?: string): DeployedVm[] {
 }
 
 /**
- * Compare declared services (cloud-topology.json) with deployed containers (docker ps).
+ * Compare declared services (cloud-data-topology.json) with deployed containers (docker ps).
  * For each service, check if expected containers are running.
  */
 export function healthDrift(): DriftEntry[] {
@@ -785,11 +785,11 @@ export interface ReachResult {
 }
 
 /**
- * Look up a service's domain from cloud-configs.json (Caddy routes + services).
+ * Look up a service's domain from cloud-data-configs.json (Caddy routes + services).
  * Falls back to topology service domain.
  */
 function resolveServiceDomain(target: string): string | undefined {
-  // 1. cloud-configs.json — has Caddy routes and service domains
+  // 1. cloud-data-configs.json — has Caddy routes and service domains
   if (existsSync(CONFIGS_PATH)) {
     try {
       const configs = JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
@@ -810,7 +810,7 @@ function resolveServiceDomain(target: string): string | undefined {
 
 /**
  * /reach/:target — Test actual route reachability through Caddy/Cloudflare.
- * Looks up domain from cloud-configs.json, probes HTTPS + HTTP + TCP in parallel.
+ * Looks up domain from cloud-data-configs.json, probes HTTPS + HTTP + TCP in parallel.
  */
 export function checkReach(target: string): ReachResult {
   const start = Date.now();

@@ -1,4 +1,4 @@
-// gen-topology.ts — Generate cloud-topology.json + cloud-topology.md
+// gen-topology.ts — Generate cloud-data-topology.json + cloud-data-topology.md
 //
 // Sources:
 //   ~/.ssh/config                            → VM aliases + WireGuard IPs
@@ -8,8 +8,8 @@
 //   ba-clo_hickory-dns/dist/zones/           → DNS records
 //
 // Outputs (written directly to cloud-data/ submodule, symlinked from repo root):
-//   cloud-data/cloud-topology.json  → machine-readable infrastructure topology
-//   cloud-data/cloud-topology.md    → human-readable tables (via Nunjucks)
+//   cloud-data/cloud-data-topology.json  → machine-readable infrastructure topology
+//   cloud-data/cloud-data-topology.md    → human-readable tables (via Nunjucks)
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve, join } from "path";
@@ -32,8 +32,8 @@ const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
 const SSH_CONFIG = join(homedir(), ".ssh", "config");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
-const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-topology.json");
-const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-topology.md");
+const OUTPUT_JSON = join(CLOUD_DATA_DIR, "cloud-data-topology.json");
+const OUTPUT_MD = join(CLOUD_DATA_DIR, "cloud-data-topology.md");
 
 // --- Types ----------------------------------------------------------------
 
@@ -317,9 +317,9 @@ function main() {
     (topology as any).native = existing.native;
   }
 
-  // 11. Write cloud-topology.json
+  // 11. Write cloud-data-topology.json
   writeFileSync(OUTPUT_JSON, JSON.stringify(topology, null, 2) + "\n");
-  console.log(`  Written: cloud-topology.json (${Object.keys(services).length} services, ${Object.keys(vms).length} VMs)`);
+  console.log(`  Written: cloud-data-topology.json (${Object.keys(services).length} services, ${Object.keys(vms).length} VMs)`);
 
   // 12. Render cloud-topology.md
   const templatePath = join(TEMPLATE_DIR, "cloud-topology.md.njk");
@@ -356,7 +356,7 @@ function main() {
       data: topology, CATEGORY_PREFIX, servicesByCategory, servicesByCategoryData,
     });
     writeFileSync(OUTPUT_MD, md);
-    console.log(`  Written: cloud-topology.md`);
+    console.log(`  Written: cloud-data-topology.md`);
   } else {
     console.warn(`  WARN: template not found at ${templatePath}`);
   }

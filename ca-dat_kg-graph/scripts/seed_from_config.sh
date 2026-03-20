@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# seed_from_config.sh - Populate SurrealDB KG from cloud-topology.json
+# seed_from_config.sh - Populate SurrealDB KG from cloud-data-topology.json
 # Usage: ./seed_from_config.sh [surreal_url] [topology_json_path]
 #
-# Reads cloud-topology.json and generates SurrealQL to create:
+# Reads cloud-data-topology.json and generates SurrealQL to create:
 #   - VM nodes (from vms section)
 #   - Service nodes (from services section)
 #   - hosted_on edges (service -> vm)
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SURREAL_URL="${1:-http://localhost:8001}"
-CONFIG_JSON="${2:-/opt/containers/kg-graph/cloud-topology.json}"
+CONFIG_JSON="${2:-/opt/containers/kg-graph/cloud-data-topology.json}"
 SURREAL_NS="infra"
 SURREAL_DB="production"
 
@@ -33,7 +33,7 @@ declare -A WG_IPS=(
     ["oci-A1-p_0"]="10.0.0.7"
 )
 
-# VM metadata (arch, cpu, ram) not in cloud-topology.json
+# VM metadata (arch, cpu, ram) not in cloud-data-topology.json
 declare -A VM_ARCH=(
     ["gcp-E2-f_0"]="x86_64"
     ["oci-E2-f_0"]="x86_64"
@@ -99,14 +99,14 @@ else
     log "WARNING: schema.surql not found, skipping schema load."
 fi
 
-# ---- Parse cloud-topology.json and generate seed data ----
-log "Parsing cloud-topology.json..."
+# ---- Parse cloud-data-topology.json and generate seed data ----
+log "Parsing cloud-data-topology.json..."
 
 if ! [ -f "$CONFIG_JSON" ]; then
     # Try local path relative to script
-    CONFIG_JSON="$(dirname "$0")/../cloud-topology.json"
+    CONFIG_JSON="$(dirname "$0")/../cloud-data-topology.json"
     if ! [ -f "$CONFIG_JSON" ]; then
-        log "ERROR: cloud-topology.json not found at $CONFIG_JSON"
+        log "ERROR: cloud-data-topology.json not found at $CONFIG_JSON"
         exit 1
     fi
 fi
@@ -115,7 +115,7 @@ fi
 SEED_SQL=$(python3 << 'PYEOF'
 import json, sys, os
 
-config_path = os.environ.get("CONFIG_JSON", "/opt/containers/kg-graph/cloud-topology.json")
+config_path = os.environ.get("CONFIG_JSON", "/opt/containers/kg-graph/cloud-data-topology.json")
 with open(config_path) as f:
     config = json.load(f)
 
@@ -266,4 +266,4 @@ for i, label in enumerate(labels):
     print(f'  {label}: {count}')
 " 2>/dev/null || echo "$RESULT"
 
-log "Done. KG seeded from cloud-topology.json."
+log "Done. KG seeded from cloud-data-topology.json."

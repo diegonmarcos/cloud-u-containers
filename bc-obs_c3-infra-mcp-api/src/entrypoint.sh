@@ -47,12 +47,12 @@ for repo in cloud unix front tools; do
 done
 echo "c3-entrypoint: repos ready."
 
-# cloud-topology.json + cloud-configs.json come from the cloned cloud repo.
+# cloud-data-topology.json + cloud-data-configs.json come from the cloned cloud repo.
 # gen-topology/gen-configs are desktop tools — running them in-container
 # overwrites the good files with incomplete output (missing SSH context).
 echo "c3-entrypoint: using topology from cloned cloud repo"
 
-# Generate cloud-deps.json + front-deps.json (scans package.json across repos)
+# Generate cloud-data-deps.json + front-deps.json (scans package.json across repos)
 echo "c3-entrypoint: generating deps..."
 npx tsx src/engines/gen-deps.ts 2>&1 || echo "c3-entrypoint: gen-deps failed (non-fatal)"
 

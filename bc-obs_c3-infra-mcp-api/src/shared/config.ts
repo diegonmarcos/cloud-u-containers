@@ -7,7 +7,7 @@ let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
 const CONFIG_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Hardcoded fallback — used when cloud-topology.json VMs lack ssh_alias
+// Hardcoded fallback — used when cloud-data-topology.json VMs lack ssh_alias
 const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
   "gcp-E2-f_0": "gcp-proxy",
   "oci-E2-f_0": "oci-mail",
@@ -22,7 +22,7 @@ export function getConfig(): InfraConfig {
     syncRepos();
     const fileConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
     const discovered = discoverServicesFromDisk(fileConfig);
-    // Merge: discovered first, then cloud-topology.json overrides win
+    // Merge: discovered first, then cloud-data-topology.json overrides win
     const merged = { ...discovered };
     for (const [name, svc] of Object.entries(fileConfig.services)) {
       merged[name] = svc;
@@ -170,7 +170,7 @@ function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record
   const vmToAlias: Record<string, string> = { ...VM_SSH_ALIASES_FALLBACK };
   const aliasToVm: Record<string, string> = {};
 
-  // Prefer ssh_alias from cloud-topology.json when present
+  // Prefer ssh_alias from cloud-data-topology.json when present
   for (const [vmId, vm] of Object.entries(config.vms)) {
     if (vm.ssh_alias) {
       vmToAlias[vmId] = vm.ssh_alias;
