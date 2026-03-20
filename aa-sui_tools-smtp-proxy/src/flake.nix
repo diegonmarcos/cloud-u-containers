@@ -1,5 +1,5 @@
 {
-  description = "SMTP Proxy/Relay - Docker Compose configuration";
+  description = "SMTP Proxy/Relay - CF Worker email-forwarder → Mailu front:25";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
