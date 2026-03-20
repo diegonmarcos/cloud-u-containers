@@ -3,6 +3,9 @@
   "description": "SSO and 2FA authentication portal",
   "category": "sec",
   "domain": "auth.diegonmarcos.com",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/authelia"
