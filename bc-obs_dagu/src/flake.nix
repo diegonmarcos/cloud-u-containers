@@ -118,9 +118,16 @@
     '';
 
     # ── SSH shorthand used across all workflows ──────────────────────────
-    # VMs: ip:name:user
-    vmList = "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu";
     sshCmd = "ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
+    # VM list derived from monitoring-targets.json at runtime (fallback to hardcoded)
+    monTargets = "/var/lib/dagu/data/cloud-data/monitoring-targets.json";
+    vmListCmd = ''
+      if [ -f "${monTargets}" ]; then
+        jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "${monTargets}" | tr '\n' ' '
+      else
+        echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+      fi
+    '';
 
     # ── DAG workflows ────────────────────────────────────────────────────
     mkDags = pkgs: {
@@ -134,25 +141,25 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
         steps:
           - name: check-mesh-and-notify
             command: |
-              SSH="${sshCmd}"
               FAILED=""
-              for peer in "10.0.0.1:gcp-proxy:22" "10.0.0.3:oci-mail:25" "10.0.0.4:oci-analytics:22"; do
-                ip=''${peer%%:*}
-                rest=''${peer#*:}
-                name=''${rest%:*}
-                port=''${rest##*:}
+              PEERS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.vms[] | "\(.ip):\(.name):22"' "$MON_TARGETS"; else echo -e "10.0.0.1:gcp-proxy:22\n10.0.0.3:oci-mail:25\n10.0.0.4:oci-analytics:22"; fi)
+              echo "$PEERS" | while IFS=: read -r ip name port; do
+                [ -z "$ip" ] && continue
                 if ! echo QUIT | timeout 3 bash -c "cat > /dev/tcp/$ip/$port" 2>/dev/null; then
-                  FAILED="''${FAILED}  - $name ($ip) port $port UNREACHABLE\n"
+                  echo "  - $name ($ip) port $port UNREACHABLE" >> /tmp/mesh-failed.$$
                 fi
               done
-              if [ -n "$FAILED" ]; then
-                MSG=$(echo -e "Unreachable peers:\n''${FAILED}\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070")
+              if [ -f /tmp/mesh-failed.$$ ]; then
+                FAILED=$(cat /tmp/mesh-failed.$$)
+                rm -f /tmp/mesh-failed.$$
+                MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
                 curl -s -X POST "$NTFY_URL/infra_mesh-health" \
                   -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Mesh Health FAILED" \
@@ -168,6 +175,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -175,22 +183,20 @@
           - name: check-endpoints-and-notify
             command: |
               FAILED=""
-              for endpoint in \
-                "auth.diegonmarcos.com/api/health:Authelia 2FA" \
-                "vault.diegonmarcos.com/:Vaultwarden" \
-                "proxy.diegonmarcos.com/:Caddy Proxy" \
-                "api.diegonmarcos.com/c3-api/health:C3 API" \
-                "analytics.diegonmarcos.com/:Matomo" \
-                "mail.diegonmarcos.com/:Mailu"; do
-                url=''${endpoint%:*}
-                svc=''${endpoint##*:}
-                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "https://$url" 2>/dev/null || echo "000")
+              ENDPOINTS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.endpoint_checks[] | "\(.url):\(.name)"' "$MON_TARGETS"; else echo -e "https://auth.diegonmarcos.com/api/health:Authelia 2FA\nhttps://vault.diegonmarcos.com/:Vaultwarden\nhttps://api.diegonmarcos.com/c3-api/health:C3 API"; fi)
+              echo "$ENDPOINTS" | while IFS=: read -r proto rest; do
+                [ -z "$proto" ] && continue
+                svc=''${rest##*:}
+                url="$proto:''${rest%:*}"
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "$url" 2>/dev/null || echo "000")
                 if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
-                  FAILED="''${FAILED}  - $svc (https://$url) -> HTTP $HTTP_CODE\n"
+                  echo "  - $svc ($url) -> HTTP $HTTP_CODE" >> /tmp/endpoints-failed.$$
                 fi
               done
-              if [ -n "$FAILED" ]; then
-                MSG=$(echo -e "DOWN endpoints:\n''${FAILED}\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070")
+              if [ -f /tmp/endpoints-failed.$$ ]; then
+                FAILED=$(cat /tmp/endpoints-failed.$$)
+                rm -f /tmp/endpoints-failed.$$
+                MSG=$(printf "DOWN endpoints:\n%s\n\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
                 curl -s -X POST "$NTFY_URL/infra_endpoints" \
                   -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: Service Endpoint DOWN" \
@@ -206,6 +212,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -213,7 +220,8 @@
           - name: check-dns-and-notify
             command: |
               FAILED=""
-              for domain in diegonmarcos.com auth.diegonmarcos.com vault.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com; do
+              DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.dns_checks[]' "$MON_TARGETS"; else echo -e "diegonmarcos.com\nauth.diegonmarcos.com\nvault.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com"; fi)
+              for domain in $DOMAINS; do
                 RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
                 if [ -z "$RESULT" ]; then
                   FAILED="''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
@@ -236,6 +244,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -244,7 +253,8 @@
             command: |
               SSH="${sshCmd}"
               ALERTS=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -273,6 +283,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -281,7 +292,8 @@
             command: |
               SSH="${sshCmd}"
               ALERTS=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -322,6 +334,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -331,7 +344,8 @@
               SSH="${sshCmd}"
               TODAY=$(date +"%b %e")
               ALERTS=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -363,6 +377,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -370,7 +385,8 @@
           - name: check-tls-and-notify
             command: |
               ALERTS=""
-              for domain in auth.diegonmarcos.com vault.diegonmarcos.com proxy.diegonmarcos.com api.diegonmarcos.com analytics.diegonmarcos.com mail.diegonmarcos.com sync.diegonmarcos.com; do
+              TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[]' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
+              for domain in $TLS_DOMAINS; do
                 EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
                 if [ -n "$EXPIRY" ]; then
                   EXPIRY_SEC=$(date -d "$EXPIRY" +%s 2>/dev/null || echo 0)
