@@ -416,6 +416,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -425,7 +426,8 @@
               SSH="${sshCmd}"
               TODAY=$(date +"%b %e")
               REPORT=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -452,6 +454,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -462,7 +465,8 @@
               RUNNING=0
               TOTAL=0
               MISSING=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -495,6 +499,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -503,7 +508,8 @@
             command: |
               SSH="${sshCmd}"
               REPORT=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -528,6 +534,8 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
+          - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/backup-targets.json
         mailOn:
           failure: false
           success: false
@@ -536,7 +544,8 @@
             command: |
               SSH="${sshCmd}"
               ALERTS=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -570,6 +579,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -578,7 +588,8 @@
             command: |
               SSH="${sshCmd}"
               ALERTS=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -608,6 +619,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -617,7 +629,8 @@
               SSH="${sshCmd}"
               REPORT=""
               TOTAL=0
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -649,6 +662,7 @@
         env:
           - NTFY_URL: http://10.0.0.1:8090
           - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - MON_TARGETS: ${monTargets}
         mailOn:
           failure: false
           success: false
@@ -657,7 +671,8 @@
             command: |
               SSH="${sshCmd}"
               REPORT=""
-              for vm_data in ${vmList}; do
+              VM_LIST=$(${vmListCmd})
+              for vm_data in $VM_LIST; do
                 ip=''${vm_data%%:*}
                 temp=''${vm_data#*:}
                 name=''${temp%:*}
@@ -733,8 +748,9 @@
         # ══════════════════════════════════════════════════════════════════════
         # COLLECT DATA FROM EACH VM
         # ══════════════════════════════════════════════════════════════════════
+        VM_LIST=$(${vmListCmd})
         i=0
-        for vm_data in ${vmList}; do
+        for vm_data in $VM_LIST; do
           ip=''${vm_data%%:*}
           temp=''${vm_data#*:}
           name=''${temp%:*}
