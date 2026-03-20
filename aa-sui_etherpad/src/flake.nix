@@ -68,6 +68,7 @@
             name = "postgres";
             image = config.db_image;
             container_name = config.db_container;
+            skipReadOnly = true;  # postgres writes to /var/run/postgresql + data dir
             networks = [ "etherpad_net" ];
             volumes = [
               "postgres_data:/var/lib/postgresql/data"
