@@ -248,6 +248,8 @@ function mailuSendTestResend(): Check[] {
 
   // Inbound test: Resend → Mailu (external sender delivers to our mailbox)
   const tag = `health-${Date.now()}`;
+  let emailId = "";
+
   checks.push(timed("Inbound: Resend → Mailu", () => {
     const body = JSON.stringify({
       from: `Health Check <${TEST_FROM}>`,
@@ -263,9 +265,67 @@ function mailuSendTestResend(): Check[] {
       "https://api.resend.com/emails",
     ], { timeout: 15_000 });
     const parsed = JSON.parse(r.stdout || "{}");
-    if (parsed.id) return { passed: true, details: `id=${parsed.id}` };
+    if (parsed.id) {
+      emailId = parsed.id;
+      return { passed: true, details: `id=${parsed.id}` };
+    }
     return { passed: false, details: parsed.message || r.stdout || r.stderr };
   }));
+
+  // Poll Resend delivery status (wait up to 10s for delivery confirmation)
+  if (emailId) {
+    checks.push(timed("Resend delivery status", () => {
+      const maxAttempts = 5;
+      const delayMs = 2000;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        if (attempt > 0) {
+          exec("bash", ["-c", `sleep ${delayMs / 1000}`]);
+        }
+        const r = exec("curl", [
+          "-s",
+          "-H", `Authorization: Bearer ${apiKey}`,
+          `https://api.resend.com/emails/${emailId}`,
+        ], { timeout: 10_000 });
+        const parsed = JSON.parse(r.stdout || "{}");
+        const event = parsed.last_event || "unknown";
+
+        if (event === "delivered") {
+          return { passed: true, details: `delivered (attempt ${attempt + 1}/${maxAttempts})` };
+        }
+        if (event === "bounced" || event === "complained") {
+          return { passed: false, details: `${event}: ${parsed.reject_reason || "unknown reason"}` };
+        }
+        // sent/delivery_delayed — keep polling
+      }
+      // Final check
+      const r = exec("curl", [
+        "-s",
+        "-H", `Authorization: Bearer ${apiKey}`,
+        `https://api.resend.com/emails/${emailId}`,
+      ], { timeout: 10_000 });
+      const parsed = JSON.parse(r.stdout || "{}");
+      const event = parsed.last_event || "unknown";
+      return {
+        passed: event === "delivered",
+        details: `${event} (after ${maxAttempts} polls)`,
+      };
+    }));
+
+    // Fetch recent Resend delivery events (last 10 emails for context)
+    checks.push(timed("Resend recent events", () => {
+      const r = exec("curl", [
+        "-s",
+        "-H", `Authorization: Bearer ${apiKey}`,
+        "https://api.resend.com/emails?limit=5",
+      ], { timeout: 10_000 });
+      const parsed = JSON.parse(r.stdout || "{}");
+      const emails = parsed.data || [];
+      const summary = emails.map((e: { subject?: string; last_event?: string; created_at?: string }) =>
+        `${e.last_event || "?"} | ${e.subject || "?"} | ${e.created_at || "?"}`
+      ).join("\n    ");
+      return { passed: emails.length > 0, details: `${emails.length} recent\n    ${summary}` };
+    }));
+  }
 
   return checks;
 }
