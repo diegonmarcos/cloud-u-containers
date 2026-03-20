@@ -35,43 +35,38 @@
     # A plain rule (no resources_*) produces a single rule with domain+policy
     lib = nixpkgs.lib;
 
-    indent = n: str: let pad = lib.concatStrings (lib.genList (_: " ") n); in "${pad}${str}";
-
+    # Generate YAML rules — indentation relative to the rules: key in the template
+    # The template has `rules:\n${accessControlYaml}` at 6-space indent
     mkResourceLines = resources:
-      lib.concatMapStringsSep "\n" (r: indent 8 "- \"${r}\"") resources;
+      lib.concatMapStringsSep "\n" (r: "          - \"${r}\"") resources;
 
     mkRuleYaml = rule:
       let
         hasBypass = rule ? resources_bypass && rule.resources_bypass != [];
         hasTwoFactor = rule ? resources_two_factor && rule.resources_two_factor != [];
-        # Plain rule (no resource splits)
         plainRule =
-          if !hasBypass && !hasTwoFactor then
-            indent 4 "- domain: ${rule.domain}\n" +
-            indent 6 "policy: ${rule.policy}"
+          if !hasBypass && !hasTwoFactor then ''
+          - domain: '${rule.domain}'
+            policy: ${rule.policy}''
           else "";
-        # Bypass rule with resources
         bypassRule =
-          if hasBypass then
-            indent 4 "- domain: ${rule.domain}\n" +
-            indent 6 "resources:\n" +
-            mkResourceLines rule.resources_bypass + "\n" +
-            indent 6 "policy: bypass"
+          if hasBypass then ''
+          - domain: '${rule.domain}'
+            resources:
+${mkResourceLines rule.resources_bypass}
+            policy: bypass''
           else "";
-        # Two-factor rule with resources
         twoFactorRule =
-          if hasTwoFactor then
-            indent 4 "- domain: ${rule.domain}\n" +
-            indent 6 "resources:\n" +
-            mkResourceLines rule.resources_two_factor + "\n" +
-            indent 6 "policy: two_factor"
+          if hasTwoFactor then ''
+          - domain: '${rule.domain}'
+            resources:
+${mkResourceLines rule.resources_two_factor}
+            policy: two_factor''
           else "";
-        # For services with both resources_bypass and resources_two_factor but also
-        # a base policy (e.g. vault has bypass as base policy for non-resource paths)
         baseRule =
-          if hasBypass && rule ? policy && rule.policy != "" then
-            indent 4 "- domain: ${rule.domain}\n" +
-            indent 6 "policy: ${rule.policy}"
+          if hasBypass && rule ? policy && rule.policy != "" then ''
+          - domain: '${rule.domain}'
+            policy: ${rule.policy}''
           else "";
         parts = builtins.filter (s: s != "") [ bypassRule twoFactorRule baseRule plainRule ];
       in lib.concatStringsSep "\n" parts;
@@ -153,7 +148,7 @@
       access_control:
         default_policy: two_factor
         rules:
-      ${accessControlYaml}
+${accessControlYaml}
 
       session:
         name: authelia_session
