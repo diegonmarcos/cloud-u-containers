@@ -1548,6 +1548,48 @@
               curl -sf "$C3_API/backup-targets" | jq '.' > "$REPO_DIR/backup-targets.json.tmp"
               mv "$REPO_DIR/backup-targets.json.tmp" "$REPO_DIR/backup-targets.json"
               echo "Fetched backup-targets.json ($(wc -c < "$REPO_DIR/backup-targets.json") bytes)"
+          - name: fetch-wireguard-peers
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/wireguard-peers" | jq '.' > "$REPO_DIR/wireguard-peers.json.tmp"
+              mv "$REPO_DIR/wireguard-peers.json.tmp" "$REPO_DIR/wireguard-peers.json"
+              echo "Fetched wireguard-peers.json ($(wc -c < "$REPO_DIR/wireguard-peers.json") bytes)"
+          - name: fetch-ntfy-acl
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/ntfy-acl" | jq '.' > "$REPO_DIR/ntfy-acl.json.tmp"
+              mv "$REPO_DIR/ntfy-acl.json.tmp" "$REPO_DIR/ntfy-acl.json"
+              echo "Fetched ntfy-acl.json ($(wc -c < "$REPO_DIR/ntfy-acl.json") bytes)"
+          - name: fetch-cloudflare-dns
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/cloudflare-dns" | jq '.' > "$REPO_DIR/cloudflare-dns.json.tmp"
+              mv "$REPO_DIR/cloudflare-dns.json.tmp" "$REPO_DIR/cloudflare-dns.json"
+              echo "Fetched cloudflare-dns.json ($(wc -c < "$REPO_DIR/cloudflare-dns.json") bytes)"
+          - name: fetch-matomo-sites
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/matomo-sites" | jq '.' > "$REPO_DIR/matomo-sites.json.tmp"
+              mv "$REPO_DIR/matomo-sites.json.tmp" "$REPO_DIR/matomo-sites.json"
+              echo "Fetched matomo-sites.json ($(wc -c < "$REPO_DIR/matomo-sites.json") bytes)"
+          - name: fetch-container-resources
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/container-resources" | jq '.' > "$REPO_DIR/container-resources.json.tmp"
+              mv "$REPO_DIR/container-resources.json.tmp" "$REPO_DIR/container-resources.json"
+              echo "Fetched container-resources.json ($(wc -c < "$REPO_DIR/container-resources.json") bytes)"
+          - name: fetch-log-routing
+            depends:
+              - pull-rebase
+            command: |
+              curl -sf "$C3_API/log-routing" | jq '.' > "$REPO_DIR/log-routing.json.tmp"
+              mv "$REPO_DIR/log-routing.json.tmp" "$REPO_DIR/log-routing.json"
+              echo "Fetched log-routing.json ($(wc -c < "$REPO_DIR/log-routing.json") bytes)"
           - name: commit-and-push
             depends:
               - fetch-topology
@@ -1559,6 +1601,12 @@
               - fetch-monitoring-targets
               - fetch-firewall-rules
               - fetch-backup-targets
+              - fetch-wireguard-peers
+              - fetch-ntfy-acl
+              - fetch-cloudflare-dns
+              - fetch-matomo-sites
+              - fetch-container-resources
+              - fetch-log-routing
             command: |
               export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
               cd "$REPO_DIR"
