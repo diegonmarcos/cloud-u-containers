@@ -53,6 +53,9 @@
             - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_C3_INFRA_MCP_SECRET}
             - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
             - DAGU_API=http://10.0.0.3:8070
+            - RESEND_API_KEY=''${RESEND_API_KEY}
+            - CF_API_KEY=''${CF_API_KEY}
+            - CF_API_EMAIL=''${CF_API_EMAIL}
             - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
