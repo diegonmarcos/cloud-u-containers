@@ -31,15 +31,9 @@
             - .secrets
           environment:
             MAIL_HOST: ${config.mail_host}
-          networks:
-            - c3-net
           ports:
             - "3103:3103"
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
   in {

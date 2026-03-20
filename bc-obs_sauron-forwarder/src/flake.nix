@@ -41,13 +41,6 @@
               tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
                 echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true
               done
-          networks:
-            - security
-
-      networks:
-        security:
-          name: sauron-lite_security
-          external: true
 
       volumes:
         sauron-data:

@@ -43,7 +43,7 @@
           depends_on:
             - loki
           networks:
-            - dev_network
+            - lgtm_net
           healthcheck:
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
             interval: 30s
@@ -61,7 +61,7 @@
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
           command: -config.file=/etc/loki/local-config.yaml
           networks:
-            - dev_network
+            - lgtm_net
           healthcheck:
             test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
             interval: 30s
@@ -82,7 +82,7 @@
             - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
           command: ["-config.file=/etc/tempo/tempo.yaml"]
           networks:
-            - dev_network
+            - lgtm_net
 
         mimir:
           image: grafana/mimir:latest
@@ -95,12 +95,10 @@
             - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
           command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
           networks:
-            - dev_network
+            - lgtm_net
 
       networks:
-        dev_network:
-          external: true
-          name: dev_network
+        lgtm_net:
 
       volumes:
         grafana_data:

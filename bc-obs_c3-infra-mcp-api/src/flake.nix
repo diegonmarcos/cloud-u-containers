@@ -13,7 +13,7 @@
       image = "ghcr.io/diegonmarcos/c3-infra-mcp-api:latest";
       port = 8081;   # parallel with Rust API on 8080 — swap to 8080 after cutover
       mcp_http_port = 3100;
-      mattermost_url = "http://mattermost:8065";
+      mattermost_url = "http://mattermost.app:8065";
     };
 
     title = "C3 — Cloud Control Center";
@@ -32,8 +32,6 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          networks:
-            - c3-net
           ports:
             - "10.0.0.6:${toString config.port}:8080"
             - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
@@ -66,10 +64,6 @@
       volumes:
         c3-repos:
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
     # ── Documentation ────────────────────────────────────────────────────

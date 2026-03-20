@@ -55,7 +55,7 @@
             postgres:
               condition: service_healthy
           networks:
-            - dev_network
+            - hedgedoc_net
 
         postgres:
           image: ${config.db_image}
@@ -69,7 +69,7 @@
             - POSTGRES_DB=${config.db_name}
             - PGDATA=/var/lib/postgresql/data/pgdata
           networks:
-            - dev_network
+            - hedgedoc_net
           healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U ${config.db_user}']
             interval: 10s
@@ -77,8 +77,7 @@
             retries: 5
 
       networks:
-        dev_network:
-          external: true
+        hedgedoc_net:
 
       volumes:
         hedgedoc_uploads:

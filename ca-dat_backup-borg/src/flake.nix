@@ -46,8 +46,6 @@
             - ./authorized_keys:/root/.ssh/authorized_keys:ro
           ports:
             - "${toString config.ssh_port}:22"
-          networks:
-            - backup_network
 
       volumes:
         borg_data:
@@ -57,9 +55,6 @@
             o: bind
             device: /backup/media
 
-      networks:
-        backup_network:
-          external: true
     '';
 
 

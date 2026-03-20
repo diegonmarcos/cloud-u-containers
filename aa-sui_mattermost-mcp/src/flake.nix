@@ -33,15 +33,9 @@
             MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
             MM_ADMIN_USERNAME: me@diegonmarcos.com
             CLAUDE_MODEL: opus
-          networks:
-            - c3-net
           ports:
             - "3102:3102"
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
   in {

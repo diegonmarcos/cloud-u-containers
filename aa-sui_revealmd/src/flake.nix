@@ -38,18 +38,11 @@
           volumes:
             - slides_data:/slides
           command: /slides --watch
-          networks:
-            - dev_network
           healthcheck:
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1948']
             interval: 30s
             timeout: 10s
             retries: 3
-
-      networks:
-        dev_network:
-          external: true
-          name: dev_network
 
       volumes:
         slides_data:

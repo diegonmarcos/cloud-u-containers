@@ -13,9 +13,9 @@
       port = 8090;
       ollama_url = "http://10.0.0.8:11434";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
-      c3_api_url = "http://c3-infra-mcp-api:8080";
-      c3_mcp_url = "http://c3-infra-mcp-api:3100";
-      mattermost_url = "http://mattermost:8065";
+      c3_api_url = "http://c3-api.app:8081";
+      c3_mcp_url = "http://c3-mcp.app:3100";
+      mattermost_url = "http://mattermost.app:8065";
     };
 
     title = "Rig Agentic AI";
@@ -36,8 +36,6 @@
           image: rig-agentic:latest
           container_name: ${config.container_name}
           restart: unless-stopped
-          networks:
-            - c3-net
           ports:
             - "127.0.0.1:${toString config.port}:${toString config.port}"
           env_file:
@@ -62,10 +60,6 @@
             retries: 3
             start_period: 15s
 
-      networks:
-        c3-net:
-          external: true
-          name: mattermost-bots_default
     '';
 
 

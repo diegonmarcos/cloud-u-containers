@@ -63,9 +63,9 @@
 
       volumes:
         matomo_matomo_data:
-          external: true
+          name: matomo_matomo_data
         matomo_matomo_db:
-          external: true
+          name: matomo_matomo_db
         matomo_inbox:
           name: matomo_inbox
     '';

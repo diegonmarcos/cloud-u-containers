@@ -36,13 +36,6 @@
             - /opt/sauron/config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
             - sauron-logs:/var/log/sauron:ro
             - syslog-cache:/var/cache/syslog-ng
-          networks:
-            - security
-
-      networks:
-        security:
-          name: sauron_security
-          external: true
 
       volumes:
         sauron-logs:
