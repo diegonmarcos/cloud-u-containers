@@ -156,11 +156,31 @@ function mailuUp(): Check[] {
     return { passed: hasMx, details: out.split("\n")[0] || "no MX" };
   }));
 
+  // smtp-proxy container (CF Worker email delivery target)
+  checks.push(timed("smtp-proxy container", () => {
+    const { containers, ok } = listContainers(MAILU_VM, true);
+    if (!ok) return { passed: false, details: "SSH/Docker unreachable" };
+    const proxy = containers.find((c) => c.name === "smtp-proxy");
+    if (!proxy) return { passed: false, details: "NOT FOUND — CF Worker inbound will fail" };
+    const healthy = proxy.status.includes("healthy") || proxy.status.startsWith("Up");
+    return { passed: healthy, details: proxy.status };
+  }));
+
+  // smtp-proxy HTTP endpoint
+  checks.push(timed("smtp-proxy endpoint", () => {
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
+      "https://smtp-proxy.diegonmarcos.com/"]);
+    const code = r.stdout.trim();
+    return { passed: code !== "000" && code !== "502", details: `HTTP ${code}` };
+  }));
+
   return checks;
 }
 
 function mailuProfile(): unknown {
   const profiles: Record<string, unknown> = {};
+
+  // Mailu containers
   for (const container of MAILU_CONTAINERS) {
     try {
       profiles[container] = profileContainer(container);
@@ -168,7 +188,51 @@ function mailuProfile(): unknown {
       profiles[container] = { error: err instanceof Error ? err.message : String(err) };
     }
   }
+
+  // smtp-proxy container (CF Worker forwards email here)
+  try {
+    profiles["smtp-proxy"] = profileContainer("smtp-proxy");
+  } catch {
+    profiles["smtp-proxy"] = { error: "container not found — CF Worker email delivery will fail" };
+  }
+
   return profiles;
+}
+
+/** Fetch recent Cloudflare Worker logs via CF API (requires observability enabled) */
+function fetchWorkerLogs(): unknown {
+  const cfKey = process.env.CF_API_KEY || (() => {
+    const envPath = join(GIT_BASE, "vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env");
+    if (!existsSync(envPath)) return null;
+    const content = readFileSync(envPath, "utf-8");
+    const match = content.match(/CF_API_KEY=(.+)/);
+    return match ? match[1].trim() : null;
+  })();
+  const cfEmail = process.env.CF_API_EMAIL || (() => {
+    const envPath = join(GIT_BASE, "vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env");
+    if (!existsSync(envPath)) return null;
+    const content = readFileSync(envPath, "utf-8");
+    const match = content.match(/CF_API_EMAIL=(.+)/);
+    return match ? match[1].trim() : null;
+  })();
+  const accountId = "e5cb0a0c6f448e54f217de484259f0ae";
+
+  if (!cfKey || !cfEmail) return { error: "Cloudflare API credentials not found" };
+
+  // Query Workers analytics for email-forwarder invocations (last 6h)
+  const since = new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+  const r = exec("curl", [
+    "-s",
+    "-H", `X-Auth-Email: ${cfEmail}`,
+    "-H", `X-Auth-Key: ${cfKey}`,
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/email-forwarder/telemetry/events?limit=20&filters=timestamp > '${since}'&fields=timestamp,outcome,logs`,
+  ], { timeout: 15_000 });
+
+  try {
+    return JSON.parse(r.stdout);
+  } catch {
+    return { raw: r.stdout || r.stderr, error: "Failed to parse CF response" };
+  }
 }
 
 function mailuSendTestResend(): Check[] {
@@ -294,13 +358,14 @@ export function registerHealthMailuTools(server: McpServer): void {
 
   server.tool(
     "mailu_full",
-    "Full mail health pipeline: UP + profile + inbound send test + outbound + DNS auth",
+    "Full mail health pipeline: UP + profile + inbound send test + outbound + DNS auth + CF Worker logs",
     {},
     async () => {
       const upChecks = mailuUp();
       const outboundChecks = mailuOutboundTest();
       const sendChecks = mailuSendTestResend();
       const profiles = mailuProfile();
+      const workerLogs = fetchWorkerLogs();
 
       const sections = [
         formatChecks("1. UP CHECK", upChecks),
@@ -311,6 +376,9 @@ export function registerHealthMailuTools(server: McpServer): void {
         "",
         `4. CONTAINER PROFILES\n${"─".repeat(60)}`,
         JSON.stringify(profiles, null, 2),
+        "",
+        `5. CF WORKER LOGS (email-forwarder, last 6h)\n${"─".repeat(60)}`,
+        JSON.stringify(workerLogs, null, 2),
       ];
 
       return { content: [{ type: "text" as const, text: sections.join("\n") }] };
