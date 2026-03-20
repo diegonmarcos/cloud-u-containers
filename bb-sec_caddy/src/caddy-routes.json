@@ -1,0 +1,192 @@
+{
+  "_meta": {
+    "description": "Caddy route definitions — consumed by flake.nix to generate Caddyfile",
+    "format_version": 1
+  },
+
+  "l4_routes": [
+    { "port": 993, "upstream": "mailu.app:993", "comment": "IMAPS — TLS passthrough to Mailu" },
+    { "port": 465, "upstream": "mailu.app:465", "comment": "SMTPS — TLS passthrough to Mailu" },
+    { "port": 587, "upstream": "mailu.app:587", "comment": "SMTP Submission (STARTTLS) — TCP passthrough to Mailu" }
+  ],
+
+  "routes": [
+    {
+      "domain": "auth.diegonmarcos.com",
+      "upstream": "authelia.app:9091",
+      "auth": "none",
+      "comment": "Authelia itself — no forward_auth loop"
+    },
+    {
+      "domain": "cal.diegonmarcos.com",
+      "upstream": "radicale.app:5232",
+      "comment": "Radicale CalDAV/CardDAV"
+    },
+    {
+      "domain": "chat.diegonmarcos.com",
+      "upstream": "mattermost.app:8065",
+      "comment": "Mattermost team chat",
+      "bypass_paths": ["/api/v4/*"]
+    },
+    {
+      "domain": "drive-notes-affine.diegonmarcos.com",
+      "upstream": "affine.app:3010",
+      "max_upload": "100MB",
+      "timeout": "3600s",
+      "comment": "Affine collaborative docs"
+    },
+    {
+      "domain": "photos.diegonmarcos.com",
+      "upstream": "photoprism.app:3013",
+      "landing_page": "myphotos",
+      "comment": "PhotoPrism"
+    },
+    {
+      "domain": "mail.diegonmarcos.com",
+      "upstream": "mailu.app:8444",
+      "tls_skip_verify": true,
+      "landing_page": "mymail",
+      "comment": "Mailu webmail (HTTPS with self-signed cert)"
+    },
+    {
+      "domain": "workflows.diegonmarcos.com",
+      "upstream": "dagu.app:8070",
+      "comment": "Dagu workflow scheduler"
+    },
+    {
+      "domain": "ide.diegonmarcos.com",
+      "upstream": "code-server.app:8443",
+      "comment": "Code Server IDE"
+    },
+    {
+      "domain": "db.diegonmarcos.com",
+      "upstream": "nocodb.app:8085",
+      "comment": "NocoDB"
+    },
+    {
+      "domain": "sheets.diegonmarcos.com",
+      "upstream": "grist.app:3011",
+      "comment": "Grist Sheets"
+    },
+    {
+      "domain": "vault.diegonmarcos.com",
+      "upstream": "vaultwarden.app:8880",
+      "comment": "Vaultwarden password manager"
+    }
+  ],
+
+  "path_routes": [
+    {
+      "parent_domain": "api.diegonmarcos.com",
+      "landing_page": "api",
+      "comment": "API hub — path-based routing to backend APIs",
+      "paths": [
+        {
+          "base_path": "/dash",
+          "type": "github_pages",
+          "github_path": "mcp-api-swagger",
+          "redirect_bare": true,
+          "comment": "C3 Dashboard from GitHub Pages"
+        },
+        {
+          "base_path": "/c3-api",
+          "upstream": "c3-api.app:8081",
+          "public_paths": ["/c3-api/docs/json"],
+          "comment": "C3 — Cloud Control Center API"
+        },
+        {
+          "base_path": "/services",
+          "upstream": "c3-services.app:8082",
+          "public_paths": ["/services/docs/json"],
+          "comment": "C3 Services — Unified Service API Gateway"
+        },
+        {
+          "base_path": "/crawlee",
+          "upstream": "crawlee.app:3000",
+          "public_paths": ["/crawlee/openapi.json"],
+          "comment": "Crawlee scraping API"
+        }
+      ]
+    },
+    {
+      "parent_domain": "app.diegonmarcos.com",
+      "comment": "App hub — path-based routing",
+      "fallback": "respond \"Not Found\" 404",
+      "paths": [
+        { "base_path": "/windmill", "upstream": "windmill-app.app:8000" },
+        { "base_path": "/etherpad", "upstream": "etherpad.app:3012" },
+        { "base_path": "/filebrowser", "upstream": "filebrowser.app:3015" },
+        { "base_path": "/hedgedoc", "upstream": "hedgedoc.app:3018" },
+        { "base_path": "/revealmd", "upstream": "revealmd.app:3014" },
+        { "base_path": "/dozzle", "upstream": "dozzle.app:9999" },
+        { "base_path": "/grafana", "upstream": "grafana.app:3016" },
+        { "base_path": "/gitea", "upstream": "gitea.app:3017" },
+        { "base_path": "/crawlee", "upstream": "crawlee-ui.app:3001" }
+      ]
+    },
+    {
+      "parent_domain": "cloud.diegonmarcos.com",
+      "comment": "Cloud dashboard + spec viewer",
+      "landing_page": "cloud",
+      "paths": [
+        {
+          "base_path": "/spec",
+          "upstream": "c3-spec.app:3080",
+          "redirect_bare": true,
+          "comment": "C3 spec viewer"
+        }
+      ]
+    }
+  ],
+
+  "github_pages_proxies": [
+    {
+      "domain": "diegonmarcos.com, www.diegonmarcos.com",
+      "github_path": "landpage",
+      "wkd": true,
+      "comment": "Landing page + WKD (Web Key Directory for PGP)"
+    },
+    { "domain": "linktree.diegonmarcos.com", "github_path": "linktree" },
+    { "domain": "nexus.diegonmarcos.com", "github_path": "nexus" },
+    { "domain": "suite.diegonmarcos.com", "github_path": "suite" },
+    { "domain": "maps.diegonmarcos.com", "github_path": "mymaps" }
+  ],
+
+  "mcp_routes": [
+    {
+      "parent_domain": "mcp.diegonmarcos.com",
+      "comment": "MCP — Streamable HTTP endpoints for Claude Code MCP clients",
+      "fallback_message": "MCP Hub — use /c3-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp, /g-workspace/mcp",
+      "endpoints": [
+        { "base_path": "/c3-mcp", "upstream": "c3-mcp.app:3100" },
+        { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
+        { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
+        { "base_path": "/mailu-mcp", "upstream": "mailu-mcp.app:3103" },
+        { "base_path": "/g-workspace", "upstream": "g-workspace-mcp.app:3104" }
+      ]
+    }
+  ],
+
+  "special": {
+    "ntfy": {
+      "domain": "rss.diegonmarcos.com",
+      "upstream": "ntfy.app:8090",
+      "comment": "ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia"
+    },
+    "analytics": {
+      "domain": "analytics.diegonmarcos.com",
+      "comment": "Matomo (public tracking + protected admin) + Umami (path-based)",
+      "matomo_upstream": "matomo.app:8080",
+      "umami_upstream": "umami.app:3000",
+      "public_tracking_paths": [
+        "/matomo.js", "/matomo.php", "/piwik.js", "/piwik.php",
+        "/collect.php", "/api.php", "/track.php", "/js/*"
+      ],
+      "umami_public_paths": ["/umami/script.js", "/umami/api/send"]
+    },
+    "proxy_dashboard": {
+      "domain": "proxy.diegonmarcos.com",
+      "comment": "Infrastructure dashboard (static HTML)"
+    }
+  }
+}
