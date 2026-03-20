@@ -10,5 +10,13 @@
   "proxy": {
     "upstream": "code-server.app:8443",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

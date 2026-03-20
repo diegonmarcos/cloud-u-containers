@@ -12,5 +12,17 @@
     "upstream": "photoprism.app:3013",
     "auth": "two_factor",
     "landing_page": "myphotos"
+  },
+  "health": {
+    "path": "/api/v1/status"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["photoprism_originals", "photoprism_storage"]
   }
 }

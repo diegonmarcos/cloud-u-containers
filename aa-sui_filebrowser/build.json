@@ -13,5 +13,13 @@
     "type": "path",
     "parent_domain": "app.diegonmarcos.com",
     "base_path": "/filebrowser"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

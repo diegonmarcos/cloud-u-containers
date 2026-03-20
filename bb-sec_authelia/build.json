@@ -15,5 +15,13 @@
   "proxy": {
     "upstream": "authelia.app:9091",
     "auth": "bypass"
+  },
+  "health": {
+    "path": "/api/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

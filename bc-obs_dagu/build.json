@@ -13,5 +13,13 @@
   "proxy": {
     "upstream": "dagu.app:8070",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
   }
 }

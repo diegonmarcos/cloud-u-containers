@@ -10,5 +10,17 @@
   "proxy": {
     "upstream": "grist.app:3011",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["grist_data"]
   }
 }

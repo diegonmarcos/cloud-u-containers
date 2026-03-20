@@ -10,5 +10,17 @@
   "proxy": {
     "upstream": "nocodb.app:8085",
     "auth": "two_factor"
+  },
+  "health": {
+    "path": "/api/v1/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["nocodb_data"]
   }
 }

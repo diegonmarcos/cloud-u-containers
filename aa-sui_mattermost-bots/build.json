@@ -17,5 +17,17 @@
         "auth": "bypass"
       }
     }
+  },
+  "health": {
+    "path": "/api/v4/system/ping"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["mattermost_data", "mattermost_postgres"]
   }
 }
