@@ -73,7 +73,8 @@ const WG_RETRY_DELAYS = [2, 3, 4]; // seconds between attempts
 export function sshExec(
   vmNameOrAlias: string,
   command: string,
-  timeout?: number
+  timeout?: number,
+  noRetry = false,
 ): ExecResult {
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
@@ -101,8 +102,8 @@ export function sshExec(
 
   let result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
 
-  // WG handshake recovery: retry with escalating backoff
-  for (let attempt = 1; attempt < maxAttempts && !result.ok && result.exitCode === 255; attempt++) {
+  // WG handshake recovery: retry with escalating backoff (skip if noRetry)
+  for (let attempt = 1; !noRetry && attempt < maxAttempts && !result.ok && result.exitCode === 255; attempt++) {
     const delay = WG_RETRY_DELAYS[attempt - 1];
     audit("ssh", `${alias}: WG handshake attempt ${attempt}/${maxAttempts - 1}`, result.stderr.trim());
     killMux(alias, target);
