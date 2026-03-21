@@ -60,16 +60,16 @@ function getResendApiKey(): string | null {
 /** DNS lookup with dig → nslookup fallback (Termux may lack dig) */
 function dnsLookup(type: string, name: string): string {
   // Try dig first
-  const dig = exec("bash", ["-c", `command -v dig >/dev/null 2>&1 && dig +short ${type} ${name} 2>&1`]);
+  const dig = exec("bash", ["-c", `command -v dig >/dev/null 2>&1 && dig +short +time=3 +tries=1 ${type} ${name} 2>&1`]);
   if (dig.ok && dig.stdout.trim()) return dig.stdout.trim();
   // Fallback: nslookup
   if (type === "MX") {
-    const r = exec("nslookup", ["-type=mx", name], { timeout: 10_000 });
+    const r = exec("nslookup", ["-timeout=3", "-type=mx", name], { timeout: 5_000 });
     const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("mail exchanger"));
     return lines.map((l) => l.replace(/.*mail exchanger = /, "").trim()).join("\n") || "";
   }
   if (type === "TXT") {
-    const r = exec("nslookup", ["-type=txt", name], { timeout: 10_000 });
+    const r = exec("nslookup", ["-timeout=3", "-type=txt", name], { timeout: 5_000 });
     const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("text =") || l.includes("v="));
     return lines.map((l) => l.replace(/.*text = /, "").trim()).join("\n") || "";
   }
@@ -113,7 +113,7 @@ function mailuUp(): Check[] {
 
   // IMAPS (993) via Caddy L4
   checks.push(timed("IMAPS :993 (Caddy L4)", () => {
-    const r = exec("bash", ["-c", `echo Q | timeout 8 openssl s_client -connect ${MAILU_DOMAIN}:993 2>&1`]);
+    const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect ${MAILU_DOMAIN}:993 2>&1`]);
     const connected = r.stdout.includes("CONNECTED");
     const verified = r.stdout.includes("Verify return code: 0");
     return { passed: connected && verified, details: connected ? (verified ? "TLS OK" : "TLS invalid") : "unreachable" };
@@ -121,7 +121,7 @@ function mailuUp(): Check[] {
 
   // SMTPS (465) via Caddy L4
   checks.push(timed("SMTPS :465 (Caddy L4)", () => {
-    const r = exec("bash", ["-c", `echo Q | timeout 8 openssl s_client -connect ${MAILU_DOMAIN}:465 2>&1`]);
+    const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect ${MAILU_DOMAIN}:465 2>&1`]);
     const connected = r.stdout.includes("CONNECTED");
     return { passed: connected, details: connected ? "TLS OK" : "unreachable" };
   }));
@@ -135,7 +135,7 @@ function mailuUp(): Check[] {
 
   // Webmail HTTPS
   checks.push(timed("Webmail HTTPS", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "10",
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
       `https://${MAILU_DOMAIN}/webmail`]);
     const code = r.stdout.trim();
     return { passed: code === "301" || code === "200", details: `HTTP ${code}` };

@@ -32,22 +32,18 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:${toString config.port}:8080"
-            - "10.0.0.6:${toString config.mcp_http_port}:${toString config.mcp_http_port}"
+          network_mode: host
           volumes:
             - /opt/ssh-keys/c3-infra-mcp-api:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
             - ./cloud-data-topology.json:/app/cloud-data-topology.json:ro
-            - c3-repos:/app/repos
           env_file:
             - .secrets
           environment:
-            - PORT=8080
+            - PORT=${toString config.port}
             - NODE_ENV=production
-            - GIT_BASE=/app/repos
             - CONFIG_JSON_PATH=/app/cloud-data-topology.json
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
             - MM_URL=${config.mattermost_url}
@@ -60,14 +56,11 @@
             - CF_API_EMAIL=''${CF_API_EMAIL}
             - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3
             start_period: 15s
-
-      volumes:
-        c3-repos:
 
     '';
 
