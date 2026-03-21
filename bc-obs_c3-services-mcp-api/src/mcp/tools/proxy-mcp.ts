@@ -18,7 +18,7 @@ interface ChildMcp {
 
 const CHILD_MCPS: ChildMcp[] = [
   { name: "mattermost-mcp", url: "http://mattermost-mcp:3102/mcp" },
-  { name: "mailu-mcp", url: "http://mailu-mcp:3103/mcp" },
+  { name: "mail-mcp", url: "http://mail-mcp:3103/mcp" },
 ];
 
 export async function registerProxiedTools(server: McpServer): Promise<void> {

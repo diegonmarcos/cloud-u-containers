@@ -1,0 +1,20 @@
+{
+  "name": "mail-mcp",
+  "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
+  "category": "app",
+  "docker": {
+    "image": "mail-mcp",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/mail-mcp"
+  },
+  "proxy": {
+    "upstream": "mail-mcp.app:3103",
+    "streaming": true,
+    "type": "path",
+    "parent_domain": "mcp.diegonmarcos.com",
+    "base_path": "/mail-mcp"
+  }
+}

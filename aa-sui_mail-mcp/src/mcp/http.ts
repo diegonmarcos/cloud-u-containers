@@ -5,11 +5,11 @@ import { registerInboxTools } from "./tools/inbox.js";
 import { registerComposeTools } from "./tools/compose.js";
 import { registerAdminTools } from "./tools/admin.js";
 
-const log = (msg: string) => process.stderr.write(`[mailu-mcp-http] ${msg}\n`);
-const SESSION_ID = "mailu-mcp-session";
+const log = (msg: string) => process.stderr.write(`[mail-mcp-http] ${msg}\n`);
+const SESSION_ID = "mail-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "mailu-mcp", version: "1.0.0" });
+  const server = new McpServer({ name: "mail-mcp", version: "1.0.0" });
   registerInboxTools(server);
   registerComposeTools(server);
   registerAdminTools(server);

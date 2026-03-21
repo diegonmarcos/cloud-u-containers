@@ -156,12 +156,12 @@
     {
       "parent_domain": "mcp.diegonmarcos.com",
       "comment": "MCP — Streamable HTTP endpoints for Claude Code MCP clients",
-      "fallback_message": "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mailu-mcp/mcp, /g-workspace/mcp",
+      "fallback_message": "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp",
       "endpoints": [
         { "base_path": "/c3-infra-mcp", "upstream": "c3-infra-mcp.app:3100" },
         { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
         { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
-        { "base_path": "/mailu-mcp", "upstream": "mailu-mcp.app:3103" },
+        { "base_path": "/mail-mcp", "upstream": "mail-mcp.app:3103" },
         { "base_path": "/g-workspace", "upstream": "g-workspace-mcp.app:3104" }
       ]
     }

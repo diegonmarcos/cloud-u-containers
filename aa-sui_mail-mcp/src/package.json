@@ -1,5 +1,5 @@
 {
-  "name": "mailu-mcp",
+  "name": "mail-mcp",
   "version": "1.0.0",
   "scripts": {
     "start": "tsx mcp/index.ts"
