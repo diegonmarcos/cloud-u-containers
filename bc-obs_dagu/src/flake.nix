@@ -218,11 +218,11 @@
               for domain in $DOMAINS; do
                 RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
                 if [ -z "$RESULT" ]; then
-                  FAILED="''''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
+                  FAILED="''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
                 fi
               done
               if [ -n "$FAILED" ]; then
-                MSG=$(echo -e "DNS resolution failures:\n''''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
+                MSG=$(echo -e "DNS resolution failures:\n''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_dns" \
                   -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: DNS Resolution FAILED" \
