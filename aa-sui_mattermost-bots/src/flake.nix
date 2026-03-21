@@ -87,6 +87,7 @@
           environment:
             - POSTGRES_DB=mattermost
             - POSTGRES_USER=mattermost
+            - PGPORT=${toString config.postgres_port}
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
             interval: 10s

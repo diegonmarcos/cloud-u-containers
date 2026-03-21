@@ -44,17 +44,7 @@
       # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_tools-mailu/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        resolver:
-          image: ghcr.io/mailu/unbound:2024.06
-          env_file: mailu.env
-          restart: always
-          network_mode: host
-          healthcheck:
-            test: ["CMD", "dig", "+short", "@127.0.0.1", "google.com"]
-            interval: 30s
-            timeout: 5s
-            retries: 3
-            start_period: 10s
+        # resolver removed — host networking uses system DNS (systemd-resolved)
 
         front:
           image: ghcr.io/mailu/nginx:2024.06
@@ -64,9 +54,6 @@
           volumes:
             - "./certs:/certs"
             - "./overrides/nginx:/overrides:ro"
-          depends_on:
-            resolver:
-              condition: service_healthy
 
         admin:
           image: ghcr.io/mailu/admin:2024.06
@@ -77,8 +64,6 @@
             - "./data:/data"
             - "./dkim:/dkim"
           depends_on:
-            resolver:
-              condition: service_healthy
             redis:
               condition: service_started
 
@@ -91,8 +76,6 @@
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
@@ -105,8 +88,6 @@
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
@@ -119,8 +100,6 @@
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
@@ -140,8 +119,6 @@
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
             imap:
