@@ -5,9 +5,9 @@
   },
 
   "l4_routes": [
-    { "port": 993, "upstream": "mailu.app:993", "comment": "IMAPS — TLS passthrough to Mailu" },
-    { "port": 465, "upstream": "mailu.app:465", "comment": "SMTPS — TLS passthrough to Mailu" },
-    { "port": 587, "upstream": "mailu.app:587", "comment": "SMTP Submission (STARTTLS) — TCP passthrough to Mailu" }
+    { "port": 993, "upstream": "mailu.app:993", "proxy_protocol": true, "comment": "IMAPS — TLS passthrough + proxy protocol to Mailu front" },
+    { "port": 465, "upstream": "mailu.app:465", "proxy_protocol": true, "comment": "SMTPS — TLS passthrough + proxy protocol to Mailu front" },
+    { "port": 587, "upstream": "mailu.app:587", "proxy_protocol": true, "comment": "SMTP Submission — TCP passthrough + proxy protocol to Mailu front" }
   ],
 
   "routes": [
