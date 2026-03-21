@@ -383,8 +383,6 @@
         cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
         cp ${./overrides/roundcube/nginx-webmail.conf} $out/overrides/roundcube/nginx-webmail.conf
         cp ${./overrides/postfix/postfix.cf} $out/overrides/postfix/postfix.cf
-        cp ${./overrides/nginx/stream.conf} $out/overrides/nginx/stream.conf
-        cp ${./overrides/dovecot/10-master-override.conf} $out/overrides/dovecot/10-master-override.conf
         cat > $out/admin-resolv.conf <<'RESOLV'
 nameserver 1.1.1.1
 nameserver 8.8.8.8
