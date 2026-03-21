@@ -60,6 +60,8 @@
           env_file: mailu.env
           restart: always
           network_mode: host
+          environment:
+            - SKIP_DNSSEC_CHECK=1
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
@@ -115,6 +117,8 @@
           env_file: mailu.env
           restart: always
           network_mode: host
+          environment:
+            - HTTP_PORT=8380
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
@@ -142,6 +146,7 @@
       SMTP_ADDRESS=localhost
       ANTISPAM_ADDRESS=localhost
       WEBMAIL_ADDRESS=localhost
+      WEBMAIL_PORT=8380
       REDIS_ADDRESS=localhost
       REAL_IP_FROM=127.0.0.0/8,10.0.0.0/24
 
@@ -165,6 +170,7 @@
       ANTISPAM=rspamd
       ADMIN=true
       SKIP_DNSSEC_CHECK=true
+      CREDENTIAL_ROUNDS=12
       WEBDAV=none
       FETCHMAIL=false
 
