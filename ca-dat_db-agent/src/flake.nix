@@ -31,6 +31,7 @@
           build: .
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           mem_limit: 64m
           cpus: 0.1
           environment:

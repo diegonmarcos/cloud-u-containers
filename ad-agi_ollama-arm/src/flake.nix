@@ -36,8 +36,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "${config.wg_ip}:${toString config.api_port}:11434"
+          network_mode: host
           volumes:
             - ollama_data:/root/.ollama
           environment:

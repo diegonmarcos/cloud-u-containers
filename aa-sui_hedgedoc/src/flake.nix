@@ -34,15 +34,14 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:${toString config.port}:3000"
+          network_mode: host
           volumes:
             - hedgedoc_uploads:/hedgedoc/public/uploads
           environment:
             - CMD_DOMAIN=${config.domain}
             - CMD_URL_ADDPORT=false
             - CMD_PROTOCOL_USESSL=true
-            - CMD_DB_URL=postgres://${config.db_user}:${config.db_user}@${config.db_container}:5432/${config.db_name}
+            - CMD_DB_URL=postgres://${config.db_user}:${config.db_user}@localhost:5432/${config.db_name}
             - CMD_ALLOW_EMAIL_REGISTER=true
             - CMD_EMAIL=true
             - CMD_ALLOW_FREEURL=true
@@ -55,13 +54,12 @@
           depends_on:
             postgres:
               condition: service_healthy
-          networks:
-            - hedgedoc_net
 
         postgres:
           image: ${config.db_image}
           container_name: ${config.db_container}
           restart: unless-stopped
+          network_mode: host
           volumes:
             - postgres_data:/var/lib/postgresql/data
           environment:
@@ -69,16 +67,11 @@
             - POSTGRES_PASSWORD=${config.db_user}
             - POSTGRES_DB=${config.db_name}
             - PGDATA=/var/lib/postgresql/data/pgdata
-          networks:
-            - hedgedoc_net
           healthcheck:
             test: ['CMD-SHELL', 'pg_isready -U ${config.db_user}']
             interval: 10s
             timeout: 5s
             retries: 5
-
-      networks:
-        hedgedoc_net:
 
       volumes:
         hedgedoc_uploads:

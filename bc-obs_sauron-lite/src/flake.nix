@@ -165,6 +165,7 @@
           build: .
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           volumes:
             # Watch paths (read-only)
             - /etc:/watch/etc:ro
@@ -189,8 +190,6 @@
             options:
               max-size: "5m"
               max-file: "2"
-          networks:
-            - security
           healthcheck:
             test: ["CMD", "pgrep", "-f", "inotifywait"]
             interval: 60s
@@ -201,6 +200,7 @@
           image: debian:bookworm-slim
           container_name: sauron-forwarder
           restart: unless-stopped
+          network_mode: host
           entrypoint: ["/bin/sh", "-c"]
           command:
             - |
@@ -218,12 +218,6 @@
             - sauron
           mem_limit: 16m
           cpus: "0.05"
-          networks:
-            - security
-
-      networks:
-        security:
-          driver: bridge
     '';
 
     # .env template

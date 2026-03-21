@@ -45,6 +45,7 @@
           image: ${config.rclone_image}
           container_name: ${config.rclone_container}
           restart: unless-stopped
+          network_mode: host
           cap_add:
             - SYS_ADMIN
           devices:
@@ -74,8 +75,6 @@
             --vfs-read-chunk-size-limit 256M
             --dir-cache-time 5m
             --log-level INFO
-          networks:
-            - photoprism_net
           healthcheck:
             test: ['CMD', 'ls', '/data']
             interval: 30s
@@ -87,8 +86,7 @@
           image: ${config.app_image}
           container_name: ${config.app_container}
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:${toString config.app_port}:2342"
+          network_mode: host
           volumes:
             - photoprism_storage:/photoprism/storage
             - /opt/containers/photoprism/originals:/photoprism/originals:ro
@@ -114,7 +112,7 @@
             - PHOTOPRISM_DETECT_NSFW=false
             - PHOTOPRISM_UPLOAD_NSFW=true
             - PHOTOPRISM_DATABASE_DRIVER=mysql
-            - PHOTOPRISM_DATABASE_SERVER=mariadb:3306
+            - PHOTOPRISM_DATABASE_SERVER=localhost:3306
             - PHOTOPRISM_DATABASE_NAME=''${MARIADB_DATABASE:-photoprism}
             - PHOTOPRISM_DATABASE_USER=''${MARIADB_USER:-photoprism}
             - PHOTOPRISM_DATABASE_PASSWORD=''${MARIADB_PASSWORD:-changeme}
@@ -123,8 +121,6 @@
               condition: service_healthy
             rclone:
               condition: service_healthy
-          networks:
-            - photoprism_net
           healthcheck:
             test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:2342/api/v1/status']
             interval: 30s
@@ -136,6 +132,7 @@
           image: ${config.db_image}
           container_name: ${config.db_container}
           restart: unless-stopped
+          network_mode: host
           volumes:
             - mariadb_data:/var/lib/mysql
           environment:
@@ -145,16 +142,11 @@
             - MARIADB_USER=''${MARIADB_USER:-photoprism}
             - MARIADB_PASSWORD=''${MARIADB_PASSWORD:-changeme}
             - MARIADB_ROOT_PASSWORD=''${MARIADB_ROOT_PASSWORD:-changeme}
-          networks:
-            - photoprism_net
           healthcheck:
             test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
             interval: 10s
             timeout: 5s
             retries: 5
-
-      networks:
-        photoprism_net:
 
       volumes:
         photoprism_storage:

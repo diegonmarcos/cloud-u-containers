@@ -31,8 +31,7 @@
           image: grafana/grafana:latest
           container_name: lgtm_grafana
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:3016:3000"
+          network_mode: host
           volumes:
             - grafana_data:/var/lib/grafana
           environment:
@@ -42,8 +41,6 @@
             - GF_SERVER_ROOT_URL=https://${config.domain}
           depends_on:
             - loki
-          networks:
-            - lgtm_net
           healthcheck:
             test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
             interval: 30s
@@ -54,14 +51,11 @@
           image: grafana/loki:latest
           container_name: lgtm_loki
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:3019:3100"
+          network_mode: host
           volumes:
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
           command: -config.file=/etc/loki/local-config.yaml
-          networks:
-            - lgtm_net
           healthcheck:
             test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
             interval: 30s
@@ -73,32 +67,21 @@
           image: grafana/tempo:latest
           container_name: lgtm_tempo
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:3020:3200"
-            - "10.0.0.6:4317:4317"
-            - "10.0.0.6:4318:4318"
+          network_mode: host
           volumes:
             - tempo_data:/var/tempo
             - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
           command: ["-config.file=/etc/tempo/tempo.yaml"]
-          networks:
-            - lgtm_net
 
         mimir:
           image: grafana/mimir:latest
           container_name: lgtm_mimir
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:3021:8080"
+          network_mode: host
           volumes:
             - mimir_data:/data
             - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
           command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
-          networks:
-            - lgtm_net
-
-      networks:
-        lgtm_net:
 
       volumes:
         grafana_data:
@@ -169,18 +152,18 @@
         - name: Loki
           type: loki
           access: proxy
-          url: http://lgtm_loki:3100
+          url: http://localhost:3100
           isDefault: true
 
         - name: Tempo
           type: tempo
           access: proxy
-          url: http://lgtm_tempo:3200
+          url: http://localhost:3200
 
         - name: Mimir
           type: prometheus
           access: proxy
-          url: http://lgtm_mimir:8080/prometheus
+          url: http://localhost:8080/prometheus
 
         - name: Photoprism MariaDB
           type: mysql

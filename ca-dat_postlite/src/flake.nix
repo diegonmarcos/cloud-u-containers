@@ -29,41 +29,37 @@
           image: germanorizzo/ws4sqlite:latest
           container_name: sqlite-npm
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:8880:12321"
+          network_mode: host
           volumes:
             - /home/diego/npm/data:/data
-          command: ["-db", "/data/database.sqlite?mode=ro"]
+          command: ["-port", "8880", "-db", "/data/database.sqlite?mode=ro"]
 
         sqlite-vaultwarden:
           image: germanorizzo/ws4sqlite:latest
           container_name: sqlite-vaultwarden
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:8881:12321"
+          network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
-          command: ["-db", "/data/db.sqlite3?mode=ro"]
+          command: ["-port", "8881", "-db", "/data/db.sqlite3?mode=ro"]
 
         sqlite-ntfy:
           image: germanorizzo/ws4sqlite:latest
           container_name: sqlite-ntfy
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:8882:12321"
+          network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
-          command: ["-db", "/data/cache.db?mode=ro"]
+          command: ["-port", "8882", "-db", "/data/cache.db?mode=ro"]
 
         sqlite-authelia:
           image: germanorizzo/ws4sqlite:latest
           container_name: sqlite-authelia
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:8883:12321"
+          network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
-          command: ["-db", "/data/db.sqlite3?mode=ro"]
+          command: ["-port", "8883", "-db", "/data/db.sqlite3?mode=ro"]
 
         postlite-npm:
           build:
@@ -72,41 +68,37 @@
           image: postlite:latest
           container_name: postlite-npm
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:5433:5432"
+          network_mode: host
           volumes:
             - /home/diego/npm/data:/data
-          command: ["-addr", ":5432", "-data-dir", "/data"]
+          command: ["-addr", ":5433", "-data-dir", "/data"]
 
         postlite-vaultwarden:
           image: postlite:latest
           container_name: postlite-vaultwarden
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:5434:5432"
+          network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
-          command: ["-addr", ":5432", "-data-dir", "/data"]
+          command: ["-addr", ":5434", "-data-dir", "/data"]
 
         postlite-ntfy:
           image: postlite:latest
           container_name: postlite-ntfy
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:5435:5432"
+          network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
-          command: ["-addr", ":5432", "-data-dir", "/data"]
+          command: ["-addr", ":5435", "-data-dir", "/data"]
 
         postlite-authelia:
           image: postlite:latest
           container_name: postlite-authelia
           restart: unless-stopped
-          ports:
-            - "10.0.0.1:5436:5432"
+          network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
-          command: ["-addr", ":5432", "-data-dir", "/data"]
+          command: ["-addr", ":5436", "-data-dir", "/data"]
     '';
 
 

@@ -28,6 +28,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           volumes:
             - /opt/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
             - /opt/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro

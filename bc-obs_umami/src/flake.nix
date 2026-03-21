@@ -34,12 +34,11 @@
           image: ghcr.io/umami-software/umami:latest
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "10.0.0.4:${toString config.port}:3000"
+          network_mode: host
           env_file:
             - .secrets
           environment:
-            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@umami-db:5432/umami
+            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@localhost:5432/umami
             DATABASE_TYPE: postgresql
             APP_SECRET: ''${APP_SECRET}
             BASE_PATH: /umami
@@ -64,6 +63,7 @@
           image: postgres:16-alpine
           container_name: ${config.db_container}
           restart: unless-stopped
+          network_mode: host
           environment:
             POSTGRES_DB: umami
             POSTGRES_USER: umami
@@ -86,6 +86,7 @@
           image: curlimages/curl:latest
           container_name: umami-setup
           restart: "no"
+          network_mode: host
           env_file:
             - .secrets
           depends_on:
@@ -109,7 +110,7 @@
       # Configures admin credentials + creates website
       set -e
 
-      UMAMI_URL="http://umami:3000"
+      UMAMI_URL="http://localhost:3000"
 
       # Extract JSON field value using awk index() — no sed escaping issues
       json_val() {

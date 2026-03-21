@@ -42,8 +42,7 @@
           build: .
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "10.0.0.4:${toString config.port}:8080"
+          network_mode: host
           volumes:
             - matomo_matomo_data:/var/www/html
             - matomo_matomo_db:/var/lib/mysql

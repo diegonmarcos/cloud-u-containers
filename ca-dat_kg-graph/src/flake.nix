@@ -30,25 +30,19 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          command: start --log info --user root --pass ''${SURREAL_ROOT_PASSWORD} file:/data/surreal.db
+          network_mode: host
+          command: start --log info --user root --pass ''${SURREAL_ROOT_PASSWORD} --bind 127.0.0.1:${toString config.port} file:/data/surreal.db
           env_file:
             - .secrets
-          ports:
-            - "127.0.0.1:${toString config.port}:8000"
           volumes:
             - ${config.data_path}:/data
-          networks:
-            - kg-net
           healthcheck:
-            test: ["CMD", "/surreal", "is-ready", "--conn", "http://localhost:8000"]
+            test: ["CMD", "/surreal", "is-ready", "--conn", "http://localhost:${toString config.port}"]
             interval: 15s
             timeout: 5s
             retries: 3
             start_period: 10s
 
-      networks:
-        kg-net:
-          driver: bridge
     '';
 
     mkSchema = pkgs: pkgs.copyPathToStore ./schema.surql;

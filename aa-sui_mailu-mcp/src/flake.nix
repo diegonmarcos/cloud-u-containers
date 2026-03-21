@@ -27,12 +27,11 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
             MAIL_HOST: ${config.mail_host}
-          ports:
-            - "3103:3103"
 
     '';
 

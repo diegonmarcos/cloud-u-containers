@@ -30,6 +30,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           command: redis-server --appendonly yes --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass ''${REDIS_PASSWORD}

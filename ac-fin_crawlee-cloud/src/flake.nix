@@ -41,14 +41,15 @@
           image: crawlee-cloud-api:local
           container_name: crawlee_api
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
             NODE_ENV: production
             PORT: "3000"
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@crawlee_db:5432/''${POSTGRES_DB}
-            REDIS_URL: redis://crawlee_redis:6379
-            S3_ENDPOINT: http://crawlee_minio:9000
+            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
+            REDIS_URL: redis://localhost:${toString config.redis_port}
+            S3_ENDPOINT: http://localhost:${toString config.minio_port}
             S3_ACCESS_KEY: ''${MINIO_USER}
             S3_SECRET_KEY: ''${MINIO_PASSWORD}
             S3_BUCKET: crawlee-cloud
@@ -58,8 +59,6 @@
             LOG_LEVEL: info
             ADMIN_EMAIL: ''${ADMIN_EMAIL}
             ADMIN_PASSWORD: ''${ADMIN_PASSWORD}
-          ports:
-            - "${toString config.api_port}:3000"
           depends_on:
             crawlee_db:
               condition: service_healthy
@@ -67,8 +66,6 @@
               condition: service_healthy
             crawlee_minio:
               condition: service_healthy
-          networks:
-            - crawlee_network
           healthcheck:
             test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1"]
             interval: 15s
@@ -83,16 +80,17 @@
           image: crawlee-cloud-runner:local
           container_name: crawlee_runner
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
             NODE_ENV: production
-            API_BASE_URL: http://crawlee_api:3000
+            API_BASE_URL: http://localhost:3000
             API_TOKEN: ''${RUNNER_TOKEN}
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@crawlee_db:5432/''${POSTGRES_DB}
-            REDIS_URL: redis://crawlee_redis:6379
+            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
+            REDIS_URL: redis://localhost:${toString config.redis_port}
             DOCKER_SOCKET: /var/run/docker.sock
-            DOCKER_NETWORK: crawlee_network
+            DOCKER_NETWORK: host
             MAX_CONCURRENT_RUNS: "5"
             ACTOR_MAX_MEMORY_MB: "2048"
             ACTOR_DEFAULT_MEMORY_MB: "512"
@@ -102,8 +100,6 @@
           depends_on:
             api:
               condition: service_healthy
-          networks:
-            - crawlee_network
 
         dashboard:
           build:
@@ -112,17 +108,14 @@
           image: crawlee-cloud-dashboard:local
           container_name: crawlee_dashboard
           restart: unless-stopped
+          network_mode: host
           environment:
             NODE_ENV: production
-            PORT: "3001"
-            NEXT_PUBLIC_API_URL: http://crawlee_api:3000
-          ports:
-            - "${toString config.dashboard_port}:3001"
+            PORT: "${toString config.dashboard_port}"
+            NEXT_PUBLIC_API_URL: http://localhost:3000
           depends_on:
             api:
               condition: service_healthy
-          networks:
-            - crawlee_network
 
         scheduler:
           build:
@@ -131,15 +124,14 @@
           image: crawlee-cloud-api:local
           container_name: crawlee_scheduler
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           command: ["sleep", "infinity"]
           environment:
             NODE_ENV: production
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@crawlee_db:5432/''${POSTGRES_DB}
-            REDIS_URL: redis://crawlee_redis:6379
-          networks:
-            - crawlee_network
+            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
+            REDIS_URL: redis://localhost:${toString config.redis_port}
 
         # ═══ DATA STORES (standard images) ═══
 
@@ -147,14 +139,13 @@
           image: postgres:16-alpine
           container_name: crawlee_db
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
-          ports:
-            - "${toString config.db_port}:5432"
+          environment:
+            PGPORT: "${toString config.db_port}"
           volumes:
             - crawlee_postgres:/var/lib/postgresql/data
-          networks:
-            - crawlee_network
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
             interval: 5s
@@ -165,15 +156,12 @@
           image: redis:7-alpine
           container_name: crawlee_redis
           restart: unless-stopped
-          command: redis-server --appendonly yes
-          ports:
-            - "${toString config.redis_port}:6379"
+          network_mode: host
+          command: redis-server --appendonly yes --port ${toString config.redis_port}
           volumes:
             - crawlee_redis:/data
-          networks:
-            - crawlee_network
           healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
+            test: ["CMD", "redis-cli", "-p", "${toString config.redis_port}", "ping"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -182,21 +170,17 @@
           image: minio/minio:latest
           container_name: crawlee_minio
           restart: unless-stopped
-          command: server /data --console-address ":9001"
+          network_mode: host
+          command: server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"
           env_file:
             - .secrets
           environment:
             MINIO_ROOT_USER: ''${MINIO_USER}
             MINIO_ROOT_PASSWORD: ''${MINIO_PASSWORD}
-          ports:
-            - "${toString config.minio_port}:9000"
-            - "${toString config.minio_console_port}:9001"
           volumes:
             - crawlee_minio:/data
-          networks:
-            - crawlee_network
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            test: ["CMD", "curl", "-f", "http://localhost:${toString config.minio_port}/minio/health/live"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -204,6 +188,7 @@
         minio_init:
           image: minio/mc:latest
           container_name: crawlee_minio_init
+          network_mode: host
           depends_on:
             crawlee_minio:
               condition: service_healthy
@@ -211,12 +196,10 @@
             - .secrets
           entrypoint: >
             /bin/sh -c "
-            mc alias set myminio http://crawlee_minio:9000 ''${MINIO_USER} ''${MINIO_PASSWORD};
+            mc alias set myminio http://localhost:${toString config.minio_port} ''${MINIO_USER} ''${MINIO_PASSWORD};
             mc mb myminio/crawlee-cloud --ignore-existing;
             exit 0;
             "
-          networks:
-            - crawlee_network
 
       volumes:
         crawlee_postgres:
@@ -226,10 +209,6 @@
         crawlee_minio:
           name: crawlee_minio
 
-      networks:
-        crawlee_network:
-          name: crawlee_network
-          driver: bridge
     '';
 
 

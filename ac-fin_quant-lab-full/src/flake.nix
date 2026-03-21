@@ -36,8 +36,7 @@
           image: ${config.research_image}
           container_name: quant_full_research
           restart: unless-stopped
-          ports:
-            - "${toString config.jupyter_port}:8888"
+          network_mode: host
           volumes:
             - ./notebooks:/home/jovyan/work
             - shared_data:/home/jovyan/data
@@ -46,8 +45,6 @@
           command: >
             sh -c "pip install openbb polars plotly &&
                    start-notebook.sh --NotebookApp.token='''"
-          networks:
-            - quant_network
           healthcheck:
             test: ["CMD-SHELL", "curl -sf http://localhost:8888/api || exit 1"]
             interval: 30s
@@ -59,8 +56,7 @@
           image: ${config.analytics_image}
           container_name: quant_full_analytics
           restart: unless-stopped
-          ports:
-            - "${toString config.dash_port}:8050"
+          network_mode: host
           volumes:
             - ./scripts:/app
             - shared_data:/data
@@ -68,13 +64,12 @@
           command: >
             sh -c "pip install polars numpy scipy pandas matplotlib seaborn plotly dash &&
                    tail -f /dev/null"
-          networks:
-            - quant_network
 
         ml_brain:
           image: ${config.ml_image}
           container_name: quant_full_ml
           restart: unless-stopped
+          network_mode: host
           volumes:
             - ./models:/workspace/models
             - shared_data:/data
@@ -90,13 +85,12 @@
           command: >
             sh -c "pip install torch scikit-learn lightgbm pycaret xgboost &&
                    tail -f /dev/null"
-          networks:
-            - quant_network
 
         risk_manager:
           image: ${config.risk_image}
           container_name: quant_full_risk
           restart: unless-stopped
+          network_mode: host
           volumes:
             - ./risk_reports:/reports
             - shared_data:/data
@@ -104,15 +98,12 @@
           command: >
             sh -c "pip install riskfolio-lib quantstats cvxpy &&
                    tail -f /dev/null"
-          networks:
-            - quant_network
 
         execution_engine:
           image: ${config.engine_image}
           container_name: quant_full_engine
           restart: unless-stopped
-          ports:
-            - "${toString config.engine_port}:5000"
+          network_mode: host
           volumes:
             - ./strategies:/app/strategies
             - shared_data:/data
@@ -120,15 +111,12 @@
           command: >
             sh -c "pip install nautilus_trader ib_insync &&
                    tail -f /dev/null"
-          networks:
-            - quant_network
 
         database:
           image: ${config.db_image}
           container_name: quant_full_db
           restart: unless-stopped
-          ports:
-            - "${toString config.db_port}:5432"
+          network_mode: host
           env_file:
             - .secrets
           environment:
@@ -137,8 +125,6 @@
             POSTGRES_DB: ''${POSTGRES_DB}
           volumes:
             - pg_data:/var/lib/postgresql/data
-          networks:
-            - quant_network
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ''${POSTGRES_USER} -d ''${POSTGRES_DB}"]
             interval: 10s
@@ -152,10 +138,6 @@
         shared_data:
           name: quant_full_shared_data
 
-      networks:
-        quant_network:
-          name: quant_full_network
-          driver: bridge
     '';
 
 

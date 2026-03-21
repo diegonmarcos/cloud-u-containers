@@ -36,8 +36,7 @@
           image: rig-agentic:latest
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "127.0.0.1:${toString config.port}:${toString config.port}"
+          network_mode: host
           env_file:
             - .secrets
           environment:

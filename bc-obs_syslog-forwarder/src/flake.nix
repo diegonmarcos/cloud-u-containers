@@ -28,6 +28,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           environment:
             - VM_NAME=''${VM_NAME:-unknown}
             - CENTRAL_HOST=''${CENTRAL_HOST}

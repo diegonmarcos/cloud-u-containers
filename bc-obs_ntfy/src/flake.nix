@@ -63,6 +63,8 @@
         ntfy:
           image: ${config.image}
           container_name: ${config.container_name}
+          restart: unless-stopped
+          network_mode: host
           entrypoint:
             - /bin/sh
             - -c
@@ -79,13 +81,12 @@
           volumes:
             - ./cache:/var/cache/ntfy
             - ./etc:/etc/ntfy
-          ports:
-            - '10.0.0.1:${toString config.port}:80'
-          restart: unless-stopped
 
         syslog-bridge:
           image: python:3.11-slim
           container_name: syslog-bridge
+          restart: unless-stopped
+          network_mode: host
           command: python -u /app/syslog-to-ntfy.py
           volumes:
             - ./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro
@@ -96,11 +97,12 @@
             - PYTHONUNBUFFERED=1
           depends_on:
             - ntfy
-          restart: unless-stopped
 
         github-rss:
           image: python:3.11-slim
           container_name: github-rss
+          restart: unless-stopped
+          network_mode: host
           command: python -u /app/github-rss-to-ntfy.py
           volumes:
             - ./github-rss-to-ntfy.py:/app/github-rss-to-ntfy.py:ro
@@ -110,7 +112,6 @@
             - PYTHONUNBUFFERED=1
           depends_on:
             - ntfy
-          restart: unless-stopped
 
       volumes:
         syslog-central-logs:

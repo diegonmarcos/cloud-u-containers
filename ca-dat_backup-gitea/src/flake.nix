@@ -43,25 +43,23 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           environment:
             - USER_UID=1000
             - USER_GID=1000
             - GITEA__database__DB_TYPE=${config.db_type}
             - GITEA__database__PATH=/data/gitea/gitea.db
             - GITEA__server__ROOT_URL=http://144.24.196.72:${toString config.http_port}
+            - GITEA__server__HTTP_PORT=${toString config.http_port}
             - GITEA__server__SSH_PORT=${toString config.ssh_port}
             - GITEA__server__SSH_DOMAIN=144.24.196.72
+            - GITEA__server__SSH_LISTEN_PORT=${toString config.ssh_port}
             - GITEA__mirror__ENABLED=true
             - GITEA__mirror__DEFAULT_INTERVAL=1h
           volumes:
             - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro
-          ports:
-            - "${toString config.http_port}:${toString config.http_port}"
-            - "${toString config.ssh_port}:22"
-          networks:
-            - backup_network
 
       volumes:
         gitea_data:
@@ -70,10 +68,6 @@
             type: none
             o: bind
             device: /backup/code/gitea-data
-
-      networks:
-        backup_network:
-          driver: bridge
     '';
 
 
