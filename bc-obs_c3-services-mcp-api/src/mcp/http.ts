@@ -83,23 +83,11 @@ async function handleMcpRequest(
     }
     res.writeHead(200);
     res.end();
-  } else if (req.method === "POST" && sessionId && !sessions.has(sessionId)) {
-    // Stale session (server restarted) → auto-recover by creating new session
-    log(`Session expired: ${sessionId} — auto-recovering`);
-    delete req.headers["mcp-session-id"];
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
-    const server = await createMcpServer();
-    await server.connect(transport);
-    await transport.handleRequest(req, res);
-    const sid = transport.sessionId!;
-    sessions.set(sid, { transport, server });
-    log(`Recovered → new session: ${sid}`);
-    transport.onclose = () => {
-      sessions.delete(sid);
-      log(`Session closed: ${sid}`);
-    };
+  } else if (sessionId && !sessions.has(sessionId)) {
+    // Stale session (server restarted) → return 404 so client re-initializes
+    log(`Session expired: ${sessionId} — returning 404 for client retry`);
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Session expired — please re-initialize" }));
   } else {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Bad Request — missing session" }));

@@ -272,60 +272,75 @@ function mailuSendTestResend(): Check[] {
     return { passed: false, details: parsed.message || r.stdout || r.stderr };
   }));
 
-  // Poll Resend delivery status (wait up to 10s for delivery confirmation)
+  // Poll Resend delivery status
   if (emailId) {
     checks.push(timed("Resend delivery status", () => {
       const maxAttempts = 3;
-      const delayMs = 1500;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          exec("bash", ["-c", `sleep ${delayMs / 1000}`]);
-        }
-        const r = exec("curl", [
-          "-s",
-          "-H", `Authorization: Bearer ${apiKey}`,
-          `https://api.resend.com/emails/${emailId}`,
-        ], { timeout: 10_000 });
+        if (attempt > 0) exec("bash", ["-c", "sleep 1.5"]);
+        const r = exec("curl", ["-s", "-H", `Authorization: Bearer ${apiKey}`,
+          `https://api.resend.com/emails/${emailId}`], { timeout: 8_000 });
         const parsed = JSON.parse(r.stdout || "{}");
         const event = parsed.last_event || "unknown";
-
-        if (event === "delivered") {
-          return { passed: true, details: `delivered (attempt ${attempt + 1}/${maxAttempts})` };
-        }
-        if (event === "bounced" || event === "complained") {
-          return { passed: false, details: `${event}: ${parsed.reject_reason || "unknown reason"}` };
-        }
-        // sent/delivery_delayed — keep polling
+        if (event === "delivered") return { passed: true, details: `delivered (poll ${attempt + 1})` };
+        if (event === "bounced" || event === "complained") return { passed: false, details: `${event}` };
       }
-      // Final check
-      const r = exec("curl", [
-        "-s",
-        "-H", `Authorization: Bearer ${apiKey}`,
-        `https://api.resend.com/emails/${emailId}`,
-      ], { timeout: 10_000 });
-      const parsed = JSON.parse(r.stdout || "{}");
-      const event = parsed.last_event || "unknown";
+      return { passed: false, details: "not delivered after polling" };
+    }));
+
+    // IMAP inbox verification — check if email actually arrived in Mailu
+    checks.push(timed("IMAP inbox check", () => {
+      exec("bash", ["-c", "sleep 2"]); // wait for delivery pipeline
+      const r = sshExec(MAILU_VM,
+        `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "health-check" subject "${tag}" 2>&1 | head -5`,
+        10_000);
+      const found = r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("no results");
+      return { passed: found, details: found ? `found in inbox` : `NOT in inbox: ${r.stdout.trim() || r.stderr.trim() || "empty"}` };
+    }));
+
+    // smtp-proxy logs — did it receive and forward the email?
+    checks.push(timed("smtp-proxy delivery log", () => {
+      const r = sshExec(MAILU_VM,
+        `docker logs smtp-proxy --since 2m 2>&1 | tail -10`,
+        8_000);
+      const logs = r.stdout + r.stderr;
+      const hasDelivery = logs.includes("250") || logs.includes("accepted") || logs.includes("delivered");
+      const hasError = logs.includes("error") || logs.includes("refused") || logs.includes("timeout");
       return {
-        passed: event === "delivered",
-        details: `${event} (after ${maxAttempts} polls)`,
+        passed: hasDelivery && !hasError,
+        details: hasError ? `ERROR in logs:\n    ${logs.trim().split("\n").slice(-3).join("\n    ")}`
+          : hasDelivery ? "delivery confirmed in logs"
+          : `no delivery activity:\n    ${logs.trim().split("\n").slice(-3).join("\n    ")}`,
       };
     }));
-
-    // Fetch recent Resend delivery events (last 10 emails for context)
-    checks.push(timed("Resend recent events", () => {
-      const r = exec("curl", [
-        "-s",
-        "-H", `Authorization: Bearer ${apiKey}`,
-        "https://api.resend.com/emails?limit=5",
-      ], { timeout: 10_000 });
-      const parsed = JSON.parse(r.stdout || "{}");
-      const emails = parsed.data || [];
-      const summary = emails.map((e: { subject?: string; last_event?: string; created_at?: string }) =>
-        `${e.last_event || "?"} | ${e.subject || "?"} | ${e.created_at || "?"}`
-      ).join("\n    ");
-      return { passed: emails.length > 0, details: `${emails.length} recent\n    ${summary}` };
-    }));
   }
+
+  return checks;
+}
+
+/** Analyze CF Worker logs — detect backup email triggers and delivery failures */
+function analyzeWorkerLogs(): Check[] {
+  const checks: Check[] = [];
+  const workerLogs = fetchWorkerLogs();
+
+  checks.push(timed("CF Worker API access", () => {
+    if (workerLogs && typeof workerLogs === "object" && "error" in workerLogs) {
+      return { passed: false, details: String((workerLogs as { error: string }).error) };
+    }
+    return { passed: true, details: "API accessible" };
+  }));
+
+  checks.push(timed("CF Worker delivery path", () => {
+    const logs = JSON.stringify(workerLogs);
+    const deliveredToMailu = logs.includes("delivered to Mailu") || logs.includes("Email delivered");
+    const backupTriggered = logs.includes("forwarding to backup") || logs.includes("Insurance copy");
+    const deliveryFailed = logs.includes("delivery failed") || logs.includes("SMTP proxy failed");
+
+    if (deliveryFailed) return { passed: false, details: "DELIVERY FAILED — Worker could not reach smtp-proxy" };
+    if (backupTriggered) return { passed: false, details: "BACKUP TRIGGERED — emails going to diegonmarcos@live.com instead of Mailu" };
+    if (deliveredToMailu) return { passed: true, details: "Primary path OK (smtp-proxy)" };
+    return { passed: true, details: "No recent failures detected" };
+  }));
 
   return checks;
 }
@@ -333,15 +348,25 @@ function mailuSendTestResend(): Check[] {
 function mailuOutboundTest(): Check[] {
   const checks: Check[] = [];
 
-  // Outbound: Mailu SMTP → external (via Mailu's own relay)
-  // Uses swaks (Swiss Army Knife for SMTP) on oci-mail to test the full SMTP pipeline
-  checks.push(timed("Outbound: Mailu SMTP relay", () => {
-    // Test that SMTP accepts a message on the submission port locally
+  // Outbound: SMTP submission port accepts connections
+  checks.push(timed("SMTP submission :587", () => {
     const r = sshExec(MAILU_VM,
-      `echo "EHLO healthcheck" | nc -w5 localhost 587 2>&1 | head -5`,
-      10_000);
+      `echo "EHLO healthcheck" | nc -w3 localhost 587 2>&1 | head -3`,
+      8_000);
     const hasEhlo = r.stdout.includes("250") || r.stdout.includes("220");
     return { passed: hasEhlo, details: hasEhlo ? "EHLO accepted" : r.stdout.trim().split("\n")[0] || "no response" };
+  }));
+
+  // Outbound: Send a real email from Mailu via SMTP (swaks or sendmail)
+  checks.push(timed("Outbound: Mailu → external", () => {
+    const tag = `outbound-${Date.now()}`;
+    // Use Mailu admin CLI to send a test email via the local SMTP relay
+    const r = sshExec(MAILU_VM,
+      `docker exec mailu-admin-1 flask mailu send-test me@diegonmarcos.com "${tag}" 2>&1 || ` +
+      `echo "EHLO test\nMAIL FROM:<health@diegonmarcos.com>\nRCPT TO:<me@diegonmarcos.com>\nDATA\nSubject: [health-outbound] ${tag}\n\nOutbound test\n.\nQUIT" | nc -w5 localhost 25 2>&1 | tail -3`,
+      15_000);
+    const sent = r.stdout.includes("250") || r.stdout.includes("queued") || r.stdout.includes("OK");
+    return { passed: sent, details: sent ? `queued (${tag})` : r.stdout.trim().split("\n").slice(-2).join(" | ") || "send failed" };
   }));
 
   // DKIM check
@@ -420,10 +445,9 @@ export function registerHealthMailuTools(server: McpServer): void {
         "",
         formatChecks("2. OUTBOUND & DNS AUTH", mailuOutboundTest()),
         "",
-        formatChecks("3. INBOUND SEND TEST (Resend → Mailu)", mailuSendTestResend()),
+        formatChecks("3. INBOUND (Resend → CF Worker → smtp-proxy → Mailu → IMAP)", mailuSendTestResend()),
         "",
-        `4. CF WORKER LOGS (email-forwarder, last 6h)\n${"─".repeat(60)}`,
-        JSON.stringify(fetchWorkerLogs(), null, 2),
+        formatChecks("4. CF WORKER ANALYSIS", analyzeWorkerLogs()),
       ];
       return sections.join("\n");
     }),
