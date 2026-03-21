@@ -1,0 +1,40 @@
+{
+  "name": "stalwart",
+  "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
+  "category": "app",
+  "domain": "mail.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/stalwart",
+    "excludes": [
+      "data/**",
+      "dkim/**"
+    ]
+  },
+  "compose": {
+    "pre_hook": "init.sh"
+  },
+  "proxy": {
+    "upstream": "stalwart.app:8443",
+    "auth": "two_factor",
+    "tls_skip_verify": true,
+    "landing_page": "mymail",
+    "l4_ports": [
+      { "port": 993, "upstream": "stalwart.app:993", "comment": "IMAPS" },
+      { "port": 465, "upstream": "stalwart.app:465", "comment": "SMTPS" },
+      { "port": 587, "upstream": "stalwart.app:587", "comment": "SMTP Submission" }
+    ]
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["stalwart_data"]
+  }
+}
