@@ -69,7 +69,7 @@
           restart: always
           network_mode: host
           environment:
-            - SKIP_DNSSEC_CHECK=1
+            - SKIP_DNSSEC_CHECK=True
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
