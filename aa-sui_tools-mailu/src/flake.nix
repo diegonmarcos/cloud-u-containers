@@ -68,11 +68,10 @@
           env_file: mailu.env
           restart: always
           network_mode: host
-          environment:
-            - SKIP_DNSSEC_CHECK=True
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
+            - "./admin-resolv.conf:/etc/resolv.conf:ro"
           depends_on:
             redis:
               condition: service_started
@@ -401,6 +400,10 @@
         cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
         cp ${./overrides/roundcube/nginx-webmail.conf} $out/overrides/roundcube/nginx-webmail.conf
         cp ${./overrides/postfix/postfix.cf} $out/overrides/postfix/postfix.cf
+        cat > $out/admin-resolv.conf <<'RESOLV'
+nameserver 1.1.1.1
+nameserver 10.0.0.1
+RESOLV
       '';
     in {
       default = defaultPkg;
