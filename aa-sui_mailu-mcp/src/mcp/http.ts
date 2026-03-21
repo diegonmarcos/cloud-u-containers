@@ -75,6 +75,7 @@ async function handleMcpRequest(
   } else if (req.method === "POST" && sessionId && !sessions.has(sessionId)) {
     // Stale session (server restarted) → auto-recover by creating new session
     log(`Session expired: ${sessionId} — auto-recovering`);
+    delete req.headers["mcp-session-id"];
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     });

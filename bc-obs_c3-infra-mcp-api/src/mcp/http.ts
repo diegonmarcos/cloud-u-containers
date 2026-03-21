@@ -102,8 +102,9 @@ async function handleMcpRequest(
     res.end();
   } else if (req.method === "POST" && sessionId && !sessions.has(sessionId)) {
     // Stale session (server restarted) → auto-recover by creating new session
-    // MCP SDK requires no session ID for initialization, so strip it and handle as new
+    // Strip the old session ID so the SDK treats this as a fresh initialization
     log(`Session expired: ${sessionId} — auto-recovering`);
+    delete req.headers["mcp-session-id"];
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
     });
