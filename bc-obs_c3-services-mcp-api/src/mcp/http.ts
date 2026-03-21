@@ -83,10 +83,22 @@ async function handleMcpRequest(
     }
     res.writeHead(200);
     res.end();
-  } else if (sessionId && !sessions.has(sessionId)) {
-    // Stale/unknown session → 404 tells MCP client to clear session and re-initialize
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Session not found" }));
+  } else if (req.method === "POST" && sessionId && !sessions.has(sessionId)) {
+    // Stale session (server restarted) → auto-recover by creating new session
+    log(`Session expired: ${sessionId} — auto-recovering`);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+    });
+    const server = await createMcpServer();
+    await server.connect(transport);
+    await transport.handleRequest(req, res);
+    const sid = transport.sessionId!;
+    sessions.set(sid, { transport, server });
+    log(`Recovered → new session: ${sid}`);
+    transport.onclose = () => {
+      sessions.delete(sid);
+      log(`Session closed: ${sid}`);
+    };
   } else {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Bad Request — missing session" }));
