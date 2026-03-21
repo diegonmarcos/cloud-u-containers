@@ -174,6 +174,24 @@ function mailuUp(): Check[] {
     return { passed: code !== "000" && code !== "502", details: `HTTP ${code}` };
   }));
 
+  // mailu-mcp container (MCP server for IMAP/SMTP/Admin tools)
+  checks.push(timed("mailu-mcp container", () => {
+    const { containers, ok } = listContainers("oci-A1-f_0", true);
+    if (!ok) return { passed: false, details: "SSH/Docker unreachable" };
+    const mcp = containers.find((c) => c.name === "mailu-mcp");
+    if (!mcp) return { passed: false, details: "NOT FOUND" };
+    const healthy = mcp.status.includes("healthy") || mcp.status.startsWith("Up");
+    return { passed: healthy, details: mcp.status };
+  }));
+
+  // mailu-mcp MCP endpoint (HTTP transport)
+  checks.push(timed("mailu-mcp endpoint", () => {
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
+      "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
+    const code = r.stdout.trim();
+    return { passed: code === "400" || code === "405", details: `HTTP ${code} (expected — needs POST)` };
+  }));
+
   return checks;
 }
 
@@ -297,16 +315,18 @@ function mailuSendTestResend(): Check[] {
       return { passed: true, details: "sent (IMAP check is ground truth)" };
     }));
 
-    // IMAP verification — check if email arrived in Mailu (inbox or Health folder)
+    // IMAP verification — poll for email arrival (delivery can take 5-15s)
     checks.push(timed("IMAP delivery check", () => {
-      exec("bash", ["-c", "sleep 3"]); // wait for delivery pipeline
-      // Search all mailboxes for the health check tag
-      const r = sshExec(MAILU_VM,
-        `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} mailbox Health subject "${tag}" 2>&1 || ` +
-        `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -5`,
-        10_000);
-      const found = r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("no results");
-      return { passed: found, details: found ? `found in mailbox` : `NOT found: ${r.stdout.trim() || r.stderr.trim() || "empty"}` };
+      for (let attempt = 0; attempt < 3; attempt++) {
+        exec("bash", ["-c", "sleep 3"]);
+        // Search Health folder first (sieve filter), then INBOX, then all
+        const r = sshExec(MAILU_VM,
+          `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -5`,
+          8_000);
+        const found = r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("no results") && !r.stdout.includes("error");
+        if (found) return { passed: true, details: `found (poll ${attempt + 1})` };
+      }
+      return { passed: false, details: "NOT found after 3 polls (9s wait)" };
     }));
 
     // smtp-proxy — check recent activity via docker logs + nginx access log
