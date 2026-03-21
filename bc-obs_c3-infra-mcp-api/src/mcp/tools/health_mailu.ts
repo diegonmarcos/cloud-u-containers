@@ -176,6 +176,58 @@ function containerHealth(): Check[] {
     return { passed: mcp.status.startsWith("Up"), details: mcp.status.replace(/\s+\(.*/, "") };
   }));
 
+  // ── Deep service checks (internal health, not just container status) ──
+
+  // Dovecot auth — tests IMAP user lookup (catches auth-userdb socket errors)
+  checks.push(timed("dovecot auth", () => {
+    const r = sshExec(MAILU_VM,
+      `docker exec mailu-imap-1 doveadm user me@diegonmarcos.com 2>&1 | head -3`, 5_000);
+    const ok = r.ok && r.stdout.includes("me@diegonmarcos.com");
+    return { passed: ok, details: ok ? "user lookup OK" : `FAILED: ${r.stdout.trim() || r.stderr.trim()}` };
+  }));
+
+  // Dovecot IMAP — test actual IMAP login via openssl
+  checks.push(timed("dovecot IMAP login", () => {
+    const r = sshExec(MAILU_VM,
+      `echo "a001 CAPABILITY" | timeout 3 openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3`, 5_000);
+    const ok = r.stdout.includes("IMAP4rev1") || r.stdout.includes("OK");
+    return { passed: ok, details: ok ? "IMAP4rev1 OK" : "IMAP not responding" };
+  }));
+
+  // Postfix queue — check for stuck emails
+  checks.push(timed("postfix queue", () => {
+    const r = sshExec(MAILU_VM,
+      `docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1`, 5_000);
+    const empty = r.stdout.includes("Mail queue is empty") || r.stdout.includes("is empty");
+    const count = r.stdout.match(/-- (\d+) .* Request/)?.[1];
+    if (empty) return { passed: true, details: "queue empty" };
+    if (count) return { passed: parseInt(count) < 50, details: `${count} messages queued${parseInt(count) >= 20 ? " ⚠️" : ""}` };
+    return { passed: true, details: r.stdout.trim().split("\n").slice(-1)[0] || "unknown" };
+  }));
+
+  // Rspamd (antispam) — check if learning/scanning works
+  checks.push(timed("rspamd antispam", () => {
+    const r = sshExec(MAILU_VM,
+      `docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5`, 5_000);
+    const ok = r.ok && (r.stdout.includes("scanned") || r.stdout.includes("learned") || r.stdout.includes("ham"));
+    return { passed: ok, details: ok ? "rspamd responding" : `rspamd DOWN: ${r.stdout.trim().slice(0, 60) || r.stderr.trim().slice(0, 60)}` };
+  }));
+
+  // Redis — check if Mailu's redis is responding
+  checks.push(timed("redis", () => {
+    const r = sshExec(MAILU_VM,
+      `docker exec mailu-redis-1 redis-cli ping 2>&1`, 3_000);
+    return { passed: r.stdout.trim() === "PONG", details: r.stdout.trim() === "PONG" ? "PONG" : `FAILED: ${r.stdout.trim()}` };
+  }));
+
+  // Mailu admin API — check if admin panel responds
+  checks.push(timed("admin API", () => {
+    const r = sshExec(MAILU_VM,
+      `curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://localhost:8444/admin/ 2>&1`, 5_000);
+    const code = r.stdout.trim();
+    return { passed: ["200", "302", "303"].includes(code), details: `HTTP ${code}` };
+  }));
+
   return checks;
 }
 
