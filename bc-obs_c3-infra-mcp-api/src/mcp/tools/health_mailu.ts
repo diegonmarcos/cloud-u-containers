@@ -42,7 +42,7 @@ async function timedAsync(name: string, fn: () => Promise<{ passed: boolean; det
   catch (err: unknown) { return { name, passed: false, details: "", error: err instanceof Error ? err.message : String(err), durationMs: Date.now() - start }; }
 }
 
-function ssh(cmd: string, timeout = 8_000) { return sshExec(MAILU_VM, cmd, timeout); }
+function ssh(cmd: string, timeout = 8_000) { return sshExec(MAILU_VM, cmd, timeout, true); }
 function getResendApiKey(): string | null { return process.env.RESEND_API_KEY || null; }
 
 function dnsLookup(type: string, name: string): string {
@@ -177,7 +177,7 @@ curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:844
 echo ""
 `.trim();
 
-  const r = sshExec(MAILU_VM, script, 15_000);
+  const r = sshExec(MAILU_VM, script, 15_000, true);
   const output = r.stdout;
 
   function section(name: string): string {
@@ -492,35 +492,32 @@ export function registerHealthMailuTools(server: McpServer): void {
   server.tool("mailu_full", "Full 6-phase diagnostic: pre-flight → containers → network → DNS → internals → e2e delivery", {},
     async () => safeTool(() => {
       clearRemoteCache();
+      const t0 = Date.now();
+      const perf = (label: string) => `[${((Date.now() - t0) / 1000).toFixed(1)}s] ${label}`;
       const sections: string[] = [];
 
-      // Phase 1: Pre-flight (gates everything else)
       const pf = preflight();
-      sections.push(formatChecks("1. PRE-FLIGHT", pf));
+      sections.push(formatChecks(perf("1. PRE-FLIGHT"), pf));
 
       const sshOk = _remoteCache !== null;
       if (!sshOk) {
-        sections.push("", "⚠️ SSH to oci-mail FAILED — skipping phases 2, 3 (local), 5");
-        sections.push("", formatChecks("2. CONTAINERS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
+        sections.push("", "⚠️ SSH to oci-mail FAILED — skipping container/internal checks");
+        sections.push("", formatChecks(perf("2. CONTAINERS"), [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       } else {
-        sections.push("", formatChecks("2. CONTAINERS", containerHealth()));
+        sections.push("", formatChecks(perf("2. CONTAINERS"), containerHealth()));
       }
 
-      // Phase 3: Network (external checks work without SSH)
-      sections.push("", formatChecks("3. NETWORK", networkChecks()));
+      sections.push("", formatChecks(perf("3. NETWORK"), networkChecks()));
+      sections.push("", formatChecks(perf("4. DNS AUTH"), dnsAuth()));
 
-      // Phase 4: DNS (no SSH needed)
-      sections.push("", formatChecks("4. DNS AUTH", dnsAuth()));
-
-      // Phase 5: Mail internals (needs SSH data)
       if (sshOk) {
-        sections.push("", formatChecks("5. MAIL INTERNALS", mailInternals()));
+        sections.push("", formatChecks(perf("5. MAIL INTERNALS"), mailInternals()));
       } else {
-        sections.push("", formatChecks("5. MAIL INTERNALS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
+        sections.push("", formatChecks(perf("5. MAIL INTERNALS"), [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       }
 
-      // Phase 6: E2E delivery (Resend works without SSH, IMAP check needs SSH)
-      sections.push("", formatChecks("6. E2E DELIVERY", e2eDelivery()));
+      sections.push("", formatChecks(perf("6. E2E DELIVERY"), e2eDelivery()));
+      sections.push("", `Total: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 
       return sections.join("\n");
     }),
