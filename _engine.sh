@@ -216,9 +216,14 @@ step_build() {
             for f in "$CLOUD_DATA_DIR"/*.json; do
                 [ -f "$f" ] || continue
                 BASENAME=$(basename "$f")
-                cp "$f" "$SRC_DIR/$BASENAME"
-                git -C "$SERVICE_DIR/../.." add -f "$(realpath --relative-to="$SERVICE_DIR/../.." "$SRC_DIR/$BASENAME")" 2>/dev/null || true
-                CLOUD_DATA_STAGED="$CLOUD_DATA_STAGED $SRC_DIR/$BASENAME"
+                TARGET="$SRC_DIR/$BASENAME"
+                # Skip files already committed in src/ — don't overwrite with submodule copy
+                if git -C "$SERVICE_DIR/../.." ls-files --error-unmatch "$(realpath --relative-to="$SERVICE_DIR/../.." "$TARGET")" >/dev/null 2>&1; then
+                    continue
+                fi
+                cp "$f" "$TARGET"
+                git -C "$SERVICE_DIR/../.." add -f "$(realpath --relative-to="$SERVICE_DIR/../.." "$TARGET")" 2>/dev/null || true
+                CLOUD_DATA_STAGED="$CLOUD_DATA_STAGED $TARGET"
             done
             log "Staged cloud-data/*.json into src/ for nix build"
         fi
