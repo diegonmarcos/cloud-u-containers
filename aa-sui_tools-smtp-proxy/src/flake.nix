@@ -28,13 +28,12 @@
           build: .
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "${toString config.port}:8080"
+          network_mode: host
           environment:
-            - SMTP_HOST=mailu.app
+            - SMTP_HOST=localhost
             - SMTP_PORT=25
             - API_KEY=stalwart-proxy-key-2025
-            - LISTEN_PORT=8080
+            - LISTEN_PORT=${toString config.port}
 
     '';
 
