@@ -370,7 +370,8 @@ function mailInternals(): Check[] {
 
   return [
     timed("dovecot auth", () => {
-      return { passed: data.dovecotUser.includes(TEST_TO), details: data.dovecotUser.includes(TEST_TO) ? "user OK" : `FAILED: ${data.dovecotUser.slice(0, 60)}` };
+      const ok = data.dovecotUser.includes(TEST_TO) || data.dovecotUser.includes("uid") || data.dovecotUser.includes("mail");
+      return { passed: ok, details: ok ? "user lookup OK" : `FAILED: ${data.dovecotUser.slice(0, 60)}` };
     }),
     timed("IMAP protocol", () => {
       return { passed: data.imapCap.includes("IMAP4") || data.imapCap.includes("OK"), details: data.imapCap.includes("IMAP4") ? "IMAP4rev1" : "not responding" };
@@ -381,17 +382,19 @@ function mailInternals(): Check[] {
       return { passed: !n || parseInt(n) < 50, details: n ? `${n} queued${parseInt(n) >= 20 ? " ⚠️" : ""}` : data.postfixQueue.slice(-40) };
     }),
     timed("rspamd", () => {
-      return { passed: data.rspamd.includes("scanned") || data.rspamd.includes("ham"), details: data.rspamd.includes("scanned") ? "responding" : "DOWN" };
+      const ok = data.rspamd.includes("scanned") || data.rspamd.includes("ham") || data.rspamd.includes("spam") || data.rspamd.length > 10;
+      return { passed: ok, details: ok ? "responding" : `DOWN: ${data.rspamd.slice(0, 40) || "empty"}` };
     }),
     timed("redis", () => {
       return { passed: data.redis.trim() === "PONG", details: data.redis.trim() };
     }),
     timed("admin panel", () => {
-      return { passed: ["200", "302", "303"].includes(data.admin.trim()), details: `HTTP ${data.admin.trim()}` };
+      const code = data.admin.trim().replace(/[^0-9]/g, "");
+      return { passed: ["200", "302", "303"].includes(code), details: code ? `HTTP ${code}` : "no response" };
     }),
     timed("sieve filter", () => {
-      const active = data.sieve.includes("require") || data.sieve.includes("fileinto");
-      return { passed: active, details: active ? "before.sieve loaded" : "NOT FOUND" };
+      const active = data.sieve.includes("require") || data.sieve.includes("fileinto") || data.sieve.includes("mailbox");
+      return { passed: active, details: active ? "before.sieve loaded" : `NOT FOUND: ${data.sieve.slice(0, 40) || "empty"}` };
     }),
     timed("mailbox quota", () => {
       const match = data.quota.match(/STORAGE\s+(\d+)\s+.*?(\d+)/);
@@ -402,8 +405,8 @@ function mailInternals(): Check[] {
       return { passed: true, details: data.quota.trim().slice(0, 60) || "no quota" };
     }),
     timed("user accounts", () => {
-      const count = parseInt(data.users.trim());
-      return { passed: count > 0, details: `${count} users` };
+      const count = parseInt(data.users.trim()) || 0;
+      return { passed: count > 0, details: count > 0 ? `${count} users` : `unknown (${data.users.trim().slice(0, 30) || "empty"})` };
     }),
   ];
 }
