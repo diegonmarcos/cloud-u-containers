@@ -402,7 +402,7 @@
         cp ${./overrides/postfix/postfix.cf} $out/overrides/postfix/postfix.cf
         cat > $out/admin-resolv.conf <<'RESOLV'
 nameserver 1.1.1.1
-nameserver 10.0.0.1
+nameserver 8.8.8.8
 RESOLV
       '';
     in {
