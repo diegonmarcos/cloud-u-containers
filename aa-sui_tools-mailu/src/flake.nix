@@ -44,28 +44,44 @@
       # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_tools-mailu/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        # resolver removed — host networking uses system DNS (systemd-resolved)
+        resolver:
+          image: ghcr.io/mailu/unbound:2024.06
+          env_file: mailu.env
+          restart: always
+          healthcheck:
+            test: ["CMD", "dig", "+short", "@127.0.0.1", "google.com"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
 
         front:
           image: ghcr.io/mailu/nginx:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
+          ports:
+            - "10.0.0.3:8444:443"
+            - "0.0.0.0:25:25"
+            - "0.0.0.0:465:465"
+            - "0.0.0.0:587:587"
+            - "0.0.0.0:993:993"
           volumes:
             - "./certs:/certs"
             - "./overrides/nginx:/overrides:ro"
+          depends_on:
+            resolver:
+              condition: service_healthy
 
         admin:
           image: ghcr.io/mailu/admin:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
-          environment:
-            - SKIP_DNSSEC_CHECK=1
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
           depends_on:
+            resolver:
+              condition: service_healthy
             redis:
               condition: service_started
 
@@ -73,11 +89,12 @@
           image: ghcr.io/mailu/dovecot:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
           volumes:
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
           depends_on:
+            resolver:
+              condition: service_healthy
             front:
               condition: service_started
 
@@ -85,11 +102,12 @@
           image: ghcr.io/mailu/postfix:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
           volumes:
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
           depends_on:
+            resolver:
+              condition: service_healthy
             front:
               condition: service_started
 
@@ -97,18 +115,18 @@
           image: ghcr.io/mailu/rspamd:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
           volumes:
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
           depends_on:
+            resolver:
+              condition: service_healthy
             front:
               condition: service_started
 
         redis:
           image: redis:7-bookworm
           restart: always
-          network_mode: host
           volumes:
             - "./redis:/data"
 
@@ -116,13 +134,12 @@
           image: ghcr.io/mailu/webmail:2024.06
           env_file: mailu.env
           restart: always
-          network_mode: host
-          environment:
-            - HTTP_PORT=8380
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
           depends_on:
+            resolver:
+              condition: service_healthy
             front:
               condition: service_started
             imap:
@@ -137,18 +154,7 @@
       POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
-      SUBNET=127.0.0.0/8
-
-      # Host networking — all services on localhost (no Docker DNS)
-      FRONT_ADDRESS=localhost
-      ADMIN_ADDRESS=localhost
-      IMAP_ADDRESS=localhost
-      SMTP_ADDRESS=localhost
-      ANTISPAM_ADDRESS=localhost
-      WEBMAIL_ADDRESS=localhost
-      WEBMAIL_PORT=8380
-      REDIS_ADDRESS=localhost
-      REAL_IP_FROM=127.0.0.0/8,10.0.0.0/24
+      SUBNET=192.168.203.0/24
 
       WEBMAIL=roundcube
       WEB_ADMIN=/admin
@@ -169,8 +175,6 @@
       ANTIVIRUS=none
       ANTISPAM=rspamd
       ADMIN=true
-      SKIP_DNSSEC_CHECK=true
-      CREDENTIAL_ROUNDS=12
       WEBDAV=none
       FETCHMAIL=false
 
