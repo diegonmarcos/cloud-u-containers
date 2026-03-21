@@ -10,7 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
 // ── Tool registrations ──
-import { registerHealthMailuTools } from "./tools/health_mailu.js";
+import { registerHealthMailTools } from "./tools/health_mail.js";
 import { registerInventoryTools } from "./tools/inventory.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
@@ -28,7 +28,7 @@ const SESSION_ID = "c3-infra-mcp-session";
 function createMcpServer(): McpServer {
   const server = new McpServer({ name: "cloud-infra", version: "3.2.0" });
 
-  registerHealthMailuTools(server);
+  registerHealthMailTools(server);
   registerInventoryTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
