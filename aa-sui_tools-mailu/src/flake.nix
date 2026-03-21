@@ -135,6 +135,16 @@
       SECRET_KEY=''\${SECRET_KEY}
       SUBNET=127.0.0.0/8
 
+      # Host networking — all services on localhost (no Docker DNS)
+      FRONT_ADDRESS=localhost
+      ADMIN_ADDRESS=localhost
+      IMAP_ADDRESS=localhost
+      SMTP_ADDRESS=localhost
+      ANTISPAM_ADDRESS=localhost
+      WEBMAIL_ADDRESS=localhost
+      REDIS_ADDRESS=localhost
+      REAL_IP_FROM=127.0.0.0/8,10.0.0.0/24
+
       WEBMAIL=roundcube
       WEB_ADMIN=/admin
       WEB_WEBMAIL=/webmail
@@ -154,6 +164,7 @@
       ANTIVIRUS=none
       ANTISPAM=rspamd
       ADMIN=true
+      SKIP_DNSSEC_CHECK=true
       WEBDAV=none
       FETCHMAIL=false
 
