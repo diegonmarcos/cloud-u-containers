@@ -218,11 +218,11 @@
               for domain in $DOMAINS; do
                 RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
                 if [ -z "$RESULT" ]; then
-                  FAILED="''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
+                  FAILED="''''${FAILED}  - $domain -> NO RECORDS (Cloudflare 1.1.1.1)\n"
                 fi
               done
               if [ -n "$FAILED" ]; then
-                MSG=$(echo -e "DNS resolution failures:\n''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
+                MSG=$(echo -e "DNS resolution failures:\n''''${FAILED}\nAction:\n  dig <domain> @1.1.1.1\n  dig <domain> @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
                 curl -s -X POST "$NTFY_URL/infra_dns" \
                   -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
                   -H "Title: DNS Resolution FAILED" \
@@ -351,19 +351,19 @@
               CONTAINERS=$($SSH ubuntu@10.0.0.3 "docker ps --format '{{.Names}}\t{{.Status}}' | grep mailu" 2>&1)
               UNHEALTHY=$(echo "$CONTAINERS" | grep -v healthy | grep -v "^$" || true)
               if [ -n "$UNHEALTHY" ]; then
-                FAILED="${FAILED}Unhealthy containers:\n$UNHEALTHY\n\n"
+                FAILED="''${FAILED}Unhealthy containers:\n$UNHEALTHY\n\n"
               fi
 
               # Check smtp-proxy
               PROXY=$($SSH ubuntu@10.0.0.3 "docker ps --format '{{.Names}}\t{{.Status}}' | grep smtp-proxy" 2>&1)
               if ! echo "$PROXY" | grep -q "Up"; then
-                FAILED="${FAILED}smtp-proxy NOT running\n\n"
+                FAILED="''${FAILED}smtp-proxy NOT running\n\n"
               fi
 
               # Check TLS ports via Caddy
               for port in 993 465 587; do
                 if ! echo Q | timeout 5 openssl s_client -connect mail.diegonmarcos.com:$port 2>&1 | grep -q CONNECTED; then
-                  FAILED="${FAILED}TLS port $port UNREACHABLE\n"
+                  FAILED="''${FAILED}TLS port $port UNREACHABLE\n"
                 fi
               done
 
@@ -372,7 +372,7 @@
                 domain=''${record%:*}
                 expect=''${record#*:}
                 if ! dig +short TXT "$domain" 2>/dev/null | grep -q "$expect"; then
-                  FAILED="${FAILED}DNS: $domain missing $expect\n"
+                  FAILED="''${FAILED}DNS: $domain missing $expect\n"
                 fi
               done
 
