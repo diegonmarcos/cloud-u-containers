@@ -1,0 +1,38 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  stalwart:
+    image: stalwartlabs/mail-server:latest
+    container_name: stalwart
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - ./data:/opt/stalwart/data
+      - ./config.toml:/opt/stalwart/etc/config.toml:ro
+      - ./dkim:/opt/stalwart/dkim:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          pids: 256
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
