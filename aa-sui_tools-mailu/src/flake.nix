@@ -143,7 +143,7 @@
       POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
-      SUBNET=127.0.0.0/8
+      SUBNET=127.0.0.0/8,10.0.0.0/24
 
       # Host networking — all services on localhost
       FRONT_ADDRESS=localhost
