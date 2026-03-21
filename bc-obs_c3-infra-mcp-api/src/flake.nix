@@ -40,6 +40,7 @@
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
+            - ./cloud-data-topology.json:/app/cloud-data-topology.json:ro
             - c3-repos:/app/repos
           env_file:
             - .secrets
@@ -47,6 +48,7 @@
             - PORT=8080
             - NODE_ENV=production
             - GIT_BASE=/app/repos
+            - CONFIG_JSON_PATH=/app/cloud-data-topology.json
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
             - MM_URL=${config.mattermost_url}
             - AUTHELIA_OIDC_CLIENT_ID=c3-infra-mcp-api
