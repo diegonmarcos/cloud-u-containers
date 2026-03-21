@@ -173,9 +173,9 @@ docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -
 echo "===smtp25==="
 echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
-echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3
+echo QUIT | timeout 3 openssl s_client -connect localhost:587 2>&1 | head -3
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:8444/webmail 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://${MAILU_WG_IP}:8444/webmail 2>&1
 echo ""
 `.trim();
 
@@ -272,20 +272,32 @@ function containerHealth(): Check[] {
 function networkChecks(): Check[] {
   const checks: Check[] = [];
 
-  // TLS ports with cert expiry check
-  for (const [port, proto] of [["993", ""], ["465", ""], ["587", "-starttls smtp"]] as const) {
-    checks.push(timed(`TLS :${port}`, () => {
-      const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client ${proto} -connect ${MAILU_DOMAIN}:${port} 2>&1`]);
-      if (!r.stdout.includes("CONNECTED")) return { passed: false, details: "unreachable" };
-      // Extract cert expiry
-      const expiry = r.stdout.match(/Not After\s*:\s*(.+)/)?.[1]?.trim();
-      if (expiry) {
-        const days = Math.floor((new Date(expiry).getTime() - Date.now()) / 86400000);
-        return { passed: days > 7, details: `TLS OK, expires in ${days}d${days < 14 ? " ⚠️" : ""}` };
-      }
-      return { passed: true, details: "TLS OK" };
-    }));
-  }
+  // TLS ports — run ALL 3 in parallel via single bash call
+  checks.push(timed("TLS :993/:465/:587", () => {
+    const r = exec("bash", ["-c", `
+      r993=$(echo Q | timeout 3 openssl s_client -connect ${MAILU_DOMAIN}:993 2>&1) &
+      r465=$(echo Q | timeout 3 openssl s_client -connect ${MAILU_DOMAIN}:465 2>&1) &
+      r587=$(echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAILU_DOMAIN}:587 2>&1) &
+      wait
+      echo "993:$(echo "$r993" | grep -c CONNECTED)"
+      echo "465:$(echo "$r465" | grep -c CONNECTED)"
+      echo "587:$(echo "$r587" | grep -c CONNECTED)"
+      echo "$r993" | grep "Not After" | head -1
+    `], { timeout: 8_000 });
+    const out = r.stdout;
+    const p993 = out.includes("993:1");
+    const p465 = out.includes("465:1");
+    const p587 = out.includes("587:1");
+    const all = p993 && p465 && p587;
+    const expiry = out.match(/Not After\s*:\s*(.+)/)?.[1]?.trim();
+    let certInfo = "";
+    if (expiry) {
+      const days = Math.floor((new Date(expiry).getTime() - Date.now()) / 86400000);
+      certInfo = `, cert ${days}d${days < 14 ? " ⚠️" : ""}`;
+    }
+    const status = [p993 ? "993✓" : "993✗", p465 ? "465✓" : "465✗", p587 ? "587✓" : "587✗"].join(" ");
+    return { passed: all, details: `${status}${certInfo}` };
+  }));
 
   // Local SMTP (from cached data)
   const data = _remoteCache;
@@ -300,7 +312,7 @@ function networkChecks(): Check[] {
 
   // HTTP endpoints
   checks.push(timed("Webmail HTTPS", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAILU_DOMAIN}/webmail`]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `https://${MAILU_DOMAIN}/webmail`]);
     return { passed: ["200", "301", "302"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
   }));
   checks.push(timed("Webmail internal", () => {
@@ -308,11 +320,11 @@ function networkChecks(): Check[] {
     return { passed: data.webmailInternal.trim() === "200", details: `HTTP ${data.webmailInternal.trim()}` };
   }));
   checks.push(timed("smtp-proxy", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://smtp-proxy.diegonmarcos.com/"]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://smtp-proxy.diegonmarcos.com/"]);
     return { passed: r.stdout.trim() !== "000" && r.stdout.trim() !== "502", details: `HTTP ${r.stdout.trim()}` };
   }));
   checks.push(timed("mailu-mcp MCP", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
     return { passed: ["400", "405", "406"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()} (alive)` };
   }));
 
