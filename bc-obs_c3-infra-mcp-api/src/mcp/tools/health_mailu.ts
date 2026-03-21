@@ -137,11 +137,9 @@ let _remoteCache: RemoteData | null = null;
 function getRemoteData(): RemoteData {
   if (_remoteCache) return _remoteCache;
 
+  // Each command wrapped in timeout 3 to prevent one hanging command from blocking all
+  const T = 3; // per-command timeout
   const script = `
-echo "===containers==="
-docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
-echo "===restarts==="
-docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(docker ps -aq --filter name=mailu --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===disk==="
 df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
 echo "===memory==="
@@ -150,32 +148,36 @@ echo ""
 echo "===load==="
 cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}'
 echo "===dockerVersion==="
-docker info --format '{{.ServerVersion}}' 2>&1 | head -1
+timeout ${T} docker info --format '{{.ServerVersion}}' 2>&1 | head -1
+echo "===containers==="
+timeout ${T} docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
+echo "===restarts==="
+timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=mailu --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===dovecotUser==="
-docker exec mailu-imap-1 doveadm user ${TEST_TO} 2>&1 | head -3
+timeout ${T} docker exec mailu-imap-1 doveadm user ${TEST_TO} 2>&1 | head -3
 echo "===imapCap==="
-echo "a001 CAPABILITY" | timeout 3 openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
+echo "a001 CAPABILITY" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===postfixQueue==="
-docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1
+timeout ${T} docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1
 echo "===rspamd==="
-docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5
+timeout ${T} docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5
 echo "===redis==="
-docker exec mailu-redis-1 redis-cli ping 2>&1
+timeout ${T} docker exec mailu-redis-1 redis-cli ping 2>&1
 echo "===admin==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://localhost:8444/admin/ 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://localhost:8444/admin/ 2>&1
 echo ""
 echo "===sieve==="
-docker exec mailu-imap-1 cat /overrides/before.sieve 2>&1 | head -1
+timeout ${T} docker exec mailu-imap-1 cat /overrides/before.sieve 2>&1 | head -1
 echo "===quota==="
-docker exec mailu-imap-1 doveadm quota get -u ${TEST_TO} 2>&1 | head -3
+timeout ${T} docker exec mailu-imap-1 doveadm quota get -u ${TEST_TO} 2>&1 | head -3
 echo "===users==="
-docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -c '@' || echo 0
+timeout ${T} docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -c '@' || echo 0
 echo "===smtp25==="
-echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1
+echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
-echo QUIT | timeout 3 openssl s_client -connect localhost:587 2>&1 | head -3
+echo QUIT | timeout ${T} openssl s_client -connect localhost:587 2>&1 | head -3
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://${MAILU_WG_IP}:8444/webmail 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAILU_WG_IP}:8444/webmail 2>&1
 echo ""
 `.trim();
 
@@ -426,19 +428,22 @@ function e2eDelivery(): Check[] {
     return { passed: true, details: "sent (IMAP is truth)" };
   }));
 
+  // IMAP check — skip if SSH failed in preflight
+  const sshOk = _remoteCache !== null;
   checks.push(timed("IMAP arrival", () => {
-    for (let i = 0; i < 4; i++) {
-      exec("bash", ["-c", "sleep 3"]);
-      const r = ssh(`docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -5`, 8_000);
-      if (r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("error")) return { passed: true, details: `found (poll ${i + 1}, ${(i + 1) * 3}s)` };
+    if (!sshOk) return { passed: false, details: "SSH down — cannot check IMAP" };
+    for (let i = 0; i < 3; i++) {
+      exec("bash", ["-c", "sleep 2"]);
+      const r = ssh(`docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -3`, 5_000);
+      if (r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("error")) return { passed: true, details: `found (poll ${i + 1}, ${(i + 1) * 2}s)` };
     }
-    return { passed: false, details: "NOT FOUND after 12s" };
+    return { passed: false, details: "NOT FOUND after 6s" };
   }));
 
   checks.push(timed("smtp-proxy logs", () => {
-    const l = ssh(`docker logs smtp-proxy --since 5m 2>&1 | tail -3`, 5_000);
-    const a = ssh(`docker exec smtp-proxy cat /var/log/nginx/access.log 2>/dev/null | tail -3 || true`, 5_000);
-    const all = l.stdout + l.stderr + a.stdout;
+    if (!sshOk) return { passed: false, details: "SSH down" };
+    const r = ssh(`docker logs smtp-proxy --since 5m 2>&1 | tail -3; docker exec smtp-proxy cat /var/log/nginx/access.log 2>/dev/null | tail -3 || true`, 5_000);
+    const all = r.stdout + r.stderr;
     if (all.includes("502") || all.includes("refused")) return { passed: false, details: `errors: ${all.trim().split("\n").slice(-2).join(" | ")}` };
     if (all.includes("POST") || all.includes("200")) return { passed: true, details: "activity confirmed" };
     return { passed: true, details: "no logs (IMAP is truth)" };
