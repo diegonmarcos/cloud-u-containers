@@ -287,6 +287,14 @@ step_build() {
         fi
     fi
 
+    # Source hash for REMOTE_BUILD — TS/JS changes must trigger Docker rebuild
+    # dist/ only has docker-compose.yml; source goes via rsync. Without this,
+    # the ship hash check sees "unchanged" and skips compose (stale container).
+    if [ -n "$DOCKER_IMAGE" ]; then
+        find "$SRC_DIR" -name '*.ts' -o -name '*.js' -o -name 'Dockerfile' -o -name 'package.json' 2>/dev/null \
+            | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16 > "$DIST_DIR/.src-hash"
+    fi
+
     # Copy extra source files for on-VM builds (e.g. Rust source for rig)
     EXTRA_COPY="$(get_config_array build.extra_copy)"
     if [ -n "$EXTRA_COPY" ]; then
