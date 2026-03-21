@@ -275,8 +275,8 @@ function mailuSendTestResend(): Check[] {
   // Poll Resend delivery status (wait up to 10s for delivery confirmation)
   if (emailId) {
     checks.push(timed("Resend delivery status", () => {
-      const maxAttempts = 5;
-      const delayMs = 2000;
+      const maxAttempts = 3;
+      const delayMs = 1500;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         if (attempt > 0) {
           exec("bash", ["-c", `sleep ${delayMs / 1000}`]);
@@ -339,7 +339,7 @@ function mailuOutboundTest(): Check[] {
     // Test that SMTP accepts a message on the submission port locally
     const r = sshExec(MAILU_VM,
       `echo "EHLO healthcheck" | nc -w5 localhost 587 2>&1 | head -5`,
-      { timeout: 10_000 });
+      10_000);
     const hasEhlo = r.stdout.includes("250") || r.stdout.includes("220");
     return { passed: hasEhlo, details: hasEhlo ? "EHLO accepted" : r.stdout.trim().split("\n")[0] || "no response" };
   }));
@@ -422,10 +422,7 @@ export function registerHealthMailuTools(server: McpServer): void {
         "",
         formatChecks("3. INBOUND SEND TEST (Resend → Mailu)", mailuSendTestResend()),
         "",
-        `4. CONTAINER PROFILES\n${"─".repeat(60)}`,
-        JSON.stringify(mailuProfile(), null, 2),
-        "",
-        `5. CF WORKER LOGS (email-forwarder, last 6h)\n${"─".repeat(60)}`,
+        `4. CF WORKER LOGS (email-forwarder, last 6h)\n${"─".repeat(60)}`,
         JSON.stringify(fetchWorkerLogs(), null, 2),
       ];
       return sections.join("\n");
