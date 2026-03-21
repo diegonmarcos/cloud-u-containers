@@ -69,36 +69,149 @@ function formatChecks(title: string, checks: Check[]): string {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function preflight(): Check[] {
-  return [
-    timed("WG tunnel", () => {
-      const r = exec("bash", ["-c", `timeout 3 bash -c 'echo > /dev/tcp/${MAILU_WG_IP}/22' 2>&1`]);
-      return { passed: r.ok, details: r.ok ? `${MAILU_WG_IP}:22 OK` : "WG DOWN" };
-    }),
-    timed("SSH", () => {
-      const r = ssh("echo OK", 8_000);
-      return { passed: r.ok && r.stdout.includes("OK"), details: r.ok ? "OK" : `FAILED: ${r.stderr.trim().split("\n")[0]}` };
-    }),
-    timed("Docker daemon", () => {
-      const r = ssh("docker info --format '{{.ServerVersion}}' 2>&1 | head -1", 5_000);
-      return { passed: r.ok && !r.stdout.includes("error"), details: `Docker ${r.stdout.trim()}` };
-    }),
-    timed("Disk space", () => {
-      const r = ssh("df / --output=pcent | tail -1 | tr -d ' %'", 3_000);
-      const pct = parseInt(r.stdout.trim());
-      return { passed: !isNaN(pct) && pct < 90, details: `${pct}% used${pct >= 80 ? " ⚠️" : ""}` };
-    }),
-    timed("Memory", () => {
-      const r = ssh("free -m | awk '/Mem:/{printf \"%d/%dMB (%.0f%%)\", $3, $2, $3/$2*100}'", 3_000);
-      const pct = parseInt(r.stdout.match(/\((\d+)%\)/)?.[1] || "0");
-      return { passed: pct < 95, details: r.stdout.trim() + (pct >= 85 ? " ⚠️" : "") };
-    }),
-    timed("Load", () => {
-      const r = ssh("cat /proc/loadavg | awk '{print $1, $2, $3}'", 3_000);
-      const l = parseFloat(r.stdout.split(" ")[0]);
-      return { passed: !isNaN(l) && l < 4, details: `load: ${r.stdout.trim()}${l >= 2 ? " ⚠️" : ""}` };
-    }),
-  ];
+  const checks: Check[] = [];
+
+  // WG tunnel — direct TCP probe (no SSH)
+  checks.push(timed("WG tunnel", () => {
+    const r = exec("bash", ["-c", `timeout 3 bash -c 'echo > /dev/tcp/${MAILU_WG_IP}/22' 2>&1`]);
+    return { passed: r.ok, details: r.ok ? `${MAILU_WG_IP}:22 OK` : "WG DOWN" };
+  }));
+
+  // SSH + batch data collection (single SSH call)
+  checks.push(timed("SSH + data collect", () => {
+    try {
+      const data = getRemoteData();
+      return { passed: data.dockerVersion.length > 0, details: `SSH OK, Docker ${data.dockerVersion}` };
+    } catch {
+      return { passed: false, details: "SSH FAILED" };
+    }
+  }));
+
+  // Parse pre-collected data
+  const data = _remoteCache;
+  if (!data) return checks;
+
+  checks.push(timed("Disk space", () => {
+    const pct = parseInt(data.disk);
+    return { passed: !isNaN(pct) && pct < 90, details: `${pct}% used${pct >= 80 ? " ⚠️" : ""}` };
+  }));
+  checks.push(timed("Memory", () => {
+    const pct = parseInt(data.memory.match(/\((\d+)%\)/)?.[1] || "0");
+    return { passed: pct < 95, details: data.memory + (pct >= 85 ? " ⚠️" : "") };
+  }));
+  checks.push(timed("Load", () => {
+    const l = parseFloat(data.load.split(" ")[0]);
+    return { passed: !isNaN(l) && l < 4, details: `load: ${data.load}${l >= 2 ? " ⚠️" : ""}` };
+  }));
+
+  return checks;
 }
+
+// ── Batched SSH — single SSH call collects ALL remote data ────────────────
+
+interface RemoteData {
+  containers: string;
+  restarts: string;
+  disk: string;
+  memory: string;
+  load: string;
+  dockerVersion: string;
+  dovecotUser: string;
+  imapCap: string;
+  postfixQueue: string;
+  rspamd: string;
+  redis: string;
+  admin: string;
+  sieve: string;
+  quota: string;
+  users: string;
+  smtp25: string;
+  smtp587: string;
+  webmailInternal: string;
+}
+
+let _remoteCache: RemoteData | null = null;
+
+function getRemoteData(): RemoteData {
+  if (_remoteCache) return _remoteCache;
+
+  const script = `
+echo "===containers==="
+docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
+echo "===restarts==="
+docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(docker ps -aq --filter name=mailu --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
+echo "===disk==="
+df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
+echo "===memory==="
+free -m 2>/dev/null | awk '/Mem:/{printf "%d/%dMB (%.0f%%)", $3, $2, $3/$2*100}'
+echo ""
+echo "===load==="
+cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}'
+echo "===dockerVersion==="
+docker info --format '{{.ServerVersion}}' 2>&1 | head -1
+echo "===dovecotUser==="
+docker exec mailu-imap-1 doveadm user ${TEST_TO} 2>&1 | head -3
+echo "===imapCap==="
+echo "a001 CAPABILITY" | timeout 3 openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
+echo "===postfixQueue==="
+docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1
+echo "===rspamd==="
+docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5
+echo "===redis==="
+docker exec mailu-redis-1 redis-cli ping 2>&1
+echo "===admin==="
+curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://localhost:8444/admin/ 2>&1
+echo ""
+echo "===sieve==="
+docker exec mailu-imap-1 cat /overrides/before.sieve 2>&1 | head -1
+echo "===quota==="
+docker exec mailu-imap-1 doveadm quota get -u ${TEST_TO} 2>&1 | head -3
+echo "===users==="
+docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -c '@' || echo 0
+echo "===smtp25==="
+echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1
+echo "===smtp587==="
+echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3
+echo "===webmailInternal==="
+curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:8444/webmail 2>&1
+echo ""
+`.trim();
+
+  const r = sshExec(MAILU_VM, script, 30_000);
+  const output = r.stdout;
+
+  function section(name: string): string {
+    const start = output.indexOf(`===${name}===`);
+    if (start === -1) return "";
+    const afterMarker = start + `===${name}===`.length + 1;
+    const end = output.indexOf("===", afterMarker);
+    return (end === -1 ? output.slice(afterMarker) : output.slice(afterMarker, end)).trim();
+  }
+
+  _remoteCache = {
+    containers: section("containers"),
+    restarts: section("restarts"),
+    disk: section("disk"),
+    memory: section("memory"),
+    load: section("load"),
+    dockerVersion: section("dockerVersion"),
+    dovecotUser: section("dovecotUser"),
+    imapCap: section("imapCap"),
+    postfixQueue: section("postfixQueue"),
+    rspamd: section("rspamd"),
+    redis: section("redis"),
+    admin: section("admin"),
+    sieve: section("sieve"),
+    quota: section("quota"),
+    users: section("users"),
+    smtp25: section("smtp25"),
+    smtp587: section("smtp587"),
+    webmailInternal: section("webmailInternal"),
+  };
+  return _remoteCache;
+}
+
+function clearRemoteCache() { _remoteCache = null; }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PHASE 2: CONTAINERS + restart counts
@@ -106,15 +219,18 @@ function preflight(): Check[] {
 
 function containerHealth(): Check[] {
   const checks: Check[] = [];
-  const { containers, ok } = listContainers(MAILU_VM, true);
-  if (!ok) { checks.push({ name: "Container listing", passed: false, details: "SSH/Docker unreachable", durationMs: 0 }); return checks; }
+  const data = _remoteCache;
+  if (!data || !data.containers) { checks.push({ name: "Container listing", passed: false, details: "no remote data", durationMs: 0 }); return checks; }
 
-  // Container status + restart count (via docker inspect)
-  const restartData = ssh(
-    `docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(docker ps -aq --filter name=mailu --filter name=smtp-proxy) 2>/dev/null | tr -d '/'`, 5_000
-  );
+  // Parse containers from cached data
+  const containers = data.containers.split("\n").filter(Boolean).map((line) => {
+    const [name, status, image, ports] = line.split("\t");
+    return { name: name ?? "", status: status ?? "", image: image ?? "", ports: ports ?? "" };
+  });
+
+  // Parse restart counts
   const restartMap = new Map<string, number>();
-  for (const line of restartData.stdout.trim().split("\n")) {
+  for (const line of data.restarts.split("\n")) {
     const [name, count] = line.split("\t");
     if (name) restartMap.set(name, parseInt(count) || 0);
   }
@@ -168,14 +284,15 @@ function networkChecks(): Check[] {
     }));
   }
 
-  // Local SMTP
+  // Local SMTP (from cached data)
+  const data = _remoteCache;
   checks.push(timed("SMTP :25 relay", () => {
-    const r = ssh(`echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`, 5_000);
-    return { passed: r.stdout.includes("220"), details: r.stdout.trim().split("\n")[0] || "no banner" };
+    if (!data) return { passed: false, details: "no data" };
+    return { passed: data.smtp25.includes("220"), details: data.smtp25.split("\n")[0] || "no banner" };
   }));
   checks.push(timed("SMTP :587 local TLS", () => {
-    const r = ssh(`echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3`, 8_000);
-    return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "not responding" };
+    if (!data) return { passed: false, details: "no data" };
+    return { passed: data.smtp587.includes("CONNECTED"), details: data.smtp587.includes("CONNECTED") ? "TLS OK" : "not responding" };
   }));
 
   // HTTP endpoints
@@ -184,8 +301,8 @@ function networkChecks(): Check[] {
     return { passed: ["200", "301", "302"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
   }));
   checks.push(timed("Webmail internal", () => {
-    const r = ssh(`curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:8444/webmail`);
-    return { passed: r.stdout.trim() === "200", details: `HTTP ${r.stdout.trim()}` };
+    if (!data) return { passed: false, details: "no data" };
+    return { passed: data.webmailInternal.trim() === "200", details: `HTTP ${data.webmailInternal.trim()}` };
   }));
   checks.push(timed("smtp-proxy", () => {
     const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://smtp-proxy.diegonmarcos.com/"]);
@@ -217,63 +334,44 @@ function dnsAuth(): Check[] {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function mailInternals(): Check[] {
+  const data = _remoteCache;
+  if (!data) return [{ name: "internals", passed: false, details: "no remote data", durationMs: 0 }];
+
   return [
-    // Dovecot auth
     timed("dovecot auth", () => {
-      const r = ssh(`docker exec mailu-imap-1 doveadm user ${TEST_TO} 2>&1 | head -3`, 5_000);
-      return { passed: r.ok && r.stdout.includes(TEST_TO), details: r.stdout.includes(TEST_TO) ? "user OK" : `FAILED: ${r.stdout.trim().slice(0, 60)}` };
+      return { passed: data.dovecotUser.includes(TEST_TO), details: data.dovecotUser.includes(TEST_TO) ? "user OK" : `FAILED: ${data.dovecotUser.slice(0, 60)}` };
     }),
-    // IMAP protocol
     timed("IMAP protocol", () => {
-      const r = ssh(`echo "a001 CAPABILITY" | timeout 3 openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3`, 5_000);
-      return { passed: r.stdout.includes("IMAP4rev1") || r.stdout.includes("OK"), details: r.stdout.includes("IMAP4") ? "IMAP4rev1" : "not responding" };
+      return { passed: data.imapCap.includes("IMAP4") || data.imapCap.includes("OK"), details: data.imapCap.includes("IMAP4") ? "IMAP4rev1" : "not responding" };
     }),
-    // Postfix queue
     timed("postfix queue", () => {
-      const r = ssh(`docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1`, 5_000);
-      if (r.stdout.includes("empty")) return { passed: true, details: "empty" };
-      const n = r.stdout.match(/-- (\d+)/)?.[1];
-      return { passed: !n || parseInt(n) < 50, details: n ? `${n} queued${parseInt(n) >= 20 ? " ⚠️" : ""}` : r.stdout.trim().slice(-40) };
+      if (data.postfixQueue.includes("empty")) return { passed: true, details: "empty" };
+      const n = data.postfixQueue.match(/-- (\d+)/)?.[1];
+      return { passed: !n || parseInt(n) < 50, details: n ? `${n} queued${parseInt(n) >= 20 ? " ⚠️" : ""}` : data.postfixQueue.slice(-40) };
     }),
-    // Rspamd
     timed("rspamd", () => {
-      const r = ssh(`docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5`, 5_000);
-      return { passed: r.ok && (r.stdout.includes("scanned") || r.stdout.includes("ham")), details: r.ok ? "responding" : "DOWN" };
+      return { passed: data.rspamd.includes("scanned") || data.rspamd.includes("ham"), details: data.rspamd.includes("scanned") ? "responding" : "DOWN" };
     }),
-    // Redis
     timed("redis", () => {
-      const r = ssh(`docker exec mailu-redis-1 redis-cli ping 2>&1`, 3_000);
-      return { passed: r.stdout.trim() === "PONG", details: r.stdout.trim() };
+      return { passed: data.redis.trim() === "PONG", details: data.redis.trim() };
     }),
-    // Admin panel
     timed("admin panel", () => {
-      const r = ssh(`curl -skL -o /dev/null -w '%{http_code}' --max-time 3 https://localhost:8444/admin/`, 5_000);
-      return { passed: ["200", "302", "303"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
+      return { passed: ["200", "302", "303"].includes(data.admin.trim()), details: `HTTP ${data.admin.trim()}` };
     }),
-    // Sieve filter active
     timed("sieve filter", () => {
-      const r = ssh(`docker exec mailu-imap-1 cat /overrides/before.sieve 2>&1 | head -1`, 3_000);
-      const active = r.stdout.includes("require") || r.stdout.includes("fileinto");
+      const active = data.sieve.includes("require") || data.sieve.includes("fileinto");
       return { passed: active, details: active ? "before.sieve loaded" : "NOT FOUND" };
     }),
-    // Mail quota
     timed("mailbox quota", () => {
-      const r = ssh(`docker exec mailu-imap-1 doveadm quota get -u ${TEST_TO} 2>&1 | head -3`, 5_000);
-      if (r.stdout.includes("STORAGE")) {
-        const match = r.stdout.match(/STORAGE\s+(\d+)\s+.*?(\d+)/);
-        if (match) {
-          const used = parseInt(match[1]);
-          const limit = parseInt(match[2]);
-          const pct = limit > 0 ? Math.round(used / limit * 100) : 0;
-          return { passed: pct < 90, details: `${used}/${limit} KB (${pct}%)${pct >= 80 ? " ⚠️" : ""}` };
-        }
+      const match = data.quota.match(/STORAGE\s+(\d+)\s+.*?(\d+)/);
+      if (match) {
+        const pct = parseInt(match[2]) > 0 ? Math.round(parseInt(match[1]) / parseInt(match[2]) * 100) : 0;
+        return { passed: pct < 90, details: `${match[1]}/${match[2]} KB (${pct}%)${pct >= 80 ? " ⚠️" : ""}` };
       }
-      return { passed: true, details: r.stdout.trim().slice(0, 60) || "no quota set" };
+      return { passed: true, details: data.quota.trim().slice(0, 60) || "no quota" };
     }),
-    // Mailu user count
     timed("user accounts", () => {
-      const r = ssh(`docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -c '@' || echo 0`, 5_000);
-      const count = parseInt(r.stdout.trim());
+      const count = parseInt(data.users.trim());
       return { passed: count > 0, details: `${count} users` };
     }),
   ];
@@ -354,13 +452,16 @@ function safeTool(fn: () => string): { content: [{ type: "text"; text: string }]
 
 export function registerHealthMailuTools(server: McpServer): void {
   server.tool("mailu_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
-    async () => safeTool(() => [
-      formatChecks("PRE-FLIGHT", preflight()), "",
-      formatChecks("CONTAINERS", containerHealth()), "",
-      formatChecks("NETWORK", networkChecks()), "",
-      formatChecks("DNS AUTH", dnsAuth()), "",
-      formatChecks("MAIL INTERNALS", mailInternals()),
-    ].join("\n")),
+    async () => safeTool(() => {
+      clearRemoteCache();
+      return [
+        formatChecks("PRE-FLIGHT", preflight()), "",
+        formatChecks("CONTAINERS", containerHealth()), "",
+        formatChecks("NETWORK", networkChecks()), "",
+        formatChecks("DNS AUTH", dnsAuth()), "",
+        formatChecks("MAIL INTERNALS", mailInternals()),
+      ].join("\n");
+    }),
   );
 
   server.tool("mailu_profile", "Deep profile all Mailu containers", {},
@@ -387,13 +488,16 @@ export function registerHealthMailuTools(server: McpServer): void {
   );
 
   server.tool("mailu_full", "Full 6-phase diagnostic: pre-flight → containers → network → DNS → internals → e2e delivery", {},
-    async () => safeTool(() => [
-      formatChecks("1. PRE-FLIGHT", preflight()), "",
-      formatChecks("2. CONTAINERS", containerHealth()), "",
-      formatChecks("3. NETWORK", networkChecks()), "",
-      formatChecks("4. DNS AUTH", dnsAuth()), "",
-      formatChecks("5. MAIL INTERNALS", mailInternals()), "",
-      formatChecks("6. E2E DELIVERY", e2eDelivery()),
-    ].join("\n")),
+    async () => safeTool(() => {
+      clearRemoteCache(); // fresh data each run
+      return [
+        formatChecks("1. PRE-FLIGHT", preflight()), "",
+        formatChecks("2. CONTAINERS", containerHealth()), "",
+        formatChecks("3. NETWORK", networkChecks()), "",
+        formatChecks("4. DNS AUTH", dnsAuth()), "",
+        formatChecks("5. MAIL INTERNALS", mailInternals()), "",
+        formatChecks("6. E2E DELIVERY", e2eDelivery()),
+      ].join("\n");
+    }),
   );
 }
