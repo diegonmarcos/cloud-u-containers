@@ -137,8 +137,8 @@ let _remoteCache: RemoteData | null = null;
 function getRemoteData(): RemoteData {
   if (_remoteCache) return _remoteCache;
 
-  // Each command wrapped in timeout 3 to prevent one hanging command from blocking all
-  const T = 3; // per-command timeout
+  // Each command wrapped in timeout to prevent one hanging command from blocking all
+  const T = 5; // per-command timeout (docker exec needs 3-5s on 1GB VMs)
   const script = `
 echo "===disk==="
 df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
@@ -182,7 +182,7 @@ echo ""
 `.trim();
 
   log("SSH batch: connecting...");
-  const r = sshExec(MAILU_VM, script, 15_000, true, 3);
+  const r = sshExec(MAILU_VM, script, 25_000, true, 3);
   const output = r.stdout;
 
   function section(name: string): string {
