@@ -534,49 +534,42 @@ export function registerHealthMailuTools(server: McpServer): void {
       const mark = (phase: string) => { marks.push({ phase, ms: Math.round(performance.now() - t0) }); };
       const sections: string[] = [];
 
-      log("Phase 1: PRE-FLIGHT starting...");
-      mark("start");
-      const pf = preflight();
-      mark("1. PRE-FLIGHT");
-      log(`Phase 1: done (${marks[marks.length - 1].ms}ms)`);
-      sections.push(formatChecks("1. PRE-FLIGHT", pf));
+      // Each phase wrapped in try/catch — partial results always returned
+      const runPhase = (name: string, fn: () => string) => {
+        log(`${name} starting...`);
+        try {
+          const result = fn();
+          mark(name);
+          log(`${name}: done (${marks[marks.length - 1].ms}ms)`);
+          sections.push("", result);
+        } catch (e) {
+          mark(name);
+          log(`${name}: FAILED (${e})`);
+          sections.push("", `${name}  [FAILED]\n${"─".repeat(60)}\n  ✗ ${e}`);
+        }
+      };
 
+      mark("start");
+      runPhase("1. PRE-FLIGHT", () => formatChecks("1. PRE-FLIGHT", preflight()));
       const sshOk = _remoteCache !== null;
 
       if (!sshOk) {
-        log("SSH FAILED — skipping phases 2, 5");
         sections.push("", "⚠️ SSH to oci-mail FAILED — skipping container/internal checks");
         sections.push("", formatChecks("2. CONTAINERS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       } else {
-        log("Phase 2: CONTAINERS starting...");
-        sections.push("", formatChecks("2. CONTAINERS", containerHealth()));
-        mark("2. CONTAINERS");
-        log(`Phase 2: done (${marks[marks.length - 1].ms}ms)`);
+        runPhase("2. CONTAINERS", () => formatChecks("2. CONTAINERS", containerHealth()));
       }
 
-      log("Phase 3: NETWORK starting...");
-      sections.push("", formatChecks("3. NETWORK", networkChecks()));
-      mark("3. NETWORK");
-      log(`Phase 3: done (${marks[marks.length - 1].ms}ms)`);
-
-      log("Phase 4: DNS starting...");
-      sections.push("", formatChecks("4. DNS AUTH", dnsAuth()));
-      mark("4. DNS AUTH");
-      log(`Phase 4: done (${marks[marks.length - 1].ms}ms)`);
+      runPhase("3. NETWORK", () => formatChecks("3. NETWORK", networkChecks()));
+      runPhase("4. DNS AUTH", () => formatChecks("4. DNS AUTH", dnsAuth()));
 
       if (sshOk) {
-        log("Phase 5: MAIL INTERNALS starting...");
-        sections.push("", formatChecks("5. MAIL INTERNALS", mailInternals()));
-        mark("5. MAIL INTERNALS");
-        log(`Phase 5: done (${marks[marks.length - 1].ms}ms)`);
+        runPhase("5. MAIL INTERNALS", () => formatChecks("5. MAIL INTERNALS", mailInternals()));
       } else {
         sections.push("", formatChecks("5. MAIL INTERNALS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       }
 
-      log("Phase 6: E2E DELIVERY starting...");
-      sections.push("", formatChecks("6. E2E DELIVERY", e2eDelivery()));
-      mark("6. E2E DELIVERY");
-      log(`Phase 6: done (${marks[marks.length - 1].ms}ms)`);
+      runPhase("6. E2E DELIVERY", () => formatChecks("6. E2E DELIVERY", e2eDelivery()));
 
       // Performance summary
       const totalMs = Math.round(performance.now() - t0);
