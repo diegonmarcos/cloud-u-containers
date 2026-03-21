@@ -125,11 +125,10 @@
           env_file: mailu.env
           restart: always
           network_mode: host
-          environment:
-            - HTTP_PORT=8380
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
+            - "./overrides/roundcube/nginx-webmail.conf:/conf/nginx-webmail.conf:ro"
           depends_on:
             front:
               condition: service_started
