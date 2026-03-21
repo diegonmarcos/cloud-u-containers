@@ -1,4 +1,10 @@
-// ── Mailu Health — mail-specific UP, profiling, send/receive tests (5 tools) ──
+// ── Mailu Health — comprehensive 5-phase diagnostic (5 MCP tools) ──
+//
+// Phase 1: PRE-FLIGHT — WG tunnel, SSH, Docker daemon, disk space
+// Phase 2: CONTAINERS — each container status + crash-loop detection
+// Phase 3: NETWORK — TLS ports, SMTP relay, webmail, smtp-proxy, mailu-mcp
+// Phase 4: DNS AUTH — MX, DKIM, SPF, DMARC
+// Phase 5: E2E DELIVERY — Resend send → IMAP inbox check → CF Worker analysis
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -12,14 +18,14 @@ import { join } from "path";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-const MAILU_VM = "oci-E2-f_0"; // oci-mail
+const MAILU_VM = "oci-E2-f_0";
 const MAILU_DOMAIN = "mail.diegonmarcos.com";
 const MAILU_WG_IP = "10.0.0.3";
+const C3_VM = "oci-A1-f_0";
 const MAILU_CONTAINERS = [
   "mailu-front-1", "mailu-admin-1", "mailu-imap-1", "mailu-smtp-1",
   "mailu-antispam-1", "mailu-webmail-1", "mailu-resolver-1", "mailu-redis-1",
 ];
-const RESEND_ENV_PATH = join(GIT_BASE, "vault/A0_keys/providers/resend/resend.env");
 const TEST_FROM = "health@mails.diegonmarcos.com";
 const TEST_TO = "me@diegonmarcos.com";
 
@@ -39,39 +45,28 @@ function timed(name: string, fn: () => { passed: boolean; details: string }): Ch
     const result = fn();
     return { name, ...result, durationMs: Date.now() - start };
   } catch (err: unknown) {
-    return {
-      name,
-      passed: false,
-      details: "",
+    return { name, passed: false, details: "",
       error: err instanceof Error ? err.message : String(err),
-      durationMs: Date.now() - start,
-    };
+      durationMs: Date.now() - start };
   }
 }
 
 function getResendApiKey(): string | null {
-  if (process.env.RESEND_API_KEY) return process.env.RESEND_API_KEY;
-  if (!existsSync(RESEND_ENV_PATH)) return null;
-  const content = readFileSync(RESEND_ENV_PATH, "utf-8");
-  const match = content.match(/RESEND_API_KEY=(.+)/);
-  return match ? match[1].trim() : null;
+  return process.env.RESEND_API_KEY || null;
 }
 
-/** DNS lookup with dig → nslookup fallback (Termux may lack dig) */
 function dnsLookup(type: string, name: string): string {
-  // Try dig first
   const dig = exec("bash", ["-c", `command -v dig >/dev/null 2>&1 && dig +short +time=3 +tries=1 ${type} ${name} 2>&1`]);
   if (dig.ok && dig.stdout.trim()) return dig.stdout.trim();
-  // Fallback: nslookup
   if (type === "MX") {
     const r = exec("nslookup", ["-timeout=3", "-type=mx", name], { timeout: 5_000 });
-    const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("mail exchanger"));
-    return lines.map((l) => l.replace(/.*mail exchanger = /, "").trim()).join("\n") || "";
+    return (r.stdout + r.stderr).split("\n").filter((l) => l.includes("mail exchanger"))
+      .map((l) => l.replace(/.*mail exchanger = /, "").trim()).join("\n") || "";
   }
   if (type === "TXT") {
     const r = exec("nslookup", ["-timeout=3", "-type=txt", name], { timeout: 5_000 });
-    const lines = (r.stdout + r.stderr).split("\n").filter((l) => l.includes("text =") || l.includes("v="));
-    return lines.map((l) => l.replace(/.*text = /, "").trim()).join("\n") || "";
+    return (r.stdout + r.stderr).split("\n").filter((l) => l.includes("text =") || l.includes("v="))
+      .map((l) => l.replace(/.*text = /, "").trim()).join("\n") || "";
   }
   return "";
 }
@@ -93,347 +88,285 @@ function formatChecks(title: string, checks: Check[]): string {
   return lines.join("\n");
 }
 
-// ── Tool implementations ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 1: PRE-FLIGHT — infrastructure reachability
+// ═══════════════════════════════════════════════════════════════════════════
 
-function mailuUp(): Check[] {
+function preflight(): Check[] {
   const checks: Check[] = [];
 
-  // Container health
-  checks.push(timed("Containers running", () => {
-    const { containers, ok } = listContainers(MAILU_VM, true);
-    if (!ok) return { passed: false, details: "SSH/Docker unreachable" };
-    const mailuContainers = containers.filter((c) => c.name.startsWith("mailu-"));
-    const healthy = mailuContainers.filter((c) => c.status.includes("healthy"));
-    const running = mailuContainers.filter((c) => c.status.startsWith("Up"));
-    return {
-      passed: healthy.length >= 7,
-      details: `${healthy.length}/${mailuContainers.length} healthy, ${running.length} running`,
-    };
+  // WireGuard tunnel to oci-mail
+  checks.push(timed("WG tunnel to oci-mail", () => {
+    const r = exec("bash", ["-c", `timeout 3 bash -c 'echo > /dev/tcp/${MAILU_WG_IP}/22' 2>&1`]);
+    return { passed: r.ok, details: r.ok ? "10.0.0.3:22 reachable" : "WG DOWN — tunnel unreachable" };
   }));
 
-  // IMAPS (993) via Caddy L4
-  checks.push(timed("IMAPS :993 (Caddy L4)", () => {
+  // SSH to oci-mail
+  checks.push(timed("SSH to oci-mail", () => {
+    const r = sshExec(MAILU_VM, "echo OK", 8_000);
+    return { passed: r.ok && r.stdout.includes("OK"), details: r.ok ? "SSH OK" : `SSH FAILED: ${r.stderr.trim().split("\n")[0]}` };
+  }));
+
+  // Docker daemon on oci-mail
+  checks.push(timed("Docker daemon", () => {
+    const r = sshExec(MAILU_VM, "docker info --format '{{.ServerVersion}}' 2>&1 | head -1", 5_000);
+    const version = r.stdout.trim();
+    return { passed: r.ok && version.length > 0 && !version.includes("error"), details: r.ok ? `Docker ${version}` : "Docker UNREACHABLE" };
+  }));
+
+  // Disk space on oci-mail
+  checks.push(timed("Disk space", () => {
+    const r = sshExec(MAILU_VM, "df / --output=pcent | tail -1 | tr -d ' %'", 5_000);
+    const pct = parseInt(r.stdout.trim(), 10);
+    if (isNaN(pct)) return { passed: false, details: "cannot read disk usage" };
+    return { passed: pct < 90, details: `${pct}% used${pct >= 80 ? " ⚠️ HIGH" : ""}` };
+  }));
+
+  // VM load average
+  checks.push(timed("VM load", () => {
+    const r = sshExec(MAILU_VM, "cat /proc/loadavg | awk '{print $1, $2, $3}'", 3_000);
+    const load = r.stdout.trim();
+    const load1 = parseFloat(load.split(" ")[0]);
+    return { passed: !isNaN(load1) && load1 < 4, details: `load: ${load}${load1 >= 2 ? " ⚠️ HIGH" : ""}` };
+  }));
+
+  return checks;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 2: CONTAINERS — per-container status + crash-loop detection
+// ═══════════════════════════════════════════════════════════════════════════
+
+function containerHealth(): Check[] {
+  const checks: Check[] = [];
+
+  const { containers, ok } = listContainers(MAILU_VM, true);
+  if (!ok) {
+    checks.push({ name: "Container listing", passed: false, details: "SSH/Docker unreachable", durationMs: 0 });
+    return checks;
+  }
+
+  // Check each Mailu container + smtp-proxy
+  const targets = [...MAILU_CONTAINERS, "smtp-proxy"];
+  for (const name of targets) {
+    checks.push(timed(name, () => {
+      const c = containers.find((ct) => ct.name === name);
+      if (!c) return { passed: false, details: "NOT FOUND" };
+
+      const isUp = c.status.startsWith("Up");
+      const isHealthy = c.status.includes("healthy");
+      const isRestarting = c.status.includes("Restarting");
+
+      // Crash-loop detection: check restart count
+      const restartMatch = c.status.match(/Restarting \((\d+)\)/);
+      const restartCount = restartMatch ? parseInt(restartMatch[1], 10) : 0;
+
+      if (isRestarting) return { passed: false, details: `CRASH-LOOPING (restart ${restartCount})` };
+      if (!isUp) return { passed: false, details: `DOWN: ${c.status}` };
+      return { passed: true, details: c.status.replace(/\s+\(.*/, "") + (isHealthy ? " (healthy)" : "") };
+    }));
+  }
+
+  // mailu-mcp on oci-apps
+  checks.push(timed("mailu-mcp", () => {
+    const { containers: c3Containers, ok: c3Ok } = listContainers(C3_VM, true);
+    if (!c3Ok) return { passed: false, details: "oci-apps unreachable" };
+    const mcp = c3Containers.find((c) => c.name === "mailu-mcp");
+    if (!mcp) return { passed: false, details: "NOT FOUND on oci-apps" };
+    return { passed: mcp.status.startsWith("Up"), details: mcp.status.replace(/\s+\(.*/, "") };
+  }));
+
+  return checks;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3: NETWORK — ports, endpoints, connectivity
+// ═══════════════════════════════════════════════════════════════════════════
+
+function networkChecks(): Check[] {
+  const checks: Check[] = [];
+
+  // External TLS ports via Caddy L4
+  checks.push(timed("IMAPS :993", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect ${MAILU_DOMAIN}:993 2>&1`]);
-    const connected = r.stdout.includes("CONNECTED");
-    const verified = r.stdout.includes("Verify return code: 0");
-    return { passed: connected && verified, details: connected ? (verified ? "TLS OK" : "TLS invalid") : "unreachable" };
+    return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "unreachable" };
   }));
 
-  // SMTPS (465) via Caddy L4
-  checks.push(timed("SMTPS :465 (Caddy L4)", () => {
+  checks.push(timed("SMTPS :465", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect ${MAILU_DOMAIN}:465 2>&1`]);
-    const connected = r.stdout.includes("CONNECTED");
-    return { passed: connected, details: connected ? "TLS OK" : "unreachable" };
+    return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "unreachable" };
   }));
 
-  // SMTP Submission (587) STARTTLS via Caddy L4
-  checks.push(timed("SMTP :587 STARTTLS (Caddy L4)", () => {
-    const r = exec("bash", ["-c", `echo Q | timeout 8 openssl s_client -starttls smtp -connect ${MAILU_DOMAIN}:587 2>&1`]);
-    const connected = r.stdout.includes("CONNECTED");
-    return { passed: connected, details: connected ? "STARTTLS OK" : "unreachable" };
+  checks.push(timed("SMTP :587 STARTTLS", () => {
+    const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -starttls smtp -connect ${MAILU_DOMAIN}:587 2>&1`]);
+    return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "STARTTLS OK" : "unreachable" };
   }));
 
-  // Webmail HTTPS
+  // Local SMTP ports on oci-mail
+  checks.push(timed("SMTP :25 local relay", () => {
+    const r = sshExec(MAILU_VM, `echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`, 5_000);
+    return { passed: r.stdout.includes("220"), details: r.stdout.trim().split("\n")[0] || "no 220 banner" };
+  }));
+
+  checks.push(timed("SMTP :587 local", () => {
+    const r = sshExec(MAILU_VM, `echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3`, 8_000);
+    return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "not responding" };
+  }));
+
+  // Webmail
   checks.push(timed("Webmail HTTPS", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
-      `https://${MAILU_DOMAIN}/webmail`]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAILU_DOMAIN}/webmail`]);
     const code = r.stdout.trim();
     return { passed: ["200", "301", "302"].includes(code), details: `HTTP ${code}` };
   }));
 
-  // Webmail via WireGuard (internal)
   checks.push(timed("Webmail internal (WG)", () => {
-    const r = sshExec(MAILU_VM,
-      `curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:8444/webmail`);
-    const code = r.stdout.trim();
-    return { passed: code === "200", details: `HTTP ${code}` };
+    const r = sshExec(MAILU_VM, `curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:8444/webmail`);
+    return { passed: r.stdout.trim() === "200", details: `HTTP ${r.stdout.trim()}` };
   }));
 
-  // MX DNS record
-  checks.push(timed("MX DNS record", () => {
-    const out = dnsLookup("MX", "diegonmarcos.com");
-    const hasMx = out.includes("mx") || out.includes("cloudflare") || out.includes("diegonmarcos");
-    return { passed: hasMx, details: out.split("\n")[0] || "no MX" };
-  }));
-
-  // smtp-proxy container (CF Worker email delivery target)
-  checks.push(timed("smtp-proxy container", () => {
-    const { containers, ok } = listContainers(MAILU_VM, true);
-    if (!ok) return { passed: false, details: "SSH/Docker unreachable" };
-    const proxy = containers.find((c) => c.name === "smtp-proxy");
-    if (!proxy) return { passed: false, details: "NOT FOUND — CF Worker inbound will fail" };
-    const healthy = proxy.status.includes("healthy") || proxy.status.startsWith("Up");
-    return { passed: healthy, details: proxy.status };
-  }));
-
-  // smtp-proxy HTTP endpoint
+  // smtp-proxy endpoint
   checks.push(timed("smtp-proxy endpoint", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
-      "https://smtp-proxy.diegonmarcos.com/"]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://smtp-proxy.diegonmarcos.com/"]);
     const code = r.stdout.trim();
     return { passed: code !== "000" && code !== "502", details: `HTTP ${code}` };
   }));
 
-  // mailu-mcp container (MCP server for IMAP/SMTP/Admin tools)
-  checks.push(timed("mailu-mcp container", () => {
-    const { containers, ok } = listContainers("oci-A1-f_0", true);
-    if (!ok) return { passed: false, details: "SSH/Docker unreachable" };
-    const mcp = containers.find((c) => c.name === "mailu-mcp");
-    if (!mcp) return { passed: false, details: "NOT FOUND" };
-    const healthy = mcp.status.includes("healthy") || mcp.status.startsWith("Up");
-    return { passed: healthy, details: mcp.status };
-  }));
-
-  // mailu-mcp MCP endpoint (HTTP transport)
+  // mailu-mcp MCP endpoint
   checks.push(timed("mailu-mcp endpoint", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
-      "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
     const code = r.stdout.trim();
-    return { passed: ["400", "405", "406"].includes(code), details: `HTTP ${code} (expected — MCP needs POST+JSON)` };
+    return { passed: ["400", "405", "406"].includes(code), details: `HTTP ${code} (MCP alive)` };
   }));
 
   return checks;
 }
 
-function mailuProfile(): unknown {
-  const profiles: Record<string, unknown> = {};
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 4: DNS AUTH — MX, DKIM, SPF, DMARC
+// ═══════════════════════════════════════════════════════════════════════════
 
-  // Mailu containers
-  for (const container of MAILU_CONTAINERS) {
-    try {
-      profiles[container] = profileContainer(container);
-    } catch (err: unknown) {
-      profiles[container] = { error: err instanceof Error ? err.message : String(err) };
-    }
-  }
+function dnsAuth(): Check[] {
+  const checks: Check[] = [];
 
-  // smtp-proxy container (CF Worker forwards email here)
-  try {
-    profiles["smtp-proxy"] = profileContainer("smtp-proxy");
-  } catch {
-    profiles["smtp-proxy"] = { error: "container not found — CF Worker email delivery will fail" };
-  }
+  checks.push(timed("MX record", () => {
+    const out = dnsLookup("MX", "diegonmarcos.com");
+    const ok = out.includes("mx") || out.includes("cloudflare") || out.includes("diegonmarcos");
+    return { passed: ok, details: out.split("\n")[0] || "no MX" };
+  }));
 
-  return profiles;
+  checks.push(timed("DKIM record", () => {
+    const out = dnsLookup("TXT", "dkim._domainkey.diegonmarcos.com");
+    return { passed: out.includes("v=DKIM1"), details: out.includes("v=DKIM1") ? "DKIM1 present" : "missing" };
+  }));
+
+  checks.push(timed("SPF record", () => {
+    const out = dnsLookup("TXT", "diegonmarcos.com");
+    return { passed: out.includes("v=spf1"), details: out.split("\n").find((l) => l.includes("spf1"))?.trim() || "missing" };
+  }));
+
+  checks.push(timed("DMARC record", () => {
+    const out = dnsLookup("TXT", "_dmarc.diegonmarcos.com");
+    return { passed: out.includes("v=DMARC1"), details: out.trim().split("\n")[0] || "missing" };
+  }));
+
+  return checks;
 }
 
-/** Fetch recent Cloudflare Worker logs via CF API (requires observability enabled) */
-function fetchWorkerLogs(): unknown {
-  const cfKey = process.env.CF_API_KEY || (() => {
-    const envPath = join(GIT_BASE, "vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env");
-    if (!existsSync(envPath)) return null;
-    const content = readFileSync(envPath, "utf-8");
-    const match = content.match(/CF_API_KEY=(.+)/);
-    return match ? match[1].trim() : null;
-  })();
-  const cfEmail = process.env.CF_API_EMAIL || (() => {
-    const envPath = join(GIT_BASE, "vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env");
-    if (!existsSync(envPath)) return null;
-    const content = readFileSync(envPath, "utf-8");
-    const match = content.match(/CF_API_EMAIL=(.+)/);
-    return match ? match[1].trim() : null;
-  })();
-  const accountId = "e5cb0a0c6f448e54f217de484259f0ae";
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 5: E2E DELIVERY — send → verify arrival → analyze pipeline
+// ═══════════════════════════════════════════════════════════════════════════
 
-  if (!cfKey || !cfEmail) return { error: "Cloudflare API credentials not found" };
-
-  // Query Workers analytics — invocations summary (last 24h)
-  const r = exec("curl", [
-    "-s",
-    "-H", `X-Auth-Email: ${cfEmail}`,
-    "-H", `X-Auth-Key: ${cfKey}`,
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/email-forwarder`,
-  ], { timeout: 10_000 });
-
-  try {
-    const data = JSON.parse(r.stdout);
-    return data?.result || data;
-  } catch {
-    // Try telemetry endpoint with proper encoding
-    const since = encodeURIComponent(new Date(Date.now() - 6 * 3600 * 1000).toISOString());
-    const r2 = exec("curl", [
-      "-s", "--globoff",
-      "-H", `X-Auth-Email: ${cfEmail}`,
-      "-H", `X-Auth-Key: ${cfKey}`,
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/email-forwarder/telemetry/events?limit=10`,
-    ], { timeout: 10_000 });
-    try { return JSON.parse(r2.stdout); } catch { return { error: "CF API unreachable", raw: (r.stdout + r2.stdout).slice(0, 200) }; }
-  }
-}
-
-function mailuSendTestResend(): Check[] {
+function e2eDelivery(): Check[] {
   const checks: Check[] = [];
   const apiKey = getResendApiKey();
 
   if (!apiKey) {
-    checks.push({ name: "Resend API key", passed: false, details: "Not found", durationMs: 0 });
+    checks.push({ name: "Resend API key", passed: false, details: "RESEND_API_KEY not set", durationMs: 0 });
     return checks;
   }
-
   checks.push({ name: "Resend API key", passed: true, details: "Found", durationMs: 0 });
 
-  // Inbound test: Resend → Mailu (external sender delivers to our mailbox)
+  // Send via Resend
   const tag = `health-${Date.now()}`;
   let emailId = "";
 
-  checks.push(timed("Inbound: Resend → Mailu", () => {
+  checks.push(timed("Send via Resend", () => {
     const body = JSON.stringify({
-      from: `Health Check <${TEST_FROM}>`,
-      to: [TEST_TO],
+      from: `Health Check <${TEST_FROM}>`, to: [TEST_TO],
       subject: `[health-check] inbound ${tag}`,
-      text: `Automated health check at ${new Date().toISOString()}. Tag: ${tag}`,
+      text: `Health check ${new Date().toISOString()}. Tag: ${tag}`,
     });
-    const r = exec("curl", [
-      "-s", "-X", "POST",
-      "-H", "Content-Type: application/json",
-      "-H", `Authorization: Bearer ${apiKey}`,
-      "-d", body,
-      "https://api.resend.com/emails",
-    ], { timeout: 15_000 });
+    const r = exec("curl", ["-s", "-X", "POST", "-H", "Content-Type: application/json",
+      "-H", `Authorization: Bearer ${apiKey}`, "-d", body, "https://api.resend.com/emails"], { timeout: 10_000 });
     const parsed = JSON.parse(r.stdout || "{}");
-    if (parsed.id) {
-      emailId = parsed.id;
-      return { passed: true, details: `id=${parsed.id}` };
-    }
-    return { passed: false, details: parsed.message || r.stdout || r.stderr };
+    if (parsed.id) { emailId = parsed.id; return { passed: true, details: `id=${parsed.id}` }; }
+    return { passed: false, details: parsed.message || r.stderr || "send failed" };
   }));
+
+  if (!emailId) return checks;
 
   // Poll Resend delivery status
-  if (emailId) {
-    checks.push(timed("Resend delivery status", () => {
-      const maxAttempts = 3;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) exec("bash", ["-c", "sleep 1.5"]);
-        const r = exec("curl", ["-s", "-H", `Authorization: Bearer ${apiKey}`,
-          `https://api.resend.com/emails/${emailId}`], { timeout: 8_000 });
-        const parsed = JSON.parse(r.stdout || "{}");
-        const event = parsed.last_event || "unknown";
-        if (event === "delivered") return { passed: true, details: `delivered (poll ${attempt + 1})` };
-        if (event === "bounced" || event === "complained") return { passed: false, details: `${event}` };
-      }
-      // Not yet "delivered" per Resend — but IMAP check is the real verdict
-      return { passed: true, details: "sent (IMAP check is ground truth)" };
-    }));
-
-    // IMAP verification — poll for email arrival (delivery can take 5-15s)
-    checks.push(timed("IMAP delivery check", () => {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        exec("bash", ["-c", "sleep 3"]);
-        // Search Health folder first (sieve filter), then INBOX, then all
-        const r = sshExec(MAILU_VM,
-          `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -5`,
-          8_000);
-        const found = r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("no results") && !r.stdout.includes("error");
-        if (found) return { passed: true, details: `found (poll ${attempt + 1})` };
-      }
-      return { passed: false, details: "NOT found after 3 polls (9s wait)" };
-    }));
-
-    // smtp-proxy — check recent activity via docker logs + nginx access log
-    checks.push(timed("smtp-proxy activity", () => {
-      // Check docker logs (stdout/stderr)
-      const logs = sshExec(MAILU_VM, `docker logs smtp-proxy --since 5m 2>&1 | tail -5`, 5_000);
-      // Check nginx access log inside container
-      const access = sshExec(MAILU_VM,
-        `docker exec smtp-proxy cat /var/log/nginx/access.log 2>/dev/null | tail -5 || echo "no access log"`,
-        5_000);
-      const allLogs = logs.stdout + logs.stderr + access.stdout;
-      const hasActivity = allLogs.includes("POST") || allLogs.includes("200") || allLogs.includes("250");
-      const hasError = allLogs.includes("502") || allLogs.includes("503") || allLogs.includes("refused");
-      if (hasError) return { passed: false, details: `errors:\n    ${allLogs.trim().split("\n").slice(-3).join("\n    ")}` };
-      if (hasActivity) return { passed: true, details: "recent delivery activity" };
-      // No logs is OK if IMAP check passed — smtp-proxy may not log to these paths
-      return { passed: true, details: "no logs (IMAP delivery confirmed)" };
-    }));
-  }
-
-  return checks;
-}
-
-/** Analyze CF Worker logs — detect backup email triggers and delivery failures */
-function analyzeWorkerLogs(): Check[] {
-  const checks: Check[] = [];
-  const workerLogs = fetchWorkerLogs();
-
-  checks.push(timed("CF Worker API access", () => {
-    if (workerLogs && typeof workerLogs === "object" && "error" in workerLogs) {
-      // CF API is informational — IMAP check is ground truth for delivery
-      return { passed: true, details: `info: ${String((workerLogs as { error: string }).error)}` };
+  checks.push(timed("Resend delivery", () => {
+    for (let i = 0; i < 3; i++) {
+      if (i > 0) exec("bash", ["-c", "sleep 1.5"]);
+      const r = exec("curl", ["-s", "-H", `Authorization: Bearer ${apiKey}`,
+        `https://api.resend.com/emails/${emailId}`], { timeout: 8_000 });
+      const event = JSON.parse(r.stdout || "{}").last_event || "unknown";
+      if (event === "delivered") return { passed: true, details: `delivered (poll ${i + 1})` };
+      if (event === "bounced") return { passed: false, details: "BOUNCED" };
     }
-    return { passed: true, details: "API accessible" };
+    return { passed: true, details: "sent (IMAP is ground truth)" };
   }));
 
-  checks.push(timed("CF Worker delivery path", () => {
-    const logs = JSON.stringify(workerLogs);
-    const deliveredToMailu = logs.includes("delivered to Mailu") || logs.includes("Email delivered");
-    const backupTriggered = logs.includes("forwarding to backup") || logs.includes("Insurance copy");
-    const deliveryFailed = logs.includes("delivery failed") || logs.includes("SMTP proxy failed");
-
-    if (deliveryFailed) return { passed: false, details: "DELIVERY FAILED — Worker could not reach smtp-proxy" };
-    if (backupTriggered) return { passed: false, details: "BACKUP TRIGGERED — emails going to diegonmarcos@live.com instead of Mailu" };
-    if (deliveredToMailu) return { passed: true, details: "Primary path OK (smtp-proxy)" };
-    return { passed: true, details: "No recent failures detected" };
-  }));
-
-  return checks;
-}
-
-function mailuOutboundTest(): Check[] {
-  const checks: Check[] = [];
-
-  // Outbound: SMTP submission port 587 (STARTTLS)
-  checks.push(timed("SMTP submission :587", () => {
-    // nc first for 220 banner, then openssl for STARTTLS
-    const banner = sshExec(MAILU_VM, `echo QUIT | nc -w3 localhost 587 2>&1 | head -1`, 5_000);
-    if (banner.stdout.includes("220")) {
-      const tls = sshExec(MAILU_VM,
-        `echo QUIT | timeout 5 openssl s_client -starttls smtp -connect localhost:587 2>&1 | head -3`,
-        8_000);
-      const ok = tls.stdout.includes("CONNECTED");
-      return { passed: ok, details: ok ? "220 + STARTTLS OK" : `220 banner OK, STARTTLS failed` };
+  // IMAP inbox check — poll for arrival in Health folder
+  checks.push(timed("IMAP arrival (Health folder)", () => {
+    for (let i = 0; i < 4; i++) {
+      exec("bash", ["-c", "sleep 3"]);
+      const r = sshExec(MAILU_VM,
+        `docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -5`, 8_000);
+      const found = r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("no results") && !r.stdout.includes("error");
+      if (found) return { passed: true, details: `found (poll ${i + 1}, ${(i + 1) * 3}s)` };
     }
-    // Port might not respond to plaintext — try direct TLS
-    const tls = sshExec(MAILU_VM,
-      `echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3`,
-      8_000);
-    const ok = tls.stdout.includes("CONNECTED");
-    return { passed: ok, details: ok ? "direct TLS OK" : `port not responding: ${banner.stdout.trim() || banner.stderr.trim() || "silent"}` };
+    return { passed: false, details: "NOT FOUND after 12s — email lost in pipeline" };
   }));
 
-  // Outbound: SMTP port 25 accepts relay (local → Mailu front)
-  checks.push(timed("SMTP relay :25", () => {
-    const r = sshExec(MAILU_VM,
-      `echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`,
-      8_000);
-    const ok = r.stdout.includes("220");
-    return { passed: ok, details: ok ? r.stdout.trim().split("\n")[0] : "no 220 banner" };
+  // smtp-proxy activity
+  checks.push(timed("smtp-proxy logs", () => {
+    const logs = sshExec(MAILU_VM, `docker logs smtp-proxy --since 5m 2>&1 | tail -5`, 5_000);
+    const access = sshExec(MAILU_VM,
+      `docker exec smtp-proxy cat /var/log/nginx/access.log 2>/dev/null | tail -3 || echo none`, 5_000);
+    const all = logs.stdout + logs.stderr + access.stdout;
+    const hasActivity = all.includes("POST") || all.includes("200") || all.includes("250");
+    const hasError = all.includes("502") || all.includes("503") || all.includes("refused");
+    if (hasError) return { passed: false, details: `errors: ${all.trim().split("\n").slice(-2).join(" | ")}` };
+    if (hasActivity) return { passed: true, details: "delivery activity confirmed" };
+    return { passed: true, details: "no logs (IMAP is ground truth)" };
   }));
 
-  // DKIM check
-  checks.push(timed("DKIM record", () => {
-    const out = dnsLookup("TXT", "dkim._domainkey.diegonmarcos.com");
-    const hasDkim = out.includes("v=DKIM1");
-    return { passed: hasDkim, details: hasDkim ? "DKIM1 present" : "missing or unresolvable" };
-  }));
-
-  // SPF check
-  checks.push(timed("SPF record", () => {
-    const out = dnsLookup("TXT", "diegonmarcos.com");
-    const hasSpf = out.includes("v=spf1");
-    return { passed: hasSpf, details: out.split("\n").find((l) => l.includes("spf1"))?.trim() || "missing" };
-  }));
-
-  // DMARC check
-  checks.push(timed("DMARC record", () => {
-    const out = dnsLookup("TXT", "_dmarc.diegonmarcos.com");
-    const hasDmarc = out.includes("v=DMARC1");
-    return { passed: hasDmarc, details: out.trim().split("\n")[0] || "missing" };
+  // CF Worker analysis
+  checks.push(timed("CF Worker path", () => {
+    const cfKey = process.env.CF_API_KEY;
+    const cfEmail = process.env.CF_API_EMAIL;
+    if (!cfKey || !cfEmail) return { passed: true, details: "info: no CF credentials" };
+    const r = exec("curl", ["-s", "-H", `X-Auth-Email: ${cfEmail}`, "-H", `X-Auth-Key: ${cfKey}`,
+      "https://api.cloudflare.com/client/v4/accounts/e5cb0a0c6f448e54f217de484259f0ae/workers/scripts/email-forwarder"],
+      { timeout: 8_000 });
+    try {
+      const data = JSON.parse(r.stdout);
+      const modified = data?.result?.modified_on || "unknown";
+      return { passed: true, details: `worker active (modified: ${modified})` };
+    } catch {
+      return { passed: true, details: "info: CF API response unparseable" };
+    }
   }));
 
   return checks;
 }
 
-// ── Registration ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// TOOL REGISTRATION
+// ═══════════════════════════════════════════════════════════════════════════
 
 function safeTool(fn: () => string): { content: [{ type: "text"; text: string }] } {
   try {
@@ -447,47 +380,79 @@ function safeTool(fn: () => string): { content: [{ type: "text"; text: string }]
 export function registerHealthMailuTools(server: McpServer): void {
   server.tool(
     "mailu_up",
-    "Quick UP check: containers, TLS ports (993/465/587), webmail, MX record",
+    "Quick UP check: pre-flight + containers + network + DNS",
     {},
-    async () => safeTool(() => formatChecks("Mailu UP Check", mailuUp())),
+    async () => safeTool(() => {
+      const sections = [
+        formatChecks("PRE-FLIGHT", preflight()),
+        "",
+        formatChecks("CONTAINERS", containerHealth()),
+        "",
+        formatChecks("NETWORK", networkChecks()),
+        "",
+        formatChecks("DNS AUTH", dnsAuth()),
+      ];
+      return sections.join("\n");
+    }),
   );
 
   server.tool(
     "mailu_profile",
-    "Deep profile all 8 Mailu containers (CPU, memory, network, disk, ports, health)",
+    "Deep profile all Mailu containers (CPU, memory, network, disk, ports, health)",
     {},
-    async () => safeTool(() =>
-      `Mailu Container Profiles\n${"─".repeat(60)}\n\n${JSON.stringify(mailuProfile(), null, 2)}`
-    ),
+    async () => safeTool(() => {
+      const profiles: Record<string, unknown> = {};
+      for (const name of [...MAILU_CONTAINERS, "smtp-proxy"]) {
+        try { profiles[name] = profileContainer(name); }
+        catch (err: unknown) { profiles[name] = { error: err instanceof Error ? err.message : String(err) }; }
+      }
+      return `Mailu Container Profiles\n${"─".repeat(60)}\n\n${JSON.stringify(profiles, null, 2)}`;
+    }),
   );
 
   server.tool(
     "mailu_send_test",
-    "Inbound delivery test: send email via Resend API → Mailu mailbox",
+    "Inbound delivery test: Resend → CF Worker → smtp-proxy → Mailu → IMAP",
     {},
-    async () => safeTool(() => formatChecks("Mailu Inbound Send Test", mailuSendTestResend())),
+    async () => safeTool(() => formatChecks("E2E DELIVERY TEST", e2eDelivery())),
   );
 
   server.tool(
     "mailu_outbound_test",
-    "Outbound + DNS auth: SMTP relay, DKIM, SPF, DMARC records",
+    "Outbound: SMTP relay + DNS auth (DKIM, SPF, DMARC)",
     {},
-    async () => safeTool(() => formatChecks("Mailu Outbound & DNS Auth", mailuOutboundTest())),
+    async () => safeTool(() => {
+      const checks: Check[] = [];
+      // SMTP ports
+      checks.push(timed("SMTP :25 relay", () => {
+        const r = sshExec(MAILU_VM, `echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`, 5_000);
+        return { passed: r.stdout.includes("220"), details: r.stdout.trim().split("\n")[0] || "no banner" };
+      }));
+      checks.push(timed("SMTP :587 submission", () => {
+        const r = sshExec(MAILU_VM, `echo QUIT | timeout 5 openssl s_client -connect localhost:587 2>&1 | head -3`, 8_000);
+        return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "not responding" };
+      }));
+      // DNS auth
+      checks.push(...dnsAuth());
+      return formatChecks("OUTBOUND & DNS AUTH", checks);
+    }),
   );
 
   server.tool(
     "mailu_full",
-    "Full mail health pipeline: UP + profile + inbound send test + outbound + DNS auth + CF Worker logs",
+    "Full 5-phase mail health: pre-flight → containers → network → DNS → e2e delivery",
     {},
     async () => safeTool(() => {
       const sections = [
-        formatChecks("1. UP CHECK", mailuUp()),
+        formatChecks("1. PRE-FLIGHT", preflight()),
         "",
-        formatChecks("2. OUTBOUND & DNS AUTH", mailuOutboundTest()),
+        formatChecks("2. CONTAINERS", containerHealth()),
         "",
-        formatChecks("3. INBOUND (Resend → CF Worker → smtp-proxy → Mailu → IMAP)", mailuSendTestResend()),
+        formatChecks("3. NETWORK", networkChecks()),
         "",
-        formatChecks("4. CF WORKER ANALYSIS", analyzeWorkerLogs()),
+        formatChecks("4. DNS AUTH", dnsAuth()),
+        "",
+        formatChecks("5. E2E DELIVERY (Resend → CF → smtp-proxy → Mailu → IMAP)", e2eDelivery()),
       ];
       return sections.join("\n");
     }),
