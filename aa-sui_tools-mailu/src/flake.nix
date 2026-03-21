@@ -155,6 +155,9 @@
       WEBMAIL_ADDRESS=localhost
       REDIS_ADDRESS=localhost
 
+      # Use Cloudflare DNS for DNSSEC validation (Hickory DNS doesn't support it)
+      RESOLVER=1.1.1.1
+
       # Front (nginx) owns external ports
       BIND_ADDRESS4=0.0.0.0
       HTTP_PORT=80
