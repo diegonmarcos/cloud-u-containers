@@ -195,12 +195,16 @@
     # ── Route generators ──────────────────────────────────────────
 
     # Generate L4 (layer4) blocks from l4_routes[]
-    mkL4Block = route: ''
+    mkL4Block = route:
+      let
+        pp = route.proxy_protocol or false;
+        ppLine = if pp then "\n                proxy_protocol v2" else "";
+      in ''
           # ${route.comment or ""}
           :${toString route.port} {
             route {
               proxy {
-                upstream ${route.upstream}
+                upstream ${route.upstream}${ppLine}
               }
             }
           }'';
