@@ -72,9 +72,6 @@
             - "./data:/data"
             - "./dkim:/dkim"
             - "./admin-resolv.conf:/etc/resolv.conf:ro"
-          depends_on:
-            redis:
-              condition: service_started
 
         imap:
           image: ghcr.io/mailu/dovecot:2024.06
@@ -84,9 +81,6 @@
           volumes:
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
-          depends_on:
-            front:
-              condition: service_started
 
         smtp:
           image: ghcr.io/mailu/postfix:2024.06
@@ -96,9 +90,6 @@
           volumes:
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
-          depends_on:
-            front:
-              condition: service_started
 
         antispam:
           image: ghcr.io/mailu/rspamd:2024.06
@@ -108,9 +99,6 @@
           volumes:
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
-          depends_on:
-            front:
-              condition: service_started
 
         redis:
           image: redis:7-bookworm
@@ -128,11 +116,6 @@
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
             - "./overrides/roundcube/nginx-webmail.conf:/conf/nginx-webmail.conf:ro"
-          depends_on:
-            front:
-              condition: service_started
-            imap:
-              condition: service_started
     '';
 
     # Mailu env template — secrets use ''${VAR} placeholders, substituted by init.sh
