@@ -70,8 +70,13 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse): Prom
   const clientSessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (req.method === "POST" && !clientSessionId) {
-    // New client connecting — route to our persistent session
-    // The SDK will handle initialize + tools/list
+    // New client connecting (initialize request) — recreate session
+    // This handles /mcp reconnect: Claude Code sends initialize without session ID
+    log(`New client initialize — recreating session`);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
+    const server = createMcpServer();
+    await server.connect(transport);
+    session = { transport, server };
     await session.transport.handleRequest(req, res);
   } else if (clientSessionId === SESSION_ID) {
     // Existing client with correct session ID

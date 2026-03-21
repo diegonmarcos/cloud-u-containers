@@ -74,6 +74,17 @@ async function handleMcpRequest(
     return;
   }
 
+  if (req.method === "POST" && !sessionId) {
+    // New client initialize — recreate session
+    log(`New client initialize — recreating session`);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
+    const server = createMcpServer();
+    await server.connect(transport);
+    session = { transport, server };
+    await session.transport.handleRequest(req, res);
+    return;
+  }
+
   // Swap stale session ID to fixed ID so transport recognises the request
   if (sessionId && sessionId !== SESSION_ID) {
     log(`Swapping stale session ID: ${sessionId} → ${SESSION_ID}`);
