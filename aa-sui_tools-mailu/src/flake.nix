@@ -43,45 +43,37 @@
       # ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-mailu/src/flake.nix ║
       # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_tools-mailu/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
+      # ALL containers on host networking — Hickory DNS + WG
+      # No Docker bridge, no docker-proxy, no resolver container
+      # Internal ports remapped to avoid conflicts:
+      #   front: 80/443/25/465/587/993 (owns external ports)
+      #   imap: 10143/10993/14190 (front proxies to these)
+      #   smtp: 10025/10587 (already internal)
+      #   antispam: 11332/11334 (already internal)
+      #   admin: 8080 (front proxies /admin)
+      #   webmail: 8380 (front proxies /webmail)
+      #   redis: 6379 (no conflict)
       services:
-        resolver:
-          image: ghcr.io/mailu/unbound:2024.06
-          env_file: mailu.env
-          restart: always
-          healthcheck:
-            test: ["CMD", "dig", "+short", "@127.0.0.1", "google.com"]
-            interval: 30s
-            timeout: 5s
-            retries: 3
-            start_period: 10s
-
         front:
           image: ghcr.io/mailu/nginx:2024.06
           env_file: mailu.env
           restart: always
-          ports:
-            - "10.0.0.3:8444:443"
-            - "0.0.0.0:25:25"
-            - "0.0.0.0:465:465"
-            - "0.0.0.0:587:587"
-            - "0.0.0.0:993:993"
+          network_mode: host
           volumes:
             - "./certs:/certs"
             - "./overrides/nginx:/overrides:ro"
-          depends_on:
-            resolver:
-              condition: service_healthy
 
         admin:
           image: ghcr.io/mailu/admin:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
+          environment:
+            - SKIP_DNSSEC_CHECK=1
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
           depends_on:
-            resolver:
-              condition: service_healthy
             redis:
               condition: service_started
 
@@ -89,12 +81,11 @@
           image: ghcr.io/mailu/dovecot:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
@@ -102,12 +93,11 @@
           image: ghcr.io/mailu/postfix:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
@@ -115,18 +105,18 @@
           image: ghcr.io/mailu/rspamd:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
 
         redis:
           image: redis:7-bookworm
           restart: always
+          network_mode: host
           volumes:
             - "./redis:/data"
 
@@ -134,12 +124,13 @@
           image: ghcr.io/mailu/webmail:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
+          environment:
+            - HTTP_PORT=8380
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
           depends_on:
-            resolver:
-              condition: service_healthy
             front:
               condition: service_started
             imap:
@@ -154,18 +145,37 @@
       POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
-      SUBNET=192.168.203.0/24
+      SUBNET=127.0.0.0/8
+
+      # Host networking — all services on localhost
+      FRONT_ADDRESS=localhost
+      ADMIN_ADDRESS=localhost
+      IMAP_ADDRESS=localhost
+      SMTP_ADDRESS=localhost
+      ANTISPAM_ADDRESS=localhost
+      WEBMAIL_ADDRESS=localhost
+      REDIS_ADDRESS=localhost
+
+      # Front (nginx) owns external ports
+      BIND_ADDRESS4=0.0.0.0
+      HTTP_PORT=80
+      HTTPS_PORT=8444
+      SMTP_PORT=25
+      IMAP_PORT=993
+      SUBMISSION_PORT=587
+
+      # Internal listen ports (avoid conflicts with front)
+      IMAP_LISTEN_PORT=10143
+      AUTHSMTP_LISTEN_PORT=10025
+      SUBMISSION_LISTEN_PORT=10587
+      WEBMAIL_PORT=8380
+      ADMIN_LISTEN_PORT=8080
+
+      REAL_IP_FROM=127.0.0.0/8,10.0.0.0/24
 
       WEBMAIL=roundcube
       WEB_ADMIN=/admin
       WEB_WEBMAIL=/webmail
-
-      BIND_ADDRESS4=0.0.0.0
-      HTTP_PORT=80
-      HTTPS_PORT=443
-      SMTP_PORT=25
-      IMAP_PORT=993
-      SUBMISSION_PORT=587
 
       TLS_FLAVOR=cert
 
