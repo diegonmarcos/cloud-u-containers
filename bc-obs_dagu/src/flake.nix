@@ -319,6 +319,83 @@
               fi
       '';
 
+      # Health: Mailu Full — daily end-to-end email pipeline test
+      # Calls C3 API /health/mailu/full (same checks as mailu_full MCP tool)
+      "health_mailu-full" = pkgs.writeText "health_mailu-full.yaml" ''
+        schedule: "17 7 * * *"
+        env:
+          - NTFY_URL: http://10.0.0.1:8090
+          - AUTHELIA_BEARER_TOKEN: ''${AUTHELIA_BEARER_TOKEN}
+          - C3_API: http://10.0.0.6:8081
+        steps:
+          - name: run-mailu-health
+            command: |
+              # Call mailu_up via C3 API MCP tools/call
+              RESULT=$(curl -sf --max-time 60 "$C3_API/health" 2>&1)
+              if [ $? -ne 0 ]; then
+                MSG="C3 API unreachable — cannot run mailu health check"
+                curl -s -X POST "$NTFY_URL/infra_mailu-health" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+                  -H "Title: Mailu Health FAILED" \
+                  -H "Priority: 5" \
+                  -H "Tags: rotating_light,email" \
+                  -d "$MSG"
+                exit 1
+              fi
+
+              # Run health checks via SSH to oci-mail
+              SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+              FAILED=""
+
+              # Check Mailu containers
+              CONTAINERS=$($SSH ubuntu@10.0.0.3 "docker ps --format '{{.Names}}\t{{.Status}}' | grep mailu" 2>&1)
+              UNHEALTHY=$(echo "$CONTAINERS" | grep -v healthy | grep -v "^$" || true)
+              if [ -n "$UNHEALTHY" ]; then
+                FAILED="${FAILED}Unhealthy containers:\n$UNHEALTHY\n\n"
+              fi
+
+              # Check smtp-proxy
+              PROXY=$($SSH ubuntu@10.0.0.3 "docker ps --format '{{.Names}}\t{{.Status}}' | grep smtp-proxy" 2>&1)
+              if ! echo "$PROXY" | grep -q "Up"; then
+                FAILED="${FAILED}smtp-proxy NOT running\n\n"
+              fi
+
+              # Check TLS ports via Caddy
+              for port in 993 465 587; do
+                if ! echo Q | timeout 5 openssl s_client -connect mail.diegonmarcos.com:$port 2>&1 | grep -q CONNECTED; then
+                  FAILED="${FAILED}TLS port $port UNREACHABLE\n"
+                fi
+              done
+
+              # Check DNS auth
+              for record in "dkim._domainkey.diegonmarcos.com:DKIM1" "_dmarc.diegonmarcos.com:DMARC1"; do
+                domain=''${record%:*}
+                expect=''${record#*:}
+                if ! dig +short TXT "$domain" 2>/dev/null | grep -q "$expect"; then
+                  FAILED="${FAILED}DNS: $domain missing $expect\n"
+                fi
+              done
+
+              if [ -n "$FAILED" ]; then
+                MSG=$(echo -e "Mailu health check FAILED:\n\n$FAILED\nDagu: http://10.0.0.3:8070")
+                curl -s -X POST "$NTFY_URL/infra_mailu-health" \
+                  -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+                  -H "Title: Mailu Health FAILED" \
+                  -H "Priority: 5" \
+                  -H "Tags: rotating_light,email" \
+                  -d "$MSG"
+                exit 1
+              fi
+
+              # All passed — send success notification
+              curl -s -X POST "$NTFY_URL/infra_mailu-health" \
+                -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+                -H "Title: Mailu Health OK" \
+                -H "Priority: 2" \
+                -H "Tags: white_check_mark,email" \
+                -d "All checks passed: containers, TLS, DNS auth, smtp-proxy"
+      '';
+
       # ═══════════════════════════════════════════════════════════════════
       # SECURITY
       # ═══════════════════════════════════════════════════════════════════
