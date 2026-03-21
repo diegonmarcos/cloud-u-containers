@@ -38,7 +38,7 @@ function killMux(alias: string, target: string): void {
   ], { timeout: 3_000 });
 }
 
-function ensureMux(alias: string, target: string): void {
+function ensureMux(alias: string, target: string, connectTimeout = 10): void {
   // Check if master is alive
   const check = exec("ssh", [
     ...SSH_CONFIG_FLAG,
@@ -50,7 +50,7 @@ function ensureMux(alias: string, target: string): void {
   // Start master in background
   exec("ssh", [
     ...SSH_CONFIG_FLAG,
-    "-o", "ConnectTimeout=10",
+    "-o", `ConnectTimeout=${connectTimeout}`,
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", `ControlMaster=auto`,
     "-o", `ControlPath=${controlPath(alias)}`,
@@ -75,6 +75,7 @@ export function sshExec(
   command: string,
   timeout?: number,
   noRetry = false,
+  connectTimeout = 10,
 ): ExecResult {
   const vmId = resolveVmId(vmNameOrAlias);
   const alias = getVmSshAlias(vmId);
@@ -87,11 +88,11 @@ export function sshExec(
   const target = `${user}@${host}`;
 
   // Establish multiplexed connection
-  ensureMux(alias, target);
+  ensureMux(alias, target, connectTimeout);
 
   const sshArgs = [
     ...SSH_CONFIG_FLAG,
-    "-o", "ConnectTimeout=10",
+    "-o", `ConnectTimeout=${connectTimeout}`,
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", `ControlPath=${controlPath(alias)}`,
     "-i", SSH_IDENTITY,
@@ -108,7 +109,7 @@ export function sshExec(
     audit("ssh", `${alias}: WG handshake attempt ${attempt}/${maxAttempts - 1}`, result.stderr.trim());
     killMux(alias, target);
     exec("sleep", [String(delay)], { timeout: (delay + 1) * 1_000 });
-    ensureMux(alias, target);
+    ensureMux(alias, target, connectTimeout);
     result = exec("ssh", sshArgs, { timeout: effectiveTimeout });
   }
 

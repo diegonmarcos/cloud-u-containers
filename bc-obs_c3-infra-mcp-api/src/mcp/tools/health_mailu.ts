@@ -13,7 +13,7 @@ import { exec } from "../../shared/exec.js";
 import { sshExec } from "../../shared/ssh.js";
 import { listContainers } from "../../shared/docker.js";
 import { profileContainer } from "../../shared/diagnostics.js";
-import { execSync } from "child_process";
+import { performance } from "node:perf_hooks";
 
 const MAILU_VM = "oci-E2-f_0";
 const MAILU_DOMAIN = "mail.diegonmarcos.com";
@@ -42,7 +42,9 @@ async function timedAsync(name: string, fn: () => Promise<{ passed: boolean; det
   catch (err: unknown) { return { name, passed: false, details: "", error: err instanceof Error ? err.message : String(err), durationMs: Date.now() - start }; }
 }
 
-function ssh(cmd: string, timeout = 8_000) { return sshExec(MAILU_VM, cmd, timeout, true); }
+// SSH with fast timeout (3s connect, no WG retry) for health checks
+function ssh(cmd: string, timeout = 8_000) { return sshExec(MAILU_VM, cmd, timeout, true, 3); }
+const log = (msg: string) => process.stderr.write(`[mailu-health] ${msg}\n`);
 function getResendApiKey(): string | null { return process.env.RESEND_API_KEY || null; }
 
 function dnsLookup(type: string, name: string): string {
@@ -177,7 +179,8 @@ curl -skL -o /dev/null -w '%{http_code}' --max-time 5 https://${MAILU_WG_IP}:844
 echo ""
 `.trim();
 
-  const r = sshExec(MAILU_VM, script, 15_000, true);
+  log("SSH batch: connecting...");
+  const r = sshExec(MAILU_VM, script, 15_000, true, 3);
   const output = r.stdout;
 
   function section(name: string): string {
@@ -492,33 +495,61 @@ export function registerHealthMailuTools(server: McpServer): void {
   server.tool("mailu_full", "Full 6-phase diagnostic: pre-flight → containers → network → DNS → internals → e2e delivery", {},
     async () => safeTool(() => {
       clearRemoteCache();
-      const t0 = Date.now();
-      const perf = (label: string) => `[${((Date.now() - t0) / 1000).toFixed(1)}s] ${label}`;
+      const marks: { phase: string; ms: number }[] = [];
+      const t0 = performance.now();
+      const mark = (phase: string) => { marks.push({ phase, ms: Math.round(performance.now() - t0) }); };
       const sections: string[] = [];
 
+      log("Phase 1: PRE-FLIGHT starting...");
+      mark("start");
       const pf = preflight();
-      sections.push(formatChecks(perf("1. PRE-FLIGHT"), pf));
+      mark("1. PRE-FLIGHT");
+      log(`Phase 1: done (${marks[marks.length - 1].ms}ms)`);
+      sections.push(formatChecks("1. PRE-FLIGHT", pf));
 
       const sshOk = _remoteCache !== null;
+
       if (!sshOk) {
+        log("SSH FAILED — skipping phases 2, 5");
         sections.push("", "⚠️ SSH to oci-mail FAILED — skipping container/internal checks");
-        sections.push("", formatChecks(perf("2. CONTAINERS"), [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
+        sections.push("", formatChecks("2. CONTAINERS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       } else {
-        sections.push("", formatChecks(perf("2. CONTAINERS"), containerHealth()));
+        log("Phase 2: CONTAINERS starting...");
+        sections.push("", formatChecks("2. CONTAINERS", containerHealth()));
+        mark("2. CONTAINERS");
+        log(`Phase 2: done (${marks[marks.length - 1].ms}ms)`);
       }
 
-      sections.push("", formatChecks(perf("3. NETWORK"), networkChecks()));
-      sections.push("", formatChecks(perf("4. DNS AUTH"), dnsAuth()));
+      log("Phase 3: NETWORK starting...");
+      sections.push("", formatChecks("3. NETWORK", networkChecks()));
+      mark("3. NETWORK");
+      log(`Phase 3: done (${marks[marks.length - 1].ms}ms)`);
+
+      log("Phase 4: DNS starting...");
+      sections.push("", formatChecks("4. DNS AUTH", dnsAuth()));
+      mark("4. DNS AUTH");
+      log(`Phase 4: done (${marks[marks.length - 1].ms}ms)`);
 
       if (sshOk) {
-        sections.push("", formatChecks(perf("5. MAIL INTERNALS"), mailInternals()));
+        log("Phase 5: MAIL INTERNALS starting...");
+        sections.push("", formatChecks("5. MAIL INTERNALS", mailInternals()));
+        mark("5. MAIL INTERNALS");
+        log(`Phase 5: done (${marks[marks.length - 1].ms}ms)`);
       } else {
-        sections.push("", formatChecks(perf("5. MAIL INTERNALS"), [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
+        sections.push("", formatChecks("5. MAIL INTERNALS", [{ name: "skipped", passed: false, details: "SSH unreachable", durationMs: 0 }]));
       }
 
-      sections.push("", formatChecks(perf("6. E2E DELIVERY"), e2eDelivery()));
-      sections.push("", `Total: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+      log("Phase 6: E2E DELIVERY starting...");
+      sections.push("", formatChecks("6. E2E DELIVERY", e2eDelivery()));
+      mark("6. E2E DELIVERY");
+      log(`Phase 6: done (${marks[marks.length - 1].ms}ms)`);
 
+      // Performance summary
+      const totalMs = Math.round(performance.now() - t0);
+      const perfLines = marks.filter(m => m.phase !== "start").map(m => `  ${m.phase.padEnd(22)} ${(m.ms / 1000).toFixed(1)}s`);
+      sections.push("", `PERFORMANCE (total: ${(totalMs / 1000).toFixed(1)}s)\n${"─".repeat(40)}\n${perfLines.join("\n")}`);
+
+      log(`mailu_full complete: ${totalMs}ms`);
       return sections.join("\n");
     }),
   );
