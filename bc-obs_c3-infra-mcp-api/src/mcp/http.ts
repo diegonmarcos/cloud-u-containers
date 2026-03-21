@@ -31,6 +31,7 @@ function createMcpServer(): McpServer {
     version: "3.1.0",
   });
 
+  registerHealthMailuTools(server);   // 5: mail health — register first (Claude Code tool limit)
   registerInventoryTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
@@ -40,7 +41,6 @@ function createMcpServer(): McpServer {
   registerFrontendTools(server);
   registerCrawleeTools(server);
   registerMattermostTools(server);
-  registerHealthMailuTools(server);
   registerResources(server);
 
   return server;
