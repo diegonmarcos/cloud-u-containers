@@ -189,7 +189,7 @@ function mailuUp(): Check[] {
     const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
       "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
     const code = r.stdout.trim();
-    return { passed: code === "400" || code === "405", details: `HTTP ${code} (expected — needs POST)` };
+    return { passed: ["400", "405", "406"].includes(code), details: `HTTP ${code} (expected — MCP needs POST+JSON)` };
   }));
 
   return checks;
