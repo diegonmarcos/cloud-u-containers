@@ -97,10 +97,10 @@ in {
     entrypoint ? null,        # string or list — overrides image ENTRYPOINT
     command ? null,           # string or list — overrides image CMD
 
-    # Networking
-    networkMode ? null,       # "host" = use host network stack (no ports/networks needed)
-    ports ? [],               # list of "ip:host:container" strings
-    networks ? [],
+    # Networking — host mode by default (WG + Hickory DNS, no Docker proxy)
+    networkMode ? "host",     # "host" = host network (default). null = Docker bridge (legacy)
+    ports ? [],               # only used if networkMode != "host"
+    networks ? [],            # only used if networkMode != "host"
     expose ? [],              # internal-only ports
 
     # Health
