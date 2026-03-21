@@ -130,6 +130,7 @@ interface RemoteData {
   smtp25: string;
   smtp587: string;
   webmailInternal: string;
+  debugDump: string;
 }
 
 let _remoteCache: RemoteData | null = null;
@@ -179,10 +180,37 @@ echo QUIT | timeout ${T} openssl s_client -connect localhost:587 2>&1 | head -3
 echo "===webmailInternal==="
 curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAILU_WG_IP}:8444/webmail 2>&1
 echo ""
+echo "===debugDump==="
+echo "--- ss listening ports ---"
+sudo ss -tlnp 2>/dev/null || ss -tlnp 2>/dev/null || true
+echo "--- iptables nat DNAT ---"
+sudo iptables -t nat -L -n 2>/dev/null | grep DNAT || echo "(none)"
+echo "--- iptables INPUT ---"
+sudo iptables -L INPUT -n 2>/dev/null | head -20 || true
+echo "--- nft raw PREROUTING ---"
+sudo nft list chain ip raw PREROUTING 2>/dev/null || echo "(no raw table)"
+echo "--- docker networks ---"
+timeout ${T} docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null || true
+echo "--- mailu.env SUBNET ---"
+grep SUBNET /opt/mailu/mailu.env 2>/dev/null || true
+echo "--- front logs (last 5) ---"
+timeout ${T} docker logs mailu-front-1 --tail 5 2>&1 || true
+echo "--- admin logs (last 5) ---"
+timeout ${T} docker logs mailu-admin-1 --tail 5 2>&1 || true
+echo "--- smtp logs (last 5) ---"
+timeout ${T} docker logs mailu-smtp-1 --tail 5 2>&1 || true
+echo "--- imap logs (last 3) ---"
+timeout ${T} docker logs mailu-imap-1 --tail 3 2>&1 || true
+echo "--- smtp-proxy logs (last 3) ---"
+timeout ${T} docker logs smtp-proxy --tail 3 2>&1 || true
+echo "--- resolv.conf ---"
+cat /etc/resolv.conf 2>/dev/null || true
+echo "--- WG port test ---"
+for p in 993 465 587 25 443 8384 8080; do timeout 1 bash -c "echo > /dev/tcp/10.0.0.3/\$p" 2>/dev/null && echo "\$p OK" || echo "\$p FAIL"; done
 `.trim();
 
   log("SSH batch: connecting...");
-  const r = sshExec(MAILU_VM, script, 25_000, true, 3);
+  const r = sshExec(MAILU_VM, script, 45_000, true, 3);
   const output = r.stdout;
 
   function section(name: string): string {
@@ -212,6 +240,7 @@ echo ""
     smtp25: section("smtp25"),
     smtp587: section("smtp587"),
     webmailInternal: section("webmailInternal"),
+    debugDump: section("debugDump"),
   };
   return _remoteCache;
 }
@@ -575,6 +604,12 @@ export function registerHealthMailuTools(server: McpServer): void {
       const totalMs = Math.round(performance.now() - t0);
       const perfLines = marks.filter(m => m.phase !== "start").map(m => `  ${m.phase.padEnd(22)} ${(m.ms / 1000).toFixed(1)}s`);
       sections.push("", `PERFORMANCE (total: ${(totalMs / 1000).toFixed(1)}s)\n${"─".repeat(40)}\n${perfLines.join("\n")}`);
+
+      // If ANY phase has failures, dump full debug data
+      const hasFailures = sections.some(s => s.includes("✗") || s.includes("FAILED"));
+      if (hasFailures && _remoteCache?.debugDump) {
+        sections.push("", `DEBUG DUMP (auto-collected on failure)\n${"═".repeat(60)}\n${_remoteCache.debugDump}`);
+      }
 
       log(`mailu_full complete: ${totalMs}ms`);
       return sections.join("\n");
