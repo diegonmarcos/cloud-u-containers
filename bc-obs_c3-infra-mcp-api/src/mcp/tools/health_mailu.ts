@@ -600,18 +600,74 @@ export function registerHealthMailuTools(server: McpServer): void {
 
       runPhase("6. E2E DELIVERY", () => formatChecks("6. E2E DELIVERY", e2eDelivery()));
 
-      // Performance summary
+      // ── SUMMARY ──
       const totalMs = Math.round(performance.now() - t0);
       const perfLines = marks.filter(m => m.phase !== "start").map(m => `  ${m.phase.padEnd(22)} ${(m.ms / 1000).toFixed(1)}s`);
       sections.push("", `PERFORMANCE (total: ${(totalMs / 1000).toFixed(1)}s)\n${"─".repeat(40)}\n${perfLines.join("\n")}`);
 
-      // If ANY phase has failures, dump full debug data
-      const hasFailures = sections.some(s => s.includes("✗") || s.includes("FAILED"));
-      if (hasFailures && _remoteCache?.debugDump) {
-        sections.push("", `DEBUG DUMP (auto-collected on failure)\n${"═".repeat(60)}\n${_remoteCache.debugDump}`);
+      // Count pass/fail across all phases
+      const allLines = sections.join("\n");
+      const passCount = (allLines.match(/✓/g) || []).length;
+      const failCount = (allLines.match(/✗/g) || []).length;
+      const hasFailures = failCount > 0 || allLines.includes("FAILED");
+
+      sections.push("", `${"═".repeat(60)}`);
+      sections.push(`RESULT: ${passCount} passed, ${failCount} failed (${(totalMs / 1000).toFixed(1)}s)`);
+
+      if (!hasFailures) {
+        sections.push("ALL CHECKS PASSED — Mailu is fully operational.");
+      } else {
+        sections.push(`${failCount} CHECK(S) FAILED — COLLECTING FULL DEBUG DATA BELOW`);
+        sections.push(`${"═".repeat(60)}`);
+
+        // Dump ALL remote data for cross-referencing
+        if (_remoteCache) {
+          sections.push("");
+          sections.push("╔══════════════════════════════════════════════════════════════╗");
+          sections.push("║          FULL DEBUG DUMP — USE THIS TO DIAGNOSE             ║");
+          sections.push("╚══════════════════════════════════════════════════════════════╝");
+
+          if (_remoteCache.debugDump) {
+            sections.push("", _remoteCache.debugDump);
+          }
+
+          // Also dump ALL raw SSH data for complete picture
+          sections.push("", "── RAW CONTAINER STATUS ──────────────────────────────────────");
+          sections.push(_remoteCache.containers || "(empty)");
+          sections.push("", "── RAW RESTART COUNTS ───────────────────────────────────────");
+          sections.push(_remoteCache.restarts || "(empty)");
+          sections.push("", "── DOVECOT USER LOOKUP ──────────────────────────────────────");
+          sections.push(_remoteCache.dovecotUser || "(empty)");
+          sections.push("", "── IMAP CAPABILITY ─────────────────────────────────────────");
+          sections.push(_remoteCache.imapCap || "(empty)");
+          sections.push("", "── POSTFIX QUEUE ───────────────────────────────────────────");
+          sections.push(_remoteCache.postfixQueue || "(empty)");
+          sections.push("", "── RSPAMD STATUS ───────────────────────────────────────────");
+          sections.push(_remoteCache.rspamd || "(empty)");
+          sections.push("", "── REDIS PING ──────────────────────────────────────────────");
+          sections.push(_remoteCache.redis || "(empty)");
+          sections.push("", "── ADMIN PANEL HTTP ────────────────────────────────────────");
+          sections.push(_remoteCache.admin || "(empty)");
+          sections.push("", "── SIEVE FILTER ────────────────────────────────────────────");
+          sections.push(_remoteCache.sieve || "(empty)");
+          sections.push("", "── QUOTA ────────────────────────────────────────────────────");
+          sections.push(_remoteCache.quota || "(empty)");
+          sections.push("", "── USER ACCOUNTS ───────────────────────────────────────────");
+          sections.push(_remoteCache.users || "(empty)");
+          sections.push("", "── SMTP :25 BANNER ─────────────────────────────────────────");
+          sections.push(_remoteCache.smtp25 || "(empty)");
+          sections.push("", "── SMTP :587 TLS ───────────────────────────────────────────");
+          sections.push(_remoteCache.smtp587 || "(empty)");
+          sections.push("", "── WEBMAIL INTERNAL ────────────────────────────────────────");
+          sections.push(_remoteCache.webmailInternal || "(empty)");
+          sections.push("", "── DISK / MEMORY / LOAD ────────────────────────────────────");
+          sections.push(`disk: ${_remoteCache.disk}% | memory: ${_remoteCache.memory} | load: ${_remoteCache.load}`);
+        } else {
+          sections.push("", "⚠️ No remote data collected (SSH failed) — cannot dump debug info");
+        }
       }
 
-      log(`mailu_full complete: ${totalMs}ms`);
+      log(`mailu_full complete: ${totalMs}ms, ${passCount}✓ ${failCount}✗`);
       return sections.join("\n");
     }),
   );
