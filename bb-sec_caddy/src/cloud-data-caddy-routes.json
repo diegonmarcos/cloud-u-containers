@@ -5,9 +5,9 @@
   },
 
   "l4_routes": [
-    { "port": 993, "upstream": "mailu.app:993", "comment": "IMAPS — TLS passthrough to Mailu front" },
-    { "port": 465, "upstream": "mailu.app:465", "comment": "SMTPS — TLS passthrough to Mailu front" },
-    { "port": 587, "upstream": "mailu.app:587", "comment": "SMTP Submission — TCP passthrough to Mailu front" }
+    { "port": 993, "upstream": "stalwart.app:993", "comment": "IMAPS — TLS passthrough to Stalwart" },
+    { "port": 465, "upstream": "stalwart.app:465", "comment": "SMTPS — TLS passthrough to Stalwart" },
+    { "port": 587, "upstream": "stalwart.app:587", "comment": "SMTP Submission — TCP passthrough to Stalwart" }
   ],
 
   "routes": [
@@ -43,10 +43,10 @@
     },
     {
       "domain": "mail.diegonmarcos.com",
-      "upstream": "mailu.app:8444",
+      "upstream": "stalwart.app:8443",
       "tls_skip_verify": true,
       "landing_page": "mymail",
-      "comment": "Mailu webmail (HTTPS with self-signed cert)"
+      "comment": "Stalwart web admin (HTTPS)"
     },
     {
       "domain": "workflows.diegonmarcos.com",
