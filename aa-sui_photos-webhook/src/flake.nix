@@ -38,7 +38,7 @@
             - photos_db_data:/var/lib/postgresql/data
             - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
           ports:
-            - "10.0.0.6:5432:5432"
+            - "10.0.0.6:5440:5432"
           networks:
             - photos_net
           restart: unless-stopped
@@ -62,9 +62,9 @@
             S3_SECRET_KEY: ''${S3_SECRET_KEY}
             S3_REGION: eu-marseille-1
             S3_BUCKET: photos
-            WEBHOOK_PORT: 5001
+            WEBHOOK_PORT: 5002
           ports:
-            - "10.0.0.6:5001:5001"
+            - "10.0.0.6:5002:5002"
           depends_on:
             photos-db:
               condition: service_healthy
@@ -76,7 +76,7 @@
           restart: unless-stopped
           command: python webhook.py flask
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
             interval: 10s
             timeout: 5s
             retries: 5
