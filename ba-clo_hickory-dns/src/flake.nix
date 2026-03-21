@@ -26,7 +26,12 @@
          else { services = {}; vms = {}; suffix = "app"; };
 
     suffix = dnsRegistry.suffix or "app";
-    services = dnsRegistry.services;
+    # Static overrides for services not yet in cloud-data pipeline
+    staticServices = {
+      stalwart = { ip = "10.0.0.3"; };
+      mail-mcp = { ip = "10.0.0.6"; };
+    };
+    services = (dnsRegistry.services or {}) // staticServices;
     vms = dnsRegistry.vms;
 
     # ── Per-service zone files ─────────────────────────────────────────

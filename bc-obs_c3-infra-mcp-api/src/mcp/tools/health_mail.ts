@@ -1,4 +1,4 @@
-// ── Mailu Health — comprehensive 6-phase async diagnostic (5 MCP tools) ──
+// ── Stalwart Health — comprehensive 6-phase async diagnostic (5 MCP tools) ──
 //
 // Phase 1: PRE-FLIGHT — WG tunnel, SSH, Docker daemon, disk, load, memory
 // Phase 2: CONTAINERS — status + crash-loop + restart count + deep service checks
@@ -15,13 +15,12 @@ import { listContainers } from "../../shared/docker.js";
 import { profileContainer } from "../../shared/diagnostics.js";
 import { performance } from "node:perf_hooks";
 
-const MAILU_VM = "oci-E2-f_0";
-const MAILU_DOMAIN = "mail.diegonmarcos.com";
-const MAILU_WG_IP = "10.0.0.3";
+const MAIL_VM = "oci-E2-f_0";
+const MAIL_DOMAIN = "mail.diegonmarcos.com";
+const MAIL_WG_IP = "10.0.0.3";
 const C3_VM = "oci-A1-f_0";
-const MAILU_CONTAINERS = [
-  "mailu-front-1", "mailu-admin-1", "mailu-imap-1", "mailu-smtp-1",
-  "mailu-antispam-1", "mailu-webmail-1", "mailu-resolver-1", "mailu-redis-1",
+const MAIL_CONTAINERS = [
+  "stalwart",
 ];
 const TEST_FROM = "health@mails.diegonmarcos.com";
 const TEST_TO = "me@diegonmarcos.com";
@@ -43,8 +42,8 @@ async function timedAsync(name: string, fn: () => Promise<{ passed: boolean; det
 }
 
 // SSH with fast timeout (3s connect, no WG retry) for health checks
-function ssh(cmd: string, timeout = 8_000) { return sshExec(MAILU_VM, cmd, timeout, true, 3); }
-const log = (msg: string) => process.stderr.write(`[mailu-health] ${msg}\n`);
+function ssh(cmd: string, timeout = 8_000) { return sshExec(MAIL_VM, cmd, timeout, true, 3); }
+const log = (msg: string) => process.stderr.write(`[mail-health] ${msg}\n`);
 function getResendApiKey(): string | null { return process.env.RESEND_API_KEY || null; }
 
 function dnsLookup(type: string, name: string): string {
@@ -75,8 +74,8 @@ function preflight(): Check[] {
 
   // WG tunnel — direct TCP probe (no SSH)
   checks.push(timed("WG tunnel", () => {
-    const r = exec("bash", ["-c", `timeout 3 bash -c 'echo > /dev/tcp/${MAILU_WG_IP}/22' 2>&1`]);
-    return { passed: r.ok, details: r.ok ? `${MAILU_WG_IP}:22 OK` : "WG DOWN" };
+    const r = exec("bash", ["-c", `timeout 3 bash -c 'echo > /dev/tcp/${MAIL_WG_IP}/22' 2>&1`]);
+    return { passed: r.ok, details: r.ok ? `${MAIL_WG_IP}:22 OK` : "WG DOWN" };
   }));
 
   // SSH + batch data collection (single SSH call)
@@ -153,32 +152,32 @@ timeout ${T} docker info --format '{{.ServerVersion}}' 2>&1 | head -1
 echo "===containers==="
 timeout ${T} docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
 echo "===restarts==="
-timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=mailu --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
+timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=stalwart --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===dovecotUser==="
-timeout ${T} docker exec mailu-imap-1 doveadm user ${TEST_TO} 2>&1 | head -3
+timeout ${T} docker exec stalwart stalwart-cli user ${TEST_TO} 2>&1 | head -3
 echo "===imapCap==="
 echo "a001 CAPABILITY" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===postfixQueue==="
-timeout ${T} docker exec mailu-smtp-1 postqueue -p 2>&1 | tail -1
+timeout ${T} docker exec stalwart stalwart-cli queue list -p 2>&1 | tail -1
 echo "===rspamd==="
-timeout ${T} docker exec mailu-antispam-1 curl -sf http://localhost:11334/stat 2>&1 | head -5
+timeout ${T} curl -sf http://localhost:8443/healthz 2>&1 | head -5
 echo "===redis==="
-timeout ${T} docker exec mailu-redis-1 redis-cli ping 2>&1
+timeout ${T} curl -sf http://localhost:8443/healthz 2>&1
 echo "===admin==="
 curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://localhost:8444/admin/ 2>&1
 echo ""
 echo "===sieve==="
-timeout ${T} docker exec mailu-imap-1 cat /overrides/before.sieve 2>&1 | head -1
+timeout ${T} docker exec stalwart cat /opt/stalwart/data/sieve/before.sieve 2>/dev/null || echo none 2>&1 | head -1
 echo "===quota==="
-timeout ${T} docker exec mailu-imap-1 doveadm quota get -u ${TEST_TO} 2>&1 | head -3
+timeout ${T} docker exec stalwart stalwart-cli quota get -u ${TEST_TO} 2>&1 | head -3
 echo "===users==="
-timeout ${T} docker exec mailu-admin-1 flask mailu config-export --users 2>/dev/null | grep -c '@' || echo 0
+timeout ${T} curl -sf -u admin:$STALWART_PASS http://localhost:8443/api/account 2>/dev/null | grep -c '@' || echo 0
 echo "===smtp25==="
 echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
 echo QUIT | timeout ${T} openssl s_client -connect localhost:587 2>&1 | head -3
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAILU_WG_IP}:8444/webmail 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAIL_WG_IP}:8444/webmail 2>&1
 echo ""
 echo "===debugDump==="
 echo "--- ss listening ports ---"
@@ -191,16 +190,16 @@ echo "--- nft raw PREROUTING ---"
 sudo nft list chain ip raw PREROUTING 2>/dev/null || echo "(no raw table)"
 echo "--- docker networks ---"
 timeout ${T} docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null || true
-echo "--- mailu.env SUBNET ---"
-grep SUBNET /opt/mailu/mailu.env 2>/dev/null || true
+echo "--- stalwart config ---"
+grep -E 'hostname|bind' /opt/stalwart/config.toml 2>/dev/null || true
 echo "--- front logs (last 5) ---"
-timeout ${T} docker logs mailu-front-1 --tail 5 2>&1 || true
+timeout ${T} docker logs stalwart --tail 5 2>&1 || true
 echo "--- admin logs (last 5) ---"
-timeout ${T} docker logs mailu-admin-1 --tail 5 2>&1 || true
+timeout ${T} docker logs stalwart 2>&1 | grep -i admin --tail 5 2>&1 || true
 echo "--- smtp logs (last 5) ---"
-timeout ${T} docker logs mailu-smtp-1 --tail 5 2>&1 || true
+timeout ${T} docker logs stalwart 2>&1 | grep -i smtp --tail 5 2>&1 || true
 echo "--- imap logs (last 3) ---"
-timeout ${T} docker logs mailu-imap-1 --tail 3 2>&1 || true
+timeout ${T} docker logs stalwart 2>&1 | grep -i imap --tail 3 2>&1 || true
 echo "--- smtp-proxy logs (last 3) ---"
 timeout ${T} docker logs smtp-proxy --tail 3 2>&1 || true
 echo "--- resolv.conf ---"
@@ -210,7 +209,7 @@ for p in 993 465 587 25 443 8384 8080; do timeout 1 bash -c "echo > /dev/tcp/10.
 `.trim();
 
   log("SSH batch: connecting...");
-  const r = sshExec(MAILU_VM, script, 45_000, true, 3);
+  const r = sshExec(MAIL_VM, script, 45_000, true, 3);
   const output = r.stdout;
 
   function section(name: string): string {
@@ -283,7 +282,7 @@ function containerHealth(): Check[] {
     if (name) restartMap.set(name, parseInt(count) || 0);
   }
 
-  for (const name of [...MAILU_CONTAINERS, "smtp-proxy"]) {
+  for (const name of [...MAIL_CONTAINERS, "smtp-proxy"]) {
     checks.push(timed(name, () => {
       const c = containers.find((ct) => ct.name === name);
       if (!c) return { passed: false, details: "NOT FOUND" };
@@ -298,11 +297,11 @@ function containerHealth(): Check[] {
     }));
   }
 
-  // mailu-mcp on oci-apps
-  checks.push(timed("mailu-mcp", () => {
+  // mail-mcp on oci-apps
+  checks.push(timed("mail-mcp", () => {
     const { containers: c3c, ok: c3ok } = listContainers(C3_VM, true);
     if (!c3ok) return { passed: false, details: "oci-apps unreachable" };
-    const mcp = c3c.find((c) => c.name === "mailu-mcp");
+    const mcp = c3c.find((c) => c.name === "mail-mcp");
     if (!mcp) return { passed: false, details: "NOT FOUND" };
     return { passed: mcp.status.startsWith("Up"), details: mcp.status.replace(/\s+\(.*/, "") };
   }));
@@ -320,9 +319,9 @@ function networkChecks(): Check[] {
   // TLS ports — run ALL 3 in parallel via single bash call
   checks.push(timed("TLS :993/:465/:587", () => {
     const r = exec("bash", ["-c", `
-      r993=$(echo Q | timeout 3 openssl s_client -connect ${MAILU_DOMAIN}:993 2>&1) &
-      r465=$(echo Q | timeout 3 openssl s_client -connect ${MAILU_DOMAIN}:465 2>&1) &
-      r587=$(echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAILU_DOMAIN}:587 2>&1) &
+      r993=$(echo Q | timeout 3 openssl s_client -connect ${MAIL_DOMAIN}:993 2>&1) &
+      r465=$(echo Q | timeout 3 openssl s_client -connect ${MAIL_DOMAIN}:465 2>&1) &
+      r587=$(echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAIL_DOMAIN}:587 2>&1) &
       wait
       echo "993:$(echo "$r993" | grep -c CONNECTED)"
       echo "465:$(echo "$r465" | grep -c CONNECTED)"
@@ -357,7 +356,7 @@ function networkChecks(): Check[] {
 
   // HTTP endpoints
   checks.push(timed("Webmail HTTPS", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `https://${MAILU_DOMAIN}/webmail`]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `https://${MAIL_DOMAIN}/webmail`]);
     return { passed: ["200", "301", "302"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
   }));
   checks.push(timed("Webmail internal", () => {
@@ -368,8 +367,8 @@ function networkChecks(): Check[] {
     const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://smtp-proxy.diegonmarcos.com/"]);
     return { passed: r.stdout.trim() !== "000" && r.stdout.trim() !== "502", details: `HTTP ${r.stdout.trim()}` };
   }));
-  checks.push(timed("mailu-mcp MCP", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://mcp.diegonmarcos.com/mailu-mcp/mcp"]);
+  checks.push(timed("mail-mcp MCP", () => {
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://mcp.diegonmarcos.com/mail-mcp/mcp"]);
     return { passed: ["400", "405", "406"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()} (alive)` };
   }));
 
@@ -480,7 +479,7 @@ function e2eDelivery(): Check[] {
     if (!sshOk) return { passed: false, details: "SSH down — cannot check IMAP" };
     for (let i = 0; i < 3; i++) {
       exec("bash", ["-c", "sleep 2"]);
-      const r = ssh(`docker exec mailu-imap-1 doveadm search -u ${TEST_TO} subject "${tag}" 2>&1 | head -3`, 5_000);
+      const r = ssh(`docker exec stalwart stalwart-cli search -u ${TEST_TO} subject "${tag}" 2>&1 | head -3`, 5_000);
       if (r.ok && r.stdout.trim().length > 0 && !r.stdout.includes("error")) return { passed: true, details: `found (poll ${i + 1}, ${(i + 1) * 2}s)` };
     }
     return { passed: false, details: "NOT FOUND after 6s" };
@@ -516,8 +515,8 @@ function safeTool(fn: () => string): { content: [{ type: "text"; text: string }]
   catch (err: unknown) { return { content: [{ type: "text" as const, text: `ERROR: ${err instanceof Error ? err.message : String(err)}` }] }; }
 }
 
-export function registerHealthMailuTools(server: McpServer): void {
-  server.tool("mailu_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
+export function registerHealthMailTools(server: McpServer): void {
+  server.tool("mail_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
     async () => safeTool(() => {
       clearRemoteCache();
       const sections: string[] = [];
@@ -532,19 +531,19 @@ export function registerHealthMailuTools(server: McpServer): void {
     }),
   );
 
-  server.tool("mailu_profile", "Deep profile all Mailu containers", {},
+  server.tool("mail_profile", "Deep profile all Stalwart containers", {},
     async () => safeTool(() => {
       const p: Record<string, unknown> = {};
-      for (const n of [...MAILU_CONTAINERS, "smtp-proxy"]) { try { p[n] = profileContainer(n); } catch (e: unknown) { p[n] = { error: String(e) }; } }
-      return `Mailu Profiles\n${"─".repeat(60)}\n${JSON.stringify(p, null, 2)}`;
+      for (const n of [...MAIL_CONTAINERS, "smtp-proxy"]) { try { p[n] = profileContainer(n); } catch (e: unknown) { p[n] = { error: String(e) }; } }
+      return `Stalwart Profiles\n${"─".repeat(60)}\n${JSON.stringify(p, null, 2)}`;
     }),
   );
 
-  server.tool("mailu_send_test", "E2E delivery: Resend → CF → smtp-proxy → Mailu → IMAP", {},
+  server.tool("mail_send_test", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
     async () => safeTool(() => formatChecks("E2E DELIVERY", e2eDelivery())),
   );
 
-  server.tool("mailu_outbound_test", "Outbound: SMTP relay + DNS auth", {},
+  server.tool("mail_outbound_test", "Outbound: SMTP relay + DNS auth", {},
     async () => safeTool(() => {
       const c: Check[] = [
         timed("SMTP :25", () => { const r = ssh(`echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`, 5_000); return { passed: r.stdout.includes("220"), details: r.stdout.trim().split("\n")[0] || "no banner" }; }),
@@ -555,7 +554,7 @@ export function registerHealthMailuTools(server: McpServer): void {
     }),
   );
 
-  server.tool("mailu_full", "Full 6-phase diagnostic: pre-flight → containers → network → DNS → internals → e2e delivery", {},
+  server.tool("mail_full", "Full 6-phase diagnostic: pre-flight → containers → network → DNS → internals → e2e delivery", {},
     async () => safeTool(() => {
       clearRemoteCache();
       const marks: { phase: string; ms: number }[] = [];
@@ -615,7 +614,7 @@ export function registerHealthMailuTools(server: McpServer): void {
       sections.push(`RESULT: ${passCount} passed, ${failCount} failed (${(totalMs / 1000).toFixed(1)}s)`);
 
       if (!hasFailures) {
-        sections.push("ALL CHECKS PASSED — Mailu is fully operational.");
+        sections.push("ALL CHECKS PASSED — Stalwart is fully operational.");
       } else {
         sections.push(`${failCount} CHECK(S) FAILED — COLLECTING FULL DEBUG DATA BELOW`);
         sections.push(`${"═".repeat(60)}`);
@@ -667,7 +666,7 @@ export function registerHealthMailuTools(server: McpServer): void {
         }
       }
 
-      log(`mailu_full complete: ${totalMs}ms, ${passCount}✓ ${failCount}✗`);
+      log(`mail_full complete: ${totalMs}ms, ${passCount}✓ ${failCount}✗`);
       return sections.join("\n");
     }),
   );
