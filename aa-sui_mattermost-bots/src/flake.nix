@@ -14,11 +14,11 @@
       bridge_container = "mattermost-bots";
       image = "ngrie/mattermost-team-edition-arm:10.11";
       c3_api = "http://c3-infra-mcp-api:8080";
-      c3_port = 8888;
+      c3_port = 8887;
       postgres_image = "postgres:16-alpine";
       bridge_image = "python:3.12-slim";
       port = 8065;
-      postgres_port = 5432;
+      postgres_port = 5435;
       wg_ip = "10.0.0.6";
       ntfy_url = "http://10.0.0.1:8090";
       # Scraped from bc-obs_ntfy/src/topic-scanner.py CONFIGURED_TOPICS
@@ -722,7 +722,7 @@
               )
 
 
-      ACTION_URL = "http://mattermost-bots:8888/c3/action"
+      ACTION_URL = "http://mattermost-bots:${toString config.c3_port}/c3/action"
 
       def make_buttons(actions):
           """Build Mattermost interactive message buttons. actions = [(label, command), ...]"""
@@ -829,7 +829,7 @@
               "team_id": team_id,
               "trigger": "c3",
               "method": "P",
-              "url": "http://mattermost-bots:8888/c3",
+              "url": "http://mattermost-bots:${toString config.c3_port}/c3",
               "display_name": "C3 Infrastructure",
               "description": "Control VMs and containers",
               "auto_complete": True,
@@ -1541,9 +1541,9 @@
 
           # Register /c3 slash command and start HTTP server
           register_slash_command(headers, team_id)
-          server = HTTPServer(("0.0.0.0", 8888), C3CommandHandler)
+          server = HTTPServer(("0.0.0.0", ${toString config.c3_port}), C3CommandHandler)
           threading.Thread(target=server.serve_forever, daemon=True).start()
-          log.info("C3 command server listening on :8888")
+          log.info("C3 command server listening on :${toString config.c3_port}")
 
           # Get ALL channels (public + private) for bot membership
           r = mm_api("GET", f"/teams/{team_id}/channels?per_page=200", headers)

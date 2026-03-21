@@ -12,7 +12,7 @@
       container_name = "google-workspace-mcp";
       image = "google-workspace-mcp:latest";
       port = 3104;
-      internal_port = 8000;
+      internal_port = 8004;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
