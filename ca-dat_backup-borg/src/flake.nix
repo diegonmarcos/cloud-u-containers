@@ -32,6 +32,7 @@
           image: alpine:3.19
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           command: >
             sh -c "
               apk add --no-cache borgbackup openssh-server &&
@@ -39,13 +40,11 @@
               chmod 700 /root/.ssh &&
               ssh-keygen -A &&
               echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
-              /usr/sbin/sshd -D
+              /usr/sbin/sshd -D -p ${toString config.ssh_port}
             "
           volumes:
             - borg_data:/backup/media
             - ./authorized_keys:/root/.ssh/authorized_keys:ro
-          ports:
-            - "${toString config.ssh_port}:22"
 
       volumes:
         borg_data:

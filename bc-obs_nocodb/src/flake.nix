@@ -31,10 +31,11 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
-            NC_DB: "pg://nocodb-db:5432?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
+            NC_DB: "pg://localhost:5432?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}
             NC_DISABLE_TELE: "true"
             NC_OIDC_ISSUER: https://auth.diegonmarcos.com
@@ -47,10 +48,6 @@
           volumes:
             - nocodb_data:/usr/app/data
             - /mnt/gcloud-sqlite:/sqlite:ro
-          ports:
-            - "10.0.0.6:${toString config.port}:8080"
-          networks:
-            - nocodb_network
           depends_on:
             nocodb-db:
               condition: service_healthy
@@ -65,14 +62,13 @@
           image: postgres:16-bookworm
           container_name: nocodb-db
           restart: unless-stopped
+          network_mode: host
           environment:
             POSTGRES_DB: nocodb
             POSTGRES_USER: nocodb
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
           volumes:
             - nocodb_postgres:/var/lib/postgresql/data
-          networks:
-            - nocodb_network
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb"]
             interval: 10s
@@ -86,13 +82,6 @@
         nocodb_postgres:
           name: nocodb_postgres
 
-      networks:
-        nocodb_network:
-          name: nocodb_network
-          driver: bridge
-          ipam:
-            config:
-              - subnet: 172.25.0.0/24
     '';
 
 

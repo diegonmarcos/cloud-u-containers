@@ -33,11 +33,10 @@
           container_name: ${config.container_name}
           entrypoint: ["dagu", "start-all"]
           restart: unless-stopped
-          ports:
-            - "10.0.0.3:${toString config.port}:8080"
+          network_mode: host
           environment:
             - DAGU_HOST=0.0.0.0
-            - DAGU_PORT=8080
+            - DAGU_PORT=${toString config.port}
             - DAGU_DAGS_DIR=/var/lib/dagu/dags
             - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
             - DAGU_AUTH_MODE=basic

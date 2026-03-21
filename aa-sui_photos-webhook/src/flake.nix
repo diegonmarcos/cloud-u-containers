@@ -30,6 +30,7 @@
         photos-db:
           image: ${config.db_image}
           container_name: ${config.db_container}
+          network_mode: host
           environment:
             POSTGRES_DB: ${config.db_name}
             POSTGRES_USER: ${config.db_user}
@@ -37,10 +38,6 @@
           volumes:
             - photos_db_data:/var/lib/postgresql/data
             - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-          ports:
-            - "10.0.0.6:5440:5432"
-          networks:
-            - photos_net
           restart: unless-stopped
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ${config.db_user} -d ${config.db_name}"]
@@ -53,8 +50,9 @@
             context: .
             dockerfile: Dockerfile
           container_name: ${config.webhook_container}
+          network_mode: host
           environment:
-            DB_HOST: ${config.db_container}
+            DB_HOST: localhost
             DB_NAME: ${config.db_name}
             DB_USER: ${config.db_user}
             DB_PASSWORD: ''${DB_PASSWORD:-SECURE_PASSWORD_HERE}
@@ -63,16 +61,12 @@
             S3_REGION: eu-marseille-1
             S3_BUCKET: photos
             WEBHOOK_PORT: 5002
-          ports:
-            - "10.0.0.6:5002:5002"
           depends_on:
             photos-db:
               condition: service_healthy
           volumes:
             - ./webhook.py:/app/webhook.py
             - ./requirements.txt:/app/requirements.txt
-          networks:
-            - photos_net
           restart: unless-stopped
           command: python webhook.py flask
           healthcheck:
@@ -84,10 +78,6 @@
       volumes:
         photos_db_data:
           driver: local
-
-      networks:
-        photos_net:
-          driver: bridge
     '';
 
 

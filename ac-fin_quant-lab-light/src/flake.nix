@@ -32,8 +32,7 @@
           image: ${config.research_image}
           container_name: quant_light_research
           restart: unless-stopped
-          ports:
-            - "${toString config.jupyter_port}:8888"
+          network_mode: host
           volumes:
             - ./notebooks:/home/jovyan/work
             - ./data:/home/jovyan/data
@@ -43,8 +42,6 @@
           command: >
             sh -c "pip install polars openbb quantstats riskfolio-lib plotly &&
                    start-notebook.sh --NotebookApp.token='''"
-          networks:
-            - quant_network
           healthcheck:
             test: ["CMD-SHELL", "curl -sf http://localhost:8888/api || exit 1"]
             interval: 30s
@@ -56,8 +53,7 @@
           image: ${config.engine_image}
           container_name: quant_light_engine
           restart: unless-stopped
-          ports:
-            - "${toString config.engine_port}:5000"
+          network_mode: host
           volumes:
             - ./strategies:/app/strategies
             - ./data:/app/data
@@ -67,25 +63,21 @@
           command: >
             sh -c "pip install nautilus_trader ib_insync &&
                    tail -f /dev/null"
-          networks:
-            - quant_network
 
         db:
           image: ${config.db_image}
           container_name: quant_light_db
           restart: unless-stopped
-          ports:
-            - "${toString config.db_port}:5432"
+          network_mode: host
           env_file:
             - .secrets
           environment:
             POSTGRES_USER: ''${POSTGRES_USER}
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
             POSTGRES_DB: ''${POSTGRES_DB}
+            PGPORT: "${toString config.db_port}"
           volumes:
             - postgres_data:/var/lib/postgresql/data
-          networks:
-            - quant_network
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ''${POSTGRES_USER} -d ''${POSTGRES_DB}"]
             interval: 10s
@@ -97,10 +89,6 @@
         postgres_data:
           name: quant_light_postgres_data
 
-      networks:
-        quant_network:
-          name: quant_light_network
-          driver: bridge
     '';
 
 

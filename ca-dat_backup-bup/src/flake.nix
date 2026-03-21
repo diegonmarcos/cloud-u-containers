@@ -32,6 +32,7 @@
           image: alpine:3.19
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           command: >
             sh -c "
               apk add --no-cache bup openssh-server &&
@@ -40,13 +41,11 @@
               ssh-keygen -A &&
               echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
               bup init -r /backup/databases &&
-              /usr/sbin/sshd -D
+              /usr/sbin/sshd -D -p ${toString config.ssh_port}
             "
           volumes:
             - bup_data:/backup/databases
             - ./authorized_keys:/root/.ssh/authorized_keys:ro
-          ports:
-            - "${toString config.ssh_port}:22"
 
       volumes:
         bup_data:

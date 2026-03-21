@@ -33,11 +33,10 @@
             image: busybox:latest
             container_name: cloud-spec
             restart: unless-stopped
+            network_mode: host
             command: busybox httpd -f -p 3080 -h /srv
             volumes:
               - ./site:/srv:ro
-            ports:
-              - "3080:3080"
       '';
 
     in {

@@ -28,6 +28,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           environment:
             - CENTRAL_HOST=''${CENTRAL_HOST}
             - CENTRAL_PORT=''${CENTRAL_PORT:-5514}

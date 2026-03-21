@@ -31,6 +31,7 @@
           image: postgres:16-alpine
           container_name: windmill-db
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
@@ -39,8 +40,6 @@
             - POSTGRES_PASSWORD=''${DB_PASSWORD}
           volumes:
             - windmill-db-data:/var/lib/postgresql/data
-          networks:
-            - windmill-net
           deploy:
             resources:
               limits:
@@ -57,10 +56,11 @@
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-server
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5432/windmill?sslmode=disable
             - MODE=server
             - BASE_URL=https://${config.domain}
             - COOKIE_DOMAIN=diegonmarcos.com
@@ -75,16 +75,12 @@
             - SMTP_USERNAME=''${SMTP_USERNAME:-}
             - SMTP_PASSWORD=''${SMTP_PASSWORD:-}
             - RUST_LOG=info
-          ports:
-            - "10.0.0.6:8000:8000"
           depends_on:
             windmill-db:
               condition: service_healthy
           volumes:
             - windmill-server-data:/tmp/windmill
             - /var/run/docker.sock:/var/run/docker.sock
-          networks:
-            - windmill-net
           deploy:
             resources:
               limits:
@@ -103,10 +99,11 @@
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-worker
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5432/windmill?sslmode=disable
             - MODE=worker
             - WORKER_GROUP=default
             - NUM_WORKERS=2
@@ -121,8 +118,6 @@
             - windmill-worker-data:/tmp/windmill
             - /var/run/docker.sock:/var/run/docker.sock
             - /opt/ssh-keys/windmill-worker:/home/windmill/.ssh:ro
-          networks:
-            - windmill-net
           deploy:
             resources:
               limits:
@@ -130,11 +125,6 @@
                 cpus: '0.5'
               reservations:
                 memory: 128M
-
-      networks:
-        windmill-net:
-          name: windmill-net
-          driver: bridge
 
       volumes:
         windmill-db-data:

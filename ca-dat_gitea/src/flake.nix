@@ -30,19 +30,11 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "10.0.0.6:${toString config.port_http}:3000"
-            - "10.0.0.6:${toString config.port_ssh}:22"
+          network_mode: host
           volumes:
             - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro
-          networks:
-            - gitea_backup_network
-
-      networks:
-        gitea_backup_network:
-          driver: bridge
 
       volumes:
         gitea_data:

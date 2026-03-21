@@ -29,37 +29,27 @@
           image: balabit/syslog-ng:4.4.0
           container_name: syslog-central
           restart: "no"
-          ports:
-            - "5514:5514/tcp"
+          network_mode: host
           volumes:
             - ./syslog-ng-central.conf:/etc/syslog-ng/syslog-ng.conf:ro
             - siem-data:/var/log/siem
-          networks:
-            - security
 
         siem-api:
           image: python:3.11-slim
           container_name: siem-api
           restart: "no"
+          network_mode: host
           build:
             context: .
             dockerfile: Dockerfile.api
-          ports:
-            - "127.0.0.1:8080:8080"
           volumes:
             - siem-data:/var/log/siem:ro
             - ./api:/app:ro
           environment:
             - DB_PATH=/var/log/siem/alerts.db
-          networks:
-            - security
 
       volumes:
         siem-data:
-
-      networks:
-        security:
-          driver: bridge
     '';
 
 

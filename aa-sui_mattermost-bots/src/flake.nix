@@ -49,8 +49,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "${config.wg_ip}:${toString config.port}:8065"
+          network_mode: host
           volumes:
             - ./data/mattermost/config:/mattermost/config
             - ./data/mattermost/data:/mattermost/data
@@ -72,7 +71,7 @@
             - MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true
             - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
             - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
-            - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mattermost-bots
+            - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=localhost
           depends_on:
             postgres:
               condition: service_healthy
@@ -80,6 +79,7 @@
           image: ${config.postgres_image}
           container_name: ${config.postgres_container}
           restart: unless-stopped
+          network_mode: host
           volumes:
             - ./data/postgres:/var/lib/postgresql/data
           env_file:
@@ -97,8 +97,7 @@
           image: ${config.bridge_image}
           container_name: ${config.bridge_container}
           restart: unless-stopped
-          ports:
-            - "${config.wg_ip}:${toString config.c3_port}:${toString config.c3_port}"
+          network_mode: host
           volumes:
             - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
             - ./requirements-bridge.txt:/app/requirements.txt:ro
@@ -108,7 +107,7 @@
           environment:
             - NTFY_URL=${config.ntfy_url}
             - TOPICS=${config.topics}
-            - MM_URL=http://mattermost:8065
+            - MM_URL=http://localhost:8065
             - C3_API_URL=${config.c3_api}
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_MODEL=${config.ollama_model}
@@ -116,8 +115,6 @@
             - AUTHELIA_OIDC_CLIENT_ID=mattermost-cc
             - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_MATTERMOST_SECRET}
             - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
-          networks:
-            - default
           depends_on:
             - mattermost
     '';

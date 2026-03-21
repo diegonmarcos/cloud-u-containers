@@ -26,6 +26,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
+          network_mode: host
           env_file:
             - .secrets
           environment:
@@ -33,8 +34,6 @@
             MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
             MM_ADMIN_USERNAME: me@diegonmarcos.com
             CLAUDE_MODEL: opus
-          ports:
-            - "3102:3102"
 
     '';
 

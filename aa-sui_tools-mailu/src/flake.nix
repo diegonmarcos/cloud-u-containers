@@ -43,46 +43,36 @@
       # ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-mailu/src/flake.nix ║
       # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_tools-mailu/build.sh ship ║
       # ╚══════════════════════════════════════════════════════════════════╝
-      version: "3.8"
-
       services:
         resolver:
           image: ghcr.io/mailu/unbound:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           healthcheck:
             test: ["CMD", "dig", "+short", "@127.0.0.1", "google.com"]
             interval: 30s
             timeout: 5s
             retries: 3
             start_period: 10s
-          networks:
-            default:
-              ipv4_address: 172.16.203.254
 
         front:
           image: ghcr.io/mailu/nginx:2024.06
           env_file: mailu.env
           restart: always
-          ports:
-            - "10.0.0.3:8444:443"
-            - "0.0.0.0:25:25"
-            - "0.0.0.0:465:465"
-            - "0.0.0.0:587:587"
-            - "0.0.0.0:993:993"
+          network_mode: host
           volumes:
             - "./certs:/certs"
             - "./overrides/nginx:/overrides:ro"
           depends_on:
             resolver:
               condition: service_healthy
-          dns:
-            - 172.16.203.254
 
         admin:
           image: ghcr.io/mailu/admin:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./data:/data"
             - "./dkim:/dkim"
@@ -91,13 +81,12 @@
               condition: service_healthy
             redis:
               condition: service_started
-          dns:
-            - 172.16.203.254
 
         imap:
           image: ghcr.io/mailu/dovecot:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./mail:/mail"
             - "./overrides/dovecot:/overrides:ro"
@@ -106,13 +95,12 @@
               condition: service_healthy
             front:
               condition: service_started
-          dns:
-            - 172.16.203.254
 
         smtp:
           image: ghcr.io/mailu/postfix:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./mailqueue:/queue"
             - "./overrides/postfix:/overrides:ro"
@@ -121,13 +109,12 @@
               condition: service_healthy
             front:
               condition: service_started
-          dns:
-            - 172.16.203.254
 
         antispam:
           image: ghcr.io/mailu/rspamd:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./filter:/var/lib/rspamd"
             - "./overrides/rspamd:/overrides:ro"
@@ -136,12 +123,11 @@
               condition: service_healthy
             front:
               condition: service_started
-          dns:
-            - 172.16.203.254
 
         redis:
           image: redis:7-bookworm
           restart: always
+          network_mode: host
           volumes:
             - "./redis:/data"
 
@@ -149,6 +135,7 @@
           image: ghcr.io/mailu/webmail:2024.06
           env_file: mailu.env
           restart: always
+          network_mode: host
           volumes:
             - "./webmail:/data"
             - "./overrides/roundcube:/overrides:ro"
@@ -159,16 +146,6 @@
               condition: service_started
             imap:
               condition: service_started
-          dns:
-            - 172.16.203.254
-
-      networks:
-        default:
-          driver: bridge
-          ipam:
-            driver: default
-            config:
-              - subnet: ${config.subnet}
     '';
 
     # Mailu env template — secrets use ''${VAR} placeholders, substituted by init.sh
@@ -179,7 +156,7 @@
       POSTMASTER=me
 
       SECRET_KEY=''\${SECRET_KEY}
-      SUBNET=${config.subnet}
+      SUBNET=127.0.0.0/8
 
       WEBMAIL=roundcube
       WEB_ADMIN=/admin

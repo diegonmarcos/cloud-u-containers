@@ -33,16 +33,13 @@
           container_name: ${config.container_name}
           hostname: web-server-1
           restart: unless-stopped
+          network_mode: host
           environment:
             - PUID=1000
             - PGID=1000
           volumes:
             - /home/ubuntu/syncthing-config:/var/syncthing/config
             - /home/ubuntu/sync:/var/syncthing/data
-          ports:
-            - "10.0.0.3:${toString config.web_port}:8384"
-            - "0.0.0.0:${toString config.sync_port}:22000"
-            - "0.0.0.0:${toString config.discovery_port}:21027/udp"
           deploy:
             resources:
               limits:

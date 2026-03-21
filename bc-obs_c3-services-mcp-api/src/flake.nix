@@ -30,15 +30,13 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
-          ports:
-            - "${toString config.port}:8080"
-            - "${toString config.mcp_http_port}:${toString config.mcp_http_port}"
+          network_mode: host
           environment:
-            - PORT=8080
+            - PORT=${toString config.port}
             - NODE_ENV=production
             - MCP_HTTP_PORT=${toString config.mcp_http_port}
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3
