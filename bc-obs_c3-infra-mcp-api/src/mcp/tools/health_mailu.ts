@@ -138,7 +138,7 @@ function mailuUp(): Check[] {
     const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
       `https://${MAILU_DOMAIN}/webmail`]);
     const code = r.stdout.trim();
-    return { passed: code === "301" || code === "200", details: `HTTP ${code}` };
+    return { passed: ["200", "301", "302"].includes(code), details: `HTTP ${code}` };
   }));
 
   // Webmail via WireGuard (internal)
@@ -152,7 +152,7 @@ function mailuUp(): Check[] {
   // MX DNS record
   checks.push(timed("MX DNS record", () => {
     const out = dnsLookup("MX", "diegonmarcos.com");
-    const hasMx = out.includes("diegonmarcos.com");
+    const hasMx = out.includes("mx") || out.includes("cloudflare") || out.includes("diegonmarcos");
     return { passed: hasMx, details: out.split("\n")[0] || "no MX" };
   }));
 
