@@ -409,6 +409,7 @@
         cp ${mkSetupSh pkgs} $out/setup.sh
         chmod +x $out/setup.sh
         cp ${./overrides/dovecot/submission.conf} $out/overrides/dovecot/submission.conf
+        cp ${./overrides/dovecot/before.sieve} $out/overrides/dovecot/before.sieve
         cp ${./overrides/roundcube/calendar.inc.php} $out/overrides/roundcube/calendar.inc.php
         cp ${./overrides/roundcube/custom.inc.php} $out/overrides/roundcube/custom.inc.php
         cp ${./overrides/postfix/postfix.cf} $out/overrides/postfix/postfix.cf
