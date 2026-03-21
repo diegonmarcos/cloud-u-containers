@@ -128,14 +128,14 @@
       SECRET_KEY=''\${SECRET_KEY}
       SUBNET=127.0.0.0/8,10.0.0.0/24
 
-      # Host networking — all services on localhost
-      FRONT_ADDRESS=localhost
-      ADMIN_ADDRESS=localhost
-      IMAP_ADDRESS=localhost
-      SMTP_ADDRESS=localhost
-      ANTISPAM_ADDRESS=localhost
-      WEBMAIL_ADDRESS=localhost
-      REDIS_ADDRESS=localhost
+      # Host networking — all services on 127.0.0.1 (NOT localhost — IPv6 ::1 breaks Mailu)
+      FRONT_ADDRESS=127.0.0.1
+      ADMIN_ADDRESS=127.0.0.1
+      IMAP_ADDRESS=127.0.0.1
+      SMTP_ADDRESS=127.0.0.1
+      ANTISPAM_ADDRESS=127.0.0.1
+      WEBMAIL_ADDRESS=127.0.0.1
+      REDIS_ADDRESS=127.0.0.1
 
       # Use Cloudflare DNS for DNSSEC validation (Hickory DNS doesn't support it)
       RESOLVER=1.1.1.1
