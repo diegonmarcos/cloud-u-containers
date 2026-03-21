@@ -47,6 +47,12 @@ function ensureMux(alias: string, target: string, connectTimeout = 10): void {
   ], { timeout: 3_000 });
   if (check.ok) return; // already running
 
+  // Clean stale socket before creating new master
+  try { require("fs").unlinkSync(controlPath(alias)); } catch {}
+
+  // ControlPersist scales with connectTimeout: fast checks (3s) persist 30s, normal (10s) persist 300s
+  const persist = connectTimeout <= 3 ? 30 : 300;
+
   // Start master in background
   exec("ssh", [
     ...SSH_CONFIG_FLAG,
@@ -54,10 +60,10 @@ function ensureMux(alias: string, target: string, connectTimeout = 10): void {
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", `ControlMaster=auto`,
     "-o", `ControlPath=${controlPath(alias)}`,
-    "-o", "ControlPersist=300",
+    "-o", `ControlPersist=${persist}`,
     "-i", SSH_IDENTITY,
     "-fN", target,
-  ], { timeout: 15_000 });
+  ], { timeout: (connectTimeout + 2) * 1_000 });
 }
 
 function tcpProbe(host: string): { reachable: boolean; detail: string } {

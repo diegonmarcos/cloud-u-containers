@@ -216,7 +216,21 @@ echo ""
   return _remoteCache;
 }
 
-function clearRemoteCache() { _remoteCache = null; }
+function clearRemoteCache() {
+  _remoteCache = null;
+  // Clean stale SSH mux sockets to prevent zombie accumulation
+  try {
+    const os = require("os");
+    const fs = require("fs");
+    const path = require("path");
+    const muxDir = path.join(os.tmpdir(), "mcp-ssh-mux");
+    if (fs.existsSync(muxDir)) {
+      for (const f of fs.readdirSync(muxDir)) {
+        try { fs.unlinkSync(path.join(muxDir, f)); } catch {}
+      }
+    }
+  } catch {}
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PHASE 2: CONTAINERS + restart counts
