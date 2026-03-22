@@ -22,9 +22,9 @@ export function getConfig(): InfraConfig {
     syncRepos();
     const fileConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
     const discovered = discoverServicesFromDisk(fileConfig);
-    // Merge: discovered first, then cloud-data-topology.json overrides win
-    const merged = { ...discovered };
-    for (const [name, svc] of Object.entries(fileConfig.services)) {
+    // Merge: build.json (discovered) is source of truth, config.json is fallback only
+    const merged = { ...fileConfig.services };
+    for (const [name, svc] of Object.entries(discovered)) {
       merged[name] = svc;
     }
     fileConfig.services = merged;
