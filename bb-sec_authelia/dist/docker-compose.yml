@@ -1,37 +1,69 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bb-sec_authelia/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   authelia:
     image: authelia/authelia:4.39.15
     container_name: authelia
+    network_mode: host
+    entrypoint: ["sh", "/config/init.sh"]
     restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     env_file:
       - .secrets
     environment:
       TZ: Europe/Madrid
+    depends_on:
+      redis:
+        condition: service_started
     volumes:
       - ./config:/config
-    entrypoint: ["sh", "/config/init.sh"]
-    ports:
-      - "9091:9091"
-    networks:
-      - auth-net
-      - npm_default
-    depends_on:
-      - redis
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
 
   redis:
     image: redis:7-bookworm
     container_name: authelia-redis
+    network_mode: host
+    command: sh -c 'redis-server --requirepass $$AUTHELIA_REDIS_PASSWORD'
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     env_file:
       - .secrets
-    command: sh -c 'redis-server --requirepass $$AUTHELIA_REDIS_PASSWORD'
-    ports:
-      - "127.0.0.1:6379:6379"
-    restart: unless-stopped
-    networks:
-      - auth-net
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
 networks:
   auth-net:
     driver: bridge
-  npm_default:
-    external: true
