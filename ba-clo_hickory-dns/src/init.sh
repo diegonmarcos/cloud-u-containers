@@ -64,20 +64,22 @@ fi
 
 echo "[init] Generating zones from registry..."
 
-# Generate zone files
-echo "$REGISTRY" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-for name, info in data.get('services', {}).items():
-    ip = info.get('ip', '')
-    if not ip: continue
-    with open(sys.argv[1] + '/' + name + '.${SUFFIX}.zone', 'w') as f:
-        f.write('\$ORIGIN ' + name + '.${SUFFIX}.\n\$TTL 60\n')
-        f.write('@  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60\n')
-        f.write('@  IN NS   hickory-dns.${SUFFIX}.\n')
-        f.write('@  IN A    ' + ip + '\n')
-    print(f'  {name}.${SUFFIX} -> {ip}')
-" "$ZONES_DIR" 2>&1 || echo "[init] WARNING: python3 parse failed"
+# Generate zone files — pure shell + awk (no python)
+echo "$REGISTRY" | awk -v dir="$ZONES_DIR" -v suffix="$SUFFIX" '
+  /"[a-z].*": \{/{
+    gsub(/[" :{]/, ""); name=$1
+  }
+  /"ip":/{
+    gsub(/[",]/, ""); ip=$2
+    if (name && ip) {
+      zf = dir "/" name "." suffix ".zone"
+      printf "$ORIGIN %s.%s.\n$TTL 60\n@  IN SOA  hickory-dns.%s. admin.%s. 1 3600 900 604800 60\n@  IN NS   hickory-dns.%s.\n@  IN A    %s\n", name, suffix, suffix, suffix, suffix, ip > zf
+      close(zf)
+      printf "  %s.%s -> %s\n", name, suffix, ip
+      name=""; ip=""
+    }
+  }
+'
 
 # Generate named.toml from zone files
 {
