@@ -8,10 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
       container_name = "dozzle";
       image = "amir20/dozzle:latest";
-      port = 9999;
+      port = buildJson.ports.app;
     };
 
     title = "Dozzle - Real-time Docker log viewer";
@@ -24,9 +26,12 @@
           name = "dozzle";
           image = config.image;
           container_name = config.container_name;
-          ports = ["10.0.0.4:${toString config.port}:8080"];
+          ports = ["10.0.0.4:${toString config.port}:${toString config.port}"];
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
-          environment = ["DOZZLE_LEVEL=info"];
+          environment = [
+            "DOZZLE_LEVEL=info"
+            "DOZZLE_ADDR=:${toString config.port}"
+          ];
           memLimit = "64m";
           skipReadOnly = true;
           skipSecurity = true;

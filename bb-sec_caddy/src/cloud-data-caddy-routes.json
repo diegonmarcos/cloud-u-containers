@@ -114,7 +114,7 @@
         { "base_path": "/dozzle", "upstream": "dozzle.app:9999" },
         { "base_path": "/grafana", "upstream": "grafana.app:3016" },
         { "base_path": "/gitea", "upstream": "gitea.app:3017" },
-        { "base_path": "/crawlee", "upstream": "crawlee-ui.app:3001" }
+        { "base_path": "/crawlee", "upstream": "crawlee.app:3001" }
       ]
     },
     {

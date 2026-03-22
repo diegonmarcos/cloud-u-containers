@@ -8,6 +8,9 @@
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },
+  "ports": {
+    "app": 9999
+  },
   "secrets": {
     "escape_dollars": "true"
   },
