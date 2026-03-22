@@ -9,13 +9,16 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "pad.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "etherpad_app";
       image = "etherpad/etherpad:latest";
       db_container = "etherpad_postgres";
       db_image = "postgres:16-alpine";
-      port = 3012;
+      port = buildJson.ports.app;
+      db_port = toString buildJson.ports.db;
       db_user = "etherpad";
       db_name = "etherpad";
     };
@@ -44,7 +47,7 @@
               "ADMIN_PASSWORD=\${ETHERPAD_ADMIN_PASSWORD:-changeme}"
               "DB_TYPE=postgres"
               "DB_HOST=localhost"
-              "DB_PORT=5436"
+              "DB_PORT=${config.db_port}"
               "DB_NAME=${config.db_name}"
               "DB_USER=${config.db_user}"
               "DB_PASS=${config.db_user}"
@@ -80,10 +83,10 @@
               "POSTGRES_PASSWORD=${config.db_user}"
               "POSTGRES_DB=${config.db_name}"
               "PGDATA=/var/lib/postgresql/data/pgdata"
-              "PGPORT=5436"
+              "PGPORT=${config.db_port}"
             ];
             healthcheck = {
-              test = "['CMD-SHELL', 'pg_isready -U ${config.db_user} -p 5436']";
+              test = "['CMD-SHELL', 'pg_isready -U ${config.db_user} -p ${config.db_port}']";
               interval = "10s";
               timeout = "5s";
               retries = 5;

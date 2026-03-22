@@ -2,6 +2,10 @@
   "name": "mattermost-bots",
   "description": "Mattermost team chat with ntfy bridge and C3 command bot",
   "category": "app",
+  "ports": {
+    "app": 8065,
+    "db": 5435
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mattermost-bots"

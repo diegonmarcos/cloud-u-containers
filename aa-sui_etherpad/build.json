@@ -1,8 +1,12 @@
 {
   "name": "etherpad",
-  "description": "Etherpad collaborative editor (NEW - not deployed yet)",
+  "description": "Etherpad collaborative editor",
   "category": "app",
   "domain": "pad.diegonmarcos.com",
+  "ports": {
+    "app": 3012,
+    "db": 5436
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/etherpad"
