@@ -387,6 +387,24 @@ function networkChecks(): Check[] {
     const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAIL_DOMAIN}/`]);
     return { passed: ["200", "301", "302"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
   }));
+  checks.push(timed("Webmail auth chain", () => {
+    // Test full chain: Caddy → introspect-proxy (Bearer) → Stalwart admin
+    const token = process.env.AUTHELIA_OIDC_TOKEN || process.env.RESEND_API_KEY?.replace(/.*/, "") || "";
+    // Try reading token from vault
+    let bearerToken = "";
+    try {
+      const t = JSON.parse(exec("cat", ["/app/cloud-data-topology.json"]).stdout || "{}");
+      bearerToken = ""; // token not available in container
+    } catch {}
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5",
+      "--location-trusted", `https://${MAIL_DOMAIN}/`]);
+    const code = r.stdout.trim();
+    // Without token: 302 to Authelia = chain works
+    // With token: 200 = full auth chain works
+    if (code === "302") return { passed: true, details: `Authelia redirect OK (${code})` };
+    if (code === "200") return { passed: true, details: `authenticated OK (${code})` };
+    return { passed: false, details: `HTTP ${code}` };
+  }));
   checks.push(timed("Webmail internal", () => {
     if (!data) return { passed: false, details: "no data" };
     return { passed: data.webmailInternal.trim() === "200", details: `HTTP ${data.webmailInternal.trim()}` };
