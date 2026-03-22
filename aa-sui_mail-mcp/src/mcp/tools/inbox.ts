@@ -11,10 +11,8 @@ export function registerInboxTools(server: McpServer): void {
     {},
     async () => {
       const result = await withImap(async (client) => {
-        const folders: string[] = [];
-        for await (const folder of client.list()) {
-          folders.push(folder.path);
-        }
+        const folderList = await client.list();
+        const folders = folderList.map((f: any) => f.path);
         const details: string[] = [];
         for (const path of folders) {
           try {
