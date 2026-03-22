@@ -153,8 +153,9 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Caddy Routes (derived from topology proxy fields → caddy-routes.json) ──
 
   app.get("/cloud-data/caddy-routes", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    // Uses getConfig() which merges build.json (source of truth) + config.json (fallback)
+    const config = getConfig();
+    const solutionsDir = join(dirname(CONFIG_PATH), "a_solutions");
 
     const routes: any[] = [];
     const path_routes: any[] = [];
@@ -163,7 +164,20 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     const mcp_routes: any[] = [];
     const special: Record<string, any> = {};
 
-    for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
+    for (const [svcName, svc] of Object.entries(config.services ?? {})) {
+      // Enrich with build.json proxy config (discovered services may not have proxy in config.json)
+      const s = svc as any;
+      if (!s.proxy) {
+        const folder = s.folder ?? getServiceFolder(svcName);
+        const bjPath = join(solutionsDir, folder, "build.json");
+        if (existsSync(bjPath)) {
+          try {
+            const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+            if (bj.proxy) s.proxy = bj.proxy;
+            if (bj.domain && !s.domain) s.domain = bj.domain;
+          } catch {}
+        }
+      }
       const s = svc as any;
       const proxy = s.proxy;
       if (!proxy) continue;

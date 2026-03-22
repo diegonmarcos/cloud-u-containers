@@ -2,7 +2,7 @@
   "name": "dagu",
   "description": "Dagu - Lightweight DAG-based workflow scheduler",
   "category": "tools",
-  "domain": "dagu.diegonmarcos.com",
+  "domain": "workflows.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/dagu",

@@ -16,7 +16,10 @@
       "/api/v4/*": {
         "auth": "bypass"
       }
-    }
+    },
+    "bypass_paths": [
+      "/api/v4/*"
+    ]
   },
   "health": {
     "path": "/api/v4/system/ping"
@@ -28,6 +31,10 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": ["mattermost_data", "mattermost_postgres"]
-  }
+    "volumes": [
+      "mattermost_data",
+      "mattermost_postgres"
+    ]
+  },
+  "domain": "chat.diegonmarcos.com"
 }
