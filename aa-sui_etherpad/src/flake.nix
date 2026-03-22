@@ -70,7 +70,7 @@
             container_name = config.db_container;
             skipReadOnly = true;
             # Fix UID mismatch: Debian postgres=999, Alpine postgres=70
-            entrypoint = ["sh", "-c", "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"];
+            entrypoint = ["sh" "-c" "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"];
             networks = [ "etherpad_net" ];
             volumes = [
               "postgres_data:/var/lib/postgresql/data"
