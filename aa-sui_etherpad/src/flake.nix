@@ -43,8 +43,8 @@
               "DEFAULT_PAD_TEXT=Welcome to Etherpad!"
               "ADMIN_PASSWORD=\${ETHERPAD_ADMIN_PASSWORD:-changeme}"
               "DB_TYPE=postgres"
-              "DB_HOST=${config.db_container}"
-              "DB_PORT=5432"
+              "DB_HOST=localhost"
+              "DB_PORT=5436"
               "DB_NAME=${config.db_name}"
               "DB_USER=${config.db_user}"
               "DB_PASS=${config.db_user}"
@@ -80,9 +80,10 @@
               "POSTGRES_PASSWORD=${config.db_user}"
               "POSTGRES_DB=${config.db_name}"
               "PGDATA=/var/lib/postgresql/data/pgdata"
+              "PGPORT=5436"
             ];
             healthcheck = {
-              test = "['CMD-SHELL', 'pg_isready -U ${config.db_user}']";
+              test = "['CMD-SHELL', 'pg_isready -U ${config.db_user} -p 5436']";
               interval = "10s";
               timeout = "5s";
               retries = 5;
