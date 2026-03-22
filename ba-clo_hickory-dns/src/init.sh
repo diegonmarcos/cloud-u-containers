@@ -23,12 +23,20 @@ fi
 echo "[init] Zones missing — fetching DNS registry from C3 API..."
 mkdir -p "$ZONES_DIR"
 
-# Fetch DNS registry — try repo raw file first (no dependency on C3 API / Hickory DNS)
-REGISTRY=$(curl -sf --max-time 10 "$REPO_RAW" 2>/dev/null || echo "")
+# We're bootstrapping Hickory DNS — system DNS (10.0.0.1) is down.
+# Temporarily swap resolv.conf to Cloudflare so curl can resolve GitHub.
+ORIG_RESOLV="/etc/resolv.conf"
+BACKUP_RESOLV="/tmp/resolv.conf.bak"
+cp "$ORIG_RESOLV" "$BACKUP_RESOLV" 2>/dev/null || true
+printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > "$ORIG_RESOLV" 2>/dev/null || true
+
+REGISTRY=$(curl -sf --max-time 15 "$REPO_RAW" 2>/dev/null || echo "")
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
-  echo "[init] Repo raw fetch failed — trying C3 API..."
   REGISTRY=$(curl -sf --max-time 10 "$C3_API/dns-registry" 2>/dev/null || echo "")
 fi
+
+# Restore original resolv.conf
+cp "$BACKUP_RESOLV" "$ORIG_RESOLV" 2>/dev/null || true
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
   echo "[init] WARNING: C3 API unreachable — forwarder only"
   cat > "$NAMED_TOML" << 'EOF'
