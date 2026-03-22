@@ -29,13 +29,6 @@
       "bypass_paths": ["/api/v4/*"]
     },
     {
-      "domain": "drive-notes-affine.diegonmarcos.com",
-      "upstream": "affine.app:3010",
-      "max_upload": "100MB",
-      "timeout": "3600s",
-      "comment": "Affine collaborative docs"
-    },
-    {
       "domain": "photos.diegonmarcos.com",
       "upstream": "photoprism.app:3013",
       "landing_page": "myphotos",
