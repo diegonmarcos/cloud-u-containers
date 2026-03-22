@@ -10,7 +10,7 @@
 
     config = {
       container_name = "google-workspace-mcp";
-      image = "google-workspace-mcp:latest";
+      image = "ghcr.io/diegonmarcos/google-workspace-mcp:latest";
       port = 3104;
       internal_port = 8004;
     };

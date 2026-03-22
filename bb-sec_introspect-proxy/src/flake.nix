@@ -22,7 +22,7 @@
       services = {
         introspect-proxy = docker.mkService {
           name = "introspect-proxy";
-          image = "introspect-proxy:latest";
+          image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
           container_name = "introspect-proxy";
           skipReadOnly = true;
           env_file = [".secrets"];

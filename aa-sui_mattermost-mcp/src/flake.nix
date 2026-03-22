@@ -10,7 +10,7 @@
 
     config = {
       container_name = "mattermost-mcp";
-      image = "mattermost-mcp:latest";
+      image = "ghcr.io/diegonmarcos/mattermost-mcp:latest";
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
