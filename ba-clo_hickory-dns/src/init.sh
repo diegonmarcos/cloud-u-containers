@@ -72,7 +72,7 @@ echo "[init] Generating zones from registry..."
 
 # Generate zone files with jq (proper JSON parser)
 PAIRS="/tmp/hickory-dns-pairs.txt"
-echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' > "$PAIRS" 2>/dev/null || true
+echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | select(.key | test("^[a-z0-9-]+$")) | "\(.key) \(.value.ip)"' > "$PAIRS" 2>/dev/null || true
 while read -r name ip; do
   [ -z "$name" ] || [ -z "$ip" ] && continue
   cat > "$ZONES_DIR/${name}.${SUFFIX}.zone" << ZONE
