@@ -5,7 +5,8 @@
   "domain": "dns.internal",
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/hickory-dns"
+    "remote_path": "/opt/containers/hickory-dns",
+    "excludes": ["config/**"]
   },
   "build": {
     "include_cloud_data": "true"

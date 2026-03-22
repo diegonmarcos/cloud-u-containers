@@ -109,15 +109,12 @@ ${zoneBlocks}
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      names = builtins.attrNames services;
-      zoneFiles = map (name:
-        "cp ${mkServiceZone pkgs name services.${name}.ip} $out/config/zones/${name}.${suffix}.zone"
-      ) names;
+      # Flake outputs ONLY docker-compose.yml.
+      # named.toml + zones are RUNTIME data on the VM, managed by Dagu/C3 pipeline.
+      # They persist in /opt/containers/hickory-dns/config/ across deploys.
       defaultPkg = pkgs.runCommand "hickory-dns-configs" {} ''
-        mkdir -p $out/config/zones
+        mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        cp ${mkNamedToml pkgs} $out/config/named.toml
-        ${builtins.concatStringsSep "\n" zoneFiles}
       '';
     in {
       default = defaultPkg;
