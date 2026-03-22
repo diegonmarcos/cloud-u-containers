@@ -32,7 +32,7 @@
       services = {
         stalwart = docker.mkService {
           name = "stalwart";
-          image = "stalwartlabs/mail-server:latest";
+          image = "stalwartlabs/mail-server:v0.11";
           container_name = "stalwart";
           skipCapDrop = true;
           skipReadOnly = true;
