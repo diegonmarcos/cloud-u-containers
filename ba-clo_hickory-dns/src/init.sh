@@ -64,22 +64,17 @@ fi
 
 echo "[init] Generating zones from registry..."
 
-# Generate zone files — pure shell + awk (no python)
-echo "$REGISTRY" | awk -v dir="$ZONES_DIR" -v suffix="$SUFFIX" '
-  /"[a-z].*": \{/{
-    gsub(/[" :{]/, ""); name=$1
-  }
-  /"ip":/{
-    gsub(/[",]/, ""); ip=$2
-    if (name && ip) {
-      zf = dir "/" name "." suffix ".zone"
-      printf "$ORIGIN %s.%s.\n$TTL 60\n@  IN SOA  hickory-dns.%s. admin.%s. 1 3600 900 604800 60\n@  IN NS   hickory-dns.%s.\n@  IN A    %s\n", name, suffix, suffix, suffix, suffix, ip > zf
-      close(zf)
-      printf "  %s.%s -> %s\n", name, suffix, ip
-      name=""; ip=""
-    }
-  }
-'
+# Generate zone files with jq (proper JSON parser)
+echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' | while read -r name ip; do
+  cat > "$ZONES_DIR/${name}.${SUFFIX}.zone" << ZONE
+\$ORIGIN ${name}.${SUFFIX}.
+\$TTL 60
+@  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60
+@  IN NS   hickory-dns.${SUFFIX}.
+@  IN A    ${ip}
+ZONE
+  echo "  ${name}.${SUFFIX} -> ${ip}"
+done
 
 # Generate named.toml from zone files
 {
