@@ -91,9 +91,7 @@ ${zoneBlocks}
           name = "hickory-dns";
           image = "hickorydns/hickory-dns:latest";
           container_name = "hickory-dns";
-          user = "1000:1000";
           skipCapDrop = true;
-          capAdd = ["NET_BIND_SERVICE"];
           environment = [
             "RUST_LOG=hickory_dns=info,hickory_server=info"
           ];
