@@ -68,6 +68,7 @@
             name = "postgres";
             image = config.db_image;
             container_name = config.db_container;
+            user = "root";  # Volume has data from Debian postgres (UID 999), Alpine uses UID 70 — root can read any UID's files, entrypoint handles privilege drop
             skipReadOnly = true;  # postgres writes to /var/run/postgresql + data dir
             networks = [ "etherpad_net" ];
             volumes = [

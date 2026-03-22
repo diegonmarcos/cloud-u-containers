@@ -178,7 +178,6 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
           } catch {}
         }
       }
-      const s = svc as any;
       const proxy = s.proxy;
       if (!proxy) continue;
 
