@@ -2,7 +2,7 @@
   "name": "grist",
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
   "category": "app",
-  "domain": "grist.diegonmarcos.com",
+  "domain": "sheets.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/grist"
@@ -21,6 +21,8 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": ["grist_data"]
+    "volumes": [
+      "grist_data"
+    ]
   }
 }
