@@ -83,111 +83,7 @@ ${zoneBlocks}
       ]
     '';
 
-    # ── Init script — fetch DNS registry from C3 API if zones missing ──
-    mkInitSh = pkgs: pkgs.writeText "init.sh" ''
-      #!/bin/sh
-      set -e
-      cd "$(dirname "$0")"
-      CONFIG_DIR="./config"
-      ZONES_DIR="$CONFIG_DIR/zones"
-      NAMED_TOML="$CONFIG_DIR/named.toml"
-      C3_API="https://api.diegonmarcos.com/c3-api"
-      SUFFIX="app"
-
-      # If zones already exist and named.toml has zone entries, skip
-      if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ] && ls "$ZONES_DIR"/*.zone >/dev/null 2>&1; then
-        ZONE_COUNT=$(ls "$ZONES_DIR"/*.zone 2>/dev/null | wc -l)
-        if [ "$ZONE_COUNT" -gt 0 ]; then
-          echo "[init] $ZONE_COUNT zones found — skipping C3 API fetch"
-          exit 0
-        fi
-      fi
-
-      echo "[init] Zones missing — fetching DNS registry from C3 API..."
-      mkdir -p "$ZONES_DIR"
-
-      # Fetch DNS registry (JSON: { services: { name: { ip: "x.x.x.x" }, ... } })
-      REGISTRY=$(curl -sf --max-time 10 "$C3_API/dns-registry" 2>/dev/null || echo "")
-      if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
-        echo "[init] WARNING: C3 API unreachable or empty — starting with forwarder only"
-        # Write minimal named.toml (forwarder only)
-        cat > "$NAMED_TOML" <<'TOML'
-      listen_addrs_ipv4 = ["10.0.0.1"]
-      listen_port = 53
-      [[zones]]
-      zone = "."
-      zone_type = "External"
-      [zones.stores]
-      type = "forward"
-      name_servers = [
-        { socket_addr = "1.1.1.1:53", protocol = "udp" },
-        { socket_addr = "8.8.8.8:53", protocol = "udp" }
-      ]
-TOML
-        exit 0
-      fi
-
-      echo "[init] Generating zones from C3 API registry..."
-
-      # Parse services and generate zone files + named.toml
-      ZONE_BLOCKS=""
-      echo "$REGISTRY" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-services = data.get('services', {})
-for name, info in services.items():
-    ip = info.get('ip', '')
-    if not ip:
-        continue
-    zone_file = sys.argv[1] + '/' + name + '.${SUFFIX}.zone'
-    with open(zone_file, 'w') as f:
-        f.write(f'\$ORIGIN {name}.${SUFFIX}.\n\$TTL 60\n@  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60\n@  IN NS   hickory-dns.${SUFFIX}.\n@  IN A    {ip}\n')
-    print(f'  zone={name}.${SUFFIX} ip={ip}')
-" "$ZONES_DIR" 2>&1 || echo "[init] WARNING: python3 parse failed"
-
-      # Generate named.toml from zone files
-      {
-        echo 'listen_addrs_ipv4 = ["10.0.0.1"]'
-        echo 'listen_port = 53'
-        echo ''
-        for zf in "$ZONES_DIR"/*.zone; do
-          [ -f "$zf" ] || continue
-          ZONE_NAME=$(basename "$zf" .zone)
-          cat <<ZONE
-
-[[zones]]
-zone = "$ZONE_NAME"
-zone_type = "Primary"
-
-[zones.stores]
-type = "file"
-zone_file_path = "/etc/zones/$ZONE_NAME.zone"
-ZONE
-        done
-        cat <<'FWD'
-
-[[zones]]
-zone = "."
-zone_type = "External"
-
-[zones.stores]
-type = "forward"
-name_servers = [
-  { socket_addr = "1.1.1.1:53", protocol = "tcp" },
-  { socket_addr = "1.1.1.1:53", protocol = "udp" },
-  { socket_addr = "1.0.0.1:53", protocol = "tcp" },
-  { socket_addr = "1.0.0.1:53", protocol = "udp" },
-  { socket_addr = "8.8.8.8:53", protocol = "tcp" },
-  { socket_addr = "8.8.8.8:53", protocol = "udp" },
-  { socket_addr = "8.8.4.4:53", protocol = "tcp" },
-  { socket_addr = "8.8.4.4:53", protocol = "udp" }
-]
-FWD
-      } > "$NAMED_TOML"
-
-      ZONE_COUNT=$(ls "$ZONES_DIR"/*.zone 2>/dev/null | wc -l)
-      echo "[init] Done — $ZONE_COUNT zones generated"
-    '';
+    # init.sh is a separate file (not inline nix string — avoids escaping issues)
 
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
@@ -221,7 +117,7 @@ FWD
       defaultPkg = pkgs.runCommand "hickory-dns-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        cp ${mkInitSh pkgs} $out/init.sh
+        cp ${./init.sh} $out/init.sh
         chmod +x $out/init.sh
       '';
     in {
