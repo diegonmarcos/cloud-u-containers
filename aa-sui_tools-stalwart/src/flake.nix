@@ -92,16 +92,18 @@
       protocol = "http"
       tls.implicit = true
 
-      # ── TLS (ACME — Let's Encrypt) ─────────────────────────────────
+      # ── TLS (ACME — Let's Encrypt via Cloudflare DNS-01) ────────────
+      # tls-alpn-01 can't work behind Cloudflare proxy + Caddy L4
+      # dns-01 validates via Cloudflare DNS API (no inbound port needed)
       [acme."letsencrypt"]
       directory = "https://acme-v02.api.letsencrypt.org/directory"
       contact = ["mailto:me@${config.domain}"]
       domains = ["${config.mail_domain}"]
-      challenge = "tls-alpn-01"
+      challenge = "dns-01"
 
-      [certificate."default"]
-      cert = "%{file:/opt/stalwart-mail/data/acme/letsencrypt/cert.pem}%"
-      private-key = "%{file:/opt/stalwart-mail/data/acme/letsencrypt/key.pem}%"
+      [acme."letsencrypt".dns]
+      provider = "cloudflare"
+      secret = "''\${CF_DNS_API_TOKEN}"
 
       # ── Storage (RocksDB + filesystem) ──────────────────────────────
       [store."rocksdb"]
@@ -117,12 +119,29 @@
       blob = "blob"
       fts = "rocksdb"
       lookup = "rocksdb"
-      directory = "internal"
+      directory = "static"
 
-      # ── Directory (internal accounts) ───────────────────────────────
-      [directory."internal"]
-      type = "internal"
-      store = "rocksdb"
+      # ── Directory (static accounts — fully declarative) ─────────────
+      [directory."static"]
+      type = "memory"
+
+      [[directory."static".principals]]
+      type = "admin"
+      name = "admin"
+      secret = "''\${ADMIN_PASSWORD}"
+      emails = ["admin@${config.domain}"]
+
+      [[directory."static".principals]]
+      type = "individual"
+      name = "me"
+      secret = "''\${ME_PASSWORD}"
+      emails = ["me@${config.domain}"]
+
+      [[directory."static".principals]]
+      type = "individual"
+      name = "no-reply"
+      secret = "''\${NOREPLY_PASSWORD}"
+      emails = ["no-reply@${config.domain}", "noreply@${config.domain}"]
 
       # ── Authentication ──────────────────────────────────────────────
       [authentication]
@@ -131,7 +150,7 @@
 
       [session.auth]
       mechanisms = ["PLAIN", "LOGIN"]
-      directory = "internal"
+      directory = "static"
 
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
@@ -195,7 +214,7 @@
         (cd /opt/mailu && docker compose down 2>/dev/null) || true
       fi
 
-      ENV_VARS='$ADMIN_PASSWORD $ME_PASSWORD $NOREPLY_PASSWORD $OCI_RELAYUSER $OCI_RELAYPASSWORD $AWS_RELAYUSER $AWS_RELAYPASSWORD $DKIM_PRIVATE_KEY_B64'
+      ENV_VARS='$ADMIN_PASSWORD $ME_PASSWORD $NOREPLY_PASSWORD $OCI_RELAYUSER $OCI_RELAYPASSWORD $AWS_RELAYUSER $AWS_RELAYPASSWORD $DKIM_PRIVATE_KEY_B64 $CF_DNS_API_TOKEN'
 
       echo "[init] Substituting secrets into config.toml..."
       while IFS='=' read -r _key _val; do
