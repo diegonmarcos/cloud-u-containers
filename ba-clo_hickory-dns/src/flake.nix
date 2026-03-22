@@ -20,20 +20,13 @@
     #   src/cloud-data-dns-services.json → ../../../cloud-data/cloud-data-dns-services.json
     # Fallback: empty (bootstrap / fresh clone before first Dagu run)
     dnsRegistry =
-      let
-        jsonPath = ./cloud-data-dns-services.json;
-        raw = if builtins.pathExists jsonPath then builtins.readFile jsonPath else "";
-      in if builtins.stringLength raw > 2
-         then builtins.fromJSON raw
+      let jsonPath = ./cloud-data-dns-services.json;
+      in if builtins.pathExists jsonPath
+         then builtins.fromJSON (builtins.readFile jsonPath)
          else { services = {}; vms = {}; suffix = "app"; };
 
     suffix = dnsRegistry.suffix or "app";
-    # Static overrides for services not yet in cloud-data pipeline
-    staticServices = {
-      stalwart = { ip = "10.0.0.3"; };
-      mail-mcp = { ip = "10.0.0.6"; };
-    };
-    services = (dnsRegistry.services or {}) // staticServices;
+    services = dnsRegistry.services;
     vms = dnsRegistry.vms;
 
     # ── Per-service zone files ─────────────────────────────────────────
@@ -96,9 +89,11 @@ ${zoneBlocks}
           name = "hickory-dns";
           image = "hickorydns/hickory-dns:latest";
           container_name = "hickory-dns";
-          user = "1000:1000";
-          skipCapDrop = true;
-          capAdd = ["NET_BIND_SERVICE"];
+          user = "1000:1000";  # prevent "unable to set gid" crash from root privilege dropping
+          ports = [
+            "10.0.0.1:53:53/tcp"
+            "10.0.0.1:53:53/udp"
+          ];
           environment = [
             "RUST_LOG=hickory_dns=info,hickory_server=info"
           ];
