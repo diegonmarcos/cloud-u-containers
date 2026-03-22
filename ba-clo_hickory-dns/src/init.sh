@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 CONFIG_DIR="./config"
 ZONES_DIR="$CONFIG_DIR/zones"
 NAMED_TOML="$CONFIG_DIR/named.toml"
+REPO_RAW="https://raw.githubusercontent.com/diegonmarcos/cloud/main/cloud-data/cloud-data-dns-services.json"
 C3_API="https://api.diegonmarcos.com/c3-api"
 SUFFIX="app"
 LISTEN_IP="10.0.0.1"
@@ -22,8 +23,12 @@ fi
 echo "[init] Zones missing — fetching DNS registry from C3 API..."
 mkdir -p "$ZONES_DIR"
 
-# Fetch DNS registry
-REGISTRY=$(curl -sf --max-time 10 "$C3_API/dns-registry" 2>/dev/null || echo "")
+# Fetch DNS registry — try repo raw file first (no dependency on C3 API / Hickory DNS)
+REGISTRY=$(curl -sf --max-time 10 "$REPO_RAW" 2>/dev/null || echo "")
+if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
+  echo "[init] Repo raw fetch failed — trying C3 API..."
+  REGISTRY=$(curl -sf --max-time 10 "$C3_API/dns-registry" 2>/dev/null || echo "")
+fi
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
   echo "[init] WARNING: C3 API unreachable — forwarder only"
   cat > "$NAMED_TOML" << 'EOF'
