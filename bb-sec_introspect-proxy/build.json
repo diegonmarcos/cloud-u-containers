@@ -11,6 +11,7 @@
   },
   "docker": {
     "image": "introspect-proxy",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos"
   }
 }

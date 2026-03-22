@@ -4,8 +4,8 @@
   "category": "obs",
   "domain": "api.diegonmarcos.com/services",
   "docker": {
-    "registry": "ghcr.io",
-    "image": "diegonmarcos/c3-services-mcp-api",
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "c3-services-mcp-api",
     "dockerfile": "Dockerfile"
   },
   "deploy": {
