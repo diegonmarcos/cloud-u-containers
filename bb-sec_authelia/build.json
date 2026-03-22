@@ -3,6 +3,10 @@
   "description": "SSO and 2FA authentication portal",
   "category": "sec",
   "domain": "auth.diegonmarcos.com",
+  "ports": {
+    "app": 9091,
+    "redis": 6380
+  },
   "build": {
     "include_cloud_data": "true"
   },
