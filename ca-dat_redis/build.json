@@ -2,6 +2,9 @@
   "name": "redis",
   "description": "In-memory data store",
   "category": "data",
+  "ports": {
+    "app": 6379
+  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/redis"

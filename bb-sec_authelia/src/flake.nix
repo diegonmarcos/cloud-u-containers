@@ -8,13 +8,15 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
-    # Configuration options (non-secret)
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "auth.diegonmarcos.com";
+      domain = buildJson.domain;
       base_domain = "diegonmarcos.com";
       container_name = "authelia";
       image = "authelia/authelia:4.39.15";
-      port = 9091;
+      port = buildJson.ports.app;
+      redis_port = toString buildJson.ports.redis;
       timezone = "Europe/Madrid";
     };
 
@@ -97,8 +99,7 @@ ${mkResourceLines rule.resources_two_factor}
           image = "redis:7-bookworm";
           container_name = "authelia-redis";
           env_file = [".secrets"];
-          command = "sh -c 'redis-server --requirepass $$AUTHELIA_REDIS_PASSWORD'";
-          ports = ["127.0.0.1:6379:6379"];
+          command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD'";
           networks = ["auth-net"];
           skipReadOnly = true;
         };
@@ -184,9 +185,9 @@ ${mkResourceLines rule.resources_two_factor}
             expiration: 1h
             remember_me: 30d
         redis:
-          host: authelia-redis
+          host: localhost
           password: ''\${AUTHELIA_REDIS_PASSWORD}
-          port: 6379
+          port: ${config.redis_port}
 
       regulation:
         max_retries: 3
