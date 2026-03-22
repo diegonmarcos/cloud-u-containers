@@ -10,7 +10,7 @@
 
     config = {
       container_name = "mail-mcp";
-      image = "mail-mcp:latest";
+      image = "ghcr.io/diegonmarcos/mail-mcp:latest";
       mail_host = "mail.diegonmarcos.com";
     };
 
