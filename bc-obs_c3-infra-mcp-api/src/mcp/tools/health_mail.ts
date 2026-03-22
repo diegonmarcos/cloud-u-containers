@@ -310,6 +310,37 @@ function containerHealth(): Check[] {
 function networkChecks(): Check[] {
   const checks: Check[] = [];
 
+  // Caddy reverse proxy (gcp-proxy) — entry point for ALL mail traffic
+  checks.push(timed("Caddy (gcp-proxy)", () => {
+    const r = exec("bash", ["-c", `
+      c_up=$(echo Q | timeout 3 openssl s_client -connect diegonmarcos.com:443 -servername diegonmarcos.com 2>&1 | grep -c CONNECTED)
+      c_dns=$(dig +short caddy.app @10.0.0.1 2>/dev/null | head -1)
+      echo "up:$c_up dns:$c_dns"
+    `], { timeout: 6_000 });
+    const up = r.stdout.includes("up:1");
+    const dns = r.stdout.match(/dns:(\S+)/)?.[1] || "";
+    return { passed: up, details: up ? `HTTPS OK (${dns || "no DNS"})` : "Caddy DOWN" };
+  }));
+  checks.push(timed("Hickory DNS", () => {
+    const r = exec("bash", ["-c", `dig +short stalwart.app @10.0.0.1 2>&1 | head -1`], { timeout: 5_000 });
+    const ip = r.stdout.trim();
+    return { passed: ip === "10.0.0.3", details: ip === "10.0.0.3" ? `stalwart.app → ${ip}` : `FAIL: ${ip || "no response"}` };
+  }));
+
+  // Caddy (gcp-proxy) — the entry door for ALL traffic
+  checks.push(timed("Caddy (gcp-proxy)", () => {
+    const r = exec("bash", ["-c", `timeout 3 curl -sk -o /dev/null -w '%{http_code}' https://proxy.diegonmarcos.com/ 2>&1`], { timeout: 5_000 });
+    const code = r.stdout.trim();
+    return { passed: code !== "000" && code !== "502", details: `HTTP ${code}` };
+  }));
+
+  // Hickory DNS — internal .app resolution
+  checks.push(timed("Hickory DNS", () => {
+    const r = exec("bash", ["-c", `timeout 3 dig +short stalwart.app @10.0.0.1 2>&1`], { timeout: 5_000 });
+    const ip = r.stdout.trim();
+    return { passed: ip === "10.0.0.3", details: ip === "10.0.0.3" ? "stalwart.app → 10.0.0.3" : `FAIL: ${ip || "no response"}` };
+  }));
+
   // TLS via localhost on oci-mail (direct to Stalwart, bypasses Caddy L4)
   checks.push(timed("TLS WG direct", () => {
     const r = ssh(`
