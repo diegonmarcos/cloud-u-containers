@@ -91,11 +91,9 @@ ${zoneBlocks}
           name = "hickory-dns";
           image = "hickorydns/hickory-dns:latest";
           container_name = "hickory-dns";
-          user = "1000:1000";  # prevent "unable to set gid" crash from root privilege dropping
-          ports = [
-            "10.0.0.1:53:53/tcp"
-            "10.0.0.1:53:53/udp"
-          ];
+          user = "1000:1000";
+          skipCapDrop = true;
+          capAdd = ["NET_BIND_SERVICE"];
           environment = [
             "RUST_LOG=hickory_dns=info,hickory_server=info"
           ];
