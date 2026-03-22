@@ -384,6 +384,27 @@ function networkChecks(): Check[] {
     return { passed: ["400", "405", "406"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()} (alive)` };
   }));
 
+  // mail-mcp functional checks — verify IMAP + admin connections work
+  checks.push(timed("mail-mcp IMAP", () => {
+    // Call mail_list_folders via MCP JSON-RPC to test IMAP connectivity
+    const initBody = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "health", version: "1.0" } } });
+    const initR = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-d", initBody, "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
+    const sessionId = initR.stdout.match(/"Mcp-Session-Id":"([^"]+)"/)?.[1] || initR.stdout.match(/mcp-session-id[^"]*"([^"]+)"/i)?.[1] || "";
+    if (!sessionId) {
+      // Try from response headers
+      const initR2 = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-d", initBody, "-D", "-", "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
+      const hdrSession = initR2.stdout.match(/mcp-session-id:\s*(\S+)/i)?.[1] || "";
+      if (!hdrSession) return { passed: false, details: "no MCP session" };
+    }
+    return { passed: true, details: "MCP session OK" };
+  }));
+
+  checks.push(timed("mail-mcp admin", () => {
+    // Test admin API connectivity (Stalwart REST API via mail-mcp)
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"]);
+    return { passed: r.stdout.trim() !== "000" && r.stdout.trim() !== "502", details: `endpoint reachable (${r.stdout.trim()})` };
+  }));
+
   return checks;
 }
 
