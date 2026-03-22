@@ -93,17 +93,24 @@
       tls.implicit = true
 
       # ── TLS (ACME — Let's Encrypt via Cloudflare DNS-01) ────────────
-      # tls-alpn-01 can't work behind Cloudflare proxy + Caddy L4
-      # dns-01 validates via Cloudflare DNS API (no inbound port needed)
       [acme."letsencrypt"]
       directory = "https://acme-v02.api.letsencrypt.org/directory"
       contact = ["mailto:me@${config.domain}"]
       domains = ["${config.mail_domain}"]
       challenge = "dns-01"
+      renew-before = "30d"
 
       [acme."letsencrypt".dns]
       provider = "cloudflare"
       secret = "''\${CF_DNS_API_TOKEN}"
+
+      # ── Local domain — accept mail for diegonmarcos.com ─────────────
+      [session.rcpt]
+      relay = false
+      directory = "static"
+
+      [session.rcpt.domain]
+      "${config.domain}" = true
 
       # ── Storage (RocksDB + filesystem) ──────────────────────────────
       [store."rocksdb"]
