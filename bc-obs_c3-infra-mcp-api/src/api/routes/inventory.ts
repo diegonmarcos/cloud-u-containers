@@ -608,3 +608,4 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     },
   );
 }
+// rebuild 1774202309
