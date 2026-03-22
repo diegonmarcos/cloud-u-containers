@@ -42,6 +42,12 @@
       "comment": "Stalwart web admin (HTTPS)"
     },
     {
+      "domain": "webmail.diegonmarcos.com",
+      "upstream": "snappymail.app:8888",
+      "landing_page": "mymail",
+      "comment": "SnappyMail webmail"
+    },
+    {
       "domain": "workflows.diegonmarcos.com",
       "upstream": "dagu.app:8070",
       "comment": "Dagu workflow scheduler"
