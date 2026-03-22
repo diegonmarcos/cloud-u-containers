@@ -337,19 +337,19 @@ function networkChecks(): Check[] {
   }));
 
   // TLS via public domains (Cloudflare → Caddy L4 → Stalwart — end-user path)
-  checks.push(timed("imap.dnm.com:993", () => {
+  checks.push(timed("imap.diegonmarcos.com:993", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect imap.diegonmarcos.com:993 -servername imap.diegonmarcos.com 2>&1`], { timeout: 8_000 });
     return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
   }));
-  checks.push(timed("smtp.dnm.com:465", () => {
+  checks.push(timed("smtp.diegonmarcos.com:465", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect smtp.diegonmarcos.com:465 -servername smtp.diegonmarcos.com 2>&1`], { timeout: 8_000 });
     return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
   }));
-  checks.push(timed("smtp.dnm.com:587", () => {
+  checks.push(timed("smtp.diegonmarcos.com:587", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -starttls smtp -connect smtp.diegonmarcos.com:587 -servername smtp.diegonmarcos.com 2>&1`], { timeout: 8_000 });
     return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "STARTTLS OK" : "FAIL" };
   }));
-  checks.push(timed("mail.dnm.com:993", () => {
+  checks.push(timed("mail.diegonmarcos.com:993", () => {
     const r = exec("bash", ["-c", `echo Q | timeout 5 openssl s_client -connect ${MAIL_DOMAIN}:993 -servername ${MAIL_DOMAIN} 2>&1`], { timeout: 8_000 });
     return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
   }));
