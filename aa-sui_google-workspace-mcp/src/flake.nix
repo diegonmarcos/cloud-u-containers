@@ -31,7 +31,8 @@
           network_mode: host
           environment:
             WORKSPACE_MCP_HOST: "0.0.0.0"
-            WORKSPACE_MCP_PORT: "${toString config.internal_port}"
+            WORKSPACE_MCP_PORT: "${toString config.port}"
+            PORT: "${toString config.port}"
             USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
             GOOGLE_SERVICE_ACCOUNT_KEY_PATH: "/run/secrets/service-account-key.json"
           volumes:
