@@ -4,8 +4,8 @@
   "category": "sec",
   "domain": "api.diegonmarcos.com/c3-api",
   "docker": {
-    "registry": "ghcr.io",
-    "image": "diegonmarcos/c3-infra-mcp-api",
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "c3-infra-mcp-api",
     "dockerfile": "Dockerfile"
   },
   "deploy": {

@@ -4,7 +4,8 @@
   "category": "app",
   "docker": {
     "image": "google-workspace-mcp",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos"
   },
   "deploy": {
     "host": "oci-apps",
