@@ -5,7 +5,7 @@ import { readFileSync, existsSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
-import { getDriftReport } from "../../shared/config.js";
+import { getDriftReport, getConfig, getServiceFolder } from "../../shared/config.js";
 import { getConfigFile } from "../../shared/files.js";
 import { CONFIG_PATH, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH } from "../../shared/paths.js";
 
@@ -101,43 +101,36 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     const services: Record<string, { ip: string; desc: string }> = {};
     const vms: Record<string, string> = {};
 
-    // DNS names derived from build.json — the SINGLE source of truth.
-    // Scans ALL a_solutions/*/build.json directly. No dependency on config.json services.
-    // VM → WG IP resolved via build.json.deploy.host → topo.vms[alias].wg_ip
+    // Use getConfig() which merges build.json discovery + config.json fallback
+    const config = getConfig();
     const solutionsDir = join(dirname(CONFIG_PATH), "a_solutions");
-    const vmAlias2ip: Record<string, string> = {};
-    for (const [, vm] of Object.entries(topo.vms ?? {})) {
-      const v = vm as any;
-      if (v.wg_ip && v.ssh_alias) vmAlias2ip[v.ssh_alias] = v.wg_ip;
-    }
 
-    for (const entry of readdirSync(solutionsDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const bjPath = join(solutionsDir, entry.name, "build.json");
-      if (!existsSync(bjPath)) continue;
-      try {
-        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
-        const host = bj.deploy?.host;
-        if (!host || host === "local" || host === "all") continue;
-        const ip = vmAlias2ip[host];
-        if (!ip) continue;
-        const svcName = bj.name || entry.name.replace(/^[a-z]+-[a-z]+_/, "");
-        const desc = bj.description || svcName;
+    for (const [svcName, svc] of Object.entries(config.services)) {
+      const vm = topo.vms?.[svc.vm];
+      if (!vm?.wg_ip) continue;
+      const ip: string = vm.wg_ip;
+      const desc: string = svc.description ?? svcName;
 
-        // Register the service name itself
-        services[svcName] = { ip, desc };
+      // Register service name
+      services[svcName] = { ip, desc };
 
-        // Extract .app DNS names from proxy.upstream and proxy.l4_ports
-        const upstreams: string[] = [];
-        if (bj.proxy?.upstream) upstreams.push(bj.proxy.upstream);
-        for (const l4 of (bj.proxy?.l4_ports ?? [])) {
-          if (l4.upstream) upstreams.push(l4.upstream);
-        }
-        for (const u of upstreams) {
-          const m = u.match(/^(?:https?:\/\/)?([a-z0-9-]+)\.app/);
-          if (m && m[1]) services[m[1]] = { ip, desc };
-        }
-      } catch { /* skip unparseable build.json */ }
+      // Extract .app DNS names from build.json proxy config
+      const folder = svc.folder ?? getServiceFolder(svcName);
+      const bjPath = join(solutionsDir, folder, "build.json");
+      if (existsSync(bjPath)) {
+        try {
+          const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+          const upstreams: string[] = [];
+          if (bj.proxy?.upstream) upstreams.push(bj.proxy.upstream);
+          for (const l4 of (bj.proxy?.l4_ports ?? [])) {
+            if (l4.upstream) upstreams.push(l4.upstream);
+          }
+          for (const u of upstreams) {
+            const m = u.match(/^(?:https?:\/\/)?([a-z0-9-]+)\.app/);
+            if (m && m[1]) services[m[1]] = { ip, desc };
+          }
+        } catch { /* skip */ }
+      }
     }
 
     // PTR reverse map: last WG octet → VM alias (for Hickory vms attrset)
