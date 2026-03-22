@@ -231,6 +231,18 @@
       done < .secrets
       envsubst "$ENV_VARS" < config.toml.tpl > config.toml
 
+      # Clear ACME data if domains changed (forces new cert with all SANs)
+      ACME_DOMAINS="mail.${config.domain},imap.${config.domain},smtp.${config.domain}"
+      ACME_STAMP="data/.acme-domains"
+      if [ -f "$ACME_STAMP" ]; then
+        OLD_DOMAINS=$(cat "$ACME_STAMP")
+        if [ "$OLD_DOMAINS" != "$ACME_DOMAINS" ]; then
+          echo "[init] ACME domains changed — clearing cert cache for re-issue"
+          rm -rf data/acme
+        fi
+      fi
+      echo "$ACME_DOMAINS" > "$ACME_STAMP"
+
       # Decode DKIM private key from base64
       if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
         echo "[init] Writing DKIM private key..."

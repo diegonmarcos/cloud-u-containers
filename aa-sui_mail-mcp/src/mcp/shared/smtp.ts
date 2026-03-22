@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 export function getTransport(): nodemailer.Transporter {
   return nodemailer.createTransport({
-    host: process.env.MAIL_HOST ?? "mail.diegonmarcos.com",
+    host: process.env.MAIL_HOST ?? "smtp.diegonmarcos.com",
     port: 465,
     secure: true,
     auth: {
