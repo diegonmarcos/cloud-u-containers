@@ -1,18 +1,41 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ba-clo_hickory-dns/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   hickory-dns:
     image: hickorydns/hickory-dns:latest
     container_name: hickory-dns
+    network_mode: host
     restart: unless-stopped
-    ports:
-      - "10.0.0.1:53:53/tcp"
-      - "10.0.0.1:53:53/udp"
-    volumes:
-      - ./config/named.toml:/etc/named.toml:ro
-      - ./zones:/var/named:ro
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     dns:
       - 1.1.1.1
       - 8.8.8.8
+    environment:
+      - RUST_LOG=hickory_dns=info,hickory_server=info
+    volumes:
+      - ./config/named.toml:/etc/named.toml:ro
+      - ./config/zones:/etc/zones:ro
     deploy:
       resources:
         limits:
           memory: 64M
+          pids: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
