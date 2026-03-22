@@ -160,6 +160,10 @@
       directory = "'static'"
       require = [{if = "local_port != 25", then = true}, {else = false}]
 
+      # ── Trusted networks (WG mesh + localhost — never rate-limit) ──
+      [server.security]
+      trusted-networks = ["127.0.0.0/8", "10.0.0.0/24"]
+
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
       private-key = "%{file:/opt/stalwart-mail/dkim/${config.domain}.dkim.key}%"
