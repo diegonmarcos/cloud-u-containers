@@ -7,6 +7,9 @@
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos"
   },
+  "ports": {
+    "app": 3104
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/google-workspace-mcp"
