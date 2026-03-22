@@ -36,8 +36,7 @@
             name = "etherpad";
             image = config.image;
             container_name = config.container_name;
-            ports = [ "10.0.0.6:${toString config.port}:9001" ];
-            networks = [ "etherpad_net" ];
+            skipReadOnly = true;
             volumes = [
               "etherpad_data:/opt/etherpad-lite/var"
             ];
@@ -45,6 +44,7 @@
               "TITLE=Etherpad"
               "DEFAULT_PAD_TEXT=Welcome to Etherpad!"
               "ADMIN_PASSWORD=\${ETHERPAD_ADMIN_PASSWORD:-changeme}"
+              "PORT=${toString config.port}"
               "DB_TYPE=postgres"
               "DB_HOST=localhost"
               "DB_PORT=${config.db_port}"
@@ -55,7 +55,7 @@
               "LOGLEVEL=INFO"
             ];
             healthcheck = {
-              test = "['CMD', 'curl', '-f', 'http://localhost:9001/']";
+              test = "['CMD', 'curl', '-f', 'http://localhost:${toString config.port}/']";
               interval = "30s";
               timeout = "10s";
               retries = 3;
