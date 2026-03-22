@@ -48,6 +48,7 @@
         mattermost:
           image: ${config.image}
           container_name: ${config.container_name}
+          command: mattermost server
           restart: unless-stopped
           network_mode: host
           volumes:
