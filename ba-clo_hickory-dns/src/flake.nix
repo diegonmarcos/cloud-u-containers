@@ -20,9 +20,11 @@
     #   src/cloud-data-dns-services.json → ../../../cloud-data/cloud-data-dns-services.json
     # Fallback: empty (bootstrap / fresh clone before first Dagu run)
     dnsRegistry =
-      let jsonPath = ./cloud-data-dns-services.json;
-      in if builtins.pathExists jsonPath
-         then builtins.fromJSON (builtins.readFile jsonPath)
+      let
+        jsonPath = ./cloud-data-dns-services.json;
+        raw = if builtins.pathExists jsonPath then builtins.readFile jsonPath else "";
+      in if builtins.stringLength raw > 2
+         then builtins.fromJSON raw
          else { services = {}; vms = {}; suffix = "app"; };
 
     suffix = dnsRegistry.suffix or "app";
