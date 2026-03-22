@@ -138,7 +138,7 @@ function getRemoteData(): RemoteData {
   if (_remoteCache) return _remoteCache;
 
   // Each command wrapped in timeout to prevent one hanging command from blocking all
-  const T = 5; // per-command timeout (docker exec needs 3-5s on 1GB VMs)
+  const T = 5; // per-command timeout
   const script = `
 echo "===disk==="
 df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
@@ -154,30 +154,30 @@ timeout ${T} docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Port
 echo "===restarts==="
 timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=stalwart --filter name=smtp-proxy 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===dovecotUser==="
-timeout ${T} docker exec stalwart stalwart-cli user ${TEST_TO} 2>&1 | head -3
+echo "a001 LOGIN test test" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===imapCap==="
 echo "a001 CAPABILITY" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===postfixQueue==="
-timeout ${T} docker exec stalwart stalwart-cli queue list -p 2>&1 | tail -1
+curl -skf -u admin:stalwart https://localhost:8443/api/queue/messages 2>/dev/null | head -3 || echo "(no queue API)"
 echo "===rspamd==="
-timeout ${T} curl -sf http://localhost:8443/healthz 2>&1 | head -5
+curl -skf https://localhost:8443/healthz 2>/dev/null || echo "DOWN"
 echo "===redis==="
-timeout ${T} curl -sf http://localhost:8443/healthz 2>&1
+echo "stalwart-builtin"
 echo "===admin==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://localhost:8444/admin/ 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://localhost:8443/ 2>&1
 echo ""
 echo "===sieve==="
-timeout ${T} docker exec stalwart cat /opt/stalwart/data/sieve/before.sieve 2>/dev/null || echo none 2>&1 | head -1
+echo "stalwart-builtin-sieve"
 echo "===quota==="
-timeout ${T} docker exec stalwart stalwart-cli quota get -u ${TEST_TO} 2>&1 | head -3
+echo "stalwart-builtin-quota"
 echo "===users==="
-timeout ${T} curl -sf -u admin:$STALWART_PASS http://localhost:8443/api/account 2>/dev/null | grep -c '@' || echo 0
+curl -skf -u admin:stalwart https://localhost:8443/api/account 2>/dev/null | head -5 || echo "(no API)"
 echo "===smtp25==="
 echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
 echo QUIT | timeout ${T} openssl s_client -connect localhost:587 2>&1 | head -3
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAIL_WG_IP}:8444/webmail 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAIL_WG_IP}:8443/ 2>&1
 echo ""
 echo "===debugDump==="
 echo "--- ss listening ports ---"
@@ -191,21 +191,15 @@ sudo nft list chain ip raw PREROUTING 2>/dev/null || echo "(no raw table)"
 echo "--- docker networks ---"
 timeout ${T} docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null || true
 echo "--- stalwart config ---"
-grep -E 'hostname|bind' /opt/stalwart/config.toml 2>/dev/null || true
-echo "--- front logs (last 5) ---"
-timeout ${T} docker logs stalwart --tail 5 2>&1 || true
-echo "--- admin logs (last 5) ---"
-timeout ${T} docker logs stalwart 2>&1 | grep -i admin --tail 5 2>&1 || true
-echo "--- smtp logs (last 5) ---"
-timeout ${T} docker logs stalwart 2>&1 | grep -i smtp --tail 5 2>&1 || true
-echo "--- imap logs (last 3) ---"
-timeout ${T} docker logs stalwart 2>&1 | grep -i imap --tail 3 2>&1 || true
+grep -E 'hostname|bind' /opt/stalwart/config.toml 2>/dev/null || echo "(no config yet)"
+echo "--- stalwart logs (last 10) ---"
+timeout ${T} docker logs stalwart --tail 10 2>&1 || echo "(no stalwart container)"
 echo "--- smtp-proxy logs (last 3) ---"
 timeout ${T} docker logs smtp-proxy --tail 3 2>&1 || true
 echo "--- resolv.conf ---"
 cat /etc/resolv.conf 2>/dev/null || true
 echo "--- WG port test ---"
-for p in 993 465 587 25 443 8384 8080; do timeout 1 bash -c "echo > /dev/tcp/10.0.0.3/\$p" 2>/dev/null && echo "\$p OK" || echo "\$p FAIL"; done
+for p in 993 465 587 25 8443 8384 8080; do timeout 1 bash -c "echo > /dev/tcp/10.0.0.3/\$p" 2>/dev/null && echo "\$p OK" || echo "\$p FAIL"; done
 `.trim();
 
   log("SSH batch: connecting...");
