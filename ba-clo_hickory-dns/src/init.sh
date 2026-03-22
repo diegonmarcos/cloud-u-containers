@@ -1,7 +1,6 @@
 #!/bin/sh
 # Hickory DNS init — fetch zones from C3 API if missing
 # Runs as compose pre_hook before docker compose up
-set -e
 cd "$(dirname "$0")"
 CONFIG_DIR="./config"
 ZONES_DIR="$CONFIG_DIR/zones"
@@ -65,7 +64,10 @@ fi
 echo "[init] Generating zones from registry..."
 
 # Generate zone files with jq (proper JSON parser)
-echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' | while read -r name ip; do
+PAIRS="/tmp/hickory-dns-pairs.txt"
+echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' > "$PAIRS" 2>/dev/null || true
+while read -r name ip; do
+  [ -z "$name" ] || [ -z "$ip" ] && continue
   cat > "$ZONES_DIR/${name}.${SUFFIX}.zone" << ZONE
 \$ORIGIN ${name}.${SUFFIX}.
 \$TTL 60
@@ -74,7 +76,8 @@ echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key
 @  IN A    ${ip}
 ZONE
   echo "  ${name}.${SUFFIX} -> ${ip}"
-done
+done < "$PAIRS"
+rm -f "$PAIRS"
 
 # Generate named.toml from zone files
 {
