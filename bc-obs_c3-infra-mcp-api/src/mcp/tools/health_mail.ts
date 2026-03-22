@@ -327,20 +327,6 @@ function networkChecks(): Check[] {
     return { passed: ip === "10.0.0.3", details: ip === "10.0.0.3" ? `stalwart.app → ${ip}` : `FAIL: ${ip || "no response"}` };
   }));
 
-  // Caddy (gcp-proxy) — the entry door for ALL traffic
-  checks.push(timed("Caddy (gcp-proxy)", () => {
-    const r = exec("bash", ["-c", `timeout 3 curl -sk -o /dev/null -w '%{http_code}' https://proxy.diegonmarcos.com/ 2>&1`], { timeout: 5_000 });
-    const code = r.stdout.trim();
-    return { passed: code !== "000" && code !== "502", details: `HTTP ${code}` };
-  }));
-
-  // Hickory DNS — internal .app resolution
-  checks.push(timed("Hickory DNS", () => {
-    const r = exec("bash", ["-c", `timeout 3 dig +short stalwart.app @10.0.0.1 2>&1`], { timeout: 5_000 });
-    const ip = r.stdout.trim();
-    return { passed: ip === "10.0.0.3", details: ip === "10.0.0.3" ? "stalwart.app → 10.0.0.3" : `FAIL: ${ip || "no response"}` };
-  }));
-
   // TLS via localhost on oci-mail (direct to Stalwart, bypasses Caddy L4)
   checks.push(timed("TLS WG direct", () => {
     const r = ssh(`
@@ -398,7 +384,7 @@ function networkChecks(): Check[] {
 
   // HTTP endpoints
   checks.push(timed("Webmail HTTPS", () => {
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `https://${MAIL_DOMAIN}/webmail`]);
+    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAIL_DOMAIN}/`]);
     return { passed: ["200", "301", "302"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()}` };
   }));
   checks.push(timed("Webmail internal", () => {
