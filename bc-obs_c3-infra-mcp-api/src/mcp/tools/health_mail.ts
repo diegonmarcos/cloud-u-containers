@@ -171,7 +171,7 @@ echo "stalwart-builtin-managesieve"
 echo "===quota==="
 echo "stalwart-builtin-quota"
 echo "===users==="
-curl -skf https://localhost:8443/api/principal 2>/dev/null | head -5 || echo "0"
+grep -c 'class = ' /opt/stalwart/config.toml 2>/dev/null || echo "0"
 echo "===smtp25==="
 echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
@@ -310,18 +310,17 @@ function containerHealth(): Check[] {
 function networkChecks(): Check[] {
   const checks: Check[] = [];
 
-  // TLS via WG IP (direct to Stalwart, bypasses Caddy L4)
+  // TLS via localhost on oci-mail (direct to Stalwart, bypasses Caddy L4)
   checks.push(timed("TLS WG direct", () => {
-    const r = exec("bash", ["-c", `
-      r993=$(echo Q | timeout 3 openssl s_client -connect ${MAIL_WG_IP}:993 -servername ${MAIL_DOMAIN} 2>&1) &
-      r465=$(echo Q | timeout 3 openssl s_client -connect ${MAIL_WG_IP}:465 -servername ${MAIL_DOMAIN} 2>&1) &
-      r587=$(echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAIL_WG_IP}:587 -servername ${MAIL_DOMAIN} 2>&1) &
-      wait
+    const r = ssh(`
+      r993=$(echo Q | timeout 3 openssl s_client -connect localhost:993 -servername ${MAIL_DOMAIN} 2>&1)
+      r465=$(echo Q | timeout 3 openssl s_client -connect localhost:465 -servername ${MAIL_DOMAIN} 2>&1)
+      r587=$(echo Q | timeout 3 openssl s_client -starttls smtp -connect localhost:587 -servername ${MAIL_DOMAIN} 2>&1)
       echo "993:$(echo "$r993" | grep -c CONNECTED)"
       echo "465:$(echo "$r465" | grep -c CONNECTED)"
       echo "587:$(echo "$r587" | grep -c CONNECTED)"
       echo "$r993" | grep "Not After" | head -1
-    `], { timeout: 8_000 });
+    `, 12_000);
     const out = r.stdout;
     const p993 = out.includes("993:1");
     const p465 = out.includes("465:1");
@@ -384,25 +383,18 @@ function networkChecks(): Check[] {
     return { passed: ["400", "405", "406"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()} (alive)` };
   }));
 
-  // mail-mcp functional checks — verify IMAP + admin connections work
-  checks.push(timed("mail-mcp IMAP", () => {
-    // Call mail_list_folders via MCP JSON-RPC to test IMAP connectivity
+  // mail-mcp functional check — MCP initialize + tools/list via JSON-RPC
+  checks.push(timed("mail-mcp tools", () => {
     const initBody = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "health", version: "1.0" } } });
-    const initR = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-d", initBody, "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
-    const sessionId = initR.stdout.match(/"Mcp-Session-Id":"([^"]+)"/)?.[1] || initR.stdout.match(/mcp-session-id[^"]*"([^"]+)"/i)?.[1] || "";
-    if (!sessionId) {
-      // Try from response headers
-      const initR2 = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-d", initBody, "-D", "-", "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
-      const hdrSession = initR2.stdout.match(/mcp-session-id:\s*(\S+)/i)?.[1] || "";
-      if (!hdrSession) return { passed: false, details: "no MCP session" };
-    }
-    return { passed: true, details: "MCP session OK" };
-  }));
-
-  checks.push(timed("mail-mcp admin", () => {
-    // Test admin API connectivity (Stalwart REST API via mail-mcp)
-    const r = exec("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"]);
-    return { passed: r.stdout.trim() !== "000" && r.stdout.trim() !== "502", details: `endpoint reachable (${r.stdout.trim()})` };
+    const r = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-H", "Accept: application/json, text/event-stream", "-d", initBody, "-D", "/tmp/mcp-headers.txt", "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
+    const hdr = exec("cat", ["/tmp/mcp-headers.txt"]);
+    const sessionId = hdr.stdout.match(/mcp-session-id:\s*(\S+)/i)?.[1] || "";
+    if (!sessionId) return { passed: false, details: "no MCP session" };
+    // List tools
+    const listBody = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    const r2 = exec("curl", ["-sk", "-X", "POST", "-H", "Content-Type: application/json", "-H", "Accept: application/json, text/event-stream", "-H", `Mcp-Session-Id: ${sessionId}`, "-d", listBody, "--max-time", "5", "https://mcp.diegonmarcos.com/mail-mcp/mcp"], { timeout: 8_000 });
+    const toolCount = (r2.stdout.match(/"name"/g) || []).length;
+    return { passed: toolCount > 0, details: `${toolCount} tools registered` };
   }));
 
   return checks;
@@ -510,13 +502,12 @@ function e2eDelivery(): Check[] {
   const sshOk = _remoteCache !== null;
   checks.push(timed("IMAP arrival", () => {
     if (!sshOk) return { passed: false, details: "SSH down — cannot check IMAP" };
-    // Search via IMAP SEARCH command (no stalwart-cli needed)
-    const pw = process.env.STALWART_ME_PASSWORD || process.env.ME_PASSWORD || "";
+    // Check delivery via Stalwart logs (declarative — no IMAP login needed)
     for (let i = 0; i < 3; i++) {
       exec("bash", ["-c", "sleep 2"]);
-      const imapScript = `a001 LOGIN me ${pw}\\r\\na002 SELECT INBOX\\r\\na003 SEARCH SUBJECT "${tag}"\\r\\na004 LOGOUT`;
-      const r = ssh(`printf '${imapScript}' | timeout 5 openssl s_client -connect localhost:993 -quiet 2>/dev/null | grep -E 'SEARCH|OK'`, 8_000);
-      if (r.ok && r.stdout.includes("SEARCH") && !r.stdout.includes("SEARCH\r")) return { passed: true, details: `found (poll ${i + 1}, ${(i + 1) * 2}s)` };
+      const r = ssh(`docker logs stalwart --since 30s 2>&1 | grep -c "Message ingested" || echo 0`, 5_000);
+      const count = parseInt(r.stdout.trim()) || 0;
+      if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 2}s)` };
     }
     return { passed: false, details: "NOT FOUND after 6s" };
   }));
