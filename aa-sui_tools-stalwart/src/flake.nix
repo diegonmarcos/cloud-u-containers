@@ -96,9 +96,9 @@
       [acme."letsencrypt"]
       directory = "https://acme-v02.api.letsencrypt.org/directory"
       challenge = "dns-01"
-      contact = "mailto:me@${config.domain}"
+      contact = "postmaster@${config.domain}"
       provider = "cloudflare"
-      token = "''\${CF_DNS_API_TOKEN}"
+      secret = "''\${CF_DNS_API_TOKEN}"
       domains = ["${config.mail_domain}"]
       renew-before = "30d"
 
@@ -107,9 +107,9 @@
       default = true
       acme = "letsencrypt"
 
-      # ── Local domain — accept mail for diegonmarcos.com ─────────────
+      # ── SMTP session — accept mail for local domains ───────────────
       [session.rcpt]
-      directory = "static"
+      directory = "'static'"
 
       # ── Storage (RocksDB + filesystem) ──────────────────────────────
       [store."rocksdb"]
@@ -128,30 +128,27 @@
       directory = "static"
 
       # ── Directory (static accounts — fully declarative) ─────────────
+      # Domains auto-derived from email addresses in principals
       [directory."static"]
       type = "memory"
 
       [[directory."static".principals]]
-      type = "admin"
+      class = "admin"
       name = "admin"
       secret = "''\${ADMIN_PASSWORD}"
-      emails = ["admin@${config.domain}"]
+      email = ["postmaster@${config.domain}", "admin@${config.domain}"]
 
       [[directory."static".principals]]
-      type = "individual"
+      class = "individual"
       name = "me"
       secret = "''\${ME_PASSWORD}"
-      emails = ["me@${config.domain}"]
+      email = ["me@${config.domain}"]
 
       [[directory."static".principals]]
-      type = "individual"
+      class = "individual"
       name = "no-reply"
       secret = "''\${NOREPLY_PASSWORD}"
-      emails = ["no-reply@${config.domain}", "noreply@${config.domain}"]
-
-      # Domain ownership
-      [[directory."static".domains]]
-      name = "${config.domain}"
+      email = ["no-reply@${config.domain}", "noreply@${config.domain}"]
 
       # ── Authentication ──────────────────────────────────────────────
       [authentication]
@@ -159,9 +156,9 @@
       fallback-admin.secret = "''\${ADMIN_PASSWORD}"
 
       [session.auth]
-      mechanisms = ["PLAIN", "LOGIN"]
-      directory = "static"
-      allow-plain-text = true
+      mechanisms = [{if = "is_tls", then = "[plain, login]"}, {else = false}]
+      directory = "'static'"
+      require = [{if = "local_port != 25", then = true}, {else = false}]
 
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
