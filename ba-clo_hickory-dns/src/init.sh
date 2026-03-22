@@ -10,15 +10,17 @@ SUFFIX="app"
 LISTEN_IP="10.0.0.1"
 
 # If zones already exist, skip
-if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ]; then
+# Regenerate if: zones missing, OR init.sh is newer than named.toml (new deploy)
+if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ] && [ ! ./init.sh -nt "$NAMED_TOML" ]; then
   ZONE_COUNT=$(ls "$ZONES_DIR"/*.zone 2>/dev/null | wc -l)
   if [ "$ZONE_COUNT" -gt 0 ]; then
-    echo "[init] $ZONE_COUNT zones found — skipping fetch"
+    echo "[init] $ZONE_COUNT zones found, init.sh unchanged — skipping"
     exit 0
   fi
 fi
 
-echo "[init] Zones missing — fetching from cloud-data repo..."
+echo "[init] Regenerating zones from cloud-data repo..."
+rm -rf "$ZONES_DIR"
 mkdir -p "$ZONES_DIR"
 
 # Remove stale Docker directory mount
