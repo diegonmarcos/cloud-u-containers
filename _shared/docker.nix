@@ -121,7 +121,7 @@ in {
     cpuLimit ? null,          # e.g. "0.5"
 
     # Security escape hatches
-    skipCapDrop ? false,      # true = don't add cap_drop: ALL (e.g. Mailu)
+    skipCapDrop ? false,      # DEPRECATED — cap_drop removed, kept for backward compat
     capAdd ? [],              # explicit capabilities to add back
     user ? null,              # e.g. "1000:1000" — opt-in per service
     allowPublicPorts ? false, # true = allow 0.0.0.0 port bindings
@@ -229,7 +229,6 @@ in {
 
       securityLines = if skipSecurity then ""
         else "${i2}security_opt:\n${i3}- no-new-privileges:true"
-          + (if !skipCapDrop then "\n${i2}cap_drop:\n${i3}- ALL" else "")
           + (if capAdd != [] then "\n${i2}cap_add:\n" + builtins.concatStringsSep "\n" (map (c: "${i3}- ${c}") capAdd) else "");
 
       userLine = if user != null then "${i2}user: \"${user}\"" else "";
