@@ -134,25 +134,25 @@
 
       [[directory."static".principals]]
       class = "admin"
-      name = "admin"
+      name = "admin@${config.domain}"
       secret = "''\${ADMIN_PASSWORD}"
-      email = ["postmaster@${config.domain}", "admin@${config.domain}"]
+      email = ["admin@${config.domain}", "postmaster@${config.domain}"]
 
       [[directory."static".principals]]
       class = "individual"
-      name = "me"
+      name = "me@${config.domain}"
       secret = "''\${ME_PASSWORD}"
       email = ["me@${config.domain}"]
 
       [[directory."static".principals]]
       class = "individual"
-      name = "no-reply"
+      name = "no-reply@${config.domain}"
       secret = "''\${NOREPLY_PASSWORD}"
       email = ["no-reply@${config.domain}", "noreply@${config.domain}"]
 
       # ── Authentication ──────────────────────────────────────────────
       [authentication]
-      fallback-admin.user = "admin"
+      fallback-admin.user = "admin@${config.domain}"
       fallback-admin.secret = "''\${ADMIN_PASSWORD}"
 
       [session.auth]
