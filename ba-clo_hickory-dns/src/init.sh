@@ -23,12 +23,17 @@ fi
 echo "[init] Zones missing — fetching DNS registry from C3 API..."
 mkdir -p "$ZONES_DIR"
 
-# We're bootstrapping Hickory DNS — system DNS (10.0.0.1) is down.
-# Temporarily swap resolv.conf to Cloudflare so curl can resolve GitHub.
-ORIG_RESOLV="/etc/resolv.conf"
-BACKUP_RESOLV="/tmp/resolv.conf.bak"
-cp "$ORIG_RESOLV" "$BACKUP_RESOLV" 2>/dev/null || true
-printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > "$ORIG_RESOLV" 2>/dev/null || true
+# We're bootstrapping Hickory DNS — system DNS (10.0.0.1) may be down.
+# Use sudo to temporarily swap resolv.conf to Cloudflare.
+SUDO=""
+for p in /usr/bin/sudo /run/wrappers/bin/sudo /usr/local/bin/sudo; do
+  [ -x "$p" ] && SUDO="$p" && break
+done
+
+if [ -n "$SUDO" ]; then
+  $SUDO cp /etc/resolv.conf /tmp/resolv.conf.bak 2>/dev/null || true
+  printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" | $SUDO tee /etc/resolv.conf >/dev/null 2>/dev/null || true
+fi
 
 REGISTRY=$(curl -sf --max-time 15 "$REPO_RAW" 2>/dev/null || echo "")
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
@@ -36,7 +41,9 @@ if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
 fi
 
 # Restore original resolv.conf
-cp "$BACKUP_RESOLV" "$ORIG_RESOLV" 2>/dev/null || true
+if [ -n "$SUDO" ] && [ -f /tmp/resolv.conf.bak ]; then
+  $SUDO cp /tmp/resolv.conf.bak /etc/resolv.conf 2>/dev/null || true
+fi
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
   echo "[init] WARNING: C3 API unreachable — forwarder only"
   cat > "$NAMED_TOML" << 'EOF'
