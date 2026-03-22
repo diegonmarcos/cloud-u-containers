@@ -40,9 +40,9 @@
             "TZ=${config.timezone}"
           ];
           volumes = [
-            "./data:/opt/stalwart/data"
-            "./config.toml:/opt/stalwart/etc/config.toml:ro"
-            "./dkim:/opt/stalwart/dkim:ro"
+            "./data:/opt/stalwart-mail/data"
+            "./config.toml:/opt/stalwart-mail/etc/config.toml:ro"
+            "./dkim:/opt/stalwart-mail/dkim:ro"
           ];
           memLimit = "512M";
           memReservation = "64M";
@@ -100,17 +100,17 @@
       challenge = "tls-alpn-01"
 
       [certificate."default"]
-      cert = "%{file:/opt/stalwart/data/acme/letsencrypt/cert.pem}%"
-      private-key = "%{file:/opt/stalwart/data/acme/letsencrypt/key.pem}%"
+      cert = "%{file:/opt/stalwart-mail/data/acme/letsencrypt/cert.pem}%"
+      private-key = "%{file:/opt/stalwart-mail/data/acme/letsencrypt/key.pem}%"
 
       # ── Storage (RocksDB + filesystem) ──────────────────────────────
       [store."rocksdb"]
       type = "rocksdb"
-      path = "/opt/stalwart/data/db"
+      path = "/opt/stalwart-mail/data/db"
 
       [store."blob"]
       type = "fs"
-      path = "/opt/stalwart/data/blobs"
+      path = "/opt/stalwart-mail/data/blobs"
 
       [storage]
       data = "rocksdb"
@@ -135,7 +135,7 @@
 
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
-      private-key = "%{file:/opt/stalwart/dkim/${config.domain}.dkim.key}%"
+      private-key = "%{file:/opt/stalwart-mail/dkim/${config.domain}.dkim.key}%"
       domain = "${config.domain}"
       selector = "dkim"
       headers = ["From", "To", "Date", "Subject", "Message-ID"]
