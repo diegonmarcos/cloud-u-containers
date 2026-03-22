@@ -68,8 +68,9 @@
             name = "postgres";
             image = config.db_image;
             container_name = config.db_container;
-            user = "root";  # Volume has data from Debian postgres (UID 999), Alpine uses UID 70 — root can read any UID's files, entrypoint handles privilege drop
-            skipReadOnly = true;  # postgres writes to /var/run/postgresql + data dir
+            skipReadOnly = true;
+            # Fix UID mismatch: Debian postgres=999, Alpine postgres=70
+            entrypoint = ["sh", "-c", "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"];
             networks = [ "etherpad_net" ];
             volumes = [
               "postgres_data:/var/lib/postgresql/data"
