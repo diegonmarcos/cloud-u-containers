@@ -109,12 +109,16 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       if (!vm?.wg_ip) continue;
       const ip: string = vm.wg_ip;
       const desc: string = s.description ?? svcName;
-      // Register each container name
+      // Register each container name (convert underscores to hyphens for valid DNS labels)
       for (const container of (s.containers ?? [])) {
-        if (container) services[container] = { ip, desc };
+        if (container) {
+          const dnsName = container.replace(/_/g, "-").toLowerCase();
+          services[dnsName] = { ip, desc };
+        }
       }
-      // Also register the service name itself (folder name, e.g. "c3-infra-mcp-api")
-      services[svcName] = { ip, desc };
+      // Also register the service name itself
+      const dnsSvcName = svcName.replace(/_/g, "-").toLowerCase();
+      services[dnsSvcName] = { ip, desc };
     }
 
     // PTR reverse map: last WG octet → VM alias (for Hickory vms attrset)
