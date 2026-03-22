@@ -19,8 +19,15 @@ if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ]; then
   fi
 fi
 
-echo "[init] Zones missing — fetching DNS registry from C3 API..."
+echo "[init] Zones missing — fetching DNS registry..."
 mkdir -p "$ZONES_DIR"
+
+# Remove stale Docker directory mount (Docker creates dir if file didn't exist)
+if [ -d "$NAMED_TOML" ]; then
+  rm -rf "$NAMED_TOML"
+fi
+# Stop container so Docker recreates the mount correctly after we write the file
+docker compose down 2>/dev/null || true
 
 # We're bootstrapping Hickory DNS — system DNS (10.0.0.1) may be down.
 # Use sudo to temporarily swap resolv.conf to Cloudflare.
