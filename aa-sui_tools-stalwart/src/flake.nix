@@ -95,22 +95,21 @@
       # ── TLS (ACME — Let's Encrypt via Cloudflare DNS-01) ────────────
       [acme."letsencrypt"]
       directory = "https://acme-v02.api.letsencrypt.org/directory"
-      contact = ["mailto:me@${config.domain}"]
-      domains = ["${config.mail_domain}"]
       challenge = "dns-01"
+      contact = "mailto:me@${config.domain}"
+      provider = "cloudflare"
+      token = "''\${CF_DNS_API_TOKEN}"
+      domains = ["${config.mail_domain}"]
       renew-before = "30d"
 
-      [acme."letsencrypt".dns]
-      provider = "cloudflare"
-      secret = "''\${CF_DNS_API_TOKEN}"
+      # ── Certificate (link ACME to listeners) ───────────────────────
+      [certificate."default"]
+      default = true
+      acme = "letsencrypt"
 
       # ── Local domain — accept mail for diegonmarcos.com ─────────────
       [session.rcpt]
-      relay = false
       directory = "static"
-
-      [session.rcpt.domain]
-      "${config.domain}" = true
 
       # ── Storage (RocksDB + filesystem) ──────────────────────────────
       [store."rocksdb"]
@@ -150,6 +149,10 @@
       secret = "''\${NOREPLY_PASSWORD}"
       emails = ["no-reply@${config.domain}", "noreply@${config.domain}"]
 
+      # Domain ownership
+      [[directory."static".domains]]
+      name = "${config.domain}"
+
       # ── Authentication ──────────────────────────────────────────────
       [authentication]
       fallback-admin.user = "admin"
@@ -158,6 +161,7 @@
       [session.auth]
       mechanisms = ["PLAIN", "LOGIN"]
       directory = "static"
+      allow-plain-text = true
 
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
