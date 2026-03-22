@@ -59,7 +59,7 @@ $TTL 60
       zone_file_path = "/etc/zones/${name}.${suffix}.zone"
 '') names);
       in pkgs.writeText "named.toml" ''
-      listen_addrs_ipv4 = ["0.0.0.0"]
+      listen_addrs_ipv4 = ["10.0.0.1"]
       listen_port = 53
 
       # ── Per-service zones (<name>.app → WG IP) ──
