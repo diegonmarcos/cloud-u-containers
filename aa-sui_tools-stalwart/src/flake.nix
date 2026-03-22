@@ -99,7 +99,7 @@
       contact = "postmaster@${config.domain}"
       provider = "cloudflare"
       secret = "''\${CF_DNS_API_TOKEN}"
-      domains = ["${config.mail_domain}"]
+      domains = ["${config.mail_domain}", "imap.${config.domain}", "smtp.${config.domain}"]
       renew-before = "30d"
 
       # ── Certificate (link ACME to listeners) ───────────────────────
