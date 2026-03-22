@@ -8,6 +8,9 @@
     "remote_path": "/opt/containers/hickory-dns",
     "excludes": ["config/**"]
   },
+  "compose": {
+    "pre_hook": "init.sh"
+  },
   "build": {
     "include_cloud_data": "true"
   }
