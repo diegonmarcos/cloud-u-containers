@@ -12,11 +12,63 @@
 
     config = {
       port = toString buildJson.ports.app;
+      domain = "diegonmarcos.com";
       mail_domain = "mail.diegonmarcos.com";
     };
 
     title = "SnappyMail";
     docker = import ../../_shared/docker.nix;
+
+    # ── SnappyMail domain config (IMAP + SMTP to Stalwart on localhost) ──
+    mkDomainConfig = pkgs: pkgs.writeText "diegonmarcos.com.ini" ''
+      imap_host = "localhost"
+      imap_port = 993
+      imap_secure = "SSL"
+      imap_short_login = 0
+
+      sieve_host = "localhost"
+      sieve_port = 4190
+      sieve_secure = "None"
+
+      smtp_host = "localhost"
+      smtp_port = 465
+      smtp_secure = "SSL"
+      smtp_short_login = 0
+      smtp_auth = 1
+      smtp_set_sender = 0
+
+      white_list = ""
+    '';
+
+    # ── SnappyMail application config ──
+    mkAppConfig = pkgs: pkgs.writeText "application.ini" ''
+      [webmail]
+      title = "Diego Mail"
+      loading_description = "Diego Mail"
+      theme = "Default"
+      allow_languages_on_login = 1
+      allow_additional_accounts = 0
+      allow_additional_identities = 0
+
+      [interface]
+      show_attachment_thumbnail = 1
+
+      [contacts]
+      enable = 0
+
+      [security]
+      admin_password = ""
+      admin_totp = ""
+      allow_admin_panel = 1
+      csrf_protection = 1
+
+      [login]
+      default_domain = "${config.domain}"
+      allow_languages_on_login = 1
+
+      [plugins]
+      enable = 0
+    '';
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_snappymail/src/flake.nix";
@@ -26,16 +78,15 @@
           image = "djmaze/snappymail:latest";
           container_name = "snappymail";
           skipReadOnly = true;
-          environment = [
-            "SNAPPYMAIL_BACKEND_PATH=/var/lib/snappymail"
-          ];
           volumes = [
             "./data:/var/lib/snappymail"
+            "./config/domains/${config.domain}.ini:/var/lib/snappymail/_data_/_default_/domains/${config.domain}.ini:ro"
+            "./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini:ro"
           ];
           memLimit = "64M";
           memReservation = "16M";
           healthcheck = {
-            test = "['CMD', 'curl', '-sf', 'http://localhost:8888/']";
+            test = "['CMD', 'curl', '-sf', 'http://localhost:${config.port}/']";
             interval = "30s";
             timeout = "10s";
             retries = 3;
@@ -50,8 +101,10 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "snappymail-configs" {} ''
-        mkdir -p $out
+        mkdir -p $out/config/domains
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkDomainConfig pkgs} $out/config/domains/${config.domain}.ini
+        cp ${mkAppConfig pkgs} $out/config/application.ini
       '';
     in {
       default = defaultPkg;
