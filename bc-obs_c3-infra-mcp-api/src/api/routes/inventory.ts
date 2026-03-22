@@ -1,7 +1,8 @@
 // ── Inventory Routes — "What exists" ──
 // Service catalog, topology, config, and discovery
 
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
+import { join, dirname } from "path";
 import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
 import { getDriftReport } from "../../shared/config.js";
@@ -100,25 +101,41 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     const services: Record<string, { ip: string; desc: string }> = {};
     const vms: Record<string, string> = {};
 
-    // Derive container_name → WG IP from topology
-    // topology.services[svcName].vm → topology.vms[vmId].wg_ip
-    // topology.services[svcName].containers[] → each container gets the VM's WG IP
+    // Derive DNS names from build.json proxy configs (what consumers actually reference)
+    // Each service's build.json has proxy.upstream = "name.app:port" — extract the name.
+    // Also extract from proxy.l4_ports[].upstream.
+    const solutionsDir = join(dirname(CONFIG_PATH), "a_solutions");
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
       const s = svc as any;
       const vm = topo.vms?.[s.vm];
       if (!vm?.wg_ip) continue;
       const ip: string = vm.wg_ip;
       const desc: string = s.description ?? svcName;
-      // Register each container name (convert underscores to hyphens for valid DNS labels)
-      for (const container of (s.containers ?? [])) {
-        if (container) {
-          const dnsName = container.replace(/_/g, "-").toLowerCase();
-          services[dnsName] = { ip, desc };
-        }
+
+      // Always register the service name itself
+      services[svcName] = { ip, desc };
+
+      // Scan build.json for proxy.upstream DNS names
+      const flake = s.flake ?? svcName;
+      const buildJsonPaths = readdirSync(solutionsDir, { withFileTypes: true })
+        .filter(d => d.isDirectory() && d.name.endsWith(`_${flake}`))
+        .map(d => join(solutionsDir, d.name, "build.json"));
+
+      for (const bjPath of buildJsonPaths) {
+        if (!existsSync(bjPath)) continue;
+        try {
+          const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+          const upstreams: string[] = [];
+          if (bj.proxy?.upstream) upstreams.push(bj.proxy.upstream);
+          for (const l4 of (bj.proxy?.l4_ports ?? [])) {
+            if (l4.upstream) upstreams.push(l4.upstream);
+          }
+          for (const u of upstreams) {
+            const m = u.match(/^(?:https?:\/\/)?([a-z0-9-]+)\.app/);
+            if (m && m[1]) services[m[1]] = { ip, desc };
+          }
+        } catch { /* skip unparseable build.json */ }
       }
-      // Also register the service name itself
-      const dnsSvcName = svcName.replace(/_/g, "-").toLowerCase();
-      services[dnsSvcName] = { ip, desc };
     }
 
     // PTR reverse map: last WG octet → VM alias (for Hickory vms attrset)
