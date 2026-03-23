@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerSpecTools } from "./tools/specs.js";
-import { registerDocsTools } from "./tools/docs.js";
-import { registerSkillTools } from "./tools/skills.js";
+import { registerSpecTools } from "./tools/a-raw-json/specs.js";
+import { registerDocsTools } from "./tools/a-raw-json/docs.js";
+import { registerSkillTools } from "./tools/a-raw-json/skills.js";
+import { registerOctocodeTools } from "./tools/b-octocode/octocode.js";
+import { registerCodegraphTools } from "./tools/c-codegraph-rust/codegraph.js";
 import { buildContextSummary } from "./context.js";
 
 const server = new McpServer({
-  name: "cloud-specs-docs",
-  version: "4.0.0",
+  name: "code-graph-context",
+  version: "5.0.0",
 });
 
 // ── Resources ─────────────────────────────────────────────────────────
@@ -38,21 +40,27 @@ server.resource(
   })
 );
 
-// ── Tools ─────────────────────────────────────────────────────────────
-// A: Specs — 9 tools (topology, configs, deps, service spec, VM info, categories)
+// ── Section A: Raw JSON Infra Knowledge ──────────────────────────────
+// 9 spec tools (topology, configs, deps, service spec, VM info, categories)
 registerSpecTools(server);
-
-// B: Docs — 4 tools (overview, service docs, README, cloud_context)
+// 4 doc tools (overview, service docs, README, cloud_context)
 registerDocsTools(server);
-
-// C: Skills — 4 tools (architect, frontend, debug, scraping)
+// 4 skill tools (architect, frontend, debug, scraping)
 registerSkillTools(server);
 
-const log = (msg: string) => process.stderr.write(`[cloud-specs-docs] ${msg}\n`);
+// ── Section B: Octocode — Semantic Code Search ───────────────────────
+// 3 tools (search, memory, index)
+registerOctocodeTools(server);
+
+// ── Section C: CodeGraph-Rust — Graph Analysis (Future) ──────────────
+// 3 stub tools (trace_call_path, impact_analysis, dependencies)
+registerCodegraphTools(server);
+
+const log = (msg: string) => process.stderr.write(`[code-graph-context] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-specs-docs MCP server v4.0.0 (17 tools, 2 resources: 9 specs, 4 docs, 4 skills)...");
+  log("Starting code-graph-context MCP server v5.0.0 (23 tools, 2 resources: A=17 infra, B=3 octocode, C=3 codegraph-stub)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }

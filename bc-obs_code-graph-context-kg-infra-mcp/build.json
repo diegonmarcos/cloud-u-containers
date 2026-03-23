@@ -1,5 +1,5 @@
 {
-  "name": "c3-specs-docs-mcp",
-  "description": "MCP server — cloud specs (topology, configs, deps), docs (overview, service, README), skills (architect, frontend, debug, scraping)",
+  "name": "code-graph-context-kg-infra-mcp",
+  "description": "MCP server — A) Raw JSON infra knowledge (topology, configs, deps, docs, skills), B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
   "category": "obs"
 }

@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getConfig, getVmSshAlias } from "../config.js";
+import { getConfig, getVmSshAlias } from "../../config.js";
 
 export function registerSkillTools(server: McpServer) {
 

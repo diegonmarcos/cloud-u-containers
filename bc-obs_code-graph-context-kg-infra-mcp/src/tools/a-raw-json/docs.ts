@@ -6,8 +6,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getRepoRoot } from "../config.js";
-import { buildContextSummary } from "../context.js";
+import { getRepoRoot } from "../../config.js";
+import { buildContextSummary } from "../../context.js";
 
 function getCloudSpecDir(): string {
   return join(getRepoRoot(), "a_solutions", "bc-obs_cloud-spec");
