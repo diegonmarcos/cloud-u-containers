@@ -34,8 +34,6 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     cap_add:
       - DAC_OVERRIDE
 
@@ -43,7 +41,7 @@ services:
     image: redis:7-bookworm
     container_name: authelia-redis
     network_mode: host
-    command: sh -c 'redis-server --requirepass $$AUTHELIA_REDIS_PASSWORD'
+    command: sh -c 'redis-server --port 6380 --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'
     restart: unless-stopped
     stop_grace_period: 30s
     ulimits:
@@ -52,6 +50,8 @@ services:
         hard: 65536
     env_file:
       - .secrets
+    volumes:
+      - authelia_redis_data:/data
     pids_limit: 256
     logging:
       driver: "json-file"
@@ -60,10 +60,6 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - DAC_OVERRIDE
 networks:
   auth-net:
     driver: bridge
