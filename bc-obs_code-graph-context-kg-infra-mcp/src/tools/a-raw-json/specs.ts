@@ -6,7 +6,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getConfig, getVmSshAlias, getRepoRoot } from "../config.js";
+import { getConfig, getVmSshAlias, getRepoRoot } from "../../config.js";
 
 const CATEGORY_PREFIX: Record<string, string> = {
   app: "aa-sui_", mic: "ab-mic_", fin: "ac-fin_", agi: "ad-agi_",

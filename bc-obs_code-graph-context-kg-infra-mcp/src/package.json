@@ -1,7 +1,7 @@
 {
-  "name": "c3-specs-docs-mcp",
-  "version": "4.0.0",
-  "description": "MCP stdio server — cloud specs, docs, and skills (17 tools, 2 resources)",
+  "name": "code-graph-context-kg-infra-mcp",
+  "version": "5.0.0",
+  "description": "MCP server — A) Raw JSON infra knowledge, B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
   "type": "module",
   "scripts": {
     "start": "tsx index.ts"
