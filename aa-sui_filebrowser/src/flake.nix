@@ -29,7 +29,9 @@
             name = "filebrowser";
             image = config.image;
             container_name = config.container_name;
+            networkMode = null;
             ports = [ "10.0.0.6:${toString config.port}:80" ];
+            dns = ["10.0.0.6"];
             volumes = [
               "filebrowser_data:/srv"
               "filebrowser_db:/database"
