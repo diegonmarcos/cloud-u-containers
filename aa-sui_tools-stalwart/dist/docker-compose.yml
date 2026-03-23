@@ -7,7 +7,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   stalwart:
-    image: stalwartlabs/mail-server:latest
+    image: stalwartlabs/mail-server:v0.11
     container_name: stalwart
     network_mode: host
     restart: unless-stopped
@@ -19,9 +19,9 @@ services:
     environment:
       - TZ=Europe/Madrid
     volumes:
-      - ./data:/opt/stalwart/data
-      - ./config.toml:/opt/stalwart/etc/config.toml:ro
-      - ./dkim:/opt/stalwart/dkim:ro
+      - ./data:/opt/stalwart-mail/data
+      - ./config.toml:/opt/stalwart-mail/etc/config.toml:ro
+      - ./dkim:/opt/stalwart-mail/dkim:ro
     deploy:
       resources:
         limits:
