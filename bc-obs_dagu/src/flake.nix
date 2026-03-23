@@ -1954,7 +1954,6 @@
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      dags = mkDags pkgs;
     in let
       defaultPkg = pkgs.runCommand "dagu-configs" {} ''
         mkdir -p $out/dags
@@ -1963,25 +1962,8 @@
         cp ${mkFetchToken pkgs} $out/fetch-token.sh
         chmod +x $out/fetch-token.sh
         cp ${./Dockerfile} $out/Dockerfile
-        cp ${dags."health_mesh-connectivity"} $out/dags/health_mesh-connectivity.yaml
-        cp ${dags."health_system-resources"} $out/dags/health_system-resources.yaml
-        cp ${dags."health_docker-containers"} $out/dags/health_docker-containers.yaml
-        cp ${dags."ops_backup-check"} $out/dags/ops_backup-check.yaml
-        cp ${dags."security_ssh-audit"} $out/dags/security_ssh-audit.yaml
-        cp ${dags.ops_summary} $out/dags/ops_summary.yaml
-        cp ${dags."health_service-endpoints"} $out/dags/health_service-endpoints.yaml
-        cp ${dags."security_tls-expiry"} $out/dags/security_tls-expiry.yaml
-        cp ${dags."health_dns-resolution"} $out/dags/health_dns-resolution.yaml
-        cp ${dags."security_auth-events"} $out/dags/security_auth-events.yaml
-        cp ${dags."ops_cron-status"} $out/dags/ops_cron-status.yaml
-        cp ${dags."ops_deploy-digest"} $out/dags/ops_deploy-digest.yaml
-        cp ${dags."security_sauron-integrity"} $out/dags/security_sauron-integrity.yaml
-        cp ${dags."ops_capacity-review"} $out/dags/ops_capacity-review.yaml
-        cp ${dags.report_daily} $out/dags/report_daily.yaml
-        cp ${dags."report_daily-script"} $out/dags/report_daily.sh
-        cp ${dags."cloud-data_sync"} $out/dags/cloud-data_sync.yaml
-        cp ${dags."cloud-data_front-sync"} $out/dags/cloud-data_front-sync.yaml
-        cp ${dags."cloud-data_secrets-sync"} $out/dags/cloud-data_secrets-sync.yaml
+        cp -r ${./dags}/. $out/dags/
+        chmod +x $out/dags/report_daily.sh
       '';
     in {
       default = defaultPkg;
