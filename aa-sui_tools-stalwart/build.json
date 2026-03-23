@@ -20,9 +20,9 @@
     "tls_skip_verify": true,
     "landing_page": "mymail",
     "l4_ports": [
-      { "port": 993, "upstream": "stalwart.app:993", "comment": "IMAPS" },
-      { "port": 465, "upstream": "stalwart.app:465", "comment": "SMTPS" },
-      { "port": 587, "upstream": "stalwart.app:587", "comment": "SMTP Submission" }
+      { "port": 993, "upstream": "130.110.251.193:993", "comment": "IMAPS" },
+      { "port": 465, "upstream": "130.110.251.193:465", "comment": "SMTPS" },
+      { "port": 587, "upstream": "130.110.251.193:587", "comment": "SMTP Submission" }
     ]
   },
   "health": {

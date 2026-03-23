@@ -37,50 +37,83 @@ bind = ["0.0.0.0:8443"]
 protocol = "http"
 tls.implicit = true
 
-# ── TLS (ACME — Let's Encrypt) ─────────────────────────────────
+# ── TLS (ACME — Let's Encrypt via Cloudflare DNS-01) ────────────
 [acme."letsencrypt"]
 directory = "https://acme-v02.api.letsencrypt.org/directory"
-contact = ["mailto:me@diegonmarcos.com"]
-domains = ["mail.diegonmarcos.com"]
-challenge = "tls-alpn-01"
+challenge = "dns-01"
+contact = "postmaster@diegonmarcos.com"
+provider = "cloudflare"
+secret = "${CF_DNS_API_TOKEN}"
+domains = ["mail.diegonmarcos.com", "imap.diegonmarcos.com", "smtp.diegonmarcos.com"]
+renew-before = "30d"
 
+# ── Certificate (link ACME to listeners) ───────────────────────
 [certificate."default"]
-cert = "%{file:/opt/stalwart/data/acme/letsencrypt/cert.pem}%"
-private-key = "%{file:/opt/stalwart/data/acme/letsencrypt/key.pem}%"
+default = true
+acme = "letsencrypt"
+
+# ── SMTP session — accept mail for local domains ───────────────
+[session.rcpt]
+directory = "'static'"
 
 # ── Storage (RocksDB + filesystem) ──────────────────────────────
 [store."rocksdb"]
 type = "rocksdb"
-path = "/opt/stalwart/data/db"
+path = "/opt/stalwart-mail/data/db"
 
 [store."blob"]
 type = "fs"
-path = "/opt/stalwart/data/blobs"
+path = "/opt/stalwart-mail/data/blobs"
 
 [storage]
 data = "rocksdb"
 blob = "blob"
 fts = "rocksdb"
 lookup = "rocksdb"
-directory = "internal"
+directory = "static"
 
-# ── Directory (internal accounts) ───────────────────────────────
-[directory."internal"]
-type = "internal"
-store = "rocksdb"
+# ── Directory (static accounts — fully declarative) ─────────────
+# Domains auto-derived from email addresses in principals
+[directory."static"]
+type = "memory"
+
+[[directory."static".principals]]
+class = "admin"
+name = "admin@diegonmarcos.com"
+secret = "${ADMIN_PASSWORD}"
+email = ["admin@diegonmarcos.com", "postmaster@diegonmarcos.com"]
+
+[[directory."static".principals]]
+class = "individual"
+name = "me@diegonmarcos.com"
+secret = "${ME_PASSWORD}"
+email = ["me@diegonmarcos.com"]
+
+[[directory."static".principals]]
+class = "individual"
+name = "no-reply@diegonmarcos.com"
+secret = "${NOREPLY_PASSWORD}"
+email = ["no-reply@diegonmarcos.com", "noreply@diegonmarcos.com"]
 
 # ── Authentication ──────────────────────────────────────────────
 [authentication]
-fallback-admin.user = "admin"
+fallback-admin.user = "admin@diegonmarcos.com"
 fallback-admin.secret = "${ADMIN_PASSWORD}"
 
 [session.auth]
-mechanisms = ["PLAIN", "LOGIN"]
-directory = "internal"
+mechanisms = [{if = "is_tls", then = "[plain, login]"}, {else = false}]
+directory = "'static'"
+require = [{if = "local_port != 25", then = true}, {else = false}]
+
+# ── Trusted networks (WG mesh + localhost) ──
+# Security (rate-limiting, IP blocking) handled at cloud level (Caddy/firewalls)
+[server.security]
+trusted-networks = ["127.0.0.0/8", "10.0.0.0/24"]
+blocked-ip-addresses.max-entries = 0
 
 # ── DKIM signing ────────────────────────────────────────────────
 [signature."dkim"]
-private-key = "%{file:/opt/stalwart/dkim/diegonmarcos.com.dkim.key}%"
+private-key = "%{file:/opt/stalwart-mail/dkim/diegonmarcos.com.dkim.key}%"
 domain = "diegonmarcos.com"
 selector = "dkim"
 headers = ["From", "To", "Date", "Subject", "Message-ID"]
