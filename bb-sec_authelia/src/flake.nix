@@ -588,17 +588,8 @@ ${mkResourceLines rule.resources_two_factor}
               pkce_challenge_method: S256
               access_token_signed_response_alg: RS256
               audience:
-                - https://db.diegonmarcos.com/
-                - https://analytics.diegonmarcos.com/
-                - https://auth.diegonmarcos.com/
-                - https://cal.diegonmarcos.com/
-                - https://ide.diegonmarcos.com/
-                - https://mail.diegonmarcos.com/
-                - https://photos.diegonmarcos.com/
-                - https://proxy.diegonmarcos.com/
-                - https://rss.diegonmarcos.com/
-                - https://sync.diegonmarcos.com/
-                - https://vault.diegonmarcos.com/
+                - https://*.diegonmarcos.com/
+                - https://diegonmarcos.com/
     '';
 
     # Users database template (hash comes from .env via envsubst)
