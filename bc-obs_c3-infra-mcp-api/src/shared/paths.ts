@@ -99,8 +99,9 @@ export function syncRepos(force = false): void {
         // Auto-clone missing repos (e.g. cloud-data on first run)
         const repoUrl = REPO_URLS[name];
         if (!repoUrl) continue;
-        execSync(`${GIT_SSH} git clone --depth 1 ${repoUrl} ${dir}`, {
-          timeout: 30000,
+        // Sparse checkout for large repos — only get build.json + config files
+        execSync(`${GIT_SSH} git clone --depth 1 --filter=blob:none --sparse ${repoUrl} ${dir} && cd ${dir} && git sparse-checkout set a_solutions/*/build.json a_solutions/*/src/flake.nix config.json`, {
+          timeout: 60000,
           stdio: "ignore",
         });
       } else {
@@ -119,4 +120,5 @@ export function syncRepos(force = false): void {
 /** Git remote URLs for auto-cloning in server mode */
 const REPO_URLS: Record<string, string> = {
   "cloud-data": CLOUD_DATA_REPO,
+  cloud: "git@github.com:diegonmarcos/cloud.git",
 };
