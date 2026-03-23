@@ -234,6 +234,7 @@
     mkSubdomainRoute = route:
       let
         isNoAuth = (route.auth or null) == "none";
+        isWgOnly = route.wg_only or false;
         hasMaxUpload = (route.max_upload or null) != null;
         hasTimeout = (route.timeout or null) != null;
         hasTlsSkipVerify = route.tls_skip_verify or false;
@@ -292,10 +293,15 @@
         }'') route.bypass_paths
         else "";
 
+        wgBlock = if isWgOnly then ''
+        @not_wg not remote_ip 10.0.0.0/24
+        respond @not_wg "Forbidden" 403'' else "";
+
       in ''
       # ${route.comment or route.domain}
       ${route.domain} {
     ${secLine}${uploadBlock}
+    ${wgBlock}
     ${bypassBlock}${landingBlock}
         ${proxyBlock}
         ${handleErrors}
