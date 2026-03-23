@@ -8,6 +8,9 @@
     "remote_path": "/opt/containers/dagu",
     "excludes": [
       "data"
+    ],
+    "clean_dirs": [
+      "dags"
     ]
   },
   "proxy": {
