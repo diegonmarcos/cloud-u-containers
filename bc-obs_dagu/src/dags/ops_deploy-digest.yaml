@@ -1,0 +1,45 @@
+schedule: "0 19 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: collect-deploys-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      TOTAL=0
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2>/dev/null || echo "")
+        COUNT_RAW=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2>/dev/null | grep -c 'Container.*Started' || echo 0" 2>/dev/null || echo 0)
+        COUNT=$(echo "$COUNT_RAW" | tr -dc '0-9')
+        COUNT=${COUNT:-0}
+        TOTAL=$((TOTAL + COUNT))
+        if [ "${COUNT:-0}" -gt 0 ]; then
+          REPORT="${REPORT}$name ($ip): $COUNT restarts\n"
+          if [ -n "$RESTARTS" ]; then
+            REPORT="${REPORT}$RESTARTS\n"
+          fi
+          REPORT="${REPORT}\n"
+        fi
+      done
+      MSG=$(echo -e "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
+        -H "Priority: 2" \
+        -H "Tags: rocket" \
+        -d "$MSG"

@@ -1,0 +1,10 @@
+schedule: "0 7 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: collect-and-email
+    command: bash /var/lib/dagu/dags/report_daily.sh
