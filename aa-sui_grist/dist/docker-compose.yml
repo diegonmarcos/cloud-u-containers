@@ -1,34 +1,42 @@
-# Grist - Modern collaborative spreadsheet
-# Deployed on: oci-A1-f_1 (Oracle Flex)
-
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: aa-sui_grist/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   grist:
     image: gristlabs/grist:latest
     container_name: grist_app
+    network_mode: host
     restart: always
-    ports:
-      - "10.0.0.6:3011:8484"
-    volumes:
-      - grist_data:/persist
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     environment:
       - GRIST_SESSION_SECRET=changeme-secret-key
       - GRIST_SINGLE_ORG=docs
       - GRIST_DEFAULT_EMAIL=${GRIST_ADMIN_EMAIL:-admin@diegonmarcos.com}
       - APP_HOME_URL=https://sheets.diegonmarcos.com
       - GRIST_SANDBOX_FLAVOR=unsandboxed
-    networks:
-      - dev_network
+      - GRIST_LOG_LEVEL=info
+    volumes:
+      - grist_data:/persist
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8484/']
       interval: 30s
       timeout: 10s
       retries: 3
-
-networks:
-  dev_network:
-    external: true
-    name: dev_network
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   grist_data:
-    driver: local

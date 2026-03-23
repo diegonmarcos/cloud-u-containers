@@ -30,6 +30,7 @@
             image = config.image;
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8484" ];
+            skipReadOnly = true;
             volumes = [
               "grist_data:/persist"
             ];
