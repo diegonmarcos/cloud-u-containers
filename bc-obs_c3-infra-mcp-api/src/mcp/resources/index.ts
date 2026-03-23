@@ -10,7 +10,7 @@ import {
   resolveVmId,
 } from "../../shared/config.js";
 import {
-  CONFIG_PATH,
+  getConfigPath,
   SSH_CONFIG_PATH,
   SOLUTIONS_DIR,
   FRONT_DIR,
@@ -19,7 +19,7 @@ import { listServices } from "../../shared/discovery.js";
 
 export function registerResources(server: McpServer) {
   server.resource("config", "cloud://config", async (uri) => {
-    const content = readFileSync(CONFIG_PATH, "utf-8");
+    const content = readFileSync(getConfigPath(), "utf-8");
     return {
       contents: [
         {

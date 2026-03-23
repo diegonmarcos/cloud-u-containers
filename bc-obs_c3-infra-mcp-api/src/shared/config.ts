@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
 import type { InfraConfig, ServiceConfig } from "./types.js";
-import { CONFIG_PATH, SOLUTIONS_DIR, syncRepos } from "./paths.js";
+import { getConfigPath, SOLUTIONS_DIR, syncRepos } from "./paths.js";
 
 let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
@@ -20,7 +20,7 @@ export function getConfig(): InfraConfig {
   const now = Date.now();
   if (!_config || now - _configTimestamp > CONFIG_TTL) {
     syncRepos();
-    const fileConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
+    const fileConfig = JSON.parse(readFileSync(getConfigPath(), "utf-8")) as InfraConfig;
     const discovered = discoverServicesFromDisk(fileConfig);
     // Merge: build.json (discovered) is source of truth, config.json is fallback only
     const merged = { ...fileConfig.services };
@@ -41,7 +41,7 @@ export function reloadConfig(): InfraConfig {
 }
 
 export function getDriftReport(): { onDiskOnly: string[]; configOnly: string[] } {
-  const fileConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as InfraConfig;
+  const fileConfig = JSON.parse(readFileSync(getConfigPath(), "utf-8")) as InfraConfig;
   const discovered = discoverServicesFromDisk(fileConfig);
   const configNames = new Set(Object.keys(fileConfig.services));
   const diskNames = new Set(Object.keys(discovered));
