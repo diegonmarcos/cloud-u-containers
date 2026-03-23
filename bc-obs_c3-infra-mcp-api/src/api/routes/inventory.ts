@@ -2,12 +2,12 @@
 // Service catalog, topology, config, and discovery
 
 import { readFileSync, existsSync, readdirSync } from "fs";
-import { join, dirname } from "path";
+import { join } from "path";
 import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
 import { getDriftReport, getConfig, getServiceFolder } from "../../shared/config.js";
 import { getConfigFile } from "../../shared/files.js";
-import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH } from "../../shared/paths.js";
+import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH, SOLUTIONS_DIR } from "../../shared/paths.js";
 
 export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Services (from services.ts) ──
@@ -103,7 +103,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     // Use getConfig() which merges build.json discovery + config.json fallback
     const config = getConfig();
-    const solutionsDir = join(dirname(getConfigPath()), "a_solutions");
+    const solutionsDir = SOLUTIONS_DIR;
 
     for (const [svcName, svc] of Object.entries(config.services)) {
       const vm = topo.vms?.[svc.vm];
@@ -161,7 +161,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get("/cloud-data/caddy-routes", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
     const config = getConfig();
-    const solutionsDir = join(dirname(getConfigPath()), "a_solutions");
+    const solutionsDir = SOLUTIONS_DIR;
 
     const routes: any[] = [];
     const l4_routes: any[] = [];
