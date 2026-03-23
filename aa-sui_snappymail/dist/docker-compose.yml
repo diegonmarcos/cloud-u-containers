@@ -18,8 +18,6 @@ services:
         hard: 65536
     volumes:
       - ./data:/var/lib/snappymail
-      - ./config/domains/diegonmarcos.com.ini:/var/lib/snappymail/_data_/_default_/domains/diegonmarcos.com.ini
-      - ./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini
     healthcheck:
       test: ['CMD', 'curl', '-sf', 'http://localhost:8888/']
       interval: 30s
