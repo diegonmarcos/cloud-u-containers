@@ -128,8 +128,8 @@ steps:
         fi
       REMOTE
 
-  # ── Phase 2: Pull dumps to oci-apps + bup save ─────────────────────
-  - name: collect-and-bup
+  # ── Phase 2: Pull dumps to oci-apps + restic save ───────────────────
+  - name: collect-and-save
     depends:
       - dump-oci-apps
       - dump-gcp-proxy
@@ -147,32 +147,28 @@ steps:
         cp /var/backups/databases/*${STAMP}* "$COLLECT/" 2>/dev/null || true
 
         # Pull from remote VMs
-        SSH_INNER="ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
         for vm in "diego@10.0.0.1" "ubuntu@10.0.0.3" "ubuntu@10.0.0.4"; do
-          rsync -az --ignore-missing-args $vm:/var/backups/databases/*${STAMP}* "$COLLECT/" 2>/dev/null && \
+          rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
+            --ignore-missing-args "$vm:/var/backups/databases/*${STAMP}*" "$COLLECT/" 2>/dev/null && \
             echo "Pulled from $vm" || echo "No dumps from $vm"
         done
 
         echo "Collected dumps:"
         ls -lh "$COLLECT/"*${STAMP}* 2>/dev/null
 
-        # bup save to local bup-server
-        export BUP_DIR=/backup/databases
-        if command -v bup >/dev/null 2>&1 || docker exec bup-server bup version >/dev/null 2>&1; then
-          docker exec -e BUP_DIR=/backup/databases bup-server bup index "$COLLECT/" 2>/dev/null || \
-            docker exec bup-server sh -c "cd / && bup -d /backup/databases index /var/backups/collected/"
-          docker exec bup-server sh -c "cd / && bup -d /backup/databases save -n databases /var/backups/collected/" && \
-            echo "bup save OK" || echo "bup save FAILED"
-        else
-          echo "WARN: bup not available, dumps kept in $COLLECT"
-        fi
+        # Restic backup to local repo
+        export RESTIC_REPOSITORY=/backup/databases
+        export RESTIC_PASSWORD=backup-databases-key
+        restic init 2>/dev/null || true
+        restic backup "$COLLECT/" --tag "databases" --tag "$STAMP" && \
+          echo "restic backup OK" || echo "restic backup FAILED"
 
-        # Prune old dumps (keep 7 days)
-        find /var/backups/databases -name "*.gz" -o -name "*.sqlite" | while read f; do
-          age=$(( ($(date +%s) - $(stat -c %Y "$f")) / 86400 ))
-          [ "$age" -gt 7 ] && rm -f "$f" && echo "Pruned: $f"
-        done
-        find "$COLLECT" -name "*.gz" -o -name "*.sqlite" -mtime +7 -delete 2>/dev/null
+        # Prune: keep 7 daily, 4 weekly, 6 monthly
+        restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune 2>/dev/null
+
+        # Clean old local dumps (keep 3 days)
+        find /var/backups/databases -name "*.gz" -o -name "*.sqlite.gz" -mtime +3 -delete 2>/dev/null
+        find "$COLLECT" -name "*.gz" -o -name "*.sqlite.gz" -mtime +3 -delete 2>/dev/null
       REMOTE
 
   # ── Phase 3: Notify ────────────────────────────────────────────────

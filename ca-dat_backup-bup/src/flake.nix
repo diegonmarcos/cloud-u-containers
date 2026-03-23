@@ -29,18 +29,17 @@
 
       services:
         bup:
-          image: alpine:3.19
+          image: alpine:3.20
           container_name: ${config.container_name}
           restart: unless-stopped
           network_mode: host
           command: >
             sh -c "
-              apk add --no-cache bup openssh-server &&
+              apk add --no-cache restic openssh-server &&
               mkdir -p /backup/databases /root/.ssh &&
               chmod 700 /root/.ssh &&
               ssh-keygen -A &&
               echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
-              bup init -r /backup/databases &&
               /usr/sbin/sshd -D -p ${toString config.ssh_port}
             "
           volumes:
