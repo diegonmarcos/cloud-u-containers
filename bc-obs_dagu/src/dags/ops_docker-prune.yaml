@@ -1,0 +1,38 @@
+schedule: "0 4 */3 * *"
+env:
+  - SSH: ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - NTFY_URL: http://10.0.0.1:8090
+  - VM_LIST: 10.0.0.6:oci-apps:ubuntu 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.1:gcp-proxy:diego
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: prune-all-vms
+    command: |
+      REPORT=""
+      for entry in $VM_LIST; do
+        IP=$(echo "$entry" | cut -d: -f1)
+        NAME=$(echo "$entry" | cut -d: -f2)
+        USER=$(echo "$entry" | cut -d: -f3)
+
+        echo "=== Pruning $NAME ($IP) ==="
+        BEFORE=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
+
+        RESULT=$($SSH "$USER@$IP" "docker system prune -af 2>&1 | tail -1" 2>/dev/null || echo "FAILED")
+
+        AFTER=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2>/dev/null || echo "?")
+        FREED=$(( (BEFORE - AFTER) / 1024 ))
+
+        echo "  $NAME: $RESULT (freed ~${FREED}MB)"
+        REPORT="$REPORT\n$NAME: $RESULT (freed ~${FREED}MB)"
+      done
+
+      echo ""
+      echo "=== Summary ==="
+      echo -e "$REPORT"
+
+      # Notify via ntfy
+      curl -sf -d "Docker prune complete:$(echo -e "$REPORT")" \
+        -H "Title: Docker Prune" \
+        -H "Tags: broom" \
+        "$NTFY_URL/ops" 2>/dev/null || true
