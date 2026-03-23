@@ -103,6 +103,7 @@ log_error() { printf "\033[0;31m[%s] ERROR: %s\033[0m\n" "$(date '+%H:%M:%S')" "
 
 # Global error handler: print step name on failure
 CURRENT_STEP=""
+DOCKER_IMAGE_CHANGED=""
 trap 'if [ -n "$CURRENT_STEP" ]; then log_error "Step '\''$CURRENT_STEP'\'' failed (exit $?)"; fi' EXIT
 
 # ── Step: Docker image build ─────────────────────────────────────────
@@ -121,6 +122,7 @@ step_docker_remote() {
 
     ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
     log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
+    DOCKER_IMAGE_CHANGED=true
 }
 
 step_docker_local() {
@@ -129,15 +131,15 @@ step_docker_local() {
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     SHA_TAG="${GITHUB_SHA:-$(git -C "$SERVICE_DIR" rev-parse HEAD 2>/dev/null || echo local)}"
 
-    # Smart build: hash Dockerfile to skip rebuild when unchanged
-    LOCAL_HASH=$(sha256sum "$SRC_DIR/$DOCKERFILE" 2>/dev/null | cut -c1-12)
+    # Smart build: hash entire src/ (Dockerfile + source code) to skip rebuild when unchanged
+    LOCAL_HASH=$(find "$SRC_DIR" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -name 'secrets.yaml' -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
     if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
-        REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.dockerfile-hash 2>/dev/null" 2>/dev/null || true)
+        REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.docker-src-hash 2>/dev/null" 2>/dev/null || true)
         if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
-            log "Dockerfile unchanged (hash: $LOCAL_HASH) -- skipping Docker build"
+            log "Docker src unchanged (hash: $LOCAL_HASH) -- skipping Docker build"
             return 0
         fi
-        [ -n "$REMOTE_HASH" ] && log "Dockerfile changed ($REMOTE_HASH -> $LOCAL_HASH)"
+        [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
     log "Building Docker image: $FULL_IMAGE"
@@ -154,7 +156,8 @@ step_docker_local() {
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
 
     # Save hash to temp (step_build wipes dist/, so persist outside it)
-    echo "$LOCAL_HASH" > "$SERVICE_DIR/.dockerfile-hash-new"
+    echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
+    DOCKER_IMAGE_CHANGED=true
 
     # Extract binary for direct transfer (avoids image pull/decompression on VM)
     if [ -n "$DOCKER_BINARY" ]; then
@@ -270,9 +273,9 @@ step_build() {
         rm -f "$f"
     done
 
-    # Carry over dockerfile hash from step_docker (if image was rebuilt)
-    if [ -f "$SERVICE_DIR/.dockerfile-hash-new" ]; then
-        mv "$SERVICE_DIR/.dockerfile-hash-new" "$DIST_DIR/.dockerfile-hash"
+    # Carry over docker source hash from step_docker (if image was rebuilt)
+    if [ -f "$SERVICE_DIR/.docker-src-hash-new" ]; then
+        mv "$SERVICE_DIR/.docker-src-hash-new" "$DIST_DIR/.docker-src-hash"
     fi
 
     # Include cloud-data/*.json in dist/ for runtime use (e.g. C3 API needs topology)
@@ -433,6 +436,16 @@ step_deploy() {
         RSYNC_EXCLUDES=$(echo "$EXCLUDES" | while IFS= read -r ex; do
             [ -n "$ex" ] && printf " --exclude '%s'" "$ex"
         done)
+    fi
+
+    # 3b. Clean specified subdirectories (deploy.clean_dirs) — ensures exact mirror
+    CLEAN_DIRS="$(get_config_array deploy.clean_dirs)"
+    if [ -n "$CLEAN_DIRS" ]; then
+        echo "$CLEAN_DIRS" | while IFS= read -r d; do
+            [ -z "$d" ] && continue
+            log "  clean: $DEPLOY_PATH/$d/"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf '$DEPLOY_PATH/$d/'"
+        done
     fi
 
     # 4. Additive rsync (NO --delete) — adds/updates files, never removes
@@ -864,8 +877,8 @@ case "${1:-all}" in
         else
             OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
         fi
-        if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ]; then
-            log "Config unchanged — skipping deploy+compose"
+        if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ] && [ -z "$DOCKER_IMAGE_CHANGED" ]; then
+            log "Config unchanged, no image rebuild — skipping deploy+compose"
         elif [ "$WRANGLER_DEPLOY" = "true" ]; then
             step_wrangler
             echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
