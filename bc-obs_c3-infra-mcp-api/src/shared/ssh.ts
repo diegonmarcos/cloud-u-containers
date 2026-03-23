@@ -1,4 +1,4 @@
-import { exec, type ExecResult } from "./exec.js";
+import { exec, execAsync, type ExecResult } from "./exec.js";
 import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
 import { audit } from "./audit.js";
 import { SSH_IDENTITY } from "./paths.js";
@@ -128,6 +128,41 @@ export function sshExec(
       stderr: `${result.stderr}\n[ssh] ${maxAttempts} WG handshake attempts failed for ${alias}. ${probe.detail}`,
     };
   }
+
+  audit("ssh", `${alias}: "${command.slice(0, 120)}"`, `exit ${result.exitCode}`);
+  return result;
+}
+
+export async function sshExecAsync(
+  vmNameOrAlias: string,
+  command: string,
+  timeout?: number,
+  noRetry = false,
+  connectTimeout = 10,
+): Promise<ExecResult> {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+  const config = getConfig();
+  const vmConfig = config.vms[vmId];
+
+  const host = vmConfig?.wg_ip || vmConfig?.ip || alias;
+  const user = vmConfig?.user || "ubuntu";
+  const target = `${user}@${host}`;
+
+  // Establish mux synchronously (fast check/setup)
+  ensureMux(alias, target, connectTimeout);
+
+  const sshArgs = [
+    ...SSH_CONFIG_FLAG,
+    "-o", `ConnectTimeout=${connectTimeout}`,
+    "-o", "StrictHostKeyChecking=accept-new",
+    "-o", `ControlPath=${controlPath(alias)}`,
+    "-i", SSH_IDENTITY,
+    target, command,
+  ];
+  const effectiveTimeout = timeout ?? 30_000;
+
+  const result = await execAsync("ssh", sshArgs, { timeout: effectiveTimeout });
 
   audit("ssh", `${alias}: "${command.slice(0, 120)}"`, `exit ${result.exitCode}`);
   return result;
