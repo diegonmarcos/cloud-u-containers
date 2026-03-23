@@ -105,6 +105,9 @@ ${mkResourceLines rule.resources_two_factor}
           skipReadOnly = true;
         };
       };
+      volumes = {
+        authelia_redis_data = {};
+      };
       networks = {
         auth-net = { driver = "bridge"; };
       };
