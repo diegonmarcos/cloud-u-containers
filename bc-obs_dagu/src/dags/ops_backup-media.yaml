@@ -2,79 +2,59 @@ schedule: "0 4 * * 0"
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - BORG_PASSPHRASE: ${BORG_PASSPHRASE}
+  - AWS_ACCESS_KEY_ID: "<REDACTED-LEAK-2026-04-21>"
+  - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
+  - RESTIC_REPOSITORY: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-media"
+  - RESTIC_PASSWORD: ${RESTIC_PASSWORD}
 mailOn:
   failure: true
   success: false
 steps:
-  # ── Phase 1: Collect media from remote VMs to oci-apps ─────────────
-  - name: collect-gcp-proxy
-    command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-      # Rsync vaultwarden + caddy data from gcp-proxy to oci-apps staging
-      $SSH ubuntu@10.0.0.6 bash <<'REMOTE'
-        mkdir -p /var/backups/media/gcp-proxy
-        SSH_INNER="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-        rsync -az --delete diego@10.0.0.1:/opt/containers/vaultwarden/data/ /var/backups/media/gcp-proxy/vaultwarden/ 2>/dev/null && \
-          echo "OK vaultwarden data" || echo "FAIL vaultwarden data"
-        rsync -az --delete diego@10.0.0.1:/opt/containers/caddy/data/ /var/backups/media/gcp-proxy/caddy/ 2>/dev/null && \
-          echo "OK caddy data" || echo "FAIL caddy data"
-      REMOTE
-
-  - name: collect-oci-mail
-    command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-      $SSH ubuntu@10.0.0.6 bash <<'REMOTE'
-        mkdir -p /var/backups/media/oci-mail
-        SSH_INNER="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-        rsync -az --delete ubuntu@10.0.0.3:/opt/containers/stalwart/data/ /var/backups/media/oci-mail/stalwart/ 2>/dev/null && \
-          echo "OK stalwart data" || echo "FAIL stalwart data"
-      REMOTE
-
-  # ── Phase 2: Borg backup on oci-apps (local) ───────────────────────
-  - name: borg-backup
-    depends:
-      - collect-gcp-proxy
-      - collect-oci-mail
+  - name: backup-media
     command: |
       SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       $SSH ubuntu@10.0.0.6 bash <<REMOTE
         set -e
         STAMP=\$(date +%Y%m%d-%H%M)
 
-        # borg needs to talk to borg-server via SSH on localhost:2224
-        export BORG_PASSPHRASE="$BORG_PASSPHRASE"
-        export BORG_RSH="ssh -p 2224 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-        export BORG_REPO="root@localhost:/backup/media"
+        # Collect from remote VMs first
+        mkdir -p /var/backups/media/gcp-proxy /var/backups/media/oci-mail
+        RSYNC_SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 
-        # Init repo if first run
-        borg init --encryption=repokey-blake2 2>/dev/null || true
+        rsync -az --delete -e "\$RSYNC_SSH" diego@10.0.0.1:/opt/containers/vaultwarden/data/ /var/backups/media/gcp-proxy/vaultwarden/ 2>/dev/null && \
+          echo "OK vaultwarden" || echo "SKIP vaultwarden"
+        rsync -az --delete -e "\$RSYNC_SSH" diego@10.0.0.1:/opt/containers/caddy/data/ /var/backups/media/gcp-proxy/caddy/ 2>/dev/null && \
+          echo "OK caddy" || echo "SKIP caddy"
+        rsync -az --delete -e "\$RSYNC_SSH" ubuntu@10.0.0.3:/opt/containers/stalwart/data/ /var/backups/media/oci-mail/stalwart/ 2>/dev/null && \
+          echo "OK stalwart" || echo "SKIP stalwart"
 
-        # Create archive with all media
-        borg create --stats --compression lz4 "::backup-\${STAMP}" \
+        # Restic to OCI Object Storage (Archive tier bucket)
+        export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+        export RESTIC_REPOSITORY="$RESTIC_REPOSITORY"
+        export RESTIC_PASSWORD="$RESTIC_PASSWORD"
+
+        command -v restic >/dev/null 2>&1 || { echo "Installing restic..."; sudo apt-get install -y restic >/dev/null 2>&1; }
+
+        restic init 2>/dev/null || true
+        restic backup \
           /opt/containers/photoprism/data \
           /opt/containers/gitea/data \
           /opt/containers/radicale/data \
           /opt/containers/filebrowser/data \
           /var/backups/media/gcp-proxy \
           /var/backups/media/oci-mail \
-          2>&1 | tail -5
+          --tag "media" --tag "\$STAMP" --verbose 2>&1 | tail -10
 
-        # Prune old archives
-        borg prune --keep-daily=7 --keep-weekly=4 --keep-monthly=6 --stats 2>&1 | tail -3
-        borg compact 2>/dev/null || true
-
-        echo "Borg backup complete"
+        restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune 2>/dev/null
+        echo "Media backup complete"
       REMOTE
 
-  # ── Phase 3: Notify ────────────────────────────────────────────────
   - name: notify
     depends:
-      - borg-backup
+      - backup-media
     command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-      BORG_INFO=$($SSH ubuntu@10.0.0.6 "BORG_PASSPHRASE='$BORG_PASSPHRASE' BORG_RSH='ssh -p 2224 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR' borg info root@localhost:/backup/media 2>/dev/null | tail -5" || echo "N/A")
-      MSG="Weekly media backup complete\n\n$BORG_INFO\n\nDagu: http://10.0.0.3:8070"
+      MSG="Weekly media backup → OCI S3 (Archive)\nBucket: cloud-backups-media\nDagu: http://10.0.0.3:8070"
       curl -s -X POST "$NTFY_URL/ops_backups" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Weekly Media Backup OK" \
