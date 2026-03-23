@@ -99,7 +99,8 @@ ${mkResourceLines rule.resources_two_factor}
           image = "redis:7-bookworm";
           container_name = "authelia-redis";
           env_file = [".secrets"];
-          command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD'";
+          command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";
+          volumes = ["authelia_redis_data:/data"];
           networks = ["auth-net"];
           skipReadOnly = true;
         };

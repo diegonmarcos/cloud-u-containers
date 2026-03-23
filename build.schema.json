@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/diegonmarcos/cloud/blob/main/a_solutions/build.schema.json",
+  "title": "Cloud Service build.json",
+  "description": "Configuration schema for cloud service build.json files used by the build.sh engine in ~/git/cloud/",
+  "type": "object",
+  "required": ["name", "deploy"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique service identifier (kebab-case)",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the service"
+    },
+    "category": {
+      "type": "string",
+      "description": "Service category matching the directory prefix",
+      "enum": ["app", "mic", "fin", "cloud", "sec", "tools", "obs", "data", "agi"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the service",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Public domain or path where the service is accessible (e.g. 'api.diegonmarcos.com/c3-api')"
+    },
+    "multi_vm": {
+      "type": "boolean",
+      "description": "When true, this service is deployed to all VMs (deploy.host should be 'all')"
+    },
+    "ports": {
+      "type": "object",
+      "description": "Named port mappings for the service",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "examples": [{ "app": 9091, "redis": 6380 }]
+    },
+    "deploy": {
+      "type": "object",
+      "description": "Deployment target configuration",
+      "required": ["host", "remote_path"],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "SSH alias of the target VM, 'local' for local-only, or 'all' for multi-VM deployment",
+          "examples": ["gcp-proxy", "oci-apps", "oci-apps-2", "oci-mail", "oci-analytics", "gcp-t4", "local", "all"]
+        },
+        "remote_path": {
+          "type": "string",
+          "description": "Absolute path on the target VM where the service is deployed (empty string for local-only)"
+        },
+        "excludes": {
+          "type": "array",
+          "description": "Glob patterns to exclude from rsync during deployment",
+          "items": { "type": "string" }
+        },
+        "compose_flags": {
+          "type": "string",
+          "description": "Additional flags passed to 'docker compose up' (e.g. '--build')"
+        },
+        "sequential_restart": {
+          "type": ["string", "boolean"],
+          "description": "When true, restart containers one-by-one instead of all at once"
+        },
+        "terraform": {
+          "type": "boolean",
+          "description": "When true, this service uses Terraform for deployment instead of Docker Compose"
+        },
+        "wrangler": {
+          "type": ["string", "boolean"],
+          "description": "When true, deploy via Cloudflare Wrangler CLI instead of SSH"
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "description": "Build-phase configuration",
+      "additionalProperties": false,
+      "properties": {
+        "include_cloud_data": {
+          "type": ["string", "boolean"],
+          "description": "When true, copy cloud-data/ generated configs into the build output"
+        },
+        "copy_only": {
+          "type": ["string", "boolean"],
+          "description": "When true, skip nix build and just copy src/ to dist/"
+        },
+        "extra_copy": {
+          "type": "array",
+          "description": "Additional files/directories to copy from the service root into dist/",
+          "items": { "type": "string" }
+        },
+        "preserve_symlinks": {
+          "type": ["string", "boolean"],
+          "description": "When true, preserve symlinks during copy instead of dereferencing"
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "description": "SOPS secrets decryption configuration",
+      "additionalProperties": false,
+      "properties": {
+        "escape_dollars": {
+          "type": ["string", "boolean"],
+          "description": "When true, escape dollar signs in decrypted secrets (needed for Docker Compose interpolation)"
+        },
+        "jwks_file": {
+          "type": "string",
+          "description": "Source SOPS-encrypted JWKS key file name in src/"
+        },
+        "jwks_dest": {
+          "type": "string",
+          "description": "Destination path for the decrypted JWKS key relative to dist/"
+        }
+      }
+    },
+    "compose": {
+      "type": "object",
+      "description": "Docker Compose lifecycle hooks",
+      "additionalProperties": false,
+      "properties": {
+        "pre_hook": {
+          "type": "string",
+          "description": "Script to run on the VM before 'docker compose up' (relative to deploy path)"
+        },
+        "post_hook": {
+          "type": "string",
+          "description": "Script to run on the VM after 'docker compose up' (relative to deploy path)"
+        }
+      }
+    },
+    "docker": {
+      "type": "object",
+      "description": "Docker image build configuration (for services that build custom images)",
+      "additionalProperties": false,
+      "properties": {
+        "registry": {
+          "type": "string",
+          "description": "Container registry URL (e.g. 'ghcr.io/diegonmarcos')"
+        },
+        "image": {
+          "type": "string",
+          "description": "Docker image name"
+        },
+        "dockerfile": {
+          "type": "string",
+          "description": "Dockerfile path relative to src/"
+        }
+      }
+    },
+    "proxy": {
+      "type": "object",
+      "description": "Caddy reverse proxy configuration (consumed by caddy flake to generate Caddyfile routes)",
+      "additionalProperties": false,
+      "properties": {
+        "upstream": {
+          "type": "string",
+          "description": "Upstream address in format 'service.app:port' (resolved via Hickory DNS over WireGuard)"
+        },
+        "auth": {
+          "type": "string",
+          "description": "Authentication mode for this route",
+          "enum": ["two_factor", "bypass", "public", "ntfy-3tier"]
+        },
+        "type": {
+          "type": "string",
+          "description": "Routing type: 'path' for path-based routing under a parent domain, omit for dedicated domain",
+          "enum": ["path"]
+        },
+        "parent_domain": {
+          "type": "string",
+          "description": "Parent domain for path-based routing (e.g. 'api.diegonmarcos.com')"
+        },
+        "base_path": {
+          "type": "string",
+          "description": "URL path prefix for path-based routing (e.g. '/c3-api')"
+        },
+        "paths": {
+          "type": "object",
+          "description": "Per-path auth overrides (e.g. public endpoints within an authenticated service)",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "auth": {
+                "type": "string",
+                "enum": ["public", "bypass", "two_factor"]
+              }
+            }
+          }
+        },
+        "bypass_paths": {
+          "type": "array",
+          "description": "URL path patterns that bypass authentication",
+          "items": { "type": "string" }
+        },
+        "landing_page": {
+          "type": "string",
+          "description": "Front-end project name to use as the landing/redirect page"
+        },
+        "tls_skip_verify": {
+          "type": "boolean",
+          "description": "When true, skip TLS certificate verification for upstream (e.g. self-signed certs)"
+        },
+        "max_upload": {
+          "type": "string",
+          "description": "Maximum upload body size (e.g. '100MB')"
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Request timeout duration (e.g. '3600s')"
+        },
+        "streaming": {
+          "type": "boolean",
+          "description": "When true, configure proxy for SSE/streaming responses (MCP servers)"
+        },
+        "l4_ports": {
+          "type": "array",
+          "description": "Caddy L4 TCP port forwarding rules (for non-HTTP protocols like IMAP, SMTP)",
+          "items": {
+            "type": "object",
+            "required": ["port", "upstream"],
+            "additionalProperties": false,
+            "properties": {
+              "port": {
+                "type": "integer",
+                "description": "External port to listen on",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "upstream": {
+                "type": "string",
+                "description": "Upstream address in format 'service.app:port'"
+              },
+              "comment": {
+                "type": "string",
+                "description": "Human-readable label for the port mapping"
+              }
+            }
+          }
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "description": "Health check configuration",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "HTTP path for health checks (e.g. '/api/health', '/')"
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "description": "Monitoring probe configuration",
+      "additionalProperties": false,
+      "properties": {
+        "tls_check": {
+          "type": "boolean",
+          "description": "Enable TLS certificate validity monitoring"
+        },
+        "dns_check": {
+          "type": "boolean",
+          "description": "Enable DNS resolution monitoring"
+        },
+        "endpoint_check": {
+          "type": "boolean",
+          "description": "Enable HTTP endpoint availability monitoring"
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "description": "Backup configuration for persistent data",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "When true, include this service in automated backups"
+        },
+        "volumes": {
+          "type": "array",
+          "description": "Docker volume names to include in backups",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "description": "Custom lifecycle actions (wake/sleep/custom commands) for on-demand services",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["action"],
+          "properties": {
+            "action": {
+              "type": "string",
+              "description": "Action type to execute",
+              "enum": ["exec", "stats"]
+            },
+            "vm": {
+              "type": "string",
+              "description": "Target VM SSH alias"
+            },
+            "container": {
+              "type": "string",
+              "description": "Docker container name for exec actions"
+            },
+            "script": {
+              "type": "string",
+              "description": "Script path or command to execute inside the container"
+            }
+          }
+        }
+      }
+    },
+    "terraform": {
+      "type": "object",
+      "description": "Terraform-specific configuration (for IaC services)",
+      "additionalProperties": false,
+      "properties": {
+        "tfvars_template": {
+          "type": "string",
+          "description": "Template file name for terraform.tfvars generation"
+        }
+      }
+    },
+    "hm": {
+      "type": "object",
+      "description": "Home Manager deployment configuration (for b_infra/home-manager/ services)",
+      "additionalProperties": false,
+      "properties": {
+        "user": {
+          "type": "string",
+          "description": "Unix username on the target VM"
+        },
+        "arch": {
+          "type": "string",
+          "description": "Nix system architecture",
+          "enum": ["x86_64-linux", "aarch64-linux"]
+        },
+        "config": {
+          "type": "string",
+          "description": "Home Manager configuration name (format: user@host)"
+        },
+        "remote_build": {
+          "type": "boolean",
+          "description": "When true, rsync flake to VM and build on-machine (for cross-arch)"
+        }
+      }
+    }
+  }
+}

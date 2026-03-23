@@ -26,7 +26,16 @@
       "/docs/json": {
         "auth": "public"
       }
-    }
+    },
+    "additional_routes": [
+      {
+        "upstream": "c3-services-mcp-api.app:3101",
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/c3-services-mcp"
+      }
+    ]
   },
   "health": {
     "path": "/services/health"
