@@ -1,7 +1,7 @@
 shell: /bin/bash
 
 smtp:
-  host: mailu-smtp-1
+  host: mailu.app
   port: "25"
   username: ""
   password: ""
