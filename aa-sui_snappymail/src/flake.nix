@@ -40,8 +40,8 @@
       white_list = ""
     '';
 
-    # ── SnappyMail application config ──
-    mkAppConfig = pkgs: pkgs.writeText "application.ini" ''
+    # ── SnappyMail application config (template — secrets substituted by init.sh) ──
+    mkAppConfigTpl = pkgs: pkgs.writeText "application.ini.tpl" ''
       [webmail]
       title = "Diego Mail"
       loading_description = "Diego Mail"
@@ -57,7 +57,7 @@
       enable = 0
 
       [security]
-      admin_password = ""
+      admin_password = "''\${SNAPPYMAIL_ADMIN_PASSWORD}"
       admin_totp = ""
       allow_admin_panel = 1
       csrf_protection = 1
@@ -68,6 +68,24 @@
 
       [plugins]
       enable = 0
+    '';
+
+    # ── Init script (substitutes secrets into config templates) ──────────
+    mkInitSh = pkgs: pkgs.writeText "init.sh" ''
+      #!/bin/sh
+      set -e
+      cd "$(dirname "$0")"
+
+      ENV_VARS='$SNAPPYMAIL_ADMIN_PASSWORD'
+
+      echo "[init] Substituting secrets into application.ini..."
+      while IFS='=' read -r _key _val; do
+        case "$_key" in ""|\#*) continue ;; esac
+        export "$_key=$_val"
+      done < .secrets
+      envsubst "$ENV_VARS" < config/application.ini.tpl > config/application.ini
+
+      echo "[init] Done."
     '';
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
@@ -104,7 +122,9 @@
         mkdir -p $out/config/domains
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkDomainConfig pkgs} $out/config/domains/${config.domain}.ini
-        cp ${mkAppConfig pkgs} $out/config/application.ini
+        cp ${mkAppConfigTpl pkgs} $out/config/application.ini.tpl
+        cp ${mkInitSh pkgs} $out/init.sh
+        chmod +x $out/init.sh
       '';
     in {
       default = defaultPkg;

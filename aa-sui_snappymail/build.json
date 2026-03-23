@@ -11,6 +11,9 @@
     "remote_path": "/opt/containers/snappymail",
     "excludes": ["data/**"]
   },
+  "compose": {
+    "pre_hook": "init.sh"
+  },
   "proxy": {
     "upstream": "snappymail.app:8888",
     "auth": "two_factor",

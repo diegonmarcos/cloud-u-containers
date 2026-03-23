@@ -454,7 +454,7 @@ const HEALTH_PATHS: Record<string, string> = {
   authelia: "/api/health",
   vaultwarden: "/alive",
   ntfy: "/v1/health",
-  matomo: "/index.php?module=API&method=API.getMatomoVersion&format=json",
+  matomo: "/health",
   syncthing: "/rest/noauth/health",
   photoprism: "/api/v1/status",
   nocodb: "/api/v1/health",

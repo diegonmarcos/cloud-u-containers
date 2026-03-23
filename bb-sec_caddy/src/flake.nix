@@ -26,11 +26,23 @@
     # from the JSON data files in data/. Nix just copies it.
 
     # ── Route data from JSON ────────────────────────────────────
+    # Priority: cloud-data pipeline (auto-generated from build.json proxy fields)
+    # Fallback: committed caddy-routes-fallback.json (manually maintained)
     caddyRoutes =
-      let jsonPath = ./cloud-data-caddy-routes.json;
-      in if builtins.pathExists jsonPath
-         then builtins.fromJSON (builtins.readFile jsonPath)
-         else { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; };
+      let
+        cloudDataPath = ./cloud-data-caddy-routes.json;
+        fallbackPath = ./caddy-routes-fallback.json;
+        emptyRoutes = { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; };
+        cloudData = if builtins.pathExists cloudDataPath
+          then builtins.fromJSON (builtins.readFile cloudDataPath)
+          else null;
+        fallback = if builtins.pathExists fallbackPath
+          then builtins.fromJSON (builtins.readFile fallbackPath)
+          else emptyRoutes;
+        # Use cloud-data if it has actual routes; otherwise use fallback
+      in if cloudData != null && (cloudData.routes or []) != []
+         then cloudData
+         else fallback;
 
     # ── Security snippets ─────────────────────────────────────────
 
