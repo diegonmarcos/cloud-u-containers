@@ -2,45 +2,37 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: aa-sui_filebrowser/src/flake.nix
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_snappymail/src/flake.nix
 # ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
-  filebrowser:
-    image: filebrowser/filebrowser:latest
-    container_name: filebrowser_app
+  snappymail:
+    image: djmaze/snappymail:latest
+    container_name: snappymail
+    network_mode: host
     restart: unless-stopped
     stop_grace_period: 30s
-    read_only: true
-    tmpfs:
-      - /tmp
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
-    dns:
-      - 10.0.0.6
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - FB_DATABASE=/database/filebrowser.db
-      - FB_CONFIG=/config/settings.json
-      - FB_ROOT=/srv
-      - FB_NOAUTH=false
-      - FB_LOG=stdout
-      - FB_PORT=8080
-    ports:
-      - "10.0.0.6:3015:8080"
     volumes:
-      - filebrowser_data:/srv
-      - filebrowser_db:/database
-      - filebrowser_config:/config
+      - ./data:/var/lib/snappymail
+      - ./config/domains/diegonmarcos.com.ini:/var/lib/snappymail/_data_/_default_/domains/diegonmarcos.com.ini
+      - ./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini
     healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/health']
+      test: ['CMD', 'curl', '-sf', 'http://localhost:8888/']
       interval: 30s
       timeout: 10s
       retries: 3
-    pids_limit: 256
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          pids: 256
+        reservations:
+          memory: 16M
     logging:
       driver: "json-file"
       options:
@@ -48,7 +40,3 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
-volumes:
-  filebrowser_config:
-  filebrowser_data:
-  filebrowser_db:

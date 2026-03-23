@@ -7,35 +7,22 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   google-workspace-mcp:
-    image: google-workspace-mcp:latest
+    image: ghcr.io/diegonmarcos/google-workspace-mcp:latest
     container_name: google-workspace-mcp
     restart: unless-stopped
-    env_file:
-      - .secrets
+    network_mode: host
     environment:
       WORKSPACE_MCP_HOST: "0.0.0.0"
-      WORKSPACE_MCP_PORT: "8000"
-      WORKSPACE_EXTERNAL_URL: "https://mcp.diegonmarcos.com/google-workspace-mcp"
-      GOOGLE_OAUTH_REDIRECT_URI: "https://mcp.diegonmarcos.com/google-workspace-mcp/oauth2callback"
-      WORKSPACE_MCP_STATELESS_MODE: "true"
-      TOOL_TIER: "full"
-    networks:
-      - c3-net
-    ports:
-      - "3104:8000"
+      WORKSPACE_MCP_PORT: "3104"
+      PORT: "3104"
+      USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
+      GOOGLE_SERVICE_ACCOUNT_KEY_PATH: "/run/secrets/service-account-key.json"
     volumes:
-      - google-workspace-data:/app/credentials
+      - ./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3104/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
 
-volumes:
-  google-workspace-data:
-
-networks:
-  c3-net:
-    external: true
-    name: mattermost-bots_default

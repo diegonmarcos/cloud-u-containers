@@ -30,7 +30,7 @@
             image = config.image;
             container_name = config.container_name;
             networkMode = null;
-            ports = [ "10.0.0.6:${toString config.port}:80" ];
+            ports = [ "10.0.0.6:${toString config.port}:8080" ];
             dns = ["10.0.0.6"];
             volumes = [
               "filebrowser_data:/srv"
@@ -45,9 +45,10 @@
               "FB_ROOT=/srv"
               "FB_NOAUTH=false"
               "FB_LOG=stdout"
+              "FB_PORT=8080"
             ];
             healthcheck = {
-              test = "['CMD', 'wget', '-q', '--spider', 'http://localhost:80/health']";
+              test = "['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/health']";
               interval = "30s";
               timeout = "10s";
               retries = 3;

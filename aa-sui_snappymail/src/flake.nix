@@ -98,8 +98,8 @@
           skipReadOnly = true;
           volumes = [
             "./data:/var/lib/snappymail"
-            "./config/domains/${config.domain}.ini:/var/lib/snappymail/_data_/_default_/domains/${config.domain}.ini:ro"
-            "./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini:ro"
+            "./config/domains/${config.domain}.ini:/var/lib/snappymail/_data_/_default_/domains/${config.domain}.ini"
+            "./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini"
           ];
           memLimit = "64M";
           memReservation = "16M";
