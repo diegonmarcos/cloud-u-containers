@@ -113,6 +113,17 @@ step_docker_remote() {
     DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
     REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
 
+    # Smart build: hash src/ to skip rebuild when unchanged
+    LOCAL_HASH=$(find "$SRC_DIR" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -name 'secrets.yaml' -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
+    if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
+        REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.docker-src-hash 2>/dev/null" 2>/dev/null || true)
+        if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
+            log "Docker src unchanged (hash: $LOCAL_HASH) -- skipping remote Docker build"
+            return 0
+        fi
+        [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
+    fi
+
     log "Syncing Docker context to $DEPLOY_HOST:$REMOTE_BUILD_DIR"
     ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
     rsync -avz --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
@@ -122,6 +133,7 @@ step_docker_remote() {
 
     ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
     log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
+    echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
     DOCKER_IMAGE_CHANGED=true
 }
 
@@ -498,11 +510,14 @@ step_compose() {
 
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
-    # Image strategy: binary transfer > already local > registry pull
+    # Image strategy: binary > forced pull (if image changed) > already local > registry pull
     if [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
         log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
         log "Image built locally"
+    elif [ -n "$DOCKER_IMAGE_CHANGED" ] && [ -n "$FULL_IMAGE" ]; then
+        log "Image changed — pulling latest from registry"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable" || true
     elif [ -n "$FULL_IMAGE" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "docker image inspect $FULL_IMAGE:latest >/dev/null 2>&1" 2>/dev/null; then
         log "Image already local -- config-only restart"
     elif [ -n "$FULL_IMAGE" ]; then
