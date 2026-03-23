@@ -70,7 +70,9 @@
     {
       "domain": "vault.diegonmarcos.com",
       "upstream": "vaultwarden.app:8880",
-      "comment": "Vaultwarden password manager"
+      "auth": "none",
+      "wg_only": true,
+      "comment": "Vaultwarden password manager — WG only, own auth"
     }
   ],
 

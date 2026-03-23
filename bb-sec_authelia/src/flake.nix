@@ -155,20 +155,6 @@ ${mkResourceLines rule.resources_two_factor}
         rules:
           - domain: ${config.domain}
             policy: bypass
-          - domain: vault.${config.base_domain}
-            resources:
-              - "^/api.*"
-              - "^/identity.*"
-              - "^/icons.*"
-              - "^/notifications.*"
-              - "^/attachments.*"
-            policy: bypass
-          - domain: vault.${config.base_domain}
-            resources:
-              - "^/admin.*"
-            policy: two_factor
-          - domain: vault.${config.base_domain}
-            policy: bypass
           - domain: db.${config.base_domain}
             resources:
               - "^/api/.*"
