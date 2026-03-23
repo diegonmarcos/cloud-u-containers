@@ -56,6 +56,8 @@ services:
     container_name: photoprism_app
     restart: unless-stopped
     network_mode: host
+    env_file:
+      - .secrets
     volumes:
       - photoprism_storage:/photoprism/storage
       - /opt/containers/photoprism/originals:/photoprism/originals:ro
@@ -102,6 +104,8 @@ services:
     container_name: photoprism_mariadb
     restart: unless-stopped
     network_mode: host
+    env_file:
+      - .secrets
     volumes:
       - mariadb_data:/var/lib/mysql
     environment:

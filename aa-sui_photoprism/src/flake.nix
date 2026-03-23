@@ -87,6 +87,8 @@
           container_name: ${config.app_container}
           restart: unless-stopped
           network_mode: host
+          env_file:
+            - .secrets
           volumes:
             - photoprism_storage:/photoprism/storage
             - /opt/containers/photoprism/originals:/photoprism/originals:ro
@@ -133,6 +135,8 @@
           container_name: ${config.db_container}
           restart: unless-stopped
           network_mode: host
+          env_file:
+            - .secrets
           volumes:
             - mariadb_data:/var/lib/mysql
           environment:

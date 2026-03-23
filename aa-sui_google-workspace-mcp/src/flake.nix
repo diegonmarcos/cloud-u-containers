@@ -38,7 +38,7 @@
           volumes:
             - ./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:${toString config.internal_port}/health"]
+            test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3
