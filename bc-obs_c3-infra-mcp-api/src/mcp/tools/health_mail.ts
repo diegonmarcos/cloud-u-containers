@@ -404,6 +404,64 @@ async function networkChecks(): Promise<Check[]> {
       return { passed: ["400", "405", "406"].includes(r.stdout.trim()), details: `HTTP ${r.stdout.trim()} (alive)` };
     }),
 
+    // ── mail-mcp container connectivity (tests FROM the container that actually connects to IMAP) ──
+
+    // DNS resolution from inside mail-mcp
+    timedAsync("mcp→DNS resolve", async () => {
+      const r = await sshExecAsync(C3_VM, `docker exec mail-mcp node -e "require('dns').resolve4('imap.diegonmarcos.com',(e,a)=>console.log(e?'ERR:'+e.message:'OK:'+a.join(',')))"`, 8_000, true, 3);
+      const out = r.stdout.trim();
+      if (out.startsWith("OK:")) return { passed: true, details: out.replace("OK:", "→ ") };
+      return { passed: false, details: out || "no output" };
+    }),
+
+    // TLS IMAP from inside mail-mcp (this is the actual path mailu-mcp uses)
+    timedAsync("mcp→IMAP TLS", async () => {
+      const script = `
+        const tls=require('tls');
+        const s=tls.connect(993,'imap.diegonmarcos.com',{servername:'imap.diegonmarcos.com',timeout:5000},()=>{
+          console.log('OK proto='+s.getProtocol()+' cert='+s.getPeerCertificate().subject?.CN);s.end()
+        });
+        s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));
+        s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});
+      `.replace(/\n\s*/g, "");
+      const r = await sshExecAsync(C3_VM, `docker exec mail-mcp node -e "${script.replace(/"/g, '\\"')}"`, 10_000, true, 3);
+      const out = r.stdout.trim();
+      if (out.startsWith("OK")) return { passed: true, details: out };
+      return { passed: false, details: out || r.stderr.trim().slice(0, 80) || "no output" };
+    }),
+
+    // TLS SMTP from inside mail-mcp
+    timedAsync("mcp→SMTP TLS", async () => {
+      const script = `
+        const tls=require('tls');
+        const s=tls.connect(465,'smtp.diegonmarcos.com',{servername:'smtp.diegonmarcos.com',timeout:5000},()=>{
+          console.log('OK proto='+s.getProtocol());s.end()
+        });
+        s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));
+        s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});
+      `.replace(/\n\s*/g, "");
+      const r = await sshExecAsync(C3_VM, `docker exec mail-mcp node -e "${script.replace(/"/g, '\\"')}"`, 10_000, true, 3);
+      const out = r.stdout.trim();
+      if (out.startsWith("OK")) return { passed: true, details: out };
+      return { passed: false, details: out || r.stderr.trim().slice(0, 80) || "no output" };
+    }),
+
+    // IMAP via WG IP from inside mail-mcp (bypass DNS/Caddy — direct to Stalwart)
+    timedAsync("mcp→IMAP WG", async () => {
+      const script = `
+        const tls=require('tls');
+        const s=tls.connect(993,'${MAIL_WG_IP}',{servername:'${MAIL_DOMAIN}',rejectUnauthorized:false,timeout:5000},()=>{
+          console.log('OK proto='+s.getProtocol());s.end()
+        });
+        s.on('error',e=>console.log('ERR:'+e.code+' '+e.message));
+        s.setTimeout(5000,()=>{console.log('ERR:TIMEOUT');s.destroy()});
+      `.replace(/\n\s*/g, "");
+      const r = await sshExecAsync(C3_VM, `docker exec mail-mcp node -e "${script.replace(/"/g, '\\"')}"`, 10_000, true, 3);
+      const out = r.stdout.trim();
+      if (out.startsWith("OK")) return { passed: true, details: `${MAIL_WG_IP}:993 ${out}` };
+      return { passed: false, details: `${MAIL_WG_IP}:993 ${out || r.stderr.trim().slice(0, 80) || "no output"}` };
+    }),
+
     // mail-mcp functional check
     timedAsync("mail-mcp tools", async () => {
       const initBody = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "health", version: "1.0" } } });
