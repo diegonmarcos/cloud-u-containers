@@ -71,8 +71,7 @@
       "domain": "vault.diegonmarcos.com",
       "upstream": "vaultwarden.app:8880",
       "auth": "none",
-      "wg_only": true,
-      "comment": "Vaultwarden password manager — WG only, own auth"
+      "comment": "Vaultwarden password manager — own auth, Caddy → private backend"
     }
   ],
 
