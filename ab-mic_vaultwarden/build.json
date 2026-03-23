@@ -15,8 +15,7 @@
   },
   "proxy": {
     "upstream": "vaultwarden.app:8880",
-    "auth": "none",
-    "wg_only": true
+    "auth": "none"
   },
   "health": {
     "path": "/alive"
