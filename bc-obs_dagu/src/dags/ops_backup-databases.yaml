@@ -1,0 +1,192 @@
+schedule: "0 3 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - BUP_PORT: "2223"
+mailOn:
+  failure: true
+  success: false
+steps:
+  # ── Phase 1: Dump databases on each VM (parallel) ──────────────────
+  - name: dump-oci-apps
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      STAMP=$(date +%Y%m%d)
+      $SSH ubuntu@10.0.0.6 bash <<'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+        cd /var/backups/databases
+
+        # PostgreSQL containers
+        for spec in \
+          "mattermost-postgres:mattermost:mattermost" \
+          "crawlee_db:crawlee:crawlee" \
+          "hedgedoc_postgres:hedgedoc:hedgedoc" \
+          "etherpad_postgres:etherpad:etherpad" \
+          "nocodb-db:nocodb:nocodb" \
+          "windmill-db:windmill:windmill" \
+          "quant_light_db:quantlab:quantlab" \
+          "quant_full_db:quantlab:quantlab"
+        do
+          container=${spec%%:*}
+          rest=${spec#*:}
+          user=${rest%%:*}
+          db=${rest#*:}
+          if docker ps --format '{{.Names}}' | grep -qx "$container"; then
+            docker exec "$container" pg_dump -U "$user" -d "$db" 2>/dev/null | gzip > "${container}-$(date +%Y%m%d).sql.gz" && \
+              echo "OK $container" || echo "FAIL $container"
+          else
+            echo "SKIP $container (not running)"
+          fi
+        done
+
+        # MariaDB
+        if docker ps --format '{{.Names}}' | grep -qx "photoprism_mariadb"; then
+          docker exec photoprism_mariadb mariadb-dump -u root photoprism 2>/dev/null | gzip > "photoprism_mariadb-$(date +%Y%m%d).sql.gz" && \
+            echo "OK photoprism_mariadb" || echo "FAIL photoprism_mariadb"
+        fi
+
+        # SurrealDB
+        if docker ps --format '{{.Names}}' | grep -qx "surrealdb"; then
+          docker exec surrealdb surreal export --conn http://localhost:8000 /tmp/surreal-export.surql 2>/dev/null && \
+            docker cp surrealdb:/tmp/surreal-export.surql - | gzip > "surrealdb-$(date +%Y%m%d).surql.gz" && \
+            echo "OK surrealdb" || echo "FAIL surrealdb"
+        fi
+
+        # Gitea SQLite
+        if docker ps --format '{{.Names}}' | grep -qx "gitea"; then
+          docker exec gitea sqlite3 /data/gitea/gitea.db ".backup '/tmp/gitea-dump.db'" 2>/dev/null && \
+            docker cp gitea:/tmp/gitea-dump.db - | gzip > "gitea-$(date +%Y%m%d).sqlite.gz" && \
+            echo "OK gitea" || echo "FAIL gitea"
+        fi
+
+        ls -lh /var/backups/databases/*$(date +%Y%m%d)* 2>/dev/null | wc -l | xargs -I{} echo "Total: {} dumps"
+      REMOTE
+
+  - name: dump-gcp-proxy
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH diego@10.0.0.1 bash <<'REMOTE'
+        set -e
+        sudo mkdir -p /var/backups/databases
+
+        # Vaultwarden SQLite
+        if docker ps --format '{{.Names}}' | grep -qx "vaultwarden"; then
+          docker exec vaultwarden sqlite3 /data/db.sqlite3 ".backup '/tmp/vw-dump.db'" && \
+            docker cp vaultwarden:/tmp/vw-dump.db /var/backups/databases/vaultwarden-$(date +%Y%m%d).sqlite && \
+            gzip -f /var/backups/databases/vaultwarden-$(date +%Y%m%d).sqlite && \
+            echo "OK vaultwarden" || echo "FAIL vaultwarden"
+        fi
+
+        # Authelia SQLite
+        if docker ps --format '{{.Names}}' | grep -qx "authelia"; then
+          docker exec authelia cat /config/db.sqlite3 > /var/backups/databases/authelia-$(date +%Y%m%d).sqlite && \
+            gzip -f /var/backups/databases/authelia-$(date +%Y%m%d).sqlite && \
+            echo "OK authelia" || echo "FAIL authelia"
+        fi
+
+        # ntfy SQLite
+        if docker ps --format '{{.Names}}' | grep -qx "ntfy"; then
+          docker exec ntfy sqlite3 /var/cache/ntfy/cache.db ".backup '/tmp/ntfy-dump.db'" 2>/dev/null && \
+            docker cp ntfy:/tmp/ntfy-dump.db /var/backups/databases/ntfy-$(date +%Y%m%d).sqlite && \
+            gzip -f /var/backups/databases/ntfy-$(date +%Y%m%d).sqlite && \
+            echo "OK ntfy" || echo "FAIL ntfy"
+        fi
+
+        ls -lh /var/backups/databases/*$(date +%Y%m%d)* 2>/dev/null | wc -l | xargs -I{} echo "Total: {} dumps"
+      REMOTE
+
+  - name: dump-oci-mail
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.3 bash <<'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+
+        # Stalwart SQLite
+        if docker ps --format '{{.Names}}' | grep -qx "stalwart"; then
+          docker exec stalwart sqlite3 /opt/stalwart-mail/data/index.sqlite3 ".backup '/tmp/stalwart-dump.db'" 2>/dev/null && \
+            docker cp stalwart:/tmp/stalwart-dump.db /var/backups/databases/stalwart-$(date +%Y%m%d).sqlite && \
+            gzip -f /var/backups/databases/stalwart-$(date +%Y%m%d).sqlite && \
+            echo "OK stalwart" || echo "FAIL stalwart"
+        fi
+      REMOTE
+
+  - name: dump-oci-analytics
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.4 bash <<'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+
+        # Matomo MariaDB (hybrid container with internal MariaDB)
+        if docker ps --format '{{.Names}}' | grep -q "matomo"; then
+          MATOMO_CTR=$(docker ps --format '{{.Names}}' | grep matomo | head -1)
+          docker exec "$MATOMO_CTR" mysqldump -u matomo matomo 2>/dev/null | gzip > /var/backups/databases/matomo-$(date +%Y%m%d).sql.gz && \
+            echo "OK matomo" || echo "FAIL matomo"
+        fi
+      REMOTE
+
+  # ── Phase 2: Pull dumps to oci-apps + bup save ─────────────────────
+  - name: collect-and-bup
+    depends:
+      - dump-oci-apps
+      - dump-gcp-proxy
+      - dump-oci-mail
+      - dump-oci-analytics
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.6 bash <<'REMOTE'
+        set -e
+        STAMP=$(date +%Y%m%d)
+        COLLECT="/var/backups/collected"
+        mkdir -p "$COLLECT"
+
+        # Copy local oci-apps dumps
+        cp /var/backups/databases/*${STAMP}* "$COLLECT/" 2>/dev/null || true
+
+        # Pull from remote VMs
+        SSH_INNER="ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+        for vm in "diego@10.0.0.1" "ubuntu@10.0.0.3" "ubuntu@10.0.0.4"; do
+          rsync -az --ignore-missing-args $vm:/var/backups/databases/*${STAMP}* "$COLLECT/" 2>/dev/null && \
+            echo "Pulled from $vm" || echo "No dumps from $vm"
+        done
+
+        echo "Collected dumps:"
+        ls -lh "$COLLECT/"*${STAMP}* 2>/dev/null
+
+        # bup save to local bup-server
+        export BUP_DIR=/backup/databases
+        if command -v bup >/dev/null 2>&1 || docker exec bup-server bup version >/dev/null 2>&1; then
+          docker exec -e BUP_DIR=/backup/databases bup-server bup index "$COLLECT/" 2>/dev/null || \
+            docker exec bup-server sh -c "cd / && bup -d /backup/databases index /var/backups/collected/"
+          docker exec bup-server sh -c "cd / && bup -d /backup/databases save -n databases /var/backups/collected/" && \
+            echo "bup save OK" || echo "bup save FAILED"
+        else
+          echo "WARN: bup not available, dumps kept in $COLLECT"
+        fi
+
+        # Prune old dumps (keep 7 days)
+        find /var/backups/databases -name "*.gz" -o -name "*.sqlite" | while read f; do
+          age=$(( ($(date +%s) - $(stat -c %Y "$f")) / 86400 ))
+          [ "$age" -gt 7 ] && rm -f "$f" && echo "Pruned: $f"
+        done
+        find "$COLLECT" -name "*.gz" -o -name "*.sqlite" -mtime +7 -delete 2>/dev/null
+      REMOTE
+
+  # ── Phase 3: Notify ────────────────────────────────────────────────
+  - name: notify
+    depends:
+      - collect-and-bup
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      COUNT=$($SSH ubuntu@10.0.0.6 "ls /var/backups/collected/*$(date +%Y%m%d)* 2>/dev/null | wc -l")
+      SIZE=$($SSH ubuntu@10.0.0.6 "du -sh /var/backups/collected/ 2>/dev/null | awk '{print \$1}'" || echo "N/A")
+      MSG="Database backup complete: $COUNT dumps ($SIZE)\nDagu: http://10.0.0.3:8070"
+      curl -s -X POST "$NTFY_URL/ops_backups" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily DB Backup OK ($COUNT dumps)" \
+        -H "Priority: 2" \
+        -H "Tags: floppy_disk,white_check_mark" \
+        -d "$(echo -e "$MSG")"

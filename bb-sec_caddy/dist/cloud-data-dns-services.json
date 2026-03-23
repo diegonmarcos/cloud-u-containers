@@ -1,5 +1,6 @@
 {
-  "_generated": "2026-03-22T19:40:25.653Z",
+  "_generated": "2026-03-23T23:10:03.939Z",
+  "_source": "cloud-data-topology.json via /cloud-data/dns-services",
   "suffix": "app",
   "services": {
     "affine": {
@@ -18,14 +19,6 @@
       "ip": "10.0.0.6",
       "desc": "FileBrowser web file manager (NEW - not deployed yet)"
     },
-    "google-workspace-mcp": {
-      "ip": "10.0.0.6",
-      "desc": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport"
-    },
-    "g-workspace-mcp": {
-      "ip": "10.0.0.6",
-      "desc": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport"
-    },
     "grist": {
       "ip": "10.0.0.6",
       "desc": "Grist spreadsheet/database (sheets.diegonmarcos.com)"
@@ -34,9 +27,9 @@
       "ip": "10.0.0.6",
       "desc": "Collaborative markdown editor"
     },
-    "mail-mcp": {
-      "ip": "10.0.0.6",
-      "desc": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API"
+    "mailu-mcp": {
+      "ip": "10.0.0.3",
+      "desc": "Mailu mail MCP server — IMAP/SMTP/Admin via MCP protocol"
     },
     "mattermost-bots": {
       "ip": "10.0.0.6",
@@ -66,17 +59,17 @@
       "ip": "10.0.0.6",
       "desc": "Reveal.js markdown presentations (NEW - not deployed yet)"
     },
+    "mailu": {
+      "ip": "10.0.0.3",
+      "desc": "Mailu mail server stack (mail.diegonmarcos.com)"
+    },
     "smtp-proxy": {
       "ip": "10.0.0.3",
-      "desc": "smtp-proxy"
-    },
-    "stalwart": {
-      "ip": "10.0.0.3",
-      "desc": "Stalwart Mail Server (mail.diegonmarcos.com)"
+      "desc": ""
     },
     "syncthing": {
       "ip": "10.0.0.3",
-      "desc": "syncthing"
+      "desc": "File Sync"
     },
     "vaultwarden": {
       "ip": "10.0.0.1",
@@ -122,13 +115,13 @@
       "ip": "10.0.0.1",
       "desc": "Caddy reverse proxy + security dashboard (gcp-proxy)"
     },
-    "introspect-proxy": {
-      "ip": "10.0.0.1",
-      "desc": "OIDC token introspection sidecar for Caddy Bearer auth"
-    },
     "orchestrator": {
       "ip": "10.0.0.6",
       "desc": "Container orchestrator — resource budget management for on-demand services"
+    },
+    "rust-api": {
+      "ip": "10.0.0.6",
+      "desc": "Cloud Rust API (api.diegonmarcos.com — default)"
     },
     "sauron-central": {
       "ip": "10.0.0.4",
@@ -137,30 +130,6 @@
     "alerts-api": {
       "ip": "10.0.0.4",
       "desc": "Security Alert Aggregation API"
-    },
-    "c3-infra-mcp-api": {
-      "ip": "10.0.0.6",
-      "desc": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)"
-    },
-    "c3-api": {
-      "ip": "10.0.0.6",
-      "desc": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)"
-    },
-    "c3-services-mcp-api": {
-      "ip": "10.0.0.6",
-      "desc": "C3 Services — Unified service API gateway: MCP server + Fastify API (api.diegonmarcos.com/services)"
-    },
-    "c3-services": {
-      "ip": "10.0.0.6",
-      "desc": "C3 Services — Unified service API gateway: MCP server + Fastify API (api.diegonmarcos.com/services)"
-    },
-    "cloud-spec": {
-      "ip": "10.0.0.6",
-      "desc": "Unified Cloud Documentation Portal"
-    },
-    "c3-spec": {
-      "ip": "10.0.0.6",
-      "desc": "Unified Cloud Documentation Portal"
     },
     "dagu": {
       "ip": "10.0.0.3",
@@ -200,11 +169,7 @@
     },
     "syslog-forwarder": {
       "ip": "10.0.0.3",
-      "desc": "syslog-forwarder"
-    },
-    "umami": {
-      "ip": "10.0.0.4",
-      "desc": "Umami Analytics - lightweight privacy-focused web analytics"
+      "desc": ""
     },
     "windmill": {
       "ip": "10.0.0.6",
@@ -241,6 +206,94 @@
     "redis": {
       "ip": "10.0.0.1",
       "desc": "In-memory data store"
+    },
+    "cloud-spec": {
+      "ip": "10.0.0.6",
+      "desc": "Unified Cloud Documentation Portal"
+    },
+    "c3-spec": {
+      "ip": "10.0.0.6",
+      "desc": "Unified Cloud Documentation Portal"
+    },
+    "c3-infra-mcp-api": {
+      "ip": "10.0.0.6",
+      "desc": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)"
+    },
+    "c3-api": {
+      "ip": "10.0.0.6",
+      "desc": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)"
+    },
+    "sauron-lite-micro1": {
+      "ip": "10.0.0.3",
+      "desc": "File Integrity Scanner"
+    },
+    "sauron-lite-micro2": {
+      "ip": "10.0.0.4",
+      "desc": "File Integrity Scanner"
+    },
+    "sauron-lite-gcp": {
+      "ip": "10.0.0.1",
+      "desc": "File Integrity Scanner"
+    },
+    "sauron-lite-flex": {
+      "ip": "10.0.0.6",
+      "desc": "File Integrity Scanner"
+    },
+    "syslog-forwarder-micro1": {
+      "ip": "10.0.0.3",
+      "desc": "Syslog Forwarder"
+    },
+    "db-agent-gcp": {
+      "ip": "10.0.0.1",
+      "desc": "Central DB Backup Agent"
+    },
+    "db-agent-micro2": {
+      "ip": "10.0.0.4",
+      "desc": "Central DB Backup Agent"
+    },
+    "db-agent-flex": {
+      "ip": "10.0.0.6",
+      "desc": "Central DB Backup Agent"
+    },
+    "rig": {
+      "ip": "10.0.0.6",
+      "desc": "Rig Intelligence Framework — Self-healing orchestrator + GraphRAG"
+    },
+    "google-workspace-mcp": {
+      "ip": "10.0.0.6",
+      "desc": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport"
+    },
+    "g-workspace-mcp": {
+      "ip": "10.0.0.6",
+      "desc": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport"
+    },
+    "mail-mcp": {
+      "ip": "10.0.0.6",
+      "desc": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API"
+    },
+    "snappymail": {
+      "ip": "10.0.0.3",
+      "desc": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
+    },
+    "stalwart": {
+      "ip": "10.0.0.3",
+      "desc": "Stalwart Mail Server (mail.diegonmarcos.com)"
+    },
+    "introspect-proxy": {
+      "ip": "10.0.0.1",
+      "desc": "OIDC token introspection sidecar for Caddy Bearer auth"
+    },
+    "c3-services-mcp-api": {
+      "ip": "10.0.0.6",
+      "desc": "C3 Services — Unified service API gateway: MCP server + Fastify API (api.diegonmarcos.com/services)"
+    },
+    "c3-services": {
+      "ip": "10.0.0.6",
+      "desc": "C3 Services — Unified service API gateway: MCP server + Fastify API (api.diegonmarcos.com/services)"
+    },
+    "umami": {
+      "ip": "10.0.0.4",
+      "desc": "Umami Analytics - lightweight privacy-focused web analytics"
     }
   },
   "vms": {
