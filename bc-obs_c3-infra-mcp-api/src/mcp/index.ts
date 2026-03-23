@@ -15,6 +15,7 @@ import { registerFrontendTools } from "./tools/frontend.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
 import { registerMattermostTools } from "./tools/health_mattermost.js";
 import { registerHealthMailTools } from "./tools/health_mail.js";
+import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
 import { registerResources } from "./resources/index.js";
 
@@ -37,7 +38,8 @@ registerFinOpsTools(server);         //  7: OCI + GCP instances, resources, cost
 registerFrontendTools(server);       //  5: front-end monorepo build/dev/deploy
 registerCrawleeTools(server);        //  7: web scraping actors/runs/results
 registerMattermostTools(server);     //  8: chat read/write/react for agentic bot
-registerHealthMailTools(server);    //  5: mail UP, profiling, inbound/outbound tests, full pipeline
+registerHealthMailTools(server);     //  5: mail UP, profiling, inbound/outbound tests, full pipeline
+registerHealthCloudTools(server);   //  2: cloud UP + cloud full 8-layer diagnostic
 
 // Register resources (7 static + 2 templates = 9 total)
 registerResources(server);             // cloud://config, ssh-config, services-overview, readme, front-projects, c3-api-endpoints, service-apis + templates: services/{name}, vms/{vm_id}

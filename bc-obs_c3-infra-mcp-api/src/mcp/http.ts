@@ -20,6 +20,7 @@ import { registerFinOpsTools } from "./tools/finops.js";
 import { registerFrontendTools } from "./tools/frontend.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
 import { registerMattermostTools } from "./tools/health_mattermost.js";
+import { registerHealthCloudTools } from "./tools/health_cloud.js";
 import { registerResources } from "./resources/index.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
@@ -38,6 +39,7 @@ function createMcpServer(): McpServer {
   registerFrontendTools(server);
   registerCrawleeTools(server);
   registerMattermostTools(server);
+  registerHealthCloudTools(server);
   registerResources(server);
 
   return server;
