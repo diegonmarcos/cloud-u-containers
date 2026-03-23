@@ -13,7 +13,7 @@
 //   cloud-data/cloud-data-configs.md     → human-readable tables (via Nunjucks)
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { homedir } from "os";
 import nunjucks from "nunjucks";
 import { parseCaddyfile } from "./parsers/caddyfile.js";
@@ -24,10 +24,11 @@ import { parseMailu } from "./parsers/mailu.js";
 
 // --- Paths ----------------------------------------------------------------
 
-const GIT_BASE = process.env.GIT_BASE ?? join(homedir(), "git");
-const CLOUD_ROOT = join(GIT_BASE, "cloud");
-const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
 const ENGINE_DIR = import.meta.dirname!;
+const CLOUD_ROOT_DEFAULT = resolve(ENGINE_DIR, "../../../..");
+const GIT_BASE = process.env.GIT_BASE ?? resolve(CLOUD_ROOT_DEFAULT, "..");
+const CLOUD_ROOT = process.env.GIT_BASE ? join(GIT_BASE, "cloud") : CLOUD_ROOT_DEFAULT;
+const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
 const TEMPLATE_DIR = join(ENGINE_DIR, "templates");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");

@@ -16,14 +16,17 @@
 //   C3 API GET /deps       → serves live
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { join, dirname, resolve } from "path";
 import { execSync } from "child_process";
 import { homedir } from "os";
+import { fileURLToPath } from "url";
 
 // --- Paths ----------------------------------------------------------------
 
-const GIT_BASE = process.env.GIT_BASE ?? join(homedir(), "git");
-const CLOUD_ROOT = join(GIT_BASE, "cloud");
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const CLOUD_ROOT_DEFAULT = resolve(SCRIPT_DIR, "../../../..");
+const GIT_BASE = process.env.GIT_BASE ?? dirname(CLOUD_ROOT_DEFAULT);
+const CLOUD_ROOT = process.env.GIT_BASE ? join(GIT_BASE, "cloud") : CLOUD_ROOT_DEFAULT;
 const FRONT_ROOT = join(GIT_BASE, "front");
 const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
 const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
