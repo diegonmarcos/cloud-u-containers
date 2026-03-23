@@ -2,20 +2,25 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bb-sec_caddy/src/flake.nix      ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_caddy/build.sh ship     ║
+# ║ Source: ~/git/cloud/a_solutions/bb-sec_caddy/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   caddy:
-    image: ghcr.io/diegonmarcos/caddy-custom:latest
+    image: ghcr.io/diegonmarcos/caddy-l4:latest
     container_name: caddy
+    network_mode: host
     restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     env_file:
       - .secrets
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+    depends_on:
+      introspect-proxy:
+        condition: service_healthy
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./error.html:/srv/error.html:ro
@@ -25,43 +30,58 @@ services:
       - ./logs:/var/log/caddy
       - caddy_data:/data
       - caddy_config:/config
-    networks:
-      - npm_default
-    depends_on:
-      introspect-proxy:
-        condition: service_healthy
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - NET_BIND_SERVICE
 
   introspect-proxy:
-    build: ./introspect-proxy
     image: introspect-proxy:latest
+    build: ./introspect-proxy
     container_name: introspect-proxy
+    network_mode: host
     restart: unless-stopped
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     environment:
-      JWKS_URL: https://auth.diegonmarcos.com/jwks.json
-      ISSUER: https://auth.diegonmarcos.com
-      REQUIRED_SCOPE: authelia.bearer.authz
       DEBUG: "true"
-    networks:
-      - npm_default
-    deploy:
-      resources:
-        limits:
-          memory: 96M
-        reservations:
-          memory: 48M
+      ISSUER: https://auth.diegonmarcos.com
+      JWKS_URL: https://auth.diegonmarcos.com/jwks.json
+      REQUIRED_SCOPE: authelia.bearer.authz
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+          pids: 256
+        reservations:
+          memory: 48M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
-  caddy_data:
-    driver: local
   caddy_config:
     driver: local
-
-networks:
-  npm_default:
-    external: true
+  caddy_data:
+    driver: local

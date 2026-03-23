@@ -1,0 +1,31 @@
+schedule: "*/5 * * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-mesh-and-notify
+    command: |
+      FAILED=""
+      PEERS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.vms[] | "\(.ip):\(.name):22"' "$MON_TARGETS"; else echo -e "10.0.0.1:gcp-proxy:22\n10.0.0.3:oci-mail:25\n10.0.0.4:oci-analytics:22"; fi)
+      echo "$PEERS" | while IFS=: read -r ip name port; do
+        [ -z "$ip" ] && continue
+        if ! echo QUIT | timeout 3 bash -c "cat > /dev/tcp/$ip/$port" 2>/dev/null; then
+          echo "  - $name ($ip) port $port UNREACHABLE" >> /tmp/mesh-failed.$$
+        fi
+      done
+      if [ -f /tmp/mesh-failed.$$ ]; then
+        FAILED=$(cat /tmp/mesh-failed.$$)
+        rm -f /tmp/mesh-failed.$$
+        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
+        curl -s -X POST "$NTFY_URL/infra_mesh-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Mesh Health FAILED" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi

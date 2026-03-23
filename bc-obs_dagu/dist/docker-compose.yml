@@ -14,11 +14,10 @@ services:
     container_name: dagu
     entrypoint: ["dagu", "start-all"]
     restart: unless-stopped
-    ports:
-      - "10.0.0.3:8070:8080"
+    network_mode: host
     environment:
       - DAGU_HOST=0.0.0.0
-      - DAGU_PORT=8080
+      - DAGU_PORT=8070
       - DAGU_DAGS_DIR=/var/lib/dagu/dags
       - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
       - DAGU_AUTH_MODE=basic
@@ -37,10 +36,4 @@ services:
       - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
       - /opt/ssh-keys/dagu:/root/.ssh:ro
     mem_limit: 256m
-    networks:
-      - default
-      - mailu_default
 
-networks:
-  mailu_default:
-    external: true

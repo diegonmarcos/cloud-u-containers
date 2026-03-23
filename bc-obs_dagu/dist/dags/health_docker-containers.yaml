@@ -1,0 +1,49 @@
+schedule: "0 10 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-containers-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}'" 2>/dev/null)
+        EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --filter 'exited!=0' --format '{{.Names}} (exit {{.Status}})'" 2>/dev/null)
+        if [ -n "$UNHEALTHY" ]; then
+          ALERTS="${ALERTS}  $name — UNHEALTHY:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done <<< "$UNHEALTHY"
+        fi
+        if [ -n "$EXITED" ]; then
+          ALERTS="${ALERTS}  $name — CRASHED:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done <<< "$EXITED"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Container issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'docker logs <container> --tail 30'\n  ssh <user>@<ip> 'docker restart <container>'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_containers" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Container Health Issues" \
+          -H "Priority: 4" \
+          -H "Tags: whale,warning" \
+          -d "$MSG"
+        exit 1
+      fi

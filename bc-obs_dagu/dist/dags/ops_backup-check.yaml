@@ -1,0 +1,47 @@
+schedule: "0 11 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-backups-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        RECENT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -o -name '*.tar.gz' -o -name '*.bak' 2>/dev/null | head -5 | while read f; do stat --format='%n (%s bytes, %y)' \"\$f\" 2>/dev/null; done | head -5" 2>/dev/null)
+        COUNT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2>/dev/null | wc -l" 2>/dev/null || echo 0)
+        if [ "$COUNT" -eq 0 ] 2>/dev/null; then
+          ALERTS="${ALERTS}  $name ($ip): NO backups in last 24h\n"
+          if [ -n "$RECENT" ]; then
+            ALERTS="${ALERTS}    Latest files:\n"
+            while IFS= read -r f; do
+              ALERTS="${ALERTS}      $f\n"
+            done <<< "$RECENT"
+          fi
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh <user>@<ip> 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/ops_backups" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Backup Alert" \
+          -H "Priority: 4" \
+          -H "Tags: floppy_disk,warning" \
+          -d "$MSG"
+        exit 1
+      fi
