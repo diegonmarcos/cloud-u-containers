@@ -5,7 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
 import { readFileSync } from "fs";
-import { CONFIG_PATH } from "../../shared/paths.js";
+import { getConfigPath } from "../../shared/paths.js";
 import { getSecretsStatus } from "../../shared/files.js";
 import { resolveVmId } from "../../shared/config.js";
 
@@ -67,7 +67,7 @@ export function registerSecurityTools(server: McpServer) {
     "Security topology: exposed services, secrets status, VM access methods",
     {},
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       const exposed = Object.entries(topo.services as Record<string, any>)
         .filter(([, s]) => (s as any).domain)
         .map(([name, s]: [string, any]) => ({ name, domain: s.domain, vm: s.vm }));

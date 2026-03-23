@@ -27,7 +27,7 @@ import {
   SERVICE_BASE_PATHS,
 } from "../../shared/discovery.js";
 import { rawHttpRequest, getBearerToken } from "../../shared/http.js";
-import { CONFIG_PATH } from "../../shared/paths.js";
+import { getConfigPath } from "../../shared/paths.js";
 import { getConfigFile } from "../../shared/files.js";
 
 // ── Helpers ──
@@ -476,7 +476,7 @@ export function registerInventoryTools(server: McpServer) {
     "c3_topology",
     "Unified topology view of all VMs, services, and networks from declarative config",
     {},
-    async () => jsonText("Topology", JSON.parse(readFileSync(CONFIG_PATH, "utf-8"))),
+    async () => jsonText("Topology", JSON.parse(readFileSync(getConfigPath(), "utf-8"))),
   );
 
   server.tool(
@@ -498,7 +498,7 @@ export function registerInventoryTools(server: McpServer) {
     "Show Docker networks per VM with connected containers",
     {},
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       const result = Object.entries(topo.vms).map(([id, vm]) => {
         const vmSvcs = Object.entries(topo.services).filter(([, s]) => s.vm === id);
         const netMap: Record<string, string[]> = {};
@@ -519,7 +519,7 @@ export function registerInventoryTools(server: McpServer) {
     "Show Docker volumes per VM (from cloud-data-topology.json)",
     {},
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       return jsonText("Volume topology (declarative — from compose files)", topo.services);
     },
   );
@@ -529,7 +529,7 @@ export function registerInventoryTools(server: McpServer) {
     "Show Docker images per VM (from cloud-data-topology.json containers)",
     {},
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       const result = Object.entries(topo.vms).map(([id, vm]) => ({
         vm: vm.ssh_alias, containers: vm.containers, ports: vm.ports,
       }));
@@ -542,7 +542,7 @@ export function registerInventoryTools(server: McpServer) {
     "Show service dependencies (from cloud-data-topology.json)",
     {},
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       // Services sharing networks are implicitly dependent
       const result = Object.entries(topo.services)
         .filter(([, s]) => s.networks && s.networks.length > 0)

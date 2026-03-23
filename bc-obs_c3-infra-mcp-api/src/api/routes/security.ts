@@ -8,7 +8,7 @@ import { securityScan, securityDocker, securitySshKeys, securityTokens } from ".
 import { sshExec } from "../../shared/ssh.js";
 import { getConfig, getVmSshAlias, resolveVmId } from "../../shared/config.js";
 import { getSecretsStatus } from "../../shared/files.js";
-import { CONFIG_PATH } from "../../shared/paths.js";
+import { getConfigPath } from "../../shared/paths.js";
 import { readFileSync } from "fs";
 
 const securityScanSchema = z.object({
@@ -91,7 +91,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     "/cloud-data/topology/security",
     { schema: { tags: ["Security"] } },
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       const exposed = Object.entries(topo.services as Record<string, any>)
         .filter(([, s]) => s.domain)
         .map(([name, s]: [string, any]) => ({ name, domain: s.domain, vm: s.vm }));
@@ -105,7 +105,7 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     "/cloud-data/topology/network",
     { schema: { tags: ["Security"], summary: "Docker networks and container isolation per VM" } },
     async () => {
-      const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+      const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
       return Object.entries(topo.vms as Record<string, any>).map(([id, vm]: [string, any]) => {
         const vmServices = Object.entries(topo.services as Record<string, any>).filter(([, s]: [string, any]) => s.vm === id);
         const netMap: Record<string, string[]> = {};

@@ -7,7 +7,7 @@ import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
 import { getDriftReport, getConfig, getServiceFolder } from "../../shared/config.js";
 import { getConfigFile } from "../../shared/files.js";
-import { CONFIG_PATH, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH } from "../../shared/paths.js";
+import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH } from "../../shared/paths.js";
 
 export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Services (from services.ts) ──
@@ -49,8 +49,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Topology (serves cloud-data-topology.json directly) ──
 
   app.get("/cloud-data/topology", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    return JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    return JSON.parse(readFileSync(getConfigPath(), "utf-8"));
   });
 
   app.get("/cloud-data/topology/drift", { schema: { tags: ["Inventory"] } }, async () => {
@@ -96,14 +96,14 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── DNS Registry (container name → WG IP, for Hickory DNS auto-generation) ──
 
   app.get("/cloud-data/dns-services", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
     const services: Record<string, { ip: string; desc: string }> = {};
     const vms: Record<string, string> = {};
 
     // Use getConfig() which merges build.json discovery + config.json fallback
     const config = getConfig();
-    const solutionsDir = join(dirname(CONFIG_PATH), "a_solutions");
+    const solutionsDir = join(dirname(getConfigPath()), "a_solutions");
 
     for (const [svcName, svc] of Object.entries(config.services)) {
       const vm = topo.vms?.[svc.vm];
@@ -161,7 +161,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
   app.get("/cloud-data/caddy-routes", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
     const config = getConfig();
-    const solutionsDir = join(dirname(CONFIG_PATH), "a_solutions");
+    const solutionsDir = join(dirname(getConfigPath()), "a_solutions");
 
     const routes: any[] = [];
     const l4_routes: any[] = [];
@@ -401,8 +401,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Authelia ACL (derived from topology proxy.auth fields → authelia-acl.json) ──
 
   app.get("/cloud-data/authelia-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const rules: any[] = [];
 
@@ -448,8 +448,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Monitoring Targets (derived from topology health/monitoring fields) ──
 
   app.get("/cloud-data/monitoring-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const endpoint_checks: any[] = [];
     const dns_checks: string[] = [];
@@ -497,8 +497,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Firewall Rules (aggregated ports per VM from topology) ──
 
   app.get("/cloud-data/firewall-rules", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const vms: Record<string, { ingress: any[] }> = {};
 
@@ -533,8 +533,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Backup Targets (services with backup.enabled) ──
 
   app.get("/cloud-data/backup-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const targets: any[] = [];
 
@@ -563,8 +563,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── WireGuard Peers (derived from topology VMs with wg_ip) ──
 
   app.get("/cloud-data/wireguard-peers", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const peers: any[] = [];
     for (const [vmId, vm] of Object.entries(topo.vms ?? {})) {
@@ -594,8 +594,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── ntfy ACL (derived from topology notifications fields) ──
 
   app.get("/cloud-data/ntfy-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const topics: Record<string, { publishers: string[]; desc: string }> = {};
 
@@ -624,8 +624,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Cloudflare DNS (derived from topology services with domains) ──
 
   app.get("/cloud-data/cloudflare-dns", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const records: any[] = [];
     const seenDomains = new Set<string>();
@@ -662,8 +662,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Matomo Sites (services with domains that have analytics tracking) ──
 
   app.get("/cloud-data/matomo-sites", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const sites: any[] = [];
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
@@ -687,8 +687,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Container Resources (derived from topology — mem/cpu per service) ──
 
   app.get("/cloud-data/container-resources", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const services: Record<string, any> = {};
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
@@ -714,8 +714,8 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Log Routing (derived from topology — container → log config) ──
 
   app.get("/cloud-data/log-routing", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIG_PATH)) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
-    const topo = JSON.parse(readFileSync(CONFIG_PATH, "utf-8"));
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const routes: Record<string, any[]> = {};
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
