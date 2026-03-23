@@ -71,9 +71,9 @@ session:
       expiration: 1h
       remember_me: 30d
   redis:
-    host: authelia-redis
+    host: localhost
     password: ${AUTHELIA_REDIS_PASSWORD}
-    port: 6379
+    port: 6380
 
 regulation:
   max_retries: 3
@@ -214,18 +214,8 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://mcp.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/
 
       - client_id: cloud-admin
         consent_mode: explicit
@@ -251,18 +241,8 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://mcp.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/
           - https://api.diegonmarcos.com/
 
       - client_id: claude-opus
@@ -289,18 +269,8 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://mcp.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/
           - https://api.diegonmarcos.com/
 
       - client_id: claude-sonnet
@@ -327,18 +297,8 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://mcp.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/
           - https://api.diegonmarcos.com/
 
       - client_id: claude-haiku
@@ -365,18 +325,8 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://mcp.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/
           - https://api.diegonmarcos.com/
 
       - client_id: dagu-ops
@@ -524,14 +474,5 @@ identity_providers:
         pkce_challenge_method: S256
         access_token_signed_response_alg: RS256
         audience:
-          - https://db.diegonmarcos.com/
-          - https://analytics.diegonmarcos.com/
-          - https://auth.diegonmarcos.com/
-          - https://cal.diegonmarcos.com/
-          - https://ide.diegonmarcos.com/
-          - https://mail.diegonmarcos.com/
-          - https://photos.diegonmarcos.com/
-          - https://proxy.diegonmarcos.com/
-          - https://rss.diegonmarcos.com/
-          - https://sync.diegonmarcos.com/
-          - https://vault.diegonmarcos.com/
+          - https://*.diegonmarcos.com/
+          - https://diegonmarcos.com/

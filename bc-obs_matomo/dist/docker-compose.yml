@@ -1,3 +1,10 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_matomo/src/flake.nix     ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_matomo/build.sh ship    ║
+# ╚══════════════════════════════════════════════════════════════════╝
 # Matomo Hybrid Container
 # VM: oci-E2-f_1 (129.151.228.66)
 # Domain: analytics.diegonmarcos.com
@@ -16,8 +23,7 @@ services:
     build: .
     container_name: matomo-hybrid
     restart: unless-stopped
-    ports:
-      - "10.0.0.4:8080:8080"
+    network_mode: host
     volumes:
       - matomo_matomo_data:/var/www/html
       - matomo_matomo_db:/var/lib/mysql
@@ -37,8 +43,8 @@ services:
 
 volumes:
   matomo_matomo_data:
-    external: true
+    name: matomo_matomo_data
   matomo_matomo_db:
-    external: true
+    name: matomo_matomo_db
   matomo_inbox:
     name: matomo_inbox

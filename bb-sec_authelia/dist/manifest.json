@@ -1,0 +1,122 @@
+[
+  {
+    "file": "authelia-acl.json",
+    "name": "authelia acl"
+  },
+  {
+    "file": "backup-targets.json",
+    "name": "backup targets"
+  },
+  {
+    "file": "caddy-routes.json",
+    "name": "caddy routes"
+  },
+  {
+    "file": "cloud-configs.json",
+    "name": "cloud configs"
+  },
+  {
+    "file": "cloud-data-authelia-acl.json",
+    "name": "cloud data authelia acl"
+  },
+  {
+    "file": "cloud-data-backup-targets.json",
+    "name": "cloud data backup targets"
+  },
+  {
+    "file": "cloud-data-caddy-routes.json",
+    "name": "cloud data caddy routes"
+  },
+  {
+    "file": "cloud-data-cloudflare-dns.json",
+    "name": "cloud data cloudflare dns"
+  },
+  {
+    "file": "cloud-data-configs.json",
+    "name": "cloud data configs"
+  },
+  {
+    "file": "cloud-data-container-resources.json",
+    "name": "cloud data container resources"
+  },
+  {
+    "file": "cloud-data-deps.json",
+    "name": "cloud data deps"
+  },
+  {
+    "file": "cloud-data-dns-services.json",
+    "name": "cloud data dns services"
+  },
+  {
+    "file": "cloud-data-firewall-rules.json",
+    "name": "cloud data firewall rules"
+  },
+  {
+    "file": "cloud-data-log-routing.json",
+    "name": "cloud data log routing"
+  },
+  {
+    "file": "cloud-data-matomo-sites.json",
+    "name": "cloud data matomo sites"
+  },
+  {
+    "file": "cloud-data-monitoring-targets.json",
+    "name": "cloud data monitoring targets"
+  },
+  {
+    "file": "cloud-data-ntfy-acl.json",
+    "name": "cloud data ntfy acl"
+  },
+  {
+    "file": "cloud-data-topology.json",
+    "name": "cloud data topology"
+  },
+  {
+    "file": "cloud-data-wireguard-peers.json",
+    "name": "cloud data wireguard peers"
+  },
+  {
+    "file": "cloud-deps.json",
+    "name": "cloud deps"
+  },
+  {
+    "file": "cloud-topology.json",
+    "name": "cloud topology"
+  },
+  {
+    "file": "cloudflare-dns.json",
+    "name": "cloudflare dns"
+  },
+  {
+    "file": "container-resources.json",
+    "name": "container resources"
+  },
+  {
+    "file": "dns-services.json",
+    "name": "dns services"
+  },
+  {
+    "file": "firewall-rules.json",
+    "name": "firewall rules"
+  },
+  {
+    "file": "log-routing.json",
+    "name": "log routing"
+  },
+  {
+    "file": "matomo-sites.json",
+    "name": "matomo sites"
+  },
+  {
+    "file": "monitoring-targets.json",
+    "name": "monitoring targets"
+  },
+  {
+    "file": "ntfy-acl.json",
+    "name": "ntfy acl"
+  },
+  {
+    "file": "wireguard-peers.json",
+    "name": "wireguard peers"
+  }
+]
