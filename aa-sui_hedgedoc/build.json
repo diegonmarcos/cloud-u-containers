@@ -15,7 +15,7 @@
     "base_path": "/hedgedoc"
   },
   "ports": {
-    "app": 3000,
+    "app": 3018,
     "db": 5439
   },
   "health": {

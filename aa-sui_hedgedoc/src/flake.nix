@@ -38,6 +38,7 @@
           volumes:
             - hedgedoc_uploads:/hedgedoc/public/uploads
           environment:
+            - CMD_PORT=${toString config.port}
             - CMD_DOMAIN=${config.domain}
             - CMD_URL_ADDPORT=false
             - CMD_PROTOCOL_USESSL=true

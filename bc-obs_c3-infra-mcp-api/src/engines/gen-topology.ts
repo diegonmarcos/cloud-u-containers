@@ -166,6 +166,9 @@ function main() {
     const vmId = resolveVmId(entry.vm, aliasToVmId, vms);
     const existingSvc = existing?.services?.[entry.name];
 
+    // Compute upstream from dns:port if both are available
+    const computedUpstream = entry.dns && entry.port ? `${entry.dns}:${entry.port}` : undefined;
+
     const svc: Service = {
       category: entry.category,
       vm: vmId,
@@ -175,6 +178,10 @@ function main() {
       ...(entry.flake ? { flake: entry.flake } : existingSvc?.flake ? { flake: existingSvc.flake } : {}),
       ...(compose.ports.length > 0 ? { ports: compose.ports } : existingSvc?.ports ? { ports: existingSvc.ports } : {}),
       ...(compose.networks.length > 0 ? { networks: compose.networks } : existingSvc?.networks ? { networks: existingSvc.networks } : {}),
+      // Standardized routing (from build.json)
+      ...(entry.port != null ? { port: entry.port } : {}),
+      ...(entry.dns ? { dns: entry.dns } : {}),
+      ...(computedUpstream ? { upstream: computedUpstream } : {}),
       // Declarative infrastructure fields (pass through from build.json)
       ...(entry.proxy ? { proxy: entry.proxy } : {}),
       ...(entry.ports ? { declared_ports: entry.ports } : {}),
