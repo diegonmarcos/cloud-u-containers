@@ -96,7 +96,7 @@
         },
         {
           "base_path": "/services",
-          "upstream": "c3-services.app:8082",
+          "upstream": "c3-services-api.app:8082",
           "public_paths": ["/services/docs/json"],
           "comment": "C3 Services — Unified Service API Gateway"
         },
@@ -158,8 +158,8 @@
       "comment": "MCP — Streamable HTTP endpoints for Claude Code MCP clients",
       "fallback_message": "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp",
       "endpoints": [
-        { "base_path": "/c3-infra-mcp", "upstream": "c3-infra-mcp-api.app:3100" },
-        { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp-api.app:3101" },
+        { "base_path": "/c3-infra-mcp", "upstream": "c3-mcp.app:3100" },
+        { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
         { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
         { "base_path": "/mail-mcp", "upstream": "mail-mcp.app:3103" },
         { "base_path": "/g-workspace", "upstream": "google-workspace-mcp.app:3104" }
