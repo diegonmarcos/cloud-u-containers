@@ -47,7 +47,7 @@
           "c3_git_repos:/root/git"
         ];
         healthcheck = {
-          test = ''["CMD-SHELL", "curl -sf -X POST -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}' http://localhost:${toString config.port}${config.health_path} || exit 1"]'';
+          test = ''["CMD-SHELL", "curl -so /dev/null -w '%{http_code}' http://localhost:${toString config.port}${config.health_path} | grep -qE '^[2-4]' || exit 1"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;
