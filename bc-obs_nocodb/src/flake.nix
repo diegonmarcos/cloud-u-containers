@@ -7,12 +7,14 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "db.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "nocodb";
       image = "nocodb/nocodb:latest";
-      port = 8085;
+      port = buildJson.ports.app;
+      db_port = buildJson.ports.db;
       timezone = "Europe/Madrid";
     };
 
@@ -35,7 +37,7 @@
           env_file:
             - .secrets
           environment:
-            NC_DB: "pg://localhost:5441?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
+            NC_DB: "pg://localhost:${toString config.db_port}?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}
             NC_DISABLE_TELE: "true"
             NC_OIDC_ISSUER: https://auth.diegonmarcos.com
@@ -67,11 +69,11 @@
             POSTGRES_DB: nocodb
             POSTGRES_USER: nocodb
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
-            PGPORT: "5441"
+            PGPORT: "${toString config.db_port}"
           volumes:
             - nocodb_postgres:/var/lib/postgresql/data
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb -p 5441"]
+            test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb -p ${toString config.db_port}"]
             interval: 10s
             timeout: 5s
             retries: 5

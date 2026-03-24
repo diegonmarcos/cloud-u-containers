@@ -8,12 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "sheets.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "grist_app";
       image = "gristlabs/grist:latest";
-      port = 3011;
+      port = buildJson.ports.app;
     };
 
     title = "Grist - Modern collaborative spreadsheet (Google Sheets alternative)";

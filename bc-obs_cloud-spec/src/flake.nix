@@ -7,6 +7,11 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
+    config = {
+      port = buildJson.ports.app;
+    };
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -34,7 +39,7 @@
             container_name: cloud-spec
             restart: unless-stopped
             network_mode: host
-            command: busybox httpd -f -p 3080 -h /srv
+            command: busybox httpd -f -p ${toString config.port} -h /srv
             volumes:
               - ./site:/srv:ro
       '';

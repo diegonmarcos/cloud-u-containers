@@ -7,13 +7,14 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "git.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "gitea";
       image = "gitea/gitea:latest";
-      http_port = 3002;
-      ssh_port = 2222;
+      http_port = buildJson.ports.app;
+      ssh_port = buildJson.ports.ssh;
       timezone = "Europe/Madrid";
 
       # Database (SQLite by default, or use external PostgreSQL)

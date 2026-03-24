@@ -7,14 +7,15 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
       research_image = "quay.io/jupyter/scipy-notebook:latest";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
-      jupyter_port = 8889;
-      engine_port = 5001;
-      db_port = 5434;
+      jupyter_port = buildJson.ports.app;
+      engine_port = buildJson.ports.engine;
+      db_port = buildJson.ports.db;
     };
 
     title = "Quant Lab Light - Jupyter + NautilusTrader + Postgres";

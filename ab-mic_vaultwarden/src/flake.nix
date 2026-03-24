@@ -8,11 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "vault.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "vaultwarden";
       image = "vaultwarden/server:latest";
+      port = buildJson.ports.app;
       timezone = "Europe/Madrid";
 
       signups_allowed = "true";
@@ -34,7 +36,7 @@
         env_file = [ ".secrets" ];
         environment = {
           DOMAIN = "https://${config.domain}";
-          ROCKET_PORT = "\"8880\"";
+          ROCKET_PORT = "\"${toString config.port}\"";
           SIGNUPS_ALLOWED = config.signups_allowed;
           INVITATIONS_ALLOWED = config.invitations_allowed;
           SHOW_PASSWORD_HINT = config.show_password_hint;

@@ -7,9 +7,12 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "windmill.diegonmarcos.com";
+      domain = buildJson.domain;
+      port = buildJson.ports.app;
+      db_port = buildJson.ports.db;
     };
 
     title = "Windmill - Workflow orchestration platform";
@@ -38,7 +41,7 @@
             - POSTGRES_DB=windmill
             - POSTGRES_USER=windmill
             - POSTGRES_PASSWORD=''${DB_PASSWORD}
-            - PGPORT=5440
+            - PGPORT=${toString config.db_port}
           volumes:
             - windmill-db-data:/var/lib/postgresql/data
           deploy:
@@ -48,7 +51,7 @@
               reservations:
                 memory: 64M
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U windmill -d windmill -p 5440"]
+            test: ["CMD-SHELL", "pg_isready -U windmill -d windmill -p ${toString config.db_port}"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -61,7 +64,7 @@
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5440/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:${toString config.db_port}/windmill?sslmode=disable
             - MODE=server
             - BASE_URL=https://${config.domain}
             - COOKIE_DOMAIN=diegonmarcos.com
@@ -90,7 +93,7 @@
               reservations:
                 memory: 128M
           healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/api/version"]
+            test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/api/version"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -104,7 +107,7 @@
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5440/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:${toString config.db_port}/windmill?sslmode=disable
             - MODE=worker
             - WORKER_GROUP=default
             - NUM_WORKERS=2

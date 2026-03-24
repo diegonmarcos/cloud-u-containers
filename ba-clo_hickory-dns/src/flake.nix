@@ -8,7 +8,11 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
-    config = {};
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
+    config = {
+      dns_port = buildJson.ports.dns;
+    };
 
     title = "Hickory DNS";
     docker = import ../../_shared/docker.nix;
@@ -60,7 +64,7 @@ $TTL 60
 '') names);
       in pkgs.writeText "named.toml" ''
       listen_addrs_ipv4 = ["10.0.0.1"]
-      listen_port = 53
+      listen_port = ${toString config.dns_port}
 
       # ── Per-service zones (<name>.app → WG IP) ──
 ${zoneBlocks}

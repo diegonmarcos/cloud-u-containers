@@ -8,9 +8,14 @@
   outputs = { self, nixpkgs }: let
     # Support both architectures (output is text-only)
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "grafana.diegonmarcos.com";
+      domain = buildJson.domain;
+      grafana_port = buildJson.ports.grafana;
+      loki_port = buildJson.ports.loki;
+      mimir_port = buildJson.ports.mimir;
+      tempo_port = buildJson.ports.tempo;
     };
 
     title = "LGTM Stack - Grafana Labs Observability (Loki, Grafana, Tempo, Mimir)";
@@ -38,12 +43,12 @@
             - GF_SECURITY_ADMIN_USER=admin
             - GF_SECURITY_ADMIN_PASSWORD=''${GRAFANA_ADMIN_PASSWORD:-changeme}
             - GF_USERS_ALLOW_SIGN_UP=false
-            - GF_SERVER_HTTP_PORT=3200
+            - GF_SERVER_HTTP_PORT=${toString config.grafana_port}
             - GF_SERVER_ROOT_URL=https://${config.domain}
           depends_on:
             - loki
           healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3200/api/health']
+            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:${toString config.grafana_port}/api/health']
             interval: 30s
             timeout: 10s
             retries: 3
@@ -56,9 +61,9 @@
           volumes:
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
-          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=3110 -server.grpc-listen-port=9111
+          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=${toString config.loki_port} -server.grpc-listen-port=9111
           healthcheck:
-            test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3110/ready']
+            test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:${toString config.loki_port}/ready']
             interval: 30s
             timeout: 10s
             retries: 5
@@ -94,7 +99,7 @@
     # ── Config: Tempo ──────────────────────────────────────────────────
     mkTempoConfig = pkgs: pkgs.writeText "tempo.yaml" ''
       server:
-        http_listen_port: 3210
+        http_listen_port: ${toString config.tempo_port}
         grpc_listen_port: 9112
 
       distributor:
@@ -123,7 +128,7 @@
           dir: /data/blocks
 
       server:
-        http_listen_port: 9009
+        http_listen_port: ${toString config.mimir_port}
         grpc_listen_port: 9113
 
       distributor:
@@ -155,18 +160,18 @@
         - name: Loki
           type: loki
           access: proxy
-          url: http://localhost:3110
+          url: http://localhost:${toString config.loki_port}
           isDefault: true
 
         - name: Tempo
           type: tempo
           access: proxy
-          url: http://localhost:3210
+          url: http://localhost:${toString config.tempo_port}
 
         - name: Mimir
           type: prometheus
           access: proxy
-          url: http://localhost:9009/prometheus
+          url: http://localhost:${toString config.mimir_port}/prometheus
 
         - name: Photoprism MariaDB
           type: mysql
