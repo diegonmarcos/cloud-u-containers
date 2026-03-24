@@ -11,6 +11,7 @@ import { registerSecurityExecTools } from "./tools/security.js";
 // ── Extensions ───────────────────────────────────
 import { registerFrontendExecTools } from "./tools/frontend.js";
 import { registerFinOpsTools } from "./tools/finops.js";
+import { registerWorkflowTools } from "./tools/workflows.js";
 import { registerHealthMailTools } from "./tools/health_mail.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
@@ -30,6 +31,7 @@ registerSecurityExecTools(server);       //  4: scan, docker audit, SSH keys, to
 // ── Extensions ───────────────────────────────────
 registerFrontendExecTools(server);       //  3: front-end build/dev/deploy
 registerFinOpsTools(server);            //  4: VPS costs, service map, asset inventory
+registerWorkflowTools(server);          //  9: GHA + Dagu status, errors, triggers
 registerHealthMailTools(server);         //  5: mail UP, profiling, inbound/outbound tests, full pipeline
 registerHealthCloudTools(server);        //  2: cloud UP + cloud full 10-layer diagnostic
 
