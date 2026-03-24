@@ -1,7 +1,6 @@
 {
   "name": "mattermost-mcp",
-  "description": "Mattermost MCP server — chat tools via HTTP transport",
-  "port": 3102,
+  "description": "Mattermost MCP server \u2014 chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
   "category": "app",
   "docker": {
@@ -21,5 +20,8 @@
       "base_path": "/mattermost-mcp"
     },
     "app_hub": false
+  },
+  "ports": {
+    "app": 3102
   }
 }

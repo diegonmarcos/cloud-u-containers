@@ -1,9 +1,10 @@
 {
   "name": "c3-infra-mcp",
-  "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
-  "port": 3100,
+  "description": "C3 MCP Server \u2014 Cloud Control Center MCP transport (stdio + HTTP)",
   "dns": "c3-infra-mcp.app",
-  "ports": {"app": 3100},
+  "ports": {
+    "app": 3100
+  },
   "category": "sec",
   "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
   "docker": {

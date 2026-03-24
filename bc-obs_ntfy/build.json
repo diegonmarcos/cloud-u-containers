@@ -1,7 +1,6 @@
 {
   "name": "ntfy",
   "description": "Push notification server",
-  "port": 8090,
   "dns": "ntfy.app",
   "category": "tools",
   "domain": "rss.diegonmarcos.com",
@@ -25,5 +24,8 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "ports": {
+    "app": 8090
   }
 }

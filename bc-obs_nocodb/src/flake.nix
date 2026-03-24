@@ -35,7 +35,7 @@
           env_file:
             - .secrets
           environment:
-            NC_DB: "pg://localhost:5435?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
+            NC_DB: "pg://localhost:5441?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}
             NC_DISABLE_TELE: "true"
             NC_OIDC_ISSUER: https://auth.diegonmarcos.com
@@ -67,11 +67,11 @@
             POSTGRES_DB: nocodb
             POSTGRES_USER: nocodb
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
-            PGPORT: "5435"
+            PGPORT: "5441"
           volumes:
             - nocodb_postgres:/var/lib/postgresql/data
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb -p 5435"]
+            test: ["CMD-SHELL", "pg_isready -U nocodb -d nocodb -p 5441"]
             interval: 10s
             timeout: 5s
             retries: 5

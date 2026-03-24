@@ -1,7 +1,6 @@
 {
   "name": "cloud-spec",
   "description": "Unified Cloud Documentation Portal",
-  "port": 3080,
   "dns": "c3-spec.app",
   "deploy": {
     "host": "oci-apps",
@@ -15,5 +14,8 @@
       "auth": "two_factor"
     },
     "app_hub": false
+  },
+  "ports": {
+    "app": 3080
   }
 }
