@@ -51,4 +51,3 @@ services:
       - no-new-privileges:true
 volumes:
   c3_git_repos:
-    driver: local
