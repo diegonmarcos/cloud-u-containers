@@ -74,10 +74,22 @@ let _oidcTokenCache: string | null = null;
 
 function fetchOidcToken(): string | null {
   const clientId = process.env.AUTHELIA_OIDC_CLIENT_ID;
-  const clientSecret = process.env.AUTHELIA_OIDC_CLIENT_SECRET;
   const tokenUrl = process.env.AUTHELIA_TOKEN_URL;
+  if (!clientId || !tokenUrl) return null;
 
-  if (!clientId || !clientSecret || !tokenUrl) return null;
+  // Read client secret from env or credentials dir file
+  let clientSecret = process.env.AUTHELIA_OIDC_CLIENT_SECRET;
+  if (!clientSecret) {
+    const credsDir = process.env.AUTHELIA_OIDC_CREDENTIALS_DIR;
+    if (credsDir) {
+      try {
+        const envFile = readFileSync(`${credsDir}/${clientId}.env`, "utf-8");
+        const match = envFile.match(/^CLIENT_SECRET=(.+)$/m);
+        if (match) clientSecret = match[1].trim();
+      } catch {}
+    }
+  }
+  if (!clientSecret) return null;
 
   try {
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
