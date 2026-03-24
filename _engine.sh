@@ -185,7 +185,22 @@ step_docker_local() {
 step_docker() {
     [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json -- skipping"; return 0; }
 
-    if [ "${REMOTE_BUILD:-}" = "true" ]; then
+    # Auto-detect: only oci-apps (aarch64) builds on VM. All x86_64 VMs build on GHA runner.
+    # REMOTE_BUILD env var overrides auto-detection.
+    if [ -z "${REMOTE_BUILD:-}" ]; then
+        case "$DEPLOY_HOST" in
+            oci-apps|oci-apps-1|oci-apps-2)
+                REMOTE_BUILD=true
+                log "Auto-detected ARM host ($DEPLOY_HOST) — building on VM"
+                ;;
+            *)
+                REMOTE_BUILD=false
+                log "Auto-detected x86_64 host ($DEPLOY_HOST) — building on GHA runner"
+                ;;
+        esac
+    fi
+
+    if [ "$REMOTE_BUILD" = "true" ]; then
         step_docker_remote
     else
         step_docker_local
@@ -563,14 +578,20 @@ step_compose() {
         log "Waiting for CPU to settle..."
         sleep 5
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d --build"
+        # Only --build on ARM VMs (oci-apps*). x86 VMs use pre-built GHCR images — NEVER build on host.
+        BUILD_FLAG=""
+        case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d $BUILD_FLAG"
     else
         # Standard: pull first (while old containers run), then down + up (instant, no pulling)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
         log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && for svc in \$(docker compose config --services 2>/dev/null); do echo \"  pull: \$svc\"; docker compose $ENV_FILE_FLAG pull --ignore-buildable \$svc 2>/dev/null || true; done"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate --build $EXTRA_FLAGS"
+        # Only --build on ARM VMs. x86 VMs (gcp-proxy, oci-mail, oci-analytics) use pre-built images.
+        BUILD_FLAG=""
+        case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate $BUILD_FLAG $EXTRA_FLAGS"
     fi
 
     # Post-compose hook (e.g. mailu setup.sh)
