@@ -35,107 +35,167 @@ steps:
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/topology" | jq '.' > "$REPO_DIR/cloud-data-topology.json.tmp"
-      mv "$REPO_DIR/cloud-data-topology.json.tmp" "$REPO_DIR/cloud-data-topology.json"
-      echo "Fetched cloud-data-topology.json ($(wc -c < "$REPO_DIR/cloud-data-topology.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/topology" | jq '.' > "$REPO_DIR/cloud-data-topology.json.tmp" && [ -s "$REPO_DIR/cloud-data-topology.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-topology.json.tmp" "$REPO_DIR/cloud-data-topology.json"
+        echo "Fetched cloud-data-topology.json ($(wc -c < "$REPO_DIR/cloud-data-topology.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-topology.json.tmp"
+        echo "SKIP cloud-data-topology.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-configs
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/configs" | jq '.' > "$REPO_DIR/cloud-data-configs.json.tmp"
-      mv "$REPO_DIR/cloud-data-configs.json.tmp" "$REPO_DIR/cloud-data-configs.json"
-      echo "Fetched cloud-data-configs.json ($(wc -c < "$REPO_DIR/cloud-data-configs.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/configs" | jq '.' > "$REPO_DIR/cloud-data-configs.json.tmp" && [ -s "$REPO_DIR/cloud-data-configs.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-configs.json.tmp" "$REPO_DIR/cloud-data-configs.json"
+        echo "Fetched cloud-data-configs.json ($(wc -c < "$REPO_DIR/cloud-data-configs.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-configs.json.tmp"
+        echo "SKIP cloud-data-configs.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-deps
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/deps" | jq '.' > "$REPO_DIR/cloud-data-deps.json.tmp"
-      mv "$REPO_DIR/cloud-data-deps.json.tmp" "$REPO_DIR/cloud-data-deps.json"
-      echo "Fetched cloud-data-deps.json ($(wc -c < "$REPO_DIR/cloud-data-deps.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/deps" | jq '.' > "$REPO_DIR/cloud-data-deps.json.tmp" && [ -s "$REPO_DIR/cloud-data-deps.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-deps.json.tmp" "$REPO_DIR/cloud-data-deps.json"
+        echo "Fetched cloud-data-deps.json ($(wc -c < "$REPO_DIR/cloud-data-deps.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-deps.json.tmp"
+        echo "SKIP cloud-data-deps.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-dns-services
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/dns-services" | jq '.' > "$REPO_DIR/cloud-data-dns-services.json.tmp"
-      mv "$REPO_DIR/cloud-data-dns-services.json.tmp" "$REPO_DIR/cloud-data-dns-services.json"
-      echo "Fetched cloud-data-dns-services.json ($(wc -c < "$REPO_DIR/cloud-data-dns-services.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/dns-services" | jq '.' > "$REPO_DIR/cloud-data-dns-services.json.tmp" && [ -s "$REPO_DIR/cloud-data-dns-services.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-dns-services.json.tmp" "$REPO_DIR/cloud-data-dns-services.json"
+        echo "Fetched cloud-data-dns-services.json ($(wc -c < "$REPO_DIR/cloud-data-dns-services.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-dns-services.json.tmp"
+        echo "SKIP cloud-data-dns-services.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-caddy-routes
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/caddy-routes" | jq '.' > "$REPO_DIR/cloud-data-caddy-routes.json.tmp"
-      mv "$REPO_DIR/cloud-data-caddy-routes.json.tmp" "$REPO_DIR/cloud-data-caddy-routes.json"
-      echo "Fetched cloud-data-caddy-routes.json ($(wc -c < "$REPO_DIR/cloud-data-caddy-routes.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/caddy-routes" | jq '.' > "$REPO_DIR/cloud-data-caddy-routes.json.tmp" && [ -s "$REPO_DIR/cloud-data-caddy-routes.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-caddy-routes.json.tmp" "$REPO_DIR/cloud-data-caddy-routes.json"
+        echo "Fetched cloud-data-caddy-routes.json ($(wc -c < "$REPO_DIR/cloud-data-caddy-routes.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-caddy-routes.json.tmp"
+        echo "SKIP cloud-data-caddy-routes.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-authelia-acl
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/authelia-acl" | jq '.' > "$REPO_DIR/cloud-data-authelia-acl.json.tmp"
-      mv "$REPO_DIR/cloud-data-authelia-acl.json.tmp" "$REPO_DIR/cloud-data-authelia-acl.json"
-      echo "Fetched cloud-data-authelia-acl.json ($(wc -c < "$REPO_DIR/cloud-data-authelia-acl.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/authelia-acl" | jq '.' > "$REPO_DIR/cloud-data-authelia-acl.json.tmp" && [ -s "$REPO_DIR/cloud-data-authelia-acl.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-authelia-acl.json.tmp" "$REPO_DIR/cloud-data-authelia-acl.json"
+        echo "Fetched cloud-data-authelia-acl.json ($(wc -c < "$REPO_DIR/cloud-data-authelia-acl.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-authelia-acl.json.tmp"
+        echo "SKIP cloud-data-authelia-acl.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-monitoring-targets
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/monitoring-targets" | jq '.' > "$REPO_DIR/cloud-data-monitoring-targets.json.tmp"
-      mv "$REPO_DIR/cloud-data-monitoring-targets.json.tmp" "$REPO_DIR/cloud-data-monitoring-targets.json"
-      echo "Fetched cloud-data-monitoring-targets.json ($(wc -c < "$REPO_DIR/cloud-data-monitoring-targets.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/monitoring-targets" | jq '.' > "$REPO_DIR/cloud-data-monitoring-targets.json.tmp" && [ -s "$REPO_DIR/cloud-data-monitoring-targets.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-monitoring-targets.json.tmp" "$REPO_DIR/cloud-data-monitoring-targets.json"
+        echo "Fetched cloud-data-monitoring-targets.json ($(wc -c < "$REPO_DIR/cloud-data-monitoring-targets.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-monitoring-targets.json.tmp"
+        echo "SKIP cloud-data-monitoring-targets.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-firewall-rules
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/firewall-rules" | jq '.' > "$REPO_DIR/cloud-data-firewall-rules.json.tmp"
-      mv "$REPO_DIR/cloud-data-firewall-rules.json.tmp" "$REPO_DIR/cloud-data-firewall-rules.json"
-      echo "Fetched cloud-data-firewall-rules.json ($(wc -c < "$REPO_DIR/cloud-data-firewall-rules.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/firewall-rules" | jq '.' > "$REPO_DIR/cloud-data-firewall-rules.json.tmp" && [ -s "$REPO_DIR/cloud-data-firewall-rules.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-firewall-rules.json.tmp" "$REPO_DIR/cloud-data-firewall-rules.json"
+        echo "Fetched cloud-data-firewall-rules.json ($(wc -c < "$REPO_DIR/cloud-data-firewall-rules.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-firewall-rules.json.tmp"
+        echo "SKIP cloud-data-firewall-rules.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-backup-targets
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/backup-targets" | jq '.' > "$REPO_DIR/cloud-data-backup-targets.json.tmp"
-      mv "$REPO_DIR/cloud-data-backup-targets.json.tmp" "$REPO_DIR/cloud-data-backup-targets.json"
-      echo "Fetched cloud-data-backup-targets.json ($(wc -c < "$REPO_DIR/cloud-data-backup-targets.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/backup-targets" | jq '.' > "$REPO_DIR/cloud-data-backup-targets.json.tmp" && [ -s "$REPO_DIR/cloud-data-backup-targets.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-backup-targets.json.tmp" "$REPO_DIR/cloud-data-backup-targets.json"
+        echo "Fetched cloud-data-backup-targets.json ($(wc -c < "$REPO_DIR/cloud-data-backup-targets.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-backup-targets.json.tmp"
+        echo "SKIP cloud-data-backup-targets.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-wireguard-peers
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/wireguard-peers" | jq '.' > "$REPO_DIR/cloud-data-wireguard-peers.json.tmp"
-      mv "$REPO_DIR/cloud-data-wireguard-peers.json.tmp" "$REPO_DIR/cloud-data-wireguard-peers.json"
-      echo "Fetched cloud-data-wireguard-peers.json ($(wc -c < "$REPO_DIR/cloud-data-wireguard-peers.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/wireguard-peers" | jq '.' > "$REPO_DIR/cloud-data-wireguard-peers.json.tmp" && [ -s "$REPO_DIR/cloud-data-wireguard-peers.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-wireguard-peers.json.tmp" "$REPO_DIR/cloud-data-wireguard-peers.json"
+        echo "Fetched cloud-data-wireguard-peers.json ($(wc -c < "$REPO_DIR/cloud-data-wireguard-peers.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-wireguard-peers.json.tmp"
+        echo "SKIP cloud-data-wireguard-peers.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-ntfy-acl
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/ntfy-acl" | jq '.' > "$REPO_DIR/cloud-data-ntfy-acl.json.tmp"
-      mv "$REPO_DIR/cloud-data-ntfy-acl.json.tmp" "$REPO_DIR/cloud-data-ntfy-acl.json"
-      echo "Fetched cloud-data-ntfy-acl.json ($(wc -c < "$REPO_DIR/cloud-data-ntfy-acl.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/ntfy-acl" | jq '.' > "$REPO_DIR/cloud-data-ntfy-acl.json.tmp" && [ -s "$REPO_DIR/cloud-data-ntfy-acl.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-ntfy-acl.json.tmp" "$REPO_DIR/cloud-data-ntfy-acl.json"
+        echo "Fetched cloud-data-ntfy-acl.json ($(wc -c < "$REPO_DIR/cloud-data-ntfy-acl.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-ntfy-acl.json.tmp"
+        echo "SKIP cloud-data-ntfy-acl.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-cloudflare-dns
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/cloudflare-dns" | jq '.' > "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp"
-      mv "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp" "$REPO_DIR/cloud-data-cloudflare-dns.json"
-      echo "Fetched cloud-data-cloudflare-dns.json ($(wc -c < "$REPO_DIR/cloud-data-cloudflare-dns.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/cloudflare-dns" | jq '.' > "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp" && [ -s "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp" "$REPO_DIR/cloud-data-cloudflare-dns.json"
+        echo "Fetched cloud-data-cloudflare-dns.json ($(wc -c < "$REPO_DIR/cloud-data-cloudflare-dns.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-cloudflare-dns.json.tmp"
+        echo "SKIP cloud-data-cloudflare-dns.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-matomo-sites
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/matomo-sites" | jq '.' > "$REPO_DIR/cloud-data-matomo-sites.json.tmp"
-      mv "$REPO_DIR/cloud-data-matomo-sites.json.tmp" "$REPO_DIR/cloud-data-matomo-sites.json"
-      echo "Fetched cloud-data-matomo-sites.json ($(wc -c < "$REPO_DIR/cloud-data-matomo-sites.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/matomo-sites" | jq '.' > "$REPO_DIR/cloud-data-matomo-sites.json.tmp" && [ -s "$REPO_DIR/cloud-data-matomo-sites.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-matomo-sites.json.tmp" "$REPO_DIR/cloud-data-matomo-sites.json"
+        echo "Fetched cloud-data-matomo-sites.json ($(wc -c < "$REPO_DIR/cloud-data-matomo-sites.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-matomo-sites.json.tmp"
+        echo "SKIP cloud-data-matomo-sites.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-container-resources
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/container-resources" | jq '.' > "$REPO_DIR/cloud-data-container-resources.json.tmp"
-      mv "$REPO_DIR/cloud-data-container-resources.json.tmp" "$REPO_DIR/cloud-data-container-resources.json"
-      echo "Fetched cloud-data-container-resources.json ($(wc -c < "$REPO_DIR/cloud-data-container-resources.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/container-resources" | jq '.' > "$REPO_DIR/cloud-data-container-resources.json.tmp" && [ -s "$REPO_DIR/cloud-data-container-resources.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-container-resources.json.tmp" "$REPO_DIR/cloud-data-container-resources.json"
+        echo "Fetched cloud-data-container-resources.json ($(wc -c < "$REPO_DIR/cloud-data-container-resources.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-container-resources.json.tmp"
+        echo "SKIP cloud-data-container-resources.json (API returned empty or failed)"
+      fi
   - name: fetch-cloud-data-log-routing
     depends:
       - pull-rebase
     command: |
-      curl -sf "$C3_API/cloud-data/log-routing" | jq '.' > "$REPO_DIR/cloud-data-log-routing.json.tmp"
-      mv "$REPO_DIR/cloud-data-log-routing.json.tmp" "$REPO_DIR/cloud-data-log-routing.json"
-      echo "Fetched cloud-data-log-routing.json ($(wc -c < "$REPO_DIR/cloud-data-log-routing.json") bytes)"
+      if curl -sf "$C3_API/cloud-data/log-routing" | jq '.' > "$REPO_DIR/cloud-data-log-routing.json.tmp" && [ -s "$REPO_DIR/cloud-data-log-routing.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-log-routing.json.tmp" "$REPO_DIR/cloud-data-log-routing.json"
+        echo "Fetched cloud-data-log-routing.json ($(wc -c < "$REPO_DIR/cloud-data-log-routing.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-log-routing.json.tmp"
+        echo "SKIP cloud-data-log-routing.json (API returned empty or failed)"
+      fi
   - name: commit-and-push
     depends:
       - fetch-cloud-data-topology
