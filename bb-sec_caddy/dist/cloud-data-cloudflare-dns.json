@@ -1,15 +1,8 @@
 {
-  "_generated": "2026-03-23T23:10:07.789Z",
+  "_generated": "2026-03-24T15:50:28.015Z",
   "_source": "cloud-data-topology.json via /cloud-data/cloudflare-dns",
   "zone": "diegonmarcos.com",
   "records": [
-    {
-      "name": "drive-notes-affine.diegonmarcos.com",
-      "type": "CNAME",
-      "content": "diegonmarcos.com",
-      "proxied": true,
-      "service": "affine"
-    },
     {
       "name": "ide.diegonmarcos.com",
       "type": "CNAME",
@@ -78,7 +71,14 @@
       "type": "CNAME",
       "content": "diegonmarcos.com",
       "proxied": true,
-      "service": "mailu"
+      "service": "stalwart"
+    },
+    {
+      "name": "webmail.diegonmarcos.com",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "snappymail"
     },
     {
       "name": "sync.diegonmarcos.com",
@@ -177,6 +177,13 @@
       "content": "diegonmarcos.com",
       "proxied": true,
       "service": "backup-gitea"
+    },
+    {
+      "name": "mcp.diegonmarcos.com",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "c3-infra-mcp"
     }
   ]
 }

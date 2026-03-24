@@ -1,17 +1,7 @@
 {
-  "_generated": "2026-03-23T23:10:08.729Z",
+  "_generated": "2026-03-24T15:50:29.133Z",
   "_source": "cloud-data-topology.json via /cloud-data/container-resources",
   "services": {
-    "affine": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "hedgedoc_app",
-        "hedgedoc_postgres"
-      ],
-      "resources": null
-    },
     "code-server": {
       "vm": "oci-apps",
       "vm_ram_gb": null,
@@ -59,12 +49,12 @@
       ],
       "resources": null
     },
-    "mailu-mcp": {
-      "vm": "oci-mail",
+    "mail-mcp": {
+      "vm": "oci-apps",
       "vm_ram_gb": null,
       "vm_cpu": null,
       "containers": [
-        "mailu-mcp"
+        "mail-mcp"
       ],
       "resources": null
     },
@@ -125,19 +115,21 @@
       ],
       "resources": null
     },
-    "mailu": {
+    "stalwart": {
       "vm": "oci-mail",
       "vm_ram_gb": null,
       "vm_cpu": null,
       "containers": [
-        "admin",
-        "antispam",
-        "front",
-        "imap",
-        "redis",
-        "resolver",
-        "smtp",
-        "webmail"
+        "stalwart"
+      ],
+      "resources": null
+    },
+    "snappymail": {
+      "vm": "oci-mail",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "snappymail"
       ],
       "resources": null
     },
@@ -208,15 +200,6 @@
       "vm_cpu": null,
       "containers": [
         "ollama"
-      ],
-      "resources": null
-    },
-    "ollama-arm": {
-      "vm": "oci-apps-2",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "ollama-arm"
       ],
       "resources": null
     },
@@ -464,15 +447,6 @@
       ],
       "resources": null
     },
-    "c3-infra-mcp-api": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "c3-infra-mcp-api"
-      ],
-      "resources": null
-    },
     "sauron-lite-micro1": {
       "vm": "oci-mail",
       "vm_ram_gb": null,
@@ -551,6 +525,42 @@
       "vm_cpu": null,
       "containers": [
         "rig"
+      ],
+      "resources": null
+    },
+    "c3-infra-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "c3-infra-mcp"
+      ],
+      "resources": null
+    },
+    "c3-infra-api": {
+      "vm": "oci-apps",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "c3-infra-api"
+      ],
+      "resources": null
+    },
+    "c3-services-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "c3-services-mcp"
+      ],
+      "resources": null
+    },
+    "c3-services-api": {
+      "vm": "oci-apps",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "c3-services-api"
       ],
       "resources": null
     }

@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-23T23:10:06.857Z",
+  "_generated": "2026-03-24T15:50:26.828Z",
   "_source": "cloud-data-topology.json via /cloud-data/wireguard-peers",
   "hub": null,
   "peers": [
@@ -29,13 +29,6 @@
       "name": "oci-apps",
       "wg_ip": "10.0.0.6",
       "public_ip": "82.70.229.129",
-      "user": "ubuntu"
-    },
-    {
-      "vm_id": "oci-A1-p_0",
-      "name": "oci-apps-2",
-      "wg_ip": "10.0.0.7",
-      "public_ip": "79.72.28.10",
       "user": "ubuntu"
     },
     {

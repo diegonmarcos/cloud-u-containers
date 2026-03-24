@@ -1,18 +1,8 @@
 {
-  "_generated": "2026-03-23T23:10:09.195Z",
+  "_generated": "2026-03-24T15:50:29.696Z",
   "_source": "cloud-data-topology.json via /cloud-data/log-routing",
   "vms": {
     "oci-apps": [
-      {
-        "container": "hedgedoc_app",
-        "service": "affine",
-        "log_level": "info"
-      },
-      {
-        "container": "hedgedoc_postgres",
-        "service": "affine",
-        "log_level": "info"
-      },
       {
         "container": "code-server",
         "service": "code-server",
@@ -46,6 +36,11 @@
       {
         "container": "hedgedoc_postgres",
         "service": "hedgedoc",
+        "log_level": "info"
+      },
+      {
+        "container": "mail-mcp",
+        "service": "mail-mcp",
         "log_level": "info"
       },
       {
@@ -219,11 +214,6 @@
         "log_level": "info"
       },
       {
-        "container": "c3-infra-mcp-api",
-        "service": "c3-infra-mcp-api",
-        "log_level": "info"
-      },
-      {
         "container": "sauron",
         "service": "sauron-lite-flex",
         "log_level": "info"
@@ -237,52 +227,37 @@
         "container": "rig",
         "service": "rig",
         "log_level": "info"
+      },
+      {
+        "container": "c3-infra-mcp",
+        "service": "c3-infra-mcp",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-infra-api",
+        "service": "c3-infra-api",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-services-mcp",
+        "service": "c3-services-mcp",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-services-api",
+        "service": "c3-services-api",
+        "log_level": "info"
       }
     ],
     "oci-mail": [
       {
-        "container": "mailu-mcp",
-        "service": "mailu-mcp",
+        "container": "stalwart",
+        "service": "stalwart",
         "log_level": "info"
       },
       {
-        "container": "admin",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "antispam",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "front",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "imap",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "redis",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "resolver",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "smtp",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "webmail",
-        "service": "mailu",
+        "container": "snappymail",
+        "service": "snappymail",
         "log_level": "info"
       },
       {
@@ -452,13 +427,6 @@
       {
         "container": "ollama",
         "service": "ollama",
-        "log_level": "info"
-      }
-    ],
-    "oci-apps-2": [
-      {
-        "container": "ollama-arm",
-        "service": "ollama-arm",
         "log_level": "info"
       }
     ],

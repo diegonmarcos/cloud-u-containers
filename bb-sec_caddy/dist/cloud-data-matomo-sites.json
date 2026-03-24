@@ -1,12 +1,7 @@
 {
-  "_generated": "2026-03-23T23:10:08.254Z",
+  "_generated": "2026-03-24T15:50:28.612Z",
   "_source": "cloud-data-topology.json via /cloud-data/matomo-sites",
   "sites": [
-    {
-      "name": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake",
-      "url": "https://drive-notes-affine.diegonmarcos.com",
-      "service": "affine"
-    },
     {
       "name": "VS Code IDE (ide.diegonmarcos.com)",
       "url": "https://ide.diegonmarcos.com",
@@ -53,9 +48,14 @@
       "service": "revealmd"
     },
     {
-      "name": "Mailu mail server stack (mail.diegonmarcos.com)",
+      "name": "Stalwart Mail Server (mail.diegonmarcos.com)",
       "url": "https://mail.diegonmarcos.com",
-      "service": "mailu"
+      "service": "stalwart"
+    },
+    {
+      "name": "SnappyMail webmail UI for Stalwart",
+      "url": "https://webmail.diegonmarcos.com",
+      "service": "snappymail"
     },
     {
       "name": "File Sync",
@@ -138,9 +138,24 @@
       "service": "gitea"
     },
     {
-      "name": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)",
+      "name": "C3 Infrastructure MCP server (tools + resources)",
+      "url": "https://mcp.diegonmarcos.com",
+      "service": "c3-infra-mcp"
+    },
+    {
+      "name": "C3 Infrastructure REST API (health, inventory, control)",
       "url": "https://api.diegonmarcos.com",
-      "service": "c3-infra-mcp-api"
+      "service": "c3-infra-api"
+    },
+    {
+      "name": "C3 Services MCP server (service-specific tools)",
+      "url": "https://mcp.diegonmarcos.com",
+      "service": "c3-services-mcp"
+    },
+    {
+      "name": "C3 Services REST API (Matomo, ntfy, Radicale, etc.)",
+      "url": "https://api.diegonmarcos.com",
+      "service": "c3-services-api"
     }
   ]
 }
