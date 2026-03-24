@@ -7,13 +7,13 @@
 //   3. PLATFORM          — Docker version, disk%, memory%, load, uptime, container count
 //   4. CONTAINERS        — All topology containers: Up/healthy/unhealthy/starting/exited
 //   5. PUBLIC URLS       — curl each public HTTPS domain
-//   6. PRIVATE URLS      — TCP probe each caddy upstream through mesh
-//   7. CROSS-CHECKS      — public vs private reachability per caddy route
+//   6. PRIVATE URLS      — curl each service via WG mesh (wg_ip:port)
+//   7. CROSS-CHECKS      — public URL vs container health per service
 //   8. EXTERNAL          — Cloudflare DNS, GHCR, GHA failures, Resend API, GitHub API
 //   9. DRIFT             — missing containers, unmanaged containers, caddy orphan routes
 //  10. SECURITY          — TLS cert expiry, DMARC/SPF DNS, Authelia health, firewall ports
 //
-// Data sources: cloud-data-topology.json + cloud-data-caddy-routes.json
+// Data sources: cloud-data-topology.json + cloud-data-caddy-routes.json + build.json (ports)
 // Design: zero hardcoded service names. Promise.allSettled everywhere. SSH multiplexed.
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -23,8 +23,8 @@ import { execAsync } from "../../shared/exec.js";
 import { sshExecAsync } from "../../shared/ssh.js";
 import { getVmSshAlias } from "../../shared/config.js";
 import { getBearerToken } from "../../shared/http.js";
-import { CLOUD_DATA_DIR, C3_API_MESH, C3_API_PUBLIC } from "../../shared/paths.js";
-import { readFileSync, existsSync } from "fs";
+import { CLOUD_DATA_DIR, C3_API_MESH, C3_API_PUBLIC, SOLUTIONS_DIR } from "../../shared/paths.js";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { performance } from "node:perf_hooks";
 
@@ -99,6 +99,7 @@ interface DiagContext {
   reachableVms: Set<string>;
   sshOkVms: Set<string>;
   dockerOkVms: Set<string>;
+  servicePorts: Map<string, number>; // service name → app port
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -171,7 +172,6 @@ function loadCaddyRoutes(): CaddyRoute[] {
         type: "github",
       });
     }
-    // Special routes
     if (data.special) {
       for (const s of Object.values(data.special) as Array<{ domain?: string }>) {
         if (s.domain) {
@@ -185,6 +185,27 @@ function loadCaddyRoutes(): CaddyRoute[] {
     log(`caddy-routes.json parse error: ${e}`);
     return [];
   }
+}
+
+/** Discover service ports from build.json files on disk */
+function loadServicePorts(): Map<string, number> {
+  const ports = new Map<string, number>();
+  try {
+    const dirs = readdirSync(SOLUTIONS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    for (const dir of dirs) {
+      const bjPath = join(SOLUTIONS_DIR, dir, "build.json");
+      if (!existsSync(bjPath)) continue;
+      try {
+        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+        if (bj.name && bj.ports?.app) {
+          ports.set(bj.name, Number(bj.ports.app));
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* no solutions dir */ }
+  return ports;
 }
 
 async function timedCheck(
@@ -218,7 +239,7 @@ function runShell(script: string, timeout = 8_000) {
 }
 
 function getAlias(ctx: DiagContext, vmId: string): string {
-  return ctx.vms[vmId]?.ssh_alias ?? vmId;
+  return ctx.vms[vmId]?.ssh_alias ?? getVmSshAlias(vmId);
 }
 
 /** Get all active VMs (have wg_ip and ip is not TBD) */
@@ -226,11 +247,16 @@ function getActiveVms(ctx: DiagContext): [string, TopologyVm][] {
   return Object.entries(ctx.vms).filter(([_, v]) => v.wg_ip && v.ip !== "TBD");
 }
 
-/** Get all services deployed on remote VMs (not local, not frozen, not vm=all with no specific VM) */
+/** Get all services deployed on remote VMs (not local, not frozen) */
 function getRemoteServices(ctx: DiagContext): [string, TopologyService][] {
   return Object.entries(ctx.services).filter(
     ([_, s]) => s.vm && s.vm !== "local" && !s.frozen,
   );
+}
+
+/** Get WG IP for a VM */
+function vmWgIp(ctx: DiagContext, vmId: string): string | null {
+  return ctx.vms[vmId]?.wg_ip ?? null;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -313,16 +339,12 @@ function formatChecks(title: string, checks: Check[]): string {
 // VM BATCH DATA COLLECTOR
 // ──────────────────────────────────────────────────────────────────────────────
 
-// CRITICAL: The batch script uses Go template syntax {{.Field}} for docker format strings.
-// When passed through SSH via sshExecAsync (spawn("ssh", [..., target, command])),
-// the command string is interpreted by the REMOTE bash shell.
-//
-// The fix: Assign the format string to a shell variable FIRST, then use $VAR.
-// This prevents any shell from interpreting the curly braces.
+// SSH batch script — collects all platform data in one SSH round-trip.
+// Docker format strings use Go template {{.Field}} syntax.
+// We assign them to shell variables to prevent any bash interpretation.
 const BATCH_SCRIPT = [
-  // Define docker format strings as variables — prevents brace interpretation by any shell layer
-  'FMT_VER="{{.ServerVersion}}"',
-  'FMT_PS="{{.Names}}|{{.Status}}|{{.Image}}"',
+  'FMT_VER=\'{{.ServerVersion}}\'',
+  'FMT_PS=\'{{.Names}}|{{.Status}}|{{.Image}}\'',
   'echo "===dockerVersion==="',
   'timeout 3 docker info --format "$FMT_VER" 2>&1 | head -1',
   'echo "===disk==="',
@@ -335,7 +357,7 @@ const BATCH_SCRIPT = [
   'echo "===uptime==="',
   "uptime -s 2>/dev/null || echo N/A",
   'echo "===dockerPs==="',
-  'timeout 5 docker ps -a --format "$FMT_PS" 2>&1',
+  'timeout 10 docker ps -a --format "$FMT_PS" 2>&1',
 ].join("\n");
 
 function parseSection(output: string, name: string): string {
@@ -343,71 +365,148 @@ function parseSection(output: string, name: string): string {
   const start = output.indexOf(marker);
   if (start === -1) return "";
   const afterMarker = start + marker.length;
-  // Skip the newline after the marker
   const contentStart = output[afterMarker] === "\n" ? afterMarker + 1 : afterMarker;
   const end = output.indexOf("===", contentStart);
   return (end === -1 ? output.slice(contentStart) : output.slice(contentStart, end)).trim();
+}
+
+/** Validate docker version string — reject error messages */
+function isValidDockerVersion(v: string): boolean {
+  if (!v || v.length > 20) return false;
+  // Valid version looks like "27.5.1" or "24.0.7"
+  if (/^\d+\.\d+/.test(v)) return true;
+  return false;
 }
 
 async function collectVmBatch(vmId: string): Promise<VmBatchData | null> {
   // Primary: full batch script
   try {
     const r = await sshExecAsync(vmId, BATCH_SCRIPT, 20_000, true, 5);
-    if (r.ok && r.stdout.includes("===dockerPs===")) {
+    if (r.ok || r.stdout.includes("===dockerPs===")) {
       const dockerPs = parseSection(r.stdout, "dockerPs");
+      const dockerVersion = parseSection(r.stdout, "dockerVersion");
+      // Filter out error messages from docker version
+      const validVersion = isValidDockerVersion(dockerVersion) ? dockerVersion : "";
+      const containers = parseContainers(dockerPs);
       return {
         dockerPs,
-        dockerVersion: parseSection(r.stdout, "dockerVersion"),
+        dockerVersion: validVersion || (containers.length > 0 ? "detected" : ""),
         disk: parseSection(r.stdout, "disk"),
         memory: parseSection(r.stdout, "memory"),
         load: parseSection(r.stdout, "load"),
         uptime: parseSection(r.stdout, "uptime"),
-        containers: parseContainers(dockerPs),
+        containers,
       };
     }
-  } catch {
-    /* fallback */
-  }
+  } catch { /* fallback */ }
 
-  // Fallback: docker ps only — same variable trick for format string
+  // Fallback 1: docker ps only (simpler command, more likely to work)
   log(`batch failed for ${vmId}, trying docker ps fallback`);
   try {
-    const cmd = 'FMT="{{.Names}}|{{.Status}}|{{.Image}}" && docker ps -a --format "$FMT" 2>&1';
-    const r = await sshExecAsync(vmId, cmd, 10_000, true, 5);
-    if (r.ok && r.stdout.trim()) {
+    const r = await sshExecAsync(
+      vmId,
+      "docker ps -a --format '{{.Names}}|{{.Status}}|{{.Image}}' 2>&1",
+      10_000, true, 5,
+    );
+    if (r.ok && r.stdout.trim() && r.stdout.includes("|")) {
       return {
         dockerPs: r.stdout.trim(),
         dockerVersion: "fallback",
-        disk: "N/A",
-        memory: "N/A",
-        load: "N/A",
-        uptime: "N/A",
+        disk: "N/A", memory: "N/A", load: "N/A", uptime: "N/A",
         containers: parseContainers(r.stdout.trim()),
       };
     }
-  } catch {
-    /* fallback */
-  }
+  } catch { /* fallback */ }
 
-  // Last resort: docker version only
-  log(`docker ps failed for ${vmId}, trying docker info fallback`);
+  // Fallback 2: docker ps with single-quote escaping
+  log(`docker ps failed for ${vmId}, trying quoted format`);
   try {
-    const cmd = 'FMT="{{.ServerVersion}}" && docker info --format "$FMT" 2>&1 | head -1';
-    const r = await sshExecAsync(vmId, cmd, 8_000, true, 5);
+    const cmd = `FMT='{{.Names}}|{{.Status}}|{{.Image}}' && docker ps -a --format "$FMT" 2>&1`;
+    const r = await sshExecAsync(vmId, cmd, 10_000, true, 5);
+    if (r.ok && r.stdout.trim() && r.stdout.includes("|")) {
+      return {
+        dockerPs: r.stdout.trim(),
+        dockerVersion: "fallback",
+        disk: "N/A", memory: "N/A", load: "N/A", uptime: "N/A",
+        containers: parseContainers(r.stdout.trim()),
+      };
+    }
+  } catch { /* fallback */ }
+
+  // Fallback 3: docker ps with table format and parse columns
+  log(`quoted format failed for ${vmId}, trying table parse`);
+  try {
+    const r = await sshExecAsync(vmId, "docker ps -a 2>&1", 10_000, true, 5);
+    if (r.ok && r.stdout.includes("CONTAINER ID")) {
+      // Parse table output — less structured but works
+      const lines = r.stdout.split("\n").slice(1).filter((l) => l.trim());
+      const containers: ContainerHealth[] = lines.map((line) => {
+        // Docker ps table: CONTAINER ID  IMAGE  COMMAND  CREATED  STATUS  PORTS  NAMES
+        const parts = line.split(/\s{2,}/);
+        const name = (parts[parts.length - 1] || "").trim();
+        const image = (parts[1] || "").trim();
+        const statusIdx = parts.findIndex((p) => /^(Up|Exited|Created|Restarting)/.test(p));
+        const rawStatus = statusIdx >= 0 ? parts[statusIdx] : "";
+        const { up, healthy, status } = parseDockerHealth(rawStatus);
+        return { name, up, healthy, status, image };
+      }).filter((c) => c.name);
+      if (containers.length > 0) {
+        return {
+          dockerPs: r.stdout.trim(),
+          dockerVersion: "table-fallback",
+          disk: "N/A", memory: "N/A", load: "N/A", uptime: "N/A",
+          containers,
+        };
+      }
+    }
+  } catch { /* fallback */ }
+
+  // Fallback 4: just docker info for version
+  log(`table parse failed for ${vmId}, trying docker info`);
+  try {
+    const r = await sshExecAsync(
+      vmId,
+      "docker info --format '{{.ServerVersion}}' 2>&1 | head -1",
+      8_000, true, 5,
+    );
     if (r.ok) {
+      const ver = r.stdout.trim();
       return {
         dockerPs: "",
-        dockerVersion: r.stdout.trim(),
-        disk: "N/A",
-        memory: "N/A",
-        load: "N/A",
-        uptime: "N/A",
+        dockerVersion: isValidDockerVersion(ver) ? ver : "",
+        disk: "N/A", memory: "N/A", load: "N/A", uptime: "N/A",
         containers: [],
       };
     }
-  } catch {
-    /* give up */
-  }
+  } catch { /* fallback */ }
+
+  // Fallback 5: at least get disk/mem/load even without docker
+  log(`all docker fallbacks failed for ${vmId}, collecting system info only`);
+  try {
+    const sysScript = [
+      "echo '===disk==='",
+      "df -h / 2>/dev/null | awk 'NR==2{gsub(/%/,\"\"); print $5}' || echo N/A",
+      "echo '===memory==='",
+      "free -m 2>/dev/null | awk '/Mem:/{printf \"%d/%dMB (%.0f%%)\", $3, $2, $3/$2*100}' || echo N/A",
+      "echo",
+      "echo '===load==='",
+      "cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}' || echo N/A",
+      "echo '===uptime==='",
+      "uptime -s 2>/dev/null || echo N/A",
+    ].join("\n");
+    const r = await sshExecAsync(vmId, sysScript, 8_000, true, 5);
+    if (r.ok) {
+      return {
+        dockerPs: "",
+        dockerVersion: "",
+        disk: parseSection(r.stdout, "disk"),
+        memory: parseSection(r.stdout, "memory"),
+        load: parseSection(r.stdout, "load"),
+        uptime: parseSection(r.stdout, "uptime"),
+        containers: [],
+      };
+    }
+  } catch { /* give up */ }
 
   return null;
 }
@@ -421,8 +520,7 @@ async function collectAllVmBatches(vmIds: string[]): Promise<Map<string, VmBatch
     if (r.status === "fulfilled") {
       map.set(r.value.vmId, r.value.data);
     } else {
-      // Promise rejected — shouldn't happen with try/catch inside collectVmBatch, but be safe
-      log(`collectVmBatch rejected: ${r.reason}`);
+      log(`collectVmBatch rejected for: ${r.reason}`);
     }
   }
   return map;
@@ -434,14 +532,19 @@ async function collectAllVmBatches(vmIds: string[]): Promise<Map<string, VmBatch
 
 async function layer1SelfCheck(ctx: DiagContext): Promise<Check[]> {
   const checks = await Promise.allSettled([
-    // 1a: C3 API via mesh
     timedCheck("C3 API mesh", async () => {
       const r = await runLocal("curl", ["-sf", "--max-time", "3", `${C3_API_MESH}/health`], 5_000);
-      if (r.ok) return { passed: true, details: `${C3_API_MESH} OK`, severity: "critical" as Severity };
+      if (r.ok) {
+        try {
+          const body = JSON.parse(r.stdout);
+          return { passed: true, details: `${C3_API_MESH} OK (v${body.version ?? "?"})` };
+        } catch {
+          return { passed: true, details: `${C3_API_MESH} OK` };
+        }
+      }
       return { passed: false, details: `${C3_API_MESH} unreachable`, severity: "critical" as Severity };
     }),
 
-    // 1b: C3 API via public
     timedCheck("C3 API public", async () => {
       const r = await runLocal(
         "curl",
@@ -449,35 +552,55 @@ async function layer1SelfCheck(ctx: DiagContext): Promise<Check[]> {
         8_000,
       );
       const code = r.stdout.trim();
-      const ok = ["200", "401", "403"].includes(code);
-      return { passed: ok, details: `${C3_API_PUBLIC} -> HTTP ${code}`, severity: "critical" as Severity };
+      const ok = ["200", "301", "302"].includes(code);
+      return { passed: ok, details: `${C3_API_PUBLIC} -> HTTP ${code}`, severity: ok ? undefined : ("warning" as Severity) };
     }),
 
-    // 1c: WireGuard interface — probe the hub (gcp-proxy 10.0.0.1)
     timedCheck("WG interface", async () => {
       const r = await runShell("timeout 3 bash -c 'echo > /dev/tcp/10.0.0.1/22' 2>&1", 5_000);
-      return { passed: r.ok, details: r.ok ? "10.0.0.1:22 OK" : "WG DOWN", severity: "critical" as Severity };
+      return { passed: r.ok, details: r.ok ? "10.0.0.1:22 OK" : "WG DOWN", severity: r.ok ? undefined : ("critical" as Severity) };
     }),
 
-    // 1d: Local docker
     timedCheck("Local docker", async () => {
       const r = await runShell("docker info --format '{{.ServerVersion}}' 2>&1 | head -1", 5_000);
-      if (r.ok && r.stdout.trim()) return { passed: true, details: `Docker ${r.stdout.trim()}`, severity: "info" as Severity };
+      if (r.ok && isValidDockerVersion(r.stdout.trim())) {
+        return { passed: true, details: `Docker ${r.stdout.trim()}` };
+      }
       return { passed: false, details: "docker not available", severity: "info" as Severity };
     }),
 
-    // 1e: SSH agent
     timedCheck("SSH agent", async () => {
       const r = await runShell("ssh-add -l 2>&1 | head -3", 3_000);
       const keys = r.stdout.trim().split("\n").filter((l) => l && !l.includes("no identities")).length;
-      if (keys > 0) return { passed: true, details: `${keys} key(s) loaded`, severity: "info" as Severity };
-      // Check if key file exists as fallback
+      if (keys > 0) return { passed: true, details: `${keys} key(s) loaded` };
       const keyCheck = await runShell("test -f ~/.ssh/id_rsa || test -f ~/.ssh/id_ed25519", 2_000);
       return {
         passed: keyCheck.ok,
         details: keyCheck.ok ? "key file present (no agent)" : "no keys found",
         severity: "info" as Severity,
       };
+    }),
+
+    timedCheck("cloud-data freshness", async () => {
+      const topoPath = join(CLOUD_DATA_DIR, "cloud-data-topology.json");
+      if (!existsSync(topoPath)) return { passed: false, details: "cloud-data-topology.json missing", severity: "critical" as Severity };
+      try {
+        const raw = JSON.parse(readFileSync(topoPath, "utf-8"));
+        const gen = raw._generated;
+        if (!gen) return { passed: true, details: "no _generated timestamp" };
+        const age = Date.now() - new Date(gen).getTime();
+        const mins = Math.floor(age / 60000);
+        if (mins > 60) return { passed: false, details: `${mins}m stale (> 60m)`, severity: "warning" as Severity };
+        return { passed: true, details: `${mins}m old` };
+      } catch { return { passed: false, details: "parse error", severity: "warning" as Severity }; }
+    }),
+
+    timedCheck("DNS resolver (.app)", async () => {
+      // Test that hickory-dns resolves .app domains through WG mesh
+      const r = await runShell("timeout 3 dig +short caddy.app @10.0.0.1 2>&1 | head -1", 5_000);
+      const ip = r.stdout.trim();
+      if (ip && /^\d+\./.test(ip)) return { passed: true, details: `caddy.app -> ${ip}` };
+      return { passed: false, details: "hickory-dns not resolving .app domains", severity: "warning" as Severity };
     }),
   ]);
 
@@ -502,7 +625,12 @@ async function layer2WgMesh(ctx: DiagContext): Promise<Check[]> {
         const tcp = await runShell(`timeout 3 bash -c 'echo > /dev/tcp/${vm.wg_ip}/22' 2>&1`, 5_000);
         if (tcp.ok) {
           ctx.reachableVms.add(vmId);
-          return { passed: true, details: ":22 OK" };
+          // Also test SSH auth
+          const auth = await sshExecAsync(vmId, "echo OK", 8_000, true, 3);
+          if (auth.ok) {
+            return { passed: true, details: `:22 OK, SSH auth OK` };
+          }
+          return { passed: true, details: `:22 OK, SSH auth FAILED: ${auth.stderr.split("\n").pop()?.trim() || "unknown"}`, severity: "warning" as Severity };
         }
         // Fallback: ping
         const ping = await runLocal("ping", ["-c", "1", "-W", "2", vm.wg_ip!], 4_000);
@@ -549,8 +677,11 @@ async function layer3Platform(ctx: DiagContext): Promise<Check[]> {
     }
 
     ctx.sshOkVms.add(vmId);
-    if (data.dockerVersion && data.dockerVersion !== "fallback") ctx.dockerOkVms.add(vmId);
-    else if (data.containers.length > 0) ctx.dockerOkVms.add(vmId);
+    if (data.dockerVersion && data.dockerVersion !== "fallback" && data.dockerVersion !== "detected" && data.dockerVersion !== "table-fallback") {
+      ctx.dockerOkVms.add(vmId);
+    } else if (data.containers.length > 0) {
+      ctx.dockerOkVms.add(vmId);
+    }
 
     const diskPct = parseInt(data.disk);
     const diskSev = !isNaN(diskPct) && diskPct >= 90 ? "critical" : !isNaN(diskPct) && diskPct >= 80 ? "warning" : undefined;
@@ -558,14 +689,17 @@ async function layer3Platform(ctx: DiagContext): Promise<Check[]> {
     const containerCount = data.containers.length;
     const unhealthyCount = data.containers.filter((c) => c.healthy === false).length;
     const exitedCount = data.containers.filter((c) => !c.up).length;
+    const runningCount = data.containers.filter((c) => c.up).length;
 
-    const parts = [`Docker ${data.dockerVersion}`, `${containerCount} containers`];
+    const parts: string[] = [];
+    if (data.dockerVersion) parts.push(`Docker ${data.dockerVersion}`);
+    else parts.push("Docker N/A");
+    parts.push(`${runningCount}/${containerCount} running`);
     if (unhealthyCount > 0) parts.push(`${unhealthyCount} unhealthy`);
     if (exitedCount > 0) parts.push(`${exitedCount} exited`);
     parts.push(`disk:${diskStr}`, `mem:${data.memory}`, `load:${data.load}`);
-    if (data.uptime !== "N/A") parts.push(`up:${data.uptime}`);
 
-    const passed = data.dockerVersion.length > 0 && unhealthyCount === 0 && !diskSev;
+    const passed = containerCount > 0 && unhealthyCount === 0 && (diskSev !== "critical");
     const sev: Severity | undefined = unhealthyCount > 0 ? "warning" : (diskSev as Severity | undefined);
 
     checks.push({ name: `${alias} platform`, passed, details: parts.join(" | "), durationMs: 0, severity: sev });
@@ -605,7 +739,6 @@ async function layer4Containers(ctx: DiagContext): Promise<Check[]> {
     for (const vmId of targetVms) {
       const vmData = ctx.vmBatch.get(vmId);
       if (!vmData) {
-        // Only report if this is a specific VM (not "all")
         if (svc.vm !== "all") {
           checks.push({
             name: svcName,
@@ -645,6 +778,8 @@ async function layer5PublicUrls(ctx: DiagContext): Promise<Check[]> {
   const domainChecks: { name: string; domain: string }[] = [];
   for (const [name, svc] of Object.entries(ctx.services)) {
     if (svc.domain && svc.vm !== "local") {
+      // Skip internal-only domains
+      if (svc.domain === "dns.internal") continue;
       domainChecks.push({ name, domain: svc.domain });
     }
   }
@@ -652,22 +787,31 @@ async function layer5PublicUrls(ctx: DiagContext): Promise<Check[]> {
   // Add caddy route domains not already covered
   const svcDomains = new Set(domainChecks.map((d) => d.domain));
   for (const route of ctx.caddyRoutes) {
-    if (route.domain && !svcDomains.has(route.domain) && route.type !== "special") {
+    if (route.domain && !svcDomains.has(route.domain) && route.type !== "special" && !route.domain.includes("internal")) {
       domainChecks.push({ name: `route:${route.domain}`, domain: route.domain });
     }
   }
 
   const results = await Promise.allSettled(
     domainChecks.map(({ name, domain }) =>
-      timedCheck(`${name}`, async () => {
-        const url = domain.startsWith("http") ? domain : `https://${domain}`;
+      timedCheck(name, async () => {
+        // Handle path-based routes
+        let url: string;
+        if (domain.startsWith("http")) {
+          url = domain;
+        } else if (domain.includes("/")) {
+          // Path route like "api.diegonmarcos.com/c3-api"
+          url = `https://${domain}`;
+        } else {
+          url = `https://${domain}`;
+        }
         const r = await runLocal(
           "curl",
           ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", ...authArgs, url],
           8_000,
         );
         const code = r.stdout.trim();
-        // 200-399 = good, 401/403 = auth-protected (expected), 404 = route exists but path wrong
+        // 200-399 = good, 401/403 = auth-protected (expected)
         const ok = /^[23]\d\d$/.test(code) || ["401", "403"].includes(code);
         return {
           passed: ok,
@@ -686,39 +830,55 @@ async function layer5PublicUrls(ctx: DiagContext): Promise<Check[]> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// LAYER 6: PRIVATE URLS (TCP probe upstreams through mesh)
+// LAYER 6: PRIVATE URLS (curl services via WG mesh using wg_ip:port)
 // ──────────────────────────────────────────────────────────────────────────────
 
 async function layer6PrivateUrls(ctx: DiagContext): Promise<Check[]> {
-  // Only check caddy routes that have real upstreams (host:port)
-  const upstreamRoutes = ctx.caddyRoutes.filter(
-    (r) => r.upstream && r.upstream.includes(":") && !r.upstream.includes("github"),
-  );
+  // Build list of services with domain + port + VM with WG IP
+  const targets: { name: string; wgIp: string; port: number; domain: string }[] = [];
 
-  // Deduplicate by upstream
-  const seen = new Set<string>();
-  const uniqueRoutes = upstreamRoutes.filter((r) => {
-    if (seen.has(r.upstream)) return false;
-    seen.add(r.upstream);
-    return true;
-  });
+  for (const [name, svc] of Object.entries(ctx.services)) {
+    if (!svc.domain || svc.vm === "local" || svc.frozen) continue;
+    if (svc.domain === "dns.internal") continue;
+
+    const port = ctx.servicePorts.get(name);
+    if (!port) continue;
+
+    const wgIp = vmWgIp(ctx, svc.vm);
+    if (!wgIp) continue;
+
+    targets.push({ name, wgIp, port, domain: svc.domain });
+  }
+
+  if (targets.length === 0) {
+    return [{
+      name: "private URL scan",
+      passed: true,
+      details: "no services with ports found (build.json missing?)",
+      durationMs: 0,
+      severity: "info",
+    }];
+  }
 
   const results = await Promise.allSettled(
-    uniqueRoutes.map((route) =>
-      timedCheck(`${route.upstream}`, async () => {
-        const [host, port] = route.upstream.split(":");
-        // TCP probe through the WG mesh — these are docker network hostnames
-        // resolved by the Caddy container, so we probe from gcp-proxy
-        const r = await sshExecAsync(
-          "gcp-proxy",
-          `timeout 3 bash -c 'echo > /dev/tcp/${host}/${port}' 2>&1`,
-          8_000,
-          true,
-          3,
+    targets.map(({ name, wgIp, port, domain }) =>
+      timedCheck(`${name} (${wgIp}:${port})`, async () => {
+        // Try HTTP on the WG mesh IP:port
+        const r = await runLocal(
+          "curl",
+          ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `http://${wgIp}:${port}/`],
+          5_000,
         );
-        if (r.ok) return { passed: true, details: `${route.upstream} OK` };
-        // Try direct from the mesh if route points to a WG IP
-        return { passed: false, details: `${route.upstream} unreachable from proxy`, severity: "warning" as Severity };
+        const code = r.stdout.trim();
+        if (/^[23]\d\d$/.test(code) || ["401", "403"].includes(code)) {
+          return { passed: true, details: `${wgIp}:${port} -> ${code}` };
+        }
+        // Fallback: TCP probe
+        const tcp = await runShell(`timeout 2 bash -c 'echo > /dev/tcp/${wgIp}/${port}' 2>&1`, 4_000);
+        if (tcp.ok) {
+          return { passed: true, details: `${wgIp}:${port} TCP OK (HTTP ${code})` };
+        }
+        return { passed: false, details: `${wgIp}:${port} unreachable (HTTP ${code})`, severity: "warning" as Severity };
       }),
     ),
   );
@@ -731,55 +891,92 @@ async function layer6PrivateUrls(ctx: DiagContext): Promise<Check[]> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// LAYER 7: CROSS-CHECKS (public vs private for each caddy route)
+// LAYER 7: CROSS-CHECKS (public URL health vs container health)
 // ──────────────────────────────────────────────────────────────────────────────
 
 async function layer7CrossChecks(ctx: DiagContext): Promise<Check[]> {
   const bearer = ctx.bearerToken;
   const authArgs = bearer ? ["-H", `Authorization: Bearer ${bearer}`] : [];
+  const checks: Check[] = [];
 
-  const crossRoutes = ctx.caddyRoutes.filter(
-    (r) => r.domain && r.upstream && r.upstream.includes(":") && !r.upstream.includes("github"),
-  );
+  for (const [name, svc] of Object.entries(ctx.services)) {
+    if (!svc.domain || svc.vm === "local" || svc.frozen) continue;
+    if (svc.domain === "dns.internal") continue;
+    const containers = svc.containers ?? [];
+    if (containers.length === 0) continue;
 
-  const results = await Promise.allSettled(
-    crossRoutes.map((route) =>
-      timedCheck(`${route.domain}`, async () => {
-        // Public side
-        const url = route.domain.startsWith("http") ? route.domain : `https://${route.domain}`;
-        const pub = await runLocal(
+    // Get container health from vmBatch
+    const vmData = ctx.vmBatch.get(svc.vm);
+    const mainContainer = containers[0];
+    const c = vmData ? findContainer(vmData.containers, mainContainer) : null;
+    const containerUp = c?.up ?? false;
+    const containerHealthy = c?.healthy;
+
+    // Get public URL status
+    const url = svc.domain.startsWith("http") ? svc.domain : `https://${svc.domain}`;
+    let pubCode = "N/A";
+    try {
+      const r = await runLocal(
+        "curl",
+        ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "4", ...authArgs, url],
+        6_000,
+      );
+      pubCode = r.stdout.trim();
+    } catch { /* timeout */ }
+
+    // Get private URL status (if port known)
+    const port = ctx.servicePorts.get(name);
+    const wgIp = vmWgIp(ctx, svc.vm);
+    let privOk = false;
+    let privDetail = "no port";
+    if (port && wgIp) {
+      try {
+        const r = await runLocal(
           "curl",
-          ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", ...authArgs, url],
-          8_000,
+          ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `http://${wgIp}:${port}/`],
+          5_000,
         );
-        const pubCode = pub.stdout.trim();
+        const code = r.stdout.trim();
+        privOk = /^[23]\d\d$/.test(code) || ["401", "403"].includes(code);
+        privDetail = `${wgIp}:${port}->${code}`;
+      } catch {
+        privDetail = "timeout";
+      }
+    }
 
-        // Private side (upstream via proxy VM)
-        const [host, port] = route.upstream.split(":");
-        const priv = await sshExecAsync(
-          "gcp-proxy",
-          `timeout 3 bash -c 'echo > /dev/tcp/${host}/${port}' 2>&1`,
-          8_000,
-          true,
-          3,
-        );
+    const pubOk = /^[23]\d\d$/.test(pubCode) || ["401", "403"].includes(pubCode);
+    const containerStatus = !vmData ? "offline" : !c ? "missing" : !containerUp ? "down" : containerHealthy === false ? "unhealthy" : "ok";
 
-        const pubOk = /^[23]\d\d$/.test(pubCode) || ["401", "403", "404"].includes(pubCode);
-        const privOk = priv.ok;
+    // Cross-check verdict
+    let passed: boolean;
+    let details: string;
+    let severity: Severity | undefined;
 
-        if (pubOk && privOk) return { passed: true, details: `pub:${pubCode} priv:OK` };
-        if (!pubOk && privOk) return { passed: false, details: `pub:${pubCode} priv:OK -- Caddy/Authelia issue`, severity: "warning" as Severity };
-        if (pubOk && !privOk) return { passed: false, details: `pub:${pubCode} priv:FAIL -- mesh routing issue`, severity: "warning" as Severity };
-        return { passed: false, details: `pub:${pubCode} priv:FAIL -- service DOWN`, severity: "critical" as Severity };
-      }),
-    ),
-  );
+    if (pubOk && containerStatus === "ok") {
+      passed = true;
+      details = `pub:${pubCode} container:${containerStatus} priv:${privDetail}`;
+    } else if (!pubOk && containerStatus === "ok" && privOk) {
+      passed = false;
+      details = `pub:${pubCode} container:OK priv:OK -- Caddy/Authelia routing issue`;
+      severity = "warning";
+    } else if (pubOk && containerStatus !== "ok") {
+      passed = false;
+      details = `pub:${pubCode} container:${containerStatus} -- stale cache or wrong backend`;
+      severity = "warning";
+    } else if (containerStatus === "offline") {
+      passed = false;
+      details = `pub:${pubCode} container:${containerStatus} -- VM offline`;
+      severity = "warning";
+    } else {
+      passed = false;
+      details = `pub:${pubCode} container:${containerStatus} priv:${privDetail} -- service DOWN`;
+      severity = "critical";
+    }
 
-  return results.map((r) =>
-    r.status === "fulfilled"
-      ? r.value
-      : { name: "unknown", passed: false, details: "cross-check threw", durationMs: 0, severity: "warning" as Severity },
-  );
+    checks.push({ name, passed, details, durationMs: 0, severity });
+  }
+
+  return checks;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -788,21 +985,18 @@ async function layer7CrossChecks(ctx: DiagContext): Promise<Check[]> {
 
 async function layer8External(_ctx: DiagContext): Promise<Check[]> {
   const results = await Promise.allSettled([
-    // 8a: Cloudflare DNS
     timedCheck("Cloudflare DNS", async () => {
       const r = await runShell("dig +short diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
       const ip = r.stdout.trim();
       return { passed: ip.length > 0 && !ip.includes("error"), details: ip || "FAIL", severity: "critical" as Severity };
     }),
 
-    // 8b: GHCR registry
     timedCheck("GHCR registry", async () => {
       const r = await runLocal("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://ghcr.io/v2/"], 8_000);
       const ok = ["200", "401"].includes(r.stdout.trim());
       return { passed: ok, details: `HTTP ${r.stdout.trim()}`, severity: "warning" as Severity };
     }),
 
-    // 8c: GHA failures
     timedCheck("GHA workflows", async () => {
       const which = await runShell("command -v gh", 3_000);
       if (!which.ok) return { passed: true, details: "gh CLI not available (skipped)", severity: "info" as Severity };
@@ -824,20 +1018,35 @@ async function layer8External(_ctx: DiagContext): Promise<Check[]> {
       return { passed: false, details: `${failures.length} failures: ${failures[0]}`, severity: "warning" as Severity };
     }),
 
-    // 8d: Resend API (email delivery service)
     timedCheck("Resend API", async () => {
       const r = await runLocal("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://api.resend.com/health"], 8_000);
       const code = r.stdout.trim();
-      const ok = code === "200";
-      return { passed: ok, details: `HTTP ${code}`, severity: "info" as Severity };
+      return { passed: code === "200", details: `HTTP ${code}`, severity: "info" as Severity };
     }),
 
-    // 8e: GitHub API
     timedCheck("GitHub API", async () => {
       const r = await runLocal("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "https://api.github.com"], 8_000);
       const code = r.stdout.trim();
       const ok = ["200", "403"].includes(code); // 403 = rate limited but reachable
       return { passed: ok, details: `HTTP ${code}`, severity: "info" as Severity };
+    }),
+
+    timedCheck("Cloudflare DNS (MX)", async () => {
+      const r = await runShell("dig +short MX diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
+      const mx = r.stdout.trim();
+      return { passed: mx.length > 0, details: mx || "no MX record", severity: "warning" as Severity };
+    }),
+
+    timedCheck("Cloudflare DNS (A mail)", async () => {
+      const r = await runShell("dig +short A mail.diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
+      const ip = r.stdout.trim();
+      return { passed: ip.length > 0, details: ip || "no A record", severity: "warning" as Severity };
+    }),
+
+    timedCheck("DKIM DNS", async () => {
+      const r = await runShell("dig +short TXT dkim._domainkey.diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
+      const txt = r.stdout.trim();
+      return { passed: txt.includes("v=DKIM1") || txt.length > 20, details: txt ? "DKIM present" : "missing", severity: "warning" as Severity };
     }),
   ]);
 
@@ -898,7 +1107,7 @@ async function layer9Drift(ctx: DiagContext): Promise<Check[]> {
   }
   checks.push({
     name: "Unmanaged containers",
-    passed: extra.length <= 2, // allow a couple of system containers
+    passed: extra.length <= 2,
     details:
       extra.length === 0
         ? "no unmanaged containers"
@@ -929,6 +1138,76 @@ async function layer9Drift(ctx: DiagContext): Promise<Check[]> {
     severity: orphanRoutes.length > 2 ? "info" : undefined,
   });
 
+  // 9d: Exited containers (running containers that are stopped)
+  const exited: string[] = [];
+  for (const [vmId, data] of Array.from(ctx.vmBatch)) {
+    if (!data) continue;
+    for (const c of data.containers) {
+      if (!c.up) exited.push(`${getAlias(ctx, vmId)}/${c.name}`);
+    }
+  }
+  checks.push({
+    name: "Exited containers",
+    passed: exited.length === 0,
+    details:
+      exited.length === 0
+        ? "no exited containers"
+        : `${exited.length} exited: ${exited.slice(0, 8).join(", ")}${exited.length > 8 ? "..." : ""}`,
+    durationMs: 0,
+    severity: exited.length > 0 ? "warning" : undefined,
+  });
+
+  // 9e: Services without containers declaration in topology
+  const noContainers: string[] = [];
+  for (const [name, svc] of Object.entries(ctx.services)) {
+    if (!svc.vm || svc.vm === "local" || svc.frozen) continue;
+    if (!svc.containers || svc.containers.length === 0) {
+      noContainers.push(name);
+    }
+  }
+  checks.push({
+    name: "Services without containers",
+    passed: noContainers.length <= 3,
+    details:
+      noContainers.length === 0
+        ? "all services declare containers"
+        : `${noContainers.length}: ${noContainers.slice(0, 5).join(", ")}`,
+    durationMs: 0,
+    severity: noContainers.length > 3 ? "info" : undefined,
+  });
+
+  // 9f: Services without domain
+  const noDomain: string[] = [];
+  for (const [name, svc] of Object.entries(ctx.services)) {
+    if (svc.vm === "local" || svc.frozen) continue;
+    if (!svc.domain) noDomain.push(name);
+  }
+  checks.push({
+    name: "Services without domain",
+    passed: true, // informational
+    details: noDomain.length === 0
+      ? "all services have domains"
+      : `${noDomain.length}: ${noDomain.slice(0, 5).join(", ")}`,
+    durationMs: 0,
+    severity: "info",
+  });
+
+  // 9g: Services without port in build.json
+  const noPort: string[] = [];
+  for (const [name, svc] of Object.entries(ctx.services)) {
+    if (svc.vm === "local" || svc.frozen) continue;
+    if (svc.domain && !ctx.servicePorts.has(name)) noPort.push(name);
+  }
+  checks.push({
+    name: "Services missing port (build.json)",
+    passed: noPort.length <= 2,
+    details: noPort.length === 0
+      ? "all domain services have ports in build.json"
+      : `${noPort.length}: ${noPort.slice(0, 5).join(", ")}`,
+    durationMs: 0,
+    severity: noPort.length > 2 ? "info" : undefined,
+  });
+
   return checks;
 }
 
@@ -940,7 +1219,7 @@ async function layer10Security(ctx: DiagContext): Promise<Check[]> {
   const keyDomains = ["diegonmarcos.com", "auth.diegonmarcos.com", "api.diegonmarcos.com", "mail.diegonmarcos.com"];
 
   const results = await Promise.allSettled([
-    // 10a: TLS cert expiry on key domains
+    // TLS cert expiry on key domains
     ...keyDomains.map((domain) =>
       timedCheck(`TLS ${domain}`, async () => {
         const r = await runShell(
@@ -958,7 +1237,6 @@ async function layer10Security(ctx: DiagContext): Promise<Check[]> {
       }),
     ),
 
-    // 10b: DMARC record
     timedCheck("DMARC DNS", async () => {
       const r = await runShell("dig +short TXT _dmarc.diegonmarcos.com 2>&1 | head -1", 5_000);
       const txt = r.stdout.trim();
@@ -966,23 +1244,20 @@ async function layer10Security(ctx: DiagContext): Promise<Check[]> {
       return { passed: ok, details: ok ? "DMARC1 present" : `missing: ${txt || "no record"}`, severity: ok ? undefined : ("warning" as Severity) };
     }),
 
-    // 10c: SPF record
     timedCheck("SPF DNS", async () => {
       const r = await runShell("dig +short TXT diegonmarcos.com 2>&1", 5_000);
       const ok = r.stdout.includes("v=spf1");
       return { passed: ok, details: ok ? "SPF present" : "missing", severity: ok ? undefined : ("warning" as Severity) };
     }),
 
-    // 10d: Authelia health
     timedCheck("Authelia health", async () => {
-      // Authelia runs on gcp-proxy — check via mesh
       const r = await runLocal(
         "curl",
         ["-sf", "--max-time", "3", "https://auth.diegonmarcos.com/api/health"],
         5_000,
       );
       if (r.ok) return { passed: true, details: "healthy" };
-      // Fallback: check container directly
+      // Fallback: check container
       const proxyData = ctx.vmBatch.get("gcp-E2-f_0");
       if (proxyData) {
         const c = findContainer(proxyData.containers, "authelia");
@@ -991,22 +1266,39 @@ async function layer10Security(ctx: DiagContext): Promise<Check[]> {
       return { passed: false, details: "unreachable", severity: "critical" as Severity };
     }),
 
-    // 10e: Key firewall ports (check from outside — these should NOT be open)
     timedCheck("Firewall ports", async () => {
-      // Check that dangerous ports are NOT reachable on the public proxy IP
       const proxyIp = ctx.vms["gcp-E2-f_0"]?.ip;
       if (!proxyIp) return { passed: true, details: "no proxy IP (skipped)", severity: "info" as Severity };
-      const dangerousPorts = [22, 6379, 5432, 3306]; // SSH, Redis, Postgres, MySQL
+      const dangerousPorts = [6379, 5432, 3306, 8081]; // Redis, Postgres, MySQL, C3 API
       const openPorts: number[] = [];
       for (const port of dangerousPorts) {
-        // Use short timeout — we expect these to fail (good)
         const r = await runShell(`timeout 2 bash -c 'echo > /dev/tcp/${proxyIp}/${port}' 2>&1`, 4_000);
         if (r.ok) openPorts.push(port);
       }
-      // SSH (22) being open is expected for proxy
-      const unexpected = openPorts.filter((p) => p !== 22);
-      if (unexpected.length === 0) return { passed: true, details: "no unexpected ports open" };
-      return { passed: false, details: `unexpected open: ${unexpected.join(", ")}`, severity: "critical" as Severity };
+      if (openPorts.length === 0) return { passed: true, details: "no dangerous ports open on public IP" };
+      return { passed: false, details: `unexpected open: ${openPorts.join(", ")}`, severity: "critical" as Severity };
+    }),
+
+    timedCheck("SSH host key stability", async () => {
+      // Check that known_hosts has entries for all VMs
+      const missingKeys: string[] = [];
+      for (const [vmId, vm] of getActiveVms(ctx)) {
+        if (!vm.ip || vm.ip === "TBD") continue;
+        const r = await runShell(`ssh-keygen -F ${vm.ip} 2>/dev/null | head -1`, 3_000);
+        if (!r.stdout.trim()) missingKeys.push(vm.ssh_alias ?? vmId);
+      }
+      if (missingKeys.length === 0) return { passed: true, details: "all VM host keys in known_hosts" };
+      return { passed: false, details: `missing keys: ${missingKeys.join(", ")}`, severity: "warning" as Severity };
+    }),
+
+    timedCheck("Caddy TLS (proxy)", async () => {
+      // Verify Caddy is serving valid TLS on the proxy
+      const r = await runShell(
+        "echo | openssl s_client -servername proxy.diegonmarcos.com -connect proxy.diegonmarcos.com:443 2>&1 | grep 'Verify return code'",
+        8_000,
+      );
+      const ok = r.stdout.includes("return code: 0");
+      return { passed: ok, details: ok ? "TLS valid" : r.stdout.trim().slice(0, 60) || "check failed", severity: ok ? undefined : ("warning" as Severity) };
     }),
   ]);
 
@@ -1032,6 +1324,7 @@ function buildContext(): DiagContext {
     reachableVms: new Set(),
     sshOkVms: new Set(),
     dockerOkVms: new Set(),
+    servicePorts: loadServicePorts(),
   };
 }
 
@@ -1084,7 +1377,6 @@ export function registerHealthCloudTools(server: McpServer): void {
         const marks: { layer: string; ms: number }[] = [];
         const sections: string[] = [];
 
-        // Sequential: L1 -> L2 -> L3 (dependency chain)
         sections.push(await runLayer(ctx, 1, "SELF-CHECK", layer1SelfCheck, marks, t0));
         sections.push("", await runLayer(ctx, 2, "WIREGUARD MESH", layer2WgMesh, marks, t0));
         sections.push("", await runLayer(ctx, 3, "PLATFORM", layer3Platform, marks, t0));
@@ -1167,11 +1459,25 @@ export function registerHealthCloudTools(server: McpServer): void {
             const authelia = findContainer(proxyData.containers, "authelia");
             if (!authelia?.up) chain.push("Authelia DOWN -> auth-protected services affected");
           } else if (ctx.reachableVms.has("gcp-E2-f_0")) {
-            // VM reachable but no docker data
             chain.push("gcp-proxy: Docker unreachable -> proxy status unknown");
           } else {
             chain.push("gcp-proxy unreachable -> ALL public services affected");
           }
+
+          // VMs with SSH auth failure
+          const authFailed = getActiveVms(ctx).filter(([id]) =>
+            ctx.reachableVms.has(id) && !ctx.sshOkVms.has(id)
+          );
+          if (authFailed.length > 0) {
+            chain.push(`SSH auth failed: ${authFailed.map(([_, v]) => v.ssh_alias ?? "?").join(", ")} -> containers unknown`);
+          }
+
+          // Docker daemon down
+          const dockerDown = Array.from(ctx.sshOkVms).filter((id) => !ctx.dockerOkVms.has(id));
+          if (dockerDown.length > 0) {
+            chain.push(`Docker daemon down: ${dockerDown.map((id) => getAlias(ctx, id)).join(", ")}`);
+          }
+
           if (chain.length > 0) {
             sections.push("", "DEPENDENCY CHAIN:");
             chain.forEach((c) => sections.push(`  -> ${c}`));
