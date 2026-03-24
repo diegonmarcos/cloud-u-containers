@@ -19,4 +19,7 @@ if [ -d /root/.ssh ]; then
 fi
 
 export PATH="/app/node_modules/.bin:/usr/local/nix-bin:$PATH"
+export NODE_OPTIONS="--unhandled-rejections=throw"
+
+echo "c3-mcp-entrypoint: starting tsx src/mcp/http.ts (NODE_OPTIONS=$NODE_OPTIONS)"
 exec tsx src/mcp/http.ts
