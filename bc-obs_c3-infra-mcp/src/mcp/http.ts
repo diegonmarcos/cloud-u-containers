@@ -159,3 +159,10 @@ export function startMcpHttpServer(port: number = 3100): Promise<void> {
     });
   });
 }
+
+// ── Self-start when run directly ─────────────────────────────────────
+const port = parseInt(process.env.MCP_HTTP_PORT ?? "3100", 10);
+startMcpHttpServer(port).catch((err) => {
+  log(`Fatal: ${err}`);
+  process.exit(1);
+});
