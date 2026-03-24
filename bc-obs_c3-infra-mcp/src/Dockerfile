@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install npm dependencies (src/package.json is the Docker-context copy)
+ENV PATH="/app/node_modules/.bin:$PATH"
+
 COPY package.json ./
 RUN npm install --omit=dev && npm install tsx
 

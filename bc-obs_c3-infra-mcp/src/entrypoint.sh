@@ -18,4 +18,4 @@ if [ -d /root/.ssh ]; then
   echo "c3-mcp-entrypoint: SSH keys copied to $SSH_DIR (fixed permissions)"
 fi
 
-exec node --import tsx src/mcp/http.ts
+exec tsx src/mcp/http.ts
