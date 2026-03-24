@@ -1,0 +1,9 @@
+{
+  "name": "postlite",
+  "description": "SQLite REST API (WireGuard only)",
+  "category": "data",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/postlite"
+  }
+}
