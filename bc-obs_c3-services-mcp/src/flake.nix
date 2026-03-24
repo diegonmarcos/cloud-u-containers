@@ -34,7 +34,7 @@
           "NODE_ENV=production"
         ];
         healthcheck = {
-          test = ''["CMD", "curl", "-f", "http://localhost:${toString config.port}/mcp"]'';
+          test = ''["CMD-SHELL", "curl -so /dev/null -w '%{http_code}' http://localhost:${toString config.port}/mcp | grep -qE '^[2-4]' || exit 1"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;
