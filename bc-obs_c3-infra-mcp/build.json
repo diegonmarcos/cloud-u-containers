@@ -1,18 +1,18 @@
 {
-  "name": "c3-mcp",
+  "name": "c3-infra-mcp",
   "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
   "port": 3100,
-  "dns": "c3-mcp.app",
+  "dns": "c3-infra-mcp.app",
   "category": "sec",
   "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "c3-mcp",
+    "image": "c3-infra-mcp",
     "dockerfile": "Dockerfile"
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-mcp"
+    "remote_path": "/opt/containers/c3-infra-mcp"
   },
   "build": {
     "include_cloud_data": "true"
