@@ -1491,7 +1491,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources: Full VM + database resource profiling ──────────
   server.tool(
-    "health_cloud_resources",
+    "cloud_resources",
     "Full resource profiling: all VMs (CPU, RAM, disk, swap, processes) + all databases (size, connections, tables)",
     {},
     () => safeRun(async () => {
@@ -1547,7 +1547,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources_vm: Single VM deep profiling ──────────────────
   server.tool(
-    "health_cloud_resources_vm",
+    "cloud_resources_vm",
     "Deep resource profile for a single VM: CPU, RAM, disk, swap, top processes, docker stats",
     { vm: z.string().describe("VM ID or alias (e.g. oci-apps, gcp-proxy)") },
     ({ vm }) => safeRun(async () => {
@@ -1558,7 +1558,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources_db: Single database profiling ──────────────────
   server.tool(
-    "health_cloud_resources_db",
+    "cloud_resources_db",
     "Database resource profile: size, connections, tables, slow queries",
     {
       service: z.string().describe("Service name (e.g. etherpad, nocodb, hedgedoc, matomo)"),
