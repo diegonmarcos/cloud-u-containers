@@ -1,0 +1,88 @@
+{
+  "name": "caddy",
+  "description": "Caddy reverse proxy + security dashboard (gcp-proxy)",
+  "dns": "caddy.app",
+  "category": "sec",
+  "domain": "proxy.diegonmarcos.com",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/caddy",
+    "excludes": [
+      "logs/"
+    ]
+  },
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "secrets": {
+    "escape_dollars": "true"
+  },
+  "proxy": {
+    "type": "special",
+    "proxy_dashboard": {
+      "domain": "proxy.diegonmarcos.com",
+      "comment": "Infrastructure dashboard (static HTML)"
+    },
+    "github_pages_proxies": [
+      {
+        "domain": "diegonmarcos.com, www.diegonmarcos.com",
+        "github_path": "landpage",
+        "wkd": true,
+        "comment": "Landing page + WKD (Web Key Directory for PGP)"
+      },
+      {
+        "domain": "linktree.diegonmarcos.com",
+        "github_path": "linktree"
+      },
+      {
+        "domain": "nexus.diegonmarcos.com",
+        "github_path": "nexus"
+      },
+      {
+        "domain": "suite.diegonmarcos.com",
+        "github_path": "suite"
+      },
+      {
+        "domain": "maps.diegonmarcos.com",
+        "github_path": "mymaps"
+      }
+    ],
+    "parent_domain_meta": {
+      "api.diegonmarcos.com": {
+        "landing_page": "api",
+        "comment": "API hub -- path-based routing to backend APIs",
+        "extra_paths": [
+          {
+            "base_path": "/dash",
+            "type": "github_pages",
+            "github_path": "mcp-api-swagger",
+            "redirect_bare": true,
+            "comment": "C3 Dashboard from GitHub Pages"
+          }
+        ]
+      },
+      "app.diegonmarcos.com": {
+        "comment": "App hub -- path-based routing",
+        "fallback": "respond \"Not Found\" 404",
+        "extra_paths": [
+          {
+            "base_path": "/crawlee",
+            "upstream": "crawlee.app:3001",
+            "comment": "Crawlee Cloud dashboard (separate from API)"
+          }
+        ]
+      },
+      "cloud.diegonmarcos.com": {
+        "comment": "Cloud dashboard + spec viewer",
+        "landing_page": "cloud"
+      },
+      "mcp.diegonmarcos.com": {
+        "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients",
+        "fallback_message": "MCP Hub -- use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp"
+      }
+    }
+  },
+  "ports": {
+    "app": 443
+  }
+}
