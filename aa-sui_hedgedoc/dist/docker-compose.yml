@@ -1,17 +1,23 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_hedgedoc/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_hedgedoc/build.sh ship  ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   hedgedoc:
     image: quay.io/hedgedoc/hedgedoc:latest
     container_name: hedgedoc_app
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:3018:3000"
+    network_mode: host
     volumes:
       - hedgedoc_uploads:/hedgedoc/public/uploads
     environment:
       - CMD_DOMAIN=notes.diegonmarcos.com
       - CMD_URL_ADDPORT=false
       - CMD_PROTOCOL_USESSL=true
-      - CMD_DB_URL=postgres://hedgedoc:hedgedoc@hedgedoc_postgres:5432/hedgedoc
+      - CMD_DB_URL=postgres://hedgedoc:hedgedoc@localhost:5434/hedgedoc
       - CMD_ALLOW_EMAIL_REGISTER=true
       - CMD_EMAIL=true
       - CMD_ALLOW_FREEURL=true
@@ -20,16 +26,16 @@ services:
       - CMD_DEFAULT_PERMISSION=freely
       - CMD_SESSION_SECRET=${CMD_SESSION_SECRET:-hedgedoc-secret-change-me}
       - CMD_TRUST_PROXY=true
+      - CMD_LOGLEVEL=info
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - dev_network
 
   postgres:
     image: postgres:16-alpine
     container_name: hedgedoc_postgres
     restart: unless-stopped
+    network_mode: host
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -37,17 +43,12 @@ services:
       - POSTGRES_PASSWORD=hedgedoc
       - POSTGRES_DB=hedgedoc
       - PGDATA=/var/lib/postgresql/data/pgdata
-    networks:
-      - dev_network
+      - PGPORT=5434
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U hedgedoc']
+      test: ['CMD-SHELL', 'pg_isready -U hedgedoc -p 5434']
       interval: 10s
       timeout: 5s
       retries: 5
-
-networks:
-  dev_network:
-    external: true
 
 volumes:
   hedgedoc_uploads:

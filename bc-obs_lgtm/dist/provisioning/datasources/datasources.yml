@@ -4,18 +4,18 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
-    url: http://lgtm_loki:3100
+    url: http://localhost:3110
     isDefault: true
 
   - name: Tempo
     type: tempo
     access: proxy
-    url: http://lgtm_tempo:3200
+    url: http://localhost:3200
 
   - name: Mimir
     type: prometheus
     access: proxy
-    url: http://lgtm_mimir:8080/prometheus
+    url: http://localhost:8080/prometheus
 
   - name: Photoprism MariaDB
     type: mysql
