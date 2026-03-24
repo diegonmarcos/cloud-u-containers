@@ -3,6 +3,7 @@
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
   "port": 3011,
   "dns": "grist.app",
+  "ports": {"app": 3011},
   "category": "app",
   "domain": "sheets.diegonmarcos.com",
   "deploy": {

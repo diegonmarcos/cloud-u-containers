@@ -3,6 +3,7 @@
   "description": "Collaborative markdown editor",
   "port": 3018,
   "dns": "hedgedoc.app",
+  "ports": {"app": 3018, "db": 5439},
   "category": "app",
   "domain": "doc.diegonmarcos.com",
   "deploy": {

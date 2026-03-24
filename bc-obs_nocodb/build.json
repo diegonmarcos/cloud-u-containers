@@ -3,6 +3,7 @@
   "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
   "port": 8085,
   "dns": "nocodb.app",
+  "ports": {"app": 8085, "db": 5435},
   "category": "tools",
   "domain": "db.diegonmarcos.com",
   "deploy": {
