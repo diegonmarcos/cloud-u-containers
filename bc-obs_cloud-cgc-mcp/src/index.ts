@@ -21,8 +21,8 @@ const log = (msg: string) => process.stderr.write(`[code-graph-context] ${msg}\n
 
 function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: "code-graph-context",
-    version: "5.0.0",
+    name: "cloud-cgc-mcp",
+    version: "6.0.0",
   });
 
   // ── Resources ─────────────────────────────────────────────────────────
