@@ -843,12 +843,56 @@ export function registerHealthMailTools(server: McpServer): void {
 
       mark("start");
 
+      // ═══════════════════════════════════════════════════════════════
+      // PHASE 0: INSTANT KPIs — public URLs + DNS (no SSH, <2s)
+      // ═══════════════════════════════════════════════════════════════
+      await runPhase("0. INSTANT KPIs", async () => {
+        const checks = await Promise.all([
+          // Public URL checks
+          timedAsync("mail.* HTTPS", async () => {
+            const r = await runA("curl", ["-sko", "/dev/null", "-w", "%{http_code}", "--max-time", "3", `https://${MAIL_DOMAIN}:443`]);
+            return { passed: r.stdout.trim().startsWith("2") || r.stdout.trim().startsWith("3"), details: `HTTP ${r.stdout.trim()}` };
+          }),
+          timedAsync("webmail HTTPS", async () => {
+            const r = await runA("curl", ["-sko", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://webmail.diegonmarcos.com"]);
+            return { passed: r.stdout.trim().startsWith("2") || r.stdout.trim().startsWith("3"), details: `HTTP ${r.stdout.trim()}` };
+          }),
+          timedAsync("auth HTTPS", async () => {
+            const r = await runA("curl", ["-sko", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://auth.diegonmarcos.com/api/health"]);
+            return { passed: r.stdout.trim() === "200", details: `HTTP ${r.stdout.trim()}` };
+          }),
+          timedAsync("MCP endpoint", async () => {
+            const r = await runA("curl", ["-sko", "/dev/null", "-w", "%{http_code}", "--max-time", "3", "https://mcp.diegonmarcos.com/mail-mcp/mcp"]);
+            const code = r.stdout.trim();
+            return { passed: ["400", "405", "406", "200"].includes(code), details: `HTTP ${code}` };
+          }),
+          // DNS checks (instant)
+          timedAsync("MX record", async () => {
+            const r = await runA("dig", ["+short", "MX", "diegonmarcos.com"], 3_000);
+            return { passed: r.stdout.includes("cloudflare"), details: r.stdout.trim().split("\n")[0] || "NONE" };
+          }),
+          timedAsync("DKIM record", async () => {
+            const r = await runA("dig", ["+short", "TXT", "dkim._domainkey.diegonmarcos.com"], 3_000);
+            return { passed: r.stdout.includes("DKIM1"), details: r.stdout.trim() ? "present" : "MISSING" };
+          }),
+          // GHA status
+          timedAsync("GHA health", async () => {
+            const r = await runA("gh", ["-R", "diegonmarcos/cloud", "run", "list", "--limit", "5", "--json", "name,conclusion", "-q",
+              '.[] | select(.conclusion == "failure") | .name'], 10_000);
+            const failures = r.stdout.trim().split("\n").filter(Boolean);
+            return { passed: failures.length === 0, details: failures.length === 0 ? "all green" : `${failures.length} failing: ${failures.slice(0, 2).join(", ")}` };
+          }),
+        ]);
+        return formatChecks("0. INSTANT KPIs", checks);
+      });
+
       // Phase 1: PRE-FLIGHT (must run first — establishes SSH mux + caches)
       await runPhase("1. PRE-FLIGHT", async () => formatChecks("1. PRE-FLIGHT", await preflight()));
       const sshOk = _remoteCache !== null;
 
-      // ── SMART FALLBACK: if any SSH failed, run docker ps on all VMs ──
-      if (!sshOk || !_appCache || !_proxyCache) {
+      // ── SMART FALLBACK: if pre-flight had failures, run docker ps on ALL VMs ──
+      const preflightFailed = !sshOk || !_appCache || !_proxyCache;
+      if (preflightFailed) {
         const vmList = [
           { name: "oci-mail", ip: MAIL_WG_IP, user: "ubuntu" },
           { name: "oci-apps", ip: APPS_WG_IP, user: "ubuntu" },
@@ -858,10 +902,11 @@ export function registerHealthMailTools(server: McpServer): void {
         const fallbackLines: string[] = [
           "",
           "╔══════════════════════════════════════════════════════════════╗",
-          "║  FALLBACK DIAGNOSTIC — docker ps on all reachable VMs       ║",
+          "║  FALLBACK — docker ps on all VMs + cloud status             ║",
           "╚══════════════════════════════════════════════════════════════╝",
         ];
-        await Promise.all(vmList.map(async (vm) => {
+        // Docker ps on all VMs in parallel
+        const vmResults = await Promise.all(vmList.map(async (vm) => {
           try {
             const r = await runA("ssh", [
               "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
@@ -869,20 +914,42 @@ export function registerHealthMailTools(server: McpServer): void {
               `${vm.user}@${vm.ip}`,
               "docker ps -a --format '{{.Names}}\\t{{.Status}}' 2>/dev/null | sort",
             ], 15_000);
-            if (r.ok && r.stdout.trim()) {
-              fallbackLines.push("", `── ${vm.name} (${vm.ip}) ──`);
-              for (const line of r.stdout.trim().split("\n")) {
-                const [name, status] = line.split("\t");
-                const icon = (status || "").includes("unhealthy") || (status || "").includes("Restarting") ? "✗" : "✓";
-                fallbackLines.push(`  ${icon} ${(name || "?").padEnd(30)} ${status || "?"}`);
-              }
-            } else {
-              fallbackLines.push("", `── ${vm.name} (${vm.ip}) — UNREACHABLE ──`);
-            }
-          } catch {
-            fallbackLines.push("", `── ${vm.name} (${vm.ip}) — SSH FAILED ──`);
-          }
+            return { vm, ok: r.ok, stdout: r.stdout };
+          } catch { return { vm, ok: false, stdout: "" }; }
         }));
+        for (const { vm, ok, stdout } of vmResults) {
+          if (ok && stdout.trim()) {
+            fallbackLines.push("", `── ${vm.name} (${vm.ip}) ──`);
+            for (const line of stdout.trim().split("\n")) {
+              const [cname, status] = line.split("\t");
+              const icon = (status || "").includes("unhealthy") || (status || "").includes("Restarting") ? "✗" : "✓";
+              fallbackLines.push(`  ${icon} ${(cname || "?").padEnd(30)} ${status || "?"}`);
+            }
+          } else {
+            fallbackLines.push("", `── ${vm.name} (${vm.ip}) — UNREACHABLE ──`);
+          }
+        }
+        // GHA recent failures
+        try {
+          const gha = await runA("gh", ["-R", "diegonmarcos/cloud", "run", "list", "--limit", "10",
+            "--json", "name,status,conclusion", "-q",
+            '.[] | select(.conclusion == "failure") | "\(.name)"'], 10_000);
+          if (gha.ok && gha.stdout.trim()) {
+            fallbackLines.push("", "── GHA Recent Failures ──");
+            for (const line of gha.stdout.trim().split("\n").slice(0, 5)) {
+              fallbackLines.push(`  ✗ ${line}`);
+            }
+          }
+        } catch {}
+        // OCI instance status
+        try {
+          const oci = await runA("oci", ["compute", "instance", "list",
+            "--compartment-id", "ocid1.tenancy.oc1..aaaaaaaate22jsouuzgaw65ucwvufcj3lzjxw4ithwcz3cxw6iom6ys2ldsq",
+            "--query", "data[].{name:\"display-name\",state:\"lifecycle-state\"}", "--output", "table"], 15_000);
+          if (oci.ok && oci.stdout.trim()) {
+            fallbackLines.push("", "── OCI VM Status ──", oci.stdout.trim());
+          }
+        } catch {}
         sections.push(fallbackLines.join("\n"));
       }
 
