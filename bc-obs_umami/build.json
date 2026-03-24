@@ -1,6 +1,8 @@
 {
   "name": "umami",
   "description": "Umami Analytics - lightweight privacy-focused web analytics",
+  "port": 3000,
+  "dns": "umami.app",
   "category": "tools",
   "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
@@ -18,18 +20,16 @@
     ]
   },
   "proxy": {
-    "upstream": "umami.app:3000",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "analytics.diegonmarcos.com",
-    "base_path": "/umami",
-    "paths": {
-      "/script.js": {
-        "auth": "public"
-      },
-      "/api/send": {
-        "auth": "public"
+    "primary": {
+      "type": "path",
+      "parent_domain": "analytics.diegonmarcos.com",
+      "base_path": "/umami",
+      "auth": "two_factor",
+      "paths": {
+        "/script.js": { "auth": "public" },
+        "/api/send": { "auth": "public" }
       }
-    }
+    },
+    "app_hub": false
   }
 }

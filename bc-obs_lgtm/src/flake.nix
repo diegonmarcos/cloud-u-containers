@@ -56,7 +56,7 @@
           volumes:
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
-          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=3110
+          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=3110 -server.grpc-listen-port=9111
           healthcheck:
             test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3110/ready']
             interval: 30s
@@ -95,6 +95,7 @@
     mkTempoConfig = pkgs: pkgs.writeText "tempo.yaml" ''
       server:
         http_listen_port: 3210
+        grpc_listen_port: 9112
 
       distributor:
         receivers:
@@ -123,6 +124,7 @@
 
       server:
         http_listen_port: 9009
+        grpc_listen_port: 9113
 
       distributor:
         ring:

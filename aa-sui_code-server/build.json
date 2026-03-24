@@ -1,9 +1,8 @@
 {
   "name": "code-server",
   "description": "VS Code IDE (ide.diegonmarcos.com)",
-  "ports": {
-    "app": 8443
-  },
+  "port": 8443,
+  "dns": "code-server.app",
   "category": "app",
   "domain": "ide.diegonmarcos.com",
   "deploy": {
@@ -11,8 +10,10 @@
     "remote_path": "/opt/containers/code-server"
   },
   "proxy": {
-    "upstream": "code-server.app:8443",
-    "auth": "two_factor"
+    "primary": {
+      "domain": "ide.diegonmarcos.com",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

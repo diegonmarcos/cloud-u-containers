@@ -1,15 +1,19 @@
 {
   "name": "cloud-spec",
   "description": "Unified Cloud Documentation Portal",
+  "port": 3080,
+  "dns": "c3-spec.app",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/cloud-spec"
   },
   "proxy": {
-    "upstream": "c3-spec.app:3080",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "cloud.diegonmarcos.com",
-    "base_path": "/spec"
+    "primary": {
+      "type": "path",
+      "parent_domain": "cloud.diegonmarcos.com",
+      "base_path": "/spec",
+      "auth": "two_factor"
+    },
+    "app_hub": false
   }
 }

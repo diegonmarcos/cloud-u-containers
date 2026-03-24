@@ -1,10 +1,9 @@
 {
   "name": "introspect-proxy",
   "description": "OIDC token introspection sidecar for Caddy Bearer auth",
+  "port": 4182,
+  "dns": "introspect-proxy.app",
   "category": "sec",
-  "ports": {
-    "app": 4182
-  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/introspect-proxy"
@@ -13,5 +12,8 @@
     "image": "introspect-proxy",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos"
+  },
+  "proxy": {
+    "app_hub": false
   }
 }

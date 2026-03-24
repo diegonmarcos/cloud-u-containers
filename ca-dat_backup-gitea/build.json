@@ -1,10 +1,8 @@
 {
   "name": "backup-gitea",
   "description": "Self-hosted Gitea for git backups and mirroring",
-  "ports": {
-    "app": 3002,
-    "ssh": 2222
-  },
+  "port": 3002,
+  "dns": "backup-gitea.app",
   "category": "data",
   "domain": "git.diegonmarcos.com",
   "deploy": {

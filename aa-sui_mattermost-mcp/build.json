@@ -1,6 +1,8 @@
 {
   "name": "mattermost-mcp",
   "description": "Mattermost MCP server — chat tools via HTTP transport",
+  "port": 3102,
+  "dns": "mattermost-mcp.app",
   "category": "app",
   "docker": {
     "image": "mattermost-mcp",
@@ -12,10 +14,12 @@
     "remote_path": "/opt/containers/mattermost-mcp"
   },
   "proxy": {
-    "upstream": "mattermost-mcp.app:3102",
-    "streaming": true,
-    "type": "path",
-    "parent_domain": "mcp.diegonmarcos.com",
-    "base_path": "/mattermost-mcp"
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/mattermost-mcp"
+    },
+    "app_hub": false
   }
 }

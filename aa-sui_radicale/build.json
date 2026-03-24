@@ -1,9 +1,8 @@
 {
   "name": "radicale",
   "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
-  "ports": {
-    "app": 5232
-  },
+  "port": 5232,
+  "dns": "radicale.app",
   "category": "app",
   "domain": "cal.diegonmarcos.com",
   "deploy": {
@@ -11,8 +10,10 @@
     "remote_path": "/home/ubuntu/radicale"
   },
   "proxy": {
-    "upstream": "radicale.app:5232",
-    "auth": "two_factor"
+    "primary": {
+      "domain": "cal.diegonmarcos.com",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/.web/"

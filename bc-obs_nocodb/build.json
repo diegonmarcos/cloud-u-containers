@@ -1,6 +1,8 @@
 {
   "name": "nocodb",
   "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
+  "port": 8085,
+  "dns": "nocodb.app",
   "category": "tools",
   "domain": "db.diegonmarcos.com",
   "deploy": {
@@ -8,12 +10,10 @@
     "remote_path": "/home/ubuntu/nocodb"
   },
   "proxy": {
-    "upstream": "nocodb.app:8085",
-    "auth": "two_factor"
-  },
-  "ports": {
-    "app": 8085,
-    "db": 5435
+    "primary": {
+      "domain": "db.diegonmarcos.com",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/api/v1/health"

@@ -1,11 +1,10 @@
 {
   "name": "mattermost-bots",
   "description": "Mattermost team chat with ntfy bridge and C3 command bot",
+  "port": 8065,
+  "dns": "mattermost.app",
   "category": "app",
-  "ports": {
-    "app": 8065,
-    "db": 5435
-  },
+  "domain": "chat.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/mattermost-bots"
@@ -14,16 +13,15 @@
     "pre_hook": "init-dirs.sh"
   },
   "proxy": {
-    "upstream": "mattermost.app:8065",
-    "auth": "two_factor",
-    "paths": {
-      "/api/v4/*": {
-        "auth": "bypass"
+    "primary": {
+      "domain": "chat.diegonmarcos.com",
+      "auth": "two_factor",
+      "paths": {
+        "/api/v4/*": {
+          "auth": "bypass"
+        }
       }
-    },
-    "bypass_paths": [
-      "/api/v4/*"
-    ]
+    }
   },
   "health": {
     "path": "/api/v4/system/ping"
@@ -39,6 +37,5 @@
       "mattermost_data",
       "mattermost_postgres"
     ]
-  },
-  "domain": "chat.diegonmarcos.com"
+  }
 }
