@@ -17,7 +17,7 @@ services:
       - CMD_DOMAIN=notes.diegonmarcos.com
       - CMD_URL_ADDPORT=false
       - CMD_PROTOCOL_USESSL=true
-      - CMD_DB_URL=postgres://hedgedoc:hedgedoc@localhost:5434/hedgedoc
+      - CMD_DB_URL=postgres://hedgedoc:hedgedoc@localhost:5439/hedgedoc
       - CMD_ALLOW_EMAIL_REGISTER=true
       - CMD_EMAIL=true
       - CMD_ALLOW_FREEURL=true
@@ -43,9 +43,9 @@ services:
       - POSTGRES_PASSWORD=hedgedoc
       - POSTGRES_DB=hedgedoc
       - PGDATA=/var/lib/postgresql/data/pgdata
-      - PGPORT=5434
+      - PGPORT=5439
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U hedgedoc -p 5434']
+      test: ['CMD-SHELL', 'pg_isready -U hedgedoc -p 5439']
       interval: 10s
       timeout: 5s
       retries: 5

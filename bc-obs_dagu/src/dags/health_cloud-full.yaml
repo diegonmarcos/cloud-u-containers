@@ -2,40 +2,30 @@ schedule: "0 6 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - C3_MCP: http://10.0.0.6:8081/mcp
 mailOn:
   failure: true
   success: false
 steps:
   - name: run-cloud-health
     command: |
-      # Call C3 MCP tool: cloud_full (8-layer diagnostic)
-      RESPONSE=$(curl -sf --max-time 120 -X POST "$C3_MCP" \
-        -H "Content-Type: application/json" \
-        -H "Accept: application/json, text/event-stream" \
-        -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"cloud_full","arguments":{}}}')
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      # Run health_cloud.ts inside the C3 API container (has all deps + SSH keys)
+      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_cloud.ts 2>&1") || true
 
-      if [ -z "$RESPONSE" ]; then
+      if [ -z "$RESULT" ]; then
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Cloud Health FAILED — C3 API unreachable" \
+          -H "Title: Cloud Health FAILED — could not run check" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,cloud" \
-          -d "Could not reach C3 MCP at $C3_MCP"
+          -d "health_cloud.ts returned empty output"
         exit 1
       fi
 
-      # Parse SSE stream or plain JSON
-      RESULT=$(echo "$RESPONSE" | grep -oP '^data: \K.*' | tail -1 || echo "$RESPONSE")
-      TEXT=$(echo "$RESULT" | jq -r '.result.content[0].text // empty' 2>/dev/null || echo "$RESULT")
-
-      if [ -z "$TEXT" ]; then
-        TEXT="$RESPONSE"
-      fi
-
-      STATUS=$(echo "$TEXT" | jq -r '.status // .overall // "unknown"' 2>/dev/null || echo "unknown")
-      SUMMARY=$(echo "$TEXT" | jq -r '.summary // empty' 2>/dev/null || echo "$TEXT" | head -20)
-      FAILS=$(echo "$TEXT" | jq -r '[.. | .status? // empty | select(. != "ok" and . != "pass" and . != "healthy")] | length' 2>/dev/null || echo "?")
+      # Parse JSON result
+      STATUS=$(echo "$RESULT" | jq -r '.status // .overall // "unknown"' 2>/dev/null || echo "unknown")
+      SUMMARY=$(echo "$RESULT" | jq -r '.summary // empty' 2>/dev/null || echo "$RESULT" | tail -10)
+      FAILS=$(echo "$RESULT" | jq -r '.failed // 0' 2>/dev/null || echo "?")
 
       if [ "$STATUS" = "ok" ] || [ "$STATUS" = "healthy" ] || [ "$STATUS" = "pass" ] || [ "$FAILS" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
@@ -43,7 +33,7 @@ steps:
           -H "Title: Cloud Health OK" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,cloud" \
-          -d "$(echo -e "All 8 layers passed\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+          -d "$(echo -e "All layers passed\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
       else
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \

@@ -2,42 +2,29 @@ schedule: "17 7 * * *"
 env:
   - NTFY_URL: http://10.0.0.1:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - C3_MCP: http://10.0.0.6:8081/mcp
 mailOn:
   failure: true
   success: false
 steps:
   - name: run-mail-health
     command: |
-      # Call C3 MCP tool: mail_full (6-phase diagnostic)
-      RESPONSE=$(curl -sf --max-time 120 -X POST "$C3_MCP" \
-        -H "Content-Type: application/json" \
-        -H "Accept: application/json, text/event-stream" \
-        -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"mail_full","arguments":{}}}')
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      # Run health_mail.ts inside the C3 API container (has all deps + SSH keys)
+      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_mail.ts 2>&1") || true
 
-      if [ -z "$RESPONSE" ]; then
+      if [ -z "$RESULT" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Mail Health FAILED — C3 API unreachable" \
+          -H "Title: Mail Health FAILED — could not run check" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
-          -d "Could not reach C3 MCP at $C3_MCP"
+          -d "health_mail.ts returned empty output"
         exit 1
       fi
 
-      # Parse SSE stream — extract the last JSON data line
-      RESULT=$(echo "$RESPONSE" | grep -oP '^data: \K.*' | tail -1 || echo "$RESPONSE")
-      # Extract tool result text
-      TEXT=$(echo "$RESULT" | jq -r '.result.content[0].text // empty' 2>/dev/null || echo "$RESULT")
-
-      if [ -z "$TEXT" ]; then
-        TEXT="$RESPONSE"
-      fi
-
-      # Parse health status from the JSON result
-      STATUS=$(echo "$TEXT" | jq -r '.status // .overall // "unknown"' 2>/dev/null || echo "unknown")
-      SUMMARY=$(echo "$TEXT" | jq -r '.summary // empty' 2>/dev/null || echo "$TEXT" | head -20)
-      FAILS=$(echo "$TEXT" | jq -r '[.. | .status? // empty | select(. != "ok" and . != "pass" and . != "healthy")] | length' 2>/dev/null || echo "?")
+      STATUS=$(echo "$RESULT" | jq -r '.status // .overall // "unknown"' 2>/dev/null || echo "unknown")
+      SUMMARY=$(echo "$RESULT" | jq -r '.summary // empty' 2>/dev/null || echo "$RESULT" | tail -10)
+      FAILS=$(echo "$RESULT" | jq -r '.failed // 0' 2>/dev/null || echo "?")
 
       if [ "$STATUS" = "ok" ] || [ "$STATUS" = "healthy" ] || [ "$STATUS" = "pass" ] || [ "$FAILS" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
