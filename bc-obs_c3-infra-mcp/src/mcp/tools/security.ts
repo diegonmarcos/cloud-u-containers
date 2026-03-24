@@ -1,10 +1,10 @@
-// ── Security Exec — "Fix it" (4 tools) ──
+// ── Security Exec — 5 tools ──
 // Security scanning and auditing
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
-import { resolveVmId } from "../../shared/config.js";
+import { resolveVmId, getConfig } from "../../shared/config.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
@@ -12,6 +12,44 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
 }
 
 export function registerSecurityExecTools(server: McpServer) {
+  // ── security: Full security audit across all VMs ──
+  server.tool(
+    "security",
+    "Full security audit: runs scan + docker + ssh_keys + tokens across all VMs",
+    {},
+    async () => {
+      const config = getConfig();
+      const vmIds = Object.keys(config.vms);
+      const sections: string[] = [];
+
+      // 1. Global scan
+      const scanResult = securityScan();
+      sections.push(`SECURITY SCAN (all VMs)\n${"─".repeat(60)}\n${typeof scanResult === "string" ? scanResult : JSON.stringify(scanResult, null, 2)}`);
+
+      // 2. Docker security per VM
+      for (const vmId of vmIds) {
+        try {
+          const result = securityDocker(vmId);
+          sections.push(`\nDOCKER SECURITY: ${vmId}\n${"─".repeat(60)}\n${typeof result === "string" ? result : JSON.stringify(result, null, 2)}`);
+        } catch (e) { sections.push(`\nDOCKER SECURITY: ${vmId} — FAILED: ${e}`); }
+      }
+
+      // 3. SSH keys per VM
+      for (const vmId of vmIds) {
+        try {
+          const result = securitySshKeys(vmId);
+          sections.push(`\nSSH KEYS: ${vmId}\n${"─".repeat(60)}\n${typeof result === "string" ? result : JSON.stringify(result, null, 2)}`);
+        } catch (e) { sections.push(`\nSSH KEYS: ${vmId} — FAILED: ${e}`); }
+      }
+
+      // 4. Token scan
+      const tokenResult = securityTokens();
+      sections.push(`\nTOKEN SCAN\n${"─".repeat(60)}\n${typeof tokenResult === "string" ? tokenResult : JSON.stringify(tokenResult, null, 2)}`);
+
+      return { content: [{ type: "text" as const, text: sections.join("\n\n") }] };
+    }
+  );
+
   server.tool(
     "security-scan",
     "Full security scan: privileged containers, root users, exposed ports, Docker config",

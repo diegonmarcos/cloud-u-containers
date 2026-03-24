@@ -1367,7 +1367,7 @@ async function runLayer(
 export function registerHealthCloudTools(server: McpServer): void {
   // ── cloud-up: Quick infrastructure check (layers 1-3, ~10s) ─────────────
   server.tool(
-    "cloud-up",
+    "health_cloud_up",
     "Quick infrastructure UP check: self-check + WG mesh + platform (~10s)",
     {},
     () =>
@@ -1392,7 +1392,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── cloud-full: Comprehensive 10-layer diagnostic (~30-60s) ─────────────
   server.tool(
-    "cloud-full",
+    "health_cloud",
     "Full 10-layer cloud diagnostic: self-check -> mesh -> platform -> containers -> URLs -> cross-checks -> external -> drift -> security (~60s)",
     {},
     () =>
@@ -1492,7 +1492,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
 // ── Standalone runner (GHA / CLI) ────────────────────────────────────────────
 if (process.argv[1]?.endsWith("health_cloud.ts") || process.argv[1]?.endsWith("health_cloud.js")) {
-  const mode = process.argv[2] === "quick" ? "cloud-up" : "cloud-full";
+  const mode = process.argv[2] === "quick" ? "health_cloud_up" : "health_cloud";
   (async () => {
     const { McpServer: S } = await import("@modelcontextprotocol/sdk/server/mcp.js");
     const server = new S({ name: "health-runner", version: "1.0.0" });
