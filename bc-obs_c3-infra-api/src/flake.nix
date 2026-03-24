@@ -57,7 +57,7 @@
         };
       };
 
-      volumes.c3_git_repos = { driver = "local"; };
+      volumes.c3_git_repos = { external = true; name = "c3-infra-mcp-api_c3_git_repos"; };
     };
 
   in {
