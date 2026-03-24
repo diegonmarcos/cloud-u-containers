@@ -71,6 +71,10 @@ interface Service {
   flake?: string;
   ports?: string[];
   networks?: string[];
+  // Standardized routing (from build.json)
+  port?: number;
+  dns?: string;
+  upstream?: string;  // computed: {dns}:{port}
   // Declarative infrastructure fields (from build.json)
   proxy?: import("./parsers/build-json.js").ProxyConfig;
   health?: import("./parsers/build-json.js").HealthConfig;
