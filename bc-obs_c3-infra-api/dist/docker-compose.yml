@@ -51,3 +51,5 @@ services:
       - no-new-privileges:true
 volumes:
   c3_git_repos:
+    external: true
+    name: c3-mcp-api_c3-repos
