@@ -1488,6 +1488,156 @@ export function registerHealthCloudTools(server: McpServer): void {
         return sections.join("\n");
       }),
   );
+
+  // ── health_cloud_resources: Full VM + database resource profiling ──────────
+  server.tool(
+    "health_cloud_resources",
+    "Full resource profiling: all VMs (CPU, RAM, disk, swap, processes) + all databases (size, connections, tables)",
+    {},
+    () => safeRun(async () => {
+      const topo = loadTopology();
+      const activeVms = Object.entries(topo.vms).filter(([_, v]) => v.wg_ip && v.ip !== "TBD");
+      const sections: string[] = [];
+
+      // Collect all VM resources in parallel
+      const vmResults = await Promise.allSettled(
+        activeVms.map(async ([vmId, vm]) => {
+          const alias = vm.ssh_alias ?? vmId;
+          const data = await collectVmResources(vmId);
+          return { vmId, alias, data };
+        }),
+      );
+
+      sections.push("VM RESOURCES");
+      sections.push("═".repeat(70));
+      for (const r of vmResults) {
+        if (r.status !== "fulfilled") continue;
+        const { alias, data } = r.value;
+        if (!data) { sections.push(`\n${alias}: UNREACHABLE`); continue; }
+        sections.push(`\n── ${alias} ──`);
+        sections.push(data);
+      }
+
+      // Collect all database sizes in parallel
+      sections.push("\n\nDATABASE RESOURCES");
+      sections.push("═".repeat(70));
+
+      const dbServices = Object.entries(topo.services).filter(([_, s]) =>
+        s.containers?.some((c) => /postgres|mariadb|mysql|redis|sqlite|nocodb.db/i.test(c))
+      );
+
+      const dbResults = await Promise.allSettled(
+        dbServices.map(async ([name, svc]) => {
+          const data = await collectDbResources(svc.vm, svc.containers ?? [], name);
+          return { name, vm: svc.vm, data };
+        }),
+      );
+
+      for (const r of dbResults) {
+        if (r.status !== "fulfilled") continue;
+        const { name, vm, data } = r.value;
+        const alias = topo.vms[vm]?.ssh_alias ?? vm;
+        sections.push(`\n── ${name} (${alias}) ──`);
+        sections.push(data);
+      }
+
+      return sections.join("\n");
+    }),
+  );
+
+  // ── health_cloud_resources_vm: Single VM deep profiling ──────────────────
+  server.tool(
+    "health_cloud_resources_vm",
+    "Deep resource profile for a single VM: CPU, RAM, disk, swap, top processes, docker stats",
+    { vm: z.string().describe("VM ID or alias (e.g. oci-apps, gcp-proxy)") },
+    ({ vm }) => safeRun(async () => {
+      const data = await collectVmResources(vm);
+      return `VM RESOURCES: ${vm}\n${"═".repeat(70)}\n${data}`;
+    }),
+  );
+
+  // ── health_cloud_resources_db: Single database profiling ──────────────────
+  server.tool(
+    "health_cloud_resources_db",
+    "Database resource profile: size, connections, tables, slow queries",
+    {
+      service: z.string().describe("Service name (e.g. etherpad, nocodb, hedgedoc, matomo)"),
+    },
+    ({ service }) => safeRun(async () => {
+      const topo = loadTopology();
+      const svc = topo.services[service];
+      if (!svc) return `Service not found: ${service}`;
+      const data = await collectDbResources(svc.vm, svc.containers ?? [], service);
+      return `DATABASE RESOURCES: ${service}\n${"═".repeat(70)}\n${data}`;
+    }),
+  );
+}
+
+// ── Resource collection helpers ──────────────────────────────────────────────
+
+async function collectVmResources(vmId: string): Promise<string> {
+  const script = [
+    "echo '=== SYSTEM ==='",
+    "uname -a 2>/dev/null | head -1",
+    "echo '=== CPU ==='",
+    "nproc 2>/dev/null; cat /proc/loadavg 2>/dev/null",
+    "echo '=== MEMORY ==='",
+    "free -h 2>/dev/null",
+    "echo '=== SWAP ==='",
+    "swapon --show 2>/dev/null || echo 'no swap'",
+    "echo '=== DISK ==='",
+    "df -h / /var /tmp 2>/dev/null | sort -u",
+    "echo '=== DOCKER DISK ==='",
+    "docker system df 2>/dev/null || echo 'docker unavailable'",
+    "echo '=== TOP PROCESSES ==='",
+    "ps aux --sort=-%mem 2>/dev/null | head -11",
+    "echo '=== DOCKER STATS ==='",
+    "timeout 3 docker stats --no-stream --format 'table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\\t{{.NetIO}}\\t{{.BlockIO}}' 2>/dev/null | head -20 || echo 'docker unavailable'",
+    "echo '=== UPTIME ==='",
+    "uptime 2>/dev/null",
+  ].join("\n");
+
+  try {
+    const r = await sshExecAsync(vmId, script, 15_000, true, 5);
+    if (r.ok || r.stdout.length > 50) return r.stdout.trim();
+    return `SSH failed: ${r.stderr.trim().split("\n").pop() || "unknown error"}`;
+  } catch (e) {
+    return `Error: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
+
+async function collectDbResources(vmId: string, containers: string[], serviceName: string): Promise<string> {
+  const dbContainer = containers.find((c) => /postgres|mariadb|mysql|db/i.test(c));
+  if (!dbContainer) return "no database container detected";
+
+  const isPostgres = /postgres/i.test(dbContainer);
+  const isMariadb = /mariadb|mysql/i.test(dbContainer);
+  const isRedis = /redis/i.test(dbContainer);
+
+  let query: string;
+  if (isPostgres) {
+    query = [
+      `docker exec ${dbContainer} psql -U postgres -c "SELECT pg_database.datname, pg_size_pretty(pg_database_size(pg_database.datname)) AS size FROM pg_database ORDER BY pg_database_size(pg_database.datname) DESC;" 2>&1`,
+      `docker exec ${dbContainer} psql -U postgres -c "SELECT count(*) AS active_connections FROM pg_stat_activity;" 2>&1`,
+      `docker exec ${dbContainer} psql -U postgres -c "SELECT schemaname, count(*) AS tables FROM pg_tables GROUP BY schemaname;" 2>&1`,
+    ].join("\necho '---'\n");
+  } else if (isMariadb) {
+    query = [
+      `docker exec ${dbContainer} mysql -u root -e "SELECT table_schema AS db, ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb FROM information_schema.tables GROUP BY table_schema;" 2>&1`,
+      `docker exec ${dbContainer} mysql -u root -e "SHOW PROCESSLIST;" 2>&1`,
+    ].join("\necho '---'\n");
+  } else if (isRedis) {
+    query = `docker exec ${dbContainer} redis-cli INFO memory 2>&1 | head -20`;
+  } else {
+    query = `docker inspect ${dbContainer} --format '{{.State.Status}} since {{.State.StartedAt}}' 2>&1`;
+  }
+
+  try {
+    const r = await sshExecAsync(vmId, query, 10_000, true, 5);
+    return r.stdout.trim() || r.stderr.trim() || "no output";
+  } catch (e) {
+    return `Error: ${e instanceof Error ? e.message : String(e)}`;
+  }
 }
 
 // ── Standalone runner (GHA / CLI) ────────────────────────────────────────────
