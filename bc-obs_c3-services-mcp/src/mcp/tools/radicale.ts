@@ -3,7 +3,7 @@ import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
 import { XMLParser } from "fast-xml-parser";
 
-const RADICALE_BASE = "http://10.0.0.3:5232";
+const RADICALE_BASE = "http://10.0.0.6:5232";
 
 const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8" ?>
 <D:propfind xmlns:D="DAV:">

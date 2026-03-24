@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
 
-const OLLAMA_BASE = "http://10.0.0.6:11434";
+const OLLAMA_BASE = "http://10.0.0.8:11434";
 
 export function registerOllamaTools(server: McpServer) {
   server.tool(

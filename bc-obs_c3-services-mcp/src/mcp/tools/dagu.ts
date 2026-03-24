@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
 
-const DAGU_BASE = process.env.DAGU_API_URL ?? "http://10.0.0.3:8080";
+const DAGU_BASE = process.env.DAGU_API_URL ?? "http://10.0.0.3:8070";
 const DAGU_AUTH = process.env.DAGU_BASIC_AUTH ?? "";
 
 function daguHeaders(): Record<string, string> {
