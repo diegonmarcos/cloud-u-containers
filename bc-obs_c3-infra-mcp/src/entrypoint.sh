@@ -18,4 +18,5 @@ if [ -d /root/.ssh ]; then
   echo "c3-mcp-entrypoint: SSH keys copied to $SSH_DIR (fixed permissions)"
 fi
 
+export PATH="/app/node_modules/.bin:/usr/local/nix-bin:$PATH"
 exec tsx src/mcp/http.ts
