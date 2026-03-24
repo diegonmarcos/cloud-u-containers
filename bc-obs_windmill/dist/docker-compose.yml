@@ -1,22 +1,29 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_windmill/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_windmill/build.sh ship  ║
+# ╚══════════════════════════════════════════════════════════════════╝
 # Windmill Workflow Orchestration Platform
-# Deploy on: oci-E2-f_1 (129.151.228.66)
-# Port: 8000 (internal, proxied via NPM)
+# Deploy on: oci-A1-f_0 (oci-apps, 10.0.0.6)
+# Port: 8000 (internal, proxied via Caddy)
 
 services:
   windmill-db:
     image: postgres:16-alpine
     container_name: windmill-db
     restart: unless-stopped
+    network_mode: host
     env_file:
       - .secrets
     environment:
       - POSTGRES_DB=windmill
       - POSTGRES_USER=windmill
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGPORT=5436
     volumes:
       - windmill-db-data:/var/lib/postgresql/data
-    networks:
-      - windmill-net
     deploy:
       resources:
         limits:
@@ -24,7 +31,7 @@ services:
         reservations:
           memory: 64M
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U windmill -d windmill"]
+      test: ["CMD-SHELL", "pg_isready -U windmill -d windmill -p 5436"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,10 +40,11 @@ services:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-server
     restart: unless-stopped
+    network_mode: host
     env_file:
       - .secrets
     environment:
-      - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
+      - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@localhost:5436/windmill?sslmode=disable
       - MODE=server
       - BASE_URL=https://windmill.diegonmarcos.com
       - COOKIE_DOMAIN=diegonmarcos.com
@@ -50,16 +58,13 @@ services:
       - SMTP_FROM=${SMTP_FROM:-}
       - SMTP_USERNAME=${SMTP_USERNAME:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-    ports:
-      - "127.0.0.1:8000:8000"
+      - RUST_LOG=info
     depends_on:
       windmill-db:
         condition: service_healthy
     volumes:
       - windmill-server-data:/tmp/windmill
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - windmill-net
     deploy:
       resources:
         limits:
@@ -78,25 +83,25 @@ services:
     image: ghcr.io/windmill-labs/windmill:main
     container_name: windmill-worker
     restart: unless-stopped
+    network_mode: host
     env_file:
       - .secrets
     environment:
-      - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@windmill-db:5432/windmill?sslmode=disable
+      - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@localhost:5436/windmill?sslmode=disable
       - MODE=worker
       - WORKER_GROUP=default
       - NUM_WORKERS=2
       - DISABLE_NUSER=true
       - KEEP_JOB_DIR=false
       - METRICS_ENABLED=false
+      - RUST_LOG=info
     depends_on:
       windmill-server:
         condition: service_healthy
     volumes:
       - windmill-worker-data:/tmp/windmill
       - /var/run/docker.sock:/var/run/docker.sock
-      - /home/ubuntu/.ssh:/home/windmill/.ssh:ro
-    networks:
-      - windmill-net
+      - /opt/ssh-keys/windmill-worker:/home/windmill/.ssh:ro
     deploy:
       resources:
         limits:
@@ -104,11 +109,6 @@ services:
           cpus: '0.5'
         reservations:
           memory: 128M
-
-networks:
-  windmill-net:
-    name: windmill-net
-    driver: bridge
 
 volumes:
   windmill-db-data:

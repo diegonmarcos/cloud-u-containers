@@ -1,3 +1,10 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_lgtm/src/flake.nix       ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_lgtm/build.sh ship      ║
+# ╚══════════════════════════════════════════════════════════════════╝
 # LGTM Stack - Grafana Labs Observability
 # Deployed on: oci-A1-f_0 (Oracle Flex — consolidated)
 services:
@@ -5,21 +12,19 @@ services:
     image: grafana/grafana:latest
     container_name: lgtm_grafana
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:3016:3000"
+    network_mode: host
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_HTTP_PORT=3200
       - GF_SERVER_ROOT_URL=https://grafana.diegonmarcos.com
     depends_on:
       - loki
-    networks:
-      - dev_network
     healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3200/api/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,16 +33,13 @@ services:
     image: grafana/loki:latest
     container_name: lgtm_loki
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:3019:3100"
+    network_mode: host
     volumes:
       - loki_data:/loki
       - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - dev_network
+    command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=3110
     healthcheck:
-      test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
+      test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3110/ready']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -47,34 +49,21 @@ services:
     image: grafana/tempo:latest
     container_name: lgtm_tempo
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:3020:3200"
-      - "10.0.0.6:4317:4317"
-      - "10.0.0.6:4318:4318"
+    network_mode: host
     volumes:
       - tempo_data:/var/tempo
       - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
     command: ["-config.file=/etc/tempo/tempo.yaml"]
-    networks:
-      - dev_network
 
   mimir:
     image: grafana/mimir:latest
     container_name: lgtm_mimir
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:3021:8080"
+    network_mode: host
     volumes:
       - mimir_data:/data
       - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
     command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
-    networks:
-      - dev_network
-
-networks:
-  dev_network:
-    external: true
-    name: dev_network
 
 volumes:
   grafana_data:

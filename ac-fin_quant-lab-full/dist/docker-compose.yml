@@ -1,0 +1,114 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-full/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  research:
+    image: quay.io/jupyter/scipy-notebook:latest
+    container_name: quant_full_research
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - shared_data:/home/jovyan/data
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    command: >
+      sh -c "pip install openbb polars plotly &&
+             start-notebook.sh --NotebookApp.token=''"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8888/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  analytics:
+    image: python:3.12-slim
+    container_name: quant_full_analytics
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./scripts:/app
+      - shared_data:/data
+    working_dir: /app
+    command: >
+      sh -c "pip install polars numpy scipy pandas matplotlib seaborn plotly dash &&
+             tail -f /dev/null"
+
+  ml_brain:
+    image: python:3.12-slim
+    container_name: quant_full_ml
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./models:/workspace/models
+      - shared_data:/data
+    working_dir: /workspace
+    # Uncomment for GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: >
+      sh -c "pip install torch scikit-learn lightgbm pycaret xgboost &&
+             tail -f /dev/null"
+
+  risk_manager:
+    image: python:3.12-slim
+    container_name: quant_full_risk
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./risk_reports:/reports
+      - shared_data:/data
+    working_dir: /reports
+    command: >
+      sh -c "pip install riskfolio-lib quantstats cvxpy &&
+             tail -f /dev/null"
+
+  execution_engine:
+    image: python:3.12-slim
+    container_name: quant_full_engine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./strategies:/app/strategies
+      - shared_data:/data
+    working_dir: /app
+    command: >
+      sh -c "pip install nautilus_trader ib_insync &&
+             tail -f /dev/null"
+
+  database:
+    image: postgres:16-alpine
+    container_name: quant_full_db
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pg_data:
+    name: quant_full_pg_data
+  shared_data:
+    name: quant_full_shared_data
+

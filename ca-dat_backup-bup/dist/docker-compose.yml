@@ -1,29 +1,32 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-bup/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-bup/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 # bup - Git-based backup for database dumps
-# Deploy to: oci-p-flex_1
+# Deploy to: oci-A1-f_1
 # Receives dumps from all servers via SSH
 
 services:
   bup:
-    image: alpine:3.19
+    image: alpine:3.20
     container_name: bup-server
-    restart: always
+    restart: unless-stopped
+    network_mode: host
     command: >
       sh -c "
-        apk add --no-cache bup openssh-server &&
+        apk add --no-cache restic openssh-server &&
         mkdir -p /backup/databases /root/.ssh &&
         chmod 700 /root/.ssh &&
         ssh-keygen -A &&
         echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
-        bup init -r /backup/databases &&
-        /usr/sbin/sshd -D
+        /usr/sbin/sshd -D -p 2223
       "
     volumes:
       - bup_data:/backup/databases
       - ./authorized_keys:/root/.ssh/authorized_keys:ro
-    ports:
-      - "2223:22"
-    networks:
-      - backup_network
 
 volumes:
   bup_data:
@@ -33,6 +36,3 @@ volumes:
       o: bind
       device: /backup/databases
 
-networks:
-  backup_network:
-    external: true

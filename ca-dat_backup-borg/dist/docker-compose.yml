@@ -1,3 +1,10 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-borg/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-borg/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 # Borg - Binary backup for media/large files
 # Deploy to: oci-A1-f_1
 # SSH server for borg clients
@@ -7,6 +14,7 @@ services:
     image: alpine:3.19
     container_name: borg-server
     restart: unless-stopped
+    network_mode: host
     command: >
       sh -c "
         apk add --no-cache borgbackup openssh-server &&
@@ -14,15 +22,11 @@ services:
         chmod 700 /root/.ssh &&
         ssh-keygen -A &&
         echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
-        /usr/sbin/sshd -D
+        /usr/sbin/sshd -D -p 2224
       "
     volumes:
       - borg_data:/backup/media
       - ./authorized_keys:/root/.ssh/authorized_keys:ro
-    ports:
-      - "2224:22"
-    networks:
-      - backup_network
 
 volumes:
   borg_data:
@@ -32,6 +36,3 @@ volumes:
       o: bind
       device: /backup/media
 
-networks:
-  backup_network:
-    external: true
