@@ -9,7 +9,57 @@ import { getDriftReport, getConfig, getServiceFolder } from "../../shared/config
 import { getConfigFile } from "../../shared/files.js";
 import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH, SOLUTIONS_DIR } from "../../shared/paths.js";
 
+// ── Cloud-data output validator ──
+// Ensures API never returns empty/broken data that would overwrite good files.
+// Defense in depth: API validates on write, Dagu validates on read.
+function validateCloudData(endpoint: string, data: Record<string, unknown>): Record<string, unknown> {
+  // Must have _generated timestamp
+  if (!data._generated) {
+    data._generated = new Date().toISOString();
+  }
+
+  // Count actual data keys (exclude meta fields)
+  const metaKeys = new Set(["_generated", "_source", "_meta"]);
+  const dataKeys = Object.keys(data).filter(k => !metaKeys.has(k));
+
+  // Must have at least 1 data key
+  if (dataKeys.length === 0) {
+    throw new Error(`cloud-data/${endpoint}: empty response — no data keys`);
+  }
+
+  // Check that at least 1 data key has non-empty content
+  const hasContent = dataKeys.some(k => {
+    const v = data[k];
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === "object" && v !== null) return Object.keys(v).length > 0;
+    return v !== null && v !== undefined && v !== "";
+  });
+
+  if (!hasContent) {
+    throw new Error(`cloud-data/${endpoint}: all data keys are empty — refusing to serve`);
+  }
+
+  return data;
+}
+
 export async function registerInventoryRoutes(app: FastifyInstance) {
+  // ── Global guard for all /cloud-data/* endpoints ──
+  // Prevents serving empty/broken data that would overwrite good files downstream.
+  app.addHook("onSend", async (request, reply, payload) => {
+    if (!request.url.startsWith("/cloud-data/")) return payload;
+    if (reply.statusCode >= 400) return payload;
+
+    try {
+      const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+      validateCloudData(request.url, data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      app.log.error(`cloud-data validation failed: ${msg}`);
+      reply.code(500);
+      return JSON.stringify({ error: "Validation failed", detail: msg, url: request.url });
+    }
+    return payload;
+  });
   // ── Services (from services.ts) ──
 
   app.get("/services", { schema: { tags: ["Inventory"] } }, async () => {
