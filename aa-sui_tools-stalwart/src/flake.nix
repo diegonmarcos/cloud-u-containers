@@ -164,7 +164,10 @@
       # Security (rate-limiting, IP blocking) handled at cloud level (Caddy/firewalls)
       [server.security]
       trusted-networks = ["127.0.0.0/8", "10.0.0.0/24", "35.226.147.64/32"]
-      blocked-ip-addresses = false
+      allowed-ip-addresses = ["127.0.0.0/8", "10.0.0.0/24", "35.226.147.64/32"]
+
+      [authentication.fail2ban]
+      rate = "100/60s"
 
       # ── DKIM signing ────────────────────────────────────────────────
       [signature."dkim"]
