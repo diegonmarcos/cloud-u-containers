@@ -1,0 +1,50 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-infra-mcp/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  c3-infra-mcp:
+    image: ghcr.io/diegonmarcos/c3-infra-mcp:latest
+    container_name: c3-infra-mcp
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    env_file:
+      - .secrets
+    environment:
+      - MCP_HTTP_PORT=3100
+      - NODE_ENV=production
+      - GIT_BASE=/root/git
+      - MM_URL=http://mattermost.app:8065
+      - DAGU_API=http://10.0.0.3:8070
+      - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    volumes:
+      - /opt/ssh-keys/c3-infra-mcp:/root/.ssh:ro
+      - /nix/store:/nix/store:ro
+      - ~/.nix-profile/bin:/usr/local/nix-bin:ro
+      - ~/.config/gcloud:/root/.config/gcloud
+      - c3_git_repos:/root/git
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/mcp"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  c3_git_repos:
+    driver: local
