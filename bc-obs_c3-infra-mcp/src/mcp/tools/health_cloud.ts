@@ -121,7 +121,7 @@ function parseContainers(dockerPs: string): ContainerHealth[] {
     const name = parts[0] || "";
     const rawStatus = parts[1] || "";
     const image = parts[2] || "";
-    const restartCount = parseInt(parts[3] || "0") || 0;
+    const restartCount = 0; // docker ps doesn't expose restart count
     const { up, healthy, status } = parseDockerHealth(rawStatus);
     return { name, up, healthy, status, restartCount, image };
   });
@@ -194,7 +194,7 @@ echo ""
 echo "===load==="
 cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}' || echo "N/A"
 echo "===dockerPs==="
-timeout 5 docker ps -a --format '{{.Names}}|{{.Status}}|{{.Image}}|{{.RestartCount}}' 2>&1
+timeout 5 docker ps -a --format '{{.Names}}|{{.Status}}|{{.Image}}' 2>&1
 `.trim();
 
 function parseSection(output: string, name: string): string {
