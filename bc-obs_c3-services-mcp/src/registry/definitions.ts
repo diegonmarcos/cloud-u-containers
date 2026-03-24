@@ -49,8 +49,8 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
     name: "windmill",
     displayName: "Windmill",
     description: "Developer platform for scripts, flows, and apps",
-    vm: "oci-analytics",
-    wgIp: "10.0.0.4",
+    vm: "oci-apps",
+    wgIp: "10.0.0.6",
     port: 8000,
     api: {
       type: "openapi",
@@ -164,8 +164,8 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
     name: "ollama",
     displayName: "Ollama",
     description: "Local LLM inference server",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
+    vm: "gcp-t4",
+    wgIp: "10.0.0.8",
     port: 11434,
     api: {
       type: "custom-rest",
@@ -179,8 +179,8 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
     name: "radicale",
     displayName: "Radicale",
     description: "CalDAV/CardDAV calendar and contacts server",
-    vm: "oci-mail",
-    wgIp: "10.0.0.3",
+    vm: "oci-apps",
+    wgIp: "10.0.0.6",
     port: 5232,
     domain: "cal.diegonmarcos.com",
     api: {

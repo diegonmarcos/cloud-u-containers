@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
 
-const WINDMILL_BASE = "http://10.0.0.4:8000";
+const WINDMILL_BASE = "http://10.0.0.6:8000";
 
 function wmApi(method: string, path: string, body?: string): string {
   const token = process.env.WINDMILL_TOKEN ?? "";
