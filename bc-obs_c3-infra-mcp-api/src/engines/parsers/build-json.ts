@@ -7,7 +7,35 @@ export interface ProxyPathOverride {
   strip_prefix?: boolean;
 }
 
+// New schema: proxy.primary — the custom/vanity route
+export interface ProxyPrimaryConfig {
+  domain?: string;
+  type?: "subdomain" | "path" | "l4";
+  parent_domain?: string;
+  base_path?: string;
+  auth?: string;
+  paths?: Record<string, ProxyPathOverride>;
+  github_pages?: string;
+  landing_page?: string;
+  tls_skip_verify?: boolean;
+  max_upload?: string;
+  streaming?: boolean;
+  timeout?: string;
+}
+
+// New schema: proxy.app_hub — standardized app.diegonmarcos.com/{name} route
+export interface AppHubConfig {
+  enabled?: boolean;   // default: true (false for infra/backend services)
+  auth?: string;       // inherits from primary.auth if not set
+}
+
+// Combined proxy config — supports both old flat format and new primary/app_hub format
 export interface ProxyConfig {
+  // New schema fields
+  primary?: ProxyPrimaryConfig;
+  app_hub?: AppHubConfig | false;
+
+  // Legacy flat fields (backward compat during migration)
   upstream?: string;
   auth?: string;
   paths?: Record<string, ProxyPathOverride>;
@@ -20,6 +48,7 @@ export interface ProxyConfig {
   type?: "subdomain" | "path" | "l4";
   parent_domain?: string;
   base_path?: string;
+  additional_routes?: unknown[];
 }
 
 export interface PortConfig {
@@ -63,6 +92,9 @@ export interface BuildJsonEntry {
   description: string;
   flake?: string;
   folder: string;
+  // Standardized routing fields
+  port?: number;               // Main listening port (REQUIRED for routable services)
+  dns?: string;                // Internal DNS name, e.g. "{name}.app" (REQUIRED for routable services)
   // Declarative infrastructure fields
   proxy?: ProxyConfig;
   ports?: Record<string, PortConfig>;
@@ -128,6 +160,10 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         ? folder.replace(/^[a-z]{2}-[a-z]{3}_/, "")
         : undefined;
 
+      // Derive dns from name if not explicitly set
+      const port: number | undefined = bj.port;
+      const dns: string | undefined = bj.dns ?? (port ? `${name}.app` : undefined);
+
       entries.push({
         name,
         category,
@@ -136,6 +172,9 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         description: bj.description || "",
         flake,
         folder,
+        // Standardized routing fields
+        ...(port != null ? { port } : {}),
+        ...(dns ? { dns } : {}),
         // Pass through declarative infrastructure fields if present
         ...(bj.proxy ? { proxy: bj.proxy } : {}),
         ...(bj.ports ? { ports: bj.ports } : {}),
