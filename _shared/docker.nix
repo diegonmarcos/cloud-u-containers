@@ -314,8 +314,16 @@ in {
         else "\nvolumes:\n" + builtins.concatStringsSep "\n" (
           builtins.attrValues (builtins.mapAttrs (name: cfg:
             let
+              isExternal = cfg.external or false;
+              extName = cfg.name or name;
               drv = if cfg ? driver then "\n    driver: ${cfg.driver}" else "";
-            in "  ${name}:${drv}"
+              drvOpts = if cfg ? driver_opts then "\n    driver_opts:\n" +
+                builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs (k: v:
+                  "      ${k}: ${v}") cfg.driver_opts)) else "";
+            in if isExternal then
+              "  ${name}:\n    external: true\n    name: ${extName}"
+            else
+              "  ${name}:${drv}${drvOpts}"
           ) volumes)
         );
 
