@@ -70,7 +70,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
 
 export function registerFrontendReadTools(server: McpServer) {
   server.tool(
-    "front_list_projects",
+    "front-data-list_projects",
     "List all front-end web projects with framework, port, and build type",
     {
       category: z
@@ -105,7 +105,7 @@ export function registerFrontendReadTools(server: McpServer) {
   );
 
   server.tool(
-    "front_get_project",
+    "front-data-get_project",
     "Get detailed info about a front-end project: build.json, package.json deps, file structure",
     {
       project: z.string().describe("Project name (directory name, e.g. 'landpage', 'myfeed', 'c_root')"),

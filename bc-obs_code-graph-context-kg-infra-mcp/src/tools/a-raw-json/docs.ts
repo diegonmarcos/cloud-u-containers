@@ -17,7 +17,7 @@ export function registerDocsTools(server: McpServer) {
 
   // ── Cloud Docs Overview ─────────────────────────────────────────────
   server.tool(
-    "c3_docs_overview",
+    "cloud-docs-overview",
     "Get the cloud documentation portal overview — architecture, VMs, service categories, how the docs portal works.",
     {},
     async () => {
@@ -41,7 +41,7 @@ export function registerDocsTools(server: McpServer) {
 
   // ── Service Documentation ───────────────────────────────────────────
   server.tool(
-    "c3_docs_service",
+    "cloud-docs-service",
     "Get a specific service's generated documentation (spec page from mdBook build). Shows all configured values from flake.nix.",
     { service: z.string().describe("Service folder name (e.g. 'bb-sec_caddy', 'aa-sui_photoprism')") },
     async ({ service }) => {
@@ -101,7 +101,7 @@ export function registerDocsTools(server: McpServer) {
 
   // ── Cloud README ────────────────────────────────────────────────────
   server.tool(
-    "c3_readme",
+    "cloud-docs-readme",
     "Get the cloud repo README.md — full infrastructure documentation, build system spec, service structure, deployment guide.",
     {},
     async () => {
@@ -115,7 +115,7 @@ export function registerDocsTools(server: McpServer) {
 
   // ── Cloud Context ─────────────────────────────────────────────────
   server.tool(
-    "cloud_context",
+    "cloud-docs-context",
     "Get a dynamic infrastructure context summary. 'compact' (~10k tokens): VM table, services, architecture, tool index. 'full' (~50k tokens): everything + topology.md, configs.md, README, deps.",
     { size: z.enum(["compact", "full"]).describe("Summary size: 'compact' or 'full'") },
     async ({ size }) => ({

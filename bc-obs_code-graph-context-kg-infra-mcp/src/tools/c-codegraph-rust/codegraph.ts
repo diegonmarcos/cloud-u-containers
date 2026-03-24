@@ -9,7 +9,7 @@ const NOT_DEPLOYED = "CodeGraph-Rust is not yet deployed. This tool is reserved 
 
 export function registerCodegraphTools(server: McpServer): void {
   server.tool(
-    "codegraph_trace_call_path",
+    "codegraph-trace_call_path",
     "[Future] Trace the full call chain between two functions using CodeGraph-Rust's graph database",
     {
       from_function: z.string().describe("Source function name (e.g. 'handleLogin')"),
@@ -19,7 +19,7 @@ export function registerCodegraphTools(server: McpServer): void {
   );
 
   server.tool(
-    "codegraph_impact_analysis",
+    "codegraph-impact_analysis",
     "[Future] Analyze what code would be affected by changing a specific function or class",
     {
       target: z.string().describe("Function, class, or file to analyze impact for"),
@@ -29,7 +29,7 @@ export function registerCodegraphTools(server: McpServer): void {
   );
 
   server.tool(
-    "codegraph_dependencies",
+    "codegraph-dependencies",
     "[Future] Query the full dependency graph for a module, file, or function",
     {
       target: z.string().describe("Module, file, or function to query dependencies for"),

@@ -71,7 +71,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
 
 export function registerFrontendExecTools(server: McpServer) {
   server.tool(
-    "front_build",
+    "front-build",
     "Build a front-end project using the universal build.sh engine",
     {
       project: z.string().describe("Project name"),
@@ -119,7 +119,7 @@ export function registerFrontendExecTools(server: McpServer) {
   );
 
   server.tool(
-    "front_dev_server",
+    "front-dev_server",
     "Start, stop, or check status of a project's dev server",
     {
       project: z.string().describe("Project name"),
@@ -159,7 +159,7 @@ export function registerFrontendExecTools(server: McpServer) {
   );
 
   server.tool(
-    "front_deploy",
+    "front-deploy",
     "Run deploy.sh to merge deps and build all changed projects (CI-like)",
     {
       phase: z

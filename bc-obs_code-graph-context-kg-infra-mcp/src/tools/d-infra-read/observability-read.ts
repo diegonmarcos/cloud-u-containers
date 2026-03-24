@@ -46,16 +46,16 @@ function plainText(text: string): { content: { type: "text"; text: string }[] } 
 export function registerObservabilityReadTools(server: McpServer) {
   // ── Health (10 tools) ──
 
-  server.tool("health_alive", "Check if the API is alive (heartbeat)", {}, async () => {
+  server.tool("cloud-data-health_alive", "Check if the API is alive (heartbeat)", {}, async () => {
     return jsonText("Health: OK", healthAlive());
   });
 
-  server.tool("health_declared", "List config-declared services (instant, no network probing)", {}, async () => {
+  server.tool("cloud-data-health_declared", "List config-declared services (instant, no network probing)", {}, async () => {
     return jsonText("Declared services", healthDeclared());
   });
 
   server.tool(
-    "health_deployed",
+    "cloud-data-health_deployed",
     "List live deployed containers on VMs (probes via SSH/Docker)",
     { vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)") },
     async ({ vm }) => {
@@ -64,12 +64,12 @@ export function registerObservabilityReadTools(server: McpServer) {
     },
   );
 
-  server.tool("health_drift", "Show drift between declared config and deployed containers", {}, async () => {
+  server.tool("cloud-data-health_drift", "Show drift between declared config and deployed containers", {}, async () => {
     return jsonText("Config drift", healthDrift());
   });
 
   server.tool(
-    "health_status",
+    "cloud-data-health_status",
     "Full health dashboard — declared + deployed + drift combined",
     { vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)") },
     async ({ vm }) => {
@@ -79,7 +79,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "health_tier1",
+    "cloud-data-health_tier1",
     "Quick UP check: TCP/SSH-keyscan reachability for all VMs (~2s)",
     { vm: z.string().optional().describe("Filter by VM ID or alias") },
     async ({ vm }) => {
@@ -89,7 +89,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "health_tier2",
+    "cloud-data-health_tier2",
     "SSH session check: full authentication test for all VMs (~5s)",
     { vm: z.string().optional().describe("Filter by VM ID or alias") },
     async ({ vm }) => {
@@ -99,7 +99,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "health_tier3",
+    "cloud-data-health_tier3",
     "Full probe: resources + docker ps for all VMs (~8s)",
     { vm: z.string().optional().describe("Filter by VM ID or alias") },
     async ({ vm }) => {
@@ -108,18 +108,18 @@ export function registerObservabilityReadTools(server: McpServer) {
     }
   );
 
-  server.tool("health_endpoints", "Probe HTTP health endpoints for all services", {}, async () => {
+  server.tool("cloud-data-health_endpoints", "Probe HTTP health endpoints for all services", {}, async () => {
     return jsonText("Endpoint Health", healthEndpoints());
   });
 
-  server.tool("metrics_snapshot", "Get current container metrics (CPU, memory, I/O)", {}, async () => {
+  server.tool("cloud-data-metrics", "Get current container metrics (CPU, memory, I/O)", {}, async () => {
     return jsonText("Container Metrics", metricsSnapshot());
   });
 
   // ── Profiling (3 tools) ──
 
   server.tool(
-    "profile_container",
+    "cloud-data-profile_container",
     "Run diagnostic profile: CPU, memory, network, disk, ports, health, processes, uptime",
     { container: z.string().describe("Container name to profile") },
     async ({ container }) => {
@@ -128,7 +128,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "profile_vm",
+    "cloud-data-profile_vm",
     "Batch profile all containers on a VM",
     { vm: z.string().describe("VM ID or alias to profile") },
     async ({ vm }) => {
@@ -138,7 +138,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "profile_service",
+    "cloud-data-profile_service",
     "Profile all containers for a service (by service name)",
     { service: z.string().describe("Service name") },
     async ({ service }) => {
@@ -149,7 +149,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   // ── VM Diagnostics (4 tools) ──
 
   server.tool(
-    "vm_network",
+    "cloud-data-vm_network",
     "Show network configuration for a VM (interfaces, routes, WireGuard)",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -159,7 +159,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "vm_top",
+    "cloud-data-vm_top",
     "Show top processes on a VM",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -169,7 +169,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "vm_disk_usage",
+    "cloud-data-vm_disk",
     "Show disk usage breakdown on a VM (du -sh per directory)",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -179,7 +179,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "vm_journal",
+    "cloud-data-vm_journal",
     "Get recent systemd journal logs from a VM",
     {
       vm: z.string().describe("VM ID or alias"),
@@ -195,7 +195,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   // ── Tests (1 tool) ──
 
   server.tool(
-    "c3_test",
+    "cloud-data-test",
     "Run an infrastructure test suite to validate the cloud is working",
     {
       suite: z.enum([
@@ -223,7 +223,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   // ── VM Status & Reports (2 tools) ──
 
   server.tool(
-    "c3_vm_status",
+    "cloud-data-vm_status",
     "Get combined VM status: uptime, WireGuard, docker ps, disk, memory",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -232,7 +232,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "c3_report",
+    "cloud-data-report",
     "Generate a text report (health, services, drift, resources, security)",
     {
       type: z.enum(["health", "services", "drift", "resources", "security"]).describe("Report type"),
@@ -243,7 +243,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   // ── Database READ (4 tools) ──
 
   server.tool(
-    "db_health_history",
+    "cloud-data-db_health_history",
     "Get health check history for a VM (last N checks from SQLite)",
     {
       vm: z.string().describe("VM ID or alias"),
@@ -255,7 +255,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "db_uptime_report",
+    "cloud-data-db_uptime",
     "Get uptime statistics for a VM over a time period",
     {
       vm: z.string().describe("VM ID or alias"),
@@ -268,7 +268,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "db_audit_log",
+    "cloud-data-db_audit",
     "Get audit log entries (all mutating operations)",
     {
       tool: z.string().optional().describe("Filter by tool name"),
@@ -281,7 +281,7 @@ export function registerObservabilityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "db_deploy_history",
+    "cloud-data-db_deploy",
     "Get deployment history for a service",
     {
       service: z.string().optional().describe("Service name (omit for all)"),

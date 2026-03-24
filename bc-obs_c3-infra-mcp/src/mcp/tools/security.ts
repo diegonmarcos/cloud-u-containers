@@ -13,7 +13,7 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
 
 export function registerSecurityExecTools(server: McpServer) {
   server.tool(
-    "security_scan",
+    "security-scan",
     "Full security scan: privileged containers, root users, exposed ports, Docker config",
     { vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)") },
     async ({ vm }) => {
@@ -23,7 +23,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security_docker",
+    "security-docker",
     "Docker-specific security checks: daemon config, socket permissions, capabilities",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -33,7 +33,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security_ssh_keys",
+    "security-ssh_keys",
     "Check SSH key permissions and authorized_keys configuration",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -43,7 +43,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security_tokens",
+    "security-tokens",
     "Check for exposed secrets/tokens in running containers (env vars, files)",
     {},
     async () => {

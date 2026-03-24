@@ -6,7 +6,7 @@ const NTFY_BASE = "http://10.0.0.1:8090";
 
 export function registerNtfyTools(server: McpServer) {
   server.tool(
-    "ntfy_health",
+    "ntfy-health",
     "Check ntfy server health",
     {},
     async () => {
@@ -18,7 +18,7 @@ export function registerNtfyTools(server: McpServer) {
   );
 
   server.tool(
-    "ntfy_publish",
+    "ntfy-publish",
     "Publish a push notification via ntfy",
     {
       topic: z.string().describe("Topic name"),

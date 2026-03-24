@@ -61,7 +61,7 @@ function formatResult(label: string, result: HttpResult): { content: { type: "te
 
 export function registerCrawleeExecTools(server: McpServer) {
   server.tool(
-    "crawlee_run_actor",
+    "crawlee-run_actor",
     "Start a crawl by running an actor with input JSON. Returns the run object with runId.",
     {
       actorId: z.string().describe("Actor ID or name"),
@@ -86,7 +86,7 @@ export function registerCrawleeExecTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee_abort_run",
+    "crawlee-abort_run",
     "Abort a running crawl",
     {
       runId: z.string().describe("Run ID to abort"),
