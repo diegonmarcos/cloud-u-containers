@@ -41,9 +41,9 @@
             GRANT_SUDO: "yes"
           command: >
             sh -c "pip install polars openbb quantstats riskfolio-lib plotly &&
-                   start-notebook.sh --NotebookApp.token='''"
+                   start-notebook.sh --NotebookApp.token=''' --ServerApp.port=${toString config.jupyter_port}"
           healthcheck:
-            test: ["CMD-SHELL", "curl -sf http://localhost:8888/api || exit 1"]
+            test: ["CMD-SHELL", "curl -sf http://localhost:${toString config.jupyter_port}/api || exit 1"]
             interval: 30s
             timeout: 10s
             retries: 3
