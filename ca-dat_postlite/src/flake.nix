@@ -26,36 +26,36 @@
 
       services:
         sqlite-npm:
-          image: germanorizzo/ws4sqlite:latest
+          image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-npm
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/npm/data:/data
           command: ["-port", "8880", "-db", "/data/database.sqlite?mode=ro"]
 
         sqlite-vaultwarden:
-          image: germanorizzo/ws4sqlite:latest
+          image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-vaultwarden
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
           command: ["-port", "8881", "-db", "/data/db.sqlite3?mode=ro"]
 
         sqlite-ntfy:
-          image: germanorizzo/ws4sqlite:latest
+          image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-ntfy
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
           command: ["-port", "8882", "-db", "/data/cache.db?mode=ro"]
 
         sqlite-authelia:
-          image: germanorizzo/ws4sqlite:latest
+          image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-authelia
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
@@ -67,7 +67,7 @@
             dockerfile: Dockerfile
           image: postlite:latest
           container_name: postlite-npm
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/npm/data:/data
@@ -76,7 +76,7 @@
         postlite-vaultwarden:
           image: postlite:latest
           container_name: postlite-vaultwarden
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
@@ -85,7 +85,7 @@
         postlite-ntfy:
           image: postlite:latest
           container_name: postlite-ntfy
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
@@ -94,7 +94,7 @@
         postlite-authelia:
           image: postlite:latest
           container_name: postlite-authelia
-          restart: unless-stopped
+          restart: on-failure:3
           network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
