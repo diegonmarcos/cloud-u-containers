@@ -1,6 +1,11 @@
 {
   "name": "caddy",
   "description": "Caddy reverse proxy + security dashboard (gcp-proxy)",
+  "ports": {
+    "http": 80,
+    "https": 443,
+    "admin": 2019
+  },
   "category": "sec",
   "domain": "proxy.diegonmarcos.com",
   "deploy": {

@@ -1,6 +1,9 @@
 {
   "name": "gitea",
   "description": "Self-hosted Git service",
+  "ports": {
+    "app": 3017
+  },
   "category": "data",
   "domain": "git.diegonmarcos.com",
   "deploy": {

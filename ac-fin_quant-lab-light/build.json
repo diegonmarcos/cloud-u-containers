@@ -1,6 +1,11 @@
 {
   "name": "quant-lab-light",
   "description": "Lightweight quant research: Jupyter + NautilusTrader + Postgres",
+  "ports": {
+    "app": 8889,
+    "engine": 5001,
+    "db": 5434
+  },
   "category": "fin",
   "deploy": {
     "host": "oci-apps",

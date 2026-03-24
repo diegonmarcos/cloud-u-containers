@@ -1,6 +1,9 @@
 {
   "name": "hickory-dns",
   "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+  "ports": {
+    "dns": 53
+  },
   "category": "cloud",
   "domain": "dns.internal",
   "deploy": {

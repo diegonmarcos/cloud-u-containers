@@ -1,6 +1,9 @@
 {
   "name": "radicale",
   "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
+  "ports": {
+    "app": 5232
+  },
   "category": "app",
   "domain": "cal.diegonmarcos.com",
   "deploy": {
