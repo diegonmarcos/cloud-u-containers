@@ -1,6 +1,7 @@
 /**
  * MCP Proxy — connects as MCP CLIENT to child MCP servers (mattermost-mcp,
- * mailu-mcp) and re-exposes their tools under this hub server.
+ * mail-mcp, google-workspace-mcp, code-graph-context) and re-exposes
+ * their tools under this hub server.
  *
  * Zero code duplication: child MCPs are the source of truth for their tools.
  * If a child adds a new tool, it appears here automatically on next session.
@@ -19,6 +20,8 @@ interface ChildMcp {
 const CHILD_MCPS: ChildMcp[] = [
   { name: "mattermost-mcp", url: "http://mattermost-mcp:3102/mcp" },
   { name: "mail-mcp", url: "http://mail-mcp:3103/mcp" },
+  { name: "google-workspace-mcp", url: "http://google-workspace-mcp:8000/mcp" },
+  { name: "code-graph-context", url: "http://code-graph-context:3105/mcp" },
 ];
 
 export async function registerProxiedTools(server: McpServer): Promise<void> {
