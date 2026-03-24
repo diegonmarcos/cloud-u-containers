@@ -186,21 +186,32 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     for (const [svcName, svc] of Object.entries(config.services ?? {})) {
       const s = svc as any;
       // Enrich with build.json proxy config
-      if (!s.proxy) {
-        const folder = s.folder ?? getServiceFolder(svcName);
-        const bjPath = join(solutionsDir, folder, "build.json");
-        if (existsSync(bjPath)) {
-          try {
-            const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
-            if (bj.proxy) s.proxy = bj.proxy;
-            if (bj.domain && !s.domain) s.domain = bj.domain;
-          } catch {}
-        }
+      const folder = s.folder ?? getServiceFolder(svcName);
+      const bjPath = join(solutionsDir, folder, "build.json");
+      let bj: any = null;
+      if (existsSync(bjPath)) {
+        try { bj = JSON.parse(readFileSync(bjPath, "utf-8")); } catch {}
       }
-      const proxy = s.proxy;
+      if (!s.proxy && bj?.proxy) s.proxy = bj.proxy;
+      if (bj?.domain && !s.domain) s.domain = bj.domain;
+
+      // Normalize new build.json schema (proxy.primary) → old flat proxy format
+      let proxy = s.proxy;
+      if (proxy?.primary && !proxy.upstream) {
+        const dns = bj?.dns ?? `${svcName}.app`;
+        const port = bj?.ports?.app;
+        const p = proxy.primary;
+        proxy = {
+          ...proxy,
+          ...p,
+          upstream: port ? `${dns}:${port}` : undefined,
+          domain: p.domain ?? s.domain,
+          type: p.type ?? "subdomain",
+        };
+      }
       if (!proxy || proxy.type === "special") continue;
 
-      const domain = s.domain;
+      const domain = proxy.domain ?? s.domain;
       // Map auth: "bypass" → "none" for Caddy (bypass means no forward_auth)
       const auth = proxy.auth === "bypass" ? "none" : (proxy.auth ?? "two_factor");
 
