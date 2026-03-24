@@ -3,6 +3,7 @@
   "description": "C3 Services REST API — service API gateway Fastify API",
   "port": 8082,
   "dns": "c3-services-api.app",
+  "ports": {"app": 8082},
   "category": "obs",
   "domain": "api.diegonmarcos.com/services",
   "docker": {

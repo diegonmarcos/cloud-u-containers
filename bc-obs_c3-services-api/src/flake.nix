@@ -8,20 +8,21 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      container_name = "c3-services-api";
-      image = "ghcr.io/diegonmarcos/c3-services-api:latest";
-      port = 8082;
+      container_name = buildJson.name;
+      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
+      port = buildJson.ports.app;
     };
 
-    title = "C3 Services REST API";
+    title = buildJson.description;
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/bc-obs_c3-services-api/src/flake.nix";
 
-      services.c3-services-api = docker.mkService {
-        name = "c3-services-api";
+      services.${config.container_name} = docker.mkService {
+        name = config.container_name;
         image = config.image;
         container_name = config.container_name;
         networkMode = "host";
@@ -46,7 +47,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "c3-services-api-configs" {} ''
+      defaultPkg = pkgs.runCommand "${config.container_name}-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';
