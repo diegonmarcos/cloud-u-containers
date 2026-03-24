@@ -24,6 +24,8 @@ steps:
     command: |
       export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       cd "$REPO_DIR"
+      # Clean stale git locks from crashed processes
+      rm -f .git/index.lock .git/shallow.lock .git/refs/heads/*.lock 2>/dev/null
       git pull --rebase origin main || {
         echo "Rebase conflict — resetting to remote"
         git rebase --abort 2>/dev/null
