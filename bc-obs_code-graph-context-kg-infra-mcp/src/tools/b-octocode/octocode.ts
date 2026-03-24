@@ -6,11 +6,12 @@ import { promisify } from "node:util";
 const exec = promisify(execFile);
 const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
 
-async function runOctocode(args: string[]): Promise<string> {
+async function runOctocode(args: string[], cwd?: string): Promise<string> {
   try {
     const { stdout, stderr } = await exec(OCTOCODE_BIN, args, {
       timeout: 60_000,
       maxBuffer: 10 * 1024 * 1024,
+      ...(cwd ? { cwd } : {}),
     });
     return stdout || stderr || "(no output)";
   } catch (err: unknown) {
@@ -63,7 +64,7 @@ export function registerOctocodeTools(server: McpServer): void {
       path: z.string().describe("Absolute path to the repository or directory to index"),
     },
     async ({ path }) => {
-      const result = await runOctocode(["index", path]);
+      const result = await runOctocode(["index"], path);
       return { content: [{ type: "text" as const, text: result }] };
     }
   );
