@@ -16,7 +16,6 @@ import { registerOllamaTools } from "./tools/ollama.js";
 import { registerDaguTools } from "./tools/dagu.js";
 import { registerWindmillTools } from "./tools/windmill.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
 
@@ -28,6 +27,7 @@ import { registerGristTools } from "./tools/grist.js";
 import { registerHedgedocTools } from "./tools/hedgedoc.js";
 import { registerEtherpadTools } from "./tools/etherpad.js";
 import { registerSnappymailTools } from "./tools/snappymail.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 
@@ -58,10 +58,9 @@ async function main() {
   registerDaguTools(server);          //  2: list, trigger
   registerWindmillTools(server);      //  9: scripts, detail, run_script, flows, run_flow, jobs, job_detail, schedules, resources
   registerCrawleeTools(server);       //  8: actors, detail, run, runs, run_detail, abort, datasets, items
-  registerStalwartTools(server);      //  7: users, user_detail, queue, config, metrics, queue_action, config_update
   registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
   registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
-                                      // ── infra subtotal: 71
+                                      // ── infra subtotal: 64
 
   // ═══════════════════════════════════════════════════════════════
   // USER — apps, collaboration, personal
@@ -73,9 +72,10 @@ async function main() {
   registerHedgedocTools(server);      //  7: notes, detail, content, create, delete, me, history
   registerEtherpadTools(server);      //  9: pads, text, html, create, set_text, delete, revisions, authors, users
   registerSnappymailTools(server);    //  3: health, domains, domain_config
+  registerStalwartTools(server);      //  7: users, user_detail, queue, config, metrics, queue_action, config_update
   registerRadicaleTools(server);      //  3: calendars, contacts, events
   registerVaultwardenTools(server);   //  4: health, status, users, orgs
-                                      // ── user subtotal: 58
+                                      // ── user subtotal: 65
 
   // ── Proxied child MCPs ────────────────────────────────────────
   // mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp
