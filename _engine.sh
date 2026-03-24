@@ -314,7 +314,7 @@ step_build() {
             done
             log "Included cloud-data/*.json + *.md in dist/"
         fi
-        # Include config.json from repo root (needed by code-graph-context)
+        # Include config.json from repo root (needed by cloud-cgc-mcp)
         if [ -f "$REPO_ROOT/config.json" ]; then
             cp "$REPO_ROOT/config.json" "$DIST_DIR/"
             log "Included config.json in dist/"

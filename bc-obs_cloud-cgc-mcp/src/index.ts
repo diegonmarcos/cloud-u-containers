@@ -17,7 +17,7 @@ import { registerCrawleeReadTools } from "./tools/d-infra-read/crawlee-read.js";
 import { registerResources } from "./tools/d-infra-read/resources/index.js";
 import { buildContextSummary } from "./context.js";
 
-const log = (msg: string) => process.stderr.write(`[code-graph-context] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[cloud-cgc-mcp] ${msg}\n`);
 
 function createMcpServer(): McpServer {
   const server = new McpServer({
@@ -79,14 +79,14 @@ function createMcpServer(): McpServer {
 async function startStdio(): Promise<void> {
   const server = createMcpServer();
   const transport = new StdioServerTransport();
-  log("Starting code-graph-context MCP server v6.0.0 (81 tools, 11 resources) via stdio...");
+  log("Starting cloud-cgc-mcp v6.0.0 (81 tools, 11 resources) via stdio...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
 
 // ── HTTP transport (for proxying via c3-services-mcp) ─────────────────
 const HTTP_PORT = parseInt(process.env.MCP_HTTP_PORT ?? "3105", 10);
-const SESSION_ID = "code-graph-context-session";
+const SESSION_ID = "cloud-cgc-mcp-session";
 
 async function startHttp(): Promise<void> {
   let session: { transport: StreamableHTTPServerTransport; server: McpServer } | null = null;
