@@ -45,6 +45,7 @@
             - OLLAMA_HOST=0.0.0.0:${toString config.api_port}
             - OLLAMA_NUM_PARALLEL=2
             - OLLAMA_MAX_LOADED_MODELS=2
+            - OLLAMA_NUM_CTX=32768
           deploy:
             resources:
               limits:
