@@ -6,7 +6,6 @@
   "build": {
     "extra_copy": [
       "Cargo.toml",
-      "Cargo.lock",
       "Dockerfile",
       "src"
     ]

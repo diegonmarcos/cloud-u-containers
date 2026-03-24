@@ -126,7 +126,7 @@ step_docker_remote() {
 
     log "Syncing Docker context to $DEPLOY_HOST:$REMOTE_BUILD_DIR"
     ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
-    rsync -avz --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
+    rsync -avzL --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
 
     log "Building Docker image on $DEPLOY_HOST (remote)"
     ssh $SSH_OPTS "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE:latest -f $DOCKERFILE ."
