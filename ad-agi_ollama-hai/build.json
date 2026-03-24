@@ -1,0 +1,9 @@
+{
+  "name": "ollama-hai",
+  "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
+  "category": "agi",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/ollama-hai"
+  }
+}

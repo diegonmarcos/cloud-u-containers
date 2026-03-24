@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "rig-agentic";
+      container_name = "rig-agentic-sonn-14bq8";
       port = 8090;
       ollama_url = "http://10.0.0.8:11434";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
@@ -25,15 +25,15 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/ad-agi_rig-agentic/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/ad-agi_rig-agentic/build.sh ship ║
+      # ║ Source: ~/git/cloud/a_solutions/ad-agi_rig-agentic-sonn-14bq8/     ║
+      # ║ Rebuild: build.sh ship                                              ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        rig-agentic:
+        rig-agentic-sonn-14bq8:
           build:
             context: .
             dockerfile: Dockerfile
-          image: rig-agentic:latest
+          image: rig-agentic-sonn-14bq8:latest
           container_name: ${config.container_name}
           restart: unless-stopped
           network_mode: host
@@ -49,6 +49,9 @@
             - MATTERMOST_URL=${config.mattermost_url}
             - GUARDRAIL_MAX_TURNS=20
             - GUARDRAIL_DENIED_TOOLS=
+            - GUARDRAIL_ALLOWED_TOOLS=
+            - SELF_HEALING_ENABLED=true
+            - MM_BOT_MENTION=@ollama-14bq8-ai
             - RUST_LOG=rig_agentic=info
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -163,7 +166,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "rig-agentic-configs" {} ''
+      defaultPkg = pkgs.runCommand "rig-agentic-sonn-14bq8-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';

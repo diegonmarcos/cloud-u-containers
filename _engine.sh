@@ -302,15 +302,30 @@ step_build() {
         mv "$SERVICE_DIR/.docker-src-hash-new" "$DIST_DIR/.docker-src-hash"
     fi
 
-    # Include cloud-data/*.json in dist/ for runtime use (e.g. C3 API needs topology)
+    # Include cloud-data/ files in dist/ for runtime use (e.g. C3 API needs topology)
     if [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
         CLOUD_DATA_DIR="$SERVICE_DIR/../../cloud-data"
+        FRONT_DATA_DIR="$SERVICE_DIR/../../front-data"
+        REPO_ROOT="$SERVICE_DIR/../.."
         if [ -d "$CLOUD_DATA_DIR" ]; then
-            for f in "$CLOUD_DATA_DIR"/*.json; do
+            for f in "$CLOUD_DATA_DIR"/*.json "$CLOUD_DATA_DIR"/*.md; do
                 [ -f "$f" ] || continue
                 cp "$f" "$DIST_DIR/"
             done
-            log "Included cloud-data/*.json in dist/"
+            log "Included cloud-data/*.json + *.md in dist/"
+        fi
+        # Include config.json from repo root (needed by code-graph-context)
+        if [ -f "$REPO_ROOT/config.json" ]; then
+            cp "$REPO_ROOT/config.json" "$DIST_DIR/"
+            log "Included config.json in dist/"
+        fi
+        # Include front-data/*.json if available
+        if [ -d "$FRONT_DATA_DIR" ]; then
+            for f in "$FRONT_DATA_DIR"/*.json; do
+                [ -f "$f" ] || continue
+                cp "$f" "$DIST_DIR/"
+            done
+            log "Included front-data/*.json in dist/"
         fi
     fi
 

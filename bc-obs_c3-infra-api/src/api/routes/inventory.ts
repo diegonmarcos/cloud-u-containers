@@ -740,6 +740,52 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
+  // ── GHA Workflow Config (VM SSH secrets + service→VM mapping for workflow generation) ──
+
+  app.get("/cloud-data/gha-config", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    const config = getConfig();
+
+    const vms: Record<string, any> = {};
+    for (const [vmId, vm] of Object.entries(config.vms)) {
+      const v = vm as any;
+      if (!v.ssh_alias || !v.gha) continue;
+      const gha = v.gha;
+      vms[v.ssh_alias] = {
+        ssh_secret: gha.ssh_secret,
+        ...(gha.host_literal ? { host: v.ip, user: v.user } : {}),
+        ...(gha.host_secret ? { host_secret: gha.host_secret, user_secret: gha.user_secret } : {}),
+      };
+    }
+
+    const services: Record<string, any> = {};
+    for (const [name, svc] of Object.entries(config.services)) {
+      const s = svc as any;
+      const folder = s.folder;
+      if (!folder) continue;
+
+      const bjPath = join(SOLUTIONS_DIR, folder, "build.json");
+      if (!existsSync(bjPath)) continue;
+      try {
+        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+        const host = bj.deploy?.host;
+        if (!host || host === "local" || host === "all") continue;
+        if (bj.frozen) continue; // Skip frozen services
+        services[name] = {
+          dir: folder,
+          vm: host,
+          has_docker: !!bj.docker,
+        };
+      } catch { continue; }
+    }
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "config.json + build.json via /cloud-data/gha-config",
+      vms,
+      services,
+    };
+  });
+
   // ── Files: config (from files.ts) ──
 
   app.get<{ Params: { service: string } }>(
