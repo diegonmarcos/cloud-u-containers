@@ -510,19 +510,14 @@ step_compose() {
 
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
-    # Image strategy: binary > forced pull (if image changed) > already local > registry pull
+    # Image strategy: binary > registry pull (always fresh)
     if [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
         log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
         log "Image built locally"
-    elif [ -n "$DOCKER_IMAGE_CHANGED" ] && [ -n "$FULL_IMAGE" ]; then
-        log "Image changed — pulling latest from registry"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable" || true
-    elif [ -n "$FULL_IMAGE" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "docker image inspect $FULL_IMAGE:latest >/dev/null 2>&1" 2>/dev/null; then
-        log "Image already local -- config-only restart"
     elif [ -n "$FULL_IMAGE" ]; then
-        log "No local image -- falling back to docker compose pull"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable"
+        log "Pulling latest image from registry"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable" || true
     fi
 
     # Pre-compose hook (e.g. mailu init.sh)
