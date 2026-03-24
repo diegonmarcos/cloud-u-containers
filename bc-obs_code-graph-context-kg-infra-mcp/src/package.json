@@ -4,7 +4,8 @@
   "description": "MCP server — A) Raw JSON infra knowledge, B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "postinstall": "bash scripts/install-octocode.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

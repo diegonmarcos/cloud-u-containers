@@ -4,7 +4,12 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const exec = promisify(execFile);
-const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const BUNDLED_BIN = join(__dirname, "..", "..", "bin", "octocode");
+const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? BUNDLED_BIN;
 
 async function runOctocode(args: string[]): Promise<string> {
   try {
