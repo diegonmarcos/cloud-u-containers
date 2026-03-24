@@ -14,7 +14,7 @@
       api_port = 11435;
       wg_ip = "10.0.0.6";
       timezone = "America/Chicago";
-      keep_alive = "10m";
+      keep_alive = "-1";
       models = [
         "qwen2.5:1.5b"
         "nomic-embed-text"
