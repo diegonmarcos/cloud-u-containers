@@ -18,6 +18,7 @@ import { registerWindmillTools } from "./tools/windmill.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
+import { registerRigTools } from "./tools/rig.js";
 
 // ── User: apps, collaboration, personal ─────────
 import { registerPhotoprismTools } from "./tools/photoprism.js";
@@ -60,7 +61,8 @@ async function main() {
   registerCrawleeTools(server);       //  8: actors, detail, run, runs, run_detail, abort, datasets, items
   registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
   registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
-                                      // ── infra subtotal: 64
+  registerRigTools(server);           //  5: status, health, run, tasks, task_detail
+                                      // ── infra subtotal: 69
 
   // ═══════════════════════════════════════════════════════════════
   // USER — apps, collaboration, personal
@@ -82,7 +84,7 @@ async function main() {
   await registerProxiedTools(server);
 
   const transport = new StdioServerTransport();
-  log("Starting c3-services MCP server v2.1.0 (135 native tools)...");
+  log("Starting c3-services MCP server v2.2.0 (140 native tools)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
