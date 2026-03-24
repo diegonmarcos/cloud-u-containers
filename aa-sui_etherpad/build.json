@@ -1,9 +1,11 @@
 {
   "name": "etherpad",
   "description": "Etherpad collaborative editor",
-  "port": 3012,
   "dns": "etherpad.app",
-  "ports": {"app": 3012, "db": 5436},
+  "ports": {
+    "app": 3012,
+    "db": 5436
+  },
   "category": "app",
   "domain": "pad.diegonmarcos.com",
   "deploy": {

@@ -1,9 +1,10 @@
 {
   "name": "matomo",
   "description": "Matomo hybrid analytics (oci-analytics)",
-  "port": 8080,
   "dns": "matomo.app",
-  "ports": {"app": 8080},
+  "ports": {
+    "app": 8080
+  },
   "category": "tools",
   "domain": "analytics.diegonmarcos.com",
   "deploy": {
@@ -42,14 +43,30 @@
       "domain": "analytics.diegonmarcos.com",
       "auth": "two_factor",
       "paths": {
-        "/matomo.js": { "auth": "public" },
-        "/matomo.php": { "auth": "public" },
-        "/piwik.js": { "auth": "public" },
-        "/piwik.php": { "auth": "public" },
-        "/collect.php": { "auth": "public" },
-        "/api.php": { "auth": "public" },
-        "/track.php": { "auth": "public" },
-        "/js/*": { "auth": "public" }
+        "/matomo.js": {
+          "auth": "public"
+        },
+        "/matomo.php": {
+          "auth": "public"
+        },
+        "/piwik.js": {
+          "auth": "public"
+        },
+        "/piwik.php": {
+          "auth": "public"
+        },
+        "/collect.php": {
+          "auth": "public"
+        },
+        "/api.php": {
+          "auth": "public"
+        },
+        "/track.php": {
+          "auth": "public"
+        },
+        "/js/*": {
+          "auth": "public"
+        }
       }
     }
   },
@@ -63,6 +80,8 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": ["matomo_data"]
+    "volumes": [
+      "matomo_data"
+    ]
   }
 }

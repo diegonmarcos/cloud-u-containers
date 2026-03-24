@@ -1,15 +1,18 @@
 {
   "name": "snappymail",
   "description": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
-  "port": 8888,
   "dns": "snappymail.app",
-  "ports": {"app": 8888},
+  "ports": {
+    "app": 8888
+  },
   "category": "app",
   "domain": "webmail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/snappymail",
-    "excludes": ["data/**"]
+    "excludes": [
+      "data/**"
+    ]
   },
   "compose": {
     "pre_hook": "init.sh"

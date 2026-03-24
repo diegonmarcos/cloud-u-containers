@@ -1,9 +1,10 @@
 {
   "name": "code-server",
   "description": "VS Code IDE (ide.diegonmarcos.com)",
-  "port": 8443,
   "dns": "code-server.app",
-  "ports": {"app": 8443},
+  "ports": {
+    "app": 8443
+  },
   "category": "app",
   "domain": "ide.diegonmarcos.com",
   "deploy": {

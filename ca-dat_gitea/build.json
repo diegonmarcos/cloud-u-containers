@@ -1,9 +1,10 @@
 {
   "name": "gitea",
   "description": "Self-hosted Git service",
-  "port": 3017,
   "dns": "gitea.app",
-  "ports": {"app": 3017},
+  "ports": {
+    "app": 3017
+  },
   "category": "data",
   "domain": "git.diegonmarcos.com",
   "deploy": {
@@ -28,6 +29,8 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": ["gitea_data"]
+    "volumes": [
+      "gitea_data"
+    ]
   }
 }

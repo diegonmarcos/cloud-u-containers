@@ -1,9 +1,10 @@
 {
   "name": "revealmd",
   "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
-  "port": 3014,
   "dns": "revealmd.app",
-  "ports": {"app": 3014},
+  "ports": {
+    "app": 3014
+  },
   "category": "app",
   "domain": "slides.diegonmarcos.com",
   "deploy": {

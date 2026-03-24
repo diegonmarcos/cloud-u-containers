@@ -1,9 +1,10 @@
 {
   "name": "c3-infra-api",
-  "description": "C3 REST API — Cloud Control Center Fastify API",
-  "port": 8081,
+  "description": "C3 REST API \u2014 Cloud Control Center Fastify API",
   "dns": "c3-infra-api.app",
-  "ports": {"app": 8081},
+  "ports": {
+    "app": 8081
+  },
   "category": "sec",
   "domain": "api.diegonmarcos.com/c3-api",
   "docker": {

@@ -1,9 +1,10 @@
 {
   "name": "dozzle",
   "description": "Dozzle - Real-time Docker log viewer",
-  "port": 9999,
   "dns": "dozzle.app",
-  "ports": {"app": 9999},
+  "ports": {
+    "app": 9999
+  },
   "category": "tools",
   "domain": "logs.diegonmarcos.com",
   "deploy": {

@@ -1,7 +1,6 @@
 {
   "name": "vaultwarden",
   "description": "Bitwarden password manager",
-  "port": 8880,
   "dns": "vaultwarden.app",
   "category": "mic",
   "domain": "vault.diegonmarcos.com",
@@ -31,6 +30,11 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": ["vaultwarden_data"]
+    "volumes": [
+      "vaultwarden_data"
+    ]
+  },
+  "ports": {
+    "app": 8880
   }
 }

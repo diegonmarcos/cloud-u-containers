@@ -1,9 +1,11 @@
 {
   "name": "windmill",
   "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
-  "port": 8000,
   "dns": "windmill-app.app",
-  "ports": {"app": 8000, "db": 5440},
+  "ports": {
+    "app": 8000,
+    "db": 5440
+  },
   "category": "tools",
   "domain": "windmill.diegonmarcos.com",
   "deploy": {

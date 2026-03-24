@@ -1,9 +1,10 @@
 {
   "name": "redis",
   "description": "In-memory data store",
-  "port": 6379,
   "dns": "redis.app",
-  "ports": {"app": 6379},
+  "ports": {
+    "app": 6379
+  },
   "category": "data",
   "deploy": {
     "host": "gcp-proxy",

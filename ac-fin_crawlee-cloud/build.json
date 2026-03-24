@@ -1,9 +1,14 @@
 {
   "name": "crawlee-cloud",
-  "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
-  "port": 3000,
+  "description": "Self-hosted Crawlee Cloud \u2014 Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
   "dns": "crawlee.app",
-  "ports": {"app": 3000, "dashboard": 3001, "db": 5433, "redis": 6380, "minio": 9000},
+  "ports": {
+    "app": 3000,
+    "dashboard": 3001,
+    "db": 5433,
+    "redis": 6380,
+    "minio": 9000
+  },
   "category": "fin",
   "domain": "api.diegonmarcos.com/crawlee/",
   "deploy": {

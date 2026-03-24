@@ -1,9 +1,10 @@
 {
   "name": "c3-services-mcp",
-  "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
-  "port": 3101,
+  "description": "C3 Services MCP Server \u2014 service API gateway MCP transport (stdio + HTTP)",
   "dns": "c3-services-mcp.app",
-  "ports": {"app": 3101},
+  "ports": {
+    "app": 3101
+  },
   "category": "obs",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

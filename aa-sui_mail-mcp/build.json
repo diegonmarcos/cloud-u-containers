@@ -1,7 +1,6 @@
 {
   "name": "mail-mcp",
-  "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
-  "port": 3103,
+  "description": "Mail MCP server \u2014 IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
   "docker": {
@@ -21,5 +20,8 @@
       "base_path": "/mail-mcp"
     },
     "app_hub": false
+  },
+  "ports": {
+    "app": 3103
   }
 }
