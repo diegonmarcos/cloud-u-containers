@@ -61,19 +61,29 @@ async function batchVmData(vmId: string): Promise<VmBatchData | null> {
 echo "===dockerVersion==="
 timeout 3 docker info --format '{{.ServerVersion}}' 2>&1 | head -1
 echo "===disk==="
-df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
+df -h / 2>/dev/null | awk 'NR==2{gsub(/%/,""); print $5}' || df / 2>/dev/null | awk 'NR==2{print $5}' | tr -d '%'
 echo "===memory==="
-free -m 2>/dev/null | awk '/Mem:/{printf "%d/%dMB (%.0f%%)", $3, $2, $3/$2*100}'
+free -m 2>/dev/null | awk '/Mem:/{printf "%d/%dMB (%.0f%%)", $3, $2, $3/$2*100}' || echo "N/A"
 echo ""
 echo "===load==="
-cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}'
+cat /proc/loadavg 2>/dev/null | awk '{print $1, $2, $3}' || echo "N/A"
 echo "===dockerPs==="
-timeout 3 docker ps -a --format '{{.Names}}\t{{.Status}}' 2>&1
+timeout 5 docker ps -a --format '{{.Names}}\t{{.Status}}' 2>&1
 `.trim();
 
   try {
-    const r = await sshExecAsync(vmId, script, 15_000, true, 3);
+    const r = await sshExecAsync(vmId, script, 20_000, true, 3);
     const output = r.stdout;
+    // Fallback: if batch script failed but SSH works, try just docker ps
+    if (!output.includes("===dockerPs===")) {
+      log(`batch failed for ${vmId}, trying docker ps fallback`);
+      const fallback = await sshExecAsync(vmId, "docker ps -a --format '{{.Names}}\t{{.Status}}' 2>&1", 10_000, true, 2);
+      if (fallback.ok && fallback.stdout.trim()) {
+        const data: VmBatchData = { dockerPs: fallback.stdout.trim(), dockerVersion: "fallback", disk: "N/A", memory: "N/A", load: "N/A" };
+        _vmCache.set(vmId, data);
+        return data;
+      }
+    }
     const section = (name: string): string => {
       const start = output.indexOf(`===${name}===`);
       if (start === -1) return "";
@@ -91,10 +101,17 @@ timeout 3 docker ps -a --format '{{.Names}}\t{{.Status}}' 2>&1
 }
 
 function containerUp(batchData: VmBatchData, name: string): { up: boolean; status: string } {
-  const line = batchData.dockerPs.split("\n").find(l => l.startsWith(name + "\t"));
+  // Exact match first, then prefix match (e.g. "photoprism" → "photoprism_app")
+  const lines = batchData.dockerPs.split("\n");
+  let line = lines.find(l => l.startsWith(name + "\t"));
+  if (!line) line = lines.find(l => l.split("\t")[0]?.startsWith(name));
+  if (!line) line = lines.find(l => l.split("\t")[0]?.includes(name));
   if (!line) return { up: false, status: "NOT FOUND" };
-  const status = line.split("\t")[1] || "";
-  return { up: status.startsWith("Up"), status: status.replace(/\s+\(.*/, "") };
+  const parts = line.split("\t");
+  const containerName = parts[0] || name;
+  const status = parts[1] || "";
+  const isUp = status.startsWith("Up");
+  return { up: isUp, status: `${containerName} ${status.replace(/\s+\(.*/, "")}`.trim() };
 }
 
 // ── State tracking ───────────────────────────────────────────────────────
@@ -112,10 +129,15 @@ interface CloudState {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function layer0SelfCheck(): Promise<Check[]> {
+  // C3 API: try mesh first, then localhost (works from both desktop and VM)
+  const apiUrls = ["http://10.0.0.6:8081/health", "http://localhost:8081/health"];
   return Promise.all([
     timedAsync("C3 API heartbeat", async () => {
-      const r = await runA("curl", ["-sf", "--max-time", "3", "http://localhost:8081/health"], 5_000);
-      return { passed: r.ok, details: r.ok ? r.stdout.trim().slice(0, 40) || "ok" : "UNREACHABLE" };
+      for (const url of apiUrls) {
+        const r = await runA("curl", ["-sf", "--max-time", "3", url], 5_000);
+        if (r.ok) return { passed: true, details: r.stdout.trim().slice(0, 40) || "ok" };
+      }
+      return { passed: false, details: "UNREACHABLE (tried mesh + localhost)" };
     }),
     timedAsync("Local WG interface", async () => {
       const r = await runA("bash", ["-c", "timeout 3 bash -c 'echo > /dev/tcp/10.0.0.6/22' 2>&1"], 5_000);
@@ -225,14 +247,15 @@ async function layer3CoreServices(state: CloudState): Promise<Check[]> {
 }
 
 async function layer4DataServices(state: CloudState): Promise<Check[]> {
-  const services: { name: string; container: string; vmId: string }[] = [
-    { name: "Gitea", container: "gitea", vmId: "oci-A1-f_0" },
-    { name: "NocoDB", container: "nocodb", vmId: "oci-A1-f_0" },
-    { name: "Syncthing", container: "syncthing", vmId: "oci-E2-f_0" },
-    { name: "Matomo", container: "matomo", vmId: "oci-E2-f_1" },
-    { name: "Vaultwarden", container: "vaultwarden", vmId: "gcp-E2-f_0" },
-    { name: "Backup (db-agent)", container: "db-agent", vmId: "oci-A1-f_0" },
-  ];
+  // Dynamic: read from config.json — data category services
+  const config = getConfig();
+  const dataNames = ["gitea", "nocodb", "syncthing", "matomo", "vaultwarden", "db-agent", "redis"];
+  const services = dataNames.map(name => {
+    const svc = config.services[name];
+    if (!svc) return null;
+    const containers = svc.containers ?? [name];
+    return { name, container: containers[0], vmId: svc.vm };
+  }).filter((s): s is NonNullable<typeof s> => s !== null);
 
   return Promise.all(services.map(({ name, container, vmId }) =>
     timedAsync(name, async () => {
@@ -246,17 +269,15 @@ async function layer4DataServices(state: CloudState): Promise<Check[]> {
 }
 
 async function layer5Applications(state: CloudState): Promise<Check[]> {
-  const apps: { name: string; container: string; vmId: string }[] = [
-    { name: "Mattermost", container: "mattermost", vmId: "oci-A1-f_0" },
-    { name: "PhotoPrism", container: "photoprism", vmId: "oci-A1-f_0" },
-    { name: "AFFiNE", container: "affine", vmId: "oci-A1-f_0" },
-    { name: "Grist", container: "grist", vmId: "oci-A1-f_0" },
-    { name: "HedgeDoc", container: "hedgedoc", vmId: "oci-A1-f_0" },
-    { name: "Code-Server", container: "code-server", vmId: "oci-A1-f_0" },
-    { name: "Radicale", container: "radicale", vmId: "oci-A1-f_0" },
-    { name: "Etherpad", container: "etherpad", vmId: "oci-A1-f_0" },
-    { name: "Windmill", container: "windmill", vmId: "oci-E2-f_1" },
-  ];
+  // Dynamic: read from config.json — app category services
+  const config = getConfig();
+  const appNames = ["mattermost", "photoprism", "grist", "hedgedoc", "code-server", "radicale", "etherpad", "filebrowser", "revealmd", "windmill"];
+  const apps = appNames.map(name => {
+    const svc = config.services[name];
+    if (!svc) return null;
+    const containers = svc.containers ?? [name];
+    return { name, container: containers[0], vmId: svc.vm };
+  }).filter((s): s is NonNullable<typeof s> => s !== null);
 
   return Promise.all(apps.map(({ name, container, vmId }) =>
     timedAsync(name, async () => {
