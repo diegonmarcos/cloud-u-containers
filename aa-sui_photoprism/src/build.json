@@ -1,0 +1,37 @@
+{
+  "name": "photoprism",
+  "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
+  "dns": "photoprism.app",
+  "ports": {
+    "app": 3013
+  },
+  "category": "app",
+  "domain": "photos.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/photoprism",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "photos.diegonmarcos.com",
+      "auth": "two_factor",
+      "landing_page": "myphotos"
+    }
+  },
+  "health": {
+    "path": "/api/v1/status"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "photoprism_originals",
+      "photoprism_storage"
+    ]
+  }
+}
