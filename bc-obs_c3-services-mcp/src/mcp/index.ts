@@ -33,7 +33,7 @@ import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 
 // ── Proxied child MCPs ──────────────────────────
-import { registerProxiedTools } from "./tools/proxy-mcp.js";
+import { registerProxiedInfraTools, registerProxiedUserTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
 
@@ -62,7 +62,8 @@ async function main() {
   registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
   registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
   registerRigTools(server);           //  5: status, health, run, tasks, task_detail
-                                      // ── infra subtotal: 69
+  await registerProxiedInfraTools(server); // cloud-cgc-mcp (code graph, cloud knowledge)
+                                      // ── infra subtotal: 69 + proxied
 
   // ═══════════════════════════════════════════════════════════════
   // USER — apps, collaboration, personal
@@ -77,11 +78,8 @@ async function main() {
   registerStalwartTools(server);      //  7: users, user_detail, queue, config, metrics, queue_action, config_update
   registerRadicaleTools(server);      //  3: calendars, contacts, events
   registerVaultwardenTools(server);   //  4: health, status, users, orgs
-                                      // ── user subtotal: 65
-
-  // ── Proxied child MCPs ────────────────────────────────────────
-  // mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp
-  await registerProxiedTools(server);
+  await registerProxiedUserTools(server); // mattermost-mcp, mail-mcp, google-workspace-mcp
+                                      // ── user subtotal: 65 + proxied
 
   const transport = new StdioServerTransport();
   log("Starting c3-services MCP server v2.2.0 (140 native tools)...");

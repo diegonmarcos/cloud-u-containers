@@ -30,7 +30,7 @@ import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 // ── Proxied ─────────────────────────────────────
-import { registerProxiedTools } from "./tools/proxy-mcp.js";
+import { registerProxiedInfraTools, registerProxiedUserTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-services-mcp-session";
@@ -53,6 +53,7 @@ async function createMcpServer(): Promise<McpServer> {
   registerAutheliaTools(server);
   registerNocodbTools(server);
   registerRigTools(server);
+  await registerProxiedInfraTools(server);
   // User
   registerPhotoprismTools(server);
   registerFilebrowserTools(server);
@@ -64,8 +65,7 @@ async function createMcpServer(): Promise<McpServer> {
   registerStalwartTools(server);
   registerRadicaleTools(server);
   registerVaultwardenTools(server);
-  // Proxied
-  await registerProxiedTools(server);
+  await registerProxiedUserTools(server);
   return server;
 }
 
