@@ -502,22 +502,18 @@ async function networkChecks(): Promise<Check[]> {
       return { passed: proxyData.caddyL4_587.includes("1"), details: proxyData.caddyL4_587.includes("1") ? "587 forwarding OK" : "FAIL" };
     }),
 
-    // ── TLS via public domains ──
-    timedAsync("imap.diegonmarcos.com:993", async () => {
-      const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -connect imap.diegonmarcos.com:993 -servername imap.diegonmarcos.com 2>&1`], 5_000);
-      return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
-    }),
-    timedAsync("smtp.diegonmarcos.com:465", async () => {
-      const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -connect smtp.diegonmarcos.com:465 -servername smtp.diegonmarcos.com 2>&1`], 5_000);
-      return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
-    }),
-    timedAsync("smtp.diegonmarcos.com:587", async () => {
-      const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -starttls smtp -connect smtp.diegonmarcos.com:587 -servername smtp.diegonmarcos.com 2>&1`], 5_000);
-      return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "STARTTLS OK" : "FAIL" };
-    }),
-    timedAsync("mail.diegonmarcos.com:993", async () => {
+    // ── TLS via public domain (mail.diegonmarcos.com — Caddy L4 passthrough) ──
+    timedAsync("mail:993 (IMAP)", async () => {
       const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -connect ${MAIL_DOMAIN}:993 -servername ${MAIL_DOMAIN} 2>&1`], 5_000);
       return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
+    }),
+    timedAsync("mail:465 (SMTPS)", async () => {
+      const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -connect ${MAIL_DOMAIN}:465 -servername ${MAIL_DOMAIN} 2>&1`], 5_000);
+      return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "TLS OK" : "FAIL" };
+    }),
+    timedAsync("mail:587 (SMTP Sub)", async () => {
+      const r = await runA("bash", ["-c", `echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAIL_DOMAIN}:587 -servername ${MAIL_DOMAIN} 2>&1`], 5_000);
+      return { passed: r.stdout.includes("CONNECTED"), details: r.stdout.includes("CONNECTED") ? "STARTTLS OK" : "FAIL" };
     }),
 
     // ── Local SMTP (from cache) ──
