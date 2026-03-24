@@ -38,11 +38,12 @@
             - GF_SECURITY_ADMIN_USER=admin
             - GF_SECURITY_ADMIN_PASSWORD=''${GRAFANA_ADMIN_PASSWORD:-changeme}
             - GF_USERS_ALLOW_SIGN_UP=false
+            - GF_SERVER_HTTP_PORT=3200
             - GF_SERVER_ROOT_URL=https://${config.domain}
           depends_on:
             - loki
           healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
+            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3200/api/health']
             interval: 30s
             timeout: 10s
             retries: 3
@@ -55,9 +56,9 @@
           volumes:
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
-          command: -config.file=/etc/loki/local-config.yaml
+          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=3110
           healthcheck:
-            test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3100/ready']
+            test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:3110/ready']
             interval: 30s
             timeout: 10s
             retries: 5
@@ -152,7 +153,7 @@
         - name: Loki
           type: loki
           access: proxy
-          url: http://localhost:3100
+          url: http://localhost:3110
           isDefault: true
 
         - name: Tempo

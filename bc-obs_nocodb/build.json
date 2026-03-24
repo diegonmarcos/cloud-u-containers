@@ -11,6 +11,10 @@
     "upstream": "nocodb.app:8085",
     "auth": "two_factor"
   },
+  "ports": {
+    "app": 8085,
+    "db": 5435
+  },
   "health": {
     "path": "/api/v1/health"
   },

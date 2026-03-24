@@ -38,6 +38,7 @@
             - POSTGRES_DB=windmill
             - POSTGRES_USER=windmill
             - POSTGRES_PASSWORD=''${DB_PASSWORD}
+            - PGPORT=5436
           volumes:
             - windmill-db-data:/var/lib/postgresql/data
           deploy:
@@ -47,7 +48,7 @@
               reservations:
                 memory: 64M
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U windmill -d windmill"]
+            test: ["CMD-SHELL", "pg_isready -U windmill -d windmill -p 5436"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -60,7 +61,7 @@
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5432/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5436/windmill?sslmode=disable
             - MODE=server
             - BASE_URL=https://${config.domain}
             - COOKIE_DOMAIN=diegonmarcos.com
@@ -103,7 +104,7 @@
           env_file:
             - .secrets
           environment:
-            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5432/windmill?sslmode=disable
+            - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:5436/windmill?sslmode=disable
             - MODE=worker
             - WORKER_GROUP=default
             - NUM_WORKERS=2
