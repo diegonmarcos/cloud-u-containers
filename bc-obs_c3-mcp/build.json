@@ -1,0 +1,36 @@
+{
+  "name": "c3-mcp",
+  "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+  "port": 3100,
+  "dns": "c3-mcp.app",
+  "category": "sec",
+  "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "c3-mcp",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/c3-mcp"
+  },
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "secrets": {
+    "escape_dollars": "true"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "auth": "two_factor",
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/c3-infra-mcp"
+    },
+    "app_hub": false
+  },
+  "health": {
+    "path": "/mcp"
+  }
+}
