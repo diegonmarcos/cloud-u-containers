@@ -1,6 +1,8 @@
 {
   "name": "windmill",
   "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+  "port": 8000,
+  "dns": "windmill-app.app",
   "category": "tools",
   "domain": "windmill.diegonmarcos.com",
   "deploy": {
@@ -8,15 +10,12 @@
     "remote_path": "/opt/containers/windmill"
   },
   "proxy": {
-    "upstream": "windmill-app.app:8000",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/windmill"
-  },
-  "ports": {
-    "app": 8000,
-    "db": 5440
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/windmill",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

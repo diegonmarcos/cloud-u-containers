@@ -1,6 +1,8 @@
 {
   "name": "hedgedoc",
   "description": "Collaborative markdown editor",
+  "port": 3018,
+  "dns": "hedgedoc.app",
   "category": "app",
   "domain": "doc.diegonmarcos.com",
   "deploy": {
@@ -8,15 +10,12 @@
     "remote_path": "/opt/containers/hedgedoc"
   },
   "proxy": {
-    "upstream": "hedgedoc.app:3018",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/hedgedoc"
-  },
-  "ports": {
-    "app": 3018,
-    "db": 5439
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/hedgedoc",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

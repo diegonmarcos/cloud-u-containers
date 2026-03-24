@@ -1,9 +1,8 @@
 {
   "name": "revealmd",
   "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
-  "ports": {
-    "app": 3014
-  },
+  "port": 3014,
+  "dns": "revealmd.app",
   "category": "app",
   "domain": "slides.diegonmarcos.com",
   "deploy": {
@@ -11,11 +10,12 @@
     "remote_path": "/opt/containers/revealmd"
   },
   "proxy": {
-    "upstream": "revealmd.app:3014",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/revealmd"
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/revealmd",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

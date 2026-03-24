@@ -1,9 +1,8 @@
 {
   "name": "matomo",
   "description": "Matomo hybrid analytics (oci-analytics)",
-  "ports": {
-    "app": 8080
-  },
+  "port": 8080,
+  "dns": "matomo.app",
   "category": "tools",
   "domain": "analytics.diegonmarcos.com",
   "deploy": {
@@ -38,32 +37,18 @@
     ]
   },
   "proxy": {
-    "upstream": "matomo.app:8080",
-    "auth": "two_factor",
-    "paths": {
-      "/matomo.js": {
-        "auth": "public"
-      },
-      "/matomo.php": {
-        "auth": "public"
-      },
-      "/piwik.js": {
-        "auth": "public"
-      },
-      "/piwik.php": {
-        "auth": "public"
-      },
-      "/collect.php": {
-        "auth": "public"
-      },
-      "/api.php": {
-        "auth": "public"
-      },
-      "/track.php": {
-        "auth": "public"
-      },
-      "/js/*": {
-        "auth": "public"
+    "primary": {
+      "domain": "analytics.diegonmarcos.com",
+      "auth": "two_factor",
+      "paths": {
+        "/matomo.js": { "auth": "public" },
+        "/matomo.php": { "auth": "public" },
+        "/piwik.js": { "auth": "public" },
+        "/piwik.php": { "auth": "public" },
+        "/collect.php": { "auth": "public" },
+        "/api.php": { "auth": "public" },
+        "/track.php": { "auth": "public" },
+        "/js/*": { "auth": "public" }
       }
     }
   },

@@ -1,6 +1,8 @@
 {
   "name": "dozzle",
   "description": "Dozzle - Real-time Docker log viewer",
+  "port": 9999,
+  "dns": "dozzle.app",
   "category": "tools",
   "domain": "logs.diegonmarcos.com",
   "deploy": {
@@ -8,17 +10,15 @@
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },
-  "ports": {
-    "app": 9999
-  },
   "secrets": {
     "escape_dollars": "true"
   },
   "proxy": {
-    "upstream": "dozzle.app:9999",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/dozzle"
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/dozzle",
+      "auth": "two_factor"
+    }
   }
 }

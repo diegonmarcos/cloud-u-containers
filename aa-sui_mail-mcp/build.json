@@ -1,6 +1,8 @@
 {
   "name": "mail-mcp",
   "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
+  "port": 3103,
+  "dns": "mail-mcp.app",
   "category": "app",
   "docker": {
     "image": "mail-mcp",
@@ -12,10 +14,12 @@
     "remote_path": "/opt/containers/mail-mcp"
   },
   "proxy": {
-    "upstream": "mail-mcp.app:3103",
-    "streaming": true,
-    "type": "path",
-    "parent_domain": "mcp.diegonmarcos.com",
-    "base_path": "/mail-mcp"
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/mail-mcp"
+    },
+    "app_hub": false
   }
 }

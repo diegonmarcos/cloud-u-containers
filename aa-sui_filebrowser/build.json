@@ -1,9 +1,8 @@
 {
   "name": "filebrowser",
   "description": "FileBrowser web file manager (NEW - not deployed yet)",
-  "ports": {
-    "app": 3015
-  },
+  "port": 3015,
+  "dns": "filebrowser.app",
   "category": "app",
   "domain": "files.diegonmarcos.com",
   "deploy": {
@@ -11,11 +10,12 @@
     "remote_path": "/opt/containers/filebrowser"
   },
   "proxy": {
-    "upstream": "filebrowser.app:3015",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/filebrowser"
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/filebrowser",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

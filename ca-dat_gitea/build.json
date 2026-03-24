@@ -1,9 +1,8 @@
 {
   "name": "gitea",
   "description": "Self-hosted Git service",
-  "ports": {
-    "app": 3017
-  },
+  "port": 3017,
+  "dns": "gitea.app",
   "category": "data",
   "domain": "git.diegonmarcos.com",
   "deploy": {
@@ -11,11 +10,12 @@
     "remote_path": "/opt/containers/gitea"
   },
   "proxy": {
-    "upstream": "gitea.app:3017",
-    "auth": "two_factor",
-    "type": "path",
-    "parent_domain": "app.diegonmarcos.com",
-    "base_path": "/gitea"
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/gitea",
+      "auth": "two_factor"
+    }
   },
   "health": {
     "path": "/"

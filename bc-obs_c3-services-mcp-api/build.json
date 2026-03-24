@@ -1,6 +1,8 @@
 {
   "name": "c3-services-mcp-api",
   "description": "C3 Services — Unified service API gateway: MCP server + Fastify API (api.diegonmarcos.com/services)",
+  "port": 8082,
+  "dns": "c3-services.app",
   "category": "obs",
   "domain": "api.diegonmarcos.com/services",
   "docker": {

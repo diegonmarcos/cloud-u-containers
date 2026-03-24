@@ -1,9 +1,8 @@
 {
   "name": "photoprism",
   "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
-  "ports": {
-    "app": 3013
-  },
+  "port": 3013,
+  "dns": "photoprism.app",
   "category": "app",
   "domain": "photos.diegonmarcos.com",
   "deploy": {
@@ -12,9 +11,11 @@
     "compose_flags": "--build"
   },
   "proxy": {
-    "upstream": "photoprism.app:3013",
-    "auth": "two_factor",
-    "landing_page": "myphotos"
+    "primary": {
+      "domain": "photos.diegonmarcos.com",
+      "auth": "two_factor",
+      "landing_page": "myphotos"
+    }
   },
   "health": {
     "path": "/api/v1/status"

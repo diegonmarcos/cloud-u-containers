@@ -1,6 +1,8 @@
 {
   "name": "ntfy",
   "description": "Push notification server",
+  "port": 8090,
+  "dns": "ntfy.app",
   "category": "tools",
   "domain": "rss.diegonmarcos.com",
   "deploy": {
@@ -11,8 +13,10 @@
     ]
   },
   "proxy": {
-    "upstream": "ntfy.app:8090",
-    "auth": "ntfy-3tier"
+    "primary": {
+      "domain": "rss.diegonmarcos.com",
+      "auth": "ntfy-3tier"
+    }
   },
   "health": {
     "path": "/"

@@ -1,6 +1,8 @@
 {
   "name": "c3-infra-mcp-api",
   "description": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)",
+  "port": 8081,
+  "dns": "c3-api.app",
   "category": "sec",
   "domain": "api.diegonmarcos.com/c3-api",
   "docker": {
