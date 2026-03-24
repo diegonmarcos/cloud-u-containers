@@ -14,6 +14,7 @@
       container_name = buildJson.name;
       image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
       port = buildJson.ports.app;
+      health_path = buildJson.health.path;
       mattermost_url = "http://mattermost.app:8065";
     };
 
@@ -46,7 +47,7 @@
           "c3_git_repos:/root/git"
         ];
         healthcheck = {
-          test = ''["CMD", "curl", "-f", "http://localhost:${toString config.port}/mcp"]'';
+          test = ''["CMD-SHELL", "curl -sf -X POST -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}' http://localhost:${toString config.port}${config.health_path} || exit 1"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;

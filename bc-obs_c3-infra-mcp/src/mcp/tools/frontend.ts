@@ -1,5 +1,5 @@
-// ── Frontend Extension — "Front-end monorepo" (5 tools) ──
-// Build, dev, deploy for 32-project front-end monorepo
+// ── Frontend Exec — "Build & Deploy" (3 tools) ──
+// Build, dev server, deploy for front-end monorepo
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -69,119 +69,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
   return projects;
 }
 
-export function registerFrontendTools(server: McpServer) {
-  server.tool(
-    "front_list_projects",
-    "List all front-end web projects with framework, port, and build type",
-    {
-      category: z
-        .string()
-        .optional()
-        .describe("Filter by category folder (a_Portals, b_Work_Profiles, b_Work_Tools, c_Personal_Profiles, c_Personal_Tools, c_root)"),
-    },
-    async ({ category }) => {
-      const projects = findProjects();
-      let entries = [...projects.entries()];
-
-      if (category) {
-        entries = entries.filter(([, p]) => p.category === category);
-      }
-
-      const rows = entries.map(([name, p]) => {
-        const c = p.config;
-        const mods = (c.build ?? []).map((b) => b.mod).join(", ");
-        const hasDist = existsSync(join(p.dir, c.dist ?? "dist"));
-        return `${name} | ${c.framework ?? "vanilla"} | port:${c.port ?? "-"} | ${mods || "none"} | ${hasDist ? "built" : "-"} | ${p.category}`;
-      });
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Front-end projects (${rows.length}):\n\nNAME | FRAMEWORK | PORT | BUILD MODULES | BUILT | CATEGORY\n${rows.join("\n")}`,
-          },
-        ],
-      };
-    }
-  );
-
-  server.tool(
-    "front_get_project",
-    "Get detailed info about a front-end project: build.json, package.json deps, file structure",
-    {
-      project: z.string().describe("Project name (directory name, e.g. 'landpage', 'myfeed', 'c_root')"),
-    },
-    async ({ project }) => {
-      const projects = findProjects();
-      const p = projects.get(project);
-      if (!p) {
-        const names = [...projects.keys()].sort().join(", ");
-        return {
-          content: [{ type: "text", text: `Unknown project: ${project}\n\nAvailable: ${names}` }],
-          isError: true,
-        };
-      }
-
-      const c = p.config;
-      const info: string[] = [
-        `Project: ${c.name} (${project})`,
-        `Category: ${p.category}`,
-        `Framework: ${c.framework ?? "vanilla"}`,
-        `Port: ${c.port ?? "none"}`,
-        `Source: ${c.src ?? "src"}`,
-        `Dist: ${c.dist ?? "dist"}`,
-        `Path: ${p.dir}`,
-      ];
-
-      const mods = (c.build ?? []).map((b) => b.mod);
-      info.push(`Build modules: ${mods.join(" → ") || "none"}`);
-
-      if (c.serve) {
-        info.push(`Serve mode: ${c.serve.mode ?? "auto"}`);
-        info.push(`Serve dir: ${c.serve.dir ?? c.src ?? "src"}`);
-      }
-
-      info.push(`\n--- build.json ---`);
-      info.push(JSON.stringify(c, null, 2));
-
-      const pkgPath = join(p.dir, "package.json");
-      if (existsSync(pkgPath)) {
-        try {
-          const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-          const deps = Object.keys(pkg.dependencies ?? {});
-          const devDeps = Object.keys(pkg.devDependencies ?? {});
-          info.push(`\n--- Dependencies ---`);
-          if (deps.length) info.push(`deps: ${deps.join(", ")}`);
-          if (devDeps.length) info.push(`devDeps: ${devDeps.join(", ")}`);
-        } catch { /* skip */ }
-      }
-
-      const distDir = join(p.dir, c.dist ?? "dist");
-      if (existsSync(distDir)) {
-        try {
-          const files = readdirSync(distDir);
-          info.push(`\nDist files: ${files.join(", ")}`);
-        } catch {
-          info.push(`Dist: exists but unreadable`);
-        }
-      } else {
-        info.push(`\nDist: not built`);
-      }
-
-      const pidFile = join(p.dir, ".build.pid");
-      if (existsSync(pidFile)) {
-        try {
-          const pidData = JSON.parse(readFileSync(pidFile, "utf-8"));
-          info.push(`\nDev server PID: ${JSON.stringify(pidData)}`);
-        } catch {
-          info.push(`\nDev server: .build.pid exists but unparseable`);
-        }
-      }
-
-      return { content: [{ type: "text", text: info.join("\n") }] };
-    }
-  );
-
+export function registerFrontendExecTools(server: McpServer) {
   server.tool(
     "front_build",
     "Build a front-end project using the universal build.sh engine",

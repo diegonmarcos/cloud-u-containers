@@ -2,54 +2,47 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-// ── 6 Pillars ────────────────────────────────────
-import { registerInventoryTools } from "./tools/inventory.js";
+// ── Pillars (exec-only) ─────────────────────────
+import { registerInventoryExecTools } from "./tools/inventory-exec.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
-import { registerObservabilityTools } from "./tools/observability.js";
-import { registerSecurityTools } from "./tools/security.js";
-import { registerFinOpsTools } from "./tools/finops.js";
+import { registerObservabilityExecTools } from "./tools/observability.js";
+import { registerSecurityExecTools } from "./tools/security.js";
 
 // ── Extensions ───────────────────────────────────
-import { registerFrontendTools } from "./tools/frontend.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerFrontendExecTools } from "./tools/frontend.js";
+import { registerCrawleeExecTools } from "./tools/crawlee.js";
 import { registerMattermostTools } from "./tools/health_mattermost.js";
 import { registerHealthMailTools } from "./tools/health_mail.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
-import { registerResources } from "./resources/index.js";
-
 const server = new McpServer({
   name: "cloud-infra",
-  version: "3.2.0",
+  version: "4.0.0",
 });
 
-// Register all tools (120+ total — comprehensive C3 Cloud Control Center)
+// Register all exec tools (READ tools moved to code-graph-context)
 
-// ── 6 Pillars ────────────────────────────────────
-registerInventoryTools(server);      // 21: config, topology, discovery, repos, files
-registerDeliveryTools(server);       //  6: build, ship, docker build, secrets, backup
-registerOperationsTools(server);     // 26: SSH, Docker ops, VM/container/service lifecycle
-registerObservabilityTools(server);  // 33: health, profiling, diagnostics, tests, alerts, DB
-registerSecurityTools(server);       //  6: scan, docker audit, SSH keys, tokens, topology
-registerFinOpsTools(server);         //  7: OCI + GCP instances, resources, costs
+// ── Pillars ──────────────────────────────────────
+registerInventoryExecTools(server);      //  1: service_api_call
+registerDeliveryTools(server);           //  6: build, ship, docker build, secrets, backup
+registerOperationsTools(server);         // 26: SSH, Docker ops, VM/container/service lifecycle
+registerObservabilityExecTools(server);  //  8: notifications, alerts, DB mutations
+registerSecurityExecTools(server);       //  4: scan, docker audit, SSH keys, tokens
 
 // ── Extensions ───────────────────────────────────
-registerFrontendTools(server);       //  5: front-end monorepo build/dev/deploy
-registerCrawleeTools(server);        //  7: web scraping actors/runs/results
-registerMattermostTools(server);     //  8: chat read/write/react for agentic bot
-registerHealthMailTools(server);     //  5: mail UP, profiling, inbound/outbound tests, full pipeline
-registerHealthCloudTools(server);   //  2: cloud UP + cloud full 8-layer diagnostic
-
-// Register resources (7 static + 2 templates = 9 total)
-registerResources(server);             // cloud://config, ssh-config, services-overview, readme, front-projects, c3-api-endpoints, service-apis + templates: services/{name}, vms/{vm_id}
+registerFrontendExecTools(server);       //  3: front-end build/dev/deploy
+registerCrawleeExecTools(server);        //  2: crawlee run/abort
+registerMattermostTools(server);         //  8: chat read/write/react for agentic bot
+registerHealthMailTools(server);         //  5: mail UP, profiling, inbound/outbound tests, full pipeline
+registerHealthCloudTools(server);        //  2: cloud UP + cloud full 8-layer diagnostic
 
 // All logging must go to stderr (stdout is JSON-RPC)
 const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-infra MCP server v3.2.0 (120+ tools, 9 resources)...");
+  log("Starting cloud-infra MCP server v4.0.0 (exec-only, READ tools in code-graph-context)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
