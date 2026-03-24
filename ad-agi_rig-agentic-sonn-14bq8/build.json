@@ -1,0 +1,19 @@
+{
+  "name": "rig-agentic-sonn-14bq8",
+  "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
+  "category": "agi",
+  "version": "0.2.0",
+  "build": {
+    "extra_copy": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "Dockerfile",
+      "src"
+    ]
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/rig-agentic-sonn-14bq8",
+    "compose_flags": "--build"
+  }
+}

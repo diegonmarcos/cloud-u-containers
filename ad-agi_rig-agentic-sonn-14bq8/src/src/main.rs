@@ -55,18 +55,22 @@ async fn main() {
         tasks: tasks.clone(),
     };
 
-    // Background: self-healing loop
-    let heal_config = config.clone();
-    tokio::spawn(async move {
-        let mut tick = interval(Duration::from_secs(heal_config.heal_interval_secs));
-        let healer = SelfHealingLoop::new(heal_config);
-        loop {
-            tick.tick().await;
-            if let Err(e) = healer.run_cycle().await {
-                warn!(error = %e, "Self-healing cycle failed");
+    // Background: self-healing loop (configurable via SELF_HEALING_ENABLED)
+    if config.self_healing_enabled {
+        let heal_config = config.clone();
+        tokio::spawn(async move {
+            let mut tick = interval(Duration::from_secs(heal_config.heal_interval_secs));
+            let healer = SelfHealingLoop::new(heal_config);
+            loop {
+                tick.tick().await;
+                if let Err(e) = healer.run_cycle().await {
+                    warn!(error = %e, "Self-healing cycle failed");
+                }
             }
-        }
-    });
+        });
+    } else {
+        info!("Self-healing disabled via SELF_HEALING_ENABLED=false");
+    }
 
     // Background: Mattermost bot
     let mm_config = config.clone();

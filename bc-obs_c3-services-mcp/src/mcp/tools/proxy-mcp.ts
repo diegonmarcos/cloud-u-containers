@@ -20,7 +20,7 @@ interface ChildMcp {
 const CHILD_MCPS: ChildMcp[] = [
   { name: "mattermost-mcp", url: "http://mattermost-mcp:3102/mcp" },
   { name: "mail-mcp", url: "http://mail-mcp:3103/mcp" },
-  { name: "google-workspace-mcp", url: "http://google-workspace-mcp:8000/mcp" },
+  { name: "google-workspace-mcp", url: "http://google-workspace-mcp:3104/mcp" },
   { name: "code-graph-context", url: "http://code-graph-context:3105/mcp" },
 ];
 

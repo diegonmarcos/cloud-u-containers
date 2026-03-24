@@ -127,7 +127,7 @@ async fn connect_and_listen(
 
         if channel_type != "D" {
             // Also check if bot was mentioned in non-DM channels
-            if !post.message.contains("@ollama-14bq8-ai") {
+            if !post.message.contains(&config.mm_bot_mention) {
                 continue;
             }
         }

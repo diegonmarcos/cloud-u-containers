@@ -49,8 +49,8 @@ impl SelfHealingLoop {
                 let status = parts.get(2).unwrap_or(&"");
 
                 if state == "restarting" || status.contains("unhealthy") {
-                    // Don't restart ourselves
-                    if name != "rig-agentic" {
+                    // Don't restart any rig-agentic instance
+                    if !name.starts_with("rig-agentic") {
                         unhealthy.push(name.to_string());
                     }
                 }

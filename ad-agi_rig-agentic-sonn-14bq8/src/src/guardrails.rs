@@ -6,6 +6,7 @@ use tracing::{info, warn};
 pub struct InfraGuardrail {
     pub max_turns: usize,
     pub denied_tools: HashSet<String>,
+    pub allowed_tools: HashSet<String>,
 }
 
 impl InfraGuardrail {
@@ -13,25 +14,54 @@ impl InfraGuardrail {
         let guardrail = Self {
             max_turns: config.guardrail_max_turns,
             denied_tools: config.guardrail_denied_tools.iter().cloned().collect(),
+            allowed_tools: config.guardrail_allowed_tools.iter().cloned().collect(),
         };
 
         info!(
             max_turns = guardrail.max_turns,
             denied_count = guardrail.denied_tools.len(),
             denied = ?guardrail.denied_tools,
+            allowed_count = guardrail.allowed_tools.len(),
+            allowed = ?guardrail.allowed_tools,
+            mode = if !guardrail.allowed_tools.is_empty() { "allowlist" } else { "denylist" },
             "Guardrails initialized"
         );
 
         guardrail
     }
 
-    /// Filter denied tools from the MCP tool list. Returns (allowed, denied_count).
+    /// Filter tools based on allowlist (if set) or denylist.
+    /// Allowlist takes precedence: if non-empty, ONLY those tools are allowed.
     pub fn filter_tools(&self, tools: Vec<rmcp::model::Tool>) -> (Vec<rmcp::model::Tool>, usize) {
+        let total = tools.len();
+
+        // Allowlist mode: only keep explicitly allowed tools
+        if !self.allowed_tools.is_empty() {
+            let (allowed, denied): (Vec<_>, Vec<_>) = tools
+                .into_iter()
+                .partition(|t| self.allowed_tools.contains(t.name.as_ref()));
+
+            let denied_count = denied.len();
+            for tool in &denied {
+                warn!(tool = %tool.name, "GUARDRAIL: tool blocked by allowlist");
+            }
+
+            info!(
+                total = total,
+                allowed = allowed.len(),
+                blocked = denied_count,
+                mode = "allowlist",
+                "GUARDRAIL: tool filtering complete"
+            );
+
+            return (allowed, denied_count);
+        }
+
+        // Denylist mode: remove explicitly denied tools
         if self.denied_tools.is_empty() {
             return (tools, 0);
         }
 
-        let total = tools.len();
         let (allowed, denied): (Vec<_>, Vec<_>) = tools
             .into_iter()
             .partition(|t| !self.denied_tools.contains(t.name.as_ref()));
@@ -45,6 +75,7 @@ impl InfraGuardrail {
             total = total,
             allowed = allowed.len(),
             denied = denied_count,
+            mode = "denylist",
             "GUARDRAIL: tool filtering complete"
         );
 

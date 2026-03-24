@@ -196,6 +196,17 @@ steps:
         rm -f "$REPO_DIR/cloud-data-log-routing.json.tmp"
         echo "SKIP cloud-data-log-routing.json (API returned empty or failed)"
       fi
+  - name: fetch-cloud-data-gha-config
+    depends:
+      - pull-rebase
+    command: |
+      if curl -sf "$C3_API/cloud-data/gha-config" | jq '.' > "$REPO_DIR/cloud-data-gha-config.json.tmp" && [ -s "$REPO_DIR/cloud-data-gha-config.json.tmp" ]; then
+        mv "$REPO_DIR/cloud-data-gha-config.json.tmp" "$REPO_DIR/cloud-data-gha-config.json"
+        echo "Fetched cloud-data-gha-config.json ($(wc -c < "$REPO_DIR/cloud-data-gha-config.json") bytes)"
+      else
+        rm -f "$REPO_DIR/cloud-data-gha-config.json.tmp"
+        echo "SKIP cloud-data-gha-config.json (API returned empty or failed)"
+      fi
   - name: commit-and-push
     depends:
       - fetch-cloud-data-topology
@@ -213,6 +224,7 @@ steps:
       - fetch-cloud-data-matomo-sites
       - fetch-cloud-data-container-resources
       - fetch-cloud-data-log-routing
+      - fetch-cloud-data-gha-config
     command: |
       export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       cd "$REPO_DIR"

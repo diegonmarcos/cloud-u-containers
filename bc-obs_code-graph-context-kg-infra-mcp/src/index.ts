@@ -8,6 +8,13 @@ import { registerDocsTools } from "./tools/a-raw-json/docs.js";
 import { registerSkillTools } from "./tools/a-raw-json/skills.js";
 import { registerOctocodeTools } from "./tools/b-octocode/octocode.js";
 import { registerCodegraphTools } from "./tools/c-codegraph-rust/codegraph.js";
+import { registerInventoryTools } from "./tools/d-infra-read/inventory.js";
+import { registerFinOpsTools } from "./tools/d-infra-read/finops.js";
+import { registerObservabilityReadTools } from "./tools/d-infra-read/observability-read.js";
+import { registerSecurityReadTools } from "./tools/d-infra-read/security-read.js";
+import { registerFrontendReadTools } from "./tools/d-infra-read/frontend-read.js";
+import { registerCrawleeReadTools } from "./tools/d-infra-read/crawlee-read.js";
+import { registerResources } from "./tools/d-infra-read/resources/index.js";
 import { buildContextSummary } from "./context.js";
 
 const log = (msg: string) => process.stderr.write(`[code-graph-context] ${msg}\n`);
@@ -56,6 +63,15 @@ function createMcpServer(): McpServer {
   // ── Section C: CodeGraph-Rust — Graph Analysis (Future) ──────────────
   registerCodegraphTools(server);
 
+  // ── Section D: Infra READ tools (from c3-infra-mcp) ────────────────
+  registerInventoryTools(server);         // 21: list_vms, list_services, read_file, search_repos, c3_topology*, c3_deps*, c3_file
+  registerFinOpsTools(server);            // 10: cloud_oci/gcp/aws instances/resources/costs
+  registerObservabilityReadTools(server); // 24: health_*, profile_*, c3_test/report, db_*_history, vm_*
+  registerSecurityReadTools(server);      //  2: c3_topology_security, c3_secrets_status
+  registerFrontendReadTools(server);      //  2: front_list_projects, front_get_project
+  registerCrawleeReadTools(server);       //  5: crawlee list/get tools
+  registerResources(server);              //  9: cloud:// resources
+
   return server;
 }
 
@@ -63,7 +79,7 @@ function createMcpServer(): McpServer {
 async function startStdio(): Promise<void> {
   const server = createMcpServer();
   const transport = new StdioServerTransport();
-  log("Starting code-graph-context MCP server v5.0.0 (23 tools, 2 resources) via stdio...");
+  log("Starting code-graph-context MCP server v6.0.0 (81 tools, 11 resources) via stdio...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }

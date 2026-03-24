@@ -1,5 +1,43 @@
 {
   "name": "code-graph-context-kg-infra-mcp",
   "description": "MCP server — A) Raw JSON infra knowledge (topology, configs, deps, docs, skills), B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
-  "category": "obs"
+  "dns": "code-graph-context.app",
+  "ports": {
+    "app": 3105
+  },
+  "category": "obs",
+  "docker": {
+    "image": "code-graph-context-kg-infra-mcp",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/code-graph-context-kg-infra-mcp"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/code-graph-context"
+    },
+    "app_hub": false
+  },
+  "build": {
+    "include_cloud_data": true,
+    "extra_copy": [
+      "Dockerfile",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "index.ts",
+      "config.ts",
+      "context.ts",
+      "tools"
+    ]
+  },
+  "compose": {
+    "pre_hook": "mkdir -p data/cloud-data data/front-data && cp -f cloud-data-*.json cloud-data-*.md data/cloud-data/ 2>/dev/null; cp -f front-*.json data/front-data/ 2>/dev/null; cp -f config.json data/ 2>/dev/null; echo 'data dir ready'"
+  }
 }

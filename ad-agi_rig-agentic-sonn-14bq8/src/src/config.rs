@@ -9,10 +9,13 @@ pub struct AppConfig {
     pub c3_mcp_url: String,
     pub mm_url: String,
     pub mm_bot_token: Option<String>,
+    pub mm_bot_mention: String,
     pub heal_interval_secs: u64,
+    pub self_healing_enabled: bool,
     pub docker_socket: String,
     pub guardrail_max_turns: usize,
     pub guardrail_denied_tools: Vec<String>,
+    pub guardrail_allowed_tools: Vec<String>,
 }
 
 impl AppConfig {
@@ -36,10 +39,15 @@ impl AppConfig {
             mm_url: env::var("MATTERMOST_URL")
                 .unwrap_or_else(|_| "http://mattermost:8065".into()),
             mm_bot_token: env::var("MM_BOT_TOKEN").ok(),
+            mm_bot_mention: env::var("MM_BOT_MENTION")
+                .unwrap_or_else(|_| "@ollama-14bq8-ai".into()),
             heal_interval_secs: env::var("HEAL_INTERVAL_SECS")
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(300),
+            self_healing_enabled: env::var("SELF_HEALING_ENABLED")
+                .map(|v| v != "false" && v != "0")
+                .unwrap_or(true),
             docker_socket: env::var("DOCKER_HOST")
                 .unwrap_or_else(|_| "unix:///var/run/docker.sock".into()),
             guardrail_max_turns: env::var("GUARDRAIL_MAX_TURNS")
@@ -47,6 +55,12 @@ impl AppConfig {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(20),
             guardrail_denied_tools: env::var("GUARDRAIL_DENIED_TOOLS")
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
+            guardrail_allowed_tools: env::var("GUARDRAIL_ALLOWED_TOOLS")
                 .unwrap_or_default()
                 .split(',')
                 .map(|s| s.trim().to_string())

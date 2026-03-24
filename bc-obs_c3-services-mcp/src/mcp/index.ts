@@ -9,6 +9,8 @@ import { registerSyncthingTools } from "./tools/syncthing.js";
 import { registerNtfyTools } from "./tools/ntfy.js";
 import { registerOllamaTools } from "./tools/ollama.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
+import { registerDaguTools } from "./tools/dagu.js";
+import { registerGithubTools } from "./tools/github.js";
 import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
@@ -26,8 +28,10 @@ async function main() {
   registerNtfyTools(server);       // 2: publish, health
   registerOllamaTools(server);     // 3: models, generate, chat
   registerRadicaleTools(server);   // 3: calendars, contacts, events
+  registerDaguTools(server);       // 2: list, trigger
+  registerGithubTools(server);     // 2: list_runs, trigger
 
-  // Proxy tools from child MCPs (mattermost-mcp, mailu-mcp)
+  // Proxy tools from child MCPs (mattermost-mcp, mail-mcp, google-workspace-mcp, code-graph-context)
   await registerProxiedTools(server);
 
   const transport = new StdioServerTransport();
