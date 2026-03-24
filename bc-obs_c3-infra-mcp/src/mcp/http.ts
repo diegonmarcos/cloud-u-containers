@@ -17,6 +17,7 @@ import { registerObservabilityExecTools } from "./tools/observability.js";
 import { registerSecurityExecTools } from "./tools/security.js";
 import { registerFrontendExecTools } from "./tools/frontend.js";
 import { registerFinOpsTools } from "./tools/finops.js";
+import { registerWorkflowTools } from "./tools/workflows.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
@@ -32,6 +33,7 @@ function createMcpServer(): McpServer {
   registerSecurityExecTools(server);
   registerFrontendExecTools(server);
   registerFinOpsTools(server);
+  registerWorkflowTools(server);
   registerHealthCloudTools(server);
 
   return server;
