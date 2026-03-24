@@ -39,6 +39,11 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "networks": ["compute", "networks", "list"],
     "regions": ["compute", "regions", "list", "--format=table(name,status,quotas.CPUS.limit)"],
     "auth": ["auth", "list"],
+    "tf-plan": ["__terraform__", "plan"],
+    "tf-apply": ["__terraform__", "apply"],
+    "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
+    "tf-state": ["__terraform__", "state", "list"],
+    "tf-output": ["__terraform__", "output", "-json"],
   },
   oci: {
     "instances": ["compute", "instance", "list", "--compartment-id", "${OCI_COMPARTMENT_ID}", "--output", "table", "--query", "data[*].{Name:\"display-name\",State:\"lifecycle-state\",Shape:shape,AD:\"availability-domain\"}"],
@@ -47,6 +52,11 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "budget": ["budgets", "budget", "list", "--compartment-id", "${OCI_TENANCY_ID}", "--output", "table"],
     "limits": ["limits", "service", "list", "--compartment-id", "${OCI_COMPARTMENT_ID}", "--output", "table"],
     "auth": ["iam", "region", "list", "--output", "table"],
+    "tf-plan": ["__terraform__", "plan"],
+    "tf-apply": ["__terraform__", "apply"],
+    "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
+    "tf-state": ["__terraform__", "state", "list"],
+    "tf-output": ["__terraform__", "output", "-json"],
   },
   gh: {
     "repos": ["repo", "list", "diegonmarcos", "--json", "name,visibility,updatedAt", "--jq", '.[] | "\\(.name) (\\(.visibility)) \\(.updatedAt[:10])"'],
@@ -74,6 +84,11 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "ssh-keys": ["ssh-key", "list", "-o", "columns=id,name,fingerprint"],
     "networks": ["network", "list", "-o", "columns=id,name,ip_range"],
     "auth": ["context", "active"],
+    "tf-plan": ["__terraform__", "plan"],
+    "tf-apply": ["__terraform__", "apply"],
+    "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
+    "tf-state": ["__terraform__", "state", "list"],
+    "tf-output": ["__terraform__", "output", "-json"],
   },
   cloudflare: {
     // Cloudflare uses API, not CLI — we wrap curl calls
@@ -83,7 +98,26 @@ const PRESETS: Record<string, Record<string, string[]>> = {
     "firewall": ["__cf_api__", "/zones/${CF_ZONE_ID}/firewall/rules", "result[].{description,action,filter.expression}"],
     "analytics": ["__cf_api__", "/zones/${CF_ZONE_ID}/analytics/dashboard?since=-1440", "result.totals"],
     "auth": ["__cf_api__", "/user/tokens/verify", "result.status"],
+    "tf-plan": ["__terraform__", "plan"],
+    "tf-apply": ["__terraform__", "apply"],
+    "tf-drift": ["__terraform__", "plan", "-detailed-exitcode"],
+    "tf-state": ["__terraform__", "state", "list"],
+    "tf-output": ["__terraform__", "output", "-json"],
   },
+  ghcr: {
+    "images": ["__ghcr__", "list"],
+    "tags": ["__ghcr__", "tags"],
+    "delete": ["__ghcr__", "delete"],
+    "auth": ["__ghcr__", "auth"],
+  },
+};
+
+// Terraform directories per provider
+const TF_DIRS: Record<string, string> = {
+  gcloud: "b_infra/terraform/gcp",
+  oci: "b_infra/terraform/oci",
+  cloudflare: "b_infra/terraform/cloudflare",
+  hcloud: "b_infra/terraform/hetzner",
 };
 
 async function runCloudflareApi(path: string, jqFilter?: string): Promise<string> {
@@ -142,6 +176,16 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
       return runCloudflareApi(args[1], args[2]);
     }
 
+    // Terraform special handling
+    if (args[0] === "__terraform__") {
+      return runTerraform(provider, args.slice(1));
+    }
+
+    // GHCR special handling
+    if (args[0] === "__ghcr__") {
+      return runGhcr(args[1], command);
+    }
+
     // Expand env vars in args
     const expandedArgs = args.map((a) =>
       a.replace(/\$\{(\w+)\}/g, (_, v) => process.env[v] ?? "")
@@ -171,6 +215,100 @@ async function handleVpsCommand(provider: string, command: string): Promise<stri
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// TERRAFORM HANDLER
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function runTerraform(provider: string, tfArgs: string[]): Promise<string> {
+  const tfDir = TF_DIRS[provider];
+  if (!tfDir) return `No terraform directory configured for ${provider}`;
+
+  const GIT_BASE = process.env.GIT_BASE ?? require("os").homedir() + "/git";
+  const fullPath = `${GIT_BASE}/cloud/${tfDir}`;
+
+  const sections: string[] = [];
+  sections.push(`TERRAFORM → ${provider.toUpperCase()} (${tfDir})`);
+  sections.push("─".repeat(50));
+
+  // Init if needed
+  const initCheck = await execAsync("bash", ["-c", `test -d ${fullPath}/.terraform`], { timeout: 3_000 });
+  if (!initCheck.ok) {
+    sections.push("Running terraform init...");
+    const init = await execAsync("terraform", ["-chdir=" + fullPath, "init", "-no-color"], { timeout: 60_000 });
+    if (!init.ok) {
+      sections.push(`Init failed: ${init.stderr.trim()}`);
+      return sections.join("\n");
+    }
+  }
+
+  const r = await execAsync("terraform", ["-chdir=" + fullPath, ...tfArgs, "-no-color"], { timeout: 120_000 });
+  sections.push(r.stdout.trim());
+  if (!r.ok && r.stderr.trim()) sections.push(`\nSTDERR: ${r.stderr.trim()}`);
+
+  // For drift detection, exit code 2 = changes detected
+  if (tfArgs[0] === "plan" && tfArgs.includes("-detailed-exitcode") && r.exitCode === 2) {
+    sections.push("\n⚠️ DRIFT DETECTED — terraform plan shows pending changes");
+  }
+
+  return sections.join("\n");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GHCR HANDLER
+// ──────────────────────────────────────────────────────────────────────────────
+
+async function runGhcr(action: string, _command: string): Promise<string> {
+  const sections: string[] = [];
+  sections.push("GHCR (GitHub Container Registry)");
+  sections.push("─".repeat(50));
+
+  switch (action) {
+    case "list": {
+      const r = await execAsync("gh", [
+        "api", "/user/packages?package_type=container&per_page=50",
+        "--jq", '.[] | "\\(.name) (\\(.visibility)) updated:\\(.updated_at[:10])"',
+      ], { timeout: 15_000 });
+      if (!r.ok) {
+        // Try org packages
+        const r2 = await execAsync("gh", [
+          "api", "/users/diegonmarcos/packages?package_type=container&per_page=50",
+          "--jq", '.[] | "\\(.name) (\\(.visibility)) updated:\\(.updated_at[:10])"',
+        ], { timeout: 15_000 });
+        sections.push(r2.ok ? r2.stdout.trim() : `Error: ${r2.stderr.trim()}`);
+      } else {
+        sections.push(r.stdout.trim() || "No packages found");
+      }
+      break;
+    }
+    case "tags": {
+      // List all packages first, then tags for each
+      const pkgs = await execAsync("gh", [
+        "api", "/users/diegonmarcos/packages?package_type=container&per_page=20",
+        "--jq", ".[].name",
+      ], { timeout: 15_000 });
+      if (!pkgs.ok) { sections.push(`Error: ${pkgs.stderr.trim()}`); break; }
+      for (const pkg of pkgs.stdout.trim().split("\n").filter(Boolean).slice(0, 10)) {
+        const tags = await execAsync("gh", [
+          "api", `/users/diegonmarcos/packages/container/${encodeURIComponent(pkg)}/versions?per_page=5`,
+          "--jq", '.[] | "  \\(.metadata.container.tags | join(",")) \\(.updated_at[:10])"',
+        ], { timeout: 10_000 });
+        sections.push(`${pkg}:`);
+        sections.push(tags.ok ? tags.stdout.trim() : "  (error fetching tags)");
+      }
+      break;
+    }
+    case "auth": {
+      const r = await execAsync("gh", ["auth", "token"], { timeout: 5_000 });
+      sections.push(r.ok ? "Authenticated (token available)" : "Not authenticated");
+      break;
+    }
+    default:
+      sections.push(`Unknown GHCR action: ${action}. Available: list, tags, auth`);
+  }
+
+  return sections.join("\n");
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // TOOL REGISTRATION
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -181,7 +319,8 @@ export function registerVpsOpsTools(server: McpServer): void {
     { name: "vps_gh", cli: "gh", desc: "GitHub CLI proxy — repos, issues, PRs, runs, workflows, secrets" },
     { name: "vps_wrangler", cli: "wrangler", desc: "Cloudflare Wrangler CLI proxy — workers, KV, R2, pages" },
     { name: "vps_hetzner", cli: "hcloud", desc: "Hetzner Cloud CLI proxy — servers, volumes, firewalls, networks" },
-    { name: "vps_cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy — zones, DNS, workers, firewall, analytics" },
+    { name: "vps_cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy — zones, DNS, workers, firewall, analytics, tf-*" },
+    { name: "vps_ghcr", cli: "ghcr", desc: "GitHub Container Registry — list images, tags, auth" },
   ];
 
   for (const { name, cli, desc } of providers) {
