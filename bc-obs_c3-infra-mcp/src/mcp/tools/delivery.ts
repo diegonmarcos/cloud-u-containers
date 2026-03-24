@@ -23,7 +23,7 @@ export function registerDeliveryTools(server: McpServer) {
   // ── Build (2 tools, from build.ts) ──
 
   server.tool(
-    "delivery-build_service",
+    "ops-build_service",
     "Run build.sh for a specific service (build/secrets/ship/clean/all)",
     {
       service: z.string().describe("Service name"),
@@ -66,7 +66,7 @@ export function registerDeliveryTools(server: McpServer) {
   );
 
   server.tool(
-    "delivery-build_all",
+    "ops-build_all",
     "Run the root build.sh orchestrator to build all services",
     {
       dryRun: z.boolean().optional().describe("Dry run mode (default: false)"),
@@ -100,7 +100,7 @@ export function registerDeliveryTools(server: McpServer) {
   // ── Ship & Docker (2 tools, from native-ops.ts) ──
 
   server.tool(
-    "delivery-build_ship",
+    "ops-build_ship",
     "Run full deployment pipeline: build → secrets → deploy → compose (build.sh ship)",
     {
       service: z.string().describe("Service name to deploy"),
@@ -120,7 +120,7 @@ export function registerDeliveryTools(server: McpServer) {
         timeout: 300_000,
         cwd: svcDir,
       });
-      audit("delivery-build_ship", service, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+      audit("ops-build_ship", service, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
         content: [{
@@ -138,7 +138,7 @@ export function registerDeliveryTools(server: McpServer) {
   );
 
   server.tool(
-    "delivery-build_docker",
+    "ops-build_docker",
     "Build and push Docker image for a service (build.sh docker)",
     {
       service: z.string().describe("Service name"),
@@ -177,7 +177,7 @@ export function registerDeliveryTools(server: McpServer) {
   // ── Secrets & Backup (2 tools, from native-ops.ts) ──
 
   server.tool(
-    "delivery-secrets_status",
+    "ops-secrets_status",
     "Show secrets encryption status for services",
     {
       service: z.string().optional().describe("Service name (omit for all services)"),
@@ -226,7 +226,7 @@ export function registerDeliveryTools(server: McpServer) {
   );
 
   server.tool(
-    "delivery-backup_trigger",
+    "ops-backup_trigger",
     "Trigger backup for a service's data (borg=media files, bup=general files, db=database dump)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -254,7 +254,7 @@ export function registerDeliveryTools(server: McpServer) {
       const cmd = `cd ${remotePath} && docker compose run --rm backup-${backupType} 2>&1 || docker compose run --rm backup 2>&1`;
 
       const result = sshExec(vmId, cmd, 300_000);
-      audit("delivery-backup_trigger", `${backupType} ${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+      audit("ops-backup_trigger", `${backupType} ${service}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
         content: [{
