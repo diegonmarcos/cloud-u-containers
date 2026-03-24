@@ -3,6 +3,7 @@
   "description": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
   "port": 3016,
   "dns": "grafana.app",
+  "ports": {"grafana": 3200, "loki": 3110, "mimir": 9009, "tempo": 3210},
   "category": "tools",
   "domain": "grafana.diegonmarcos.com",
   "deploy": {

@@ -3,6 +3,7 @@
   "description": "SSO and 2FA authentication portal",
   "port": 9091,
   "dns": "authelia.app",
+  "ports": {"app": 9091, "redis": 6380},
   "category": "sec",
   "domain": "auth.diegonmarcos.com",
   "build": {

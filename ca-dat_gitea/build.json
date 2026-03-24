@@ -3,6 +3,7 @@
   "description": "Self-hosted Git service",
   "port": 3017,
   "dns": "gitea.app",
+  "ports": {"app": 3017},
   "category": "data",
   "domain": "git.diegonmarcos.com",
   "deploy": {

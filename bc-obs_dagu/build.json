@@ -3,6 +3,7 @@
   "description": "Dagu - Lightweight DAG-based workflow scheduler",
   "port": 8070,
   "dns": "dagu.app",
+  "ports": {"app": 8070},
   "category": "tools",
   "domain": "workflows.diegonmarcos.com",
   "deploy": {
