@@ -132,7 +132,7 @@ in {
     restart ? "unless-stopped",
     stopGracePeriod ? "30s",
     pidsLimit ? 256,          # max processes per container (0 = no limit)
-    dns ? [],                 # DNS servers — e.g. ["10.0.0.1"] for Hickory
+    dns ? ["10.0.0.1" "1.1.1.1"],  # Hickory DNS first, Cloudflare fallback — ALL containers
     skipLogging ? false,      # true = don't inject logging config
     skipSecurity ? false,     # true = don't inject security_opt + cap_drop
 
