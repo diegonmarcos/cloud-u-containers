@@ -487,3 +487,30 @@ export function registerHealthCloudTools(server: McpServer): void {
     }),
   );
 }
+
+// ── Standalone runner (GHA / CLI) ────────────────────────────────────────
+// When executed directly (not imported by MCP server), run cloud_full and exit
+if (process.argv[1]?.endsWith("health_cloud.ts")) {
+  (async () => {
+    const { McpServer: S } = await import("@modelcontextprotocol/sdk/server/mcp.js");
+    const server = new S({ name: "health-runner", version: "1.0.0" });
+    registerHealthCloudTools(server);
+    // Access registered tool handler directly
+    const tools = (server as any)._registeredTools;
+    const cloudFull = tools?.get?.("cloud-full") ?? tools?.["cloud-full"];
+    if (!cloudFull) {
+      console.error("ERROR: cloud-full tool not found in registered tools");
+      process.exit(1);
+    }
+    try {
+      const result = await cloudFull.callback({}, {});
+      const text = result?.content?.[0]?.text ?? "No output";
+      console.log(text);
+      const failed = (text.match(/✗/g) || []).length;
+      process.exit(failed > 0 ? 1 : 0);
+    } catch (err) {
+      console.error("FATAL:", err);
+      process.exit(1);
+    }
+  })();
+}

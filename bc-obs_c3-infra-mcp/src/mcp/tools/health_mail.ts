@@ -945,3 +945,28 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 }
+
+// ── Standalone runner (GHA / CLI) ────────────────────────────────────────
+if (process.argv[1]?.endsWith("health_mail.ts")) {
+  (async () => {
+    const { McpServer: S } = await import("@modelcontextprotocol/sdk/server/mcp.js");
+    const server = new S({ name: "health-runner", version: "1.0.0" });
+    registerHealthMailTools(server);
+    const tools = (server as any)._registeredTools;
+    const mailFull = tools?.get?.("mail-full") ?? tools?.["mail-full"];
+    if (!mailFull) {
+      console.error("ERROR: mail-full tool not found in registered tools");
+      process.exit(1);
+    }
+    try {
+      const result = await mailFull.callback({}, {});
+      const text = result?.content?.[0]?.text ?? "No output";
+      console.log(text);
+      const failed = (text.match(/✗/g) || []).length;
+      process.exit(failed > 0 ? 1 : 0);
+    } catch (err) {
+      console.error("FATAL:", err);
+      process.exit(1);
+    }
+  })();
+}
