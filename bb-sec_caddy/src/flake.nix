@@ -40,7 +40,11 @@
           then builtins.fromJSON (builtins.readFile fallbackPath)
           else emptyRoutes;
         # Use cloud-data if it has actual routes; otherwise use fallback
-      in if cloudData != null && (cloudData.routes or []) != []
+        # Validate: cloud-data routes must have 'upstream' + 'domain' on each entry
+        validRoutes = cloudData != null
+          && (cloudData.routes or []) != []
+          && builtins.all (r: r ? upstream && r ? domain) (cloudData.routes or []);
+      in if validRoutes
          then cloudData
          else fallback;
 
