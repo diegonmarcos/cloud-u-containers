@@ -1,0 +1,44 @@
+{
+  "name": "c3-api",
+  "description": "C3 REST API — Cloud Control Center Fastify API",
+  "port": 8081,
+  "dns": "c3-api.app",
+  "category": "sec",
+  "domain": "api.diegonmarcos.com/c3-api",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "c3-api",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/c3-api"
+  },
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "secrets": {
+    "escape_dollars": "true"
+  },
+  "proxy": {
+    "primary": {
+      "auth": "two_factor",
+      "type": "path",
+      "parent_domain": "api.diegonmarcos.com",
+      "base_path": "/c3-api",
+      "paths": {
+        "/docs/json": {
+          "auth": "public"
+        }
+      }
+    }
+  },
+  "health": {
+    "path": "/c3-api/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}
