@@ -13,8 +13,8 @@
       port = 8091;
       ollama_url = "http://localhost:11435";
       ollama_model = "qwen2.5:1.5b";
-      c3_mcp_url = "http://c3-services-mcp:3101";
-      mattermost_url = "http://mattermost:8065";
+      c3_mcp_url = "http://c3-services-mcp.app:3101";
+      mattermost_url = "http://mattermost.app:8065";
     };
 
     # Strict allowlist — hai can ONLY use these tools
