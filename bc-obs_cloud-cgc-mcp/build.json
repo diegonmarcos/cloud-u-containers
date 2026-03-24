@@ -1,26 +1,26 @@
 {
-  "name": "code-graph-context-kg-infra-mcp",
-  "description": "MCP server — A) Raw JSON infra knowledge (topology, configs, deps, docs, skills), B) Octocode semantic code search, C) CodeGraph-Rust graph analysis (future)",
-  "dns": "code-graph-context.app",
+  "name": "cloud-cgc-mcp",
+  "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
   },
   "category": "obs",
   "docker": {
-    "image": "code-graph-context-kg-infra-mcp",
+    "image": "cloud-cgc-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos"
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/code-graph-context-kg-infra-mcp"
+    "remote_path": "/opt/containers/cloud-cgc-mcp"
   },
   "proxy": {
     "primary": {
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/code-graph-context"
+      "base_path": "/cloud-cgc-mcp"
     },
     "app_hub": false
   },

@@ -10,7 +10,7 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      container_name = "code-graph-context";
+      container_name = buildJson.name;
       image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
       http_port = toString buildJson.ports.app;
       # CONFIG_PATH points to config.json; getRepoRoot() = parent dir
