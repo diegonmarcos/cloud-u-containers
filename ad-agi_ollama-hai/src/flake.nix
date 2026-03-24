@@ -50,7 +50,7 @@
               limits:
                 memory: 6G
           healthcheck:
-            test: ["CMD", "curl", "-sf", "http://localhost:${toString config.api_port}/api/tags"]
+            test: ["CMD", "ollama", "list"]
             interval: 30s
             timeout: 10s
             retries: 3
