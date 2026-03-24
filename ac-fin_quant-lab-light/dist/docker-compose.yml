@@ -1,0 +1,69 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ac-fin_quant-lab-light/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  research:
+    image: quay.io/jupyter/scipy-notebook:latest
+    container_name: quant_light_research
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/data
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+      GRANT_SUDO: "yes"
+    command: >
+      sh -c "pip install polars openbb quantstats riskfolio-lib plotly &&
+             start-notebook.sh --NotebookApp.token='' --ServerApp.port=8889"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8889/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  engine:
+    image: python:3.12-slim
+    container_name: quant_light_engine
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./strategies:/app/strategies
+      - ./data:/app/data
+    working_dir: /app
+    depends_on:
+      - research
+    command: >
+      sh -c "pip install nautilus_trader ib_insync &&
+             tail -f /dev/null"
+
+  db:
+    image: postgres:16-alpine
+    container_name: quant_light_db
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGPORT: "5434"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    name: quant_light_postgres_data
+
