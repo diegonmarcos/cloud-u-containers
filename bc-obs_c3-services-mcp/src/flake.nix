@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
 
     config = {
       container_name = "c3-services-mcp";
@@ -14,33 +15,32 @@
       port = 3101;
     };
 
-    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-      # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: bc-obs_c3-services-mcp/src/flake.nix                   ║
-      # ║ Rebuild: bc-obs_c3-services-mcp/build.sh ship                  ║
-      # ╚══════════════════════════════════════════════════════════════════╝
-      services:
-        c3-services-mcp:
-          image: ${config.image}
-          container_name: ${config.container_name}
-          restart: unless-stopped
-          network_mode: host
-          env_file:
-            - .secrets
-          environment:
-            - MCP_HTTP_PORT=${toString config.port}
-            - NODE_ENV=production
-          healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/mcp"]
-            interval: 30s
-            timeout: 10s
-            retries: 3
-            start_period: 15s
+    title = "C3 Services MCP Server";
 
-    '';
+    mkDockerCompose = pkgs: docker.mkCompose pkgs {
+      banner = docker.banner "~/git/cloud/a_solutions/bc-obs_c3-services-mcp/src/flake.nix";
+
+      services.c3-services-mcp = docker.mkService {
+        name = "c3-services-mcp";
+        image = config.image;
+        container_name = config.container_name;
+        networkMode = "host";
+        skipReadOnly = true;
+
+        env_file = [ ".secrets" ];
+        environment = [
+          "MCP_HTTP_PORT=${toString config.port}"
+          "NODE_ENV=production"
+        ];
+        healthcheck = {
+          test = ''["CMD", "curl", "-f", "http://localhost:${toString config.port}/mcp"]'';
+          interval = "30s";
+          timeout = "10s";
+          retries = 3;
+          start_period = "15s";
+        };
+      };
+    };
 
   in {
     packages = forAllSystems (system: let
@@ -52,6 +52,7 @@
       '';
     in {
       default = defaultPkg;
+      docs = docker.mkDocs pkgs { inherit title config defaultPkg; };
     });
   };
 }
