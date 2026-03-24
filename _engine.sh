@@ -249,6 +249,13 @@ step_build() {
         fi
     fi
 
+    # Inject build.json into src/ so flakes can read ports/config
+    if [ -f "$SERVICE_DIR/build.json" ]; then
+        cp "$SERVICE_DIR/build.json" "$SRC_DIR/build.json"
+        git -C "$SERVICE_DIR/../.." add -f "$(realpath --relative-to="$SERVICE_DIR/../.." "$SRC_DIR/build.json")" 2>/dev/null || true
+        log "Injected build.json into src/ for nix evaluation"
+    fi
+
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
