@@ -9,8 +9,8 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "c3-api";
-      image = "ghcr.io/diegonmarcos/c3-api:latest";
+      container_name = "c3-infra-api";
+      image = "ghcr.io/diegonmarcos/c3-infra-api:latest";
       port = 8081;
     };
 
@@ -21,17 +21,17 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-api/src/flake.nix   ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-api/build.sh ship  ║
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-infra-api/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-infra-api/build.sh ship  ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        c3-api:
+        c3-infra-api:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
           network_mode: host
           volumes:
-            - /opt/ssh-keys/c3-api:/root/.ssh:ro
+            - /opt/ssh-keys/c3-infra-api:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
@@ -42,7 +42,7 @@
             - PORT=${toString config.port}
             - NODE_ENV=production
             - GIT_BASE=/root/git
-            - AUTHELIA_OIDC_CLIENT_ID=c3-api
+            - AUTHELIA_OIDC_CLIENT_ID=c3-infra-api
             - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_C3_INFRA_MCP_SECRET}
             - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
             - RESEND_API_KEY=''${RESEND_API_KEY}
@@ -66,7 +66,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "c3-api-configs" {} ''
+      defaultPkg = pkgs.runCommand "c3-infra-api-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';

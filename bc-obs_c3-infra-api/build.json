@@ -1,18 +1,18 @@
 {
-  "name": "c3-api",
+  "name": "c3-infra-api",
   "description": "C3 REST API — Cloud Control Center Fastify API",
   "port": 8081,
-  "dns": "c3-api.app",
+  "dns": "c3-infra-api.app",
   "category": "sec",
   "domain": "api.diegonmarcos.com/c3-api",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "c3-api",
+    "image": "c3-infra-api",
     "dockerfile": "Dockerfile"
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-api"
+    "remote_path": "/opt/containers/c3-infra-api"
   },
   "build": {
     "include_cloud_data": "true"

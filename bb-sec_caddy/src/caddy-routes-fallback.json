@@ -90,7 +90,7 @@
         },
         {
           "base_path": "/c3-api",
-          "upstream": "c3-api.app:8081",
+          "upstream": "c3-infra-api.app:8081",
           "public_paths": ["/c3-api/docs/json"],
           "comment": "C3 — Cloud Control Center API"
         },
@@ -158,7 +158,7 @@
       "comment": "MCP — Streamable HTTP endpoints for Claude Code MCP clients",
       "fallback_message": "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp",
       "endpoints": [
-        { "base_path": "/c3-infra-mcp", "upstream": "c3-mcp.app:3100" },
+        { "base_path": "/c3-infra-mcp", "upstream": "c3-infra-mcp.app:3100" },
         { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
         { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
         { "base_path": "/mail-mcp", "upstream": "mail-mcp.app:3103" },

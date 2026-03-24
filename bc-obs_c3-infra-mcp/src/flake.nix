@@ -9,8 +9,8 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     config = {
-      container_name = "c3-mcp";
-      image = "ghcr.io/diegonmarcos/c3-mcp:latest";
+      container_name = "c3-infra-mcp";
+      image = "ghcr.io/diegonmarcos/c3-infra-mcp:latest";
       port = 3100;
       mattermost_url = "http://mattermost.app:8065";
     };
@@ -22,17 +22,17 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
       # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-mcp/src/flake.nix   ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-mcp/build.sh ship  ║
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_c3-infra-mcp/src/flake.nix   ║
+      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_c3-infra-mcp/build.sh ship  ║
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
-        c3-mcp:
+        c3-infra-mcp:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped
           network_mode: host
           volumes:
-            - /opt/ssh-keys/c3-mcp:/root/.ssh:ro
+            - /opt/ssh-keys/c3-infra-mcp:/root/.ssh:ro
             - /nix/store:/nix/store:ro
             - ~/.nix-profile/bin:/usr/local/nix-bin:ro
             - ~/.config/gcloud:/root/.config/gcloud
@@ -63,7 +63,7 @@
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in let
-      defaultPkg = pkgs.runCommand "c3-mcp-configs" {} ''
+      defaultPkg = pkgs.runCommand "c3-infra-mcp-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
       '';
