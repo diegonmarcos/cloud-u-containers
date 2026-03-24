@@ -16,6 +16,9 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
     depends_on:
@@ -55,6 +58,9 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       DEBUG: "true"
       ISSUER: https://auth.diegonmarcos.com
