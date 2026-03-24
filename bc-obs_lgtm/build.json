@@ -18,7 +18,7 @@
     "grafana": 3200,
     "loki": 3110,
     "mimir": 9009,
-    "tempo": 3200
+    "tempo": 3210
   },
   "health": {
     "path": "/"
