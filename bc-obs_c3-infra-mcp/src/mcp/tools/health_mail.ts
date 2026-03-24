@@ -847,6 +847,45 @@ export function registerHealthMailTools(server: McpServer): void {
       await runPhase("1. PRE-FLIGHT", async () => formatChecks("1. PRE-FLIGHT", await preflight()));
       const sshOk = _remoteCache !== null;
 
+      // ── SMART FALLBACK: if any SSH failed, run docker ps on all VMs ──
+      if (!sshOk || !_appCache || !_proxyCache) {
+        const vmList = [
+          { name: "oci-mail", ip: MAIL_WG_IP, user: "ubuntu" },
+          { name: "oci-apps", ip: APPS_WG_IP, user: "ubuntu" },
+          { name: "gcp-proxy", ip: PROXY_WG_IP, user: "diego" },
+          { name: "oci-analytics", ip: "10.0.0.4", user: "ubuntu" },
+        ];
+        const fallbackLines: string[] = [
+          "",
+          "╔══════════════════════════════════════════════════════════════╗",
+          "║  FALLBACK DIAGNOSTIC — docker ps on all reachable VMs       ║",
+          "╚══════════════════════════════════════════════════════════════╝",
+        ];
+        await Promise.all(vmList.map(async (vm) => {
+          try {
+            const r = await runA("ssh", [
+              "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+              "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR",
+              `${vm.user}@${vm.ip}`,
+              "docker ps -a --format '{{.Names}}\\t{{.Status}}' 2>/dev/null | sort",
+            ], 15_000);
+            if (r.ok && r.stdout.trim()) {
+              fallbackLines.push("", `── ${vm.name} (${vm.ip}) ──`);
+              for (const line of r.stdout.trim().split("\n")) {
+                const [name, status] = line.split("\t");
+                const icon = (status || "").includes("unhealthy") || (status || "").includes("Restarting") ? "✗" : "✓";
+                fallbackLines.push(`  ${icon} ${(name || "?").padEnd(30)} ${status || "?"}`);
+              }
+            } else {
+              fallbackLines.push("", `── ${vm.name} (${vm.ip}) — UNREACHABLE ──`);
+            }
+          } catch {
+            fallbackLines.push("", `── ${vm.name} (${vm.ip}) — SSH FAILED ──`);
+          }
+        }));
+        sections.push(fallbackLines.join("\n"));
+      }
+
       // Phases 2-4: run in parallel
       if (sshOk) {
         const p2 = runPhase("2. CONTAINERS", async () => formatChecks("2. CONTAINERS", await containerHealth()));
