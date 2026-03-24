@@ -29,11 +29,16 @@ export function registerOctocodeTools(server: McpServer): void {
     {
       query: z.string().describe("Natural language or code search query"),
       path: z.string().optional().describe("Limit search to a specific directory path"),
-      limit: z.number().optional().default(10).describe("Max results to return"),
+      mode: z.enum(["all", "code", "docs", "text"]).optional().describe("Search mode (default: all)"),
+      format: z.enum(["json", "md", "text"]).optional().describe("Output format (default: text)"),
+      threshold: z.number().optional().describe("Similarity threshold 0.0-1.0 (higher = stricter)"),
     },
-    async ({ query, path, limit }) => {
-      const args = ["search", query, "--limit", String(limit ?? 10)];
-      if (path) args.push("--path", path);
+    async ({ query, path, mode, format, threshold }) => {
+      const args = ["search", query, "--format", format ?? "text"];
+      if (mode) args.push("--mode", mode);
+      if (threshold) args.push("--threshold", String(threshold));
+      // path filter: append to query as context (octocode doesn't have --path flag)
+      if (path) args[1] = `${query} in ${path}`;
       const result = await runOctocode(args);
       return { content: [{ type: "text" as const, text: result }] };
     }
