@@ -8,10 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "analytics.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "matomo-hybrid";
-      port = 8080;
+      port = buildJson.ports.app;
     };
 
     title = "Matomo Analytics (Hybrid Container)";

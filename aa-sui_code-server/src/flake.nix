@@ -8,12 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "ide.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "code-server";
       image = "linuxserver/code-server:latest";
-      port = 8443;
+      port = buildJson.ports.app;
       timezone = "Europe/Madrid";
     };
 

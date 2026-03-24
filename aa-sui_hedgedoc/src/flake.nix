@@ -7,14 +7,16 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "notes.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "hedgedoc_app";
       image = "quay.io/hedgedoc/hedgedoc:latest";
       db_container = "hedgedoc_postgres";
       db_image = "postgres:16-alpine";
-      port = 3018;
+      port = buildJson.ports.app;
+      db_port = buildJson.ports.db;
       db_user = "hedgedoc";
       db_name = "hedgedoc";
     };
@@ -42,7 +44,7 @@
             - CMD_DOMAIN=${config.domain}
             - CMD_URL_ADDPORT=false
             - CMD_PROTOCOL_USESSL=true
-            - CMD_DB_URL=postgres://${config.db_user}:${config.db_user}@localhost:5439/${config.db_name}
+            - CMD_DB_URL=postgres://${config.db_user}:${config.db_user}@localhost:${toString config.db_port}/${config.db_name}
             - CMD_ALLOW_EMAIL_REGISTER=true
             - CMD_EMAIL=true
             - CMD_ALLOW_FREEURL=true
@@ -68,9 +70,9 @@
             - POSTGRES_PASSWORD=${config.db_user}
             - POSTGRES_DB=${config.db_name}
             - PGDATA=/var/lib/postgresql/data/pgdata
-            - PGPORT=5439
+            - PGPORT=${toString config.db_port}
           healthcheck:
-            test: ['CMD-SHELL', 'pg_isready -U ${config.db_user} -p 5439']
+            test: ['CMD-SHELL', 'pg_isready -U ${config.db_user} -p ${toString config.db_port}']
             interval: 10s
             timeout: 5s
             retries: 5

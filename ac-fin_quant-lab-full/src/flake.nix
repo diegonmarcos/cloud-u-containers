@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
       research_image = "quay.io/jupyter/scipy-notebook:latest";
@@ -15,10 +16,10 @@
       risk_image = "python:3.12-slim";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
-      jupyter_port = 8888;
+      jupyter_port = buildJson.ports.app;
       dash_port = 8050;
       engine_port = 5000;
-      db_port = 5437;
+      db_port = buildJson.ports.db;
     };
 
     title = "Quant Lab Full - Research + Analytics + ML + Risk + Trading + Postgres";
@@ -46,7 +47,7 @@
             sh -c "pip install openbb polars plotly &&
                    start-notebook.sh --NotebookApp.token='''"
           healthcheck:
-            test: ["CMD-SHELL", "curl -sf http://localhost:8888/api || exit 1"]
+            test: ["CMD-SHELL", "curl -sf http://localhost:${toString config.jupyter_port}/api || exit 1"]
             interval: 30s
             timeout: 10s
             retries: 3

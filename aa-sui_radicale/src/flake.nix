@@ -8,12 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "cal.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "radicale";
       image = "tomsquest/docker-radicale:latest";
-      port = 5232;
+      port = buildJson.ports.app;
     };
 
     title = "Radicale Calendar/Contacts (CalDAV/CardDAV)";

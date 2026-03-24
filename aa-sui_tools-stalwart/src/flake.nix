@@ -8,9 +8,11 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
       domain = "diegonmarcos.com";
-      mail_domain = "mail.diegonmarcos.com";
+      mail_domain = buildJson.domain;
       timezone = "Europe/Madrid";
       message_size_limit = "52428800";  # 50MB
 
@@ -21,6 +23,9 @@
       # AWS SES relay (fallback)
       aws_relay_host = "email-smtp.us-east-1.amazonaws.com";
       aws_relay_port = "587";
+
+      # Web admin port (from build.json)
+      port = buildJson.ports.app;
     };
 
     title = "Stalwart Mail Server";
@@ -88,7 +93,7 @@
       protocol = "managesieve"
 
       [server.listener."https"]
-      bind = ["0.0.0.0:8443"]
+      bind = ["0.0.0.0:${toString config.port}"]
       protocol = "http"
       tls.implicit = true
 

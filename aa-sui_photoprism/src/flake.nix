@@ -8,15 +8,17 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "photos.diegonmarcos.com";
+      domain = buildJson.domain;
       app_container = "photoprism_app";
       db_container = "photoprism_mariadb";
       rclone_container = "photoprism_rclone";
       app_image = "photoprism/photoprism:latest";
       db_image = "mariadb:11";
       rclone_image = "rclone/rclone:latest";
-      app_port = 3013;
+      app_port = buildJson.ports.app;
       timezone = "Europe/Madrid";
       db_name = "photoprism";
       db_user = "photoprism";

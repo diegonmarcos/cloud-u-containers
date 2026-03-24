@@ -8,10 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
       container_name = "google-workspace-mcp";
       image = "ghcr.io/diegonmarcos/google-workspace-mcp:latest";
-      port = 3104;
+      port = buildJson.ports.app;
       internal_port = 8004;
     };
 

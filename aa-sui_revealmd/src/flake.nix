@@ -8,11 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "slides.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "revealmd_app";
       image = "webpronl/reveal-md:latest";
-      port = 3014;
+      port = buildJson.ports.app;
     };
 
     title = "RevealMD - Markdown to reveal.js presentations";

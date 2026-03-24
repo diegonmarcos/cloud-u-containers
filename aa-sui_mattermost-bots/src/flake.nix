@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
       container_name = "mattermost";
@@ -17,8 +18,9 @@
       c3_port = 8887;
       postgres_image = "postgres:16-alpine";
       bridge_image = "python:3.12-slim";
-      port = 8065;
-      postgres_port = 5435;
+      domain = buildJson.domain;
+      port = buildJson.ports.app;
+      postgres_port = buildJson.ports.db;
       wg_ip = "10.0.0.6";
       ntfy_url = "http://10.0.0.1:8090";
       # Scraped from bc-obs_ntfy/src/topic-scanner.py CONFIGURED_TOPICS
@@ -62,8 +64,8 @@
           environment:
             - TZ=${config.timezone}
             - MM_SQLSETTINGS_DRIVERNAME=postgres
-            - MM_SERVICESETTINGS_SITEURL=https://chat.diegonmarcos.com
-            - MM_SERVICESETTINGS_LISTENADDRESS=:8065
+            - MM_SERVICESETTINGS_SITEURL=https://${config.domain}
+            - MM_SERVICESETTINGS_LISTENADDRESS=:${toString config.port}
             - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
             - MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true
             - MM_SERVICESETTINGS_ENABLECOMMANDS=true
@@ -109,7 +111,7 @@
           environment:
             - NTFY_URL=${config.ntfy_url}
             - TOPICS=${config.topics}
-            - MM_URL=http://localhost:8065
+            - MM_URL=http://localhost:${toString config.port}
             - C3_API_URL=${config.c3_api}
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_MODEL=${config.ollama_model}

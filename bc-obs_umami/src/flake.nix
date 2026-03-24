@@ -8,10 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "analytics.diegonmarcos.com/umami";
+      domain = buildJson.domain;
       container_name = "umami";
-      port = 3000;
+      port = buildJson.ports.app;
       db_container = "umami-db";
     };
 
@@ -47,7 +49,7 @@
             umami-db:
               condition: service_healthy
           healthcheck:
-            test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/heartbeat || exit 1"]
+            test: ["CMD-SHELL", "curl -sf http://localhost:${toString config.port}/api/heartbeat || exit 1"]
             interval: 15s
             timeout: 5s
             retries: 5
@@ -110,7 +112,7 @@
       # Configures admin credentials + creates website
       set -e
 
-      UMAMI_URL="http://localhost:3000"
+      UMAMI_URL="http://localhost:${toString config.port}"
 
       # Extract JSON field value using awk index() — no sed escaping issues
       json_val() {

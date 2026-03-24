@@ -8,12 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      domain = "files.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "filebrowser_app";
       image = "filebrowser/filebrowser:latest";
-      port = 3015;
+      port = buildJson.ports.app;
     };
 
     title = "Filebrowser - Web file manager";

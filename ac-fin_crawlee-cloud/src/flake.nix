@@ -11,14 +11,15 @@
 
   outputs = { self, nixpkgs, crawlee-src }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
-      api_port = 3000;
-      dashboard_port = 3001;
-      minio_port = 9000;
+      api_port = buildJson.ports.app;
+      dashboard_port = buildJson.ports.dashboard;
+      minio_port = buildJson.ports.minio;
       minio_console_port = 9001;
-      db_port = 5433;       # avoid conflict with quant-lab's 5432
-      redis_port = 6380;    # avoid conflict with other redis instances
+      db_port = buildJson.ports.db;
+      redis_port = buildJson.ports.redis;
     };
 
     title = "Crawlee Cloud - Self-hosted Apify-compatible scraping platform";
@@ -46,7 +47,7 @@
             - .secrets
           environment:
             NODE_ENV: production
-            PORT: "3000"
+            PORT: "${toString config.api_port}"
             DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
             REDIS_URL: redis://localhost:${toString config.redis_port}
             S3_ENDPOINT: http://localhost:${toString config.minio_port}
@@ -67,7 +68,7 @@
             crawlee_minio:
               condition: service_healthy
           healthcheck:
-            test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1"]
+            test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:${toString config.api_port}/health || exit 1"]
             interval: 15s
             timeout: 5s
             retries: 3
@@ -85,7 +86,7 @@
             - .secrets
           environment:
             NODE_ENV: production
-            API_BASE_URL: http://localhost:3000
+            API_BASE_URL: http://localhost:${toString config.api_port}
             API_TOKEN: ''${RUNNER_TOKEN}
             DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
             REDIS_URL: redis://localhost:${toString config.redis_port}
@@ -112,7 +113,7 @@
           environment:
             NODE_ENV: production
             PORT: "${toString config.dashboard_port}"
-            NEXT_PUBLIC_API_URL: http://localhost:3000
+            NEXT_PUBLIC_API_URL: http://localhost:${toString config.api_port}
           depends_on:
             api:
               condition: service_healthy

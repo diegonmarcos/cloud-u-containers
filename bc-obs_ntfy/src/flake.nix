@@ -8,11 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
     config = {
-      domain = "rss.diegonmarcos.com";
+      domain = buildJson.domain;
       container_name = "ntfy";
       image = "binwiederhier/ntfy";
-      port = 8090;
+      port = buildJson.ports.app;
     };
 
     title = "ntfy Push Notifications + syslog-bridge + github-rss";
