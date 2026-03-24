@@ -222,11 +222,16 @@ step_build() {
         return 0
     fi
 
-    # Pre-build: copy cloud-data/ files into src/ so nix can read them
+    # Pre-build: update cloud-data submodule + copy files into src/
     # (nix flakes can't see git submodule contents — this bridges the gap)
     CLOUD_DATA_STAGED=""
     if [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
         CLOUD_DATA_DIR="$SERVICE_DIR/../../cloud-data"
+        # Auto-update submodule to latest remote
+        if [ -f "$SERVICE_DIR/../../.gitmodules" ]; then
+            log "Updating cloud-data submodule to latest"
+            git -C "$SERVICE_DIR/../.." submodule update --remote --init cloud-data 2>/dev/null || true
+        fi
         if [ -d "$CLOUD_DATA_DIR" ]; then
             for f in "$CLOUD_DATA_DIR"/*.json; do
                 [ -f "$f" ] || continue
