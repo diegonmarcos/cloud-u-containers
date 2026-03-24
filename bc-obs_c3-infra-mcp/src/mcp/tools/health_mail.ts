@@ -953,13 +953,13 @@ if (process.argv[1]?.endsWith("health_mail.ts")) {
     const server = new S({ name: "health-runner", version: "1.0.0" });
     registerHealthMailTools(server);
     const tools = (server as any)._registeredTools;
-    const mailFull = tools?.get?.("mail-full") ?? tools?.["mail-full"];
-    if (!mailFull) {
-      console.error("ERROR: mail-full tool not found in registered tools");
+    const tool = tools?.["mail-full"];
+    if (!tool?.handler) {
+      console.error("ERROR: mail-full tool handler not found");
       process.exit(1);
     }
     try {
-      const result = await mailFull.callback({}, {});
+      const result = await tool.handler({}, {});
       const text = result?.content?.[0]?.text ?? "No output";
       console.log(text);
       const failed = (text.match(/✗/g) || []).length;

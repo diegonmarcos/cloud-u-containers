@@ -1,0 +1,34 @@
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY             ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!                  ║
+# ╠══════════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ad-agi_ollama-hai/src/flake.nix    ║
+# ║ Rebuild: build.sh ship                                              ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+services:
+  ollama-hai:
+    image: ollama/ollama:latest
+    container_name: ollama-hai
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ollama_hai_data:/root/.ollama
+    environment:
+      - TZ=America/Chicago
+      - OLLAMA_KEEP_ALIVE=10m
+      - OLLAMA_HOST=0.0.0.0:11435
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_LOADED_MODELS=2
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11435/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  ollama_hai_data:
