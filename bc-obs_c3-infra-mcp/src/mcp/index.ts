@@ -3,7 +3,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 // ── Pillars (exec-only) ─────────────────────────
-import { registerInventoryExecTools } from "./tools/inventory-exec.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
 import { registerObservabilityExecTools } from "./tools/observability.js";
@@ -11,8 +10,6 @@ import { registerSecurityExecTools } from "./tools/security.js";
 
 // ── Extensions ───────────────────────────────────
 import { registerFrontendExecTools } from "./tools/frontend.js";
-import { registerCrawleeExecTools } from "./tools/crawlee.js";
-import { registerMattermostTools } from "./tools/health_mattermost.js";
 import { registerHealthMailTools } from "./tools/health_mail.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
@@ -24,7 +21,6 @@ const server = new McpServer({
 // Register all exec tools (READ tools moved to cloud-cgc-mcp)
 
 // ── Pillars ──────────────────────────────────────
-registerInventoryExecTools(server);      //  1: service_api_call
 registerDeliveryTools(server);           //  6: build, ship, docker build, secrets, backup
 registerOperationsTools(server);         // 26: SSH, Docker ops, VM/container/service lifecycle
 registerObservabilityExecTools(server);  //  8: notifications, alerts, DB mutations
@@ -32,10 +28,8 @@ registerSecurityExecTools(server);       //  4: scan, docker audit, SSH keys, to
 
 // ── Extensions ───────────────────────────────────
 registerFrontendExecTools(server);       //  3: front-end build/dev/deploy
-registerCrawleeExecTools(server);        //  2: crawlee run/abort
-registerMattermostTools(server);         //  8: chat read/write/react for agentic bot
 registerHealthMailTools(server);         //  5: mail UP, profiling, inbound/outbound tests, full pipeline
-registerHealthCloudTools(server);        //  2: cloud UP + cloud full 8-layer diagnostic
+registerHealthCloudTools(server);        //  2: cloud UP + cloud full 10-layer diagnostic
 
 // All logging must go to stderr (stdout is JSON-RPC)
 const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
