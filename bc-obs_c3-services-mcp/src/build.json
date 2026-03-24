@@ -1,0 +1,27 @@
+{
+  "name": "c3-services-mcp",
+  "description": "C3 Services MCP Server \u2014 service API gateway MCP transport (stdio + HTTP)",
+  "dns": "c3-services-mcp.app",
+  "ports": {
+    "app": 3101
+  },
+  "category": "obs",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "c3-services-mcp",
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/c3-services-mcp"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/c3-services-mcp"
+    },
+    "app_hub": false
+  }
+}

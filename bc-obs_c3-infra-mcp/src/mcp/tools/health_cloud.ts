@@ -495,15 +495,14 @@ if (process.argv[1]?.endsWith("health_cloud.ts")) {
     const { McpServer: S } = await import("@modelcontextprotocol/sdk/server/mcp.js");
     const server = new S({ name: "health-runner", version: "1.0.0" });
     registerHealthCloudTools(server);
-    // Access registered tool handler directly
     const tools = (server as any)._registeredTools;
-    const cloudFull = tools?.get?.("cloud-full") ?? tools?.["cloud-full"];
-    if (!cloudFull) {
-      console.error("ERROR: cloud-full tool not found in registered tools");
+    const tool = tools?.["cloud-full"];
+    if (!tool?.handler) {
+      console.error("ERROR: cloud-full tool handler not found");
       process.exit(1);
     }
     try {
-      const result = await cloudFull.callback({}, {});
+      const result = await tool.handler({}, {});
       const text = result?.content?.[0]?.text ?? "No output";
       console.log(text);
       const failed = (text.match(/✗/g) || []).length;

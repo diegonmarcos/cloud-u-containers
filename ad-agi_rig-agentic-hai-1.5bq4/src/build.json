@@ -1,0 +1,19 @@
+{
+  "name": "rig-agentic-hai-1.5bq4",
+  "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
+  "category": "agi",
+  "version": "0.2.0",
+  "build": {
+    "extra_copy": [
+      "Cargo.toml",
+      "Cargo.lock",
+      "Dockerfile",
+      "src"
+    ]
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/rig-agentic-hai-1.5bq4",
+    "compose_flags": "--build"
+  }
+}
