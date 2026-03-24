@@ -11,6 +11,8 @@ import { registerOllamaTools } from "./tools/ollama.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerDaguTools } from "./tools/dagu.js";
 import { registerGithubTools } from "./tools/github.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
+import { registerSnappymailTools } from "./tools/snappymail.js";
 import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
@@ -27,6 +29,8 @@ async function createMcpServer(): Promise<McpServer> {
   registerRadicaleTools(server);
   registerDaguTools(server);
   registerGithubTools(server);
+  registerStalwartTools(server);
+  registerSnappymailTools(server);
   await registerProxiedTools(server);
   return server;
 }

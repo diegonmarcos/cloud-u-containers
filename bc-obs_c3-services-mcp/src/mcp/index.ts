@@ -11,6 +11,8 @@ import { registerOllamaTools } from "./tools/ollama.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerDaguTools } from "./tools/dagu.js";
 import { registerGithubTools } from "./tools/github.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
+import { registerSnappymailTools } from "./tools/snappymail.js";
 import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
@@ -30,6 +32,8 @@ async function main() {
   registerRadicaleTools(server);   // 3: calendars, contacts, events
   registerDaguTools(server);       // 2: list, trigger
   registerGithubTools(server);     // 2: list_runs, trigger
+  registerStalwartTools(server);  // 7: users, user_detail, queue, config, metrics, queue_action, config_update
+  registerSnappymailTools(server); // 3: health, domains, domain_config
 
   // Proxy tools from child MCPs (mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp)
   await registerProxiedTools(server);

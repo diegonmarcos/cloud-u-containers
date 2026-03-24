@@ -97,9 +97,12 @@ steps:
         mkdir -p /var/backups/databases
 
         if docker ps --format '{{.Names}}' | grep -qx "stalwart"; then
-          docker exec stalwart sqlite3 /opt/stalwart-mail/data/index.sqlite3 ".backup '/tmp/stalwart-dump.db'" 2>/dev/null && \
-            docker cp stalwart:/tmp/stalwart-dump.db /var/backups/databases/stalwart-$(date +%Y%m%d).sqlite && \
-            gzip -f /var/backups/databases/stalwart-$(date +%Y%m%d).sqlite && \
+          # Stalwart uses RocksDB — export via stalwart-mail --export
+          docker exec stalwart stalwart-mail --export /tmp/stalwart-export 2>/dev/null && \
+            docker cp stalwart:/tmp/stalwart-export /var/backups/databases/stalwart-$(date +%Y%m%d) && \
+            tar czf /var/backups/databases/stalwart-$(date +%Y%m%d).tar.gz -C /var/backups/databases stalwart-$(date +%Y%m%d) && \
+            rm -rf /var/backups/databases/stalwart-$(date +%Y%m%d) && \
+            docker exec stalwart rm -rf /tmp/stalwart-export && \
             echo "OK stalwart" || echo "FAIL stalwart"
         fi
       REMOTE
