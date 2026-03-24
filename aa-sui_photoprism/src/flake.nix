@@ -93,6 +93,7 @@
             - photoprism_storage:/photoprism/storage
             - /opt/containers/photoprism/originals:/photoprism/originals:ro
           environment:
+            - PHOTOPRISM_HTTP_PORT=${toString config.app_port}
             - PHOTOPRISM_ADMIN_USER=admin
             - PHOTOPRISM_ADMIN_PASSWORD=''${PHOTOPRISM_ADMIN_PASSWORD:-changeme}
             - PHOTOPRISM_AUTH_MODE=password
