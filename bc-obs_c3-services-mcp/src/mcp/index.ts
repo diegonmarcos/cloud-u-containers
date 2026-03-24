@@ -13,6 +13,19 @@ import { registerDaguTools } from "./tools/dagu.js";
 import { registerGithubTools } from "./tools/github.js";
 import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerSnappymailTools } from "./tools/snappymail.js";
+import { registerGiteaTools } from "./tools/gitea.js";
+import { registerNocodbTools } from "./tools/nocodb.js";
+import { registerGrafanaTools } from "./tools/grafana.js";
+import { registerPhotoprismTools } from "./tools/photoprism.js";
+import { registerGristTools } from "./tools/grist.js";
+import { registerWindmillTools } from "./tools/windmill.js";
+import { registerFilebrowserTools } from "./tools/filebrowser.js";
+import { registerHedgedocTools } from "./tools/hedgedoc.js";
+import { registerEtherpadTools } from "./tools/etherpad.js";
+import { registerVaultwardenTools } from "./tools/vaultwarden.js";
+import { registerAutheliaTools } from "./tools/authelia.js";
+import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerUmamiTools } from "./tools/umami.js";
 import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
@@ -20,26 +33,61 @@ const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
 async function main() {
   const server = new McpServer({
     name: "c3-services",
-    version: "1.1.0",
+    version: "2.0.0",
   });
 
-  registerRegistryTools(server);    // 5: list, info, spec, registry-mcp_search, registry-mcp_get
-  registerProxyTools(server);       // 1: generic proxy
-  registerMatomoTools(server);      // 5: visits, sites, actions, referrers, live
-  registerSyncthingTools(server);   // 4: status, config, folders, devices
-  registerNtfyTools(server);       // 2: publish, health
-  registerOllamaTools(server);     // 3: models, generate, chat
-  registerRadicaleTools(server);   // 3: calendars, contacts, events
-  registerDaguTools(server);       // 2: list, trigger
-  registerGithubTools(server);     // 2: list_runs, trigger
-  registerStalwartTools(server);  // 7: users, user_detail, queue, config, metrics, queue_action, config_update
-  registerSnappymailTools(server); // 3: health, domains, domain_config
+  // ── Meta & proxy ──────────────────────────────────────────────
+  registerRegistryTools(server);      //  5: list, info, spec, registry-mcp_search, registry-mcp_get
+  registerProxyTools(server);         //  1: generic proxy
 
-  // Proxy tools from child MCPs (mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp)
+  // ── Analytics & observability ─────────────────────────────────
+  registerMatomoTools(server);        //  5: visits, sites, actions, referrers, live
+  registerUmamiTools(server);         //  6: websites, stats, pageviews, metrics, active, events
+  registerGrafanaTools(server);       // 10: health, dashboards, detail, datasources, alerts, state, annotations, create, folders, org
+
+  // ── File sync & notifications ─────────────────────────────────
+  registerSyncthingTools(server);     //  4: status, config, folders, devices
+  registerNtfyTools(server);          //  5: health, publish, read, stats, tier
+  registerFilebrowserTools(server);   //  9: ls, info, search, mkdir, delete, move, shares, share_create, usage
+
+  // ── AI & code ─────────────────────────────────────────────────
+  registerOllamaTools(server);        //  3: models, generate, chat
+
+  // ── Calendars & contacts ──────────────────────────────────────
+  registerRadicaleTools(server);      //  3: calendars, contacts, events
+
+  // ── Workflows & automation ────────────────────────────────────
+  registerDaguTools(server);          //  2: list, trigger
+  registerGithubTools(server);        //  2: list_runs, trigger
+  registerWindmillTools(server);      //  9: scripts, detail, run_script, flows, run_flow, jobs, job_detail, schedules, resources
+  registerCrawleeTools(server);       //  8: actors, detail, run, runs, run_detail, abort, datasets, items
+
+  // ── Mail ──────────────────────────────────────────────────────
+  registerStalwartTools(server);      //  7: users, user_detail, queue, config, metrics, queue_action, config_update
+  registerSnappymailTools(server);    //  3: health, domains, domain_config
+
+  // ── Git & data ────────────────────────────────────────────────
+  registerGiteaTools(server);         //  8: repos, detail, issues, issue_create, pulls, users, orgs, releases
+  registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
+
+  // ── Documents & collaboration ─────────────────────────────────
+  registerGristTools(server);         //  7: orgs, docs, tables, records, record_create, record_update, columns
+  registerHedgedocTools(server);      //  7: notes, detail, content, create, delete, me, history
+  registerEtherpadTools(server);      //  9: pads, text, html, create, set_text, delete, revisions, authors, users
+
+  // ── Photos ────────────────────────────────────────────────────
+  registerPhotoprismTools(server);    //  8: status, photos, detail, albums, album_photos, labels, faces, stats
+
+  // ── Security & auth ───────────────────────────────────────────
+  registerVaultwardenTools(server);   //  4: health, status, users, orgs
+  registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
+
+  // ── Proxied child MCPs ────────────────────────────────────────
+  // mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp
   await registerProxiedTools(server);
 
   const transport = new StdioServerTransport();
-  log("Starting c3-services MCP server v1.1.0...");
+  log("Starting c3-services MCP server v2.0.0 (138+ native tools)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
