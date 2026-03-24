@@ -55,7 +55,7 @@
         };
       };
 
-      volumes.c3_git_repos = { external = true; name = "c3-infra-mcp-api_c3_git_repos"; };
+      volumes.c3_git_repos = { external = true; name = "c3-mcp-api_c3-repos"; };
     };
 
   in {
