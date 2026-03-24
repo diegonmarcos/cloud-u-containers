@@ -15,7 +15,6 @@ import { registerOllamaTools } from "./tools/ollama.js";
 import { registerDaguTools } from "./tools/dagu.js";
 import { registerWindmillTools } from "./tools/windmill.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
 // ── User ────────────────────────────────────────
@@ -26,6 +25,7 @@ import { registerGristTools } from "./tools/grist.js";
 import { registerHedgedocTools } from "./tools/hedgedoc.js";
 import { registerEtherpadTools } from "./tools/etherpad.js";
 import { registerSnappymailTools } from "./tools/snappymail.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 // ── Proxied ─────────────────────────────────────
@@ -49,7 +49,6 @@ async function createMcpServer(): Promise<McpServer> {
   registerDaguTools(server);
   registerWindmillTools(server);
   registerCrawleeTools(server);
-  registerStalwartTools(server);
   registerAutheliaTools(server);
   registerNocodbTools(server);
   // User
@@ -60,6 +59,7 @@ async function createMcpServer(): Promise<McpServer> {
   registerHedgedocTools(server);
   registerEtherpadTools(server);
   registerSnappymailTools(server);
+  registerStalwartTools(server);
   registerRadicaleTools(server);
   registerVaultwardenTools(server);
   // Proxied
