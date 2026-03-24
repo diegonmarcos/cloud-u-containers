@@ -24,11 +24,11 @@
       # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY                    ║
       # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!                         ║
       # ╠═════════════════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bc-obs_code-graph-context-kg-infra-mcp/   ║
+      # ║ Source: ~/git/cloud/a_solutions/bc-obs_cloud-cgc-mcp/                      ║
       # ║ Rebuild: build.sh ship                                                     ║
       # ╚═════════════════════════════════════════════════════════════════════════════╝
       services:
-        code-graph-context:
+        cloud-cgc-mcp:
           image: ${config.image}
           container_name: ${config.container_name}
           restart: unless-stopped

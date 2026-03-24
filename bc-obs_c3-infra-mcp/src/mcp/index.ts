@@ -21,7 +21,7 @@ const server = new McpServer({
   version: "4.0.0",
 });
 
-// Register all exec tools (READ tools moved to code-graph-context)
+// Register all exec tools (READ tools moved to cloud-cgc-mcp)
 
 // ── Pillars ──────────────────────────────────────
 registerInventoryExecTools(server);      //  1: service_api_call
@@ -42,7 +42,7 @@ const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-infra MCP server v4.0.0 (exec-only, READ tools in code-graph-context)...");
+  log("Starting cloud-infra MCP server v4.0.0 (exec-only, READ tools in cloud-cgc-mcp)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }

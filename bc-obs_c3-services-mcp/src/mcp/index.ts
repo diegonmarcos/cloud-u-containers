@@ -31,7 +31,7 @@ async function main() {
   registerDaguTools(server);       // 2: list, trigger
   registerGithubTools(server);     // 2: list_runs, trigger
 
-  // Proxy tools from child MCPs (mattermost-mcp, mail-mcp, google-workspace-mcp, code-graph-context)
+  // Proxy tools from child MCPs (mattermost-mcp, mail-mcp, google-workspace-mcp, cloud-cgc-mcp)
   await registerProxiedTools(server);
 
   const transport = new StdioServerTransport();
