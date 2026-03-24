@@ -94,7 +94,7 @@
     # ── Config: Tempo ──────────────────────────────────────────────────
     mkTempoConfig = pkgs: pkgs.writeText "tempo.yaml" ''
       server:
-        http_listen_port: 3200
+        http_listen_port: 3210
 
       distributor:
         receivers:
@@ -122,7 +122,7 @@
           dir: /data/blocks
 
       server:
-        http_listen_port: 8080
+        http_listen_port: 9009
 
       distributor:
         ring:
@@ -159,12 +159,12 @@
         - name: Tempo
           type: tempo
           access: proxy
-          url: http://localhost:3200
+          url: http://localhost:3210
 
         - name: Mimir
           type: prometheus
           access: proxy
-          url: http://localhost:8080/prometheus
+          url: http://localhost:9009/prometheus
 
         - name: Photoprism MariaDB
           type: mysql
