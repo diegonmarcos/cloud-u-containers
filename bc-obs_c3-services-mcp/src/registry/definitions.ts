@@ -190,6 +190,34 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
     },
   },
 
+  // ── Agentic AI ───────────────────────────────────────────────
+  {
+    name: "rig-heavy",
+    displayName: "Rig Agent (Heavy)",
+    description: "DeepSeek R1 14B Q8 agentic AI with MCP tool calling",
+    vm: "oci-apps",
+    wgIp: "10.0.0.6",
+    port: 8090,
+    api: {
+      type: "custom-rest",
+      endpointCount: 5,
+      description: "Rig Agent API — run tasks, list tasks, get results, health, status",
+    },
+  },
+  {
+    name: "rig-light",
+    displayName: "Rig Agent (Light)",
+    description: "Qwen 1.5B Q4 lightweight agentic AI with strict guardrails",
+    vm: "oci-apps",
+    wgIp: "10.0.0.6",
+    port: 8091,
+    api: {
+      type: "custom-rest",
+      endpointCount: 5,
+      description: "Rig Agent API — run tasks, list tasks, get results, health, status",
+    },
+  },
+
   // ── Additional REST services ──────────────────────────────────
   {
     name: "grafana",

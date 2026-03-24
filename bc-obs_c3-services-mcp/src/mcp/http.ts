@@ -17,6 +17,7 @@ import { registerWindmillTools } from "./tools/windmill.js";
 import { registerCrawleeTools } from "./tools/crawlee.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
+import { registerRigTools } from "./tools/rig.js";
 // ── User ────────────────────────────────────────
 import { registerPhotoprismTools } from "./tools/photoprism.js";
 import { registerFilebrowserTools } from "./tools/filebrowser.js";
@@ -35,7 +36,7 @@ const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-services-mcp-session";
 
 async function createMcpServer(): Promise<McpServer> {
-  const server = new McpServer({ name: "c3-services", version: "2.1.0" });
+  const server = new McpServer({ name: "c3-services", version: "2.2.0" });
   // Meta
   registerRegistryTools(server);
   registerProxyTools(server);
@@ -51,6 +52,7 @@ async function createMcpServer(): Promise<McpServer> {
   registerCrawleeTools(server);
   registerAutheliaTools(server);
   registerNocodbTools(server);
+  registerRigTools(server);
   // User
   registerPhotoprismTools(server);
   registerFilebrowserTools(server);
