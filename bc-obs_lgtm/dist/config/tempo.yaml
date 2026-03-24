@@ -1,5 +1,6 @@
 server:
   http_listen_port: 3210
+  grpc_listen_port: 9112
 
 distributor:
   receivers:
