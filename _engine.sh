@@ -713,7 +713,7 @@ step_wrangler() {
     if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
         for cf_env in \
             "$HOME/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env" \
-            "/home/diego/Mounts/Git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
+            "/home/diego/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
             if [ -f "$cf_env" ]; then
                 CLOUDFLARE_API_KEY=$(grep '^CF_API_KEY=' "$cf_env" | cut -d= -f2)
                 CLOUDFLARE_EMAIL=$(grep '^CF_API_EMAIL=' "$cf_env" | cut -d= -f2)
