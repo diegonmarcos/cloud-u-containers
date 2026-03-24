@@ -1260,6 +1260,7 @@
 
 
       OLLAMA_AI_USERNAME = "ollama-14bq8-ai"
+      HAI_AI_USERNAME = "hai-1.5bq4-ai"
 
       def create_ollama_ai(admin_headers, team_id):
           """Create or find Ollama AI account. Returns (ai_user_id, ai_token) or (None, None)."""
@@ -1295,6 +1296,43 @@
           ai_token = r.json()["token"]
           log.info("Created %s access token", OLLAMA_AI_USERNAME)
           return ai_user_id, ai_token
+
+
+      def create_hai_ai(admin_headers, team_id):
+          """Create or find HAI AI bot account (no WS listener — rig-agentic-hai handles its own).
+          Returns (bot_user_id, bot_token) or (None, None)."""
+          bot_user_id = None
+          r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
+          if r.ok:
+              for entry in r.json():
+                  if entry.get("username") == HAI_AI_USERNAME:
+                      bot_user_id = entry["user_id"]
+                      log.info("Found existing %s: %s", HAI_AI_USERNAME, bot_user_id)
+                      break
+          if not bot_user_id:
+              r = mm_api("POST", "/bots", admin_headers, json={
+                  "username": HAI_AI_USERNAME,
+                  "display_name": "HAI Agent (Qwen 1.5B)",
+                  "description": "Lightweight infra agent with strict guardrails. DM me or @mention. Always on (CPU, oci-apps).",
+              })
+              if r.ok or r.status_code == 201:
+                  bot_user_id = r.json()["user_id"]
+                  log.info("Created %s: %s", HAI_AI_USERNAME, bot_user_id)
+              else:
+                  log.error("Failed to create %s: %s", HAI_AI_USERNAME, r.text[:200])
+                  return None, None
+          mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
+              "team_id": team_id, "user_id": bot_user_id,
+          })
+          r = mm_api("POST", f"/users/{bot_user_id}/tokens", admin_headers, json={
+              "description": f"{HAI_AI_USERNAME} runtime",
+          })
+          if not r.ok:
+              log.error("Failed to create %s token: %s", HAI_AI_USERNAME, r.text[:200])
+              return bot_user_id, None
+          bot_token = r.json()["token"]
+          log.info("Created %s access token: %s", HAI_AI_USERNAME, bot_token)
+          return bot_user_id, bot_token
 
 
       def ollama_ws_listener(ai_user_id, ai_token):
@@ -1504,6 +1542,7 @@
           icons = {
               "c3-bot": ("#00B8D9", "C3"),
               OLLAMA_AI_USERNAME: ("#FF1744", "Q"),
+              HAI_AI_USERNAME: ("#00BCD4", "H"),
               "claude-opus-ai": ("#FF6B35", "O"),
               "claude-sonnet-ai": ("#7B61FF", "S"),
               "claude-haiku-ai": ("#00C853", "H"),
@@ -1580,12 +1619,22 @@
           else:
               log.warning("%s creation failed", OLLAMA_AI_USERNAME)
 
+          # Create HAI AI bot account (no WS listener — rig-agentic-hai handles its own)
+          hai_user_id, hai_token = create_hai_ai(headers, team_id)
+          if hai_user_id:
+              add_bot_to_channels(headers, hai_user_id, all_channel_ids)
+              log.info("%s ready — token logged above, add to rig-agentic-hai secrets.yaml", HAI_AI_USERNAME)
+          else:
+              log.warning("%s creation failed", HAI_AI_USERNAME)
+
           # Set profile icons for bots and AI accounts
           account_ids = {}
           if bot_user_id:
               account_ids["c3-bot"] = bot_user_id
           if ollama_user_id:
               account_ids[OLLAMA_AI_USERNAME] = ollama_user_id
+          if hai_user_id:
+              account_ids[HAI_AI_USERNAME] = hai_user_id
           for info in CLAUDE_USERS:
               r = mm_api("GET", f"/users/username/{info['username']}", headers)
               if r.ok:
