@@ -24,3 +24,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:3101/mcp || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]
+# rebuild 1774363117
