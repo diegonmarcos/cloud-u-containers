@@ -1,6 +1,9 @@
 {
   "name": "matomo",
   "description": "Matomo hybrid analytics (oci-analytics)",
+  "ports": {
+    "app": 8080
+  },
   "category": "tools",
   "domain": "analytics.diegonmarcos.com",
   "deploy": {

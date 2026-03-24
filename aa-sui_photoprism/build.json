@@ -1,6 +1,9 @@
 {
   "name": "photoprism",
   "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
+  "ports": {
+    "app": 3013
+  },
   "category": "app",
   "domain": "photos.diegonmarcos.com",
   "deploy": {

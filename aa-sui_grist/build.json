@@ -1,6 +1,9 @@
 {
   "name": "grist",
   "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
+  "ports": {
+    "app": 3011
+  },
   "category": "app",
   "domain": "sheets.diegonmarcos.com",
   "deploy": {
