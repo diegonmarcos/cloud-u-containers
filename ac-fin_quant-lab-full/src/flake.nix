@@ -18,7 +18,7 @@
       jupyter_port = 8888;
       dash_port = 8050;
       engine_port = 5000;
-      db_port = 5432;
+      db_port = 5437;
     };
 
     title = "Quant Lab Full - Research + Analytics + ML + Risk + Trading + Postgres";
