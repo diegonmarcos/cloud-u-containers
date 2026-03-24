@@ -18,7 +18,7 @@ function plainText(text: string): { content: { type: "text"; text: string }[] } 
 
 export function registerSecurityReadTools(server: McpServer) {
   server.tool(
-    "c3_topology_security",
+    "cloud-data-security_topology",
     "Security topology: exposed services, secrets status, VM access methods",
     {},
     async () => {
@@ -31,7 +31,7 @@ export function registerSecurityReadTools(server: McpServer) {
   );
 
   server.tool(
-    "c3_secrets_status",
+    "cloud-data-secrets_status",
     "Show secrets encryption status for services (never exposes values)",
     {
       service: z.string().optional().describe("Service name (omit for all)"),

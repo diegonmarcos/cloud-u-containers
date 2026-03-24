@@ -1,4 +1,4 @@
-// ── Inventory Exec — "service_api_call" (1 tool) ──
+// ── Inventory Exec — "api-service_call" (1 tool) ──
 // Proxy calls to discovered service APIs
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -11,7 +11,7 @@ import { rawHttpRequest, getBearerToken } from "../../shared/http.js";
 
 export function registerInventoryExecTools(server: McpServer) {
   server.tool(
-    "service_api_call",
+    "api-service_call",
     "Call any discovered service API endpoint. First use service_get_spec to understand available endpoints, then use this tool to make the actual call. Resolves service domain via Rust API discovery.",
     {
       service: z.string().describe("Service name (e.g. authelia, matomo, photoprism)"),

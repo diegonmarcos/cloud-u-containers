@@ -775,7 +775,7 @@ async function safeToolAsync(fn: () => Promise<string>): Promise<{ content: [{ t
 }
 
 export function registerHealthMailTools(server: McpServer): void {
-  server.tool("mail_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
+  server.tool("mail-up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
     () => safeToolAsync(async () => {
       clearAllCaches();
       const sections: string[] = [];
@@ -797,7 +797,7 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("mail_profile", "Deep profile all Stalwart containers", {},
+  server.tool("mail-profile", "Deep profile all Stalwart containers", {},
     () => safeToolAsync(async () => {
       const p: Record<string, unknown> = {};
       for (const n of [...MAIL_CONTAINERS, "smtp-proxy", "snappymail"]) { try { p[n] = profileContainer(n); } catch (e: unknown) { p[n] = { error: String(e) }; } }
@@ -805,11 +805,11 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("mail_send_test", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
+  server.tool("mail-send_test", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
     () => safeToolAsync(async () => formatChecks("E2E DELIVERY", await e2eDelivery())),
   );
 
-  server.tool("mail_outbound_test", "Outbound: SMTP relay + DNS auth", {},
+  server.tool("mail-outbound_test", "Outbound: SMTP relay + DNS auth", {},
     () => safeToolAsync(async () => {
       const [smtpChecks, dnsChecks] = await Promise.all([
         Promise.all([
@@ -822,7 +822,7 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("mail_full", "Full 6-phase diagnostic: 3-VM parallel, OIDC auth, Admin API, IMAP LOGIN, all ports", {},
+  server.tool("mail-full", "Full 6-phase diagnostic: 3-VM parallel, OIDC auth, Admin API, IMAP LOGIN, all ports", {},
     () => safeToolAsync(async () => {
       clearAllCaches();
       const marks: { phase: string; ms: number }[] = [];

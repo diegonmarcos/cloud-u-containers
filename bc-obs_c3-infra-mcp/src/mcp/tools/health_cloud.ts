@@ -360,7 +360,7 @@ async function safeToolAsync(fn: () => Promise<string>): Promise<{ content: [{ t
 
 export function registerHealthCloudTools(server: McpServer): void {
 
-  server.tool("cloud_up", "Quick infrastructure UP check: self-check + WG mesh + platform (~10s)", {},
+  server.tool("cloud-up", "Quick infrastructure UP check: self-check + WG mesh + platform (~10s)", {},
     () => safeToolAsync(async () => {
       _vmCache.clear();
       const t0 = performance.now();
@@ -385,7 +385,7 @@ export function registerHealthCloudTools(server: McpServer): void {
     }),
   );
 
-  server.tool("cloud_full", "Full 8-layer cloud diagnostic: infrastructure → services → external (~45s)", {},
+  server.tool("cloud-full", "Full 8-layer cloud diagnostic: infrastructure → services → external (~45s)", {},
     () => safeToolAsync(async () => {
       _vmCache.clear();
       const marks: { layer: string; ms: number }[] = [];

@@ -10,7 +10,7 @@ export function registerSkillTools(server: McpServer) {
 
   // ── 1. cloud-architect ──────────────────────────────────────────────
   server.tool(
-    "skill_cloud_architect",
+    "skill-cloud_architect",
     "Load cloud infrastructure context — VMs, services, architecture, tool decision matrix. Call this before infrastructure tasks.",
     {},
     async () => {
@@ -96,7 +96,7 @@ ${serviceList}
 
   // ── 2. frontend-developer ───────────────────────────────────────────
   server.tool(
-    "skill_frontend_developer",
+    "skill-frontend_developer",
     "Load front-end development context — code standards (TS/Svelte5/Vue3/SCSS), build system, project archetypes. Call this before front-end work.",
     {},
     async () => ({
@@ -154,7 +154,7 @@ Include the container_odwLIyPV.js tag manager snippet from analytics.diegonmarco
 
   // ── 3. debug-ops ────────────────────────────────────────────────────
   server.tool(
-    "skill_debug_ops",
+    "skill-debug_ops",
     "Load debugging/ops context — debug workflow, common issues, WireGuard/SMTP/memory gotchas. Call this before debugging infrastructure.",
     {},
     async () => {
@@ -206,7 +206,7 @@ health_status → check_vm → ssh_exec: nft list ruleset → wg show
 
   // ── 4. crawlee-scraping ─────────────────────────────────────────────
   server.tool(
-    "skill_crawlee_scraping",
+    "skill-crawlee_scraping",
     "Load web scraping context — Crawlee Cloud workflow, actors, runs, results. Call this before scraping tasks.",
     {},
     async () => ({

@@ -26,7 +26,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Cloud Topology ──────────────────────────────────────────────────
   server.tool(
-    "c3_topology",
+    "cloud-spec-topology",
     "Get cloud-data-topology.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
     {},
     async () => {
@@ -39,7 +39,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Cloud Configs ───────────────────────────────────────────────────
   server.tool(
-    "c3_configs",
+    "cloud-spec-configs",
     "Get cloud-data-configs.json — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
     {},
     async () => {
@@ -52,7 +52,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Cloud Deps ──────────────────────────────────────────────────────
   server.tool(
-    "c3_deps",
+    "cloud-spec-deps",
     "Get cloud-data-deps.json — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
     {},
     async () => {
@@ -65,7 +65,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Cloud Topology Markdown ─────────────────────────────────────────
   server.tool(
-    "c3_topology_md",
+    "cloud-spec-topology_md",
     "Get cloud-data-topology.md — human-readable topology overview with service tables, VM assignments, and networking.",
     {},
     async () => {
@@ -77,7 +77,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Cloud Configs Markdown ──────────────────────────────────────────
   server.tool(
-    "c3_configs_md",
+    "cloud-spec-configs_md",
     "Get cloud-data-configs.md — human-readable config overview with Caddy routes, Authelia clients, DNS zones.",
     {},
     async () => {
@@ -89,7 +89,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Front Deps ──────────────────────────────────────────────────────
   server.tool(
-    "c3_deps_front",
+    "front-spec-deps",
     "Get front-deps.json — npm dependencies for all front-end projects (per-project + merged).",
     {},
     async () => {
@@ -110,7 +110,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── Service spec lookup ─────────────────────────────────────────────
   server.tool(
-    "knowledge_service_spec",
+    "cloud-spec-service",
     "Get a service's build.json + flake.nix config + topology entry. Use before modifying or debugging a specific service.",
     { name: z.string().describe("Service name (e.g. 'caddy', 'mailu', 'c3-infra-mcp-api')") },
     async ({ name }) => {
@@ -168,7 +168,7 @@ export function registerSpecTools(server: McpServer) {
 
   // ── VM info lookup ──────────────────────────────────────────────────
   server.tool(
-    "knowledge_vm_info",
+    "cloud-spec-vm",
     "Get VM details — IP, WG IP, services, SSH alias. Use before VM-specific operations.",
     { vm: z.string().describe("VM ID (e.g. 'oci-A1-f_0') or SSH alias (e.g. 'oci-apps')") },
     async ({ vm }) => {
@@ -212,7 +212,7 @@ ${services || "No services declared."}`,
 
   // ── Services by category ────────────────────────────────────────────
   server.tool(
-    "knowledge_services_by_category",
+    "cloud-spec-services_by_category",
     "List all services grouped by category with VM and domain. Quick infrastructure overview.",
     {},
     async () => {

@@ -61,7 +61,7 @@ function formatResult(label: string, result: HttpResult): { content: { type: "te
 
 export function registerCrawleeReadTools(server: McpServer) {
   server.tool(
-    "crawlee_list_actors",
+    "cloud-data-crawlee_actors",
     "List all actors in Crawlee Cloud",
     {},
     async () => {
@@ -71,7 +71,7 @@ export function registerCrawleeReadTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee_list_runs",
+    "cloud-data-crawlee_runs",
     "List all actor runs with statuses",
     {},
     async () => {
@@ -81,7 +81,7 @@ export function registerCrawleeReadTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee_get_run",
+    "cloud-data-crawlee_run",
     "Get a single run's status and details",
     {
       runId: z.string().describe("Run ID"),
@@ -93,7 +93,7 @@ export function registerCrawleeReadTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee_get_results",
+    "cloud-data-crawlee_results",
     "Get crawl output data (dataset items) from a completed run",
     {
       runId: z.string().describe("Run ID"),
@@ -115,7 +115,7 @@ export function registerCrawleeReadTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee_get_logs",
+    "cloud-data-crawlee_logs",
     "Get logs from an actor run",
     {
       runId: z.string().describe("Run ID"),

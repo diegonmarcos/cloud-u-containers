@@ -13,7 +13,7 @@ function syncthingGet(path: string): string {
 
 export function registerSyncthingTools(server: McpServer) {
   server.tool(
-    "syncthing_status",
+    "syncthing-status",
     "Get Syncthing system status",
     {},
     async () => ({
@@ -22,7 +22,7 @@ export function registerSyncthingTools(server: McpServer) {
   );
 
   server.tool(
-    "syncthing_config",
+    "syncthing-config",
     "Get Syncthing current configuration",
     {},
     async () => ({
@@ -31,7 +31,7 @@ export function registerSyncthingTools(server: McpServer) {
   );
 
   server.tool(
-    "syncthing_folders",
+    "syncthing-folders",
     "List all synced folders",
     {},
     async () => ({
@@ -40,7 +40,7 @@ export function registerSyncthingTools(server: McpServer) {
   );
 
   server.tool(
-    "syncthing_devices",
+    "syncthing-devices",
     "List connected devices",
     {},
     async () => ({

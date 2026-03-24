@@ -21,7 +21,7 @@ async function main() {
     version: "1.1.0",
   });
 
-  registerRegistryTools(server);    // 5: list, info, spec, mcp_registry_search, mcp_registry_get
+  registerRegistryTools(server);    // 5: list, info, spec, registry-mcp_search, registry-mcp_get
   registerProxyTools(server);       // 1: generic proxy
   registerMatomoTools(server);      // 5: visits, sites, actions, referrers, live
   registerSyncthingTools(server);   // 4: status, config, folders, devices

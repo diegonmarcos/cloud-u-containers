@@ -66,7 +66,7 @@ export function registerOperationsTools(server: McpServer) {
   // ── SSH (2 tools, from ssh-tools.ts) ──
 
   server.tool(
-    "ssh_exec",
+    "ops-ssh_exec",
     "Execute a command on a VM via SSH",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -95,7 +95,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "check_vm",
+    "ops-check_vm",
     "Test if a VM is reachable via SSH, optionally with system info",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -160,7 +160,7 @@ export function registerOperationsTools(server: McpServer) {
   // ── Docker (14 tools, from docker.ts) ──
 
   server.tool(
-    "docker_ps",
+    "ops-docker_ps",
     "List Docker containers on a VM",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -186,7 +186,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_control",
+    "ops-docker_control",
     "Start/stop/restart a container via SSH. Use for debugging or when Rust API is down. Prefer container_start/stop/restart for normal operations.",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -197,7 +197,7 @@ export function registerOperationsTools(server: McpServer) {
       validateContainerName(container);
       const vmId = resolveVmId(vm);
       const result = sshExec(vmId, `docker ${action} ${container}`);
-      audit("docker_control", `${action} ${container}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+      audit("ops-docker_control", `${action} ${container}@${getVmSshAlias(vmId)}`, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
 
       return {
         content: [
@@ -212,7 +212,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_logs",
+    "ops-docker_logs",
     "Get Docker container logs. since format: '1h', '30m', '2024-01-01'",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -244,7 +244,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_compose_up",
+    "ops-docker_compose_up",
     "Recreate all containers for a service from its compose file on the VM. Does NOT rebuild images — use build_ship for full pipeline.",
     {
       service: z.string().describe("Service name from cloud-data-topology.json"),
@@ -282,7 +282,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_compose_up_all",
+    "ops-docker_compose_up_all",
     "Start all services on a VM by running docker compose up -d in each /opt/containers/* directory",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -302,7 +302,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_top",
+    "ops-docker_top",
     "Show running processes inside a container",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -319,7 +319,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_diff",
+    "ops-docker_diff",
     "Show filesystem changes in a container since it started",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -336,7 +336,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_inspect",
+    "ops-docker_inspect",
     "Get full container configuration (env vars redacted)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -353,7 +353,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_events",
+    "ops-docker_events",
     "Stream recent Docker events for a container (last 100 events)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -372,7 +372,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_pause",
+    "ops-docker_pause",
     "Pause a running container (freeze all processes)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -389,7 +389,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_unpause",
+    "ops-docker_unpause",
     "Unpause a paused container (resume all processes)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -406,7 +406,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_exec",
+    "ops-docker_exec",
     "Execute a command inside a running container",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -424,7 +424,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_logs_search",
+    "ops-docker_logs_search",
     "Search container logs for a pattern (grep)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -443,7 +443,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_logs_multi",
+    "ops-docker_logs_multi",
     "Get logs from all containers for a service",
     {
       service: z.string().describe("Service name from cloud-data-topology.json"),
@@ -459,7 +459,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "docker_system_df",
+    "ops-docker_system_df",
     "Show Docker disk usage (images, containers, volumes)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -476,28 +476,28 @@ export function registerOperationsTools(server: McpServer) {
   // ── VM Control (4 tools, from control.ts) ──
 
   server.tool(
-    "vm_start",
+    "ops-vm_start",
     "Start a VM via the Rust API (handles OCI/GCP abstraction)",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmStart(vm)),
   );
 
   server.tool(
-    "vm_stop",
+    "ops-vm_stop",
     "Stop a VM gracefully via the Rust API",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmStop(vm)),
   );
 
   server.tool(
-    "vm_reset",
+    "ops-vm_reset",
     "Reset/force-restart a VM via the Rust API",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmReset(vm)),
   );
 
   server.tool(
-    "vm_drain",
+    "ops-vm_drain",
     "Gracefully stop all containers on a VM before maintenance",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmDrain(vm)),
@@ -506,7 +506,7 @@ export function registerOperationsTools(server: McpServer) {
   // ── Container Control (3 tools, from control.ts) ──
 
   server.tool(
-    "container_start",
+    "ops-container_start",
     "Start a container via the Rust API (preferred — handles VM auto-wake and validation).",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -516,7 +516,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "container_stop",
+    "ops-container_stop",
     "Stop a container on a VM",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -526,7 +526,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "container_restart",
+    "ops-container_restart",
     "Restart a container on a VM",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -538,7 +538,7 @@ export function registerOperationsTools(server: McpServer) {
   // ── Service Control (3 tools, from control.ts) ──
 
   server.tool(
-    "service_start",
+    "ops-service_start",
     "Start all containers for a service on a VM",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -548,7 +548,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "service_stop",
+    "ops-service_stop",
     "Stop all containers for a service on a VM",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -558,7 +558,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "service_restart",
+    "ops-service_restart",
     "Restart all containers for a service (compose down + up)",
     {
       vm: z.string().describe("VM ID or SSH alias"),

@@ -28,7 +28,7 @@ interface Channel {
 export function registerMattermostTools(server: McpServer): void {
   // ── mm_read ──────────────────────────────────────────────────
   server.tool(
-    "mm_read",
+    "mm-read",
     "Read recent messages from a Mattermost channel",
     {
       channel: z.string().optional().describe("Channel name or ID (default: DM with diego)"),
@@ -61,7 +61,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_post ──────────────────────────────────────────────────
   server.tool(
-    "mm_post",
+    "mm-post",
     "Post a message to a Mattermost channel",
     {
       message: z.string().describe("Message text (Markdown supported)"),
@@ -82,7 +82,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_reply ─────────────────────────────────────────────────
   server.tool(
-    "mm_reply",
+    "mm-reply",
     "Reply to a message in a thread",
     {
       post_id: z.string().describe("ID of the post to reply to"),
@@ -105,7 +105,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_channels ──────────────────────────────────────────────
   server.tool(
-    "mm_channels",
+    "mm-channels",
     "List Mattermost channels the bot has access to",
     {},
     async () => {
@@ -131,7 +131,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_react ─────────────────────────────────────────────────
   server.tool(
-    "mm_react",
+    "mm-react",
     "Add an emoji reaction to a post",
     {
       post_id: z.string().describe("ID of the post to react to"),
@@ -149,7 +149,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_user_search ───────────────────────────────────────────
   server.tool(
-    "mm_user_search",
+    "mm-user_search",
     "Search for Mattermost users by username or email",
     {
       term: z.string().describe("Username or email to search for"),
@@ -173,7 +173,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_create_group_dm ───────────────────────────────────────
   server.tool(
-    "mm_create_group_dm",
+    "mm-create_group_dm",
     "Create a group DM channel with multiple users (by user IDs)",
     {
       user_ids: z.array(z.string()).describe("Array of Mattermost user IDs to include (bot's own ID added automatically)"),
@@ -191,7 +191,7 @@ export function registerMattermostTools(server: McpServer): void {
 
   // ── mm_add_to_channel ────────────────────────────────────────
   server.tool(
-    "mm_add_to_channel",
+    "mm-add_to_channel",
     "Add a user to a channel (public/private/group — does not work on DMs)",
     {
       channel: z.string().describe("Channel name or ID"),
