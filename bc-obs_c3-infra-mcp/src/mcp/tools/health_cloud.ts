@@ -13,7 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execAsync } from "../../shared/exec.js";
 import { sshExecAsync } from "../../shared/ssh.js";
-import { getConfig, getVmSshAlias, getServicesForVm } from "../../shared/config.js";
+import { getVmSshAlias } from "../../shared/config.js";
 import { getBearerToken } from "../../shared/http.js";
 import { CLOUD_DATA_DIR, C3_API_MESH } from "../../shared/paths.js";
 import { readFileSync, existsSync } from "fs";
@@ -76,6 +76,21 @@ interface DiagContext {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const log = (msg: string) => process.stderr.write(`[cloud-health] ${msg}\n`);
+
+// Read topology directly from cloud-data (source of truth, not config.json)
+function loadTopology(): { vms: Record<string, any>; services: Record<string, any> } {
+  const topoPath = join(CLOUD_DATA_DIR, "cloud-data-topology.json");
+  if (!existsSync(topoPath)) {
+    log("cloud-data-topology.json not found — falling back");
+    return { vms: {}, services: {} };
+  }
+  try {
+    return JSON.parse(readFileSync(topoPath, "utf-8"));
+  } catch (e) {
+    log(`topology parse error: ${e}`);
+    return { vms: {}, services: {} };
+  }
+}
 
 async function timedAsync(name: string, fn: () => Promise<{ passed: boolean; details: string; severity?: Check["severity"] }>): Promise<Check> {
   const start = Date.now();
@@ -601,7 +616,7 @@ async function layer6Drift(ctx: DiagContext): Promise<Check[]> {
 
 function buildContext(): DiagContext {
   return {
-    config: getConfig(),
+    config: loadTopology() as any,
     vmBatch: new Map(),
     caddyRoutes: loadCaddyRoutes(),
     bearerToken: getBearerToken(),
