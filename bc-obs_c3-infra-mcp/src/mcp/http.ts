@@ -9,38 +9,34 @@ import { createServer, IncomingMessage, ServerResponse, request as httpRequest }
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
-// ── Tool registrations ──
+// ── Tool registrations (exec-only) ──
 import { registerHealthMailTools } from "./tools/health_mail.js";
-import { registerInventoryTools } from "./tools/inventory.js";
+import { registerInventoryExecTools } from "./tools/inventory-exec.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
-import { registerObservabilityTools } from "./tools/observability.js";
-import { registerSecurityTools } from "./tools/security.js";
-import { registerFinOpsTools } from "./tools/finops.js";
-import { registerFrontendTools } from "./tools/frontend.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerObservabilityExecTools } from "./tools/observability.js";
+import { registerSecurityExecTools } from "./tools/security.js";
+import { registerFrontendExecTools } from "./tools/frontend.js";
+import { registerCrawleeExecTools } from "./tools/crawlee.js";
 import { registerMattermostTools } from "./tools/health_mattermost.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
-import { registerResources } from "./resources/index.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-infra-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "cloud-infra", version: "3.2.0" });
+  const server = new McpServer({ name: "cloud-infra", version: "4.0.0" });
 
   registerHealthMailTools(server);
-  registerInventoryTools(server);
+  registerInventoryExecTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
-  registerObservabilityTools(server);
-  registerSecurityTools(server);
-  registerFinOpsTools(server);
-  registerFrontendTools(server);
-  registerCrawleeTools(server);
+  registerObservabilityExecTools(server);
+  registerSecurityExecTools(server);
+  registerFrontendExecTools(server);
+  registerCrawleeExecTools(server);
   registerMattermostTools(server);
   registerHealthCloudTools(server);
-  registerResources(server);
 
   return server;
 }

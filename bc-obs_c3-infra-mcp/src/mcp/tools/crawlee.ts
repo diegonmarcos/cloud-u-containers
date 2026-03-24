@@ -1,3 +1,6 @@
+// ── Crawlee Exec — "Run & Abort" (2 tools) ──
+// Execute and abort crawl actors
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest, type HttpResult } from "../../shared/http.js";
@@ -56,17 +59,7 @@ function formatResult(label: string, result: HttpResult): { content: { type: "te
   };
 }
 
-export function registerCrawleeTools(server: McpServer) {
-  server.tool(
-    "crawlee_list_actors",
-    "List all actors in Crawlee Cloud",
-    {},
-    async () => {
-      const result = crawleeApi("GET", "/v2/acts");
-      return formatResult("GET /v2/acts", result);
-    }
-  );
-
+export function registerCrawleeExecTools(server: McpServer) {
   server.tool(
     "crawlee_run_actor",
     "Start a crawl by running an actor with input JSON. Returns the run object with runId.",
@@ -89,70 +82,6 @@ export function registerCrawleeTools(server: McpServer) {
         60_000, // actor start can take a moment
       );
       return formatResult(`POST /v2/acts/${actorId}/runs`, result);
-    }
-  );
-
-  server.tool(
-    "crawlee_list_runs",
-    "List all actor runs with statuses",
-    {},
-    async () => {
-      const result = crawleeApi("GET", "/v2/actor-runs");
-      return formatResult("GET /v2/actor-runs", result);
-    }
-  );
-
-  server.tool(
-    "crawlee_get_run",
-    "Get a single run's status and details",
-    {
-      runId: z.string().describe("Run ID"),
-    },
-    async ({ runId }) => {
-      const result = crawleeApi("GET", `/v2/actor-runs/${encodeURIComponent(runId)}`);
-      return formatResult(`GET /v2/actor-runs/${runId}`, result);
-    }
-  );
-
-  server.tool(
-    "crawlee_get_results",
-    "Get crawl output data (dataset items) from a completed run",
-    {
-      runId: z.string().describe("Run ID"),
-      limit: z.number().optional().describe("Max items to return"),
-      offset: z.number().optional().describe("Skip first N items"),
-    },
-    async ({ runId, limit, offset }) => {
-      const params = new URLSearchParams();
-      if (limit) params.set("limit", String(limit));
-      if (offset) params.set("offset", String(offset));
-      const qs = params.toString() ? `?${params}` : "";
-
-      const result = crawleeApi(
-        "GET",
-        `/v2/actor-runs/${encodeURIComponent(runId)}/dataset/items${qs}`,
-      );
-      return formatResult(`GET /v2/actor-runs/${runId}/dataset/items`, result);
-    }
-  );
-
-  server.tool(
-    "crawlee_get_logs",
-    "Get logs from an actor run",
-    {
-      runId: z.string().describe("Run ID"),
-      limit: z.number().optional().describe("Max log lines to return"),
-    },
-    async ({ runId, limit }) => {
-      const params = new URLSearchParams();
-      if (limit) params.set("limit", String(limit));
-      const qs = params.toString() ? `?${params}` : "";
-
-      const result = crawleeApi(
-        "GET",
-        `/v2/actor-runs/${encodeURIComponent(runId)}/logs${qs}`,
-      );
-      return formatResult(`GET /v2/actor-runs/${runId}/logs`, result);
     }
   );
 
