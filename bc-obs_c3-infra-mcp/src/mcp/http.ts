@@ -11,14 +11,11 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 
 // ── Tool registrations (exec-only) ──
 import { registerHealthMailTools } from "./tools/health_mail.js";
-import { registerInventoryExecTools } from "./tools/inventory-exec.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
 import { registerObservabilityExecTools } from "./tools/observability.js";
 import { registerSecurityExecTools } from "./tools/security.js";
 import { registerFrontendExecTools } from "./tools/frontend.js";
-import { registerCrawleeExecTools } from "./tools/crawlee.js";
-import { registerMattermostTools } from "./tools/health_mattermost.js";
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
@@ -28,14 +25,11 @@ function createMcpServer(): McpServer {
   const server = new McpServer({ name: "cloud-infra", version: "4.0.0" });
 
   registerHealthMailTools(server);
-  registerInventoryExecTools(server);
   registerDeliveryTools(server);
   registerOperationsTools(server);
   registerObservabilityExecTools(server);
   registerSecurityExecTools(server);
   registerFrontendExecTools(server);
-  registerCrawleeExecTools(server);
-  registerMattermostTools(server);
   registerHealthCloudTools(server);
 
   return server;
