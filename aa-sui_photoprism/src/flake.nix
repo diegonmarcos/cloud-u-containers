@@ -124,7 +124,7 @@
             rclone:
               condition: service_healthy
           healthcheck:
-            test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:2342/api/v1/status']
+            test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:${toString config.app_port}/api/v1/status']
             interval: 30s
             timeout: 10s
             retries: 3
