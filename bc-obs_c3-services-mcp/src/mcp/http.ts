@@ -2,61 +2,67 @@ import { createServer, IncomingMessage, ServerResponse, request as httpRequest }
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
+// ── Meta ────────────────────────────────────────
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerProxyTools } from "./tools/proxy.js";
-import { registerMatomoTools } from "./tools/matomo.js";
-import { registerSyncthingTools } from "./tools/syncthing.js";
-import { registerNtfyTools } from "./tools/ntfy.js";
-import { registerOllamaTools } from "./tools/ollama.js";
-import { registerRadicaleTools } from "./tools/radicale.js";
-import { registerDaguTools } from "./tools/dagu.js";
-import { registerGithubTools } from "./tools/github.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
-import { registerSnappymailTools } from "./tools/snappymail.js";
-import { registerGiteaTools } from "./tools/gitea.js";
-import { registerNocodbTools } from "./tools/nocodb.js";
+// ── Infra ───────────────────────────────────────
 import { registerGrafanaTools } from "./tools/grafana.js";
-import { registerPhotoprismTools } from "./tools/photoprism.js";
-import { registerGristTools } from "./tools/grist.js";
+import { registerMatomoTools } from "./tools/matomo.js";
+import { registerUmamiTools } from "./tools/umami.js";
+import { registerNtfyTools } from "./tools/ntfy.js";
+import { registerSyncthingTools } from "./tools/syncthing.js";
+import { registerOllamaTools } from "./tools/ollama.js";
+import { registerDaguTools } from "./tools/dagu.js";
 import { registerWindmillTools } from "./tools/windmill.js";
+import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
+import { registerAutheliaTools } from "./tools/authelia.js";
+import { registerNocodbTools } from "./tools/nocodb.js";
+// ── User ────────────────────────────────────────
+import { registerPhotoprismTools } from "./tools/photoprism.js";
 import { registerFilebrowserTools } from "./tools/filebrowser.js";
+import { registerGiteaTools } from "./tools/gitea.js";
+import { registerGristTools } from "./tools/grist.js";
 import { registerHedgedocTools } from "./tools/hedgedoc.js";
 import { registerEtherpadTools } from "./tools/etherpad.js";
+import { registerSnappymailTools } from "./tools/snappymail.js";
+import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
-import { registerAutheliaTools } from "./tools/authelia.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
-import { registerUmamiTools } from "./tools/umami.js";
+// ── Proxied ─────────────────────────────────────
 import { registerProxiedTools } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-services-mcp-session";
 
 async function createMcpServer(): Promise<McpServer> {
-  const server = new McpServer({ name: "c3-services", version: "2.0.0" });
+  const server = new McpServer({ name: "c3-services", version: "2.1.0" });
+  // Meta
   registerRegistryTools(server);
   registerProxyTools(server);
+  // Infra
+  registerGrafanaTools(server);
   registerMatomoTools(server);
   registerUmamiTools(server);
-  registerGrafanaTools(server);
-  registerSyncthingTools(server);
   registerNtfyTools(server);
-  registerFilebrowserTools(server);
+  registerSyncthingTools(server);
   registerOllamaTools(server);
-  registerRadicaleTools(server);
   registerDaguTools(server);
-  registerGithubTools(server);
   registerWindmillTools(server);
   registerCrawleeTools(server);
   registerStalwartTools(server);
-  registerSnappymailTools(server);
-  registerGiteaTools(server);
+  registerAutheliaTools(server);
   registerNocodbTools(server);
+  // User
+  registerPhotoprismTools(server);
+  registerFilebrowserTools(server);
+  registerGiteaTools(server);
   registerGristTools(server);
   registerHedgedocTools(server);
   registerEtherpadTools(server);
-  registerPhotoprismTools(server);
+  registerSnappymailTools(server);
+  registerRadicaleTools(server);
   registerVaultwardenTools(server);
-  registerAutheliaTools(server);
+  // Proxied
   await registerProxiedTools(server);
   return server;
 }
