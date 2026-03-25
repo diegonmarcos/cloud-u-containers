@@ -51,6 +51,13 @@ interface ServiceDeps {
   devDependencies: Record<string, string>;
 }
 
+interface SystemDep {
+  nix: string | null;
+  apt: string | null;
+  desc?: string;
+  npm?: string;
+}
+
 interface RepoDeps {
   _meta: {
     generated_by: string;
@@ -58,6 +65,10 @@ interface RepoDeps {
     generated_at: string;
     total_services: number;
     total_packages: number;
+  };
+  system: {
+    required: Record<string, SystemDep>;
+    optional: Record<string, SystemDep>;
   };
   node: {
     merged: PackageDeps;
@@ -80,12 +91,26 @@ function sort(obj: Record<string, string>) {
   return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
 }
 
+function readSystemDeps(): { required: Record<string, SystemDep>; optional: Record<string, SystemDep> } {
+  const required: Record<string, SystemDep> = {};
+  const optional: Record<string, SystemDep> = {};
+  if (existsSync(CONFIG_JSON)) {
+    try {
+      const config = readJson(CONFIG_JSON) as { deps?: { system?: Record<string, SystemDep>; optional?: Record<string, SystemDep> } };
+      if (config.deps?.system) Object.assign(required, config.deps.system);
+      if (config.deps?.optional) Object.assign(optional, config.deps.optional);
+    } catch { /* skip */ }
+  }
+  return { required, optional };
+}
+
 function buildOutput(
   generatedBy: string,
   apiRoute: string,
   mergedDeps: Record<string, string>,
   mergedDevDeps: Record<string, string>,
   perService: ServiceDeps[],
+  systemDeps?: { required: Record<string, SystemDep>; optional: Record<string, SystemDep> },
 ): RepoDeps {
   const totalPackages = Object.keys(mergedDeps).length + Object.keys(mergedDevDeps).length;
   return {
@@ -96,6 +121,7 @@ function buildOutput(
       total_services: perService.length,
       total_packages: totalPackages,
     },
+    system: systemDeps ?? { required: {}, optional: {} },
     node: {
       merged: {
         dependencies: sort(mergedDeps),
@@ -170,12 +196,17 @@ function scanCloud(): RepoDeps {
     } catch { /* skip */ }
   }
 
+  const systemDeps = readSystemDeps();
+  const sysCount = Object.keys(systemDeps.required).length + Object.keys(systemDeps.optional).length;
+  console.log(`  config.json: ${sysCount} system tools (${Object.keys(systemDeps.required).length} required, ${Object.keys(systemDeps.optional).length} optional)`);
+
   return buildOutput(
     "c3-infra-mcp-api/src/engines/gen-deps.ts",
     "GET /c3-api/cloud-data/deps",
     mergedDeps,
     mergedDevDeps,
     perService,
+    systemDeps,
   );
 }
 
