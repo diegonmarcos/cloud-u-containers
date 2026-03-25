@@ -274,34 +274,45 @@ step_build() {
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
-    # nix build inside nix develop — empty store, no stale cache
-    DEPS_FLAKE="$SERVICE_DIR/../../workflows/src/deps"
     BUILD_LOG=$(mktemp)
+    REPO_ROOT="$SERVICE_DIR/../.."
 
-    run_nix_build() {
-        nix build --option eval-cache false --no-link --print-out-paths 2>"$BUILD_LOG"
-    }
-
-    # Try: nix develop (clean env) → nix build inside it
-    if [ -d "$DEPS_FLAKE" ] && command -v nix >/dev/null 2>&1; then
-        RESULT=$(nix develop "$DEPS_FLAKE#" --command bash -c "cd '$SRC_DIR' && nix build --option eval-cache false --no-link --print-out-paths" 2>"$BUILD_LOG") || {
-            log_error "nix build (inside nix develop) failed:"
+    # Strategy: cloud-ci Docker image (GHA) → direct nix build (local)
+    if [ -n "$CLOUD_CI_IMAGE" ]; then
+        # GHA: run nix build inside cloud-ci container (clean nix store, no stale cache)
+        log "Building inside cloud-ci container..."
+        RESULT=$(docker run --rm \
+            -v "$REPO_ROOT:/workspace:ro" \
+            -v "$SRC_DIR:/src" \
+            -w /src \
+            "$CLOUD_CI_IMAGE" \
+            bash -c "nix build --no-link --print-out-paths --option eval-cache false" 2>"$BUILD_LOG") || {
+            log_error "nix build (cloud-ci container) failed:"
             cat "$BUILD_LOG" >&2
             rm -f "$BUILD_LOG"
             for f in $CLOUD_DATA_STAGED; do
-                git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+                git -C "$REPO_ROOT" reset HEAD "$(realpath --relative-to="$REPO_ROOT" "$f")" 2>/dev/null || true
                 rm -f "$f"
             done
             return 1
         }
+        # Copy output from container store path to host
+        if [ -n "$RESULT" ]; then
+            CID=$(docker create "$CLOUD_CI_IMAGE" true)
+            rm -rf "$DIST_DIR"
+            mkdir -p "$DIST_DIR"
+            docker cp "$CID:$RESULT/." "$DIST_DIR/" 2>/dev/null
+            docker rm "$CID" >/dev/null
+            chmod -R u+w "$DIST_DIR"
+        fi
     else
-        # Fallback: direct nix build
-        RESULT=$(cd "$SRC_DIR" && nix build --option eval-cache false --no-link --print-out-paths 2>"$BUILD_LOG") || {
+        # Local: direct nix build
+        nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
             log_error "nix build failed:"
             cat "$BUILD_LOG" >&2
             rm -f "$BUILD_LOG"
             for f in $CLOUD_DATA_STAGED; do
-                git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+                git -C "$REPO_ROOT" reset HEAD "$(realpath --relative-to="$REPO_ROOT" "$f")" 2>/dev/null || true
                 rm -f "$f"
             done
             return 1
@@ -316,24 +327,18 @@ step_build() {
     fi
     rm -f "$BUILD_LOG"
 
-    # Copy from store path to dist/
-    if [ -z "$RESULT" ] || [ ! -d "$RESULT" ]; then
-        log_error "nix build produced no output"
-        return 1
+    # Copy from .result to dist/ (local builds only — Docker path already wrote to dist/)
+    if [ -z "$CLOUD_CI_IMAGE" ]; then
+        rm -rf "$DIST_DIR"
+        mkdir -p "$DIST_DIR"
+        if [ "$PRESERVE_SYMLINKS" = "true" ]; then
+            cp -ra "$SERVICE_DIR/.result/"* "$DIST_DIR/"
+        else
+            cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
+        fi
+        chmod -R u+w "$DIST_DIR"
+        rm -f "$SERVICE_DIR/.result"
     fi
-    ln -sfn "$RESULT" "$SERVICE_DIR/.result"
-
-    rm -rf "$DIST_DIR"
-    mkdir -p "$DIST_DIR"
-
-    # Preserve symlinks (mailu) vs dereference (default)
-    if [ "$PRESERVE_SYMLINKS" = "true" ]; then
-        cp -ra "$SERVICE_DIR/.result/"* "$DIST_DIR/"
-    else
-        cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
-    fi
-    chmod -R u+w "$DIST_DIR"
-    rm -f "$SERVICE_DIR/.result"
 
     # Post-build: unstage and remove cloud-data files from src/
     for f in $CLOUD_DATA_STAGED; do
