@@ -32,7 +32,7 @@
         nocodb:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -63,7 +63,7 @@
         nocodb-db:
           image: postgres:16-bookworm
           container_name: nocodb-db
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             POSTGRES_DB: nocodb

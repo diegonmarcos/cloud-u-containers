@@ -36,7 +36,7 @@
         research:
           image: ${config.research_image}
           container_name: quant_full_research
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./notebooks:/home/jovyan/work
@@ -56,7 +56,7 @@
         analytics:
           image: ${config.analytics_image}
           container_name: quant_full_analytics
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./scripts:/app
@@ -69,7 +69,7 @@
         ml_brain:
           image: ${config.ml_image}
           container_name: quant_full_ml
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./models:/workspace/models
@@ -90,7 +90,7 @@
         risk_manager:
           image: ${config.risk_image}
           container_name: quant_full_risk
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./risk_reports:/reports
@@ -103,7 +103,7 @@
         execution_engine:
           image: ${config.engine_image}
           container_name: quant_full_engine
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./strategies:/app/strategies
@@ -116,7 +116,7 @@
         database:
           image: ${config.db_image}
           container_name: quant_full_db
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets

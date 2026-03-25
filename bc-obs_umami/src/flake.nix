@@ -35,7 +35,7 @@
         umami:
           image: ghcr.io/umami-software/umami:latest
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -64,7 +64,7 @@
         umami-db:
           image: postgres:16-alpine
           container_name: ${config.db_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             POSTGRES_DB: umami

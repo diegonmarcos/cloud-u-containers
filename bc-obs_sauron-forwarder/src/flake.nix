@@ -27,7 +27,7 @@
         sauron-forwarder:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             - CENTRAL_HOST=''${CENTRAL_HOST}

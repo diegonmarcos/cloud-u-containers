@@ -46,7 +46,7 @@
         rclone:
           image: ${config.rclone_image}
           container_name: ${config.rclone_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           cap_add:
             - SYS_ADMIN
@@ -87,7 +87,7 @@
         photoprism:
           image: ${config.app_image}
           container_name: ${config.app_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -136,7 +136,7 @@
         mariadb:
           image: ${config.db_image}
           container_name: ${config.db_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets

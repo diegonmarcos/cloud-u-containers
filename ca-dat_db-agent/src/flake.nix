@@ -30,7 +30,7 @@
         db-agent:
           build: .
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           mem_limit: 64m
           cpus: 0.1

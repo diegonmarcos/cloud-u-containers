@@ -37,7 +37,7 @@
           cloud-spec:
             image: busybox:latest
             container_name: cloud-spec
-            restart: unless-stopped
+            restart: "no"  # container-init handles startup
             network_mode: host
             command: busybox httpd -f -p ${toString config.port} -h /srv
             volumes:

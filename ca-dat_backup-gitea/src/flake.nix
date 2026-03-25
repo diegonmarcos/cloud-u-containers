@@ -43,7 +43,7 @@
         gitea:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             - USER_UID=1000

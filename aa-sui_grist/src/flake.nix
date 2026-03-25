@@ -43,7 +43,7 @@
               "GRIST_SANDBOX_FLAVOR=unsandboxed"
               "GRIST_LOG_LEVEL=info"
             ];
-            restart = "always";
+            restart = "no";  # container-init handles startup
             healthcheck = {
               test = "['CMD', 'curl', '-f', 'http://localhost:8484/']";
               interval = "30s";

@@ -38,7 +38,7 @@
           volumes:
             - photos_db_data:/var/lib/postgresql/data
             - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ${config.db_user} -d ${config.db_name}"]
             interval: 10s
@@ -67,7 +67,7 @@
           volumes:
             - ./webhook.py:/app/webhook.py
             - ./requirements.txt:/app/requirements.txt
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           command: python webhook.py flask
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:5002/health"]

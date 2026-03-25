@@ -31,7 +31,7 @@
         cloud-cgc-mcp:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             MCP_TRANSPORT: http

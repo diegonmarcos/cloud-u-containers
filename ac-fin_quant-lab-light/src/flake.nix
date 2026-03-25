@@ -32,7 +32,7 @@
         research:
           image: ${config.research_image}
           container_name: quant_light_research
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./notebooks:/home/jovyan/work
@@ -53,7 +53,7 @@
         engine:
           image: ${config.engine_image}
           container_name: quant_light_engine
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./strategies:/app/strategies
@@ -68,7 +68,7 @@
         db:
           image: ${config.db_image}
           container_name: quant_light_db
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets

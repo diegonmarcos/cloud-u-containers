@@ -35,7 +35,7 @@
         hedgedoc:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - hedgedoc_uploads:/hedgedoc/public/uploads
@@ -61,7 +61,7 @@
         postgres:
           image: ${config.db_image}
           container_name: ${config.db_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - postgres_data:/var/lib/postgresql/data
