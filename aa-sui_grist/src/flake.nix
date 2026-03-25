@@ -30,7 +30,7 @@
             name = "grist";
             image = config.image;
             container_name = config.container_name;
-            ports = [ "10.0.0.6:${toString config.port}:8484" ];
+            portEnv = { PORT = config.port; };
             skipReadOnly = true;
             volumes = [
               "grist_data:/persist"
@@ -45,7 +45,7 @@
             ];
             restart = "no";  # container-init handles startup
             healthcheck = {
-              test = "['CMD', 'curl', '-f', 'http://localhost:8484/']";
+              test = "['CMD', 'curl', '-f', 'http://localhost:${toString config.port}/']";
               interval = "30s";
               timeout = "10s";
               retries = 3;
