@@ -275,7 +275,7 @@ step_build() {
     cd "$SRC_DIR"
 
     BUILD_LOG=$(mktemp)
-    nix build --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
+    nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
         log_error "nix build failed:"
         cat "$BUILD_LOG" >&2
         rm -f "$BUILD_LOG"
@@ -381,7 +381,7 @@ step_docs() {
     log "Building documentation..."
     cd "$SRC_DIR"
 
-    nix build .#docs --out-link "$SERVICE_DIR/.result-docs"
+    nix build --option eval-cache false .#docs --out-link "$SERVICE_DIR/.result-docs"
 
     mkdir -p "$DIST_DIR/docs"
     cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
