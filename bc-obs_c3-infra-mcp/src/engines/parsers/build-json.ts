@@ -102,6 +102,10 @@ export interface BuildJsonEntry {
   monitoring?: MonitoringConfig;
   backup?: BackupConfig;
   notifications?: NotificationsConfig;
+  // Deploy overrides
+  fallback_vm?: string;          // deploy.fallback_host → resolved to VM ID
+  // Pass-through: any extra top-level fields from build.json (models, notes, etc.)
+  extra?: Record<string, unknown>;
 }
 
 const CATEGORY_PREFIX: Record<string, string> = {
@@ -152,6 +156,7 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
 
       const category = bj.category || deriveCategory(folder) || "tools";
       const host = bj.deploy?.host ?? "local";
+      const fallbackHost = bj.deploy?.fallback_host;
 
       const expectedFolder = CATEGORY_PREFIX[category]
         ? `${CATEGORY_PREFIX[category]}${name}`
@@ -163,6 +168,18 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
       // Derive dns from name if not explicitly set
       const port: number | undefined = bj.port;
       const dns: string | undefined = bj.dns ?? (port ? `${name}.app` : undefined);
+
+      // Collect extra top-level fields not handled above
+      const knownKeys = new Set([
+        "name", "description", "category", "domain", "deploy", "dns", "port",
+        "ports", "proxy", "health", "monitoring", "backup", "notifications",
+        "docker", "secrets", "build", "compose", "lifecycle", "terraform",
+        "multi_vm", "frozen", "version",
+      ]);
+      const extra: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(bj)) {
+        if (!knownKeys.has(k)) extra[k] = v;
+      }
 
       entries.push({
         name,
@@ -182,6 +199,10 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         ...(bj.monitoring ? { monitoring: bj.monitoring } : {}),
         ...(bj.backup ? { backup: bj.backup } : {}),
         ...(bj.notifications ? { notifications: bj.notifications } : {}),
+        // Deploy overrides
+        ...(fallbackHost ? { fallback_vm: fallbackHost } : {}),
+        // Extra service-specific fields (models, notes, etc.)
+        ...(Object.keys(extra).length > 0 ? { extra } : {}),
       });
     } catch {
       console.warn(`  WARN: invalid build.json in ${folder}`);
