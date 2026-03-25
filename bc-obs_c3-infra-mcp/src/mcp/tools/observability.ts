@@ -25,7 +25,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   // ── Notifications (5 tools) ──
 
   server.tool(
-    "devops-notify_send",
+    "obs_notify_send",
     "Send a push notification via ntfy.sh",
     {
       title: z.string().describe("Notification title"),
@@ -43,7 +43,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-notify_health_down",
+    "obs_notify_health_down",
     "Send alert for a VM/service going down",
     {
       target: z.string().describe("VM or service name"),
@@ -59,7 +59,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-notify_health_recovered",
+    "obs_notify_health_recovered",
     "Send alert for a VM/service recovery",
     {
       target: z.string().describe("VM or service name"),
@@ -74,7 +74,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-notify_cert_expiring",
+    "obs_notify_cert_expiring",
     "Send alert for expiring TLS certificate",
     {
       domain: z.string().describe("Domain with expiring cert"),
@@ -90,7 +90,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-notify_disk_full",
+    "obs_notify_disk_full",
     "Send alert for disk space warning",
     {
       vm: z.string().describe("VM ID or alias"),
@@ -108,7 +108,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   // ── Database Exec (3 tools) ──
 
   server.tool(
-    "devops-db_alert_state",
+    "obs_db_alert_state",
     "Get current alert state for a VM",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -117,7 +117,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-db_alert_update",
+    "obs_db_alert_update",
     "Update alert state for a VM",
     {
       vm: z.string().describe("VM ID or alias"),
@@ -131,7 +131,7 @@ export function registerObservabilityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "devops-db_prune",
+    "obs_db_prune",
     "Remove old records from SQLite database (keeps last N days)",
     { days: z.number().optional().describe("Keep last N days (default: 30)") },
     async ({ days }) => {
