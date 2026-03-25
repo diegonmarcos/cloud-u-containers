@@ -68,6 +68,7 @@ interface RepoDeps {
   };
   system: {
     required: Record<string, SystemDep>;
+    build: Record<string, SystemDep>;
     optional: Record<string, SystemDep>;
   };
   node: {
@@ -91,17 +92,19 @@ function sort(obj: Record<string, string>) {
   return Object.fromEntries(Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-function readSystemDeps(): { required: Record<string, SystemDep>; optional: Record<string, SystemDep> } {
+function readSystemDeps(): { required: Record<string, SystemDep>; build: Record<string, SystemDep>; optional: Record<string, SystemDep> } {
   const required: Record<string, SystemDep> = {};
+  const build: Record<string, SystemDep> = {};
   const optional: Record<string, SystemDep> = {};
   if (existsSync(CONFIG_JSON)) {
     try {
-      const config = readJson(CONFIG_JSON) as { deps?: { system?: Record<string, SystemDep>; optional?: Record<string, SystemDep> } };
+      const config = readJson(CONFIG_JSON) as { deps?: { system?: Record<string, SystemDep>; build?: Record<string, SystemDep>; optional?: Record<string, SystemDep> } };
       if (config.deps?.system) Object.assign(required, config.deps.system);
+      if (config.deps?.build) Object.assign(build, config.deps.build);
       if (config.deps?.optional) Object.assign(optional, config.deps.optional);
     } catch { /* skip */ }
   }
-  return { required, optional };
+  return { required, build, optional };
 }
 
 function buildOutput(
@@ -110,7 +113,7 @@ function buildOutput(
   mergedDeps: Record<string, string>,
   mergedDevDeps: Record<string, string>,
   perService: ServiceDeps[],
-  systemDeps?: { required: Record<string, SystemDep>; optional: Record<string, SystemDep> },
+  systemDeps?: { required: Record<string, SystemDep>; build: Record<string, SystemDep>; optional: Record<string, SystemDep> },
 ): RepoDeps {
   const totalPackages = Object.keys(mergedDeps).length + Object.keys(mergedDevDeps).length;
   return {
@@ -121,7 +124,7 @@ function buildOutput(
       total_services: perService.length,
       total_packages: totalPackages,
     },
-    system: systemDeps ?? { required: {}, optional: {} },
+    system: systemDeps ?? { required: {}, build: {}, optional: {} },
     node: {
       merged: {
         dependencies: sort(mergedDeps),
