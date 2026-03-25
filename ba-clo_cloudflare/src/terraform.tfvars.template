@@ -1,3 +1,6 @@
+# Cloudflare Terraform — secrets + DKIM keys only
+# Non-secret values (DNS records, tunnel, email routing) live in terraform.json
+
 cloudflare_api_key   = "INJECTED_FROM_SECRETS"
 cloudflare_email     = "me@diegonmarcos.com"
 cloudflare_zone_id   = "ff4335cc9c7de42e580d0dff9a0d70eb"
