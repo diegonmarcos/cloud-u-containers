@@ -1,0 +1,9 @@
+{
+  "name": "fluent-bit",
+  "description": "Log processor and forwarder",
+  "category": "tools",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/fluent-bit"
+  }
+}
