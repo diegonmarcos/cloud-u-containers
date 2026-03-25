@@ -767,7 +767,7 @@ jobs:
       - name: Build URL list from Caddy routes
         id: urls
         run: |
-          R="cloud-data/caddy-routes.json"
+          R="cloud-data/cloud-data-caddy-routes.json"
           [ ! -f "$R" ] &amp;&amp; echo "::error::$R not found" &amp;&amp; exit 1
           URLS="/tmp/urls.txt"
           &gt; "$URLS"
@@ -835,7 +835,7 @@ jobs:
           wait
 
           # Also check L4 TCP ports in parallel
-          jq -r '.l4_routes[]? | "\(.port)|\(.comment // "port")"' "cloud-data/caddy-routes.json" | while IFS='|' read -r port comment; do
+          jq -r '.l4_routes[]? | "\(.port)|\(.comment // "port")"' "cloud-data/cloud-data-caddy-routes.json" | while IFS='|' read -r port comment; do
             (
               if timeout 3 bash -c "echo &gt; /dev/tcp/mail.diegonmarcos.com/$port" 2&gt;/dev/null; then
                 echo "PASS|L4 :$port $comment|tcp://$port|OK" &gt; "$RESULTS/l4_$port"
