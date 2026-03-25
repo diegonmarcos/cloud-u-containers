@@ -902,6 +902,60 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
+  // ── Home Manager Config (all data needed by home-manager nix modules) ──
+
+  app.get("/cloud-data/home-manager", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
+    const config = getConfig();
+    const rawConfig = config as any;
+    const native = rawConfig.native ?? {};
+    const wgConfig = native.wireguard ?? {};
+
+    const vms: Record<string, any> = {};
+    for (const [vmId, vm] of Object.entries(config.vms)) {
+      const v = vm as any;
+      if (!v.ssh_alias) continue;
+      vms[v.ssh_alias] = {
+        vm_id: vmId, ip: v.ip, wg_ip: v.wg_ip,
+        wg_public_key: v.wg_public_key ?? null,
+        wg_port: v.wg_port ?? 51820, wg_role: v.wg_role ?? "spoke",
+        user: v.user, home: v.home ?? (v.user === "root" ? "/root" : `/home/${v.user}`),
+        rescue_port: v.rescue_port ?? 2200,
+        specs: v.specs ?? {}, public_ports: v.public_ports ?? [],
+        idle_shutdown: v.idle_shutdown ?? null,
+        containers: v.containers ?? [], method: v.method, gha: v.gha ?? null,
+      };
+    }
+
+    const peers = Object.entries(vms)
+      .filter(([_, v]: any) => v.wg_ip && v.wg_public_key)
+      .map(([alias, v]: any) => ({
+        name: alias, wg_ip: v.wg_ip, public_ip: v.ip,
+        wg_public_key: v.wg_public_key, wg_port: v.wg_port, role: v.wg_role, endpoint: v.ip,
+      }));
+
+    const sshEntries = Object.entries(vms).map(([alias, v]: any) => ({
+      host: alias, hostname: v.wg_ip ?? v.ip, user: v.user,
+      identity_file: v.method === "gcloud" ? "~/.ssh/google_compute_engine" : "~/.ssh/vault_id_rsa",
+      port: 22,
+    }));
+
+    return {
+      _generated: new Date().toISOString(),
+      _source: "config.json via /cloud-data/home-manager",
+      owner: rawConfig.owner ?? {},
+      home_manager: rawConfig.home_manager ?? { state_version: "24.11" },
+      vms,
+      wireguard: {
+        subnet: wgConfig.subnet ?? "10.0.0.0/24", port: wgConfig.port ?? 51820,
+        hub: wgConfig.wg_hub ?? null, peers, clients: wgConfig.clients ?? {},
+      },
+      dns: native.dns ?? { primary: "10.0.0.1", fallback: "1.1.1.1" },
+      docker: native.docker ?? { subnet: "172.16.0.0/12", iptables: false },
+      monitoring: native.monitoring ?? { ntfy_base: "https://rss.diegonmarcos.com" },
+      ssh_config: sshEntries,
+    };
+  });
+
   // ── Files: config (from files.ts) ──
 
   app.get<{ Params: { service: string } }>(

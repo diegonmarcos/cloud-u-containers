@@ -94,7 +94,7 @@ steps:
       }
 
       # ── Fetch all endpoints ──────────────────────────────────────
-      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config"
+      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager"
 
       OK=0
       SKIP=0
