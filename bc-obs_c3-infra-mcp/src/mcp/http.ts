@@ -9,34 +9,47 @@ import { createServer, IncomingMessage, ServerResponse, request as httpRequest }
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
-// ── Tool registrations (exec-only) ──
+// A) Observability
+import { registerHealthCloudTools } from "./tools/health_cloud.js";
 import { registerHealthMailTools } from "./tools/health_mail.js";
-import { registerDeliveryTools } from "./tools/delivery.js";
-import { registerOperationsTools } from "./tools/operations.js";
-import { registerObservabilityExecTools } from "./tools/observability.js";
-import { registerSecurityExecTools } from "./tools/security.js";
-import { registerFrontendExecTools } from "./tools/frontend.js";
+import { registerObservabilityReadTools } from "./tools/observability-read.js";
 import { registerFinOpsTools } from "./tools/finops.js";
+import { registerFinOpsCloudTools } from "./tools/finops-cloud.js";
+import { registerObservabilityExecTools } from "./tools/observability.js";
+// B) DevOps
 import { registerWorkflowTools } from "./tools/workflows.js";
 import { registerVpsOpsTools } from "./tools/vps-ops.js";
-import { registerHealthCloudTools } from "./tools/health_cloud.js";
+import { registerDeliveryTools } from "./tools/delivery.js";
+import { registerOperationsTools } from "./tools/operations.js";
+import { registerFrontendExecTools } from "./tools/frontend.js";
+// C) Security
+import { registerSecurityExecTools } from "./tools/security.js";
+// Resources
+import { registerResources } from "./resources/index.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-infra-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "cloud-infra", version: "4.0.0" });
+  const server = new McpServer({ name: "cloud-infra", version: "5.0.0" });
 
+  // A) Observability
+  registerHealthCloudTools(server);
   registerHealthMailTools(server);
-  registerDeliveryTools(server);
-  registerOperationsTools(server);
-  registerObservabilityExecTools(server);
-  registerSecurityExecTools(server);
-  registerFrontendExecTools(server);
+  registerObservabilityReadTools(server);
   registerFinOpsTools(server);
+  registerFinOpsCloudTools(server);
+  registerObservabilityExecTools(server);
+  // B) DevOps
   registerWorkflowTools(server);
   registerVpsOpsTools(server);
-  registerHealthCloudTools(server);
+  registerDeliveryTools(server);
+  registerOperationsTools(server);
+  registerFrontendExecTools(server);
+  // C) Security
+  registerSecurityExecTools(server);
+  // Resources
+  registerResources(server);
 
   return server;
 }
