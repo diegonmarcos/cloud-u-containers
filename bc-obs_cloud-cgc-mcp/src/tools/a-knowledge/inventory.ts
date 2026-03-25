@@ -122,7 +122,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
 export function registerInventoryTools(server: McpServer) {
   // ── Config (4 tools, from infra.ts) ──
 
-  server.tool("cloud-data-list_vms", "List all VMs with IP, user, SSH alias, and description", {}, async () => {
+  server.tool("knowledge.inventory.list_vms", "List all VMs with IP, user, SSH alias, and description", {}, async () => {
     const config = getConfig();
     const rows = Object.entries(config.vms).map(([id, vm]) => {
       const alias = getVmSshAlias(id);
@@ -140,7 +140,7 @@ export function registerInventoryTools(server: McpServer) {
   });
 
   server.tool(
-    "cloud-data-list_services",
+    "knowledge.inventory.list_services",
     "List services, optionally filtered by VM or category",
     {
       vm: z.string().optional().describe("Filter by VM ID or SSH alias"),
@@ -177,7 +177,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-service_detail",
+    "knowledge.inventory.service_detail",
     "Get full service info: folder, flake.nix presence, secrets status, dist files",
     {
       service: z.string().describe("Service name from cloud-data-topology.json"),
@@ -242,7 +242,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-reload",
+    "knowledge.inventory.reload",
     "Reload cloud-data-topology.json from disk and show diff (services/VMs added or removed since last load)",
     {},
     async () => {
@@ -292,7 +292,7 @@ export function registerInventoryTools(server: McpServer) {
   // ── Repo (3 tools, from repo.ts) ──
 
   server.tool(
-    "cloud-data-read_file",
+    "knowledge.inventory.read_file",
     "Read a file from a repository (cloud, unix, vault, front, tools)",
     {
       repo: z.enum(["cloud", "unix", "vault", "front", "tools"]).describe("Repository name"),
@@ -318,7 +318,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-search_repos",
+    "knowledge.inventory.search_repos",
     "Search (grep) across repositories for a pattern",
     {
       pattern: z.string().describe("Search pattern (grep -rn)"),
@@ -364,7 +364,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-list_directory",
+    "knowledge.inventory.list_directory",
     "List directory contents in a repository",
     {
       repo: z.enum(["cloud", "unix", "vault", "front", "tools"]).describe("Repository name"),
@@ -401,12 +401,12 @@ export function registerInventoryTools(server: McpServer) {
 
   // ── Discovery (7 tools, from health.ts + discovery.ts) ──
 
-  server.tool("cloud-data-service_apis", "List all services with domain, VM, and API spec availability", {}, async () => {
+  server.tool("knowledge.inventory.service_apis", "List all services with domain, VM, and API spec availability", {}, async () => {
     return jsonText("Service APIs", listServiceApis());
   });
 
   server.tool(
-    "cloud-data-service_info",
+    "knowledge.inventory.service_info",
     "Get single service metadata including spec URL",
     { service: z.string().describe("Service name (e.g. authelia, matomo, photoprism)") },
     async ({ service }) => {
@@ -419,7 +419,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-service_spec",
+    "knowledge.inventory.service_spec",
     "Fetch the full OpenAPI/Swagger spec for a service",
     { service: z.string().describe("Service name") },
     async ({ service }) => {
@@ -436,7 +436,7 @@ export function registerInventoryTools(server: McpServer) {
     },
   );
 
-  server.tool("cloud-data-discover_all", "Parallel-fetch all service specs (cached 5min server-side)", {}, async () => {
+  server.tool("knowledge.inventory.discover_all", "Parallel-fetch all service specs (cached 5min server-side)", {}, async () => {
     const result = getAllSpecs();
     const text = JSON.stringify(result, null, 2);
     const truncated = text.length > 15000 ? `...(truncated)\n${text.slice(-15000)}` : text;
@@ -444,7 +444,7 @@ export function registerInventoryTools(server: McpServer) {
   });
 
   server.tool(
-    "cloud-data-service_version",
+    "knowledge.inventory.service_version",
     "Get version info for a service (via API endpoint)",
     { service: z.string().describe("Service name") },
     async ({ service }) => {
@@ -452,12 +452,12 @@ export function registerInventoryTools(server: McpServer) {
     }
   );
 
-  server.tool("cloud-data-all_versions", "Get version info for all services", {}, async () => {
+  server.tool("knowledge.inventory.all_versions", "Get version info for all services", {}, async () => {
     return jsonText("All service versions", allServiceVersions());
   });
 
   server.tool(
-    "cloud-data-service_api_call",
+    "knowledge.inventory.service_api_call",
     "Call any discovered service API endpoint. First use service_get_spec to understand available endpoints, then use this tool to make the actual call. Resolves service domain via Rust API discovery.",
     {
       service: z.string().describe("Service name (e.g. authelia, matomo, photoprism)"),
@@ -536,14 +536,14 @@ export function registerInventoryTools(server: McpServer) {
   // ── Topology (6 tools, from c3.ts) ──
 
   server.tool(
-    "cloud-data-topology",
+    "knowledge.inventory.topology",
     "Unified topology view of all VMs, services, and networks from declarative config",
     {},
     async () => jsonText("Topology", JSON.parse(readFileSync(getConfigPath(), "utf-8"))),
   );
 
   server.tool(
-    "cloud-data-topology_drift",
+    "knowledge.inventory.topology_drift",
     "Compare cloud-data-topology.json with on-disk services to find drift",
     {},
     async () => {
@@ -557,7 +557,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-topology_network",
+    "knowledge.inventory.topology_network",
     "Show Docker networks per VM with connected containers",
     {},
     async () => {
@@ -578,7 +578,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-topology_volumes",
+    "knowledge.inventory.topology_volumes",
     "Show Docker volumes per VM (from cloud-data-topology.json)",
     {},
     async () => {
@@ -588,7 +588,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-topology_images",
+    "knowledge.inventory.topology_images",
     "Show Docker images per VM (from cloud-data-topology.json containers)",
     {},
     async () => {
@@ -601,7 +601,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-topology_deps",
+    "knowledge.inventory.topology_deps",
     "Show service dependencies (from cloud-data-topology.json)",
     {},
     async () => {
@@ -617,7 +617,7 @@ export function registerInventoryTools(server: McpServer) {
   // ── Deps (2 tools) ──
 
   server.tool(
-    "cloud-data-deps",
+    "knowledge.inventory.deps",
     "Get consolidated node dependencies across all cloud services (from cloud-data-deps.json). Grouped by language for home-manager consumption.",
     {},
     async () => {
@@ -629,7 +629,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-deps_merged",
+    "knowledge.inventory.deps_merged",
     "Get merged node package.json (dependencies + devDependencies) across all cloud services — ready for ~/.node_modules/",
     {},
     async () => {
@@ -644,7 +644,7 @@ export function registerInventoryTools(server: McpServer) {
   // ── Files (1 tool, from c3.ts) ──
 
   server.tool(
-    "cloud-data-file",
+    "knowledge.inventory.file",
     "Read a service config file (build.json, docker-compose.yml, flake.nix) with secrets redacted",
     {
       service: z.string().describe("Service name"),
@@ -657,7 +657,7 @@ export function registerInventoryTools(server: McpServer) {
   // ── Frontend (2 tools, from frontend-read.ts) ──
 
   server.tool(
-    "front-data-list_projects",
+    "knowledge.inventory.front_list_projects",
     "List all front-end web projects with framework, port, and build type",
     {
       category: z
@@ -692,7 +692,7 @@ export function registerInventoryTools(server: McpServer) {
   );
 
   server.tool(
-    "front-data-get_project",
+    "knowledge.inventory.front_get_project",
     "Get detailed info about a front-end project: build.json, package.json deps, file structure",
     {
       project: z.string().describe("Project name (directory name, e.g. 'landpage', 'myfeed', 'c_root')"),

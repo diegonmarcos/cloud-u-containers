@@ -15,7 +15,7 @@ function readJsonSafe(path: string): unknown {
 export function registerConfigTools(server: McpServer) {
 
   server.tool(
-    "cloud-spec-topology",
+    "knowledge.config.topology",
     "Get cloud-data-topology.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
     {},
     async () => {
@@ -27,7 +27,7 @@ export function registerConfigTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-spec-configs",
+    "knowledge.config.configs",
     "Get cloud-data-configs.json — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
     {},
     async () => {
@@ -39,7 +39,7 @@ export function registerConfigTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-spec-deps",
+    "knowledge.config.deps",
     "Get cloud-data-deps.json — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
     {},
     async () => {
@@ -51,7 +51,7 @@ export function registerConfigTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-spec-topology_md",
+    "knowledge.config.topology_md",
     "Get cloud-data-topology.md — human-readable topology overview with service tables, VM assignments, and networking.",
     {},
     async () => {
@@ -62,7 +62,7 @@ export function registerConfigTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-spec-configs_md",
+    "knowledge.config.configs_md",
     "Get cloud-data-configs.md — human-readable config overview with Caddy routes, Authelia clients, DNS zones.",
     {},
     async () => {
@@ -73,7 +73,7 @@ export function registerConfigTools(server: McpServer) {
   );
 
   server.tool(
-    "front-spec-deps",
+    "knowledge.config.front_deps",
     "Get front-deps.json — npm dependencies for all front-end projects (per-project + merged).",
     {},
     async () => {
