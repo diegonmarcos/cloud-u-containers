@@ -274,25 +274,54 @@ step_build() {
     log "Building nix flake -> dist/"
     cd "$SRC_DIR"
 
+    # nix build inside nix develop — empty store, no stale cache
+    DEPS_FLAKE="$SERVICE_DIR/../../workflows/src/deps"
     BUILD_LOG=$(mktemp)
-    nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
-        log_error "nix build failed:"
-        cat "$BUILD_LOG" >&2
-        rm -f "$BUILD_LOG"
-        # Clean up staged cloud-data files on failure
-        for f in $CLOUD_DATA_STAGED; do
-            git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
-            rm -f "$f"
-        done
-        return 1
+
+    run_nix_build() {
+        nix build --option eval-cache false --no-link --print-out-paths 2>"$BUILD_LOG"
     }
-    # Show warnings from nix build (if any)
+
+    # Try: nix develop (clean env) → nix build inside it
+    if [ -d "$DEPS_FLAKE" ] && command -v nix >/dev/null 2>&1; then
+        RESULT=$(nix develop "$DEPS_FLAKE#" --command bash -c "cd '$SRC_DIR' && nix build --option eval-cache false --no-link --print-out-paths" 2>"$BUILD_LOG") || {
+            log_error "nix build (inside nix develop) failed:"
+            cat "$BUILD_LOG" >&2
+            rm -f "$BUILD_LOG"
+            for f in $CLOUD_DATA_STAGED; do
+                git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+                rm -f "$f"
+            done
+            return 1
+        }
+    else
+        # Fallback: direct nix build
+        RESULT=$(cd "$SRC_DIR" && nix build --option eval-cache false --no-link --print-out-paths 2>"$BUILD_LOG") || {
+            log_error "nix build failed:"
+            cat "$BUILD_LOG" >&2
+            rm -f "$BUILD_LOG"
+            for f in $CLOUD_DATA_STAGED; do
+                git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+                rm -f "$f"
+            done
+            return 1
+        }
+    fi
+
+    # Show warnings
     if [ -s "$BUILD_LOG" ]; then
         grep -i 'warning\|error\|trace' "$BUILD_LOG" | while IFS= read -r line; do
             log_warn "$line"
         done
     fi
     rm -f "$BUILD_LOG"
+
+    # Copy from store path to dist/
+    if [ -z "$RESULT" ] || [ ! -d "$RESULT" ]; then
+        log_error "nix build produced no output"
+        return 1
+    fi
+    ln -sfn "$RESULT" "$SERVICE_DIR/.result"
 
     rm -rf "$DIST_DIR"
     mkdir -p "$DIST_DIR"
@@ -381,7 +410,12 @@ step_docs() {
     log "Building documentation..."
     cd "$SRC_DIR"
 
-    nix build --option eval-cache false .#docs --out-link "$SERVICE_DIR/.result-docs"
+    DEPS_FLAKE="$SERVICE_DIR/../../workflows/src/deps"
+    if [ -d "$DEPS_FLAKE" ] && command -v nix >/dev/null 2>&1; then
+        nix develop "$DEPS_FLAKE#" --command bash -c "cd '$SRC_DIR' && nix build --option eval-cache false .#docs --out-link '$SERVICE_DIR/.result-docs'"
+    else
+        nix build --option eval-cache false .#docs --out-link "$SERVICE_DIR/.result-docs"
+    fi
 
     mkdir -p "$DIST_DIR/docs"
     cp -rL "$SERVICE_DIR/.result-docs/"* "$DIST_DIR/docs/"
@@ -935,7 +969,7 @@ case "${1:-all}" in
         else
             OLD_HASH=$(cat "$SERVICE_DIR/.dist-hash" 2>/dev/null || true)
         fi
-        if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ] && [ -z "$DOCKER_IMAGE_CHANGED" ]; then
+        if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ] && [ -z "$DOCKER_IMAGE_CHANGED" ] && [ -z "$FORCE_DEPLOY" ]; then
             log "Config unchanged, no image rebuild — skipping deploy+compose"
         elif [ "$WRANGLER_DEPLOY" = "true" ]; then
             step_wrangler
