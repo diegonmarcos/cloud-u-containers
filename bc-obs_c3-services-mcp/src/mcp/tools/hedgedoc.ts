@@ -14,7 +14,7 @@ function hdApi(method: string, path: string, body?: string): string {
 
 export function registerHedgedocTools(server: McpServer) {
   server.tool(
-    "hedgedoc-notes",
+    "user.hedgedoc.notes",
     "List all notes accessible to the user",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-note_detail",
+    "user.hedgedoc.note_detail",
     "Get note metadata by alias or ID",
     { id: z.string().describe("Note ID or alias") },
     async ({ id }) => ({
@@ -32,7 +32,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-note_content",
+    "user.hedgedoc.note_content",
     "Get raw markdown content of a note",
     { id: z.string().describe("Note ID or alias") },
     async ({ id }) => ({
@@ -41,7 +41,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-note_create",
+    "user.hedgedoc.note_create",
     "Create a new note",
     {
       content: z.string().describe("Markdown content"),
@@ -57,7 +57,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-note_delete",
+    "user.hedgedoc.note_delete",
     "Delete a note by ID",
     { id: z.string().describe("Note ID") },
     async ({ id }) => ({
@@ -66,7 +66,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-me",
+    "user.hedgedoc.me",
     "Get current user profile info",
     {},
     async () => ({
@@ -75,7 +75,7 @@ export function registerHedgedocTools(server: McpServer) {
   );
 
   server.tool(
-    "hedgedoc-history",
+    "user.hedgedoc.history",
     "Get note edit history for current user",
     {},
     async () => ({

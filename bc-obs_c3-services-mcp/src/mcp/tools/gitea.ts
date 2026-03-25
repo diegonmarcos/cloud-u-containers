@@ -14,7 +14,7 @@ function giteaApi(method: string, path: string, body?: string): string {
 
 export function registerGiteaTools(server: McpServer) {
   server.tool(
-    "gitea-repos",
+    "user.gitea.repos",
     "List repositories (optionally filter by owner)",
     { owner: z.string().optional().describe("Owner username (omit for all accessible repos)"), limit: z.number().default(20).describe("Max results") },
     async ({ owner, limit }) => ({
@@ -25,7 +25,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-repo_detail",
+    "user.gitea.repo_detail",
     "Get details for a specific repository",
     { owner: z.string().describe("Repo owner"), repo: z.string().describe("Repo name") },
     async ({ owner, repo }) => ({
@@ -34,7 +34,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-issues",
+    "user.gitea.issues",
     "List issues for a repository",
     {
       owner: z.string().describe("Repo owner"),
@@ -48,7 +48,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-issue_create",
+    "user.gitea.issue_create",
     "Create a new issue in a repository",
     {
       owner: z.string().describe("Repo owner"),
@@ -68,7 +68,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-pulls",
+    "user.gitea.pulls",
     "List pull requests for a repository",
     {
       owner: z.string().describe("Repo owner"),
@@ -81,7 +81,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-users",
+    "user.gitea.users",
     "Search users",
     { q: z.string().describe("Search query"), limit: z.number().default(10).describe("Max results") },
     async ({ q, limit }) => ({
@@ -90,7 +90,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-orgs",
+    "user.gitea.orgs",
     "List organizations",
     {},
     async () => ({
@@ -99,7 +99,7 @@ export function registerGiteaTools(server: McpServer) {
   );
 
   server.tool(
-    "gitea-releases",
+    "user.gitea.releases",
     "List releases for a repository",
     { owner: z.string().describe("Repo owner"), repo: z.string().describe("Repo name") },
     async ({ owner, repo }) => ({

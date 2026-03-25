@@ -14,7 +14,7 @@ function crawleeApi(method: string, path: string, body?: string): string {
 
 export function registerCrawleeTools(server: McpServer) {
   server.tool(
-    "crawlee-actors",
+    "infra.crawlee.actors",
     "List available Crawlee actors (scrapers)",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-actor_detail",
+    "infra.crawlee.actor_detail",
     "Get details for a specific actor",
     { actor_id: z.string().describe("Actor ID") },
     async ({ actor_id }) => ({
@@ -32,7 +32,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-run_actor",
+    "infra.crawlee.run_actor",
     "Start an actor run with input",
     {
       actor_id: z.string().describe("Actor ID to run"),
@@ -44,7 +44,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-runs",
+    "infra.crawlee.runs",
     "List recent actor runs",
     { limit: z.number().default(20).describe("Max results") },
     async ({ limit }) => ({
@@ -53,7 +53,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-run_detail",
+    "infra.crawlee.run_detail",
     "Get details and status of a specific run",
     { run_id: z.string().describe("Run ID") },
     async ({ run_id }) => ({
@@ -62,7 +62,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-run_abort",
+    "infra.crawlee.run_abort",
     "Abort a running actor",
     { run_id: z.string().describe("Run ID to abort") },
     async ({ run_id }) => ({
@@ -71,7 +71,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-datasets",
+    "infra.crawlee.datasets",
     "List datasets (output storage)",
     {},
     async () => ({
@@ -80,7 +80,7 @@ export function registerCrawleeTools(server: McpServer) {
   );
 
   server.tool(
-    "crawlee-dataset_items",
+    "infra.crawlee.dataset_items",
     "Get items from a dataset",
     { dataset_id: z.string().describe("Dataset ID"), limit: z.number().default(50).describe("Max items") },
     async ({ dataset_id, limit }) => ({

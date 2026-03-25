@@ -6,7 +6,7 @@ const OLLAMA_BASE = "http://10.0.0.8:11434";
 
 export function registerOllamaTools(server: McpServer) {
   server.tool(
-    "ollama-models",
+    "infra.ollama.models",
     "List available Ollama models",
     {},
     async () => {
@@ -18,7 +18,7 @@ export function registerOllamaTools(server: McpServer) {
   );
 
   server.tool(
-    "ollama-generate",
+    "infra.ollama.generate",
     "Generate text completion with Ollama",
     {
       model: z.string().describe("Model name (e.g. llama3)"),
@@ -35,7 +35,7 @@ export function registerOllamaTools(server: McpServer) {
   );
 
   server.tool(
-    "ollama-chat",
+    "infra.ollama.chat",
     "Chat completion with Ollama",
     {
       model: z.string().describe("Model name (e.g. llama3)"),

@@ -15,7 +15,7 @@ function daguHeaders(): Record<string, string> {
 
 export function registerDaguTools(server: McpServer) {
   server.tool(
-    "dagu_list",
+    "infra.dagu.list",
     "List available Dagu DAG workflows",
     {},
     async () => {
@@ -27,7 +27,7 @@ export function registerDaguTools(server: McpServer) {
   );
 
   server.tool(
-    "dagu_trigger",
+    "infra.dagu.trigger",
     "Trigger a Dagu DAG workflow by name",
     {
       dag_id: z.string().describe("DAG ID or name to trigger"),

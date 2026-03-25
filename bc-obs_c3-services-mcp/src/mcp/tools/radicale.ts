@@ -38,7 +38,7 @@ function radicaleRequest(method: string, path: string, body?: string): string {
 
 export function registerRadicaleTools(server: McpServer) {
   server.tool(
-    "radicale-calendars",
+    "user.radicale.calendars",
     "List calendars in Radicale",
     {},
     async () => {
@@ -50,7 +50,7 @@ export function registerRadicaleTools(server: McpServer) {
   );
 
   server.tool(
-    "radicale-contacts",
+    "user.radicale.contacts",
     "List contact collections in Radicale",
     {},
     async () => {
@@ -62,7 +62,7 @@ export function registerRadicaleTools(server: McpServer) {
   );
 
   server.tool(
-    "radicale-events",
+    "user.radicale.events",
     "Get events from a Radicale calendar collection",
     {
       collection: z.string().describe("Calendar collection name"),

@@ -13,7 +13,7 @@ function vwApi(path: string): string {
 
 export function registerVaultwardenTools(server: McpServer) {
   server.tool(
-    "vaultwarden-health",
+    "user.vaultwarden.health",
     "Check Vaultwarden server health",
     {},
     async () => ({
@@ -22,7 +22,7 @@ export function registerVaultwardenTools(server: McpServer) {
   );
 
   server.tool(
-    "vaultwarden-status",
+    "user.vaultwarden.status",
     "Get Vaultwarden admin status and config",
     {},
     async () => ({
@@ -31,7 +31,7 @@ export function registerVaultwardenTools(server: McpServer) {
   );
 
   server.tool(
-    "vaultwarden-users",
+    "user.vaultwarden.users",
     "List registered users (admin endpoint)",
     {},
     async () => ({
@@ -40,7 +40,7 @@ export function registerVaultwardenTools(server: McpServer) {
   );
 
   server.tool(
-    "vaultwarden-orgs",
+    "user.vaultwarden.orgs",
     "List organizations (admin endpoint)",
     {},
     async () => ({

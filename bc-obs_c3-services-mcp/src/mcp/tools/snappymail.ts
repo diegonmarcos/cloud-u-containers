@@ -10,7 +10,7 @@ function snappyGet(path: string): string {
 
 export function registerSnappymailTools(server: McpServer) {
   server.tool(
-    "snappymail-health",
+    "user.snappymail.health",
     "Check SnappyMail webmail health (HTTP status + version)",
     {},
     async () => {
@@ -22,7 +22,7 @@ export function registerSnappymailTools(server: McpServer) {
   );
 
   server.tool(
-    "snappymail-domains",
+    "user.snappymail.domains",
     "List configured mail domains in SnappyMail (reads domain config from container)",
     {},
     async () => {
@@ -38,7 +38,7 @@ export function registerSnappymailTools(server: McpServer) {
   );
 
   server.tool(
-    "snappymail-domain_config",
+    "user.snappymail.domain_config",
     "Read SnappyMail domain configuration (IMAP/SMTP settings)",
     {},
     async () => {
