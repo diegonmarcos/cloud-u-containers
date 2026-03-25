@@ -281,12 +281,20 @@ step_build() {
     if [ -n "$CLOUD_CI_IMAGE" ]; then
         # GHA: run nix build inside cloud-ci container (clean nix store, no stale cache)
         log "Building inside cloud-ci container..."
-        RESULT=$(docker run --rm \
-            -v "$REPO_ROOT:/workspace:ro" \
-            -v "$SRC_DIR:/src" \
-            -w /src \
+        rm -rf "$DIST_DIR"
+        mkdir -p "$DIST_DIR"
+        SVC_REL="a_solutions/$(basename "$SERVICE_DIR")/src"
+        docker run --rm \
+            -v "$REPO_ROOT:/workspace" \
+            -v "$DIST_DIR:/output" \
+            -w "/workspace/$SVC_REL" \
             "$CLOUD_CI_IMAGE" \
-            bash -c "nix build --no-link --print-out-paths --option eval-cache false" 2>"$BUILD_LOG") || {
+            bash -c '
+                git config --global --add safe.directory /workspace
+                RESULT=$(nix build --impure --no-link --print-out-paths --option eval-cache false)
+                [ -z "$RESULT" ] && exit 1
+                cp -rL "$RESULT/"* /output/
+            ' 2>"$BUILD_LOG" || {
             log_error "nix build (cloud-ci container) failed:"
             cat "$BUILD_LOG" >&2
             rm -f "$BUILD_LOG"
@@ -296,15 +304,7 @@ step_build() {
             done
             return 1
         }
-        # Copy output from container store path to host
-        if [ -n "$RESULT" ]; then
-            CID=$(docker create "$CLOUD_CI_IMAGE" true)
-            rm -rf "$DIST_DIR"
-            mkdir -p "$DIST_DIR"
-            docker cp "$CID:$RESULT/." "$DIST_DIR/" 2>/dev/null
-            docker rm "$CID" >/dev/null
-            chmod -R u+w "$DIST_DIR"
-        fi
+        chmod -R u+w "$DIST_DIR"
     else
         # Local: direct nix build
         nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
