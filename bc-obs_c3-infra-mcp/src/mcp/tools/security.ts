@@ -21,7 +21,7 @@ function plainText(text: string): { content: { type: "text"; text: string }[] } 
 export function registerSecurityExecTools(server: McpServer) {
   // ── security: Full security audit across all VMs ──
   server.tool(
-    "security",
+    "sec.all",
     "Full security audit: runs scan + docker + ssh_keys + tokens across all VMs",
     {},
     async () => {
@@ -58,7 +58,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security-scan",
+    "sec.scan",
     "Full security scan: privileged containers, root users, exposed ports, Docker config",
     { vm: z.string().optional().describe("Filter by VM ID or alias (omit for all VMs)") },
     async ({ vm }) => {
@@ -68,7 +68,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security-docker",
+    "sec.docker",
     "Docker-specific security checks: daemon config, socket permissions, capabilities",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -78,7 +78,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security-ssh_keys",
+    "sec.ssh_keys",
     "Check SSH key permissions and authorized_keys configuration",
     { vm: z.string().describe("VM ID or alias") },
     async ({ vm }) => {
@@ -88,7 +88,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "security-tokens",
+    "sec.tokens",
     "Check for exposed secrets/tokens in running containers (env vars, files)",
     {},
     async () => {
@@ -99,7 +99,7 @@ export function registerSecurityExecTools(server: McpServer) {
   // ── Security READ tools (moved from cloud-cgc-mcp) ──
 
   server.tool(
-    "cloud-data-security_topology",
+    "sec.topology",
     "Security topology: exposed services, secrets status, VM access methods",
     {},
     async () => {
@@ -112,7 +112,7 @@ export function registerSecurityExecTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-secrets_status",
+    "sec.secrets_status",
     "Show secrets encryption status for services (never exposes values)",
     {
       service: z.string().optional().describe("Service name (omit for all)"),

@@ -415,7 +415,7 @@ function safeRun(fn: () => Promise<string>): Promise<{ content: [{ type: "text";
 
 export function registerFinOpsTools(server: McpServer): void {
   server.tool(
-    "fin_ops",
+    "obs.finops.all",
     "Full FinOps report: VPS costs + service map + asset inventory",
     {},
     () => safeRun(async () => {
@@ -430,21 +430,21 @@ export function registerFinOpsTools(server: McpServer): void {
   );
 
   server.tool(
-    "fin_ops_vps",
+    "obs.finops.vps",
     "VPS cost analysis: provider, tier, monthly cost, resource usage per VM",
     {},
     () => safeRun(finOpsVps),
   );
 
   server.tool(
-    "fin_ops_services",
+    "obs.finops.services",
     "Service resource map: services per VM, containers, categories, ports",
     {},
     () => safeRun(finOpsServices),
   );
 
   server.tool(
-    "fin_ops_assets",
+    "obs.finops.assets",
     "Infrastructure asset inventory: VMs, domains, containers, ports, DNS, repos",
     {},
     () => safeRun(finOpsAssets),

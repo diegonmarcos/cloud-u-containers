@@ -13,63 +13,63 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
 
 export function registerFinOpsCloudTools(server: McpServer) {
   server.tool(
-    "cloud-data-oci_instances",
+    "obs.finops.oci_instances",
     "List all OCI compute instances in the tenancy",
     {},
     async () => jsonText("OCI instances", oci.listInstances()),
   );
 
   server.tool(
-    "cloud-data-gcp_instances",
+    "obs.finops.gcp_instances",
     "List all GCP compute instances across zones",
     {},
     async () => jsonText("GCP instances", gcp.listInstances()),
   );
 
   server.tool(
-    "cloud-data-oci_resources",
+    "obs.finops.oci_resources",
     "List OCI networking and storage resources (VCNs, subnets, boot volumes)",
     {},
     async () => jsonText("OCI resources", oci.listResources()),
   );
 
   server.tool(
-    "cloud-data-gcp_resources",
+    "obs.finops.gcp_resources",
     "List GCP disks, networks, and firewalls",
     {},
     async () => jsonText("GCP resources", gcp.listResources()),
   );
 
   server.tool(
-    "cloud-data-oci_costs",
+    "obs.finops.oci_costs",
     "Get OCI usage costs for the last 30 days",
     {},
     async () => jsonText("OCI costs", oci.getCosts()),
   );
 
   server.tool(
-    "cloud-data-gcp_costs",
+    "obs.finops.gcp_costs",
     "Get GCP billing info for the project",
     {},
     async () => jsonText("GCP costs", gcp.getCosts()),
   );
 
   server.tool(
-    "cloud-data-aws_instances",
+    "obs.finops.aws_instances",
     "List all AWS EC2 instances",
     {},
     async () => jsonText("AWS instances", aws.listInstances()),
   );
 
   server.tool(
-    "cloud-data-aws_resources",
+    "obs.finops.aws_resources",
     "List AWS resources (S3 buckets, VPCs, SES identities)",
     {},
     async () => jsonText("AWS resources", aws.listResources()),
   );
 
   server.tool(
-    "cloud-data-aws_costs",
+    "obs.finops.aws_costs",
     "Get AWS usage costs for the current month via Cost Explorer",
     {},
     async () => jsonText("AWS costs", aws.getCosts()),

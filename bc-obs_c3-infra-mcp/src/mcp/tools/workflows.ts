@@ -394,7 +394,7 @@ async function workflowsDaguTrigger(dagName?: string): Promise<string> {
 export function registerWorkflowTools(server: McpServer): void {
   // ── Full: GHA + Dagu combined ──
   server.tool(
-    "workflows",
+    "devops.workflows.all",
     "Full workflow report: GHA + Dagu status, all runs last 24h",
     {},
     () => safeRun(async () => {
@@ -410,21 +410,21 @@ export function registerWorkflowTools(server: McpServer): void {
 
   // ── GHA ──
   server.tool(
-    "workflows_gha",
+    "devops.workflows.gha",
     "GHA: all workflow runs last 24h — status, counts, per-workflow breakdown",
     {},
     () => safeRun(workflowsGha),
   );
 
   server.tool(
-    "workflows_gha_errors_24",
+    "devops.workflows.gha_errors",
     "GHA: failed runs last 24h with failure logs",
     {},
     () => safeRun(workflowsGhaErrors),
   );
 
   server.tool(
-    "workflows_gha_true_24",
+    "devops.workflows.gha_ok",
     "GHA: successful runs last 24h",
     {},
     () => safeRun(async () => {
@@ -441,7 +441,7 @@ export function registerWorkflowTools(server: McpServer): void {
   );
 
   server.tool(
-    "workflows_gha_trigger",
+    "devops.workflows.gha_trigger",
     "Trigger GHA workflow(s) — specify name or 'all' for all active workflows",
     {
       workflow: z.string().optional().describe("Workflow name (partial match) or 'all'. Omit to list available."),
@@ -457,21 +457,21 @@ export function registerWorkflowTools(server: McpServer): void {
 
   // ── Dagu ──
   server.tool(
-    "workflows_dagu",
+    "devops.workflows.dagu",
     "Dagu: all DAGs with status, schedule, last run",
     {},
     () => safeRun(workflowsDagu),
   );
 
   server.tool(
-    "workflows_dagu_errors_24",
+    "devops.workflows.dagu_errors",
     "Dagu: failed DAGs in last 24h",
     {},
     () => safeRun(workflowsDaguErrors),
   );
 
   server.tool(
-    "workflows_dagu_true_24",
+    "devops.workflows.dagu_ok",
     "Dagu: successful DAGs in last 24h",
     {},
     () => safeRun(async () => {
@@ -494,7 +494,7 @@ export function registerWorkflowTools(server: McpServer): void {
   );
 
   server.tool(
-    "workflows_dagu_trigger",
+    "devops.workflows.dagu_trigger",
     "Trigger Dagu DAG(s) — specify name or 'all'",
     {
       dag: z.string().optional().describe("DAG name or 'all'. Omit to list available."),

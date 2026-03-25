@@ -1367,7 +1367,7 @@ async function runLayer(
 export function registerHealthCloudTools(server: McpServer): void {
   // ── cloud-up: Quick infrastructure check (layers 1-3, ~10s) ─────────────
   server.tool(
-    "health_cloud_up",
+    "obs.health.cloud_up",
     "Quick infrastructure UP check: self-check + WG mesh + platform (~10s)",
     {},
     () =>
@@ -1392,7 +1392,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── cloud-full: Comprehensive 10-layer diagnostic (~30-60s) ─────────────
   server.tool(
-    "health_cloud",
+    "obs.health.cloud",
     "Full 10-layer cloud diagnostic: self-check -> mesh -> platform -> containers -> URLs -> cross-checks -> external -> drift -> security (~60s)",
     {},
     () =>
@@ -1491,7 +1491,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources: Full VM + database resource profiling ──────────
   server.tool(
-    "cloud_resources",
+    "obs.resources.all",
     "Full resource profiling: all VMs (CPU, RAM, disk, swap, processes) + all databases (size, connections, tables)",
     {},
     () => safeRun(async () => {
@@ -1547,7 +1547,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources_vm: Single VM deep profiling ──────────────────
   server.tool(
-    "cloud_resources_vm",
+    "obs.resources.vm",
     "Deep resource profile for a single VM: CPU, RAM, disk, swap, top processes, docker stats",
     { vm: z.string().describe("VM ID or alias (e.g. oci-apps, gcp-proxy)") },
     ({ vm }) => safeRun(async () => {
@@ -1558,7 +1558,7 @@ export function registerHealthCloudTools(server: McpServer): void {
 
   // ── health_cloud_resources_db: Single database profiling ──────────────────
   server.tool(
-    "cloud_resources_db",
+    "obs.resources.db",
     "Database resource profile: size, connections, tables, slow queries",
     {
       service: z.string().describe("Service name (e.g. etherpad, nocodb, hedgedoc, matomo)"),
@@ -1642,7 +1642,7 @@ async function collectDbResources(vmId: string, containers: string[], serviceNam
 
 // ── Standalone runner (GHA / CLI) ────────────────────────────────────────────
 if (process.argv[1]?.endsWith("health_cloud.ts") || process.argv[1]?.endsWith("health_cloud.js")) {
-  const mode = process.argv[2] === "quick" ? "health_cloud_up" : "health_cloud";
+  const mode = process.argv[2] === "quick" ? "obs.health.cloud_up" : "obs.health.cloud";
   (async () => {
     const { McpServer: S } = await import("@modelcontextprotocol/sdk/server/mcp.js");
     const server = new S({ name: "health-runner", version: "1.0.0" });
