@@ -1,0 +1,46 @@
+name: "Health → Mail (Full Check)"
+
+on:
+  workflow_run:
+    workflows: ["Ship → oci-mail"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+concurrency:
+  group: health-mail-full
+  cancel-in-progress: true
+
+jobs:
+  health-mail-full:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.OCI_SSH_KEY }}
+          ssh_host: 130.110.251.193
+          ssh_user: ubuntu
+          ssh_alias: oci-mail
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: a_solutions/bc-obs_c3-infra-mcp-api
+        run: npm install
+
+      - name: Run full mail health check
+        run: |
+          npx tsx .github/workflows/scripts/health_mail_full.ts
