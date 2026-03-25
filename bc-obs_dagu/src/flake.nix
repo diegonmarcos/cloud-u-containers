@@ -34,7 +34,7 @@
           image: dagu-ssh:local
           container_name: ${config.container_name}
           entrypoint: ["dagu", "start-all"]
-          restart: "no"  # container-init handles startup
+          restart: unless-stopped
           network_mode: host
           environment:
             - DAGU_HOST=0.0.0.0
@@ -45,6 +45,8 @@
             - DAGU_AUTH_BASIC_USERNAME=''${DAGU_USERNAME}
             - DAGU_AUTH_BASIC_PASSWORD=''${DAGU_PASSWORD}
             - DAGU_TZ=Europe/Berlin
+            - DAGU_UI_NAVBAR_COLOR=#1a1a2e
+            - DAGU_UI_LOGO_TITLE=C3 Workflows
             - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
             - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_DAGU_SECRET}
             - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
