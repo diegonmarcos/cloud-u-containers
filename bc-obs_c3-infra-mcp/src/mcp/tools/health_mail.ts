@@ -771,7 +771,7 @@ async function safeToolAsync(fn: () => Promise<string>): Promise<{ content: [{ t
 }
 
 export function registerHealthMailTools(server: McpServer): void {
-  server.tool("health_mail_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
+  server.tool("obs.health.mail_up", "Quick UP: pre-flight + containers + network + DNS + internals", {},
     () => safeToolAsync(async () => {
       clearAllCaches();
       const sections: string[] = [];
@@ -793,7 +793,7 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("health_mail_profile", "Deep profile all Stalwart containers", {},
+  server.tool("obs.health.mail_profile", "Deep profile all Stalwart containers", {},
     () => safeToolAsync(async () => {
       const p: Record<string, unknown> = {};
       for (const n of [...MAIL_CONTAINERS, "smtp-proxy", "snappymail"]) { try { p[n] = profileContainer(n); } catch (e: unknown) { p[n] = { error: String(e) }; } }
@@ -801,11 +801,11 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("health_mail_inbound_test", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
+  server.tool("obs.health.mail_inbound", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
     () => safeToolAsync(async () => formatChecks("E2E DELIVERY", await e2eDelivery())),
   );
 
-  server.tool("health_mail_outbound_test", "Outbound: SMTP relay + DNS auth", {},
+  server.tool("obs.health.mail_outbound", "Outbound: SMTP relay + DNS auth", {},
     () => safeToolAsync(async () => {
       const [smtpChecks, dnsChecks] = await Promise.all([
         Promise.all([
@@ -818,7 +818,7 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("health_mail", "Full 6-phase diagnostic: 3-VM parallel, OIDC auth, Admin API, IMAP LOGIN, all ports", {},
+  server.tool("obs.health.mail", "Full 6-phase diagnostic: 3-VM parallel, OIDC auth, Admin API, IMAP LOGIN, all ports", {},
     () => safeToolAsync(async () => {
       clearAllCaches();
       const marks: { phase: string; ms: number }[] = [];
@@ -1055,7 +1055,7 @@ if (process.argv[1]?.endsWith("health_mail.ts")) {
     const server = new S({ name: "health-runner", version: "1.0.0" });
     registerHealthMailTools(server);
     const tools = (server as any)._registeredTools;
-    const tool = tools?.["health_mail"];
+    const tool = tools?.["obs.health.mail"];
     if (!tool?.handler) {
       console.error("ERROR: mail-full tool handler not found");
       process.exit(1);
