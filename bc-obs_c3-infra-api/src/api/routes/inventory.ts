@@ -170,6 +170,13 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       if (existsSync(bjPath)) {
         try {
           const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+          // Register dns field as zone name (source of truth for Hickory DNS)
+          if (bj.dns) {
+            const dnsName = bj.dns.replace(/\.app$/, "");
+            if (dnsName && dnsName !== svcName) {
+              services[dnsName] = { ip, desc };
+            }
+          }
           const upstreams: string[] = [];
           if (bj.proxy?.upstream) upstreams.push(bj.proxy.upstream);
           for (const l4 of (bj.proxy?.l4_ports ?? [])) {
