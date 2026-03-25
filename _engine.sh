@@ -294,6 +294,7 @@ step_build() {
                 RESULT=$(nix build --impure --no-link --print-out-paths --option eval-cache false)
                 [ -z "$RESULT" ] && exit 1
                 cp -rL "$RESULT/"* /output/
+                chmod -R 777 /output/
             ' 2>"$BUILD_LOG" || {
             log_error "nix build (cloud-ci container) failed:"
             cat "$BUILD_LOG" >&2
@@ -304,7 +305,6 @@ step_build() {
             done
             return 1
         }
-        chmod -R u+w "$DIST_DIR"
     else
         # Local: direct nix build
         nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
