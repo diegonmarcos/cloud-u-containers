@@ -3,18 +3,13 @@ import { createServer, IncomingMessage, ServerResponse, request as httpRequest }
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerSpecTools } from "./tools/a-raw-json/specs.js";
-import { registerDocsTools } from "./tools/a-raw-json/docs.js";
-import { registerSkillTools } from "./tools/a-raw-json/skills.js";
-import { registerOctocodeTools } from "./tools/b-octocode/octocode.js";
-import { registerCodegraphTools } from "./tools/c-codegraph-rust/codegraph.js";
-import { registerInventoryTools } from "./tools/d-infra-read/inventory.js";
-import { registerFinOpsTools } from "./tools/d-infra-read/finops.js";
-import { registerObservabilityReadTools } from "./tools/d-infra-read/observability-read.js";
-import { registerSecurityReadTools } from "./tools/d-infra-read/security-read.js";
-import { registerFrontendReadTools } from "./tools/d-infra-read/frontend-read.js";
-import { registerCrawleeReadTools } from "./tools/d-infra-read/crawlee-read.js";
-import { registerResources } from "./tools/d-infra-read/resources/index.js";
+import { registerSpecTools } from "./tools/a-knowledge/specs.js";
+import { registerConfigTools } from "./tools/a-knowledge/configs.js";
+import { registerDocsTools } from "./tools/a-knowledge/docs.js";
+import { registerInventoryTools } from "./tools/a-knowledge/inventory.js";
+import { registerSkillTools } from "./tools/a-knowledge/skills.js";
+import { registerOctocodeTools } from "./tools/b-code-graph-context/octocode.js";
+import { registerCodegraphTools } from "./tools/b-code-graph-context/codegraph.js";
 import { buildContextSummary } from "./context.js";
 
 const log = (msg: string) => process.stderr.write(`[cloud-cgc-mcp] ${msg}\n`);
@@ -22,7 +17,7 @@ const log = (msg: string) => process.stderr.write(`[cloud-cgc-mcp] ${msg}\n`);
 function createMcpServer(): McpServer {
   const server = new McpServer({
     name: "cloud-cgc-mcp",
-    version: "6.0.0",
+    version: "7.0.0",
   });
 
   // ── Resources ─────────────────────────────────────────────────────────
@@ -52,25 +47,16 @@ function createMcpServer(): McpServer {
     })
   );
 
-  // ── Section A: Raw JSON Infra Knowledge ──────────────────────────────
-  registerSpecTools(server);
-  registerDocsTools(server);
-  registerSkillTools(server);
+  // ── Section A: Knowledge & Data ─────────────────────────────────────
+  registerSpecTools(server);              //  3: service, vm, services_by_category
+  registerDocsTools(server);              //  4: overview, service, readme, context
+  registerInventoryTools(server);         // 25: cloud inventory + frontend projects
+  registerConfigTools(server);            //  6: topology, configs, deps, topology_md, configs_md, front-deps
+  registerSkillTools(server);             //  4: cloud_architect, frontend_developer, debug_ops, crawlee_scraping
 
-  // ── Section B: Octocode — Semantic Code Search ───────────────────────
-  registerOctocodeTools(server);
-
-  // ── Section C: CodeGraph-Rust — Graph Analysis (Future) ──────────────
-  registerCodegraphTools(server);
-
-  // ── Section D: Infra READ tools (from c3-infra-mcp) ────────────────
-  registerInventoryTools(server);         // 21: list_vms, list_services, read_file, search_repos, c3_topology*, c3_deps*, c3_file
-  registerFinOpsTools(server);            // 10: cloud_oci/gcp/aws instances/resources/costs
-  registerObservabilityReadTools(server); // 24: health_*, profile_*, c3_test/report, db_*_history, vm_*
-  registerSecurityReadTools(server);      //  2: c3_topology_security, c3_secrets_status
-  registerFrontendReadTools(server);      //  2: front_list_projects, front_get_project
-  registerCrawleeReadTools(server);       //  5: crawlee list/get tools
-  registerResources(server);              //  9: cloud:// resources
+  // ── Section B: Code Graph Context ──────────────────────────────────
+  registerOctocodeTools(server);          //  3: search, memory, index
+  registerCodegraphTools(server);         //  3: stubs (future)
 
   return server;
 }
@@ -79,7 +65,7 @@ function createMcpServer(): McpServer {
 async function startStdio(): Promise<void> {
   const server = createMcpServer();
   const transport = new StdioServerTransport();
-  log("Starting cloud-cgc-mcp v6.0.0 (81 tools, 11 resources) via stdio...");
+  log("Starting cloud-cgc-mcp v7.0.0 (48 tools, 2 resources) via stdio...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }

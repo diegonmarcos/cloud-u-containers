@@ -11,7 +11,7 @@ function jsonText(label: string, data: unknown): { content: { type: "text"; text
   return { content: [{ type: "text" as const, text: `${label}\n\n${text}` }] };
 }
 
-export function registerFinOpsTools(server: McpServer) {
+export function registerFinOpsCloudTools(server: McpServer) {
   server.tool(
     "cloud-data-oci_instances",
     "List all OCI compute instances in the tenancy",
