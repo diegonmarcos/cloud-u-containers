@@ -11,7 +11,7 @@ function autheliaApi(path: string, extraHeaders?: Record<string, string>): strin
 
 export function registerAutheliaTools(server: McpServer) {
   server.tool(
-    "authelia-health",
+    "infra.authelia.health",
     "Check Authelia server health",
     {},
     async () => ({
@@ -20,7 +20,7 @@ export function registerAutheliaTools(server: McpServer) {
   );
 
   server.tool(
-    "authelia-state",
+    "infra.authelia.state",
     "Get Authelia state (config validation, ready status)",
     {},
     async () => ({
@@ -29,7 +29,7 @@ export function registerAutheliaTools(server: McpServer) {
   );
 
   server.tool(
-    "authelia-config",
+    "infra.authelia.config",
     "Get Authelia OIDC discovery configuration",
     {},
     async () => ({
@@ -38,7 +38,7 @@ export function registerAutheliaTools(server: McpServer) {
   );
 
   server.tool(
-    "authelia-jwks",
+    "infra.authelia.jwks",
     "Get Authelia JSON Web Key Set (public keys)",
     {},
     async () => ({
@@ -47,7 +47,7 @@ export function registerAutheliaTools(server: McpServer) {
   );
 
   server.tool(
-    "authelia-user_info",
+    "infra.authelia.user_info",
     "Get user info via OIDC userinfo endpoint (requires bearer token)",
     { token: z.string().describe("OIDC access token") },
     async ({ token }) => ({

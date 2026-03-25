@@ -5,7 +5,7 @@ import { rawHttpRequest } from "../../shared/http.js";
 
 export function registerProxyTools(server: McpServer) {
   server.tool(
-    "proxy-api_call",
+    "meta.proxy.api_call",
     "Make a proxied API call to any service via its WireGuard mesh address",
     {
       service: z.string().describe("Service name (e.g. nocodb, gitea)"),

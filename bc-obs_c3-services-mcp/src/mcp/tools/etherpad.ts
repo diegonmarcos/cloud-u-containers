@@ -13,7 +13,7 @@ function epApi(method: string, params: Record<string, string> = {}): string {
 
 export function registerEtherpadTools(server: McpServer) {
   server.tool(
-    "etherpad-pads",
+    "user.etherpad.pads",
     "List all pad IDs",
     {},
     async () => ({
@@ -22,7 +22,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_text",
+    "user.etherpad.pad_text",
     "Get the text content of a pad",
     { pad_id: z.string().describe("Pad ID") },
     async ({ pad_id }) => ({
@@ -31,7 +31,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_html",
+    "user.etherpad.pad_html",
     "Get the HTML content of a pad",
     { pad_id: z.string().describe("Pad ID") },
     async ({ pad_id }) => ({
@@ -40,7 +40,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_create",
+    "user.etherpad.pad_create",
     "Create a new pad (optionally with initial text)",
     {
       pad_id: z.string().describe("Pad ID to create"),
@@ -56,7 +56,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_set_text",
+    "user.etherpad.pad_set_text",
     "Replace all text in a pad",
     { pad_id: z.string().describe("Pad ID"), text: z.string().describe("New text content") },
     async ({ pad_id, text }) => ({
@@ -65,7 +65,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_delete",
+    "user.etherpad.pad_delete",
     "Delete a pad",
     { pad_id: z.string().describe("Pad ID to delete") },
     async ({ pad_id }) => ({
@@ -74,7 +74,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_revisions",
+    "user.etherpad.pad_revisions",
     "Get revision count for a pad",
     { pad_id: z.string().describe("Pad ID") },
     async ({ pad_id }) => ({
@@ -83,7 +83,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_authors",
+    "user.etherpad.pad_authors",
     "List authors who edited a pad",
     { pad_id: z.string().describe("Pad ID") },
     async ({ pad_id }) => ({
@@ -92,7 +92,7 @@ export function registerEtherpadTools(server: McpServer) {
   );
 
   server.tool(
-    "etherpad-pad_users",
+    "user.etherpad.pad_users",
     "Get currently connected users on a pad",
     { pad_id: z.string().describe("Pad ID") },
     async ({ pad_id }) => ({

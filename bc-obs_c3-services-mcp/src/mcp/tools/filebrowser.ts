@@ -14,7 +14,7 @@ function fbApi(method: string, path: string, body?: string): string {
 
 export function registerFilebrowserTools(server: McpServer) {
   server.tool(
-    "filebrowser-ls",
+    "user.filebrowser.ls",
     "List files and directories at a path",
     { path: z.string().default("/").describe("Directory path (e.g. '/' or '/documents')") },
     async ({ path }) => ({
@@ -23,7 +23,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-info",
+    "user.filebrowser.info",
     "Get file/directory metadata (size, modified, type)",
     { path: z.string().describe("File or directory path") },
     async ({ path }) => ({
@@ -32,7 +32,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-search",
+    "user.filebrowser.search",
     "Search for files by name pattern",
     { query: z.string().describe("Search query or glob pattern"), path: z.string().default("/").describe("Base path to search in") },
     async ({ query, path }) => ({
@@ -41,7 +41,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-mkdir",
+    "user.filebrowser.mkdir",
     "Create a new directory",
     { path: z.string().describe("New directory path") },
     async ({ path }) => ({
@@ -50,7 +50,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-delete",
+    "user.filebrowser.delete",
     "Delete a file or directory",
     { path: z.string().describe("Path to delete") },
     async ({ path }) => ({
@@ -59,7 +59,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-move",
+    "user.filebrowser.move",
     "Move or rename a file/directory",
     {
       src: z.string().describe("Source path"),
@@ -71,7 +71,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-shares",
+    "user.filebrowser.shares",
     "List active file shares/links",
     {},
     async () => ({
@@ -80,7 +80,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-share_create",
+    "user.filebrowser.share_create",
     "Create a share link for a file/directory",
     {
       path: z.string().describe("Path to share"),
@@ -98,7 +98,7 @@ export function registerFilebrowserTools(server: McpServer) {
   );
 
   server.tool(
-    "filebrowser-usage",
+    "user.filebrowser.usage",
     "Get disk usage stats",
     {},
     async () => ({

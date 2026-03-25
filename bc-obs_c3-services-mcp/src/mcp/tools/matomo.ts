@@ -19,7 +19,7 @@ function matomoApiCall(method: string, params: Record<string, string> = {}): str
 
 export function registerMatomoTools(server: McpServer) {
   server.tool(
-    "matomo-visits",
+    "infra.matomo.visits",
     "Get visit summary from Matomo analytics",
     {
       idSite: z.string().default("1").describe("Site ID"),
@@ -32,7 +32,7 @@ export function registerMatomoTools(server: McpServer) {
   );
 
   server.tool(
-    "matomo-sites",
+    "infra.matomo.sites",
     "List all tracked sites in Matomo",
     {},
     async () => ({
@@ -41,7 +41,7 @@ export function registerMatomoTools(server: McpServer) {
   );
 
   server.tool(
-    "matomo-actions",
+    "infra.matomo.actions",
     "Get page view and action stats from Matomo",
     {
       idSite: z.string().default("1"),
@@ -54,7 +54,7 @@ export function registerMatomoTools(server: McpServer) {
   );
 
   server.tool(
-    "matomo-referrers",
+    "infra.matomo.referrers",
     "Get referrer stats from Matomo",
     {
       idSite: z.string().default("1"),
@@ -67,7 +67,7 @@ export function registerMatomoTools(server: McpServer) {
   );
 
   server.tool(
-    "matomo-live",
+    "infra.matomo.live",
     "Get last visits (live) from Matomo",
     {
       idSite: z.string().default("1"),

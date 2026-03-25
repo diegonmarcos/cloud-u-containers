@@ -14,7 +14,7 @@ function wmApi(method: string, path: string, body?: string): string {
 
 export function registerWindmillTools(server: McpServer) {
   server.tool(
-    "windmill-scripts",
+    "infra.windmill.scripts",
     "List scripts in a workspace",
     { workspace: z.string().default("admins").describe("Workspace name") },
     async ({ workspace }) => ({
@@ -23,7 +23,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-script_detail",
+    "infra.windmill.script_detail",
     "Get script content and metadata by path",
     { workspace: z.string().default("admins").describe("Workspace"), path: z.string().describe("Script path (e.g. 'f/folder/script')") },
     async ({ workspace, path }) => ({
@@ -32,7 +32,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-run_script",
+    "infra.windmill.run_script",
     "Execute a script and get the job ID",
     {
       workspace: z.string().default("admins").describe("Workspace"),
@@ -45,7 +45,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-flows",
+    "infra.windmill.flows",
     "List flows in a workspace",
     { workspace: z.string().default("admins").describe("Workspace") },
     async ({ workspace }) => ({
@@ -54,7 +54,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-run_flow",
+    "infra.windmill.run_flow",
     "Execute a flow and get the job ID",
     {
       workspace: z.string().default("admins").describe("Workspace"),
@@ -67,7 +67,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-jobs",
+    "infra.windmill.jobs",
     "List recent jobs (completed and running)",
     { workspace: z.string().default("admins").describe("Workspace"), limit: z.number().default(20).describe("Max results") },
     async ({ workspace, limit }) => ({
@@ -76,7 +76,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-job_detail",
+    "infra.windmill.job_detail",
     "Get details and result of a specific job",
     { workspace: z.string().default("admins").describe("Workspace"), job_id: z.string().describe("Job UUID") },
     async ({ workspace, job_id }) => ({
@@ -85,7 +85,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-schedules",
+    "infra.windmill.schedules",
     "List scheduled jobs",
     { workspace: z.string().default("admins").describe("Workspace") },
     async ({ workspace }) => ({
@@ -94,7 +94,7 @@ export function registerWindmillTools(server: McpServer) {
   );
 
   server.tool(
-    "windmill-resources",
+    "infra.windmill.resources",
     "List resources (secrets, connections, configs)",
     { workspace: z.string().default("admins").describe("Workspace") },
     async ({ workspace }) => ({

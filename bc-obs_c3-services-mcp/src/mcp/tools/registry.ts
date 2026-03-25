@@ -5,7 +5,7 @@ import { searchPublicRegistry, getPublicServer } from "../../registry/public-reg
 
 export function registerRegistryTools(server: McpServer) {
   server.tool(
-    "registry-services_list",
+    "meta.registry.services_list",
     "List all local services (Diego's cloud infra) with their API status, type, and endpoint count. These are deployed and accessible via WireGuard mesh.",
     {},
     async () => {
@@ -23,7 +23,7 @@ export function registerRegistryTools(server: McpServer) {
   );
 
   server.tool(
-    "registry-services_info",
+    "meta.registry.services_info",
     "Get detailed information about a specific service. Checks local registry first, then falls back to the public MCP registry (registry.modelcontextprotocol.io) if not found locally.",
     { service: z.string().describe("Service name (e.g. matomo, syncthing, or a public MCP name like 'filesystem')") },
     async ({ service }) => {
@@ -53,7 +53,7 @@ export function registerRegistryTools(server: McpServer) {
   );
 
   server.tool(
-    "registry-services_spec",
+    "meta.registry.services_spec",
     "Fetch the OpenAPI spec for a local service (if available)",
     { service: z.string().describe("Service name") },
     async ({ service }) => {
@@ -74,7 +74,7 @@ export function registerRegistryTools(server: McpServer) {
 
   // ── Public MCP Registry — search gateway ─────────────────────────
   server.tool(
-    "registry-mcp_search",
+    "meta.registry.mcp_search",
     "Search the public MCP registry (registry.modelcontextprotocol.io) for MCP servers by keyword. Use when a capability is not available in the local infrastructure. Returns server names, descriptions, tools, and install instructions.",
     { query: z.string().describe("Search keyword (e.g. 'google drive', 'slack', 'github', 'database')"), limit: z.number().optional().describe("Max results (default 10)") },
     async ({ query, limit }) => {
@@ -99,7 +99,7 @@ export function registerRegistryTools(server: McpServer) {
   );
 
   server.tool(
-    "registry-mcp_get",
+    "meta.registry.mcp_get",
     "Get full details for a specific server from the public MCP registry, including all tools, source, and version info.",
     { name: z.string().describe("Full server name (e.g. 'io.github.user/server-name')"), version: z.string().optional().describe("Version (default: 'latest')") },
     async ({ name, version }) => {

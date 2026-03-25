@@ -13,7 +13,7 @@ function rigApi(method: string, base: string, path: string, body?: string): stri
 
 export function registerRigTools(server: McpServer) {
   server.tool(
-    "rig-status",
+    "infra.rig.status",
     "Get Rig agent status, model info, and task counts",
     {
       instance: z.enum(["heavy", "light"]).default("heavy").describe("Agent instance: heavy (14B) or light (1.5B)"),
@@ -24,7 +24,7 @@ export function registerRigTools(server: McpServer) {
   );
 
   server.tool(
-    "rig-health",
+    "infra.rig.health",
     "Check Rig agent health",
     {
       instance: z.enum(["heavy", "light"]).default("heavy").describe("Agent instance"),
@@ -35,7 +35,7 @@ export function registerRigTools(server: McpServer) {
   );
 
   server.tool(
-    "rig-run",
+    "infra.rig.run",
     "Start an agent task (async — returns immediately, check tasks for result)",
     {
       task: z.string().describe("Task description / prompt for the agent"),
@@ -48,7 +48,7 @@ export function registerRigTools(server: McpServer) {
   );
 
   server.tool(
-    "rig-tasks",
+    "infra.rig.tasks",
     "List all agent tasks (running, completed, failed)",
     {
       instance: z.enum(["heavy", "light"]).default("heavy").describe("Agent instance"),
@@ -59,7 +59,7 @@ export function registerRigTools(server: McpServer) {
   );
 
   server.tool(
-    "rig-task_detail",
+    "infra.rig.task_detail",
     "Get task detail including steps trace and result",
     {
       id: z.string().describe("Task UUID"),

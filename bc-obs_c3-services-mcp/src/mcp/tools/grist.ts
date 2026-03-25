@@ -14,7 +14,7 @@ function gristApi(method: string, path: string, body?: string): string {
 
 export function registerGristTools(server: McpServer) {
   server.tool(
-    "grist-orgs",
+    "user.grist.orgs",
     "List Grist organizations (workspaces)",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-docs",
+    "user.grist.docs",
     "List documents in an org/workspace",
     { org_id: z.string().default("current").describe("Org ID or 'current'") },
     async ({ org_id }) => ({
@@ -32,7 +32,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-tables",
+    "user.grist.tables",
     "List tables in a document",
     { doc_id: z.string().describe("Document ID") },
     async ({ doc_id }) => ({
@@ -41,7 +41,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-records",
+    "user.grist.records",
     "Fetch records from a table",
     {
       doc_id: z.string().describe("Document ID"),
@@ -59,7 +59,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-record_create",
+    "user.grist.record_create",
     "Add records to a table",
     {
       doc_id: z.string().describe("Document ID"),
@@ -72,7 +72,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-record_update",
+    "user.grist.record_update",
     "Update records in a table",
     {
       doc_id: z.string().describe("Document ID"),
@@ -85,7 +85,7 @@ export function registerGristTools(server: McpServer) {
   );
 
   server.tool(
-    "grist-columns",
+    "user.grist.columns",
     "List columns in a table (schema)",
     { doc_id: z.string().describe("Document ID"), table_id: z.string().describe("Table ID") },
     async ({ doc_id, table_id }) => ({

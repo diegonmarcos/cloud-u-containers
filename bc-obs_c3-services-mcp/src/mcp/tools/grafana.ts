@@ -14,7 +14,7 @@ function grafanaApi(method: string, path: string, body?: string): string {
 
 export function registerGrafanaTools(server: McpServer) {
   server.tool(
-    "grafana-health",
+    "infra.grafana.health",
     "Check Grafana server health",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-dashboards",
+    "infra.grafana.dashboards",
     "Search dashboards",
     {
       query: z.string().default("").describe("Search query (empty for all)"),
@@ -35,7 +35,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-dashboard_detail",
+    "infra.grafana.dashboard_detail",
     "Get full dashboard by UID",
     { uid: z.string().describe("Dashboard UID") },
     async ({ uid }) => ({
@@ -44,7 +44,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-datasources",
+    "infra.grafana.datasources",
     "List all configured datasources",
     {},
     async () => ({
@@ -53,7 +53,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-alerts",
+    "infra.grafana.alerts",
     "List alert rules",
     {},
     async () => ({
@@ -62,7 +62,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-alert_state",
+    "infra.grafana.alert_state",
     "Get current alert instances (firing, pending, normal)",
     {},
     async () => ({
@@ -71,7 +71,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-annotations",
+    "infra.grafana.annotations",
     "List annotations (events) on dashboards",
     {
       from: z.string().optional().describe("Start time (epoch ms or ISO)"),
@@ -89,7 +89,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-annotation_create",
+    "infra.grafana.annotation_create",
     "Create an annotation on a dashboard",
     {
       text: z.string().describe("Annotation text"),
@@ -107,7 +107,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-folders",
+    "infra.grafana.folders",
     "List dashboard folders",
     {},
     async () => ({
@@ -116,7 +116,7 @@ export function registerGrafanaTools(server: McpServer) {
   );
 
   server.tool(
-    "grafana-org",
+    "infra.grafana.org",
     "Get current org info and stats",
     {},
     async () => ({

@@ -17,7 +17,7 @@ function ntfyGet(path: string): string {
 
 export function registerNtfyTools(server: McpServer) {
   server.tool(
-    "ntfy-health",
+    "infra.ntfy.health",
     "Check ntfy server health",
     {},
     async () => ({
@@ -26,7 +26,7 @@ export function registerNtfyTools(server: McpServer) {
   );
 
   server.tool(
-    "ntfy-publish",
+    "infra.ntfy.publish",
     "Publish a push notification via ntfy",
     {
       topic: z.string().describe("Topic name"),
@@ -59,7 +59,7 @@ export function registerNtfyTools(server: McpServer) {
   );
 
   server.tool(
-    "ntfy-read",
+    "infra.ntfy.read",
     "Read cached messages from a ntfy topic",
     {
       topic: z.string().describe("Topic name to read messages from"),
@@ -85,7 +85,7 @@ export function registerNtfyTools(server: McpServer) {
   );
 
   server.tool(
-    "ntfy-stats",
+    "infra.ntfy.stats",
     "Get ntfy server stats (topics, messages)",
     {},
     async () => ({
@@ -94,7 +94,7 @@ export function registerNtfyTools(server: McpServer) {
   );
 
   server.tool(
-    "ntfy-tier",
+    "infra.ntfy.tier",
     "Get ntfy account tier and usage info",
     {},
     async () => ({

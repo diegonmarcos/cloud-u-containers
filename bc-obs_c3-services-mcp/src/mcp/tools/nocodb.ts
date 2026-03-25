@@ -14,7 +14,7 @@ function nocoApi(method: string, path: string, body?: string): string {
 
 export function registerNocodbTools(server: McpServer) {
   server.tool(
-    "nocodb-bases",
+    "infra.nocodb.bases",
     "List all NocoDB bases (projects)",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-tables",
+    "infra.nocodb.tables",
     "List tables in a base",
     { base_id: z.string().describe("Base ID") },
     async ({ base_id }) => ({
@@ -32,7 +32,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-rows",
+    "infra.nocodb.rows",
     "List rows from a table",
     {
       table_id: z.string().describe("Table ID"),
@@ -52,7 +52,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-row_create",
+    "infra.nocodb.row_create",
     "Create a new row in a table",
     {
       table_id: z.string().describe("Table ID"),
@@ -64,7 +64,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-row_update",
+    "infra.nocodb.row_update",
     "Update an existing row",
     {
       table_id: z.string().describe("Table ID"),
@@ -77,7 +77,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-row_delete",
+    "infra.nocodb.row_delete",
     "Delete a row from a table",
     {
       table_id: z.string().describe("Table ID"),
@@ -89,7 +89,7 @@ export function registerNocodbTools(server: McpServer) {
   );
 
   server.tool(
-    "nocodb-table_info",
+    "infra.nocodb.table_info",
     "Get table schema (fields, types, constraints)",
     { table_id: z.string().describe("Table ID") },
     async ({ table_id }) => ({

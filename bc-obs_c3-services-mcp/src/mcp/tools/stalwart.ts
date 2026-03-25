@@ -39,7 +39,7 @@ function stalwartApi(method: string, path: string, body?: string): string {
 
 export function registerStalwartTools(server: McpServer) {
   server.tool(
-    "stalwart-users",
+    "user.stalwart.users",
     "List all Stalwart mail accounts (principals)",
     {},
     async () => ({
@@ -48,7 +48,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-user_detail",
+    "user.stalwart.user_detail",
     "Get details for a specific Stalwart user account",
     { name: z.string().describe("Account name (e.g. me@diegonmarcos.com)") },
     async ({ name }) => ({
@@ -57,7 +57,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-queue",
+    "user.stalwart.queue",
     "List messages in the Stalwart mail queue",
     {},
     async () => ({
@@ -66,7 +66,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-config",
+    "user.stalwart.config",
     "Read Stalwart configuration settings (prefix filter)",
     { prefix: z.string().optional().describe("Config key prefix to filter (e.g. 'server.security', 'storage')") },
     async ({ prefix }) => {
@@ -76,7 +76,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-metrics",
+    "user.stalwart.metrics",
     "Get Stalwart server telemetry metrics (connections, messages, errors)",
     {},
     async () => ({
@@ -85,7 +85,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-queue_action",
+    "user.stalwart.queue_action",
     "Perform action on queued messages (retry, cancel)",
     {
       action: z.enum(["retry", "cancel"]).describe("Action to perform"),
@@ -97,7 +97,7 @@ export function registerStalwartTools(server: McpServer) {
   );
 
   server.tool(
-    "stalwart-config_update",
+    "user.stalwart.config_update",
     "Update a Stalwart configuration key",
     {
       key: z.string().describe("Config key (e.g. 'server.security.allowed-ip-addresses')"),

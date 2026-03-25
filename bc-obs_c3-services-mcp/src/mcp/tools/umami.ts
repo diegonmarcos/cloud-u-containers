@@ -14,7 +14,7 @@ function umamiApi(method: string, path: string, body?: string): string {
 
 export function registerUmamiTools(server: McpServer) {
   server.tool(
-    "umami-websites",
+    "infra.umami.websites",
     "List tracked websites",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerUmamiTools(server: McpServer) {
   );
 
   server.tool(
-    "umami-website_stats",
+    "infra.umami.website_stats",
     "Get stats summary for a website (pageviews, visitors, bounces)",
     {
       website_id: z.string().describe("Website UUID"),
@@ -36,7 +36,7 @@ export function registerUmamiTools(server: McpServer) {
   );
 
   server.tool(
-    "umami-pageviews",
+    "infra.umami.pageviews",
     "Get pageview stats over time for a website",
     {
       website_id: z.string().describe("Website UUID"),
@@ -50,7 +50,7 @@ export function registerUmamiTools(server: McpServer) {
   );
 
   server.tool(
-    "umami-metrics",
+    "infra.umami.metrics",
     "Get metrics breakdown (URLs, referrers, browsers, OS, countries, etc.)",
     {
       website_id: z.string().describe("Website UUID"),
@@ -65,7 +65,7 @@ export function registerUmamiTools(server: McpServer) {
   );
 
   server.tool(
-    "umami-active",
+    "infra.umami.active",
     "Get currently active visitors on a website",
     { website_id: z.string().describe("Website UUID") },
     async ({ website_id }) => ({
@@ -74,7 +74,7 @@ export function registerUmamiTools(server: McpServer) {
   );
 
   server.tool(
-    "umami-events",
+    "infra.umami.events",
     "Get custom event data for a website",
     {
       website_id: z.string().describe("Website UUID"),

@@ -14,7 +14,7 @@ function ppApi(method: string, path: string, body?: string): string {
 
 export function registerPhotoprismTools(server: McpServer) {
   server.tool(
-    "photoprism-status",
+    "user.photoprism.status",
     "Get PhotoPrism server status and config",
     {},
     async () => ({
@@ -23,7 +23,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-photos",
+    "user.photoprism.photos",
     "Search photos with filters",
     {
       q: z.string().default("").describe("Search query (keyword, label, or empty for recent)"),
@@ -40,7 +40,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-photo_detail",
+    "user.photoprism.photo_detail",
     "Get details for a specific photo by UID",
     { uid: z.string().describe("Photo UID") },
     async ({ uid }) => ({
@@ -49,7 +49,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-albums",
+    "user.photoprism.albums",
     "List photo albums",
     { count: z.number().default(20).describe("Max results"), q: z.string().default("").describe("Search query") },
     async ({ count, q }) => ({
@@ -58,7 +58,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-album_photos",
+    "user.photoprism.album_photos",
     "List photos in a specific album",
     { uid: z.string().describe("Album UID"), count: z.number().default(50).describe("Max results") },
     async ({ uid, count }) => ({
@@ -67,7 +67,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-labels",
+    "user.photoprism.labels",
     "List auto-detected labels (AI tags)",
     { count: z.number().default(50).describe("Max results") },
     async ({ count }) => ({
@@ -76,7 +76,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-faces",
+    "user.photoprism.faces",
     "List recognized faces",
     { count: z.number().default(50).describe("Max results") },
     async ({ count }) => ({
@@ -85,7 +85,7 @@ export function registerPhotoprismTools(server: McpServer) {
   );
 
   server.tool(
-    "photoprism-stats",
+    "user.photoprism.stats",
     "Get photo library statistics",
     {},
     async () => ({
