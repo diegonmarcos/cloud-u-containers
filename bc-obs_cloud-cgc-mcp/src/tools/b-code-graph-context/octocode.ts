@@ -25,7 +25,7 @@ async function runOctocode(args: string[], cwd?: string): Promise<string> {
 
 export function registerOctocodeTools(server: McpServer): void {
   server.tool(
-    "octocode-search",
+    "cgc.octocode.search",
     "Semantic code search across indexed repositories using Octocode",
     {
       query: z.string().describe("Natural language or code search query"),
@@ -46,7 +46,7 @@ export function registerOctocodeTools(server: McpServer): void {
   );
 
   server.tool(
-    "octocode-memory",
+    "cgc.octocode.memory",
     "Query Octocode's code memory — semantic summaries of indexed files and functions",
     {
       query: z.string().describe("What to look up in code memory"),
@@ -58,7 +58,7 @@ export function registerOctocodeTools(server: McpServer): void {
   );
 
   server.tool(
-    "octocode-index",
+    "cgc.octocode.index",
     "Trigger Octocode to (re-)index a repository or directory",
     {
       path: z.string().describe("Absolute path to the repository or directory to index"),

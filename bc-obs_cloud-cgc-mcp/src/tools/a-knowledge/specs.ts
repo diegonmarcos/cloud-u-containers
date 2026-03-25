@@ -20,7 +20,7 @@ function getSolutionsDir(): string {
 export function registerSpecTools(server: McpServer) {
 
   server.tool(
-    "cloud-spec-service",
+    "knowledge.spec.service",
     "Get a service's build.json + flake.nix config + topology entry. Use before modifying or debugging a specific service.",
     { name: z.string().describe("Service name (e.g. 'caddy', 'mailu', 'c3-infra-mcp-api')") },
     async ({ name }) => {
@@ -77,7 +77,7 @@ export function registerSpecTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-spec-vm",
+    "knowledge.spec.vm",
     "Get VM details — IP, WG IP, services, SSH alias. Use before VM-specific operations.",
     { vm: z.string().describe("VM ID (e.g. 'oci-A1-f_0') or SSH alias (e.g. 'oci-apps')") },
     async ({ vm }) => {
@@ -120,7 +120,7 @@ ${services || "No services declared."}`,
   );
 
   server.tool(
-    "cloud-spec-services_by_category",
+    "knowledge.spec.services_by_category",
     "List all services grouped by category with VM and domain. Quick infrastructure overview.",
     {},
     async () => {
