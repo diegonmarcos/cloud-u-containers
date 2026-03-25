@@ -164,7 +164,7 @@
         sauron:
           build: .
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             # Watch paths (read-only)
@@ -199,7 +199,7 @@
         forwarder:
           image: debian:bookworm-slim
           container_name: sauron-forwarder
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           entrypoint: ["/bin/sh", "-c"]
           command:

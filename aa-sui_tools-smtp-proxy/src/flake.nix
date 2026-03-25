@@ -27,7 +27,7 @@
         smtp-proxy:
           build: .
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             - SMTP_HOST=localhost

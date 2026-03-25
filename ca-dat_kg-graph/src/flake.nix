@@ -29,7 +29,7 @@
         surrealdb:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: start --log info --user root --pass ''${SURREAL_ROOT_PASSWORD} --bind 127.0.0.1:${toString config.port} file:/data/surreal.db
           env_file:

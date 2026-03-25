@@ -33,7 +33,7 @@
         windmill-db:
           image: postgres:16-alpine
           container_name: windmill-db
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -59,7 +59,7 @@
         windmill-server:
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-server
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -102,7 +102,7 @@
         windmill-worker:
           image: ghcr.io/windmill-labs/windmill:main
           container_name: windmill-worker
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets

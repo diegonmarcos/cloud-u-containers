@@ -51,7 +51,7 @@
           image: ${config.image}
           container_name: ${config.container_name}
           command: mattermost server
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./data/mattermost/config:/mattermost/config
@@ -81,7 +81,7 @@
         postgres:
           image: ${config.postgres_image}
           container_name: ${config.postgres_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./data/postgres:/var/lib/postgresql/data
@@ -100,7 +100,7 @@
         mattermost-bots:
           image: ${config.bridge_image}
           container_name: ${config.bridge_container}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro

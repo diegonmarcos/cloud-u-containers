@@ -29,7 +29,7 @@
         google-workspace-mcp:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             WORKSPACE_MCP_HOST: "0.0.0.0"

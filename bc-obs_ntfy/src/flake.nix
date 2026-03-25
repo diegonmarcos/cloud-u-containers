@@ -65,7 +65,7 @@
         ntfy:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           entrypoint:
             - /bin/sh
@@ -87,7 +87,7 @@
         syslog-bridge:
           image: python:3.11-slim
           container_name: syslog-bridge
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: python -u /app/syslog-to-ntfy.py
           volumes:
@@ -103,7 +103,7 @@
         github-rss:
           image: python:3.11-slim
           container_name: github-rss
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: python -u /app/github-rss-to-ntfy.py
           volumes:

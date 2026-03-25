@@ -31,7 +31,7 @@
         borg:
           image: alpine:3.19
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: >
             sh -c "

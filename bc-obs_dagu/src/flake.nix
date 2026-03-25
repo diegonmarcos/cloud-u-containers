@@ -34,7 +34,7 @@
           image: dagu-ssh:local
           container_name: ${config.container_name}
           entrypoint: ["dagu", "start-all"]
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             - DAGU_HOST=0.0.0.0

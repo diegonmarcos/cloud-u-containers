@@ -41,7 +41,7 @@
             dockerfile: docker/Dockerfile.api
           image: crawlee-cloud-api:local
           container_name: crawlee_api
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -80,7 +80,7 @@
             dockerfile: docker/Dockerfile.runner
           image: crawlee-cloud-runner:local
           container_name: crawlee_runner
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -108,7 +108,7 @@
             dockerfile: docker/Dockerfile.dashboard
           image: crawlee-cloud-dashboard:local
           container_name: crawlee_dashboard
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           environment:
             NODE_ENV: production
@@ -124,7 +124,7 @@
             dockerfile: docker/Dockerfile.api
           image: crawlee-cloud-api:local
           container_name: crawlee_scheduler
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -139,7 +139,7 @@
         crawlee_db:
           image: postgres:16-alpine
           container_name: crawlee_db
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
@@ -156,7 +156,7 @@
         crawlee_redis:
           image: redis:7-alpine
           container_name: crawlee_redis
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: redis-server --appendonly yes --port ${toString config.redis_port}
           volumes:
@@ -170,7 +170,7 @@
         crawlee_minio:
           image: minio/minio:latest
           container_name: crawlee_minio
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           command: server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"
           env_file:

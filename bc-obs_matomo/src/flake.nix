@@ -43,7 +43,7 @@
         matomo-hybrid:
           build: .
           container_name: ${config.container_name}
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - matomo_matomo_data:/var/www/html

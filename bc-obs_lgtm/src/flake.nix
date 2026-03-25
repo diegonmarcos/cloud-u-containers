@@ -35,7 +35,7 @@
         grafana:
           image: grafana/grafana:latest
           container_name: lgtm_grafana
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - grafana_data:/var/lib/grafana
@@ -56,7 +56,7 @@
         loki:
           image: grafana/loki:latest
           container_name: lgtm_loki
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - loki_data:/loki
@@ -72,7 +72,7 @@
         tempo:
           image: grafana/tempo:2.7.2
           container_name: lgtm_tempo
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - tempo_data:/var/tempo
@@ -82,7 +82,7 @@
         mimir:
           image: grafana/mimir:latest
           container_name: lgtm_mimir
-          restart: unless-stopped
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - mimir_data:/data
