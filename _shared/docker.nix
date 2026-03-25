@@ -106,6 +106,10 @@ in {
     # Health
     healthcheck ? null,       # { test, interval, timeout, retries, start_period }
 
+    # Port binding (host mode) — inject env vars so app listens on declared port
+    # e.g. portEnv = { PORT = 3011; } or { GITEA__server__HTTP_PORT = 3017; }
+    portEnv ? {},
+
     # Data
     volumes ? [],
     environment ? null,       # attrset { K = "V"; } or list [ "K=V" ]
@@ -166,8 +170,18 @@ in {
       volumeLines = if volumes == [] then ""
         else "${i2}volumes:\n" + builtins.concatStringsSep "\n" (map (v: "${i3}- ${v}") volumes);
 
-      # ── Environment ──
-      envLines = if environment == null then "" else renderEnv environment;
+      # ── Environment (merge portEnv into environment) ──
+      # portEnv is always an attrset { ENV_VAR = port; }
+      # environment can be null, list [ "K=V" ], or attrset { K = "V"; }
+      mergedEnv =
+        if portEnv == {} then environment
+        else if environment == null then portEnv
+        else if builtins.isList environment then
+          environment ++ (builtins.attrValues (builtins.mapAttrs (k: v: "${k}=${toString v}") portEnv))
+        else if builtins.isAttrs environment then
+          environment // (builtins.mapAttrs (_: v: toString v) portEnv)
+        else environment;
+      envLines = if mergedEnv == null then "" else renderEnv mergedEnv;
 
       # ── Env file ──
       envFileLines = if env_file == [] then ""

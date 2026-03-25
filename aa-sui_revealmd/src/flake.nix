@@ -38,9 +38,9 @@
           network_mode: host
           volumes:
             - slides_data:/slides
-          command: /slides --watch
+          command: /slides --watch --port ${toString config.port}
           healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1948']
+            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:${toString config.port}']
             interval: 30s
             timeout: 10s
             retries: 3

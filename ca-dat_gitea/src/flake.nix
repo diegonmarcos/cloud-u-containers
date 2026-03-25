@@ -34,10 +34,20 @@
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
+          environment:
+            GITEA__server__HTTP_PORT: "${toString config.port_http}"
+            GITEA__server__SSH_PORT: "${toString config.port_ssh}"
+            GITEA__server__DISABLE_SSH: "true"
+            GITEA__server__ROOT_URL: "https://${config.domain}"
           volumes:
             - gitea_data:/data
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro
+          healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:${toString config.port_http}/']
+            interval: 30s
+            timeout: 10s
+            retries: 3
 
       volumes:
         gitea_data:

@@ -37,6 +37,7 @@
           env_file:
             - .secrets
           environment:
+            PORT: "${toString config.port}"
             NC_DB: "pg://localhost:${toString config.db_port}?u=nocodb&p=''${POSTGRES_PASSWORD}&d=nocodb"
             NC_PUBLIC_URL: https://${config.domain}
             NC_DISABLE_TELE: "true"
@@ -54,7 +55,7 @@
             nocodb-db:
               condition: service_healthy
           healthcheck:
-            test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/v1/health"]
+            test: ["CMD", "wget", "-q", "--spider", "http://localhost:${toString config.port}/api/v1/health"]
             interval: 30s
             timeout: 10s
             retries: 3
