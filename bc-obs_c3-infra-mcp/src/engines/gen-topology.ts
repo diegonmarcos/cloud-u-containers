@@ -21,6 +21,7 @@ import { parseSSHConfig } from "./parsers/ssh-config.js";
 import { parseDNSZones } from "./parsers/dns.js";
 import { parseWireGuard, parseOSFirewalls, parseOSFirewallGlobal, type OSFirewall, type OSFirewallGlobal } from "./parsers/wireguard.js";
 import { parseTerraform, type FirewallData } from "./parsers/terraform.js";
+import { parseCloudflareRecords } from "./parsers/cloudflare.js";
 
 // --- Paths ----------------------------------------------------------------
 
@@ -249,8 +250,10 @@ function main() {
     }
   }
 
-  // 8. Parse DNS zones
+  // 8. Parse DNS zones (internal hickory-dns + Cloudflare Terraform)
   const dnsZones = parseDNSZones(SOLUTIONS_DIR);
+  const cfRecords = parseCloudflareRecords(SOLUTIONS_DIR);
+  console.log(`  Cloudflare DNS: ${cfRecords.length} records from Terraform`);
 
   // 9. Parse Terraform for VM specs + storage
   const tfData = parseTerraform(join(CLOUD_ROOT, "b_infra"));
@@ -324,7 +327,7 @@ function main() {
     os_firewalls: osFirewalls,
     os_firewall_global: osFirewallGlobal,
     wireguard: { peers: wgPeers },
-    dns: { zones: dnsZones },
+    dns: { zones: dnsZones, cloudflare: cfRecords },
     services,
   };
 

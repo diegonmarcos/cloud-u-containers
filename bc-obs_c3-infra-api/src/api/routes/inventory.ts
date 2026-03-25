@@ -555,30 +555,73 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
-  // ── Firewall Rules (aggregated ports per VM from topology) ──
+  // ── Firewall Rules (Terraform + OS firewalls + declared_ports) ──
 
   app.get("/cloud-data/firewall-rules", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
     if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
-    const vms: Record<string, { ingress: any[] }> = {};
+    const vms: Record<string, { ingress: any[]; source: string[] }> = {};
 
+    // 1. Terraform firewall rules (cloud provider security lists)
+    for (const fw of (topo.firewalls ?? [])) {
+      for (const rule of (fw.rules ?? [])) {
+        // Map firewall to VMs by provider
+        const provider = fw.provider;
+        for (const [, vm] of Object.entries(topo.vms ?? {})) {
+          const v = vm as any;
+          const alias = v.ssh_alias;
+          if (!alias) continue;
+          const isGcp = provider === "gcloud" && v.method === "gcloud";
+          const isOci = provider === "oci" && v.method === "key" && alias.startsWith("oci");
+          if (!isGcp && !isOci) continue;
+          if (!vms[alias]) vms[alias] = { ingress: [], source: [] };
+          if (!vms[alias].source.includes("terraform")) vms[alias].source.push("terraform");
+          vms[alias].ingress.push({
+            port: rule.port,
+            proto: rule.protocol ?? "tcp",
+            source: rule.source ?? "0.0.0.0/0",
+            description: rule.description ?? "",
+            origin: `terraform/${provider}`,
+          });
+        }
+      }
+    }
+
+    // 2. OS-level firewall rules (iptables from home-manager)
+    for (const osFw of (topo.os_firewalls ?? [])) {
+      const alias = osFw.vm;
+      if (!alias) continue;
+      if (!vms[alias]) vms[alias] = { ingress: [], source: [] };
+      if (!vms[alias].source.includes("os")) vms[alias].source.push("os");
+      for (const rule of (osFw.rules ?? [])) {
+        vms[alias].ingress.push({
+          port: rule.port,
+          proto: rule.proto ?? "tcp",
+          description: rule.comment ?? "",
+          origin: "os/iptables",
+        });
+      }
+    }
+
+    // 3. Service declared_ports (from build.json)
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
       const s = svc as any;
       const vm = topo.vms?.[s.vm];
       if (!vm?.ssh_alias) continue;
-
       const alias = vm.ssh_alias;
-      if (!vms[alias]) vms[alias] = { ingress: [] };
+      if (!vms[alias]) vms[alias] = { ingress: [], source: [] };
 
       const declaredPorts = s.declared_ports ?? {};
       for (const [, portCfg] of Object.entries(declaredPorts)) {
         const p = portCfg as any;
         if (p.public) {
+          if (!vms[alias].source.includes("build.json")) vms[alias].source.push("build.json");
           vms[alias].ingress.push({
             port: p.host ?? p.container,
             proto: p.proto ?? "tcp",
             service: svcName,
+            origin: "build.json",
           });
         }
       }
@@ -682,34 +725,46 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
-  // ── Cloudflare DNS (derived from topology services with domains) ──
+  // ── Cloudflare DNS (Terraform records + service-derived CNAMEs) ──
 
   app.get("/cloud-data/cloudflare-dns", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
     if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const records: any[] = [];
-    const seenDomains = new Set<string>();
+    const seenNames = new Set<string>();
 
+    // 1. Terraform-parsed records (A, MX, TXT, CNAME — the real DNS state)
+    for (const rec of (topo.dns?.cloudflare ?? [])) {
+      const key = `${rec.type}:${rec.name}`;
+      if (seenNames.has(key)) continue;
+      seenNames.add(key);
+      records.push({
+        name: rec.name,
+        type: rec.type,
+        content: rec.content,
+        ...(rec.proxied != null ? { proxied: rec.proxied } : {}),
+        ...(rec.ttl != null ? { ttl: rec.ttl } : {}),
+        ...(rec.priority != null ? { priority: rec.priority } : {}),
+        ...(rec.comment ? { comment: rec.comment } : {}),
+        origin: "terraform",
+      });
+    }
+
+    // 2. Service-derived CNAMEs (from build.json domains — may overlap with Terraform)
     for (const [svcName, svc] of Object.entries(topo.services ?? {})) {
       const s = svc as any;
       let domain = s.domain;
       if (!domain) continue;
 
-      // Extract just the subdomain from full domain (e.g. "api.diegonmarcos.com/c3-api" → "api.diegonmarcos.com")
       domain = domain.split("/")[0];
-      if (seenDomains.has(domain)) continue;
-      seenDomains.add(domain);
-
-      // Path-based routes use parent_domain
       const proxyDomain = s.proxy?.parent_domain ?? domain;
-      if (proxyDomain !== domain) {
-        if (seenDomains.has(proxyDomain)) continue;
-        seenDomains.add(proxyDomain);
-        records.push({ name: proxyDomain, type: "CNAME", content: "diegonmarcos.com", proxied: true, service: svcName });
-      } else {
-        records.push({ name: domain, type: "CNAME", content: "diegonmarcos.com", proxied: true, service: svcName });
-      }
+      const finalDomain = proxyDomain !== domain ? proxyDomain : domain;
+      const key = `CNAME:${finalDomain}`;
+      if (seenNames.has(key)) continue;
+      seenNames.add(key);
+
+      records.push({ name: finalDomain, type: "CNAME", content: "diegonmarcos.com", proxied: true, service: svcName, origin: "build.json" });
     }
 
     return {
