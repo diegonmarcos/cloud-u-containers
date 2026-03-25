@@ -1,0 +1,3642 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Dagu - Lightweight DAG-based workflow scheduler</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html"><strong aria-hidden="true">2.</strong> Generated Configs</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Dagu - Lightweight DAG-based workflow scheduler</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="dagu---lightweight-dag-based-workflow-scheduler"><a class="header" href="#dagu---lightweight-dag-based-workflow-scheduler">Dagu - Lightweight DAG-based workflow scheduler</a></h1>
+<h2 id="network"><a class="header" href="#network">Network</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td><code>workflows.diegonmarcos.com</code></td></tr>
+<tr><td><code>port</code></td><td><code>8070</code></td></tr>
+</tbody></table>
+</div>
+<h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>container_name</code></td><td><code>dagu</code></td></tr>
+<tr><td><code>image</code></td><td><code>ghcr.io/dagu-org/dagu:1.30.3</code></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="dockerfile"><a class="header" href="#dockerfile">Dockerfile</a></h2>
+<pre><code class="language-dockerfile">FROM ghcr.io/dagu-org/dagu:1.30.3
+
+USER root
+
+RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    openssh-client \
+    curl \
+    openssl \
+    dnsutils \
+    git \
+    jq \
+    yq \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*
+
+</code></pre>
+<h2 id="baseyaml"><a class="header" href="#baseyaml">base.yaml</a></h2>
+<pre><code class="language-yaml">shell: /bin/bash
+
+smtp:
+  host: mailu.app
+  port: "25"
+  username: ""
+  password: ""
+
+mailOn:
+  failure: false
+  success: false
+
+errorMail:
+  from: no-reply@diegonmarcos.com
+  to:
+    - me@diegonmarcos.com
+  prefix: "[Dagu FAIL]"
+  attachLogs: true
+
+infoMail:
+  from: no-reply@diegonmarcos.com
+  to:
+    - me@diegonmarcos.com
+  prefix: "[Dagu OK]"
+
+</code></pre>
+<h2 id="dagsghahealth-all-vmssh"><a class="header" href="#dagsghahealth-all-vmssh">dags/gha/health-all-vms.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Trigger health checks for all VMs ──
+# Usage: health-all-vms.sh
+# In GHA: triggers per-VM workflow_dispatch via gh CLI
+# In CLI/Dagu: runs health-check-vm.sh directly for each VM
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
+
+VMS="gcp-proxy gcp-t4 oci-apps oci-analytics oci-mail"
+
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+  # In GHA: trigger individual workflows
+  REPO="${GITHUB_REPOSITORY:-diegonmarcos/cloud}"
+  for vm in $VMS; do
+    echo "Triggering health-${vm}.yml"
+    gh workflow run "health-${vm}.yml" --repo "$REPO" --ref main || echo "WARN: failed to trigger $vm"
+  done
+  gh workflow run "health-http-public.yml" --repo "$REPO" --ref main || true
+  gh workflow run "health-http-private.yml" --repo "$REPO" --ref main || true
+else
+  # In CLI/Dagu: run health-check-vm.sh directly
+  for vm in $VMS; do
+    echo "── Health: $vm ──"
+    bash "$SCRIPT_DIR/health-check-vm.sh" "$vm" || echo "FAIL: $vm"
+  done
+fi
+
+</code></pre>
+<h2 id="dagsghahealth-all-vmsyml"><a class="header" href="#dagsghahealth-all-vmsyml">dags/gha/health-all-vms.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → all VMs"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"  # daily at 06:00 UTC
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  vms:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        vm: [gcp-proxy, gcp-t4, oci-apps, oci-analytics, oci-mail]
+    steps:
+      - name: Trigger ${{ matrix.vm }} health check
+        run: gh workflow run "health-${{ matrix.vm }}.yml" --repo "${{ github.repository }}" --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  http-public:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger HTTP public health check
+        run: gh workflow run "health-http-public.yml" --repo "${{ github.repository }}" --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  http-private:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger HTTP private (.app) health check
+        run: gh workflow run "health-http-private.yml" --repo "${{ github.repository }}" --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+</code></pre>
+<h2 id="dagsghahealth-check-vmsh"><a class="header" href="#dagsghahealth-check-vmsh">dags/gha/health-check-vm.sh</a></h2>
+<pre><code class="language-bash">#!/bin/sh
+# Health check for a single VM — container status + port checks (async)
+# Usage: health-check-vm.sh &lt;ssh-alias&gt; &lt;ports&gt; [known-flaky]
+#   ssh-alias:   SSH config alias (e.g. oci-apps, gcp-proxy)
+#   ports:       comma-separated port list (e.g. 80,443,8080)
+#   known-flaky: comma-separated container names that warn instead of fail
+set -e
+
+ALIAS="${1:?Usage: $0 &lt;ssh-alias&gt; &lt;ports&gt; [known-flaky]}"
+PORTS="${2:?Usage: $0 &lt;ssh-alias&gt; &lt;ports&gt; [known-flaky]}"
+KNOWN_FLAKY="${3:-}"
+
+CONTAINERS="/tmp/containers.txt"
+PORT_RESULTS="/tmp/port_results"
+mkdir -p "$PORT_RESULTS"
+
+# ── Container health ──
+echo "=== $ALIAS container health ==="
+ssh "$ALIAS" 'docker ps --format "{{.Names}}\t{{.Status}}" 2&gt;&amp;1' | tee "$CONTAINERS"
+
+failed=0
+warned=0
+while IFS=$(printf '\t') read -r name status; do
+  [ -z "$name" ] &amp;&amp; continue
+  if printf '%s' "$status" | grep -qiE 'Restarting|unhealthy|Exited'; then
+    if [ -n "$KNOWN_FLAKY" ] &amp;&amp; printf '%s' ",$KNOWN_FLAKY," | grep -q ",$name,"; then
+      echo "::warning::$name — $status (known-flaky, non-blocking)"
+      ssh -n "$ALIAS" "docker logs $name --tail 10 2&gt;&amp;1" || true
+      warned=$((warned + 1))
+    else
+      echo "::error::$name — $status"
+      ssh -n "$ALIAS" "docker logs $name --tail 10 2&gt;&amp;1" || true
+      failed=$((failed + 1))
+    fi
+  else
+    echo "✓ $name — $status"
+  fi
+done &lt; "$CONTAINERS"
+
+# ── Port checks (async) ──
+echo ""
+echo "=== Port checks ==="
+IFS=','
+for port in $PORTS; do
+  (
+    if ssh -n "$ALIAS" "timeout 2 bash -c 'echo &gt; /dev/tcp/127.0.0.1/$port' 2&gt;/dev/null"; then
+      echo "PASS $port" &gt; "$PORT_RESULTS/$port"
+    else
+      echo "FAIL $port" &gt; "$PORT_RESULTS/$port"
+    fi
+  ) &amp;
+done
+unset IFS
+wait
+
+# Collect port results
+port_fail=0
+for f in "$PORT_RESULTS"/*; do
+  [ -f "$f" ] || continue
+  result=$(cat "$f")
+  port=$(echo "$result" | awk '{print $2}')
+  case "$result" in
+    PASS*) echo "✓ :$port open" ;;
+    FAIL*) echo "✗ :$port closed"; port_fail=$((port_fail + 1)) ;;
+  esac
+done
+
+# ── Summary ──
+echo ""
+[ "$warned" -gt 0 ] &amp;&amp; echo "::warning::$warned known-flaky container(s) unhealthy (non-blocking)"
+[ "$port_fail" -gt 0 ] &amp;&amp; echo "::warning::$port_fail port(s) closed"
+
+if [ "$failed" -gt 0 ]; then
+  echo "::error::$failed container(s) unhealthy"
+  echo ""
+  echo "=== Debug dump ==="
+  ssh -n "$ALIAS" 'free -m; echo "---"; uptime; echo "---"; df -h / 2&gt;/dev/null' || true
+  exit 1
+fi
+echo "All containers healthy"
+
+</code></pre>
+<h2 id="dagsghahealth-cloud-fullsh"><a class="header" href="#dagsghahealth-cloud-fullsh">dags/gha/health-cloud-full.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Full cloud health diagnostic ──
+# Usage: health-cloud-full.sh
+# Runs health_cloud.ts inside c3-infra-mcp container (or locally with tsx)
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+
+# Try running inside the MCP container on oci-apps (has all deps + SSH keys)
+RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_cloud.ts 2&gt;&amp;1" 2&gt;/dev/null) || true
+
+# Fallback: run locally if tsx is available
+if [ -z "$RESULT" ] &amp;&amp; command -v tsx &gt;/dev/null 2&gt;&amp;1; then
+  RESULT=$(cd "$REPO_ROOT/a_solutions/bc-obs_c3-infra-mcp/src" &amp;&amp; tsx mcp/tools/health_cloud.ts 2&gt;&amp;1) || true
+fi
+
+if [ -z "$RESULT" ]; then
+  echo "ERROR: health_cloud.ts returned empty output"
+  exit 1
+fi
+
+echo "$RESULT"
+
+# Check for failures
+FAILS=$(echo "$RESULT" | grep -c '✗' || echo 0)
+[ "$FAILS" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghahealth-gcp-proxyyml"><a class="header" href="#dagsghahealth-gcp-proxyyml">dags/gha/health-gcp-proxy.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → gcp-proxy"
+
+on:
+  workflow_run:
+    workflows: ["Ship → gcp-proxy"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: health-gcp-proxy
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.GCP_PROXY_SSH_KEY }}
+          ssh_host: ${{ secrets.GCP_PROXY_HOST }}
+          ssh_user: ${{ secrets.GCP_PROXY_USER }}
+          ssh_alias: gcp-proxy
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Health check
+        run: .github/workflows/scripts/health-check-vm.sh gcp-proxy 53,80,443,8090,9091
+
+</code></pre>
+<h2 id="dagsghahealth-gcp-t4yml"><a class="header" href="#dagsghahealth-gcp-t4yml">dags/gha/health-gcp-t4.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → gcp-t4"
+
+on:
+  workflow_run:
+    workflows: ["Ship → gcp-t4"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: health-gcp-t4
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.GCP_T4_SSH_KEY }}
+          ssh_host: ${{ secrets.GCP_T4_HOST }}
+          ssh_user: ${{ secrets.GCP_T4_USER }}
+          ssh_alias: gcp-t4
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Health check
+        run: .github/workflows/scripts/health-check-vm.sh gcp-t4 3000
+
+</code></pre>
+<h2 id="dagsghahealth-http-privatesh"><a class="header" href="#dagsghahealth-http-privatesh">dags/gha/health-http-private.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Check all .app DNS resolution (private mesh) ──
+# Usage: health-http-private.sh
+# Resolves all .app names via hickory-dns on gcp-proxy
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+DNS_FILE="cloud-data/cloud-data-dns-services.json"
+[ ! -f "$DNS_FILE" ] &amp;&amp; echo "ERROR: $DNS_FILE not found" &gt;&amp;2 &amp;&amp; exit 1
+
+NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)
+TOTAL=$(echo "$NAMES" | wc -w)
+echo "Resolving $TOTAL .app names..."
+
+# Build batch dig script for single SSH call
+SCRIPT=""
+for name in $NAMES; do
+  SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.app @10.0.0.1 2&gt;/dev/null | head -1;"
+done
+
+BATCH_RESULT=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 gcp-proxy "$SCRIPT" 2&gt;/dev/null) || {
+  echo "ERROR: SSH to gcp-proxy failed"
+  exit 1
+}
+
+PASS_N=0; FAIL_N=0; WARN_N=0
+CURRENT_NAME=""
+
+echo "$BATCH_RESULT" | while read -r line; do
+  if echo "$line" | command grep -q "^==.*==$"; then
+    CURRENT_NAME=$(echo "$line" | awk -F'==' '{print $2}')
+  elif [ -n "$CURRENT_NAME" ]; then
+    RESOLVED="$line"
+    EXPECTED=$(jq -r ".services[\"$CURRENT_NAME\"].ip // \"\"" "$DNS_FILE")
+    if [ -z "$RESOLVED" ]; then
+      echo "⚠ ${CURRENT_NAME}.app → no zone"
+      WARN_N=$((WARN_N + 1))
+    elif [ "$RESOLVED" = "$EXPECTED" ]; then
+      echo "✓ ${CURRENT_NAME}.app → $RESOLVED"
+      PASS_N=$((PASS_N + 1))
+    else
+      echo "✗ ${CURRENT_NAME}.app → expected=$EXPECTED got=$RESOLVED"
+      FAIL_N=$((FAIL_N + 1))
+    fi
+    CURRENT_NAME=""
+  fi
+done
+
+echo ""
+echo "RESULT: $PASS_N passed, $FAIL_N failed, $WARN_N warnings"
+[ "$FAIL_N" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghahealth-http-privateyml"><a class="header" href="#dagsghahealth-http-privateyml">dags/gha/health-http-private.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → HTTP private (.app)"
+
+on:
+  workflow_run:
+    workflows:
+      - "Ship → gcp-proxy"
+      - "Ship → oci-apps"
+      - "Ship → oci-mail"
+      - "Ship → oci-analytics"
+      - "Ship → gcp-t4"
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+concurrency:
+  group: health-http-private
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.GCP_PROXY_SSH_KEY }}
+          ssh_host: ${{ secrets.GCP_PROXY_HOST }}
+          ssh_user: ${{ secrets.GCP_PROXY_USER }}
+          ssh_alias: gcp-proxy
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Check all .app DNS (single SSH, batch dig)
+        run: |
+          DNS_FILE="cloud-data/cloud-data-dns-services.json"
+          [ ! -f "$DNS_FILE" ] || [ ! -s "$DNS_FILE" ] &amp;&amp; echo "::error::$DNS_FILE missing" &amp;&amp; exit 1
+
+          # Build batch dig script — single SSH call resolves ALL names
+          NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)
+          SCRIPT=""
+          for name in $NAMES; do
+            SCRIPT="$SCRIPT echo \"==$name==\"; dig +short ${name}.app @10.0.0.1 2&gt;/dev/null | head -1;"
+          done
+
+          echo "=== Resolving $(echo "$NAMES" | wc -w) .app names via single SSH ==="
+          BATCH_RESULT=$(ssh gcp-proxy "$SCRIPT" 2&gt;/dev/null)
+
+          # Parse results + compare with expected IPs
+          RESULTS="/tmp/dns-results.txt"
+          &gt; "$RESULTS"
+          CURRENT_NAME=""
+
+          echo "$BATCH_RESULT" | while read -r line; do
+            if echo "$line" | grep -q "^==.*==$"; then
+              CURRENT_NAME=$(echo "$line" | awk -F'==' '{print $2}')
+            elif [ -n "$CURRENT_NAME" ]; then
+              RESOLVED="$line"
+              EXPECTED=$(jq -r ".services[\"$CURRENT_NAME\"].ip // \"\"" "$DNS_FILE")
+              if [ -z "$RESOLVED" ]; then
+                echo "WARN|${CURRENT_NAME}.app|no zone" &gt;&gt; "$RESULTS"
+              elif [ "$RESOLVED" = "$EXPECTED" ]; then
+                echo "PASS|${CURRENT_NAME}.app|$RESOLVED" &gt;&gt; "$RESULTS"
+              else
+                echo "FAIL|${CURRENT_NAME}.app|expected=$EXPECTED got=$RESOLVED" &gt;&gt; "$RESULTS"
+              fi
+              CURRENT_NAME=""
+            fi
+          done
+
+          # Also batch-test VM reachability (SSH port 22 on each unique IP)
+          UNIQUE_IPS=$(jq -r '[.services[].ip] | unique[]' "$DNS_FILE")
+          for ip in $UNIQUE_IPS; do
+            (
+              if ssh gcp-proxy "timeout 2 bash -c 'echo &gt; /dev/tcp/$ip/22' 2&gt;/dev/null"; then
+                echo "PASS|VM $ip|reachable" &gt;&gt; "$RESULTS"
+              else
+                echo "WARN|VM $ip|unreachable" &gt;&gt; "$RESULTS"
+              fi
+            ) &amp;
+          done
+          wait
+
+          # Report
+          echo ""
+          echo "════════════════════════════════════════"
+          PASS_N=$(grep -c "^PASS" "$RESULTS" 2&gt;/dev/null || echo 0)
+          FAIL_N=$(grep -c "^FAIL" "$RESULTS" 2&gt;/dev/null || echo 0)
+          WARN_N=$(grep -c "^WARN" "$RESULTS" 2&gt;/dev/null || echo 0)
+
+          grep "^PASS" "$RESULTS" | awk -F'|' '{print "✓ " $2 " → " $3}'
+          grep "^WARN" "$RESULTS" | awk -F'|' '{print "⚠ " $2 " — " $3}'
+          grep "^FAIL" "$RESULTS" | awk -F'|' '{print "::error::" $2 " — " $3}'
+
+          echo ""
+          echo "RESULT: $PASS_N passed, $FAIL_N failed, $WARN_N warnings"
+          [ "$FAIL_N" -gt 0 ] &amp;&amp; exit 1
+          echo "All .app DNS entries correct"
+
+</code></pre>
+<h2 id="dagsghahealth-http-publicsh"><a class="header" href="#dagsghahealth-http-publicsh">dags/gha/health-http-public.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Check all public HTTP endpoints ──
+# Usage: health-http-public.sh
+# Reads caddy-routes.json, curls every public domain
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+R="cloud-data/cloud-data-caddy-routes.json"
+[ ! -f "$R" ] &amp;&amp; echo "ERROR: $R not found" &gt;&amp;2 &amp;&amp; exit 1
+
+URLS="/tmp/urls-$$.txt"
+&gt; "$URLS"
+
+# Subdomain routes
+jq -r '.routes[] | select(.domain) | "https://\(.domain)/|\(.auth // "two_factor")|\(.comment // .domain)"' "$R" &gt;&gt; "$URLS" 2&gt;/dev/null
+# Path routes
+jq -r '.path_routes[]? | .parent_domain as $p | .paths[]? | select(.upstream) | "https://\($p)\(.base_path)/|\(.auth // "two_factor")|\(.comment // .base_path)"' "$R" &gt;&gt; "$URLS" 2&gt;/dev/null
+# GitHub Pages
+jq -r '.github_pages_proxies[]? | "https://\(.domain | split(",") | .[0] | gsub("^ +| +$";""))/|none|\(.comment // .domain)"' "$R" &gt;&gt; "$URLS" 2&gt;/dev/null
+# MCP endpoints
+jq -r '.mcp_routes[]? | .parent_domain as $p | .endpoints[]? | "https://\($p)\(.base_path)/mcp|mcp|\(.base_path)"' "$R" &gt;&gt; "$URLS" 2&gt;/dev/null
+
+TOTAL=$(wc -l &lt; "$URLS")
+echo "Checking $TOTAL public URLs..."
+
+RESULTS="/tmp/results-$$"
+mkdir -p "$RESULTS"
+
+BEARER="${OIDC_TOKEN:-${AUTHELIA_BEARER_TOKEN:-}}"
+
+check_url() {
+  local idx="$1" url="$2" auth="$3" name="$4"
+  local hdr=""
+  [ "$auth" != "none" ] &amp;&amp; [ "$auth" != "mcp" ] &amp;&amp; [ -n "$BEARER" ] &amp;&amp; hdr="-H 'Authorization: Bearer $BEARER'"
+  local code
+  code=$(eval curl -sk -o /dev/null -w '%{http_code}' --max-time 10 $hdr "'$url'" 2&gt;/dev/null)
+
+  if [ "$auth" = "mcp" ] &amp;&amp; { [ "$code" = "400" ] || [ "$code" = "405" ]; }; then
+    echo "PASS|$name|$code" &gt; "$RESULTS/$idx"
+  elif [ "$code" = "000" ] || [ "$code" = "502" ] || [ "$code" = "503" ]; then
+    echo "FAIL|$name|$code" &gt; "$RESULTS/$idx"
+  else
+    echo "PASS|$name|$code" &gt; "$RESULTS/$idx"
+  fi
+}
+
+IDX=0
+while IFS='|' read -r url auth name; do
+  check_url "$IDX" "$url" "$auth" "$name" &amp;
+  IDX=$((IDX + 1))
+done &lt; "$URLS"
+wait
+
+PASS_N=0; FAIL_N=0
+for f in "$RESULTS"/*; do
+  [ -f "$f" ] || continue
+  LINE=$(cat "$f")
+  STATUS=${LINE%%|*}
+  REST=${LINE#*|}
+  case "$STATUS" in
+    PASS) echo "✓ $REST"; PASS_N=$((PASS_N + 1)) ;;
+    FAIL) echo "✗ $REST"; FAIL_N=$((FAIL_N + 1)) ;;
+  esac
+done
+
+rm -rf "$URLS" "$RESULTS"
+echo ""
+echo "RESULT: $PASS_N passed, $FAIL_N failed (of $TOTAL)"
+[ "$FAIL_N" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghahealth-http-publicyml"><a class="header" href="#dagsghahealth-http-publicyml">dags/gha/health-http-public.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → HTTP public"
+
+on:
+  workflow_run:
+    workflows:
+      - "Ship → gcp-proxy"
+      - "Ship → oci-apps"
+      - "Ship → oci-mail"
+      - "Ship → oci-analytics"
+      - "Ship → gcp-t4"
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+concurrency:
+  group: health-http-public
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - name: Build URL list from Caddy routes
+        id: urls
+        run: |
+          R="cloud-data/caddy-routes.json"
+          [ ! -f "$R" ] &amp;&amp; echo "::error::$R not found" &amp;&amp; exit 1
+          URLS="/tmp/urls.txt"
+          &gt; "$URLS"
+
+          # Subdomain routes
+          jq -r '.routes[] | "https://\(.domain)/|\(.auth // "two_factor")|\(.comment // .domain)"' "$R" &gt;&gt; "$URLS"
+          # Path routes
+          jq -r '.path_routes[]? | .parent_domain as $p | .paths[]? | "https://\($p)\(.base_path)/|\(.auth // "two_factor")|\(.comment // .base_path)"' "$R" &gt;&gt; "$URLS"
+          # GitHub Pages
+          jq -r '.github_pages_proxies[]? | "https://\(.domain | split(",") | .[0] | gsub("^ +| +$";""))/|none|\(.comment // .domain)"' "$R" &gt;&gt; "$URLS"
+          # MCP (expect 400 = alive)
+          jq -r '.mcp_routes[]? | .parent_domain as $p | .endpoints[]? | "https://\($p)\(.base_path)/mcp|mcp|\(.comment // .base_path)"' "$R" &gt;&gt; "$URLS"
+          # Special
+          jq -r '.special | to_entries[]? | select(.value.domain) | "https://\(.value.domain)/|two_factor|\(.key)"' "$R" &gt;&gt; "$URLS"
+
+          echo "total=$(wc -l &lt; "$URLS")" &gt;&gt; "$GITHUB_OUTPUT"
+          echo "Generated $(wc -l &lt; "$URLS") URLs to check"
+
+      - name: Check all URLs (async)
+        env:
+          OIDC_TOKEN: ${{ secrets.AUTHELIA_OIDC_BEARER_TOKEN }}
+        run: |
+          URLS="/tmp/urls.txt"
+          RESULTS="/tmp/results"
+          mkdir -p "$RESULTS"
+
+          check() {
+            local idx="$1" url="$2" auth="$3" name="$4"
+            local hdr=""
+            [ "$auth" != "none" ] &amp;&amp; [ "$auth" != "public" ] &amp;&amp; [ "$auth" != "mcp" ] &amp;&amp; [ -n "$OIDC_TOKEN" ] &amp;&amp; hdr="-H 'Authorization: Bearer $OIDC_TOKEN'"
+            local code
+            code=$(eval curl -sk -o /dev/null -w '%{http_code}' --max-time 10 --location-trusted $hdr "'$url'" 2&gt;/dev/null)
+
+            if [ "$auth" = "mcp" ]; then
+              # MCP: 400/405 = alive
+              if [ "$code" = "400" ] || [ "$code" = "405" ] || [ "$code" = "406" ]; then
+                echo "PASS|$name|$url|$code" &gt; "$RESULTS/$idx"
+              else
+                echo "FAIL|$name|$url|$code" &gt; "$RESULTS/$idx"
+              fi
+            elif [ "$code" = "000" ]; then
+              echo "FAIL|$name|$url|TIMEOUT" &gt; "$RESULTS/$idx"
+            elif [ "$code" = "502" ] || [ "$code" = "503" ]; then
+              echo "FAIL|$name|$url|$code" &gt; "$RESULTS/$idx"
+            elif [ "$code" = "401" ] || [ "$code" = "403" ]; then
+              # ntfy uses its own auth (JWT/tk_/cookie) — 401 means it's alive and serving its login
+              if [ "$name" = "ntfy" ] &amp;&amp; [ "$code" = "401" ]; then
+                echo "PASS|$name|$url|$code (own auth)" &gt; "$RESULTS/$idx"
+              else
+                echo "WARN|$name|$url|$code" &gt; "$RESULTS/$idx"
+              fi
+            else
+              echo "PASS|$name|$url|$code" &gt; "$RESULTS/$idx"
+            fi
+          }
+
+          # Launch ALL checks in parallel
+          IDX=0
+          while IFS='|' read -r url auth name; do
+            check "$IDX" "$url" "$auth" "$name" &amp;
+            IDX=$((IDX + 1))
+          done &lt; "$URLS"
+
+          # Wait for all
+          wait
+
+          # Also check L4 TCP ports in parallel
+          jq -r '.l4_routes[]? | "\(.port)|\(.comment // "port")"' "cloud-data/caddy-routes.json" | while IFS='|' read -r port comment; do
+            (
+              if timeout 3 bash -c "echo &gt; /dev/tcp/mail.diegonmarcos.com/$port" 2&gt;/dev/null; then
+                echo "PASS|L4 :$port $comment|tcp://$port|OK" &gt; "$RESULTS/l4_$port"
+              else
+                echo "FAIL|L4 :$port $comment|tcp://$port|CLOSED" &gt; "$RESULTS/l4_$port"
+              fi
+            ) &amp;
+          done
+          wait
+
+          # Collect results
+          echo ""
+          echo "════════════════════════════════════════"
+          PASS_N=0; FAIL_N=0; WARN_N=0
+          for f in "$RESULTS"/*; do
+            [ -f "$f" ] || continue
+            LINE=$(cat "$f")
+            STATUS=$(echo "$LINE" | awk -F'|' '{print $1}')
+            NAME=$(echo "$LINE" | awk -F'|' '{print $2}')
+            URL=$(echo "$LINE" | awk -F'|' '{print $3}')
+            CODE=$(echo "$LINE" | awk -F'|' '{print $4}')
+            case "$STATUS" in
+              PASS) echo "✓ $NAME — $URL — $CODE"; PASS_N=$((PASS_N + 1)) ;;
+              FAIL) echo "::error::$NAME — $URL — $CODE"; FAIL_N=$((FAIL_N + 1)) ;;
+              WARN) echo "::warning::$NAME — $URL — $CODE"; WARN_N=$((WARN_N + 1)) ;;
+            esac
+          done
+
+          echo ""
+          echo "RESULT: $PASS_N passed, $FAIL_N failed, $WARN_N warnings"
+          if [ "$FAIL_N" -gt 0 ]; then
+            echo "::error::$FAIL_N URL(s) failed"
+            exit 1
+          fi
+          echo "All public URLs healthy"
+
+</code></pre>
+<h2 id="dagsghahealth-mail-fullsh"><a class="header" href="#dagsghahealth-mail-fullsh">dags/gha/health-mail-full.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Full mail health diagnostic ──
+# Usage: health-mail-full.sh
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT/a_solutions/bc-obs_c3-infra-mcp/src"
+
+# Install deps if needed (GHA already has them, Dagu/CLI may not)
+[ -d node_modules ] || npm install --no-audit --no-fund 2&gt;/dev/null || true
+
+tsx mcp/tools/health_mail.ts
+
+</code></pre>
+<h2 id="dagsghahealth-oci-analyticsyml"><a class="header" href="#dagsghahealth-oci-analyticsyml">dags/gha/health-oci-analytics.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → oci-analytics"
+
+on:
+  workflow_run:
+    workflows: ["Ship → oci-analytics"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: health-oci-analytics
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.OCI_SSH_KEY }}
+          ssh_host: 129.151.228.66
+          ssh_user: ubuntu
+          ssh_alias: oci-analytics
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Health check
+        run: .github/workflows/scripts/health-check-vm.sh oci-analytics 8080 windmill-worker,alerts-api
+
+</code></pre>
+<h2 id="dagsghahealth-oci-appsyml"><a class="header" href="#dagsghahealth-oci-appsyml">dags/gha/health-oci-apps.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → oci-apps"
+
+on:
+  workflow_run:
+    workflows: ["Ship → oci-apps"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: health-oci-apps
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.OCI_SSH_KEY }}
+          ssh_host: 82.70.229.129
+          ssh_user: ubuntu
+          ssh_alias: oci-apps
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Health check
+        run: .github/workflows/scripts/health-check-vm.sh oci-apps 3100,3101,3102,3103,8065,8081
+
+</code></pre>
+<h2 id="dagsghahealth-oci-mailyml"><a class="header" href="#dagsghahealth-oci-mailyml">dags/gha/health-oci-mail.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → oci-mail"
+
+on:
+  workflow_run:
+    workflows: ["Ship → oci-mail"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: health-oci-mail
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.OCI_SSH_KEY }}
+          ssh_host: 130.110.251.193
+          ssh_user: ubuntu
+          ssh_alias: oci-mail
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Health check
+        run: .github/workflows/scripts/health-check-vm.sh oci-mail 25,465,587,993,8443,8080,8384
+
+</code></pre>
+<h2 id="dagsghahealth_mail_fullyml"><a class="header" href="#dagsghahealth_mail_fullyml">dags/gha/health_mail_full.yml</a></h2>
+<pre><code class="language-yaml">name: "Health → Mail (Full Check)"
+
+on:
+  workflow_run:
+    workflows: ["Ship → oci-mail"]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+concurrency:
+  group: health-mail-full
+  cancel-in-progress: true
+
+jobs:
+  health-mail-full:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets.OCI_SSH_KEY }}
+          ssh_host: 130.110.251.193
+          ssh_user: ubuntu
+          ssh_alias: oci-mail
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: a_solutions/bc-obs_c3-infra-mcp-api
+        run: npm install
+
+      - name: Run full mail health check
+        run: |
+          npx tsx .github/workflows/scripts/health_mail_full.ts
+
+</code></pre>
+<h2 id="dagsghaship-cloudflare-workersh"><a class="header" href="#dagsghaship-cloudflare-workersh">dags/gha/ship-cloudflare-worker.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Deploy Cloudflare Worker ──
+# Usage: ship-cloudflare-worker.sh
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+echo "── Ship cloudflare-worker ──"
+bash a_solutions/ba-clo_cloudflare-worker/build.sh ship
+
+</code></pre>
+<h2 id="dagsghaship-cloudflare-workeryml"><a class="header" href="#dagsghaship-cloudflare-workeryml">dags/gha/ship-cloudflare-worker.yml</a></h2>
+<pre><code class="language-yaml">name: "Ship → cloudflare-worker"
+
+on:
+  push:
+    paths:
+      - "a_solutions/ba-clo_cloudflare-worker/src/**"
+      - ".github/workflows/ship-cloudflare-worker.yml"
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ship-cloudflare-worker
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+
+      - name: Ship cloudflare-worker
+        env:
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+        run: bash a_solutions/ba-clo_cloudflare-worker/build.sh ship
+
+</code></pre>
+<h2 id="dagsghaship-gen-configssh"><a class="header" href="#dagsghaship-gen-configssh">dags/gha/ship-gen-configs.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Generate cloud-data configs from build.json + topology ──
+# Usage: ship-gen-configs.sh
+set -euo pipefail
+
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+export GIT_BASE="${GIT_BASE:-$(dirname "$REPO_ROOT")}"
+
+echo "── Generating cloud-data ──"
+bash build.sh config
+
+echo "── Committing cloud-data ──"
+cd cloud-data
+git config user.name "${GIT_AUTHOR_NAME:-github-actions[bot]}"
+git config user.email "${GIT_AUTHOR_EMAIL:-github-actions[bot]@users.noreply.github.com}"
+
+git stash --include-untracked 2&gt;/dev/null || true
+git checkout main 2&gt;/dev/null || true
+git pull --rebase origin main 2&gt;/dev/null || true
+git stash pop 2&gt;/dev/null || true
+
+git add -A *.json *.md 2&gt;/dev/null || true
+if git diff --cached --quiet; then
+  echo "cloud-data: no changes"
+  exit 0
+fi
+
+git commit -m "auto: regenerate cloud-data [skip ci]"
+git push origin main
+
+echo "── Updating submodule ref ──"
+cd "$REPO_ROOT"
+git config user.name "${GIT_AUTHOR_NAME:-github-actions[bot]}"
+git config user.email "${GIT_AUTHOR_EMAIL:-github-actions[bot]@users.noreply.github.com}"
+git checkout -- . 2&gt;/dev/null || true
+git add cloud-data
+if git diff --cached --quiet; then
+  echo "main repo: submodule ref unchanged"
+  exit 0
+fi
+git commit -m "auto: update cloud-data submodule ref [skip ci]"
+git push origin main
+
+</code></pre>
+<h2 id="dagsghaship-gen-configsyml"><a class="header" href="#dagsghaship-gen-configsyml">dags/gha/ship-gen-configs.yml</a></h2>
+<pre><code class="language-yaml">name: "Ship → gen-configs (cloud-data)"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "a_solutions/*/build.json"
+      - "config.json"
+      - "a_solutions/ba-clo_cloudflare/src/main.tf"
+      - "b_infra/vps_*/src/main.tf"
+      - "b_infra/home-manager/**/src/*.nix"
+      - "a_solutions/bb-sec_caddy/src/**"
+      - "a_solutions/bb-sec_authelia/src/**"
+      - "a_solutions/ba-clo_hickory-dns/src/**"
+      - "a_solutions/bc-obs_c3-infra-mcp/src/engines/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gen-configs
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+          fetch-depth: 0
+          ssh-key: ${{ secrets.CLOUD_DATA_DEPLOY_KEY }}
+
+      - uses: ./.github/actions/setup-deps
+
+      - name: Generate cloud-data (topology + configs + deps)
+        env:
+          GIT_BASE: ${{ github.workspace }}/../
+        run: bash build.sh config
+
+      - name: Commit and push cloud-data submodule
+        run: |
+          cd cloud-data
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stash generated files, checkout main, pop stash, pull latest
+          git stash --include-untracked
+          git checkout main
+          git pull --rebase origin main
+          git stash pop || true
+          git add -A *.json *.md
+          if git diff --cached --quiet; then
+            echo "cloud-data: no changes"
+            exit 0
+          fi
+          git commit -m "auto: regenerate cloud-data from build.json + config.json [skip ci]"
+          git push origin main
+
+      - name: Update submodule reference in main repo
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Reset any nix/cache modifications, keep only cloud-data change
+          git checkout -- . 2&gt;/dev/null || true
+          git add cloud-data
+          if git diff --cached --quiet; then
+            echo "main repo: submodule ref unchanged"
+            exit 0
+          fi
+          git commit -m "auto: update cloud-data submodule ref [skip ci]"
+          # Push main repo via HTTPS + GITHUB_TOKEN (deploy key only works for cloud-data)
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/diegonmarcos/cloud.git"
+          git push origin main
+
+</code></pre>
+<h2 id="dagsghaship-ghcr-imagesyml"><a class="header" href="#dagsghaship-ghcr-imagesyml">dags/gha/ship-ghcr-images.yml</a></h2>
+<pre><code class="language-yaml">name: "Ship → GHCR images"
+
+on:
+  push:
+    paths:
+      - "a_solutions/aa-sui_google-workspace-mcp/src/**"
+      - "a_solutions/aa-sui_mail-mcp/src/**"
+      - "a_solutions/aa-sui_mattermost-mcp/src/**"
+      - "a_solutions/bb-sec_introspect-proxy/src/**"
+      - "a_solutions/bc-obs_c3-infra-mcp/src/**"
+      - "a_solutions/bc-obs_c3-infra-api/src/**"
+      - "a_solutions/bc-obs_c3-services-mcp/src/**"
+      - "a_solutions/bc-obs_c3-services-api/src/**"
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: google-workspace-mcp
+            context: a_solutions/aa-sui_google-workspace-mcp/src
+            file: a_solutions/aa-sui_google-workspace-mcp/src/Dockerfile
+          - name: mail-mcp
+            context: a_solutions/aa-sui_mail-mcp/src
+            file: a_solutions/aa-sui_mail-mcp/src/Dockerfile
+          - name: mattermost-mcp
+            context: a_solutions/aa-sui_mattermost-mcp/src
+            file: a_solutions/aa-sui_mattermost-mcp/src/Dockerfile
+          - name: introspect-proxy
+            context: a_solutions/bb-sec_introspect-proxy/src
+            file: a_solutions/bb-sec_introspect-proxy/src/Dockerfile
+          - name: c3-infra-mcp
+            context: a_solutions/bc-obs_c3-infra-mcp/src
+            file: a_solutions/bc-obs_c3-infra-mcp/src/Dockerfile
+          - name: c3-infra-api
+            context: a_solutions/bc-obs_c3-infra-api/src
+            file: a_solutions/bc-obs_c3-infra-api/src/Dockerfile
+          - name: c3-services-mcp
+            context: a_solutions/bc-obs_c3-services-mcp/src
+            file: a_solutions/bc-obs_c3-services-mcp/src/Dockerfile
+          - name: c3-services-api
+            context: a_solutions/bc-obs_c3-services-api/src
+            file: a_solutions/bc-obs_c3-services-api/src/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve symlinks in build context
+        run: |
+          # Replace symlinks with real copies so Docker can access them
+          ctx="${{ matrix.context }}"
+          find "$ctx" -maxdepth 1 -type l | while read link; do
+            target=$(readlink -f "$link")
+            rm "$link"
+            cp -r "$target" "$link"
+          done
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/diegonmarcos/${{ matrix.name }}:latest
+            ghcr.io/diegonmarcos/${{ matrix.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+</code></pre>
+<h2 id="dagsghaship-ghcrsh"><a class="header" href="#dagsghaship-ghcrsh">dags/gha/ship-ghcr.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Build + push all Docker images to GHCR ──
+# Portable: works in GHA, Dagu, CLI
+# Usage: ship-ghcr.sh [service-filter]
+set -euo pipefail
+
+FILTER="${1:-}"
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+GHA_CONFIG="cloud-data/cloud-data-gha-config.json"
+if [ ! -f "$GHA_CONFIG" ]; then
+  echo "ERROR: $GHA_CONFIG not found" &gt;&amp;2
+  exit 1
+fi
+
+# Get all Docker-enabled services
+SERVICES=$(jq -r '
+  .services | to_entries[]
+  | select(.value.has_docker == true)
+  | [.value.dir, .key, (.value.docker_image // "")]
+  | join("|")
+' "$GHA_CONFIG")
+
+if [ -z "$SERVICES" ]; then
+  echo "No Docker services found"
+  exit 0
+fi
+
+OK=0
+FAIL=0
+
+echo "═══════════════════════════════════════════════"
+echo "Ship → GHCR images"
+echo "═══════════════════════════════════════════════"
+
+echo "$SERVICES" | while IFS='|' read -r dir name image; do
+  if [ -n "$FILTER" ] &amp;&amp; [ "$dir" != "$FILTER" ] &amp;&amp; [ "$name" != "$FILTER" ]; then
+    continue
+  fi
+
+  BUILD_SH="a_solutions/${dir}/build.sh"
+  if [ ! -f "$BUILD_SH" ]; then
+    echo "SKIP $name (no build.sh)"
+    continue
+  fi
+
+  echo ""
+  echo "── Build: $name ($dir) ──"
+
+  if bash "$BUILD_SH" docker; then
+    echo "OK $name"
+    OK=$((OK + 1))
+
+    # Make package public
+    pkg_name=$(echo "$image" | awk -F/ '{print $NF}')
+    if [ -n "$pkg_name" ] &amp;&amp; command -v gh &gt;/dev/null 2&gt;&amp;1; then
+      gh api --method PUT "/user/packages/container/${pkg_name}/visibility" -f visibility=public 2&gt;/dev/null || true
+    fi
+  else
+    echo "FAIL $name (exit $?)"
+    FAIL=$((FAIL + 1))
+  fi
+done
+
+echo ""
+echo "═══════════════════════════════════════════════"
+echo "GHCR: $OK ok, $FAIL failed"
+
+[ "$FAIL" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghaship-ghcrymltpl"><a class="header" href="#dagsghaship-ghcrymltpl">dags/gha/ship-ghcr.yml.tpl</a></h2>
+<pre><code>name: "Ship → GHCR images"
+
+on:
+  push:
+    paths:
+{{PATH_FILTERS}}    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push images
+        run: bash .github/workflows/scripts/ship-ghcr.sh
+
+</code></pre>
+<h2 id="dagsghaship-home-managersh"><a class="header" href="#dagsghaship-home-managersh">dags/gha/ship-home-manager.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Deploy home-manager to a VM ──
+# Usage: ship-home-manager.sh &lt;vm-alias&gt;
+#   Omit vm to deploy to all VMs
+set -euo pipefail
+
+VM="${1:-}"
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+VMS="${VM:-gcp-proxy gcp-t4 oci-mail oci-analytics oci-apps}"
+OK=0; FAIL=0
+
+for vm in $VMS; do
+  HM_DIR="b_infra/home-manager/${vm}"
+  if [ ! -d "$HM_DIR" ]; then
+    echo "SKIP $vm (no home-manager dir)"
+    continue
+  fi
+  echo "── Ship home-manager: $vm ──"
+  if bash "${HM_DIR}/build.sh" ship; then
+    echo "OK $vm"
+    OK=$((OK + 1))
+  else
+    echo "FAIL $vm (exit $?)"
+    FAIL=$((FAIL + 1))
+  fi
+done
+
+echo "Home-manager: $OK ok, $FAIL failed"
+[ "$FAIL" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghaship-home-manageryml"><a class="header" href="#dagsghaship-home-manageryml">dags/gha/ship-home-manager.yml</a></h2>
+<pre><code class="language-yaml">name: "Ship → home-manager"
+
+on:
+  push:
+    paths:
+      - "b_infra/home-manager/**"
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      vm:
+        description: "Target VM (gcp-proxy, gcp-t4, oci-mail, oci-analytics, oci-apps, oci-apps-2, or empty for all)"
+        required: false
+        type: string
+
+concurrency:
+  group: home-manager-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vm: gcp-proxy
+            host_secret: GCP_PROXY_HOST
+            user_secret: GCP_PROXY_USER
+            key_secret: GCP_PROXY_SSH_KEY
+          - vm: gcp-t4
+            host_secret: GCP_T4_HOST
+            user_secret: GCP_T4_USER
+            key_secret: GCP_T4_SSH_KEY
+            optional: true
+          - vm: oci-mail
+            host: "130.110.251.193"
+            user: "ubuntu"
+            key_secret: OCI_SSH_KEY
+          - vm: oci-analytics
+            host: "129.151.228.66"
+            user: "ubuntu"
+            key_secret: OCI_SSH_KEY
+          - vm: oci-apps
+            host: "82.70.229.129"
+            user: "ubuntu"
+            key_secret: OCI_SSH_KEY
+
+    runs-on: ubuntu-latest
+    name: ${{ matrix.vm }}
+    continue-on-error: ${{ matrix.optional || false }}
+
+    steps:
+      - name: Check if should run
+        id: gate
+        run: |
+          EVENT="${{ github.event_name }}"
+          TARGET="${{ inputs.vm }}"
+          VM="${{ matrix.vm }}"
+          if [ "$EVENT" != "workflow_dispatch" ] || [ -z "$TARGET" ] || [ "$TARGET" = "$VM" ]; then
+            echo "skip=false" &gt;&gt; "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" &gt;&gt; "$GITHUB_OUTPUT"
+            echo "Skipping $VM (target: $TARGET)"
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        if: steps.gate.outputs.skip != 'true'
+        run: git submodule update --remote
+
+      - name: Resolve host/user
+        if: steps.gate.outputs.skip != 'true'
+        id: resolve
+        run: |
+          # GCP VMs use secrets for dynamic IPs, OCI VMs use static
+          HOST="${{ matrix.host }}"
+          USER="${{ matrix.user }}"
+          [ -z "$HOST" ] &amp;&amp; HOST="${{ secrets[matrix.host_secret] }}"
+          [ -z "$USER" ] &amp;&amp; USER="${{ secrets[matrix.user_secret] }}"
+          echo "host=$HOST" &gt;&gt; "$GITHUB_OUTPUT"
+          echo "user=$USER" &gt;&gt; "$GITHUB_OUTPUT"
+
+      - name: Setup deps
+        if: steps.gate.outputs.skip != 'true'
+        uses: ./.github/actions/setup-deps
+        with:
+          ssh_key: ${{ secrets[matrix.key_secret] }}
+          ssh_host: ${{ steps.resolve.outputs.host }}
+          ssh_user: ${{ steps.resolve.outputs.user }}
+          ssh_alias: ${{ matrix.vm }}
+          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Check VM reachable
+        id: reachable
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          HOST="${{ steps.resolve.outputs.host }}"
+          if [ -z "$HOST" ] || ! ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no "${{ matrix.vm }}" 'echo ok' 2&gt;/dev/null; then
+            if [ "${{ matrix.optional }}" = "true" ]; then
+              echo "::notice::${{ matrix.vm }} is unreachable (optional VM) — skipping"
+              echo "skip=true" &gt;&gt; "$GITHUB_OUTPUT"
+            else
+              echo "::error::${{ matrix.vm }} is unreachable"
+              exit 1
+            fi
+          else
+            echo "skip=false" &gt;&gt; "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ship home-manager
+        id: ship
+        if: steps.gate.outputs.skip != 'true' &amp;&amp; steps.reachable.outputs.skip != 'true'
+        run: bash b_infra/home-manager/${{ matrix.vm }}/build.sh ship
+
+      - name: Report failure
+        if: failure() &amp;&amp; steps.ship.outcome == 'failure'
+        run: |
+          echo "::error::Home Manager deployment failed for ${{ matrix.vm }}"
+          echo "Check the 'Ship home-manager' step above for nix build errors"
+
+</code></pre>
+<h2 id="dagsghaship-terraformsh"><a class="header" href="#dagsghaship-terraformsh">dags/gha/ship-terraform.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Run terraform plan+apply for cloud providers ──
+# Usage: ship-terraform.sh [project]
+#   project: cloudflare, gcloud, oci, aws, hetzner (omit for all)
+set -euo pipefail
+
+PROJECT="${1:-}"
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+declare -A TF_DIRS=(
+  [cloudflare]="a_solutions/ba-clo_cloudflare/src"
+  [gcloud]="b_infra/vps_gcloud/src"
+  [oci]="b_infra/vps_oci/src"
+  [aws]="b_infra/vps_aws/src"
+  [hetzner]="b_infra/vps_hetzner/src"
+)
+
+OK=0; FAIL=0; SKIP=0
+
+for name in cloudflare gcloud oci aws hetzner; do
+  if [ -n "$PROJECT" ] &amp;&amp; [ "$PROJECT" != "$name" ]; then
+    continue
+  fi
+
+  dir="${TF_DIRS[$name]}"
+  if [ ! -d "$dir" ]; then
+    echo "SKIP $name (dir $dir not found)"
+    SKIP=$((SKIP + 1))
+    continue
+  fi
+
+  echo "── Terraform: $name ($dir) ──"
+  cd "$REPO_ROOT/$dir"
+
+  terraform init -input=false || { echo "FAIL $name (init)"; FAIL=$((FAIL + 1)); cd "$REPO_ROOT"; continue; }
+  terraform plan -input=false -out=tfplan || { echo "FAIL $name (plan)"; FAIL=$((FAIL + 1)); cd "$REPO_ROOT"; continue; }
+  terraform apply -input=false -auto-approve tfplan || { echo "FAIL $name (apply)"; FAIL=$((FAIL + 1)); cd "$REPO_ROOT"; continue; }
+
+  echo "OK $name"
+  OK=$((OK + 1))
+  cd "$REPO_ROOT"
+done
+
+echo "Terraform: $OK ok, $FAIL failed, $SKIP skipped"
+[ "$FAIL" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghaship-terraformyml"><a class="header" href="#dagsghaship-terraformyml">dags/gha/ship-terraform.yml</a></h2>
+<pre><code class="language-yaml">name: "Ship → terraform"
+
+on:
+  push:
+    paths:
+      - "a_solutions/ba-clo_cloudflare/src/**"
+      - "b_infra/vps_gcloud/src/**"
+      - "b_infra/vps_oci/src/**"
+      - "b_infra/vps_aws/src/**"
+      - "b_infra/vps_hetzner/src/**"
+      - ".github/workflows/ship-terraform.yml"
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Target project (cloudflare, gcloud, oci, aws, or empty for all changed)"
+        required: false
+        type: string
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            cloudflare:
+              - 'a_solutions/ba-clo_cloudflare/src/**'
+            gcloud:
+              - 'b_infra/vps_gcloud/src/**'
+            oci:
+              - 'b_infra/vps_oci/src/**'
+            aws:
+              - 'b_infra/vps_aws/src/**'
+            hetzner:
+              - 'b_infra/vps_hetzner/src/**'
+
+      - name: Force project override
+        id: force
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          proj="${{ inputs.project }}"
+          for name in cloudflare gcloud oci aws hetzner; do
+            if [ -z "$proj" ] || [ "$proj" = "$name" ]; then
+              echo "$name=true" &gt;&gt; "$GITHUB_OUTPUT"
+            fi
+          done
+
+      # ════════════════════════════════════════════════════════════
+      # Setup — Nix (for sops), Terraform, cloud CLIs
+      # ════════════════════════════════════════════════════════════
+
+      - uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-24.11
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9"
+
+      - name: Setup SOPS age key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.SOPS_AGE_KEY }}" &gt; ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      # ════════════════════════════════════════════════════════════
+      # Cloudflare — DNS, Email Routing, Tunnel
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — Cloudflare
+        if: steps.changes.outputs.cloudflare == 'true' || steps.force.outputs.cloudflare == 'true'
+        working-directory: a_solutions/ba-clo_cloudflare/src
+        env:
+          TF_VAR_cloudflare_api_key: ${{ secrets.CLOUDFLARE_API_KEY }}
+        run: |
+          # Decrypt sops secrets → inject into tfvars
+          nix-shell -p sops --run "sops -d secrets.yaml" &gt; /tmp/cf-secrets.env
+          # Build tfvars from template + secrets
+          cp terraform.tfvars.template terraform.tfvars
+          CF_API_KEY=$(grep 'cloudflare_api_key' /tmp/cf-secrets.env | awk -F': ' '{print $2}' | tr -d '"' || echo "$TF_VAR_cloudflare_api_key")
+          awk -v key="$CF_API_KEY" '{gsub(/INJECTED_FROM_SECRETS/, key)}1' terraform.tfvars &gt; terraform.tfvars.tmp &amp;&amp; mv terraform.tfvars.tmp terraform.tfvars
+          rm -f /tmp/cf-secrets.env
+
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # GCP — VMs, firewall, budget
+      # ════════════════════════════════════════════════════════════
+
+      - name: Authenticate GCP
+        if: steps.changes.outputs.gcloud == 'true' || steps.force.outputs.gcloud == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Terraform — GCP
+        if: steps.changes.outputs.gcloud == 'true' || steps.force.outputs.gcloud == 'true'
+        working-directory: b_infra/vps_gcloud/src
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.GCP_SSH_PUBLIC_KEY }}
+        run: |
+          cp terraform.tfvars.template terraform.tfvars
+          awk -v key="$TF_VAR_ssh_public_key" '{gsub(/FILL_FROM_VAULT/, key)}1' terraform.tfvars &gt; terraform.tfvars.tmp &amp;&amp; mv terraform.tfvars.tmp terraform.tfvars
+
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # OCI — VMs, VCN, security lists
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — OCI
+        if: steps.changes.outputs.oci == 'true' || steps.force.outputs.oci == 'true'
+        working-directory: b_infra/vps_oci/src
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+          OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_PRIVATE_KEY }}
+          OCI_CLI_REGION: ${{ secrets.OCI_REGION }}
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # AWS — SES email relay, IAM
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — AWS
+        if: steps.changes.outputs.aws == 'true' || steps.force.outputs.aws == 'true'
+        working-directory: b_infra/vps_aws/src
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # Hetzner — VMs (placeholder, ready for provisioning)
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — Hetzner
+        if: steps.changes.outputs.hetzner == 'true' || steps.force.outputs.hetzner == 'true'
+        working-directory: b_infra/vps_hetzner/src
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_API_TOKEN }}
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+</code></pre>
+<h2 id="dagsghaship-vmsh"><a class="header" href="#dagsghaship-vmsh">dags/gha/ship-vm.sh</a></h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# ── Ship all services for a VM ──
+# Portable: works in GHA, Dagu, CLI
+# Usage: ship-vm.sh &lt;vm-alias&gt; [service-filter]
+#   vm-alias: gcp-proxy, oci-apps, oci-mail, oci-analytics, gcp-t4
+#   service-filter: optional, only ship this service dir (e.g. bc-obs_dagu)
+set -euo pipefail
+
+VM="${1:?Usage: ship-vm.sh &lt;vm-alias&gt; [service-filter]}"
+FILTER="${2:-}"
+REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2&gt;/dev/null || pwd)}"
+cd "$REPO_ROOT"
+
+GHA_CONFIG="cloud-data/cloud-data-gha-config.json"
+if [ ! -f "$GHA_CONFIG" ]; then
+  echo "ERROR: $GHA_CONFIG not found" &gt;&amp;2
+  exit 1
+fi
+
+# Get services for this VM
+SERVICES=$(jq -r --arg vm "$VM" '
+  .services | to_entries[]
+  | select(.value.vm == $vm)
+  | [.value.dir, .key, (.value.has_docker // false | tostring)]
+  | join("|")
+' "$GHA_CONFIG")
+
+if [ -z "$SERVICES" ]; then
+  echo "No services found for VM: $VM"
+  exit 0
+fi
+
+# Detect changed dirs (GHA provides HEAD~1, CLI/Dagu ships all)
+CHANGED_DIRS=""
+if [ -n "${GITHUB_ACTIONS:-}" ] &amp;&amp; [ "${GITHUB_EVENT_NAME:-}" != "workflow_dispatch" ]; then
+  CHANGED_DIRS=$(git diff --name-only HEAD~1 HEAD -- 'a_solutions/*/src/' 2&gt;/dev/null | awk -F/ '{print $2}' | sort -u | tr '\n' ' ')
+fi
+
+OK=0
+FAIL=0
+SKIP=0
+TOTAL=$(echo "$SERVICES" | wc -l)
+
+echo "═══════════════════════════════════════════════"
+echo "Ship → $VM ($TOTAL services)"
+echo "═══════════════════════════════════════════════"
+
+echo "$SERVICES" | while IFS='|' read -r dir name has_docker; do
+  # Apply filter
+  if [ -n "$FILTER" ] &amp;&amp; [ "$dir" != "$FILTER" ] &amp;&amp; [ "$name" != "$FILTER" ]; then
+    continue
+  fi
+
+  # Skip unchanged (only in GHA push events)
+  if [ -n "$CHANGED_DIRS" ] &amp;&amp; ! echo "$CHANGED_DIRS" | grep -q "$dir"; then
+    echo "SKIP $name (unchanged)"
+    SKIP=$((SKIP + 1))
+    continue
+  fi
+
+  BUILD_SH="a_solutions/${dir}/build.sh"
+  if [ ! -f "$BUILD_SH" ]; then
+    echo "SKIP $name (no build.sh)"
+    SKIP=$((SKIP + 1))
+    continue
+  fi
+
+  echo ""
+  echo "── Ship: $name ($dir) ──"
+
+  # Set REMOTE_BUILD for Docker services
+  if [ "$has_docker" = "true" ]; then
+    export REMOTE_BUILD="true"
+  else
+    unset REMOTE_BUILD 2&gt;/dev/null || true
+  fi
+
+  if bash "$BUILD_SH" ship; then
+    echo "OK $name"
+    OK=$((OK + 1))
+  else
+    echo "FAIL $name (exit $?)"
+    FAIL=$((FAIL + 1))
+  fi
+done
+
+echo ""
+echo "═══════════════════════════════════════════════"
+echo "Ship → $VM: $OK ok, $FAIL failed, $SKIP skipped (of $TOTAL)"
+
+[ "$FAIL" -gt 0 ] &amp;&amp; exit 1
+exit 0
+
+</code></pre>
+<h2 id="dagsghaship-vmymltpl"><a class="header" href="#dagsghaship-vmymltpl">dags/gha/ship-vm.yml.tpl</a></h2>
+<pre><code>name: "Ship → {{VM_NAME}}"
+
+on:
+  push:
+    paths:
+{{PATH_FILTERS}}    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ship-{{VM_NAME}}
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+
+      - uses: ./.github/actions/setup-deps
+        with:
+{{SSH_CONFIG}}          sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
+{{DOCKER_STEPS}}
+      - name: Ship services
+        run: bash .github/workflows/scripts/ship-vm.sh {{VM_NAME}}
+
+</code></pre>
+<h2 id="dagsghasync-submodulesyml"><a class="header" href="#dagsghasync-submodulesyml">dags/gha/sync-submodules.yml</a></h2>
+<pre><code class="language-yaml">name: Auto-sync submodules
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update submodules to latest
+        run: |
+          git submodule update --remote
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "auto: update submodules [skip ci]"
+            git push
+          fi
+
+</code></pre>
+<h2 id="dagshealth_cloud-fullyaml"><a class="header" href="#dagshealth_cloud-fullyaml">dags/health_cloud-full.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 6 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: run-cloud-health
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      # Run health_cloud.ts inside the C3 API container (has all deps + SSH keys)
+      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_cloud.ts 2&gt;&amp;1") || true
+
+      if [ -z "$RESULT" ]; then
+        curl -s -X POST "$NTFY_URL/infra_cloud-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Cloud Health FAILED — could not run check" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light,cloud" \
+          -d "health_cloud.ts returned empty output"
+        exit 1
+      fi
+
+      # Parse JSON result
+      STATUS=$(echo "$RESULT" | jq -r '.status // .overall // "unknown"' 2&gt;/dev/null || echo "unknown")
+      SUMMARY=$(echo "$RESULT" | jq -r '.summary // empty' 2&gt;/dev/null || echo "$RESULT" | tail -10)
+      FAILS=$(echo "$RESULT" | jq -r '.failed // 0' 2&gt;/dev/null || echo "?")
+
+      if [ "$STATUS" = "ok" ] || [ "$STATUS" = "healthy" ] || [ "$STATUS" = "pass" ] || [ "$FAILS" = "0" ]; then
+        curl -s -X POST "$NTFY_URL/infra_cloud-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Cloud Health OK" \
+          -H "Priority: 2" \
+          -H "Tags: white_check_mark,cloud" \
+          -d "$(echo -e "All layers passed\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+      else
+        curl -s -X POST "$NTFY_URL/infra_cloud-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Cloud Health FAILED ($FAILS issues)" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light,cloud" \
+          -d "$(echo -e "Status: $STATUS\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_dns-resolutionyaml"><a class="header" href="#dagshealth_dns-resolutionyaml">dags/health_dns-resolution.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 8 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-dns-and-notify
+    command: |
+      FAILED=""
+      DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.dns_checks[]' "$MON_TARGETS"; else echo -e "diegonmarcos.com\nauth.diegonmarcos.com\nvault.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com"; fi)
+      for domain in $DOMAINS; do
+        RESULT=$(dig +short "$domain" @1.1.1.1 2&gt;&amp;1)
+        if [ -z "$RESULT" ]; then
+          FAILED="${FAILED}  - $domain -&gt; NO RECORDS (Cloudflare 1.1.1.1)\n"
+        fi
+      done
+      if [ -n "$FAILED" ]; then
+        MSG=$(echo -e "DNS resolution failures:\n${FAILED}\nAction:\n  dig &lt;domain&gt; @1.1.1.1\n  dig &lt;domain&gt; @8.8.8.8\n  Check Cloudflare DNS dashboard\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_dns" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: DNS Resolution FAILED" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_docker-containersyaml"><a class="header" href="#dagshealth_docker-containersyaml">dags/health_docker-containers.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 10 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-containers-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        UNHEALTHY=$($SSH $user@$ip "docker ps --filter health=unhealthy --format '{{.Names}}'" 2&gt;/dev/null)
+        EXITED=$($SSH $user@$ip "docker ps -a --filter status=exited --filter 'exited!=0' --format '{{.Names}} (exit {{.Status}})'" 2&gt;/dev/null)
+        if [ -n "$UNHEALTHY" ]; then
+          ALERTS="${ALERTS}  $name — UNHEALTHY:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done &lt;&lt;&lt; "$UNHEALTHY"
+        fi
+        if [ -n "$EXITED" ]; then
+          ALERTS="${ALERTS}  $name — CRASHED:\n"
+          while IFS= read -r c; do
+            ALERTS="${ALERTS}    - $c\n"
+          done &lt;&lt;&lt; "$EXITED"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Container issues:\n${ALERTS}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker logs &lt;container&gt; --tail 30'\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker restart &lt;container&gt;'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_containers" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Container Health Issues" \
+          -H "Priority: 4" \
+          -H "Tags: whale,warning" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_mail-fullyaml"><a class="header" href="#dagshealth_mail-fullyaml">dags/health_mail-full.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "17 7 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: run-mail-health
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      # Run health_mail.ts inside the C3 API container (has all deps + SSH keys)
+      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_mail.ts 2&gt;&amp;1") || true
+
+      if [ -z "$RESULT" ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Mail Health FAILED — could not run check" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light,email" \
+          -d "health_mail.ts returned empty output"
+        exit 1
+      fi
+
+      STATUS=$(echo "$RESULT" | jq -r '.status // .overall // "unknown"' 2&gt;/dev/null || echo "unknown")
+      SUMMARY=$(echo "$RESULT" | jq -r '.summary // empty' 2&gt;/dev/null || echo "$RESULT" | tail -10)
+      FAILS=$(echo "$RESULT" | jq -r '.failed // 0' 2&gt;/dev/null || echo "?")
+
+      if [ "$STATUS" = "ok" ] || [ "$STATUS" = "healthy" ] || [ "$STATUS" = "pass" ] || [ "$FAILS" = "0" ]; then
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Mail Health OK" \
+          -H "Priority: 2" \
+          -H "Tags: white_check_mark,email" \
+          -d "$(echo -e "All checks passed\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+      else
+        curl -s -X POST "$NTFY_URL/infra_mail-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Mail Health FAILED ($FAILS issues)" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light,email" \
+          -d "$(echo -e "Status: $STATUS\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_mesh-connectivityyaml"><a class="header" href="#dagshealth_mesh-connectivityyaml">dags/health_mesh-connectivity.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "*/5 * * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-mesh-and-notify
+    command: |
+      FAILED=""
+      PEERS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.vms[] | "\(.ip):\(.name):22"' "$MON_TARGETS"; else echo -e "10.0.0.1:gcp-proxy:22\n10.0.0.3:oci-mail:25\n10.0.0.4:oci-analytics:22"; fi)
+      echo "$PEERS" | while IFS=: read -r ip name port; do
+        [ -z "$ip" ] &amp;&amp; continue
+        if ! echo QUIT | timeout 3 bash -c "cat &gt; /dev/tcp/$ip/$port" 2&gt;/dev/null; then
+          echo "  - $name ($ip) port $port UNREACHABLE" &gt;&gt; /tmp/mesh-failed.$$
+        fi
+      done
+      if [ -f /tmp/mesh-failed.$$ ]; then
+        FAILED=$(cat /tmp/mesh-failed.$$)
+        rm -f /tmp/mesh-failed.$$
+        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh &lt;vm&gt; 'wg show'\n  ssh &lt;vm&gt; 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
+        curl -s -X POST "$NTFY_URL/infra_mesh-health" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Mesh Health FAILED" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_service-endpointsyaml"><a class="header" href="#dagshealth_service-endpointsyaml">dags/health_service-endpoints.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "*/5 * * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-endpoints-and-notify
+    command: |
+      FAILED=""
+      ENDPOINTS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.endpoint_checks[] | "\(.url):\(.name)"' "$MON_TARGETS"; else echo -e "https://auth.diegonmarcos.com/api/health:Authelia 2FA\nhttps://vault.diegonmarcos.com/:Vaultwarden\nhttps://api.diegonmarcos.com/c3-api/health:C3 API"; fi)
+      echo "$ENDPOINTS" | while IFS=: read -r proto rest; do
+        [ -z "$proto" ] &amp;&amp; continue
+        svc=${rest##*:}
+        url="$proto:${rest%:*}"
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "$url" 2&gt;/dev/null || echo "000")
+        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
+          echo "  - $svc ($url) -&gt; HTTP $HTTP_CODE" &gt;&gt; /tmp/endpoints-failed.$$
+        fi
+      done
+      if [ -f /tmp/endpoints-failed.$$ ]; then
+        FAILED=$(cat /tmp/endpoints-failed.$$)
+        rm -f /tmp/endpoints-failed.$$
+        MSG=$(printf "DOWN endpoints:\n%s\n\nAction:\n  curl -v https://&lt;domain&gt;\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
+        curl -s -X POST "$NTFY_URL/infra_endpoints" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Service Endpoint DOWN" \
+          -H "Priority: 5" \
+          -H "Tags: rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagshealth_system-resourcesyaml"><a class="header" href="#dagshealth_system-resourcesyaml">dags/health_system-resources.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 9 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-resources-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print substr(\$5,1,length(\$5)-1)}'" 2&gt;/dev/null || echo "N/A")
+        MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f\", (\$3/\$2)*100}'" 2&gt;/dev/null || echo "N/A")
+        LOAD=$($SSH $user@$ip "cat /proc/loadavg | awk '{print \$1}'" 2&gt;/dev/null || echo "N/A")
+        if [ "$DISK" != "N/A" ] &amp;&amp; [ "$DISK" -gt 80 ] 2&gt;/dev/null || [ "$MEM" != "N/A" ] &amp;&amp; [ "$MEM" -gt 90 ] 2&gt;/dev/null; then
+          ALERTS="${ALERTS}  - $name ($ip): disk=$DISK% mem=$MEM% load=$LOAD\n"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "High resource usage:\n${ALERTS}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'df -h &amp;&amp; free -h &amp;&amp; top -bn1 | head -15'\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker stats --no-stream'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/infra_resources" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: System Resources Alert" \
+          -H "Priority: 4" \
+          -H "Tags: warning,chart_with_upwards_trend" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagsops_backup-checkyaml"><a class="header" href="#dagsops_backup-checkyaml">dags/ops_backup-check.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 11 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-backups-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        RECENT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -o -name '*.tar.gz' -o -name '*.bak' 2&gt;/dev/null | head -5 | while read f; do stat --format='%n (%s bytes, %y)' \"\$f\" 2&gt;/dev/null; done | head -5" 2&gt;/dev/null)
+        COUNT=$($SSH $user@$ip "find /var/backups -name '*.sql.gz' -mtime -1 2&gt;/dev/null | wc -l" 2&gt;/dev/null || echo 0)
+        if [ "$COUNT" -eq 0 ] 2&gt;/dev/null; then
+          ALERTS="${ALERTS}  $name ($ip): NO backups in last 24h\n"
+          if [ -n "$RECENT" ]; then
+            ALERTS="${ALERTS}    Latest files:\n"
+            while IFS= read -r f; do
+              ALERTS="${ALERTS}      $f\n"
+            done &lt;&lt;&lt; "$RECENT"
+          fi
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Backup freshness issues:\n${ALERTS}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'ls -lt /var/backups/ | head -10'\n  Check backup cron: ssh &lt;user&gt;@&lt;ip&gt; 'crontab -l'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/ops_backups" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Backup Alert" \
+          -H "Priority: 4" \
+          -H "Tags: floppy_disk,warning" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagsops_backup-databasesyaml"><a class="header" href="#dagsops_backup-databasesyaml">dags/ops_backup-databases.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 3 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - AWS_ACCESS_KEY_ID: "<REDACTED-LEAK-2026-04-21>"
+  - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
+  - RESTIC_REPOSITORY: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-db"
+  - RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+mailOn:
+  failure: true
+  success: false
+steps:
+  # ── Phase 1: Dump databases on each VM (parallel) ──────────────────
+  - name: dump-oci-apps
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.6 bash &lt;&lt;'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+        cd /var/backups/databases
+
+        for spec in \
+          "mattermost-postgres:mattermost:mattermost" \
+          "crawlee_db:crawlee:crawlee" \
+          "hedgedoc_postgres:hedgedoc:hedgedoc" \
+          "etherpad_postgres:etherpad:etherpad" \
+          "nocodb-db:nocodb:nocodb" \
+          "windmill-db:windmill:windmill" \
+          "quant_light_db:quantlab:quantlab" \
+          "quant_full_db:quantlab:quantlab"
+        do
+          container=${spec%%:*}
+          rest=${spec#*:}
+          user=${rest%%:*}
+          db=${rest#*:}
+          if docker ps --format '{{.Names}}' | grep -qx "$container"; then
+            docker exec "$container" pg_dump -U "$user" -d "$db" 2&gt;/dev/null | gzip &gt; "${container}-$(date +%Y%m%d).sql.gz" &amp;&amp; \
+              echo "OK $container" || echo "FAIL $container"
+          else
+            echo "SKIP $container (not running)"
+          fi
+        done
+
+        if docker ps --format '{{.Names}}' | grep -qx "photoprism_mariadb"; then
+          docker exec photoprism_mariadb mariadb-dump -u root photoprism 2&gt;/dev/null | gzip &gt; "photoprism_mariadb-$(date +%Y%m%d).sql.gz" &amp;&amp; \
+            echo "OK photoprism_mariadb" || echo "FAIL photoprism_mariadb"
+        fi
+
+        if docker ps --format '{{.Names}}' | grep -qx "surrealdb"; then
+          docker exec surrealdb surreal export --conn http://localhost:8000 /tmp/surreal-export.surql 2&gt;/dev/null &amp;&amp; \
+            docker cp surrealdb:/tmp/surreal-export.surql - | gzip &gt; "surrealdb-$(date +%Y%m%d).surql.gz" &amp;&amp; \
+            echo "OK surrealdb" || echo "FAIL surrealdb"
+        fi
+
+        if docker ps --format '{{.Names}}' | grep -qx "gitea"; then
+          docker exec gitea sqlite3 /data/gitea/gitea.db ".backup '/tmp/gitea-dump.db'" 2&gt;/dev/null &amp;&amp; \
+            docker cp gitea:/tmp/gitea-dump.db - | gzip &gt; "gitea-$(date +%Y%m%d).sqlite.gz" &amp;&amp; \
+            echo "OK gitea" || echo "FAIL gitea"
+        fi
+
+        ls -lh /var/backups/databases/*$(date +%Y%m%d)* 2&gt;/dev/null | wc -l | xargs -I{} echo "Total: {} dumps"
+      REMOTE
+
+  - name: dump-gcp-proxy
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH diego@10.0.0.1 bash &lt;&lt;'REMOTE'
+        set -e
+        sudo mkdir -p /var/backups/databases
+
+        if docker ps --format '{{.Names}}' | grep -qx "vaultwarden"; then
+          docker exec vaultwarden sqlite3 /data/db.sqlite3 ".backup '/tmp/vw-dump.db'" &amp;&amp; \
+            docker cp vaultwarden:/tmp/vw-dump.db /var/backups/databases/vaultwarden-$(date +%Y%m%d).sqlite &amp;&amp; \
+            gzip -f /var/backups/databases/vaultwarden-$(date +%Y%m%d).sqlite &amp;&amp; \
+            echo "OK vaultwarden" || echo "FAIL vaultwarden"
+        fi
+
+        if docker ps --format '{{.Names}}' | grep -qx "authelia"; then
+          docker exec authelia cat /config/db.sqlite3 &gt; /var/backups/databases/authelia-$(date +%Y%m%d).sqlite &amp;&amp; \
+            gzip -f /var/backups/databases/authelia-$(date +%Y%m%d).sqlite &amp;&amp; \
+            echo "OK authelia" || echo "FAIL authelia"
+        fi
+
+        if docker ps --format '{{.Names}}' | grep -qx "ntfy"; then
+          docker exec ntfy sqlite3 /var/cache/ntfy/cache.db ".backup '/tmp/ntfy-dump.db'" 2&gt;/dev/null &amp;&amp; \
+            docker cp ntfy:/tmp/ntfy-dump.db /var/backups/databases/ntfy-$(date +%Y%m%d).sqlite &amp;&amp; \
+            gzip -f /var/backups/databases/ntfy-$(date +%Y%m%d).sqlite &amp;&amp; \
+            echo "OK ntfy" || echo "FAIL ntfy"
+        fi
+      REMOTE
+
+  - name: dump-oci-mail
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.3 bash &lt;&lt;'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+
+        if docker ps --format '{{.Names}}' | grep -qx "stalwart"; then
+          # Stalwart uses RocksDB — export via stalwart-mail --export
+          docker exec stalwart stalwart-mail --export /tmp/stalwart-export 2&gt;/dev/null &amp;&amp; \
+            docker cp stalwart:/tmp/stalwart-export /var/backups/databases/stalwart-$(date +%Y%m%d) &amp;&amp; \
+            tar czf /var/backups/databases/stalwart-$(date +%Y%m%d).tar.gz -C /var/backups/databases stalwart-$(date +%Y%m%d) &amp;&amp; \
+            rm -rf /var/backups/databases/stalwart-$(date +%Y%m%d) &amp;&amp; \
+            docker exec stalwart rm -rf /tmp/stalwart-export &amp;&amp; \
+            echo "OK stalwart" || echo "FAIL stalwart"
+        fi
+      REMOTE
+
+  - name: dump-oci-analytics
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.4 bash &lt;&lt;'REMOTE'
+        set -e
+        mkdir -p /var/backups/databases
+
+        if docker ps --format '{{.Names}}' | grep -q "matomo"; then
+          MATOMO_CTR=$(docker ps --format '{{.Names}}' | grep matomo | head -1)
+          docker exec "$MATOMO_CTR" mysqldump -u matomo matomo 2&gt;/dev/null | gzip &gt; /var/backups/databases/matomo-$(date +%Y%m%d).sql.gz &amp;&amp; \
+            echo "OK matomo" || echo "FAIL matomo"
+        fi
+      REMOTE
+
+  # ── Phase 2: Collect dumps to oci-apps + restic to OCI S3 ─────────
+  - name: collect-and-upload
+    depends:
+      - dump-oci-apps
+      - dump-gcp-proxy
+      - dump-oci-mail
+      - dump-oci-analytics
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.6 bash &lt;&lt;REMOTE
+        set -e
+        STAMP=\$(date +%Y%m%d)
+        COLLECT="/var/backups/collected"
+        mkdir -p "\$COLLECT"
+
+        # Copy local oci-apps dumps
+        cp /var/backups/databases/*\${STAMP}* "\$COLLECT/" 2&gt;/dev/null || true
+
+        # Pull from remote VMs
+        for vm in "diego@10.0.0.1" "ubuntu@10.0.0.3" "ubuntu@10.0.0.4"; do
+          rsync -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR" \
+            --ignore-missing-args "\$vm:/var/backups/databases/*\${STAMP}*" "\$COLLECT/" 2&gt;/dev/null &amp;&amp; \
+            echo "Pulled from \$vm" || echo "No dumps from \$vm"
+        done
+
+        echo "Collected:"
+        ls -lh "\$COLLECT/"*\${STAMP}* 2&gt;/dev/null
+
+        # Restic backup to OCI Object Storage
+        export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+        export RESTIC_REPOSITORY="$RESTIC_REPOSITORY"
+        export RESTIC_PASSWORD="$RESTIC_PASSWORD"
+
+        command -v restic &gt;/dev/null 2&gt;&amp;1 || { echo "Installing restic..."; sudo apt-get install -y restic &gt;/dev/null 2&gt;&amp;1 || sudo snap install restic 2&gt;/dev/null; }
+
+        restic init 2&gt;/dev/null || true
+        restic backup "\$COLLECT/" --tag "databases" --tag "\$STAMP" --verbose &amp;&amp; \
+          echo "restic upload OK" || echo "restic upload FAILED"
+
+        restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune 2&gt;/dev/null
+
+        # Clean local dumps older than 3 days
+        find /var/backups/databases -name "*.gz" -o -name "*.sqlite.gz" -mtime +3 -delete 2&gt;/dev/null
+        find "\$COLLECT" -name "*.gz" -o -name "*.sqlite.gz" -mtime +3 -delete 2&gt;/dev/null
+      REMOTE
+
+  # ── Phase 3: Notify ────────────────────────────────────────────────
+  - name: notify
+    depends:
+      - collect-and-upload
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      COUNT=$($SSH ubuntu@10.0.0.6 "ls /var/backups/collected/*$(date +%Y%m%d)* 2&gt;/dev/null | wc -l")
+      SIZE=$($SSH ubuntu@10.0.0.6 "du -sh /var/backups/collected/ 2&gt;/dev/null | awk '{print \$1}'" || echo "N/A")
+      MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: http://10.0.0.3:8070"
+      curl -s -X POST "$NTFY_URL/ops_backups" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily DB Backup OK ($COUNT dumps)" \
+        -H "Priority: 2" \
+        -H "Tags: floppy_disk,white_check_mark" \
+        -d "$(echo -e "$MSG")"
+
+</code></pre>
+<h2 id="dagsops_backup-mediayaml"><a class="header" href="#dagsops_backup-mediayaml">dags/ops_backup-media.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 4 * * 0"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - AWS_ACCESS_KEY_ID: "<REDACTED-LEAK-2026-04-21>"
+  - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
+  - RESTIC_REPOSITORY: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-media"
+  - RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: backup-media
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      $SSH ubuntu@10.0.0.6 bash &lt;&lt;REMOTE
+        set -e
+        STAMP=\$(date +%Y%m%d-%H%M)
+
+        # Collect from remote VMs first
+        mkdir -p /var/backups/media/gcp-proxy /var/backups/media/oci-mail
+        RSYNC_SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+
+        rsync -az --delete -e "\$RSYNC_SSH" diego@10.0.0.1:/opt/containers/vaultwarden/data/ /var/backups/media/gcp-proxy/vaultwarden/ 2&gt;/dev/null &amp;&amp; \
+          echo "OK vaultwarden" || echo "SKIP vaultwarden"
+        rsync -az --delete -e "\$RSYNC_SSH" diego@10.0.0.1:/opt/containers/caddy/data/ /var/backups/media/gcp-proxy/caddy/ 2&gt;/dev/null &amp;&amp; \
+          echo "OK caddy" || echo "SKIP caddy"
+        rsync -az --delete -e "\$RSYNC_SSH" ubuntu@10.0.0.3:/opt/containers/stalwart/data/ /var/backups/media/oci-mail/stalwart/ 2&gt;/dev/null &amp;&amp; \
+          echo "OK stalwart" || echo "SKIP stalwart"
+
+        # Restic to OCI Object Storage (Archive tier bucket)
+        export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+        export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+        export RESTIC_REPOSITORY="$RESTIC_REPOSITORY"
+        export RESTIC_PASSWORD="$RESTIC_PASSWORD"
+
+        command -v restic &gt;/dev/null 2&gt;&amp;1 || { echo "Installing restic..."; sudo apt-get install -y restic &gt;/dev/null 2&gt;&amp;1; }
+
+        restic init 2&gt;/dev/null || true
+        restic backup \
+          /opt/containers/photoprism/data \
+          /opt/containers/gitea/data \
+          /opt/containers/radicale/data \
+          /opt/containers/filebrowser/data \
+          /var/backups/media/gcp-proxy \
+          /var/backups/media/oci-mail \
+          --tag "media" --tag "\$STAMP" --verbose 2&gt;&amp;1 | tail -10
+
+        restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune 2&gt;/dev/null
+        echo "Media backup complete"
+      REMOTE
+
+  - name: notify
+    depends:
+      - backup-media
+    command: |
+      MSG="Weekly media backup → OCI S3 (Archive)\nBucket: cloud-backups-media\nDagu: http://10.0.0.3:8070"
+      curl -s -X POST "$NTFY_URL/ops_backups" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Weekly Media Backup OK" \
+        -H "Priority: 2" \
+        -H "Tags: floppy_disk,white_check_mark" \
+        -d "$(echo -e "$MSG")"
+
+</code></pre>
+<h2 id="dagsops_capacity-reviewyaml"><a class="header" href="#dagsops_capacity-reviewyaml">dags/ops_capacity-review.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 9 * * 1"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: review-capacity-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        DISK_DETAIL=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \"Used: \" \$3 \"/\" \$2 \" (\" \$5 \")\"}'" 2&gt;/dev/null || echo "N/A")
+        DOCKER_IMAGES=$($SSH $user@$ip "docker system df --format '{{.Type}}\t{{.Size}}' 2&gt;/dev/null | head -3 | awk '{print \"    \" \$0}'" 2&gt;/dev/null || echo "    N/A")
+        LARGEST=$($SSH $user@$ip "du -sh /opt/containers/*/data 2&gt;/dev/null | sort -rh | head -3 | awk '{print \"    \" \$0}'" 2&gt;/dev/null || echo "    N/A")
+        REPORT="${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
+      done
+      MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker system prune -f'\n  ssh &lt;user&gt;@&lt;ip&gt; 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/ops_summary" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Weekly Capacity Review" \
+        -H "Priority: 2" \
+        -H "Tags: bar_chart" \
+        -d "$MSG"
+
+</code></pre>
+<h2 id="dagsops_cron-statusyaml"><a class="header" href="#dagsops_cron-statusyaml">dags/ops_cron-status.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 7 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-timers-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        FAILED_TIMERS=$($SSH $user@$ip "systemctl list-timers --failed --no-legend 2&gt;/dev/null" 2&gt;/dev/null || echo "")
+        if [ -n "$FAILED_TIMERS" ]; then
+          ALERTS="${ALERTS}  $name ($ip):\n"
+          while IFS= read -r t; do
+            ALERTS="${ALERTS}    - $t\n"
+          done &lt;&lt;&lt; "$FAILED_TIMERS"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Failed systemd timers:\n${ALERTS}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'systemctl list-timers --failed'\n  ssh &lt;user&gt;@&lt;ip&gt; 'journalctl -u &lt;timer-name&gt; --since yesterday'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/ops_cron" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Cron/Timer Failures" \
+          -H "Priority: 4" \
+          -H "Tags: warning,clock1" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagsops_deploy-digestyaml"><a class="header" href="#dagsops_deploy-digestyaml">dags/ops_deploy-digest.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 19 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: collect-deploys-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      TOTAL=0
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        RESTARTS=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2&gt;/dev/null | grep 'Container.*Started' | awk '{print \$NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print \"    \" \$2 \" (\" \$1 \"x)\"}'" 2&gt;/dev/null || echo "")
+        COUNT_RAW=$($SSH $user@$ip "journalctl -u docker --since '24 hours ago' 2&gt;/dev/null | grep -c 'Container.*Started' || echo 0" 2&gt;/dev/null || echo 0)
+        COUNT=$(echo "$COUNT_RAW" | tr -dc '0-9')
+        COUNT=${COUNT:-0}
+        TOTAL=$((TOTAL + COUNT))
+        if [ "${COUNT:-0}" -gt 0 ]; then
+          REPORT="${REPORT}$name ($ip): $COUNT restarts\n"
+          if [ -n "$RESTARTS" ]; then
+            REPORT="${REPORT}$RESTARTS\n"
+          fi
+          REPORT="${REPORT}\n"
+        fi
+      done
+      MSG=$(echo -e "Deploy Digest (24h): $TOTAL total restarts\n\n${REPORT}Action:\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker ps --format \"table {{.Names}}\t{{.Status}}\"'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/cicd_deploy-digest" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily Deploy Digest ($TOTAL restarts)" \
+        -H "Priority: 2" \
+        -H "Tags: rocket" \
+        -d "$MSG"
+
+</code></pre>
+<h2 id="dagsops_docker-pruneyaml"><a class="header" href="#dagsops_docker-pruneyaml">dags/ops_docker-prune.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 4 */3 * *"
+env:
+  - SSH: ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - NTFY_URL: http://10.0.0.1:8090
+  - VM_LIST: 10.0.0.6:oci-apps:ubuntu 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.1:gcp-proxy:diego
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: prune-all-vms
+    command: |
+      REPORT=""
+      for entry in $VM_LIST; do
+        IP=$(echo "$entry" | cut -d: -f1)
+        NAME=$(echo "$entry" | cut -d: -f2)
+        USER=$(echo "$entry" | cut -d: -f3)
+
+        echo "=== Pruning $NAME ($IP) ==="
+        BEFORE=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2&gt;/dev/null || echo "?")
+
+        RESULT=$($SSH "$USER@$IP" "docker system prune -af 2&gt;&amp;1 | tail -1" 2&gt;/dev/null || echo "FAILED")
+
+        AFTER=$($SSH "$USER@$IP" "df --output=used / | tail -1" 2&gt;/dev/null || echo "?")
+        FREED=$(( (BEFORE - AFTER) / 1024 ))
+
+        echo "  $NAME: $RESULT (freed ~${FREED}MB)"
+        REPORT="$REPORT\n$NAME: $RESULT (freed ~${FREED}MB)"
+      done
+
+      echo ""
+      echo "=== Summary ==="
+      echo -e "$REPORT"
+
+      # Notify via ntfy
+      curl -sf -d "Docker prune complete:$(echo -e "$REPORT")" \
+        -H "Title: Docker Prune" \
+        -H "Tags: broom" \
+        "$NTFY_URL/ops" 2&gt;/dev/null || true
+
+</code></pre>
+<h2 id="dagsops_summaryyaml"><a class="header" href="#dagsops_summaryyaml">dags/ops_summary.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 18 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: gather-and-report
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        UPTIME=$($SSH $user@$ip "uptime -p" 2&gt;/dev/null || echo "N/A")
+        CONTAINERS=$($SSH $user@$ip "docker ps -q 2&gt;/dev/null | wc -l" 2&gt;/dev/null || echo "N/A")
+        DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \$5}'" 2&gt;/dev/null || echo "N/A")
+        MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f%%\", (\$3/\$2)*100}'" 2&gt;/dev/null || echo "N/A")
+        REPORT="${REPORT}$name ($ip):\n  Uptime: $UPTIME\n  Containers: $CONTAINERS | Disk: $DISK | Mem: $MEM\n\n"
+      done
+      MSG=$(echo -e "Daily Ops Summary:\n\n${REPORT}Dagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/ops_summary" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily Ops Summary" \
+        -H "Priority: 2" \
+        -H "Tags: chart_with_upwards_trend" \
+        -d "$MSG"
+
+</code></pre>
+<h2 id="dagsreport_dailysh"><a class="header" href="#dagsreport_dailysh">dags/report_daily.sh</a></h2>
+<pre><code class="language-bash">#!/bin/bash
+SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+DATE=$(date '+%Y-%m-%d')
+TIME=$(date '+%H:%M %Z')
+
+# ── Color constants ──
+C_OK="#00d68f"; C_WARN="#ffaa00"; C_CRIT="#ff3d71"; C_DIM="#8899aa"
+BG_BODY="#1a1a2e"; BG_CARD="#16213e"; BG_HEAD="#0f3460"; BG_BAR="#2a2a4e"
+C_TEXT="#e0e0e0"
+
+# ── Fleet data arrays ──
+declare -a VM_NAMES VM_IPS VM_USERS
+declare -a VM_UPTIMES VM_LOADS VM_DISKS VM_DISK_PCTS VM_MEMS VM_MEM_PCTS
+declare -a VM_CONTAINERS VM_UNHEALTHY VM_EXITED
+declare -a VM_SSH_ACCEPTS VM_SSH_FAILS VM_SUDOS VM_TOP_FAILS
+declare -a VM_RESTARTS VM_BACKUPS VM_FAILED_UNITS VM_STATUS
+declare -a VM_WG_PEERS VM_DOCKER_DFS VM_CONTAINER_STATS
+declare -a VM_CTR_RUNNING VM_CTR_TOTAL VM_CTR_UNHEALTHY
+
+# ── Helper: parse section between markers from $RAW ──
+section() { echo "$RAW" | awk "/===$1===/,/===$2===/" | grep -v '===' || true; }
+
+# ── Helper: color for percentage ──
+pct_color() {
+  local p=$1
+  if [ "$p" -gt 90 ] 2&gt;/dev/null; then echo "$C_CRIT"
+  elif [ "$p" -gt 75 ] 2&gt;/dev/null; then echo "$C_WARN"
+  else echo "$C_OK"; fi
+}
+
+# ── Helper: HTML progress bar ──
+progress_bar() {
+  local pct=$1 color
+  color=$(pct_color "$pct")
+  echo "&lt;div style=\"display:inline-block;background:$BG_BAR;border-radius:4px;height:14px;width:80px;vertical-align:middle;\"&gt;&lt;div style=\"background:$color;border-radius:4px;height:14px;width:${pct}%;\"&gt;&lt;/div&gt;&lt;/div&gt; &lt;span style=\"color:$color;font-size:12px;\"&gt;${pct}%&lt;/span&gt;"
+}
+
+# ── Helper: status badge ──
+badge_html() {
+  local status=$1 color label
+  case "$status" in
+    healthy)  color=$C_OK;   label="HEALTHY" ;;
+    warning)  color=$C_WARN; label="WARNING" ;;
+    critical) color=$C_CRIT; label="CRITICAL" ;;
+    *)        color=$C_DIM;  label="UNKNOWN" ;;
+  esac
+  echo "&lt;span style=\"display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold;background:$color;color:$BG_BODY;\"&gt;$label&lt;/span&gt;"
+}
+
+# ══════════════════════════════════════════════════════════════════════
+# COLLECT DATA FROM EACH VM
+# ══════════════════════════════════════════════════════════════════════
+VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+i=0
+for vm_data in $VM_LIST; do
+  ip=${vm_data%%:*}
+  temp=${vm_data#*:}
+  name=${temp%:*}
+  user=${temp#*:}
+  VM_NAMES[$i]=$name
+  VM_IPS[$i]=$ip
+  VM_USERS[$i]=$user
+
+  RAW=$($SSH $user@$ip 'bash -s' &lt;&lt;'EOSSH' 2&gt;/dev/null || echo "===SSH_FAILED==="
+echo "===UPTIME==="
+uptime -p 2&gt;/dev/null || echo "N/A"
+echo "===LOAD==="
+cat /proc/loadavg 2&gt;/dev/null | awk '{print $1, $2, $3}' || echo "N/A"
+echo "===DISK==="
+df -h / 2&gt;/dev/null | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}' || echo "N/A"
+echo "===DISK_PCT==="
+df / 2&gt;/dev/null | awk 'NR==2 {gsub(/%/,"",$5); print $5}' || echo "0"
+echo "===MEM==="
+free -h 2&gt;/dev/null | awk '/Mem:/ {print $3 "/" $2}' || echo "N/A"
+echo "===MEM_PCT==="
+free 2&gt;/dev/null | awk '/Mem:/ {printf "%.0f", ($3/$2)*100}' || echo "0"
+echo "===CONTAINERS==="
+docker ps -a --format '{{.Names}}|{{.Status}}|{{.State}}' 2&gt;/dev/null | head -40 || echo ""
+echo "===UNHEALTHY==="
+docker ps --filter health=unhealthy --format '{{.Names}}' 2&gt;/dev/null
+echo "===EXITED==="
+docker ps -a --filter status=exited --format '{{.Names}}' 2&gt;/dev/null | head -10
+echo "===CONTAINER_COUNTS==="
+R=$(docker ps -q 2&gt;/dev/null | wc -l)
+T=$(docker ps -aq 2&gt;/dev/null | wc -l)
+U=$(docker ps --filter health=unhealthy -q 2&gt;/dev/null | wc -l)
+echo "$R|$T|$U"
+echo "===CONTAINER_STATS==="
+docker stats --no-stream --format '{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}' 2&gt;/dev/null | sort -t'|' -k2 -rn | head -10 || echo ""
+echo "===WG_PEERS==="
+sudo wg show wg0 latest-handshakes 2&gt;/dev/null || echo ""
+echo "===DOCKER_DF==="
+docker system df --format '{{.Type}}|{{.TotalCount}}|{{.Size}}|{{.Reclaimable}}' 2&gt;/dev/null || echo ""
+echo "===SSH_ACCEPT==="
+journalctl -u ssh --since '24 hours ago' 2&gt;/dev/null | grep -c 'Accepted' || echo 0
+echo "===SSH_FAIL==="
+journalctl -u ssh --since '24 hours ago' 2&gt;/dev/null | grep -c 'Failed' || echo 0
+echo "===SUDO==="
+journalctl --since '24 hours ago' 2&gt;/dev/null | grep -c 'sudo:' || echo 0
+echo "===TOP_FAIL_IPS==="
+journalctl -u ssh --since '24 hours ago' 2&gt;/dev/null | grep 'Failed' | awk '{for(i=1;i&lt;=NF;i++) if($i ~ /[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/) print $i}' | sort | uniq -c | sort -rn | head -5 | awk '{print $2 "|" $1}'
+echo "===RESTARTS==="
+journalctl -u docker --since '24 hours ago' 2&gt;/dev/null | grep 'Container.*Started' | awk '{print $NF}' | sort | uniq -c | sort -rn | head -5 | awk '{print $2 "|" $1}'
+echo "===BACKUPS==="
+ls -lht /opt/backups/ 2&gt;/dev/null | awk 'NR&gt;1{print $NF "|" $5 "|" $6 " " $7 " " $8}' || echo ""
+echo "===FAILED_UNITS==="
+systemctl --failed --no-legend 2&gt;/dev/null | head -5 | awk '{print $1}'
+echo "===END==="
+EOSSH
+)
+
+  # ── Parse sections into arrays ──
+  VM_UPTIMES[$i]=$(section UPTIME LOAD | tr -d '\n' | sed 's/^ *//'); : "${VM_UPTIMES[$i]:=N/A}"
+  VM_LOADS[$i]=$(section LOAD DISK | tr -d '\n' | sed 's/^ *//'); : "${VM_LOADS[$i]:=N/A}"
+  VM_DISKS[$i]=$(section DISK DISK_PCT | tr -d '\n' | sed 's/^ *//'); : "${VM_DISKS[$i]:=N/A}"
+  VM_DISK_PCTS[$i]=$(section DISK_PCT MEM | tr -d '\n' | sed 's/[^0-9]//g'); : "${VM_DISK_PCTS[$i]:=0}"
+  VM_MEMS[$i]=$(section MEM MEM_PCT | tr -d '\n' | sed 's/^ *//'); : "${VM_MEMS[$i]:=N/A}"
+  VM_MEM_PCTS[$i]=$(section MEM_PCT CONTAINERS | tr -d '\n' | sed 's/[^0-9]//g'); : "${VM_MEM_PCTS[$i]:=0}"
+  VM_CONTAINERS[$i]=$(section CONTAINERS UNHEALTHY)
+  VM_UNHEALTHY[$i]=$(section UNHEALTHY EXITED)
+  VM_EXITED[$i]=$(section EXITED CONTAINER_COUNTS)
+  counts=$(section CONTAINER_COUNTS CONTAINER_STATS | head -1)
+  VM_CTR_RUNNING[$i]=$(echo "$counts" | cut -d'|' -f1 | tr -d ' '); : "${VM_CTR_RUNNING[$i]:=0}"
+  VM_CTR_TOTAL[$i]=$(echo "$counts" | cut -d'|' -f2 | tr -d ' '); : "${VM_CTR_TOTAL[$i]:=0}"
+  VM_CTR_UNHEALTHY[$i]=$(echo "$counts" | cut -d'|' -f3 | tr -d ' '); : "${VM_CTR_UNHEALTHY[$i]:=0}"
+  VM_CONTAINER_STATS[$i]=$(section CONTAINER_STATS WG_PEERS)
+  VM_WG_PEERS[$i]=$(section WG_PEERS DOCKER_DF)
+  VM_DOCKER_DFS[$i]=$(section DOCKER_DF SSH_ACCEPT)
+  VM_SSH_ACCEPTS[$i]=$(section SSH_ACCEPT SSH_FAIL | tr -d '\n' | tr -d ' '); : "${VM_SSH_ACCEPTS[$i]:=0}"
+  VM_SSH_FAILS[$i]=$(section SSH_FAIL SUDO | tr -d '\n' | tr -d ' '); : "${VM_SSH_FAILS[$i]:=0}"
+  VM_SUDOS[$i]=$(section SUDO TOP_FAIL_IPS | tr -d '\n' | tr -d ' '); : "${VM_SUDOS[$i]:=0}"
+  VM_TOP_FAILS[$i]=$(section TOP_FAIL_IPS RESTARTS)
+  VM_RESTARTS[$i]=$(section RESTARTS BACKUPS)
+  VM_BACKUPS[$i]=$(section BACKUPS FAILED_UNITS)
+  VM_FAILED_UNITS[$i]=$(section FAILED_UNITS END)
+
+  # ── Derive health status ──
+  dp=${VM_DISK_PCTS[$i]}; mp=${VM_MEM_PCTS[$i]}
+  if echo "$RAW" | grep -q '===SSH_FAILED==='; then
+    VM_STATUS[$i]="critical"
+  elif [ "$dp" -gt 90 ] 2&gt;/dev/null || [ "$mp" -gt 90 ] 2&gt;/dev/null || [ "${VM_CTR_UNHEALTHY[$i]}" -gt 0 ] 2&gt;/dev/null; then
+    VM_STATUS[$i]="critical"
+  elif [ "$dp" -gt 75 ] 2&gt;/dev/null || [ "$mp" -gt 75 ] 2&gt;/dev/null; then
+    VM_STATUS[$i]="warning"
+  else
+    VM_STATUS[$i]="healthy"
+  fi
+  i=$((i+1))
+done
+VM_COUNT=$i
+
+# ── Fleet totals ──
+FLEET_RUNNING=0; FLEET_TOTAL=0; FLEET_UNHEALTHY=0
+for ((j=0; j&lt;VM_COUNT; j++)); do
+  FLEET_RUNNING=$((FLEET_RUNNING + ${VM_CTR_RUNNING[$j]}))
+  FLEET_TOTAL=$((FLEET_TOTAL + ${VM_CTR_TOTAL[$j]}))
+  FLEET_UNHEALTHY=$((FLEET_UNHEALTHY + ${VM_CTR_UNHEALTHY[$j]}))
+done
+
+# ══════════════════════════════════════════════════════════════════════
+# BUILD HTML EMAIL
+# ══════════════════════════════════════════════════════════════════════
+F=$(mktemp)
+
+cat &gt; "$F" &lt;&lt;EOHEADERS
+From: no-reply@diegonmarcos.com
+To: me@diegonmarcos.com
+Subject: C3 Daily Ops Report - $DATE
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+EOHEADERS
+
+cat &gt;&gt; "$F" &lt;&lt;'EOSTYLE'
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;style&gt;
+body{margin:0;padding:0;background:#1a1a2e}
+td,th{font-family:'Courier New',Consolas,monospace}
+&lt;/style&gt;&lt;/head&gt;
+&lt;body style="margin:0;padding:0;background:#1a1a2e;"&gt;
+&lt;center&gt;
+&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a2e;"&gt;&lt;tr&gt;&lt;td align="center"&gt;
+&lt;table width="700" cellpadding="0" cellspacing="0" style="max-width:700px;width:100%;"&gt;
+EOSTYLE
+
+cat &gt;&gt; "$F" &lt;&lt;EOHEAD
+&lt;tr&gt;&lt;td style="background:#0f3460;padding:20px 24px;text-align:center;border-radius:8px 8px 0 0;"&gt;
+&lt;h1 style="margin:0;font-size:20px;color:#e0e0e0;font-family:'Courier New',monospace;letter-spacing:1px;"&gt;C3 Daily Ops Report&lt;/h1&gt;
+&lt;p style="margin:4px 0 0;color:#8899aa;font-size:12px;font-family:'Courier New',monospace;"&gt;$DATE &amp;mdash; Generated at $TIME&lt;/p&gt;
+&lt;/td&gt;&lt;/tr&gt;
+EOHEAD
+
+# ── Fleet Dashboard ──
+cat &gt;&gt; "$F" &lt;&lt;'EODASH1'
+&lt;tr&gt;&lt;td style="padding:8px;"&gt;
+&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;"&gt;
+&lt;tr&gt;&lt;td colspan="7" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;"&gt;Fleet Dashboard&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;VM&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Status&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Uptime&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Load&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Mem&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Disk&lt;/th&gt;
+&lt;th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;"&gt;Ctrs&lt;/th&gt;
+&lt;/tr&gt;
+EODASH1
+
+for ((j=0; j&lt;VM_COUNT; j++)); do
+  n=${VM_NAMES[$j]}; s=${VM_STATUS[$j]}
+  badge=$(badge_html "$s")
+  up=${VM_UPTIMES[$j]}
+  ld=$(echo "${VM_LOADS[$j]}" | awk '{print $1}')
+  mp=${VM_MEM_PCTS[$j]}; dp=${VM_DISK_PCTS[$j]}
+  mbar=$(progress_bar "$mp"); dbar=$(progress_bar "$dp")
+  run=${VM_CTR_RUNNING[$j]}; tot=${VM_CTR_TOTAL[$j]}
+  cat &gt;&gt; "$F" &lt;&lt;EOROW
+&lt;tr&gt;
+&lt;td style="padding:6px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;"&gt;$n&lt;/td&gt;
+&lt;td style="padding:6px 8px;border-bottom:1px solid rgba(15,52,96,0.5);"&gt;$badge&lt;/td&gt;
+&lt;td style="padding:6px 8px;color:#8899aa;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;"&gt;$up&lt;/td&gt;
+&lt;td style="padding:6px 8px;color:#e0e0e0;font-size:12px;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;"&gt;$ld&lt;/td&gt;
+&lt;td style="padding:6px 8px;border-bottom:1px solid rgba(15,52,96,0.5);"&gt;$mbar&lt;/td&gt;
+&lt;td style="padding:6px 8px;border-bottom:1px solid rgba(15,52,96,0.5);"&gt;$dbar&lt;/td&gt;
+&lt;td style="padding:6px 8px;color:#e0e0e0;font-size:12px;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;"&gt;$run/$tot&lt;/td&gt;
+&lt;/tr&gt;
+EOROW
+done
+
+cat &gt;&gt; "$F" &lt;&lt;'EODASH2'
+&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
+EODASH2
+
+# ── FOOTER ──
+cat &gt;&gt; "$F" &lt;&lt;EOFOOT
+&lt;tr&gt;&lt;td style="text-align:center;padding:16px;color:#8899aa;font-size:11px;font-family:'Courier New',monospace;"&gt;
+C3 Daily Ops Report &amp;mdash; $DATE $TIME&lt;br&gt;
+&lt;a href="http://10.0.0.3:8070" style="color:#00d68f;"&gt;Dagu Dashboard&lt;/a&gt;
+&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+EOFOOT
+
+# ── Send email via SMTP ──
+curl -s --url "smtp://mailu-smtp-1:25" \
+  --mail-from "no-reply@diegonmarcos.com" \
+  --mail-rcpt "me@diegonmarcos.com" \
+  -T "$F"
+rm -f "$F"
+echo "C3 Daily Ops Report sent for $DATE"
+
+</code></pre>
+<h2 id="dagsreport_dailyyaml"><a class="header" href="#dagsreport_dailyyaml">dags/report_daily.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 7 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: collect-and-email
+    command: bash /var/lib/dagu/dags/report_daily.sh
+
+</code></pre>
+<h2 id="dagssecurity_auth-eventsyaml"><a class="header" href="#dagssecurity_auth-eventsyaml">dags/security_auth-events.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 9 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: collect-all-connections
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      TODAY=$(date +"%b %e")
+      REPORT=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        ACCEPTED=$($SSH $user@$ip "grep 'Accepted' /var/log/auth.log 2&gt;/dev/null | grep -c '$TODAY' || echo 0" 2&gt;/dev/null || echo "N/A")
+        FAILED_SSH=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2&gt;/dev/null | grep -c '$TODAY' || echo 0" 2&gt;/dev/null || echo "N/A")
+        SUDO_EVENTS=$($SSH $user@$ip "grep 'sudo:' /var/log/auth.log 2&gt;/dev/null | grep -c '$TODAY' || echo 0" 2&gt;/dev/null || echo "N/A")
+        ACTIVE_CONN=$($SSH $user@$ip "ss -tun state established 2&gt;/dev/null | tail -n +2 | wc -l" 2&gt;/dev/null || echo "N/A")
+        DOCKER_CONN=$($SSH $user@$ip "ss -tlnp 2&gt;/dev/null | grep -c docker || echo 0" 2&gt;/dev/null || echo "N/A")
+        RECENT_LOGINS=$($SSH $user@$ip "grep 'Accepted' /var/log/auth.log 2&gt;/dev/null | grep '$TODAY' | tail -3 | awk '{print \"    \" \$0}'" 2&gt;/dev/null || echo "    (none)")
+        REPORT="${REPORT}$name ($ip):\n  SSH accepted: $ACCEPTED | failed: $FAILED_SSH\n  Sudo events: $SUDO_EVENTS\n  Active TCP: $ACTIVE_CONN | Docker listeners: $DOCKER_CONN\n  Recent logins:\n$RECENT_LOGINS\n\n"
+      done
+      MSG=$(echo -e "Daily Connection Report ($TODAY):\n\n${REPORT}Inspect:\n  ssh &lt;user&gt;@&lt;ip&gt; 'journalctl -u ssh --since yesterday'\n  ssh &lt;user&gt;@&lt;ip&gt; 'last -20'\n  ssh &lt;user&gt;@&lt;ip&gt; 'ss -tunap'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/security_connections" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily Connection Report" \
+        -H "Priority: 2" \
+        -H "Tags: key,shield" \
+        -d "$MSG"
+
+</code></pre>
+<h2 id="dagssecurity_sauron-integrityyaml"><a class="header" href="#dagssecurity_sauron-integrityyaml">dags/security_sauron-integrity.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 3 * * 0"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: verify-scanners-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      RUNNING=0
+      TOTAL=0
+      MISSING=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        TOTAL=$((TOTAL + 1))
+        if $SSH $user@$ip "docker ps --format '{{.Names}}' | grep -q sauron" 2&gt;/dev/null; then
+          RUNNING=$((RUNNING + 1))
+        else
+          MISSING="${MISSING}  - $name ($ip): sauron-lite NOT running\n"
+        fi
+      done
+      if [ $RUNNING -lt $TOTAL ]; then
+        MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'docker ps -a | grep sauron'\n  ssh &lt;user&gt;@&lt;ip&gt; 'cd /opt/containers/sauron &amp;&amp; docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/security_yara" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Sauron Scanner(s) Down" \
+          -H "Priority: 4" \
+          -H "Tags: warning,eye" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagssecurity_ssh-audityaml"><a class="header" href="#dagssecurity_ssh-audityaml">dags/security_ssh-audit.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 12 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: audit-and-notify
+    command: |
+      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      TODAY=$(date +"%b %e")
+      ALERTS=""
+      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
+  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
+else
+  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+fi
+)
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        FAIL_COUNT=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2&gt;/dev/null | grep -c '$TODAY' || echo 0" 2&gt;/dev/null || echo 0)
+        ROOT_LOGIN=$($SSH $user@$ip "grep 'root.*session opened' /var/log/auth.log 2&gt;/dev/null | grep -c '$TODAY' || echo 0" 2&gt;/dev/null || echo 0)
+        TOP_IPS=$($SSH $user@$ip "grep 'Failed password' /var/log/auth.log 2&gt;/dev/null | grep '$TODAY' | grep -oP 'from \K[0-9.]+' | sort | uniq -c | sort -rn | head -3 | awk '{print \"    \" \$2 \" (\" \$1 \" attempts)\"}'" 2&gt;/dev/null || echo "")
+        if [ "$FAIL_COUNT" -gt 10 ] 2&gt;/dev/null || [ "$ROOT_LOGIN" -gt 0 ] 2&gt;/dev/null; then
+          ALERTS="${ALERTS}  $name ($ip):\n    Failed SSH: $FAIL_COUNT\n    Root logins: $ROOT_LOGIN\n"
+          if [ -n "$TOP_IPS" ]; then
+            ALERTS="${ALERTS}    Top attacker IPs:\n$TOP_IPS\n"
+          fi
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "Suspicious auth activity:\n${ALERTS}\nAction:\n  ssh &lt;user&gt;@&lt;ip&gt; 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh &lt;user&gt;@&lt;ip&gt; 'last -20'\n  ssh &lt;user&gt;@&lt;ip&gt; 'fail2ban-client status sshd'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/security_audit" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Security Audit Alert" \
+          -H "Priority: 5" \
+          -H "Tags: lock,rotating_light" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagssecurity_tls-expiryyaml"><a class="header" href="#dagssecurity_tls-expiryyaml">dags/security_tls-expiry.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 8 * * *"
+env:
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+mailOn:
+  failure: false
+  success: false
+steps:
+  - name: check-tls-and-notify
+    command: |
+      ALERTS=""
+      TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[]' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
+      for domain in $TLS_DOMAINS; do
+        EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2&gt;/dev/null | openssl x509 -noout -enddate 2&gt;/dev/null | cut -d= -f2)
+        if [ -n "$EXPIRY" ]; then
+          EXPIRY_SEC=$(date -d "$EXPIRY" +%s 2&gt;/dev/null || echo 0)
+          NOW_SEC=$(date +%s)
+          DAYS_LEFT=$(( (EXPIRY_SEC - NOW_SEC) / 86400 ))
+          if [ $DAYS_LEFT -lt 14 ]; then
+            ALERTS="${ALERTS}  - $domain: expires in $DAYS_LEFT days ($EXPIRY)\n"
+          fi
+        else
+          ALERTS="${ALERTS}  - $domain: COULD NOT READ CERTIFICATE\n"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        MSG=$(echo -e "TLS certificates expiring soon:\n${ALERTS}\nAction:\n  openssl s_client -connect &lt;domain&gt;:443 &lt;/dev/null 2&gt;/dev/null | openssl x509 -noout -dates\n  ssh gcp-proxy 'docker exec caddy caddy reload'\n  Check Let's Encrypt / Caddy auto-renewal logs\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/security_tls" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: TLS Certificate Expiring" \
+          -H "Priority: 4" \
+          -H "Tags: warning,lock" \
+          -d "$MSG"
+        exit 1
+      fi
+
+</code></pre>
+<h2 id="dagssync_cloud-datayaml"><a class="header" href="#dagssync_cloud-datayaml">dags/sync_cloud-data.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "*/5 * * * *"
+env:
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - C3_API: http://10.0.0.6:8081
+  - REPO_DIR: /var/lib/dagu/data/cloud-data
+  - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
+  - NTFY_URL: http://10.0.0.1:8090
+  - MIN_SIZE: 50
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$REPO_DIR/.git" ]; then
+        git clone "$REPO_URL" "$REPO_DIR"
+        cd "$REPO_DIR"
+        git config user.name "dagu-bot"
+        git config user.email "no-reply@diegonmarcos.com"
+      fi
+  - name: pull-rebase
+    depends:
+      - ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      # Clean stale git locks from crashed processes
+      rm -f .git/index.lock .git/shallow.lock .git/refs/heads/*.lock 2&gt;/dev/null
+      git pull --rebase origin main || {
+        echo "Rebase conflict — resetting to remote"
+        git rebase --abort 2&gt;/dev/null
+        git reset --hard origin/main
+      }
+  - name: fetch-all
+    depends:
+      - pull-rebase
+    command: |
+      # ── Robust fetch function ──────────────────────────────────────
+      # Guards: non-empty, valid JSON, has _generated field, size sanity
+      fetch_cloud_data() {
+        local endpoint="$1"
+        local filename="cloud-data-${endpoint}.json"
+        local target="$REPO_DIR/$filename"
+        local tmp="$target.tmp"
+
+        # 1. Fetch from API
+        if ! curl -sf --max-time 30 "$C3_API/cloud-data/$endpoint" &gt; "$tmp" 2&gt;/dev/null; then
+          rm -f "$tmp"
+          echo "SKIP $filename (curl failed or API unreachable)"
+          return 0
+        fi
+
+        # 2. Check minimum size (reject tiny/empty responses)
+        local new_size=$(wc -c &lt; "$tmp")
+        if [ "$new_size" -lt "$MIN_SIZE" ]; then
+          rm -f "$tmp"
+          echo "SKIP $filename (too small: ${new_size} bytes &lt; ${MIN_SIZE} min)"
+          return 0
+        fi
+
+        # 3. Validate JSON syntax
+        if ! jq '.' "$tmp" &gt; /dev/null 2&gt;&amp;1; then
+          rm -f "$tmp"
+          echo "SKIP $filename (invalid JSON)"
+          return 0
+        fi
+
+        # 4. Reject error responses (must have _generated or be an array)
+        if ! jq -e '._generated // (type == "array")' "$tmp" &gt; /dev/null 2&gt;&amp;1; then
+          # Check if it's an error response
+          if jq -e '.error // .statusCode' "$tmp" &gt; /dev/null 2&gt;&amp;1; then
+            rm -f "$tmp"
+            echo "SKIP $filename (API returned error: $(jq -r '.error // .detail // "unknown"' "$tmp" 2&gt;/dev/null))"
+            return 0
+          fi
+        fi
+
+        # 5. Size sanity: reject if new is &lt;30% of existing (catastrophic shrink)
+        if [ -f "$target" ]; then
+          local old_size=$(wc -c &lt; "$target")
+          if [ "$old_size" -gt "$MIN_SIZE" ] &amp;&amp; [ "$new_size" -lt $((old_size * 30 / 100)) ]; then
+            rm -f "$tmp"
+            echo "REJECT $filename (catastrophic shrink: ${old_size} → ${new_size} bytes, &lt;30%)"
+            return 0
+          fi
+        fi
+
+        # 6. Pretty-print and atomically replace
+        jq '.' "$tmp" &gt; "${tmp}.pretty" 2&gt;/dev/null &amp;&amp; mv "${tmp}.pretty" "$tmp"
+        mv "$tmp" "$target"
+        echo "OK $filename (${new_size} bytes)"
+        return 0
+      }
+
+      # ── Fetch all endpoints ──────────────────────────────────────
+      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager"
+
+      OK=0
+      SKIP=0
+      REJECT=0
+      for ep in $ENDPOINTS; do
+        result=$(fetch_cloud_data "$ep")
+        echo "$result"
+        case "$result" in
+          OK*)     OK=$((OK + 1)) ;;
+          REJECT*) REJECT=$((REJECT + 1)) ;;
+          *)       SKIP=$((SKIP + 1)) ;;
+        esac
+      done
+
+      echo ""
+      echo "Summary: ${OK} updated, ${SKIP} skipped, ${REJECT} rejected (of $(echo $ENDPOINTS | wc -w) total)"
+
+      if [ "$REJECT" -gt 0 ]; then
+        echo "WARNING: ${REJECT} file(s) rejected due to catastrophic shrink — check C3 API health"
+      fi
+  - name: commit-and-push
+    depends:
+      - fetch-all
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      # Regenerate manifest
+      ls -1 *.json 2&gt;/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
+        awk '{name=$0; gsub(/-/," ",name); for(i=1;i&lt;=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i&lt;=length(a);i++) name=name (i&gt;1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
+        jq -s '.' &gt; manifest.json
+      git add -A *.json manifest.json
+      if git diff --cached --quiet; then
+        echo "No changes — skipping commit"
+        exit 0
+      fi
+      STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      git commit -m "sync: cloud data ${STAMP}"
+      git push origin main
+      echo "Pushed changes at ${STAMP}"
+
+</code></pre>
+<h2 id="dagssync_front-datayaml"><a class="header" href="#dagssync_front-datayaml">dags/sync_front-data.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "*/5 * * * *"
+env:
+  - C3_API: http://10.0.0.6:8081
+  - REPO_DIR: /var/lib/dagu/data/front-data
+  - REPO_URL: git@github.com:diegonmarcos/front-data.git
+  - NTFY_URL: http://10.0.0.1:8090
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$REPO_DIR/.git" ]; then
+        git clone "$REPO_URL" "$REPO_DIR"
+        cd "$REPO_DIR"
+        git config user.name "dagu-bot"
+        git config user.email "no-reply@diegonmarcos.com"
+      fi
+  - name: pull-rebase
+    depends:
+      - ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      git pull --rebase origin main || {
+        echo "Rebase conflict — resetting to remote"
+        git rebase --abort 2&gt;/dev/null
+        git reset --hard origin/main
+      }
+  - name: fetch-front-deps
+    depends:
+      - pull-rebase
+    command: |
+      curl -sf "$C3_API/cloud-data/deps/front" | jq '.' &gt; "$REPO_DIR/front-deps.json.tmp"
+      mv "$REPO_DIR/front-deps.json.tmp" "$REPO_DIR/front-deps.json"
+      echo "Fetched front-deps.json ($(wc -c &lt; "$REPO_DIR/front-deps.json") bytes)"
+  - name: commit-and-push
+    depends:
+      - fetch-front-deps
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      ls -1 *.json 2&gt;/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
+        awk '{name=$0; gsub(/-/," ",name); for(i=1;i&lt;=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i&lt;=length(a);i++) name=name (i&gt;1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
+        jq -s '.' &gt; manifest.json
+      git add front-deps.json manifest.json
+      if git diff --cached --quiet; then
+        echo "No changes — skipping commit"
+        exit 0
+      fi
+      STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      git commit -m "sync: front data ${STAMP}"
+      git push origin main
+      echo "Pushed changes at ${STAMP}"
+
+</code></pre>
+<h2 id="dagssync_secretsyaml"><a class="header" href="#dagssync_secretsyaml">dags/sync_secrets.yaml</a></h2>
+<pre><code class="language-yaml">schedule: "0 * * * *"
+env:
+  - CLOUD_DATA_DIR: /var/lib/dagu/data/cloud-data
+  - CLOUD_SOURCE_DIR: /var/lib/dagu/data/cloud-source
+  - CLOUD_DATA_REPO: git@github.com:diegonmarcos/cloud-data.git
+  - CLOUD_SOURCE_REPO: git@github.com:diegonmarcos/cloud.git
+  - NTFY_URL: http://10.0.0.1:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: ensure-cloud-data
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$CLOUD_DATA_DIR/.git" ]; then
+        git clone "$CLOUD_DATA_REPO" "$CLOUD_DATA_DIR"
+        cd "$CLOUD_DATA_DIR"
+        git config user.name "dagu-bot"
+        git config user.email "no-reply@diegonmarcos.com"
+      fi
+  - name: ensure-cloud-source
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$CLOUD_SOURCE_DIR/.git" ]; then
+        git clone --depth 1 "$CLOUD_SOURCE_REPO" "$CLOUD_SOURCE_DIR"
+      else
+        cd "$CLOUD_SOURCE_DIR"
+        git fetch --depth 1 origin main
+        git reset --hard origin/main
+      fi
+  - name: pull-cloud-data
+    depends:
+      - ensure-cloud-data
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$CLOUD_DATA_DIR"
+      git pull --rebase origin main || {
+        echo "Rebase conflict — resetting to remote"
+        git rebase --abort 2&gt;/dev/null
+        git reset --hard origin/main
+      }
+  - name: sync-secrets
+    depends:
+      - ensure-cloud-source
+      - pull-cloud-data
+    command: |
+      mkdir -p "$CLOUD_DATA_DIR/secrets"
+      rm -f "$CLOUD_DATA_DIR/secrets/"*.yaml
+      find "$CLOUD_SOURCE_DIR/a_solutions" \
+           "$CLOUD_SOURCE_DIR/b_infra/home-manager" \
+           "$CLOUD_SOURCE_DIR/b_infra" \
+        -name "secrets*.yaml" \
+        -not -path "*/z_archive/*" -not -path "*/node_modules/*" \
+        -not -path "*/dist/*" \
+        -type f 2&gt;/dev/null | sort -u | while read -r src; do
+        rel=${src#$CLOUD_SOURCE_DIR/}
+        rel=${rel#a_solutions/}
+        rel=${rel#b_infra/}
+        rel=$(echo "$rel" | awk -F/ '{
+          out=""
+          for(i=1;i&lt;NF;i++) {
+            if($i=="src") continue
+            out=(out=="" ? $i : out"-"$i)
+          }
+          print out"-"$NF
+        }')
+        cp "$src" "$CLOUD_DATA_DIR/secrets/$rel"
+      done
+      COUNT=$(ls "$CLOUD_DATA_DIR/secrets/"*.yaml 2&gt;/dev/null | wc -l)
+      echo "Synced $COUNT secret files to cloud-data/secrets/"
+  - name: commit-and-push
+    depends:
+      - sync-secrets
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$CLOUD_DATA_DIR"
+      git add secrets/
+      if git diff --cached --quiet; then
+        echo "No secret changes — skipping commit"
+        exit 0
+      fi
+      STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      git commit -m "sync: secrets ${STAMP}"
+      git push origin main
+      echo "Pushed secrets at ${STAMP}"
+
+</code></pre>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_dagu/src/flake.nix       ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_dagu/build.sh ship      ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  dagu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dagu-ssh:local
+    container_name: dagu
+    entrypoint: ["dagu", "start-all"]
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - DAGU_HOST=0.0.0.0
+      - DAGU_PORT=8070
+      - DAGU_DAGS_DIR=/var/lib/dagu/dags
+      - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
+      - DAGU_AUTH_MODE=basic
+      - DAGU_AUTH_BASIC_USERNAME=${DAGU_USERNAME}
+      - DAGU_AUTH_BASIC_PASSWORD=${DAGU_PASSWORD}
+      - DAGU_TZ=Europe/Berlin
+      - DAGU_UI_NAVBAR_COLOR=#1a1a2e
+      - DAGU_UI_LOGO_TITLE=C3 Workflows
+      - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
+      - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_DAGU_SECRET}
+      - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
+    env_file:
+      - .secrets
+    volumes:
+      - ./data:/var/lib/dagu/data
+      - ./dags:/var/lib/dagu/dags
+      - ./base.yaml:/var/lib/dagu/base.yaml:ro
+      - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
+      - /opt/ssh-keys/dagu:/root/.ssh:ro
+    mem_limit: 256m
+
+
+</code></pre>
+<h2 id="fetch-tokensh"><a class="header" href="#fetch-tokensh">fetch-token.sh</a></h2>
+<pre><code class="language-bash">#!/bin/sh
+
+# Fetch OIDC token via client_credentials grant, export as AUTHELIA_BEARER_TOKEN
+# so all existing DAG workflows keep working without changes.
+# Starts dagu regardless — token failure is non-fatal (DAGs using bearer will fail individually).
+echo "[fetch-token] Requesting OIDC token from $AUTHELIA_TOKEN_URL ..."
+RESPONSE=$(curl -s --max-time 10 -X POST "$AUTHELIA_TOKEN_URL" \
+  -u "$AUTHELIA_OIDC_CLIENT_ID:$AUTHELIA_OIDC_CLIENT_SECRET" \
+  -d "grant_type=client_credentials&amp;scope=authelia.bearer.authz" 2&gt;&amp;1) || true
+
+TOKEN=$(echo "$RESPONSE" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+if [ -n "$TOKEN" ]; then
+  export AUTHELIA_BEARER_TOKEN="$TOKEN"
+  echo "[fetch-token] Token acquired (${#TOKEN} chars)"
+else
+  echo "[fetch-token] WARNING: Failed to get OIDC token — dagu will start without bearer auth"
+  echo "[fetch-token] Response: $RESPONSE"
+fi
+
+exec dagu start-all
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

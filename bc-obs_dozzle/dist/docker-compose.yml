@@ -1,18 +1,36 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_dozzle/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle
+    network_mode: host
     restart: unless-stopped
-    ports:
-      - "9999:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - DOZZLE_LEVEL=info
-    mem_limit: 64m
-    networks:
-      - npm_default
-
-networks:
-  npm_default:
-    external: true
+      - DOZZLE_ADDR=:9999
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          pids: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,30 @@
+{
+  "name": "filebrowser",
+  "description": "FileBrowser web file manager (NEW - not deployed yet)",
+  "dns": "filebrowser.app",
+  "ports": {
+    "app": 3015
+  },
+  "category": "app",
+  "domain": "files.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/filebrowser"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/filebrowser",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 import smtplib
 import json
 import os
@@ -59,7 +59,7 @@ class SMTPProxyHandler(BaseHTTPRequestHandler):
         print(f'[HTTP] {args[0]}')
 
 if __name__ == '__main__':
-    server = HTTPServer(('0.0.0.0', LISTEN_PORT), SMTPProxyHandler)
+    server = ThreadingHTTPServer(('0.0.0.0', LISTEN_PORT), SMTPProxyHandler)
     print(f'SMTP Proxy listening on port {LISTEN_PORT}')
     print(f'SMTP relay: {SMTP_HOST}:{SMTP_PORT} (HELO: {HELO_DOMAIN})')
     server.serve_forever()

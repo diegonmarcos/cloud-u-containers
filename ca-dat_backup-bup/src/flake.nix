@@ -31,7 +31,7 @@
         bup:
           image: alpine:3.20
           container_name: ${config.container_name}
-          restart: "no"  # container-init handles startup
+          restart: unless-stopped
           network_mode: host
           command: >
             sh -c "

@@ -1,10 +1,17 @@
-
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-lite/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_sauron-lite/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 
 services:
   sauron:
     build: .
     container_name: sauron
-    restart: always
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       # Watch paths (read-only)
       - /etc:/watch/etc:ro
@@ -29,8 +36,6 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
-    networks:
-      - security
     healthcheck:
       test: ["CMD", "pgrep", "-f", "inotifywait"]
       interval: 60s
@@ -40,7 +45,8 @@ services:
   forwarder:
     image: debian:bookworm-slim
     container_name: sauron-forwarder
-    restart: always
+    restart: "no"  # container-init handles startup
+    network_mode: host
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -58,9 +64,3 @@ services:
       - sauron
     mem_limit: 16m
     cpus: "0.05"
-    networks:
-      - security
-
-networks:
-  security:
-    driver: bridge

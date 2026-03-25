@@ -1,0 +1,10 @@
+{
+  "name": "sauron-lite",
+  "description": "File Integrity Scanner (deployed on all VMs)",
+  "category": "tools",
+  "multi_vm": true,
+  "deploy": {
+    "host": "all",
+    "remote_path": "/opt/containers/sauron-lite"
+  }
+}

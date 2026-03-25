@@ -1,22 +1,44 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: aa-sui_radicale/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   radicale:
     image: tomsquest/docker-radicale:latest
     container_name: radicale
+    network_mode: host
     restart: unless-stopped
-    ports:
-      - "10.0.0.6:5232:5232"
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    environment:
+      - TAKE_FILE_OWNERSHIP=true
     volumes:
       - ./data:/data
       - ./config:/config:ro
-    environment:
-      - TAKE_FILE_OWNERSHIP=true
     healthcheck:
       test: curl -f http://localhost:5232/.web/ || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - default
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 networks:
   default:

@@ -1,0 +1,34 @@
+{
+  "name": "grist",
+  "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
+  "dns": "grist.app",
+  "ports": {
+    "app": 3011
+  },
+  "category": "app",
+  "domain": "sheets.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/grist"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "sheets.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "grist_data"
+    ]
+  }
+}

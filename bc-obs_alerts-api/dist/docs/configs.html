@@ -612,34 +612,56 @@ if __name__ == '__main__':
 
 </code></pre>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_alerts-api/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   alerts-api:
-    container_name: alerts-api
     build: .
+    container_name: alerts-api
+    network_mode: host
     restart: unless-stopped
-    cpus: "0.1"
-    mem_limit: 64m
-    ports:
-      - "5050:5000"
-    volumes:
-      - alerts-data:/data
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - DB_PATH=/data/alerts.db
       - NTFY_URL=https://rss.diegonmarcos.com
-    networks:
-      - npm_default
+      - LOG_LEVEL=info
+    volumes:
+      - alerts-data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.1"
+          pids: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   alerts-data:
-
-networks:
-  npm_default:
-    external: true
 
 </code></pre>
 <h2 id="requirementstxt"><a class="header" href="#requirementstxt">requirements.txt</a></h2>

@@ -1,0 +1,36 @@
+{
+  "name": "gitea",
+  "description": "Self-hosted Git service",
+  "dns": "gitea.app",
+  "ports": {
+    "app": 3017
+  },
+  "category": "data",
+  "domain": "git.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/gitea"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/gitea",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "gitea_data"
+    ]
+  }
+}

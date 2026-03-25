@@ -1,0 +1,28 @@
+{
+  "name": "code-server",
+  "description": "VS Code IDE (ide.diegonmarcos.com)",
+  "dns": "code-server.app",
+  "ports": {
+    "app": 8443
+  },
+  "category": "app",
+  "domain": "ide.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/code-server"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "ide.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

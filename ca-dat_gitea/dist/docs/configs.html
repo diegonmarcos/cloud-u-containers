@@ -176,24 +176,23 @@
                         <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_gitea/src/flake.nix      ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_gitea/build.sh ship     ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   gitea:
     image: gitea/gitea:latest
     container_name: gitea
-    restart: unless-stopped
-    ports:
-      - "10.0.0.6:3017:3000"
-      - "10.0.0.6:2222:22"
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    networks:
-      - gitea_backup_network
-
-networks:
-  gitea_backup_network:
-    driver: bridge
 
 volumes:
   gitea_data:

@@ -1,8 +1,16 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_redis/src/flake.nix      ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_redis/build.sh ship     ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   redis:
     image: redis:alpine
     container_name: redis
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     env_file:
       - .secrets
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
@@ -13,9 +21,4 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - dev_network
 
-networks:
-  dev_network:
-    external: true

@@ -1,39 +1,37 @@
-# Central Syslog Collector - Deploy on GCP arch-1
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bb-sec_sauron-central/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_sauron-central/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# Central Syslog Collector - Deploy on oci-analytics
 # Receives alerts from all VMs, stores in SQLite
+# Dormant by default — start manually: docker compose up -d
 
 services:
   syslog-central:
     image: balabit/syslog-ng:4.4.0
     container_name: syslog-central
-    restart: always
-    ports:
-      - "5514:5514/tcp"
+    restart: "no"
+    network_mode: host
     volumes:
       - ./syslog-ng-central.conf:/etc/syslog-ng/syslog-ng.conf:ro
       - siem-data:/var/log/siem
-    networks:
-      - security
 
   siem-api:
     image: python:3.11-slim
     container_name: siem-api
-    restart: always
+    restart: "no"
+    network_mode: host
     build:
       context: .
       dockerfile: Dockerfile.api
-    ports:
-      - "127.0.0.1:8080:8080"
     volumes:
       - siem-data:/var/log/siem:ro
       - ./api:/app:ro
     environment:
       - DB_PATH=/var/log/siem/alerts.db
-    networks:
-      - security
 
 volumes:
   siem-data:
-
-networks:
-  security:
-    driver: bridge

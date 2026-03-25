@@ -1,0 +1,87 @@
+{
+  "name": "matomo",
+  "description": "Matomo hybrid analytics (oci-analytics)",
+  "dns": "matomo.app",
+  "ports": {
+    "app": 8080
+  },
+  "category": "tools",
+  "domain": "analytics.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/matomo",
+    "compose_flags": "--build"
+  },
+  "lifecycle": {
+    "wake": [
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "matomo-hybrid",
+        "script": "/scripts/matomo-wake.sh"
+      },
+      {
+        "action": "stats",
+        "vm": "oci-analytics"
+      }
+    ],
+    "sleep": [
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "matomo-hybrid",
+        "script": "/scripts/matomo-sleep.sh"
+      },
+      {
+        "action": "stats",
+        "vm": "oci-analytics"
+      }
+    ]
+  },
+  "proxy": {
+    "primary": {
+      "domain": "analytics.diegonmarcos.com",
+      "auth": "two_factor",
+      "paths": {
+        "/matomo.js": {
+          "auth": "public"
+        },
+        "/matomo.php": {
+          "auth": "public"
+        },
+        "/piwik.js": {
+          "auth": "public"
+        },
+        "/piwik.php": {
+          "auth": "public"
+        },
+        "/collect.php": {
+          "auth": "public"
+        },
+        "/api.php": {
+          "auth": "public"
+        },
+        "/track.php": {
+          "auth": "public"
+        },
+        "/js/*": {
+          "auth": "public"
+        }
+      }
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "matomo_data"
+    ]
+  }
+}

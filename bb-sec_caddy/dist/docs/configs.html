@@ -1,0 +1,3231 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generated Configs - Caddy Reverse Proxy</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "ayu";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="spec.html"><strong aria-hidden="true">1.</strong> Specification</a></li><li class="chapter-item expanded "><a href="configs.html" class="active"><strong aria-hidden="true">2.</strong> Generated Configs</a></li><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">3.</strong> overview</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Caddy Reverse Proxy</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
+<p>These files are produced by nix build and deployed to the VM.</p>
+<h2 id="caddyfile"><a class="header" href="#caddyfile">Caddyfile</a></h2>
+<pre><code class="language-caddy">  {
+    # DNS: all .app upstreams resolved by Hickory DNS (10.0.0.1:53)
+    debug
+    admin localhost:2019
+    order respond before handle
+
+    layer4 {
+# IMAPS — TLS passthrough to Stalwart
+:993 {
+  route {
+    proxy {
+      upstream stalwart.app:993
+    }
+  }
+}
+# SMTPS — TLS passthrough to Stalwart
+:465 {
+  route {
+    proxy {
+      upstream stalwart.app:465
+    }
+  }
+}
+# SMTP Submission — TCP passthrough to Stalwart
+:587 {
+  route {
+    proxy {
+      upstream stalwart.app:587
+    }
+  }
+}
+    }
+
+  }
+
+  # ════════════════════════════════════════════════════════════
+  # SECURITY SNIPPETS
+  # ════════════════════════════════════════════════════════════
+
+  (security_headers) {
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
+  }
+}
+
+  (rate_limiting) {
+  rate_limit {
+    zone global {
+      key    {remote_host}
+      events 100
+      window 1m
+    }
+  }
+}
+
+  (block_bots) {
+  @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
+  respond @bad_bots 403
+}
+
+  (block_scanners) {
+  @blocked_paths path /wp-admin* /wp-login* /xmlrpc.php /.env /.git* /phpmyadmin* /actuator* /solr* /console* /.aws* /cgi-bin/*
+  respond @blocked_paths 404
+}
+
+  (request_limits) {
+  request_body {
+    max_size 10MB
+  }
+}
+
+  (ip_block) {
+  # @blocked_ips remote_ip 192.0.2.0/24
+  # respond @blocked_ips 403
+}
+
+  (access_log) {
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size 10mb
+      roll_keep 5
+    }
+    format json
+  }
+}
+
+  (security) {
+  import security_headers
+  import block_bots
+  import block_scanners
+  import rate_limiting
+  import ip_block
+  import access_log
+}
+
+
+  # ════════════════════════════════════════════════════════════
+  # SUBDOMAIN ROUTES (from routes[])
+  # ════════════════════════════════════════════════════════════
+
+  # Authelia itself — no forward_auth loop
+  auth.diegonmarcos.com {
+import security
+import request_limits
+
+
+        reverse_proxy authelia.app:9091
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Radicale CalDAV/CardDAV
+  cal.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy radicale.app:5232
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy radicale.app:5232
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Mattermost team chat
+  chat.diegonmarcos.com {
+import security
+import request_limits
+
+handle /api/v4/* {
+  reverse_proxy mattermost.app:8065
+}
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy mattermost.app:8065
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy mattermost.app:8065
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # PhotoPrism
+  photos.diegonmarcos.com {
+import security
+import request_limits
+
+# Root path → landing page (proxied, keeps our domain)
+@root path /
+handle @root {
+  rewrite * /myphotos{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+
+# All other paths → auth + upstream
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy photoprism.app:3013
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy photoprism.app:3013
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Stalwart web admin (HTTPS)
+  mail.diegonmarcos.com {
+import security
+import request_limits
+
+# Root path → landing page (proxied, keeps our domain)
+@root path /
+handle @root {
+  rewrite * /mymail{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+
+# All other paths → auth + upstream
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy https://stalwart.app:8443 {
+      transport http {
+  tls_insecure_skip_verify
+}
+    }
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy https://stalwart.app:8443 {
+      transport http {
+  tls_insecure_skip_verify
+}
+    }
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # SnappyMail webmail
+  webmail.diegonmarcos.com {
+import security
+import request_limits
+
+# Root path → landing page (proxied, keeps our domain)
+@root path /
+handle @root {
+  rewrite * /mymail{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+
+# All other paths → auth + upstream
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy snappymail.app:8888
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy snappymail.app:8888
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Dagu workflow scheduler
+  workflows.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy dagu.app:8070
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy dagu.app:8070
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Code Server IDE
+  ide.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy code-server.app:8443
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy code-server.app:8443
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # NocoDB
+  db.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy nocodb.app:8085
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy nocodb.app:8085
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Grist Sheets
+  sheets.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy grist.app:3011
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy grist.app:3011
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Vaultwarden password manager — own auth, Caddy → private backend
+  vault.diegonmarcos.com {
+import security
+import request_limits
+
+
+        reverse_proxy vaultwarden.app:8880
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # GITHUB PAGES PROXIES (from github_pages_proxies[])
+  # ════════════════════════════════════════════════════════════
+
+  # Landing page + WKD (Web Key Directory for PGP)
+  diegonmarcos.com, www.diegonmarcos.com {
+import security
+import request_limits
+# WKD — PGP public key discovery (no auth — must be public per spec)
+handle_path /.well-known/openpgpkey/* {
+  root * /srv/wkd
+  file_server
+}
+handle {
+  rewrite * /landpage{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # linktree.diegonmarcos.com
+  linktree.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /linktree{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # nexus.diegonmarcos.com
+  nexus.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /nexus{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # suite.diegonmarcos.com
+  suite.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /suite{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # maps.diegonmarcos.com
+  maps.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /mymaps{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # PATH-BASED ROUTES (from path_routes[])
+  # ════════════════════════════════════════════════════════════
+
+  # API hub — path-based routing to backend APIs
+  api.diegonmarcos.com {
+import security
+import request_limits
+@root path /
+handle @root {
+  rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+@dash_bare path /dash
+handle @dash_bare {
+  redir {path}/ permanent
+}
+
+handle_path /dash/* {
+  rewrite * /mcp-api-swagger/{path}
+  reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+  }
+}
+handle /c3-api/docs/json {
+  uri strip_prefix /c3-api
+  reverse_proxy c3-infra-api.app:8081
+}
+handle_path /c3-api/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy c3-infra-api.app:8081
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy c3-infra-api.app:8081
+  }
+
+}
+handle /services/docs/json {
+  uri strip_prefix /services
+  reverse_proxy c3-services-api.app:8082
+}
+handle_path /services/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy c3-services-api.app:8082
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy c3-services-api.app:8082
+  }
+
+}
+handle /crawlee/openapi.json {
+  uri strip_prefix /crawlee
+  reverse_proxy crawlee.app:3000
+}
+handle_path /crawlee/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy crawlee.app:3000
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy crawlee.app:3000
+  }
+
+}
+handle {
+  rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # App hub — path-based routing
+  app.diegonmarcos.com {
+import security
+import request_limits
+
+handle_path /windmill/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy windmill-app.app:8000
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy windmill-app.app:8000
+  }
+
+}
+
+handle_path /etherpad/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy etherpad.app:3012
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy etherpad.app:3012
+  }
+
+}
+
+handle_path /filebrowser/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy filebrowser.app:3015
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy filebrowser.app:3015
+  }
+
+}
+
+handle_path /hedgedoc/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy hedgedoc.app:3018
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy hedgedoc.app:3018
+  }
+
+}
+
+handle_path /revealmd/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy revealmd.app:3014
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy revealmd.app:3014
+  }
+
+}
+
+handle_path /dozzle/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy dozzle.app:9999
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy dozzle.app:9999
+  }
+
+}
+
+handle_path /grafana/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy grafana.app:3016
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy grafana.app:3016
+  }
+
+}
+
+handle_path /gitea/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy gitea.app:3017
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy gitea.app:3017
+  }
+
+}
+
+handle_path /crawlee/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy crawlee.app:3001
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy crawlee.app:3001
+  }
+
+}
+handle {
+  respond "Not Found" 404
+}
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Cloud dashboard + spec viewer
+  cloud.diegonmarcos.com {
+import security
+import request_limits
+@root path /
+handle @root {
+  rewrite * /cloud{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+@spec_bare path /spec
+handle @spec_bare {
+  redir {path}/ permanent
+}
+
+handle_path /spec/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy c3-spec.app:3080
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy c3-spec.app:3080
+  }
+
+}
+handle {
+  rewrite * /cloud{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # MCP ROUTES (from mcp_routes[])
+  # ════════════════════════════════════════════════════════════
+
+  # MCP — Streamable HTTP endpoints for Claude Code MCP clients
+  mcp.diegonmarcos.com {
+import security
+import request_limits
+handle_path /c3-infra-mcp/* {
+  reverse_proxy c3-infra-mcp.app:3100 {
+    flush_interval -1
+  }
+}
+handle_path /c3-services-mcp/* {
+  reverse_proxy c3-services-mcp.app:3101 {
+    flush_interval -1
+  }
+}
+handle_path /mattermost-mcp/* {
+  reverse_proxy mattermost-mcp.app:3102 {
+    flush_interval -1
+  }
+}
+handle_path /mail-mcp/* {
+  reverse_proxy mail-mcp.app:3103 {
+    flush_interval -1
+  }
+}
+handle_path /g-workspace/* {
+  reverse_proxy google-workspace-mcp.app:3104 {
+    flush_interval -1
+  }
+}
+    handle {
+      respond "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp" 200
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # SPECIAL ROUTES (from special{})
+  # ════════════════════════════════════════════════════════════
+
+  # Matomo (public tracking + protected admin) + Umami (path-based)
+  analytics.diegonmarcos.com {
+import security
+import request_limits
+    # Public tracking endpoints (no auth — called by portfolio sites)
+    @tracking {
+      path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
+    }
+    handle @tracking {
+      reverse_proxy matomo.app:8080
+    }
+
+    # Umami Analytics (path-based, strip /umami prefix before proxying)
+    @umami_public {
+      path /umami/script.js /umami/api/send
+    }
+    handle @umami_public {
+      uri strip_prefix /umami
+      reverse_proxy umami.app:3000
+    }
+    handle_path /umami/* {
+      @umami_bearer header Authorization Bearer*
+      handle @umami_bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+        reverse_proxy umami.app:3000
+      }
+      handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+        reverse_proxy umami.app:3000
+      }
+    }
+    @umami_root path /umami
+    handle @umami_root {
+      redir /umami/ permanent
+    }
+
+    # Protected Matomo admin dashboard (catch-all for non-umami, non-tracking)
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy matomo.app:8080
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy matomo.app:8080
+  }
+
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia
+  rss.diegonmarcos.com {
+import security
+import request_limits
+    handle /setup {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+      root * /srv
+      rewrite * /ntfy-setup.html
+      file_server
+    }
+    @authelia_jwt header_regexp Authorization "^Bearer eyJ"
+    handle @authelia_jwt {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+      reverse_proxy ntfy.app:8090
+    }
+    @ntfy_token header_regexp Authorization "^Bearer tk_"
+    handle @ntfy_token {
+      reverse_proxy ntfy.app:8090
+    }
+    handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+      reverse_proxy ntfy.app:8090
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # Infrastructure dashboard (static HTML)
+  proxy.diegonmarcos.com {
+import security
+import request_limits
+    @bearer header Authorization Bearer*
+    handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+      root * /srv
+      rewrite * /dashboard.html
+      file_server
+    }
+    handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+      root * /srv
+      rewrite * /dashboard.html
+      file_server
+    }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # CATCH-ALL — Custom error page for unknown/unconfigured domains
+  # ════════════════════════════════════════════════════════════
+
+  *.diegonmarcos.com {
+import security
+    tls {
+      dns cloudflare {env.CF_API_TOKEN}
+    }
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+
+
+</code></pre>
+<h2 id="dashboardhtml"><a class="header" href="#dashboardhtml">dashboard.html</a></h2>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;Infrastructure Dashboard&lt;/title&gt;
+&lt;style&gt;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+  padding:2rem 1rem;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  max-width:960px;
+  margin:0 auto;
+  padding:1rem;
+}
+h1{
+  font-size:clamp(1.5rem,4vw,2.5rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#845ef7,#339af0,#51cf66);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  text-align:center;
+  margin-bottom:1.5rem;
+}
+h2{
+  color:#845ef7;
+  font-size:1.1rem;
+  margin:2rem 0 .75rem;
+  border-bottom:1px solid #1a1a2e;
+  padding-bottom:.3rem;
+}
+p,li{line-height:1.6;margin:.5rem 0}
+em{color:#fcc419;font-style:normal}
+strong{color:#ff6b6b}
+code{
+  color:#51cf66;
+  background:#0d0d15;
+  padding:.15rem .4rem;
+  border-radius:3px;
+  font-size:.85em;
+}
+pre{
+  background:#0d0d15;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  padding:1rem;
+  overflow-x:auto;
+  font-size:.75rem;
+  line-height:1.5;
+  color:#868e96;
+  margin:1rem 0;
+}
+pre code{background:none;padding:0;color:inherit}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+hr{border:none;border-top:1px solid #1a1a2e;margin:1.5rem 0}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin:1rem 0;
+  font-size:.75rem;
+  display:block;
+  overflow-x:auto;
+}
+th{
+  background:#0d0d15;
+  color:#51cf66;
+  text-align:left;
+  padding:.5rem .6rem;
+  border:1px solid #1a1a2e;
+  white-space:nowrap;
+}
+td{
+  padding:.4rem .6rem;
+  border:1px solid #1a1a2e;
+  white-space:nowrap;
+}
+tr:hover td{background:#0d0d15}
+@media(max-width:600px){
+  table{font-size:.65rem}
+  pre{font-size:.65rem}
+  .tab-bar{flex-wrap:wrap}
+  .tab-btn{font-size:.6rem;padding:.3rem .5rem}
+}
+.tab-bar{
+  display:flex;
+  justify-content:center;
+  gap:.5rem;
+  margin:1.5rem 0;
+}
+.tab-btn{
+  background:#1a1a2e;
+  color:#c0c0c0;
+  border:1px solid #1a1a2e;
+  padding:.4rem .9rem;
+  border-radius:3px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:.75rem;
+  transition:all .2s;
+  border-bottom:2px solid transparent;
+}
+.tab-btn:hover{color:#fff;border-bottom-color:#339af0}
+.tab-btn.active{
+  color:#fff;
+  border-bottom:2px solid;
+  border-image:linear-gradient(135deg,#845ef7,#339af0,#51cf66) 1;
+}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.health-tier{
+  margin:1rem 0;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  padding:.75rem 1rem;
+}
+.tier-hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:.5rem;
+}
+.tier-hdr h3{
+  color:#339af0;
+  font-size:.9rem;
+  margin:0;
+  font-weight:normal;
+}
+.tier-lbl{
+  color:#495057;
+  font-size:.65rem;
+  margin-left:.5rem;
+}
+.rbtn{
+  background:#1a1a2e;
+  color:#51cf66;
+  border:1px solid #51cf66;
+  padding:.2rem .6rem;
+  border-radius:3px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:.7rem;
+  transition:all .2s;
+}
+.rbtn:hover{background:#51cf66;color:#0a0a0f}
+.rbtn:disabled{opacity:.4;cursor:not-allowed}
+.rbtn.warn{border-color:#fcc419;color:#fcc419}
+.rbtn.warn:hover{background:#fcc419;color:#0a0a0f}
+.tier-body{font-size:.75rem;color:#868e96}
+.tier-body table{margin:.5rem 0}
+.st-ok{color:#51cf66}
+.st-warn{color:#fcc419}
+.st-err{color:#ff6b6b}
+.st-off{color:#495057}
+.loading{color:#339af0;font-style:italic}
+.prof-btn{
+  background:none;
+  color:#339af0;
+  border:1px solid #1a1a2e;
+  padding:.1rem .4rem;
+  border-radius:2px;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:.65rem;
+}
+.prof-btn:hover{border-color:#339af0}
+.prof-btn.warn{color:#fcc419;border-color:#1a1a2e}
+.prof-btn.warn:hover{border-color:#fcc419}
+.prof-vm{margin:.5rem 0}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="stars" id="stars"&gt;&lt;/div&gt;
+&lt;div class="container"&gt;
+
+&lt;h1&gt;Infrastructure Dashboard&lt;/h1&gt;
+&lt;p&gt;&lt;em&gt;proxy.diegonmarcos.com&lt;/em&gt; — generated from JSON data files&lt;/p&gt;
+&lt;hr&gt;
+
+&lt;div class="tab-bar"&gt;
+&lt;button class="tab-btn active" data-tab="dns"&gt;DNS&lt;/button&gt;
+&lt;button class="tab-btn" data-tab="proxy"&gt;Reverse Proxy&lt;/button&gt;
+&lt;button class="tab-btn" data-tab="security"&gt;Security&lt;/button&gt;
+&lt;button class="tab-btn" data-tab="containers"&gt;Containers&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- ═══ TAB: DNS ═══ --&gt;
+&lt;div class="tab-content active" id="tab-dns"&gt;
+
+&lt;h2&gt;Public DNS (Cloudflare)&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;diegonmarcos.com&lt;/em&gt; — all records point to gcp-proxy (35.226.147.64) except smtp/imap direct to oci-mail&lt;/p&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Value&lt;/th&gt;&lt;th&gt;TTL&lt;/th&gt;&lt;th&gt;Purpose&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;@&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Root domain → GCP Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;www&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;www → GCP Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;*&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;Wildcard catch-all → GCP Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;auth&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Authelia 2FA&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;analytics&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Matomo Analytics&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;photos&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;PhotoPrism&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;sync&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Syncthing&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;cal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Radicale Calendar&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;ide&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Code Server IDE&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;db&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;NocoDB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;rss&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;ntfy Push&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;proxy&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Caddy Dashboard&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;vault&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Vaultwarden&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;sheets&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Grist Sheets&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;drive-notes-affine&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;AFFiNE&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;suite&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Suite Apps&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;linktree&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Linktree&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;cloud&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Cloud Portal&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;nexus&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Nexus&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;api&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;API Gateway&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;mail&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;Mailu Webmail (via Caddy)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;app&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;App Hub (path-based)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;smtp&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;130.110.251.193&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;SMTP direct → oci-mail&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;A&lt;/td&gt;&lt;td&gt;&lt;code&gt;imap&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;130.110.251.193&lt;/code&gt;&lt;/td&gt;&lt;td&gt;300&lt;/td&gt;&lt;td&gt;IMAP direct → oci-mail&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;CNAME&lt;/td&gt;&lt;td&gt;&lt;code&gt;smtp-proxy&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;cfargotunnel.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;Cloudflare Tunnel → oci-mail&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;CNAME&lt;/td&gt;&lt;td&gt;&lt;code&gt;chat&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;ghs.googlehosted.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;Google Workspace&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;MX&lt;/td&gt;&lt;td&gt;&lt;code&gt;@&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;route1.mx.cloudflare.net&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;CF Email Routing (primary)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;MX&lt;/td&gt;&lt;td&gt;&lt;code&gt;@&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;route2.mx.cloudflare.net&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;CF Email Routing (secondary)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;MX&lt;/td&gt;&lt;td&gt;&lt;code&gt;@&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;route3.mx.cloudflare.net&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;CF Email Routing (tertiary)&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Internal DNS (Hickory — .internal zone)&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;WireGuard mesh only&lt;/em&gt; — resolved by Hickory DNS on gcp-proxy:53&lt;/p&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;IP&lt;/th&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Purpose&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;caddy.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Reverse proxy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;auth.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Authelia 2FA&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;vault.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Vaultwarden&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;api.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;API Gateway&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;ntfy.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Push notifications&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;dns.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Hickory DNS&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;photos.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;PhotoPrism&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;db.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;NocoDB&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;ide.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;Code Server&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;affine.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;AFFiNE&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;mail.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;Mailu&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;sync.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;Syncthing&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;cal.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;Radicale&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;matomo.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-analytics&lt;/td&gt;&lt;td&gt;Matomo Analytics&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;windmill.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-analytics&lt;/td&gt;&lt;td&gt;Windmill Workflows&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;*.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;Wildcard → Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Reverse DNS (PTR)&lt;/h2&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;IP&lt;/th&gt;&lt;th&gt;Hostname&lt;/th&gt;&lt;th&gt;VM&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;gcp-proxy.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;oci-apps-1.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;oci-mail.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;oci-analytics.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-analytics&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;oci-apps.internal&lt;/code&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Email Authentication&lt;/h2&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Value&lt;/th&gt;&lt;th&gt;Purpose&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;@&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=spf1 include:_spf.mx.cloudflare.net a:smtp.diegonmarcos.com ~all&lt;/code&gt;&lt;/td&gt;&lt;td&gt;SPF&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;_dmarc&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=DMARC1; p=reject; rua=mailto:postmaster@diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;DMARC&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;dkim._domainkey&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=DKIM1; k=rsa; p=...&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Mailu DKIM (primary)&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;cf2024-1._domainkey&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=DKIM1; h=sha256; k=rsa; p=...&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Cloudflare DKIM&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;google._domainkey&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=DKIM1; k=rsa; p=...&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Google Workspace DKIM&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;TXT&lt;/td&gt;&lt;td&gt;&lt;code&gt;mail._domainkey&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;v=DKIM1; k=rsa; p=...&lt;/code&gt;&lt;/td&gt;&lt;td&gt;Mailu DKIM (legacy)&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;/div&gt;
+
+&lt;!-- ═══ TAB: Reverse Proxy ═══ --&gt;
+&lt;div class="tab-content" id="tab-proxy"&gt;
+
+&lt;h2&gt;Reverse Proxying&lt;/h2&gt;
+&lt;button class="rbtn" id="toggle-svcs"&gt;Show Live&lt;/button&gt;
+&lt;div id="live-svcs" class="tier-body" style="display:none"&gt;&lt;/div&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Domain&lt;/th&gt;&lt;th&gt;Service&lt;/th&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Port&lt;/th&gt;&lt;th&gt;Auth&lt;/th&gt;&lt;th&gt;Availability&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;proxy.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Dashboard&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;auth.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Authelia 2FA&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;9091&lt;/td&gt;&lt;td&gt;Public (bypass)&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;api.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;API (Rust+Flask+Go)&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps/gcp-proxy&lt;/td&gt;&lt;td&gt;8080/5000/8090&lt;/td&gt;&lt;td&gt;Rust: Public / Flask: Authelia / Go: Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;vault.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Vaultwarden&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;rss.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;ntfy Push&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;8090&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;mail.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Mailu&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;8444&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;sync.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Syncthing&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;8384&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;cal.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Radicale&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-mail&lt;/td&gt;&lt;td&gt;5232&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;analytics.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Matomo&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-analytics&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;Hybrid (public tracking)&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;photos.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;PhotoPrism&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3013&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;db.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;NocoDB&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;8085&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;ide.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Code Server&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;8443&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;drive-notes-affine.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;AFFiNE&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3010&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;sheets.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Grist&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3011&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Jupyter Lab&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;8888&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Nautilus Engine&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;5000&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Dash/Plotly&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;8050&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Quant DB&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;5432&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;api.diegonmarcos.com/crawlee/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Crawlee API&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/crawlee/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Crawlee Dash&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;3001&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;MinIO (S3)&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;9000&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Rust API&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;—&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Ollama LLM&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-ollama&lt;/td&gt;&lt;td&gt;11434&lt;/td&gt;&lt;td&gt;WG direct&lt;/td&gt;&lt;td&gt;Spot&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Landing Page&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;linktree.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Linktree&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;cloud.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Cloud Dashboard&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;nexus.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Nexus&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;suite.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Suite Apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;maps.diegonmarcos.com&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Maps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GitHub Pages&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;Public&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/windmill/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Windmill&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-analytics&lt;/td&gt;&lt;td&gt;8000&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/etherpad/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Etherpad&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3012&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/filebrowser/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;FileBrowser&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3015&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/hedgedoc/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;HedgeDoc&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3010&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/revealmd/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Reveal.md&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3014&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/dozzle/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Dozzle&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gcp-proxy&lt;/td&gt;&lt;td&gt;9999&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/grafana/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Grafana&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3016&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;code&gt;app.diegonmarcos.com/gitea/&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Gitea&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;oci-apps-1&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;Authelia + Bearer&lt;/td&gt;&lt;td&gt;Wake&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Auth Flow&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;Browser Request
+    │
+    ▼
+┌─────────────┐
+│  Cloudflare  │  DNS only (grey cloud, no proxy)
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    Caddy     │  TLS termination, security headers,
+│  (gcp-proxy) │  rate limiting, bot/scanner blocking
+└──────┬──────┘
+       │
+   ┌───┴───┐
+   │       │
+Bearer?  Cookie?
+   │       │
+   ▼       ▼
+┌──────┐ ┌──────────┐
+│intro-│ │ Authelia  │  TOTP / WebAuthn
+│spect │ │   2FA    │
+└──┬───┘ └────┬─────┘
+   │          │
+   └────┬─────┘
+        │
+        ▼
+┌─────────────┐
+│  WireGuard   │  Encrypted mesh to target VM
+│   tunnel     │
+└──────┬──────┘
+       │
+       ▼
+  [ Service ]&lt;/code&gt;&lt;/pre&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Network Topology&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;Internet
+    │
+    ▼
+┌─────────────────────────────────────────────┐
+│  Cloudflare  (*.diegonmarcos.com) DNS only   │
+└──────────────────┬──────────────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────────────┐
+│  gcp-proxy  10.0.0.1                           │
+│  ├─ Caddy (reverse proxy + TLS)              │
+│  ├─ Authelia (2FA) + introspect-proxy        │
+│  ├─ Flask API + Go API                       │
+│  ├─ Vaultwarden, ntfy, Dozzle               │
+│  └─ Sauron Central + Syslog Central          │
+└────┬──────────┬──────────┬──────┬───────────┬──────────┘
+     │ wg0      │ wg0      │ wg0  │ wg0       │ wg0
+     ▼          ▼          ▼      ▼           ▼
+┌──────────┐ ┌──────────┐ ┌─────────┐ ┌────────────┐
+│oci-apps  │ │oci-apps-1│ │oci-mail │ │oci-analyti.│
+│ 10.0.0.6 │ │ 10.0.0.2  │ │ 10.0.0.3 │ │10.0.0.4│
+│          │ │          │ │         │ │            │
+│Rust API  │ │PhotoPrism│ │ Mailu   │ │  Matomo    │
+│Crawlee   │ │ NocoDB   │ │Syncthing│ │  Windmill  │
+│Quant Lab │ │Code Srv  │ │Radicale │ │            │
+│          │ │ AFFiNE   │ │         │ │            │
+│          │ │Grist,LGTM│ │         │ │            │
+│          │ │Gitea,Ethr│ │         │ │            │
+└──────────┘ └──────────┘ └─────────┘ └────────────┘
+
+┌──────────┐ ┌──────────┐
+│oci-apps-2│ │gcp-ollama│
+│ 10.0.0.7 │ │ 10.0.0.8   │
+│          │ │          │
+│(on-demand│ │ Ollama   │
+│ compute) │ │ LLM      │
+└──────────┘ └──────────┘&lt;/code&gt;&lt;/pre&gt;
+
+&lt;/div&gt;
+
+&lt;!-- ═══ TAB: Security ═══ --&gt;
+&lt;div class="tab-content" id="tab-security"&gt;
+
+&lt;h2&gt;Security Stack&lt;/h2&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Layer&lt;/th&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Description&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Network Edge&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Cloudflare Proxy + Cloud Firewalls&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;2&lt;/td&gt;&lt;td&gt;&lt;strong&gt;TLS Termination&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Caddy auto-HTTPS + Let's Encrypt&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;3&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Traffic Filtering&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Rate limiting, bot blocking, scanner blocking&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;4&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Authentication&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Authelia 2FA (TOTP/WebAuthn) + OIDC bearer tokens&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;5&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Token Validation&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;introspect-proxy OIDC introspection sidecar&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;6&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Network Isolation&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;WireGuard mesh VPN + Docker bridge networks&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;7&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Credential Mgmt&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Vaultwarden (passwords) + Aegis (TOTP)&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Firewall &amp;amp; Ports&lt;/h2&gt;
+&lt;p&gt;Only &lt;strong&gt;gcp-proxy&lt;/strong&gt; accepts public HTTP/HTTPS traffic. All other VMs restrict to WireGuard mesh + service-specific ports.&lt;/p&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;WG IP&lt;/th&gt;&lt;th&gt;Port&lt;/th&gt;&lt;th&gt;Bind&lt;/th&gt;&lt;th&gt;Purpose&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;80/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;Caddy HTTP&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;443/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;Caddy HTTPS&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;443/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;Caddy HTTP/3&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;25/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SMTP (inbound)&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;465/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SMTPS&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;587/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SMTP Submission&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;993/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;IMAPS&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-2&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.7&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-2&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.7&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-ollama&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.8&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22/tcp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;SSH&lt;/td&gt;&lt;td&gt;&lt;span class="st-warn"&gt;RESTRICT&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-ollama&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.8&lt;/code&gt;&lt;/td&gt;&lt;td&gt;51820/udp&lt;/td&gt;&lt;td&gt;0.0.0.0&lt;/td&gt;&lt;td&gt;WireGuard&lt;/td&gt;&lt;td&gt;&lt;span class="st-ok"&gt;OPEN&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+&lt;p&gt;&lt;strong&gt;Policy&lt;/strong&gt;: All VMs run &lt;code&gt;51820/udp&lt;/code&gt; (WireGuard) + &lt;code&gt;22/tcp&lt;/code&gt; (SSH restricted). gcp-proxy additionally exposes &lt;code&gt;80/443&lt;/code&gt; (Caddy). oci-mail exposes &lt;code&gt;25,465,587,993&lt;/code&gt; (mail delivery).&lt;/p&gt;
+
+&lt;h3&gt;iptables / nftables&lt;/h3&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Chain&lt;/th&gt;&lt;th&gt;Policy&lt;/th&gt;&lt;th&gt;Notes&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;INPUT&lt;/td&gt;&lt;td&gt;DROP (cloud firewall)&lt;/td&gt;&lt;td&gt;Only allowed ports above reach the VM&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;FORWARD&lt;/td&gt;&lt;td&gt;ACCEPT (Docker)&lt;/td&gt;&lt;td&gt;Docker manages container routing via nftables&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;OUTPUT&lt;/td&gt;&lt;td&gt;ACCEPT&lt;/td&gt;&lt;td&gt;No egress filtering&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;DOCKER-USER&lt;/td&gt;&lt;td&gt;ACCEPT&lt;/td&gt;&lt;td&gt;Default — no extra restrictions&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;wg0&lt;/td&gt;&lt;td&gt;All traffic&lt;/td&gt;&lt;td&gt;Mesh peers trusted, no per-port filtering&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Docker Network&lt;/h2&gt;
+&lt;button class="rbtn" id="toggle-docker"&gt;Show Live&lt;/button&gt;
+&lt;div id="live-docker" class="tier-body" style="display:none"&gt;&lt;/div&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Container&lt;/th&gt;&lt;th&gt;Host Port&lt;/th&gt;&lt;th&gt;Bind Address&lt;/th&gt;&lt;th&gt;Internal&lt;/th&gt;&lt;th&gt;Note&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;caddy&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;reverse proxy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;caddy&lt;/td&gt;&lt;td&gt;443&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;443&lt;/td&gt;&lt;td&gt;reverse proxy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;authelia&lt;/td&gt;&lt;td&gt;9091&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;9091&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;rust-api&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;flask-api&lt;/td&gt;&lt;td&gt;5000&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;5000&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;introspect-proxy&lt;/td&gt;&lt;td&gt;4182&lt;/td&gt;&lt;td&gt;&lt;code&gt;docker&lt;/code&gt;&lt;/td&gt;&lt;td&gt;4182&lt;/td&gt;&lt;td&gt;internal only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;vaultwarden&lt;/td&gt;&lt;td&gt;—&lt;/td&gt;&lt;td&gt;&lt;code&gt;docker&lt;/code&gt;&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;ntfy&lt;/td&gt;&lt;td&gt;8090&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;dozzle&lt;/td&gt;&lt;td&gt;9999&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;via Caddy&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;photoprism&lt;/td&gt;&lt;td&gt;3013&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;2342&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;nocodb&lt;/td&gt;&lt;td&gt;8085&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;code-server&lt;/td&gt;&lt;td&gt;8443&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8443&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;grist&lt;/td&gt;&lt;td&gt;3011&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8484&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;etherpad&lt;/td&gt;&lt;td&gt;3012&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;9001&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;filebrowser&lt;/td&gt;&lt;td&gt;3015&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;80&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;hedgedoc&lt;/td&gt;&lt;td&gt;3010&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;revealmd&lt;/td&gt;&lt;td&gt;3014&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1948&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gitea&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;gitea-ssh&lt;/td&gt;&lt;td&gt;2222&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;grafana&lt;/td&gt;&lt;td&gt;3016&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;loki&lt;/td&gt;&lt;td&gt;3017&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3100&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;tempo&lt;/td&gt;&lt;td&gt;3018&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3200&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mimir&lt;/td&gt;&lt;td&gt;3019&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;quant_research&lt;/td&gt;&lt;td&gt;8888&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8888&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;nautilus_engine&lt;/td&gt;&lt;td&gt;5000&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;5000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;quant_analytics&lt;/td&gt;&lt;td&gt;8050&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8050&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;quant_db&lt;/td&gt;&lt;td&gt;5432&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;5432&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_api&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_dashboard&lt;/td&gt;&lt;td&gt;3001&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;3001&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_minio&lt;/td&gt;&lt;td&gt;9000&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;9000&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_minio&lt;/td&gt;&lt;td&gt;9001&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;9001&lt;/td&gt;&lt;td&gt;MinIO console&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_db&lt;/td&gt;&lt;td&gt;5433&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;5432&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;crawlee_redis&lt;/td&gt;&lt;td&gt;6380&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;6379&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mailu-front&lt;/td&gt;&lt;td&gt;25&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;25&lt;/td&gt;&lt;td&gt;SMTP public&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mailu-front&lt;/td&gt;&lt;td&gt;465&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;465&lt;/td&gt;&lt;td&gt;SMTPS public&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mailu-front&lt;/td&gt;&lt;td&gt;587&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;587&lt;/td&gt;&lt;td&gt;submission public&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mailu-front&lt;/td&gt;&lt;td&gt;993&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;993&lt;/td&gt;&lt;td&gt;IMAPS public&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;mailu-front&lt;/td&gt;&lt;td&gt;8444&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;443&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;syncthing&lt;/td&gt;&lt;td&gt;8384&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8384&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;syncthing&lt;/td&gt;&lt;td&gt;22000&lt;/td&gt;&lt;td&gt;&lt;code&gt;0.0.0.0&lt;/code&gt;&lt;/td&gt;&lt;td&gt;22000&lt;/td&gt;&lt;td&gt;P2P sync&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;radicale&lt;/td&gt;&lt;td&gt;5232&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;5232&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;matomo&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;windmill&lt;/td&gt;&lt;td&gt;8000&lt;/td&gt;&lt;td&gt;&lt;code&gt;127.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8000&lt;/td&gt;&lt;td&gt;localhost&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;rust-api&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8080&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-ollama&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;ollama&lt;/td&gt;&lt;td&gt;11434&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.8&lt;/code&gt;&lt;/td&gt;&lt;td&gt;11434&lt;/td&gt;&lt;td&gt;WG only&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;/div&gt;
+
+&lt;!-- ═══ TAB: Containers ═══ --&gt;
+&lt;div class="tab-content" id="tab-containers"&gt;
+
+&lt;h2&gt;Virtual Machines&lt;/h2&gt;
+&lt;button class="rbtn" id="toggle-vms"&gt;Show Live&lt;/button&gt;
+&lt;div id="live-vms" class="tier-body" style="display:none"&gt;&lt;/div&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Alias&lt;/th&gt;&lt;th&gt;Provider&lt;/th&gt;&lt;th&gt;Tier&lt;/th&gt;&lt;th&gt;Public IP&lt;/th&gt;&lt;th&gt;WG IP&lt;/th&gt;&lt;th&gt;RAM&lt;/th&gt;&lt;th&gt;CPU&lt;/th&gt;&lt;th&gt;Availability&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GCP&lt;/td&gt;&lt;td&gt;Free&lt;/td&gt;&lt;td&gt;&lt;code&gt;35.226.147.64&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.1&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1 GB&lt;/td&gt;&lt;td&gt;e2-micro (0.25 vCPU)&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;OCI&lt;/td&gt;&lt;td&gt;Free (A1.Flex)&lt;/td&gt;&lt;td&gt;&lt;code&gt;144.24.196.72&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.2&lt;/code&gt;&lt;/td&gt;&lt;td&gt;8 GB&lt;/td&gt;&lt;td&gt;Ampere A1 (1 OCPU)&lt;/td&gt;&lt;td&gt;Wake-on-demand&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;OCI&lt;/td&gt;&lt;td&gt;Free (A1.Flex)&lt;/td&gt;&lt;td&gt;&lt;code&gt;82.70.229.129&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.6&lt;/code&gt;&lt;/td&gt;&lt;td&gt;16 GB&lt;/td&gt;&lt;td&gt;Ampere A1 (3 OCPU)&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;OCI&lt;/td&gt;&lt;td&gt;Free&lt;/td&gt;&lt;td&gt;&lt;code&gt;130.110.251.193&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.3&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1 GB&lt;/td&gt;&lt;td&gt;E2.1.Micro&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;OCI&lt;/td&gt;&lt;td&gt;Free&lt;/td&gt;&lt;td&gt;&lt;code&gt;129.151.228.66&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.4&lt;/code&gt;&lt;/td&gt;&lt;td&gt;1 GB&lt;/td&gt;&lt;td&gt;E2.1.Micro&lt;/td&gt;&lt;td&gt;24/7&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-2&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;OCI&lt;/td&gt;&lt;td&gt;Paid (A1.Flex)&lt;/td&gt;&lt;td&gt;&lt;code&gt;79.72.28.10&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.7&lt;/code&gt;&lt;/td&gt;&lt;td&gt;32 GB&lt;/td&gt;&lt;td&gt;Ampere A1 (8 OCPU)&lt;/td&gt;&lt;td&gt;On-demand&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-ollama&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GCP&lt;/td&gt;&lt;td&gt;Paid (Spot)&lt;/td&gt;&lt;td&gt;&lt;code&gt;34.57.36.41&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;10.0.0.8&lt;/code&gt;&lt;/td&gt;&lt;td&gt;15 GB&lt;/td&gt;&lt;td&gt;N1-Std-4 + T4 GPU&lt;/td&gt;&lt;td&gt;Spot&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;h2&gt;Declared Containers&lt;/h2&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Count&lt;/th&gt;&lt;th&gt;Containers&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-ollama&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;1&lt;/td&gt;&lt;td&gt;ollama&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;gcp-proxy&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;8&lt;/td&gt;&lt;td&gt;authelia, caddy, dozzle, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-analytics&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;td&gt;matomo, windmill&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;10&lt;/td&gt;&lt;td&gt;crawlee_api, crawlee_dashboard, crawlee_db, crawlee_minio, crawlee_redis, nautilus_engine, quant_analytics, quant_db, quant_research, rust-api&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-apps-1&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;14&lt;/td&gt;&lt;td&gt;code-server, etherpad, filebrowser, gitea, gitea-ssh, grafana, grist, hedgedoc, loki, mimir, nocodb, photoprism, revealmd, tempo&lt;/td&gt;&lt;/tr&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;oci-mail&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;3&lt;/td&gt;&lt;td&gt;mailu-front, radicale, syncthing&lt;/td&gt;&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;hr&gt;
+&lt;div id="health-section"&gt;
+&lt;h2&gt;Live Health&lt;/h2&gt;
+&lt;p&gt;Lazy-loaded from &lt;code&gt;/api/health/*&lt;/code&gt; and &lt;code&gt;/api/profiling/*&lt;/code&gt;. Click &lt;em&gt;Refresh&lt;/em&gt; to load each tier.&lt;/p&gt;
+
+&lt;div class="health-tier"&gt;
+&lt;div class="tier-hdr"&gt;&lt;h3&gt;Declared &lt;span class="tier-lbl"&gt;Tier 0 — Config (instant)&lt;/span&gt;&lt;/h3&gt;&lt;button class="rbtn" id="btn-declared"&gt;Refresh&lt;/button&gt;&lt;/div&gt;
+&lt;div class="tier-body" id="out-declared"&gt;—&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="health-tier"&gt;
+&lt;div class="tier-hdr"&gt;&lt;h3&gt;Deployed &lt;span class="tier-lbl"&gt;Tier 1 — docker ps (~3s)&lt;/span&gt;&lt;/h3&gt;&lt;button class="rbtn" id="btn-deployed"&gt;Refresh&lt;/button&gt;&lt;/div&gt;
+&lt;div class="tier-body" id="out-deployed"&gt;—&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="health-tier"&gt;
+&lt;div class="tier-hdr"&gt;&lt;h3&gt;Drift &lt;span class="tier-lbl"&gt;Tier 2 — Declared vs Deployed (~3s)&lt;/span&gt;&lt;/h3&gt;&lt;button class="rbtn" id="btn-drift"&gt;Refresh&lt;/button&gt;&lt;/div&gt;
+&lt;div class="tier-body" id="out-drift"&gt;—&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="health-tier"&gt;
+&lt;div class="tier-hdr"&gt;&lt;h3&gt;Status &lt;span class="tier-lbl"&gt;Tier 3 — Comprehensive (heavy)&lt;/span&gt;&lt;/h3&gt;&lt;button class="rbtn warn" id="btn-status"&gt;Refresh&lt;/button&gt;&lt;/div&gt;
+&lt;div class="tier-body" id="out-status"&gt;—&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div class="health-tier"&gt;
+&lt;div class="tier-hdr"&gt;&lt;h3&gt;Profiling &lt;span class="tier-lbl"&gt;Tier 4 — Deep Diagnostic (heaviest)&lt;/span&gt;&lt;/h3&gt;&lt;/div&gt;
+&lt;div class="tier-body" id="out-profiling"&gt;Load &lt;em&gt;Declared&lt;/em&gt; first, then trigger per-container.&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;hr&gt;
+&lt;p&gt;&lt;code&gt;visitor@caddy:~$&lt;/code&gt; &lt;a href="https://linktree.diegonmarcos.com"&gt;cd /home&lt;/a&gt;&lt;/p&gt;
+
+&lt;/div&gt;
+&lt;script&gt;
+(function(){
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i&lt;80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+})();
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+    document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+// Health Dashboard
+var HAPI='https://api.diegonmarcos.com';
+function hfetch(path,elId,btnId,render){
+  var el=document.getElementById(elId);
+  var btn=document.getElementById(btnId);
+  if(btn)btn.disabled=true;
+  el.innerHTML='&lt;span class="loading"&gt;loading...&lt;/span&gt;';
+  fetch(HAPI+path,{signal:AbortSignal.timeout(30000)})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(function(d){render(el,d);if(btn)btn.disabled=false})
+    .catch(function(e){el.innerHTML='&lt;span class="st-err"&gt;Error: '+e.message+'&lt;/span&gt;';if(btn)btn.disabled=false});
+}
+document.getElementById('btn-declared').addEventListener('click',function(){
+  hfetch('/api/health/declared','out-declared','btn-declared',rDeclared);
+});
+document.getElementById('btn-deployed').addEventListener('click',function(){
+  hfetch('/api/health/deployed','out-deployed','btn-deployed',rDeployed);
+});
+document.getElementById('btn-drift').addEventListener('click',function(){
+  hfetch('/api/health/drift','out-drift','btn-drift',rDrift);
+});
+document.getElementById('btn-status').addEventListener('click',function(){
+  hfetch('/api/health/status','out-status','btn-status',rStatus);
+});
+function rDeclared(el,d){
+  var h='&lt;table&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Label&lt;/th&gt;&lt;th&gt;Services&lt;/th&gt;&lt;th&gt;Containers&lt;/th&gt;&lt;/tr&gt;';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id],svcs=v.services||{},sc=Object.keys(svcs).length,cc=0;
+    for(var s in svcs)cc+=svcs[s].length;
+    h+='&lt;tr&gt;&lt;td&gt;'+id+'&lt;/td&gt;&lt;td&gt;'+(v.label||"")+'&lt;/td&gt;&lt;td&gt;'+sc+'&lt;/td&gt;&lt;td&gt;'+cc+'&lt;/td&gt;&lt;/tr&gt;';
+  }
+  h+='&lt;/table&gt;';
+  var t=d.totals||{};
+  h+='&lt;p&gt;Total: &lt;strong&gt;'+t.vms+'&lt;/strong&gt; VMs, &lt;strong&gt;'+t.services+'&lt;/strong&gt; services, &lt;strong&gt;'+t.containers+'&lt;/strong&gt; containers&lt;/p&gt;';
+  window._dVMs=d.vms;
+  window._deployedData={};
+  el.innerHTML=h;
+  var pel=document.getElementById('out-profiling');
+  if(pel)pel.innerHTML='&lt;span class="loading"&gt;Fetching deployed state...&lt;/span&gt;';
+  fetch(HAPI+'/api/health/deployed',{signal:AbortSignal.timeout(30000)})
+    .then(function(r){return r.json()})
+    .then(function(dd){window._deployedData=dd.vms||{};rProfBtns()})
+    .catch(function(){rProfBtns()});
+}
+function rDeployed(el,d){
+  var h='';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id],cs=v.containers||[];
+    h+='&lt;div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e"&gt;';
+    h+='&lt;strong&gt;'+id+'&lt;/strong&gt; ('+(v.label||"")+') — ';
+    h+='&lt;span class="st-ok"&gt;'+v.running+' running&lt;/span&gt;, ';
+    h+='&lt;span class="'+(v.stopped&gt;0?'st-warn':'st-off')+'"&gt;'+v.stopped+' stopped&lt;/span&gt;';
+    if(cs.length&gt;0){
+      h+='&lt;table style="margin:.4rem 0"&gt;&lt;tr&gt;&lt;th&gt;Container&lt;/th&gt;&lt;th&gt;State&lt;/th&gt;&lt;th&gt;Ports&lt;/th&gt;&lt;/tr&gt;';
+      for(var i=0;i&lt;cs.length;i++){
+        var c=cs[i],cls=c.state==='running'?'st-ok':(c.state==='exited'?'st-err':'st-warn');
+        h+='&lt;tr&gt;&lt;td&gt;'+c.name+'&lt;/td&gt;&lt;td class="'+cls+'"&gt;'+c.state+'&lt;/td&gt;&lt;td&gt;'+(c.ports||'—')+'&lt;/td&gt;&lt;/tr&gt;';
+      }
+      h+='&lt;/table&gt;';
+    }
+    h+='&lt;/div&gt;';
+  }
+  var sm=d.summary||{};
+  h+='&lt;p&gt;&lt;span class="st-ok"&gt;'+sm.running+' running&lt;/span&gt;, &lt;span class="st-warn"&gt;'+sm.stopped+' stopped&lt;/span&gt;, '+sm.total+' total&lt;/p&gt;';
+  el.innerHTML=h;
+}
+function rDrift(el,d){
+  var h='&lt;table&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Declared&lt;/th&gt;&lt;th&gt;Deployed&lt;/th&gt;&lt;th&gt;Missing&lt;/th&gt;&lt;th&gt;Extra&lt;/th&gt;&lt;/tr&gt;';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id];
+    var ml=v.missing||[],xl=v.extra||[],dl=v.declared||[],dpl=v.deployed||[];
+    h+='&lt;tr&gt;&lt;td&gt;'+id+'&lt;/td&gt;&lt;td&gt;'+dl.length+'&lt;/td&gt;&lt;td&gt;'+dpl.length+'&lt;/td&gt;';
+    h+='&lt;td class="'+(ml.length?'st-err':'st-ok')+'"&gt;'+(ml.length?ml.join(', '):'none')+'&lt;/td&gt;';
+    h+='&lt;td class="'+(xl.length?'st-warn':'st-ok')+'"&gt;'+(xl.length?xl.join(', '):'none')+'&lt;/td&gt;&lt;/tr&gt;';
+  }
+  h+='&lt;/table&gt;';
+  var sm=d.summary||{};
+  h+='&lt;p&gt;Drift: '+(sm.drift?'&lt;span class="st-err"&gt;YES&lt;/span&gt;':'&lt;span class="st-ok"&gt;NO&lt;/span&gt;')+'&lt;/p&gt;';
+  el.innerHTML=h;
+}
+function rStatus(el,d){
+  var h='&lt;table&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Label&lt;/th&gt;&lt;th&gt;Health&lt;/th&gt;&lt;th&gt;SSH&lt;/th&gt;&lt;th&gt;Ping&lt;/th&gt;&lt;th&gt;Containers&lt;/th&gt;&lt;/tr&gt;';
+  var vms=d.vms||{};
+  for(var id in vms){
+    var v=vms[id],sm=v.summary||{};
+    var hc=v.health==='online'?'st-ok':(v.health==='degraded'?'st-warn':'st-err');
+    h+='&lt;tr&gt;&lt;td&gt;'+id+'&lt;/td&gt;&lt;td&gt;'+(v.label||"")+'&lt;/td&gt;';
+    h+='&lt;td class="'+hc+'"&gt;'+v.health+'&lt;/td&gt;';
+    h+='&lt;td class="'+(v.ssh?'st-ok':'st-err')+'"&gt;'+(v.ssh?'OK':'FAIL')+'&lt;/td&gt;';
+    h+='&lt;td class="'+(v.ping?'st-ok':'st-err')+'"&gt;'+(v.ping?'OK':'FAIL')+'&lt;/td&gt;';
+    h+='&lt;td&gt;'+sm.containers_running+'/'+sm.containers_total+'&lt;/td&gt;&lt;/tr&gt;';
+  }
+  h+='&lt;/table&gt;';
+  el.innerHTML=h;
+}
+function rProfBtns(){
+  var el=document.getElementById('out-profiling');
+  if(!window._dVMs){el.textContent='Load Declared first.';return}
+  var dep=window._deployedData||{};
+  var h="";
+  for(var id in window._dVMs){
+    var v=window._dVMs[id],svcs=v.services||{},cs=[];
+    for(var s in svcs)for(var i=0;i&lt;svcs[s].length;i++)cs.push(svcs[s][i]);
+    var dv=dep[id]||{},dcs=dv.containers||[];
+    var stMap={};for(var k=0;k&lt;dcs.length;k++)stMap[dcs[k].name]={state:dcs[k].state,ports:dcs[k].ports||''};
+    var unhealthy=[];
+    for(var j=0;j&lt;cs.length;j++){var si=stMap[cs[j]];if(!si||si.state!=='running')unhealthy.push(cs[j])}
+    h+='&lt;div class="prof-vm"&gt;&lt;strong&gt;'+id+'&lt;/strong&gt; ('+(v.label||"")+') — '+cs.length+' containers ';
+    h+='&lt;button class="prof-btn warn" data-profvm="'+id+'"&gt;Profile All&lt;/button&gt; ';
+    if(unhealthy.length&gt;0)h+='&lt;button class="prof-btn warn" data-profbad="'+id+'"&gt;Profile '+unhealthy.length+' Unhealthy&lt;/button&gt;';
+    h+='&lt;/div&gt;';
+    h+='&lt;div id="profvm-'+id+'"&gt;&lt;/div&gt;';
+    h+='&lt;table&gt;&lt;tr&gt;&lt;th&gt;Container&lt;/th&gt;&lt;th&gt;State&lt;/th&gt;&lt;th&gt;Ports&lt;/th&gt;&lt;th&gt;Action&lt;/th&gt;&lt;th&gt;Result&lt;/th&gt;&lt;/tr&gt;';
+    for(var j=0;j&lt;cs.length;j++){
+      var cn=cs[j],si=stMap[cn];
+      var st=si?si.state:'not deployed',pts=si?si.ports:'';
+      var cls=st==='running'?'st-ok':(st==='exited'||st==='not deployed'?'st-err':'st-warn');
+      h+='&lt;tr&gt;&lt;td&gt;'+cn+'&lt;/td&gt;&lt;td class="'+cls+'"&gt;'+st+'&lt;/td&gt;&lt;td&gt;'+(pts||'—')+'&lt;/td&gt;';
+      h+='&lt;td&gt;&lt;button class="prof-btn" data-prof="'+cn+'"&gt;Profile&lt;/button&gt;&lt;/td&gt;';
+      h+='&lt;td id="prof-'+cn+'"&gt;&lt;/td&gt;&lt;/tr&gt;';
+    }
+    h+='&lt;/table&gt;';
+  }
+  el.innerHTML=h;
+}
+document.getElementById('out-profiling').addEventListener('click',function(e){
+  var t=e.target;
+  if(t.dataset&amp;&amp;t.dataset.prof)profC(t.dataset.prof);
+  if(t.dataset&amp;&amp;t.dataset.profvm)profVM(t.dataset.profvm);
+  if(t.dataset&amp;&amp;t.dataset.profbad)profBad(t.dataset.profbad);
+});
+function profC(name){
+  var el=document.getElementById('prof-'+name);
+  if(el)el.innerHTML='&lt;span class="loading"&gt; checking...&lt;/span&gt;';
+  fetch(HAPI+'/api/profiling/'+encodeURIComponent(name),{signal:AbortSignal.timeout(60000)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var s=d.summary||{};
+      var c=s.overall_status==='healthy'?'st-ok':(s.overall_status==='degraded'?'st-warn':'st-err');
+      if(el)el.innerHTML=' &lt;span class="'+c+'"&gt;'+s.overall_status+' ('+s.checks_passed+'/'+s.checks_total+', '+d.total_time_ms+'ms)&lt;/span&gt;';
+    })
+    .catch(function(e){if(el)el.innerHTML=' &lt;span class="st-err"&gt;'+e.message+'&lt;/span&gt;'});
+}
+function profVM(vmId){
+  var el=document.getElementById('profvm-'+vmId);
+  if(el){el.className='loading';el.textContent='profiling all on '+vmId+'...';}
+  fetch(HAPI+'/api/profiling/vm/'+encodeURIComponent(vmId),{signal:AbortSignal.timeout(120000)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var sm=d.summary||{},cs=d.containers||[];
+      var h='&lt;span class="st-ok"&gt;'+sm.healthy+' healthy&lt;/span&gt;, &lt;span class="st-warn"&gt;'+sm.degraded+' degraded&lt;/span&gt;, &lt;span class="st-err"&gt;'+sm.down+' down&lt;/span&gt; ('+d.total_time_ms+'ms)&lt;br&gt;';
+      for(var i=0;i&lt;cs.length;i++){
+        var c=cs[i],st=(c.summary||{}).overall_status||'unknown';
+        var cls=st==='healthy'?'st-ok':(st==='degraded'?'st-warn':'st-err');
+        h+='  &lt;span class="'+cls+'"&gt;'+c.container+': '+st+'&lt;/span&gt;&lt;br&gt;';
+        var cel=document.getElementById('prof-'+c.container);
+        if(cel)cel.innerHTML=' &lt;span class="'+cls+'"&gt;'+st+'&lt;/span&gt;';
+      }
+      if(el){el.className="";el.innerHTML=h;}
+    })
+    .catch(function(e){if(el){el.className='st-err';el.textContent=vmId+': '+e.message;}});
+}
+function profBad(vmId){
+  var dep=window._deployedData||{};
+  var dv=dep[vmId]||{},dcs=dv.containers||[];
+  var stMap={};for(var k=0;k&lt;dcs.length;k++)stMap[dcs[k].name]=dcs[k].state;
+  var v=window._dVMs[vmId];if(!v)return;
+  var svcs=v.services||{},cs=[];
+  for(var s in svcs)for(var i=0;i&lt;svcs[s].length;i++)cs.push(svcs[s][i]);
+  var bad=[];for(var j=0;j&lt;cs.length;j++){var st=stMap[cs[j]];if(!st||st!=='running')bad.push(cs[j])}
+  if(bad.length===0)return;
+  var el=document.getElementById('profvm-'+vmId);
+  if(el){el.className='loading';el.textContent='profiling '+bad.length+' unhealthy on '+vmId+'...';}
+  var done=0,results=[];
+  for(var j=0;j&lt;bad.length;j++){
+    (function(cn){
+      fetch(HAPI+'/api/profiling/'+encodeURIComponent(cn),{signal:AbortSignal.timeout(60000)})
+        .then(function(r){return r.json()})
+        .then(function(d){
+          var s=d.summary||{};
+          var cls=s.overall_status==='healthy'?'st-ok':(s.overall_status==='degraded'?'st-warn':'st-err');
+          results.push({name:cn,status:s.overall_status||'unknown',cls:cls,passed:s.checks_passed,total:s.checks_total,ms:d.total_time_ms});
+          var cel=document.getElementById('prof-'+cn);
+          if(cel)cel.innerHTML='&lt;span class="'+cls+'"&gt;'+s.overall_status+' ('+s.checks_passed+'/'+s.checks_total+', '+d.total_time_ms+'ms)&lt;/span&gt;';
+        })
+        .catch(function(e){
+          results.push({name:cn,status:'error',cls:'st-err',err:e.message});
+          var cel=document.getElementById('prof-'+cn);
+          if(cel)cel.innerHTML='&lt;span class="st-err"&gt;'+e.message+'&lt;/span&gt;';
+        })
+        .finally(function(){
+          done++;
+          if(done===bad.length&amp;&amp;el){
+            var h='';for(var r=0;r&lt;results.length;r++){var ri=results[r];h+='&lt;span class="'+ri.cls+'"&gt;'+ri.name+': '+ri.status+'&lt;/span&gt;&lt;br&gt;'}
+            el.className='';el.innerHTML=h;
+          }
+        });
+    })(bad[j]);
+  }
+}
+// Toggle: Declared (static) &lt;-&gt; Live (API)
+function setupToggle(btnId, liveId, fetchFn) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  var liveEl = document.getElementById(liveId);
+  var staticEl = liveEl.nextElementSibling;
+  var loaded = false;
+  btn.addEventListener('click', function() {
+    if (liveEl.style.display === 'none') {
+      if (staticEl) staticEl.style.display = 'none';
+      liveEl.style.display = '';
+      btn.textContent = 'Show Declared';
+      if (!loaded) { loaded = true; fetchFn(liveEl); }
+    } else {
+      if (staticEl) staticEl.style.display = '';
+      liveEl.style.display = 'none';
+      btn.textContent = 'Show Live';
+    }
+  });
+}
+setupToggle('toggle-vms', 'live-vms', function(el) {
+  el.innerHTML = '&lt;span class="loading"&gt;Loading from API...&lt;/span&gt;';
+  fetch(HAPI + '/api/health/declared', {signal: AbortSignal.timeout(15000)})
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      var vms = d.vms || {}, t = d.totals || {};
+      var h = '&lt;table&gt;&lt;tr&gt;&lt;th&gt;VM ID&lt;/th&gt;&lt;th&gt;Label&lt;/th&gt;&lt;th&gt;Services&lt;/th&gt;&lt;th&gt;Containers&lt;/th&gt;&lt;/tr&gt;';
+      for (var id in vms) {
+        var v = vms[id], svcs = v.services || {}, sc = Object.keys(svcs).length, cc = 0;
+        for (var s in svcs) cc += svcs[s].length;
+        h += '&lt;tr&gt;&lt;td&gt;' + id + '&lt;/td&gt;&lt;td&gt;&lt;strong&gt;' + (v.label || '') + '&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;' + sc + '&lt;/td&gt;&lt;td&gt;' + cc + '&lt;/td&gt;&lt;/tr&gt;';
+      }
+      h += '&lt;/table&gt;';
+      h += '&lt;p&gt;&lt;strong&gt;' + t.vms + '&lt;/strong&gt; VMs, &lt;strong&gt;' + t.services + '&lt;/strong&gt; services, &lt;strong&gt;' + t.containers + '&lt;/strong&gt; containers&lt;/p&gt;';
+      el.innerHTML = h;
+    })
+    .catch(function(e) { el.innerHTML = '&lt;span class="st-err"&gt;Error: ' + e.message + '&lt;/span&gt;'; });
+});
+setupToggle('toggle-svcs', 'live-svcs', function(el) {
+  el.innerHTML = '&lt;span class="loading"&gt;Loading from API...&lt;/span&gt;';
+  fetch(HAPI + '/api/health/declared', {signal: AbortSignal.timeout(15000)})
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      var vms = d.vms || {}, doms = d.domains || {};
+      var h = '&lt;table&gt;&lt;tr&gt;&lt;th&gt;VM&lt;/th&gt;&lt;th&gt;Service&lt;/th&gt;&lt;th&gt;Containers&lt;/th&gt;&lt;th&gt;Domain&lt;/th&gt;&lt;/tr&gt;';
+      for (var id in vms) {
+        var v = vms[id], svcs = v.services || {};
+        for (var sn in svcs) {
+          var cs = svcs[sn], dom = '';
+          for (var ci = 0; ci &lt; cs.length; ci++) { if (doms[cs[ci]]) { dom = doms[cs[ci]]; break; } }
+          h += '&lt;tr&gt;&lt;td&gt;' + (v.label || id) + '&lt;/td&gt;&lt;td&gt;&lt;strong&gt;' + sn + '&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;&lt;code&gt;' + cs.join('&lt;/code&gt; &lt;code&gt;') + '&lt;/code&gt;&lt;/td&gt;';
+          h += '&lt;td&gt;' + (dom ? '&lt;a href="https://' + dom + '" target="_blank"&gt;' + dom + '&lt;/a&gt;' : '—') + '&lt;/td&gt;&lt;/tr&gt;';
+        }
+      }
+      h += '&lt;/table&gt;';
+      el.innerHTML = h;
+    })
+    .catch(function(e) { el.innerHTML = '&lt;span class="st-err"&gt;Error: ' + e.message + '&lt;/span&gt;'; });
+});
+setupToggle('toggle-docker', 'live-docker', function(el) {
+  el.innerHTML = '&lt;span class="loading"&gt;Loading from API...&lt;/span&gt;';
+  fetch(HAPI + '/api/health/deployed', {signal: AbortSignal.timeout(30000)})
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d) {
+      var dvms = d.vms || {}, h = '';
+      for (var id in dvms) {
+        var v = dvms[id], cs = v.containers || [];
+        h += '&lt;div class="health-tier" style="margin:.5rem 0;padding:.5rem .75rem;border-color:#1a1a2e"&gt;';
+        h += '&lt;strong&gt;' + (v.label || id) + '&lt;/strong&gt; — ';
+        h += '&lt;span class="st-ok"&gt;' + v.running + ' running&lt;/span&gt;, ';
+        h += '&lt;span class="' + (v.stopped &gt; 0 ? 'st-warn' : 'st-off') + '"&gt;' + v.stopped + ' stopped&lt;/span&gt;';
+        if (cs.length &gt; 0) {
+          h += '&lt;table style="margin:.4rem 0"&gt;&lt;tr&gt;&lt;th&gt;Container&lt;/th&gt;&lt;th&gt;State&lt;/th&gt;&lt;th&gt;Ports&lt;/th&gt;&lt;/tr&gt;';
+          for (var j = 0; j &lt; cs.length; j++) {
+            var c = cs[j], cls = c.state === 'running' ? 'st-ok' : (c.state === 'exited' ? 'st-err' : 'st-warn');
+            h += '&lt;tr&gt;&lt;td&gt;' + c.name + '&lt;/td&gt;&lt;td class="' + cls + '"&gt;' + c.state + '&lt;/td&gt;&lt;td&gt;' + (c.ports || '—') + '&lt;/td&gt;&lt;/tr&gt;';
+          }
+          h += '&lt;/table&gt;';
+        }
+        h += '&lt;/div&gt;';
+      }
+      var sm = d.summary || {};
+      h += '&lt;p&gt;&lt;span class="st-ok"&gt;' + sm.running + ' running&lt;/span&gt;, &lt;span class="st-warn"&gt;' + sm.stopped + ' stopped&lt;/span&gt;, ' + sm.total + ' total&lt;/p&gt;';
+      el.innerHTML = h;
+    })
+    .catch(function(e) { el.innerHTML = '&lt;span class="st-err"&gt;Error: ' + e.message + '&lt;/span&gt;'; });
+});
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+<h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bb-sec_caddy/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  caddy:
+    image: ghcr.io/diegonmarcos/caddy-l4:latest
+    container_name: caddy
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
+    depends_on:
+      introspect-proxy:
+        condition: service_healthy
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./error.html:/srv/error.html:ro
+      - ./dashboard.html:/srv/dashboard.html:ro
+      - ./ntfy-setup.html:/srv/ntfy-setup.html:ro
+      - ./wkd:/srv/wkd:ro
+      - ./logs:/var/log/caddy
+      - caddy_data:/data
+      - caddy_config:/config
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+    cap_add:
+      - NET_BIND_SERVICE
+
+  introspect-proxy:
+    image: introspect-proxy:latest
+    build: ./introspect-proxy
+    container_name: introspect-proxy
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    environment:
+      DEBUG: "true"
+      ISSUER: https://auth.diegonmarcos.com
+      JWKS_URL: https://auth.diegonmarcos.com/jwks.json
+      REQUIRED_SCOPE: authelia.bearer.authz
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 96M
+          pids: 256
+        reservations:
+          memory: 48M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  caddy_config:
+    driver: local
+  caddy_data:
+    driver: local
+
+</code></pre>
+<h2 id="errorhtml"><a class="header" href="#errorhtml">error.html</a></h2>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;404 — Wrong Wormhole&lt;/title&gt;
+&lt;style&gt;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+  overflow-y:auto;
+  position:relative;
+  padding:1rem 0;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding:2rem 1rem;
+  max-width:600px;
+  width:100%;
+}
+.code{
+  font-size:clamp(5rem,15vw,10rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#ff6b6b,#845ef7,#339af0);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1;
+  animation:glitch 4s ease-in-out infinite;
+  position:relative;
+}
+@keyframes glitch{
+  0%,90%,100%{transform:translate(0)}
+  92%{transform:translate(-3px,1px)}
+  94%{transform:translate(3px,-1px)}
+  96%{transform:translate(-1px,2px)}
+  98%{transform:translate(2px,-2px)}
+}
+.ascii{
+  color:#339af0;
+  font-size:clamp(.45rem,1.2vw,.8rem);
+  line-height:1.2;
+  margin:1.5rem 0;
+  opacity:.7;
+  white-space:pre;
+  overflow-x:auto;
+}
+@media(max-width:400px){
+  .ascii{font-size:.4rem}
+}
+.msg{
+  font-size:1.1rem;
+  color:#868e96;
+  margin:1rem 0;
+  line-height:1.6;
+}
+.msg em{
+  color:#ff6b6b;
+  font-style:normal;
+}
+.prompt{
+  margin-top:2rem;
+  font-size:.9rem;
+  color:#495057;
+}
+.prompt span{
+  color:#51cf66;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+.log{
+  margin-top:2.5rem;
+  text-align:left;
+  font-size:.75rem;
+  color:#495057;
+  line-height:1.8;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+}
+.log .ok{color:#51cf66}
+.log .warn{color:#fcc419}
+.log .err{color:#ff6b6b}
+.vm-panel{
+  margin-top:1.5rem;
+  text-align:left;
+  font-size:.75rem;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+}
+.vm-header{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin-bottom:.75rem;
+}
+.vm-indicator{
+  width:10px;height:10px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.vm-indicator.green{background:#51cf66}
+.vm-indicator.red{background:#ff6b6b}
+.vm-indicator.yellow{background:#fcc419}
+.vm-indicator.blue{background:#339af0}
+.vm-name{color:#c0c0c0;font-weight:bold}
+.vm-health{color:#868e96;margin-left:auto;font-size:.7rem}
+.vm-status{
+  background:#08080d;
+  border:1px solid #1a1a2e;
+  border-radius:3px;
+  padding:.5rem;
+  font-family:'Courier New',monospace;
+  font-size:.65rem;
+  color:#868e96;
+  white-space:pre-wrap;
+  word-break:break-all;
+  overflow-x:hidden;
+  min-height:1.5rem;
+  max-height:8rem;
+  overflow-y:auto;
+  margin-bottom:.75rem;
+}
+.vm-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.vm-btn{
+  font-family:'Courier New',monospace;
+  font-size:.7rem;
+  padding:.35rem .75rem;
+  border:1px solid;
+  border-radius:3px;
+  background:transparent;
+  cursor:pointer;
+  transition:opacity .2s,background .2s;
+}
+.vm-btn.refresh{color:#339af0;border-color:#339af0}
+.vm-btn.refresh:hover{background:#339af01a}
+.vm-btn.start{color:#51cf66;border-color:#51cf66}
+.vm-btn.start:hover{background:#51cf661a}
+.vm-btn.stop{color:#ff6b6b;border-color:#ff6b6b}
+.vm-btn.stop:hover{background:#ff6b6b1a}
+.vm-btn.reset{color:#fcc419;border-color:#fcc419}
+.vm-btn.reset:hover{background:#fcc4191a}
+.vm-btn:active{opacity:.7}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="stars" id="stars"&gt;&lt;/div&gt;
+&lt;div class="container"&gt;
+  &lt;div class="code"&gt;404&lt;/div&gt;
+  &lt;pre class="ascii"&gt;
+    .  *  .    *    .  *
+  *    _____     .    *
+   .  /     \  *   .
+  *  | () () |    *   .
+   . |  ___  | .    *
+  *  |_|   |_|   .
+    /    ^    \  *   .
+   /   / | \   \
+  *   /  |  \   *  .
+  &lt;/pre&gt;
+  &lt;p class="msg"&gt;
+    You've taken a &lt;em&gt;wrong wormhole&lt;/em&gt;.&lt;br&gt;
+    This domain exists, but the destination doesn't.
+  &lt;/p&gt;
+  &lt;p class="msg" style="font-size:.8rem;word-break:break-all"&gt;
+    &lt;span style="color:#495057"&gt;requested:&lt;/span&gt; &lt;span id="req-url" style="color:#339af0"&gt;&lt;/span&gt;
+  &lt;/p&gt;
+  &lt;div class="log"&gt;
+    &lt;div&gt;&lt;span class="ok"&gt;[OK]&lt;/span&gt; DNS resolved &amp;mdash; you found the server&lt;/div&gt;
+    &lt;div&gt;&lt;span class="ok"&gt;[OK]&lt;/span&gt; TLS handshake &amp;mdash; encrypted tunnel up&lt;/div&gt;
+    &lt;div&gt;&lt;span class="warn"&gt;[WARN]&lt;/span&gt; Host header &amp;mdash; no matching virtual host&lt;/div&gt;
+    &lt;div&gt;&lt;span class="err"&gt;[ERR]&lt;/span&gt; Route not found &amp;mdash; nothing lives here (yet)&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="vm-panel"&gt;
+    &lt;div class="vm-header"&gt;
+      &lt;span class="vm-indicator yellow" id="vm-light"&gt;&lt;/span&gt;
+      &lt;span class="vm-name"&gt;oci-flex-1&lt;/span&gt;
+      &lt;span class="vm-health" id="vm-health"&gt;checking...&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="vm-status" id="vm-status"&gt;&lt;/div&gt;
+    &lt;div class="vm-actions"&gt;
+      &lt;button class="vm-btn start" id="vm-start-btn"&gt;Start&lt;/button&gt;
+      &lt;button class="vm-btn stop" id="vm-stop-btn"&gt;Stop&lt;/button&gt;
+      &lt;button class="vm-btn reset" id="vm-reset-btn"&gt;Reset&lt;/button&gt;
+      &lt;button class="vm-btn refresh" id="vm-refresh-btn"&gt;Refresh&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;p class="prompt"&gt;
+    visitor@caddy:~$ &lt;a href="https://linktree.diegonmarcos.com"&gt;cd /home&lt;/a&gt;&lt;span&gt;_&lt;/span&gt;
+  &lt;/p&gt;
+&lt;/div&gt;
+&lt;script&gt;
+(function(){
+  document.getElementById('req-url').textContent=location.href;
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i&lt;80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+})();
+
+var API='https://api.diegonmarcos.com';
+var VM_LABEL='oci-flex-1';
+var vmId=null;
+var lightEl=document.getElementById('vm-light');
+var healthEl=document.getElementById('vm-health');
+var statusEl=document.getElementById('vm-status');
+
+function setIndicator(color,msg){
+  lightEl.className='vm-indicator '+color;
+  healthEl.textContent=msg;
+}
+
+function discoverVm(){
+  return fetch(API+'/api/health/declared',{signal:AbortSignal.timeout(10000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      var vms=data.vms||{};
+      for(var id in vms){
+        if(vms[id]&amp;&amp;vms[id].label===VM_LABEL){vmId=id;break}
+      }
+      if(!vmId){
+        for(var id2 in vms){
+          if(id2.indexOf('flex')!==-1){vmId=id2;break}
+        }
+      }
+      console.debug('[vm] discovered:',vmId);
+      return vmId;
+    });
+}
+
+function checkStatus(){
+  if(!vmId){
+    discoverVm().then(function(){if(vmId)checkStatus()}).catch(function(){
+      setIndicator('blue','discovery failed');
+    });
+    return;
+  }
+  setIndicator('yellow','checking...');
+  fetch(API+'/api/health/status/'+vmId,{signal:AbortSignal.timeout(10000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      console.debug('[vm] health:',data);
+      statusEl.textContent=JSON.stringify(data,null,2);
+      var h=data.health||'unknown';
+      if(h==='online') setIndicator('green','online');
+      else if(h==='offline') setIndicator('red','offline');
+      else setIndicator('blue',h);
+    })
+    .catch(function(e){
+      console.debug('[vm] health error:',e);
+      statusEl.textContent='Error: '+e.message;
+      setIndicator('blue','error');
+    });
+}
+
+function vmAction(action){
+  if(!vmId){
+    discoverVm().then(function(){if(vmId)vmAction(action)}).catch(function(){
+      setIndicator('blue','discovery failed');
+    });
+    return;
+  }
+  setIndicator('yellow','sending '+action+'...');
+  statusEl.textContent='';
+  fetch(API+'/api/vms/'+vmId+'/'+action,{method:'POST',signal:AbortSignal.timeout(30000)})
+    .then(function(r){return r.json()})
+    .then(function(data){
+      console.debug('[vm] action:',action,data);
+      statusEl.textContent=JSON.stringify(data,null,2);
+      setIndicator('yellow',data.status||'pending');
+      setTimeout(checkStatus,3000);
+    })
+    .catch(function(e){
+      console.debug('[vm] action error:',e);
+      statusEl.textContent='Error: '+e.message;
+      setIndicator('blue','error');
+    });
+}
+
+document.getElementById('vm-start-btn').addEventListener('click',function(){vmAction('start')});
+document.getElementById('vm-stop-btn').addEventListener('click',function(){vmAction('stop')});
+document.getElementById('vm-reset-btn').addEventListener('click',function(){vmAction('reset')});
+document.getElementById('vm-refresh-btn').addEventListener('click',checkStatus);
+
+discoverVm().then(checkStatus).catch(function(){setIndicator('blue','discovery failed')});
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+<h2 id="introspect-proxydockerfile"><a class="header" href="#introspect-proxydockerfile">introspect-proxy/Dockerfile</a></h2>
+<pre><code>FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY app/main.py .
+
+# Non-root user for security
+RUN useradd -r -u 1000 appuser
+USER appuser
+
+# Expose port
+EXPOSE 4182
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')" || exit 1
+
+# Run with gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:4182", "--workers", "1", "--threads", "1", "--timeout", "120", "main:app"]
+
+</code></pre>
+<h2 id="introspect-proxyappmainpy"><a class="header" href="#introspect-proxyappmainpy">introspect-proxy/app/main.py</a></h2>
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+JWT Validation Proxy
+
+Validates Bearer JWTs locally using Authelia's JWKS public keys.
+No dependency on Authelia's token database — only needs the public key
+to verify RSA signatures.
+
+Architecture:
+    CLI Client -&gt; Caddy (forward_auth) -&gt; This Proxy -&gt; Local JWT validation
+                                              |              (JWKS cached)
+                                              v
+                                        200 OK + headers (valid)
+                                        401 Unauthorized (invalid)
+"""
+
+import os
+import time
+import logging
+import jwt
+from flask import Flask, request, Response
+from jwt import PyJWKClient
+
+# Configuration from environment
+JWKS_URL = os.environ.get("JWKS_URL", "https://auth.diegonmarcos.com/jwks.json")
+ISSUER = os.environ.get("ISSUER", "https://auth.diegonmarcos.com")
+REQUIRED_SCOPE = os.environ.get("REQUIRED_SCOPE", "authelia.bearer.authz")
+DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+
+# Logging setup
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+# JWKS client with caching (re-fetches on key rotation)
+_jwks_client = None
+_jwks_client_created = 0
+JWKS_CACHE_TTL = 3600  # re-create client every hour
+
+
+def get_jwks_client():
+    """Get or create a cached JWKS client."""
+    global _jwks_client, _jwks_client_created
+    now = time.time()
+    if _jwks_client is None or (now - _jwks_client_created) &gt; JWKS_CACHE_TTL:
+        logger.info(f"Fetching JWKS from {JWKS_URL}")
+        _jwks_client = PyJWKClient(JWKS_URL)
+        _jwks_client_created = now
+    return _jwks_client
+
+
+@app.route("/auth", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+def auth():
+    """
+    Validates Bearer JWT locally using JWKS public key.
+
+    Expected by Caddy forward_auth directive:
+    - 2xx: Allow request, forward auth headers to backend
+    - 401: Deny request
+
+    Request Headers:
+        Authorization: Bearer &lt;token&gt;
+
+    Response Headers (on success):
+        X-Auth-User: client_id from token
+        X-Auth-Subject: sub claim from token
+        X-Auth-Email: email from token (if available)
+    """
+    auth_header = request.headers.get("Authorization", "")
+
+    if not auth_header.startswith("Bearer "):
+        logger.debug("No Bearer token in Authorization header")
+        return Response("No Bearer token", status=401)
+
+    token = auth_header[7:].strip()
+    # JWT tokens are always ASCII — reject non-ASCII bytes
+    if not token.isascii():
+        logger.warning(f"Non-ASCII chars in token (len={len(token)}), stripping")
+        token = token.encode('ascii', errors='ignore').decode('ascii')
+
+    try:
+        jwks_client = get_jwks_client()
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=ISSUER,
+            options={"verify_aud": False},
+        )
+    except jwt.ExpiredSignatureError:
+        logger.debug("Token expired")
+        return Response("Token expired", status=401)
+    except jwt.InvalidIssuerError:
+        logger.debug(f"Invalid issuer")
+        return Response("Invalid token issuer", status=401)
+    except jwt.PyJWKClientError as e:
+        logger.error(f"JWKS fetch failed: {e}")
+        # Reset client so next request retries
+        global _jwks_client
+        _jwks_client = None
+        return Response("Auth key server unavailable", status=502)
+    except jwt.InvalidTokenError as e:
+        logger.debug(f"Invalid token: {e}")
+        return Response("Invalid token", status=401)
+
+    # Check required scope
+    scopes = payload.get("scp", [])
+    if REQUIRED_SCOPE and REQUIRED_SCOPE not in scopes:
+        logger.debug(f"Missing scope {REQUIRED_SCOPE}, has: {scopes}")
+        return Response("Insufficient scope", status=403)
+
+    client_id = payload.get("client_id", "")
+    subject = payload.get("sub", "")
+
+    logger.info(f"Token valid for client: {client_id}, sub: {subject}")
+
+    response = Response("OK", status=200)
+    response.headers["X-Auth-User"] = client_id
+    response.headers["X-Auth-Subject"] = subject
+    response.headers["X-Auth-Email"] = client_id
+    return response
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Health check endpoint for Docker/orchestration."""
+    return Response("OK", status=200)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 4182))
+    app.run(host="0.0.0.0", port=port, debug=DEBUG)
+
+</code></pre>
+<h2 id="introspect-proxyapprequirementstxt"><a class="header" href="#introspect-proxyapprequirementstxt">introspect-proxy/app/requirements.txt</a></h2>
+<pre><code>flask==3.0.0
+PyJWT[crypto]==2.9.0
+gunicorn==21.2.0
+
+</code></pre>
+<h2 id="ntfy-setuphtml"><a class="header" href="#ntfy-setuphtml">ntfy-setup.html</a></h2>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+&lt;title&gt;ntfy — Channel Setup&lt;/title&gt;
+&lt;style&gt;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0a0a0f;
+  color:#c0c0c0;
+  font-family:'Courier New',monospace;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+  overflow-y:auto;
+  position:relative;
+  padding:1rem 0;
+}
+.stars{
+  position:fixed;
+  top:0;left:0;width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+.star{
+  position:absolute;
+  border-radius:50%;
+  background:#fff;
+  animation:twinkle var(--d,3s) ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.1}100%{opacity:.8}}
+.container{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding:2rem 1rem;
+  max-width:600px;
+  width:100%;
+}
+.title{
+  font-size:clamp(2rem,6vw,3rem);
+  font-weight:bold;
+  background:linear-gradient(135deg,#51cf66,#339af0,#845ef7);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  line-height:1.2;
+  margin-bottom:.5rem;
+}
+.subtitle{
+  font-size:.9rem;
+  color:#868e96;
+  margin-bottom:2rem;
+}
+.log{
+  text-align:left;
+  font-size:.75rem;
+  color:#495057;
+  line-height:1.8;
+  padding:1rem;
+  border:1px solid #1a1a2e;
+  border-radius:4px;
+  background:#0d0d15;
+  min-height:6rem;
+  max-height:20rem;
+  overflow-y:auto;
+}
+.log .ok{color:#51cf66}
+.log .warn{color:#fcc419}
+.log .err{color:#ff6b6b}
+.log .info{color:#339af0}
+.actions{
+  margin-top:1.5rem;
+  display:flex;
+  gap:.75rem;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.btn{
+  font-family:'Courier New',monospace;
+  font-size:.85rem;
+  padding:.5rem 1.5rem;
+  border:1px solid;
+  border-radius:3px;
+  background:transparent;
+  cursor:pointer;
+  transition:opacity .2s,background .2s;
+}
+.btn:active{opacity:.7}
+.btn.primary{color:#51cf66;border-color:#51cf66}
+.btn.primary:hover{background:#51cf661a}
+.btn.primary:disabled{color:#495057;border-color:#495057;cursor:not-allowed;background:transparent}
+.btn.secondary{color:#339af0;border-color:#339af0}
+.btn.secondary:hover{background:#339af01a}
+.prompt{
+  margin-top:2rem;
+  font-size:.9rem;
+  color:#495057;
+}
+.prompt span{
+  color:#51cf66;
+  animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+a{
+  color:#339af0;
+  text-decoration:none;
+  border-bottom:1px dashed #339af0;
+  transition:color .2s;
+}
+a:hover{color:#845ef7;border-color:#845ef7}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class="stars" id="stars"&gt;&lt;/div&gt;
+&lt;div class="container"&gt;
+  &lt;div class="title"&gt;ntfy setup&lt;/div&gt;
+  &lt;p class="subtitle"&gt;Auto-subscribe to all active notification channels&lt;/p&gt;
+  &lt;div class="log" id="log"&gt;&lt;/div&gt;
+  &lt;div class="actions"&gt;
+    &lt;button class="btn primary" id="subscribe-btn" disabled&gt;Subscribe All&lt;/button&gt;
+    &lt;button class="btn secondary" id="android-btn" disabled&gt;Download for Android&lt;/button&gt;
+    &lt;button class="btn secondary" id="go-btn" onclick="location.href='/'"&gt;Open ntfy&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;p class="prompt"&gt;
+    visitor@ntfy:~$ &lt;a href="/"&gt;cd /notifications&lt;/a&gt;&lt;span&gt;_&lt;/span&gt;
+  &lt;/p&gt;
+&lt;/div&gt;
+&lt;script&gt;
+(function(){
+  // Stars
+  var s=document.getElementById('stars'),w=window.innerWidth,h=window.innerHeight;
+  for(var i=0;i&lt;80;i++){
+    var d=document.createElement('div');
+    d.className='star';
+    var sz=Math.random()*2+1;
+    d.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*h+'px;left:'+Math.random()*w+'px;--d:'+(Math.random()*4+2)+'s';
+    s.appendChild(d);
+  }
+
+  var logEl=document.getElementById('log');
+  var btn=document.getElementById('subscribe-btn');
+  var androidBtn=document.getElementById('android-btn');
+  var baseUrl=location.origin;
+  var topics=[];
+
+  function log(cls,msg){
+    var div=document.createElement('div');
+    var span=document.createElement('span');
+    span.className=cls;
+    var labels={ok:'[OK]',warn:'[WARN]',err:'[ERR]',info:'[INFO]'};
+    span.textContent=labels[cls]||'[LOG]';
+    div.appendChild(span);
+    div.appendChild(document.createTextNode(' '+msg));
+    logEl.appendChild(div);
+    logEl.scrollTop=logEl.scrollHeight;
+  }
+
+  // Step 1: Fetch topics from ntfy API (auth injected by Caddy)
+  log('info','Fetching active topics...');
+  fetch('/v1/topics')
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      topics=(Array.isArray(data)?data:[]).map(function(t){return t.topic||t});
+      if(topics.length===0){
+        log('warn','No topics found in cache — publish a message first');
+        return;
+      }
+      log('ok','Found '+topics.length+' topic(s): '+topics.join(', '));
+      btn.disabled=false;
+      androidBtn.disabled=false;
+    })
+    .catch(function(e){
+      log('err','Failed to fetch topics: '+e.message);
+    });
+
+  // Android export — generate ntfy Android backup JSON
+  androidBtn.addEventListener('click',function(){
+    var subs=topics.map(function(topic,i){
+      return {
+        id:i+1,
+        baseUrl:baseUrl,
+        topic:topic,
+        instant:false,
+        dedicatedChannels:false,
+        mutedUntil:0,
+        minPriority:null,
+        autoDelete:null,
+        insistent:null,
+        lastNotificationId:null,
+        icon:null,
+        upAppId:null,
+        upConnectorToken:null,
+        displayName:null
+      };
+    });
+    var backup={
+      magic:'ntfy2586',
+      version:1,
+      settings:null,
+      subscriptions:subs,
+      notifications:[],
+      users:[],
+      trustedCertificates:null,
+      clientCertificates:null
+    };
+    var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='ntfy-backup.json';
+    a.click();
+    log('ok','Downloaded ntfy-backup.json — import via ntfy app → Settings → Backup &amp; Restore');
+  });
+
+  // Step 2: Subscribe — write into ntfy IndexedDB
+  btn.addEventListener('click',function(){
+    btn.disabled=true;
+    if(topics.length===0){
+      log('warn','No topics to subscribe');
+      return;
+    }
+    log('info','Opening ntfy IndexedDB...');
+    subscribeAll();
+  });
+
+  function subscribeAll(){
+    // Try opening existing DB first (no version = open at current version)
+    var req=indexedDB.open('ntfy');
+
+    req.onupgradeneeded=function(e){
+      // Fresh browser — DB doesn't exist yet, create Dexie v3 schema
+      var db=e.target.result;
+      log('info','Creating ntfy database (first visit)...');
+      if(!db.objectStoreNames.contains('subscriptions')){
+        db.createObjectStore('subscriptions',{keyPath:'id'});
+      }
+      if(!db.objectStoreNames.contains('notifications')){
+        var ns=db.createObjectStore('notifications',{keyPath:'id'});
+        ns.createIndex('nidx','[subscriptionId+time]',{unique:false});
+      }
+      if(!db.objectStoreNames.contains('users')){
+        db.createObjectStore('users',{keyPath:'baseUrl'});
+      }
+      if(!db.objectStoreNames.contains('prefs')){
+        db.createObjectStore('prefs',{keyPath:'key'});
+      }
+    };
+
+    req.onsuccess=function(e){
+      var db=e.target.result;
+      log('ok','Database opened (version '+db.version+')');
+
+      if(!db.objectStoreNames.contains('subscriptions')){
+        db.close();
+        log('err','No subscriptions store found — try visiting ntfy UI first, then return here');
+        return;
+      }
+
+      var tx=db.transaction('subscriptions','readwrite');
+      var store=tx.objectStore('subscriptions');
+      var added=0;
+      var skipped=0;
+      var pending=topics.length;
+
+      topics.forEach(function(topic){
+        var id=baseUrl+'/'+topic;
+        var getReq=store.get(id);
+
+        getReq.onsuccess=function(){
+          if(getReq.result){
+            skipped++;
+            log('warn','Skip (exists): '+topic);
+            checkDone();
+          }else{
+            var putReq=store.put({
+              id:id,
+              baseUrl:baseUrl,
+              topic:topic,
+              mutedUntil:0,
+              last:null
+            });
+            putReq.onsuccess=function(){
+              added++;
+              log('ok','Subscribed: '+topic);
+              checkDone();
+            };
+            putReq.onerror=function(){
+              log('err','Failed to write: '+topic);
+              checkDone();
+            };
+          }
+        };
+
+        getReq.onerror=function(){
+          log('err','Failed to read: '+topic);
+          checkDone();
+        };
+      });
+
+      function checkDone(){
+        pending--;
+        if(pending&lt;=0){
+          log('info','Done — '+added+' added, '+skipped+' skipped');
+          if(added&gt;0){
+            log('ok','Redirecting to ntfy in 2s...');
+            setTimeout(function(){location.href='/'},2000);
+          }
+        }
+      }
+
+      tx.onerror=function(e){
+        log('err','Transaction error: '+e.target.error);
+      };
+    };
+
+    req.onerror=function(e){
+      log('err','Failed to open IndexedDB: '+e.target.error);
+    };
+  }
+})();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="spec.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="spec.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

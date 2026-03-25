@@ -1,0 +1,34 @@
+{
+  "name": "dagu",
+  "description": "Dagu - Lightweight DAG-based workflow scheduler",
+  "dns": "dagu.app",
+  "ports": {
+    "app": 8070
+  },
+  "category": "tools",
+  "domain": "workflows.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/dagu",
+    "excludes": [
+      "data"
+    ],
+    "clean_dirs": [
+      "dags"
+    ]
+  },
+  "proxy": {
+    "primary": {
+      "domain": "workflows.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

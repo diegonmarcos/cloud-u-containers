@@ -176,30 +176,31 @@
                         <h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_kg-graph/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_kg-graph/build.sh ship  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   surrealdb:
     image: surrealdb/surrealdb:v2
     container_name: surrealdb
-    restart: unless-stopped
-    command: start --log info --user root --pass ${SURREAL_ROOT_PASSWORD} file:/data/surreal.db
+    restart: "no"  # container-init handles startup
+    network_mode: host
+    command: start --log info --user root --pass ${SURREAL_ROOT_PASSWORD} --bind 127.0.0.1:8001 file:/data/surreal.db
     env_file:
       - .secrets
-    ports:
-      - "127.0.0.1:8001:8000"
     volumes:
       - /opt/data/surrealdb:/data
-    networks:
-      - kg-net
     healthcheck:
-      test: ["CMD", "/surreal", "is-ready", "--conn", "http://localhost:8000"]
+      test: ["CMD", "/surreal", "is-ready", "--conn", "http://localhost:8001"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 10s
 
-networks:
-  kg-net:
-    driver: bridge
 
 </code></pre>
 <h2 id="schemasurql"><a class="header" href="#schemasurql">schema.surql</a></h2>

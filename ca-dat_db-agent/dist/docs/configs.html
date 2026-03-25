@@ -199,7 +199,14 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 </code></pre>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml"># db-agent - Central database backup service
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_db-agent/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_db-agent/build.sh ship  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# db-agent - Central database backup service
 # Deploy to: ALL VMs
 # Runs daily, auto-detects databases, dumps + logs
 
@@ -207,7 +214,8 @@ services:
   db-agent:
     build: .
     container_name: db-agent
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     mem_limit: 64m
     cpus: 0.1
     environment:
@@ -222,8 +230,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - db-agent-data:/backup
       - db-agent-logs:/var/log/db-agent
-    networks:
-      - npm_default
     healthcheck:
       test: ["CMD", "test", "-f", "/var/log/db-agent/last-run.json"]
       interval: 60s
@@ -242,9 +248,6 @@ volumes:
   db-agent-logs:
     name: db-agent-logs
 
-networks:
-  npm_default:
-    external: true
 
 </code></pre>
 <h2 id="entrypointsh"><a class="header" href="#entrypointsh">entrypoint.sh</a></h2>

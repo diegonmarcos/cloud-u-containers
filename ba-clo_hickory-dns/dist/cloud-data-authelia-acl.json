@@ -1,0 +1,1 @@
+{"_generated":"2026-03-25T03:04:50.402Z","_source":"cloud-data-topology.json via /cloud-data/authelia-acl","rules":[{"domain":"*.diegonmarcos.com","policy":"two_factor","service":"_default"}]}

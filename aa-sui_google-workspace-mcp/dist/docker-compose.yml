@@ -9,7 +9,7 @@ services:
   google-workspace-mcp:
     image: ghcr.io/diegonmarcos/google-workspace-mcp:latest
     container_name: google-workspace-mcp
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     environment:
       WORKSPACE_MCP_HOST: "0.0.0.0"

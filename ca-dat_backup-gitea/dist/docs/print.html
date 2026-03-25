@@ -178,7 +178,7 @@
 <h2 id="network"><a class="header" href="#network">Network</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
 <tr><td><code>domain</code></td><td><code>git.diegonmarcos.com</code></td></tr>
-<tr><td><code>http_port</code></td><td><code>3000</code></td></tr>
+<tr><td><code>http_port</code></td><td><code>3002</code></td></tr>
 <tr><td><code>ssh_port</code></td><td><code>2222</code></td></tr>
 </tbody></table>
 </div>
@@ -199,33 +199,38 @@
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml"># Gitea - Self-hosted Git server for code mirrors
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-gitea/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-gitea/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# Gitea - Self-hosted Git server for code mirrors
 # Deploy to: oci-A1-f_1
 
 services:
   gitea:
     image: gitea/gitea:latest
     container_name: gitea
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     environment:
       - USER_UID=1000
       - USER_GID=1000
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__database__PATH=/data/gitea/gitea.db
-      - GITEA__server__ROOT_URL=http://144.24.196.72:3000
+      - GITEA__server__ROOT_URL=http://144.24.196.72:3002
+      - GITEA__server__HTTP_PORT=3002
       - GITEA__server__SSH_PORT=2222
       - GITEA__server__SSH_DOMAIN=144.24.196.72
+      - GITEA__server__SSH_LISTEN_PORT=2222
       - GITEA__mirror__ENABLED=true
       - GITEA__mirror__DEFAULT_INTERVAL=1h
     volumes:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "3000:3000"
-      - "2222:22"
-    networks:
-      - backup_network
 
 volumes:
   gitea_data:
@@ -234,10 +239,6 @@ volumes:
       type: none
       o: bind
       device: /backup/code/gitea-data
-
-networks:
-  backup_network:
-    driver: bridge
 
 </code></pre>
 

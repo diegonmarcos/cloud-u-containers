@@ -26,7 +26,7 @@
         mail-mcp:
           image: ${config.image}
           container_name: ${config.container_name}
-          restart: "no"  # container-init handles startup
+          restart: unless-stopped
           network_mode: host
           env_file:
             - .secrets

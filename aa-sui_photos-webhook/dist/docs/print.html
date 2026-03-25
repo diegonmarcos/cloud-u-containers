@@ -218,10 +218,18 @@ CMD ["python", "webhook.py", "flask"]
 
 </code></pre>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_photos-webhook/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_photos-webhook/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   photos-db:
     image: postgres:16-alpine
     container_name: photos-db
+    network_mode: host
     environment:
       POSTGRES_DB: photos
       POSTGRES_USER: photos_user
@@ -229,11 +237,7 @@ CMD ["python", "webhook.py", "flask"]
     volumes:
       - photos_db_data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-    ports:
-      - "5432:5432"
-    networks:
-      - photos_net
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U photos_user -d photos"]
       interval: 10s
@@ -245,8 +249,9 @@ CMD ["python", "webhook.py", "flask"]
       context: .
       dockerfile: Dockerfile
     container_name: photos-webhook
+    network_mode: host
     environment:
-      DB_HOST: photos-db
+      DB_HOST: localhost
       DB_NAME: photos
       DB_USER: photos_user
       DB_PASSWORD: ${DB_PASSWORD:-SECURE_PASSWORD_HERE}
@@ -254,21 +259,17 @@ CMD ["python", "webhook.py", "flask"]
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_REGION: eu-marseille-1
       S3_BUCKET: photos
-      WEBHOOK_PORT: 5001
-    ports:
-      - "5001:5001"
+      WEBHOOK_PORT: 5002
     depends_on:
       photos-db:
         condition: service_healthy
     volumes:
       - ./webhook.py:/app/webhook.py
       - ./requirements.txt:/app/requirements.txt
-    networks:
-      - photos_net
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     command: python webhook.py flask
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -276,10 +277,6 @@ CMD ["python", "webhook.py", "flask"]
 volumes:
   photos_db_data:
     driver: local
-
-networks:
-  photos_net:
-    driver: bridge
 
 </code></pre>
 <h2 id="requirementstxt"><a class="header" href="#requirementstxt">requirements.txt</a></h2>

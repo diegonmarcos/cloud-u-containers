@@ -189,31 +189,30 @@
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml"># RevealMD - Markdown to reveal.js presentations
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_revealmd/src/flake.nix   ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_revealmd/build.sh ship  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# RevealMD - Markdown to reveal.js presentations
 # Deployed on: oci-A1-f_1 (Oracle Flex)
 
 services:
   revealmd:
     image: webpronl/reveal-md:latest
     container_name: revealmd_app
-    restart: "no"
-    ports:
-      - "10.0.0.6:3014:1948"
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - slides_data:/slides
     command: /slides --watch
-    networks:
-      - dev_network
     healthcheck:
       test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:1948']
       interval: 30s
       timeout: 10s
       retries: 3
-
-networks:
-  dev_network:
-    external: true
-    name: dev_network
 
 volumes:
   slides_data:

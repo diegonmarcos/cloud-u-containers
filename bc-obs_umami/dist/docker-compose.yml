@@ -1,0 +1,84 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_umami/src/flake.nix     ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_umami/build.sh ship    ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# Umami Analytics (lightweight, always-on)
+# VM: oci-E2-f_1 (129.151.228.66)
+# URL: https://analytics.diegonmarcos.com/umami
+
+services:
+  umami:
+    image: ghcr.io/umami-software/umami:latest
+    container_name: umami
+    restart: "no"  # container-init handles startup
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@localhost:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${APP_SECRET}
+      BASE_PATH: /umami
+      DISABLE_TELEMETRY: "1"
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
+
+  umami-db:
+    image: postgres:16-alpine
+    container_name: umami-db
+    restart: "no"  # container-init handles startup
+    network_mode: host
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 32M
+
+  umami-setup:
+    image: curlimages/curl:latest
+    container_name: umami-setup
+    restart: "no"
+    network_mode: host
+    env_file:
+      - .secrets
+    depends_on:
+      umami:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/setup/setup.sh"]
+    volumes:
+      - ./setup.sh:/setup/setup.sh:ro
+      - umami_config:/output
+
+volumes:
+  umami_db_data:
+    name: umami_db_data
+  umami_config:
+    name: umami_config

@@ -10,12 +10,15 @@ services:
     image: gristlabs/grist:latest
     container_name: grist_app
     network_mode: host
-    restart: always
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - GRIST_SESSION_SECRET=changeme-secret-key
       - GRIST_SINGLE_ORG=docs

@@ -1,0 +1,1 @@
+{"_generated":"2026-03-25T03:04:50.417Z","_source":"cloud-data-topology.json via /cloud-data/firewall-rules","vms":{"oci-apps":{"ingress":[]},"oci-mail":{"ingress":[]},"gcp-proxy":{"ingress":[]},"gcp-t4":{"ingress":[]},"oci-analytics":{"ingress":[]}}}

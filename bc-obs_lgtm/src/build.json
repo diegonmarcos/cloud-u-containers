@@ -1,0 +1,33 @@
+{
+  "name": "lgtm",
+  "description": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
+  "dns": "grafana.app",
+  "ports": {
+    "grafana": 3200,
+    "loki": 3110,
+    "mimir": 9009,
+    "tempo": 3210
+  },
+  "category": "tools",
+  "domain": "grafana.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/lgtm"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/grafana",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

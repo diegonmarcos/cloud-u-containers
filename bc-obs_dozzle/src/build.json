@@ -1,0 +1,26 @@
+{
+  "name": "dozzle",
+  "description": "Dozzle - Real-time Docker log viewer",
+  "dns": "dozzle.app",
+  "ports": {
+    "app": 9999
+  },
+  "category": "tools",
+  "domain": "logs.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/dozzle",
+    "compose_flags": "--build"
+  },
+  "secrets": {
+    "escape_dollars": "true"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/dozzle",
+      "auth": "two_factor"
+    }
+  }
+}

@@ -1,63 +1,93 @@
-# Etherpad - Real-time collaborative document editor
-# Deployed on: oci-A1-f_1 (Oracle Flex)
-
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: aa-sui_etherpad/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   etherpad:
     image: etherpad/etherpad:latest
     container_name: etherpad_app
-    restart: "no"
-    ports:
-      - "10.0.0.6:3012:9001"
-    volumes:
-      - etherpad_data:/opt/etherpad-lite/var
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - TITLE=Etherpad
       - DEFAULT_PAD_TEXT=Welcome to Etherpad!
       - ADMIN_PASSWORD=${ETHERPAD_ADMIN_PASSWORD:-changeme}
+      - PORT=3012
       - DB_TYPE=postgres
-      - DB_HOST=etherpad_postgres
-      - DB_PORT=5432
+      - DB_HOST=localhost
+      - DB_PORT=5436
       - DB_NAME=etherpad
       - DB_USER=etherpad
       - DB_PASS=etherpad
       - TRUST_PROXY=true
+      - LOGLEVEL=INFO
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - dev_network
+    volumes:
+      - etherpad_data:/opt/etherpad-lite/var
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9001/']
+      test: ['CMD', 'curl', '-f', 'http://localhost:3012/']
       interval: 30s
       timeout: 10s
       retries: 3
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   postgres:
     image: postgres:16-alpine
     container_name: etherpad_postgres
-    restart: "no"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    network_mode: host
+    entrypoint: ["sh", "-c", "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - POSTGRES_USER=etherpad
       - POSTGRES_PASSWORD=etherpad
       - POSTGRES_DB=etherpad
       - PGDATA=/var/lib/postgresql/data/pgdata
-    networks:
-      - dev_network
+      - PGPORT=5436
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U etherpad']
+      test: ['CMD-SHELL', 'pg_isready -U etherpad -p 5436']
       interval: 10s
       timeout: 5s
       retries: 5
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 networks:
-  dev_network:
-    external: true
-    name: dev_network
-
+  etherpad_net:
 volumes:
   etherpad_data:
-    driver: local
   postgres_data:
-    driver: local

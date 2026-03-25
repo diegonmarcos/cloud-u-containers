@@ -1,0 +1,9 @@
+{
+  "name": "sauron-central",
+  "description": "Central Syslog Collector + SIEM API",
+  "category": "sec",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/sauron-central"
+  }
+}
