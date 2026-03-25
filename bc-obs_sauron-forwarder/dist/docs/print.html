@@ -183,11 +183,19 @@
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-forwarder/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_sauron-forwarder/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   sauron-forwarder:
     image: debian:bookworm-slim
     container_name: sauron-forwarder
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     environment:
       - CENTRAL_HOST=${CENTRAL_HOST}
       - CENTRAL_PORT=${CENTRAL_PORT:-5514}
@@ -201,13 +209,6 @@
         tail -F /var/log/sauron/alerts.jsonl 2&gt;/dev/null | while read line; do
           echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2&gt;/dev/null || true
         done
-    networks:
-      - security
-
-networks:
-  security:
-    name: sauron-lite_security
-    external: true
 
 volumes:
   sauron-data:

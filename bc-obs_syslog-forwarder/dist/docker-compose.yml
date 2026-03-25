@@ -1,8 +1,16 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_syslog-forwarder/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_syslog-forwarder/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   syslog-forwarder:
     image: balabit/syslog-ng:4.4.0
     container_name: syslog-forwarder
-    restart: always
+    restart: "no"  # container-init handles startup
+    network_mode: host
     environment:
       - VM_NAME=${VM_NAME:-unknown}
       - CENTRAL_HOST=${CENTRAL_HOST}
@@ -11,13 +19,6 @@ services:
       - /opt/sauron/config/syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf:ro
       - sauron-logs:/var/log/sauron:ro
       - syslog-cache:/var/cache/syslog-ng
-    networks:
-      - security
-
-networks:
-  security:
-    name: sauron_security
-    external: true
 
 volumes:
   sauron-logs:

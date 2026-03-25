@@ -1,0 +1,419 @@
+{
+  "_generated": "2026-03-25T10:11:47.375Z",
+  "_source": "config.json via gen-home-manager.ts",
+  "owner": {
+    "name": "Diego Marcos",
+    "email": "diegonmarcos@gmail.com",
+    "domain": "diegonmarcos.com",
+    "github": "diegonmarcos"
+  },
+  "home_manager": {
+    "state_version": "24.11"
+  },
+  "vms": {
+    "oci-mail": {
+      "vm_id": "oci-E2-f_0",
+      "ip": "130.110.251.193",
+      "wg_ip": "10.0.0.3",
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
+      "wg_port": 51820,
+      "wg_role": "spoke",
+      "user": "ubuntu",
+      "home": "/home/ubuntu",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 47,
+        "arch": "x86_64",
+        "shape": "VM.Standard.E2.1.Micro"
+      },
+      "public_ports": [
+        {
+          "port": 25,
+          "proto": "tcp",
+          "desc": "SMTP (Stalwart)"
+        },
+        {
+          "port": 465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 587,
+          "proto": "tcp",
+          "desc": "SMTP submission (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 4190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
+        },
+        {
+          "port": 8080,
+          "proto": "tcp",
+          "desc": "SMTP proxy (CF Worker ingress)"
+        },
+        {
+          "port": 8443,
+          "proto": "tcp",
+          "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 22000,
+          "proto": "tcp",
+          "desc": "Syncthing transfer"
+        },
+        {
+          "port": 21027,
+          "proto": "udp",
+          "desc": "Syncthing discovery"
+        }
+      ],
+      "idle_shutdown": null,
+      "containers": [],
+      "method": "key",
+      "gha": {
+        "ssh_secret": "OCI_SSH_KEY",
+        "host_literal": true
+      }
+    },
+    "oci-analytics": {
+      "vm_id": "oci-E2-f_1",
+      "ip": "129.151.228.66",
+      "wg_ip": "10.0.0.4",
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
+      "wg_port": 51820,
+      "wg_role": "spoke",
+      "user": "ubuntu",
+      "home": "/home/ubuntu",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 47,
+        "arch": "x86_64",
+        "shape": "VM.Standard.E2.1.Micro"
+      },
+      "public_ports": [],
+      "idle_shutdown": null,
+      "containers": [],
+      "method": "key",
+      "gha": {
+        "ssh_secret": "OCI_SSH_KEY",
+        "host_literal": true
+      }
+    },
+    "oci-apps": {
+      "vm_id": "oci-A1-f_0",
+      "ip": "82.70.229.129",
+      "wg_ip": "10.0.0.6",
+      "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
+      "wg_port": 51820,
+      "wg_role": "spoke",
+      "user": "ubuntu",
+      "home": "/home/ubuntu",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": 4,
+        "ram_gb": 24,
+        "disk_gb": 100,
+        "arch": "aarch64",
+        "shape": "VM.Standard.A1.Flex"
+      },
+      "public_ports": [
+        {
+          "port": 3010,
+          "proto": "tcp",
+          "desc": "AFFiNE"
+        },
+        {
+          "port": 8081,
+          "proto": "tcp",
+          "desc": "C3 API"
+        },
+        {
+          "port": 3000,
+          "proto": "tcp",
+          "desc": "Crawlee/Gitea/Backup"
+        },
+        {
+          "port": 3001,
+          "proto": "tcp",
+          "desc": "Crawlee API"
+        },
+        {
+          "port": 2222,
+          "proto": "tcp",
+          "desc": "Gitea SSH"
+        },
+        {
+          "port": 2223,
+          "proto": "tcp",
+          "desc": "Backup BUP SSH"
+        },
+        {
+          "port": 2224,
+          "proto": "tcp",
+          "desc": "Backup Borg SSH"
+        },
+        {
+          "port": 8099,
+          "proto": "tcp",
+          "desc": "cloud-spec httpd"
+        }
+      ],
+      "idle_shutdown": null,
+      "containers": [],
+      "method": "key",
+      "gha": {
+        "ssh_secret": "OCI_SSH_KEY",
+        "host_literal": true
+      }
+    },
+    "gcp-t4": {
+      "vm_id": "gcp-T4-p_0",
+      "ip": "34.173.227.250",
+      "wg_ip": "10.0.0.8",
+      "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
+      "wg_port": 51820,
+      "wg_role": "spoke",
+      "user": "diego",
+      "home": "/home/diego",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": 4,
+        "ram_gb": 15,
+        "disk_gb": 100,
+        "arch": "x86_64",
+        "shape": "n1-standard-4",
+        "gpu": "NVIDIA T4",
+        "vram_gb": 16
+      },
+      "public_ports": [],
+      "idle_shutdown": {
+        "timeout_hours": 1,
+        "cpu_threshold": 60,
+        "docker_cpu_threshold": 30,
+        "network_threshold": 51200,
+        "min_uptime_seconds": 600
+      },
+      "containers": [],
+      "method": "gcloud",
+      "gha": {
+        "ssh_secret": "GCP_T4_SSH_KEY",
+        "host_secret": "GCP_T4_HOST",
+        "user_secret": "GCP_T4_USER"
+      }
+    },
+    "gcp-proxy": {
+      "vm_id": "gcp-E2-f_0",
+      "ip": "35.226.147.64",
+      "wg_ip": "10.0.0.1",
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
+      "wg_port": 51820,
+      "wg_role": "hub",
+      "user": "diego",
+      "home": "/home/diego",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 30,
+        "arch": "x86_64",
+        "shape": "e2-micro"
+      },
+      "public_ports": [
+        {
+          "port": 80,
+          "proto": "tcp",
+          "desc": "HTTP (Caddy)"
+        },
+        {
+          "port": 443,
+          "proto": "tcp",
+          "desc": "HTTPS (Caddy)"
+        },
+        {
+          "port": 443,
+          "proto": "udp",
+          "desc": "QUIC (Caddy)"
+        },
+        {
+          "port": 993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 → oci-mail)"
+        },
+        {
+          "port": 465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 → oci-mail)"
+        },
+        {
+          "port": 587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+        }
+      ],
+      "idle_shutdown": null,
+      "containers": [],
+      "method": "gcloud",
+      "gha": {
+        "ssh_secret": "GCP_PROXY_SSH_KEY",
+        "host_secret": "GCP_PROXY_HOST",
+        "user_secret": "GCP_PROXY_USER"
+      }
+    },
+    "vast-ollama": {
+      "vm_id": "vast-RTX-p_0",
+      "ip": "TBD",
+      "wg_ip": null,
+      "wg_public_key": null,
+      "wg_port": 51820,
+      "wg_role": "spoke",
+      "user": "root",
+      "home": "/root",
+      "rescue_port": 2200,
+      "specs": {
+        "cpu": null,
+        "ram_gb": null,
+        "disk_gb": null,
+        "arch": "x86_64",
+        "gpu": "RTX A4000",
+        "vram_gb": 16
+      },
+      "public_ports": [],
+      "idle_shutdown": null,
+      "containers": [],
+      "method": "key",
+      "gha": null
+    }
+  },
+  "wireguard": {
+    "subnet": "10.0.0.0/24",
+    "port": 51820,
+    "hub": "gcp-E2-f_0",
+    "peers": [
+      {
+        "name": "oci-mail",
+        "wg_ip": "10.0.0.3",
+        "public_ip": "130.110.251.193",
+        "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "130.110.251.193"
+      },
+      {
+        "name": "oci-analytics",
+        "wg_ip": "10.0.0.4",
+        "public_ip": "129.151.228.66",
+        "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "129.151.228.66"
+      },
+      {
+        "name": "oci-apps",
+        "wg_ip": "10.0.0.6",
+        "public_ip": "82.70.229.129",
+        "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "82.70.229.129"
+      },
+      {
+        "name": "gcp-t4",
+        "wg_ip": "10.0.0.8",
+        "public_ip": "34.173.227.250",
+        "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "34.173.227.250"
+      },
+      {
+        "name": "gcp-proxy",
+        "wg_ip": "10.0.0.1",
+        "public_ip": "35.226.147.64",
+        "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
+        "wg_port": 51820,
+        "role": "hub",
+        "endpoint": "35.226.147.64"
+      }
+    ],
+    "clients": {
+      "surface": {
+        "wg_ip": "10.0.0.5",
+        "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
+        "role": "client"
+      },
+      "termux": {
+        "wg_ip": "10.0.0.9",
+        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
+        "role": "client"
+      }
+    }
+  },
+  "dns": {
+    "primary": "10.0.0.1",
+    "fallback": "1.1.1.1",
+    "description": "Hickory DNS on gcp-proxy (WG IP) + Cloudflare fallback"
+  },
+  "docker": {
+    "subnet": "172.16.0.0/12",
+    "iptables": false,
+    "description": "Docker bridge subnet, iptables managed by firewall.nix"
+  },
+  "monitoring": {
+    "ntfy_base": "https://rss.diegonmarcos.com",
+    "description": "ntfy push notification base URL"
+  },
+  "ssh_config": [
+    {
+      "host": "oci-mail",
+      "hostname": "10.0.0.3",
+      "user": "ubuntu",
+      "identity_file": "~/.ssh/vault_id_rsa",
+      "port": 22
+    },
+    {
+      "host": "oci-analytics",
+      "hostname": "10.0.0.4",
+      "user": "ubuntu",
+      "identity_file": "~/.ssh/vault_id_rsa",
+      "port": 22
+    },
+    {
+      "host": "oci-apps",
+      "hostname": "10.0.0.6",
+      "user": "ubuntu",
+      "identity_file": "~/.ssh/vault_id_rsa",
+      "port": 22
+    },
+    {
+      "host": "gcp-t4",
+      "hostname": "10.0.0.8",
+      "user": "diego",
+      "identity_file": "~/.ssh/google_compute_engine",
+      "port": 22
+    },
+    {
+      "host": "gcp-proxy",
+      "hostname": "10.0.0.1",
+      "user": "diego",
+      "identity_file": "~/.ssh/google_compute_engine",
+      "port": 22
+    },
+    {
+      "host": "vast-ollama",
+      "hostname": "TBD",
+      "user": "root",
+      "identity_file": "~/.ssh/vault_id_rsa",
+      "port": 22
+    }
+  ]
+}

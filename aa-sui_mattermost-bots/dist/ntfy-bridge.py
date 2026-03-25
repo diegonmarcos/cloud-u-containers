@@ -24,8 +24,31 @@ MM_URL = os.environ["MM_URL"]
 MM_ADMIN_EMAIL = os.environ["MM_ADMIN_EMAIL"]
 MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
 MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
-C3_API_URL = os.environ.get("C3_API_URL", "http://c3-api:8080")
-C3_API_TOKEN = os.environ.get("C3_API_TOKEN", "")
+C3_API_URL = os.environ.get("C3_API_URL", "http://c3-infra-mcp-api:8080")
+
+
+def fetch_oidc_token():
+    """Fetch OIDC token via client_credentials grant."""
+    client_id = os.environ.get("AUTHELIA_OIDC_CLIENT_ID", "")
+    client_secret = os.environ.get("AUTHELIA_OIDC_CLIENT_SECRET", "")
+    token_url = os.environ.get("AUTHELIA_TOKEN_URL", "")
+    if not (client_id and client_secret and token_url):
+        return ""
+    try:
+        r = requests.post(token_url, auth=(client_id, client_secret),
+                          data={"grant_type": "client_credentials", "scope": "authelia.bearer.authz"},
+                          timeout=10)
+        r.raise_for_status()
+        token = r.json().get("access_token", "")
+        if token:
+            log.info("OIDC token acquired via client_credentials (%d chars)", len(token))
+        return token
+    except Exception as e:
+        log.warning("OIDC token fetch failed: %s", e)
+        return ""
+
+
+C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
 OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
@@ -573,7 +596,7 @@ def handle_c3_command(text):
         )
 
 
-ACTION_URL = "http://mattermost-bots:8888/c3/action"
+ACTION_URL = "http://mattermost-bots:8887/c3/action"
 
 def make_buttons(actions):
     """Build Mattermost interactive message buttons. actions = [(label, command), ...]"""
@@ -680,7 +703,7 @@ def register_slash_command(headers, team_id):
         "team_id": team_id,
         "trigger": "c3",
         "method": "P",
-        "url": "http://mattermost-bots:8888/c3",
+        "url": "http://mattermost-bots:8887/c3",
         "display_name": "C3 Infrastructure",
         "description": "Control VMs and containers",
         "auto_complete": True,
@@ -977,7 +1000,7 @@ def create_claude_users(admin_headers, team_id, all_channel_ids):
         log.info("Added %s to team + %d channels", info["username"], len(all_channel_ids))
 
 
-# ── Ollama Bot ────────────────────────────────────────────
+# ── Ollama AI ─────────────────────────────────────────────
 
 def _check_wg_reachable(ip, port=22, timeout=3):
     """Direct TCP socket check via WireGuard IP."""
@@ -1021,13 +1044,13 @@ def ensure_ollama_up():
     c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=30)
     return False, f":hourglass: {OLLAMA_VM} reachable but Ollama not responding — starting service..."
 
-def _ollama_wake_and_reply(channel_id, root_id, user_text, bot_headers):
+def _ollama_wake_and_reply(channel_id, root_id, user_text, post_headers):
     """Background thread: wake VM -> compose up -> poll Ollama API -> chat."""
     def _post(msg):
         body = {"channel_id": channel_id, "message": msg}
         if root_id:
             body["root_id"] = root_id
-        mm_api("POST", "/posts", bot_headers, json=body)
+        mm_api("POST", "/posts", post_headers, json=body)
 
     try:
         # Step 1: Start VM
@@ -1111,48 +1134,86 @@ def ollama_chat(channel_id, user_text):
         return f":x: Ollama error: {e}"
 
 
-OLLAMA_BOT_USERNAME = "ollama-14bq8-ai"
+OLLAMA_AI_USERNAME = "ollama-14bq8-ai"
+HAI_AI_USERNAME = "hai-1.5bq4-ai"
 
-def create_ollama_bot(admin_headers, team_id):
-    """Create or find ollama AI account. Returns (bot_user_id, bot_token) or (None, None)."""
+def create_ollama_ai(admin_headers, team_id):
+    """Create or find Ollama AI account. Returns (ai_user_id, ai_token) or (None, None)."""
+    ai_user_id = None
+    r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
+    if r.ok:
+        for entry in r.json():
+            if entry.get("username") == OLLAMA_AI_USERNAME:
+                ai_user_id = entry["user_id"]
+                log.info("Found existing %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
+                break
+    if not ai_user_id:
+        r = mm_api("POST", "/bots", admin_headers, json={
+            "username": OLLAMA_AI_USERNAME,
+            "display_name": "Ollama 14B-Q8 AI",
+            "description": "Chat with DeepSeek-R1 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
+        })
+        if r.ok or r.status_code == 201:
+            ai_user_id = r.json()["user_id"]
+            log.info("Created %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
+        else:
+            log.error("Failed to create %s: %s", OLLAMA_AI_USERNAME, r.text[:200])
+            return None, None
+    mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
+        "team_id": team_id, "user_id": ai_user_id,
+    })
+    r = mm_api("POST", f"/users/{ai_user_id}/tokens", admin_headers, json={
+        "description": f"{OLLAMA_AI_USERNAME} runtime",
+    })
+    if not r.ok:
+        log.error("Failed to create %s token: %s", OLLAMA_AI_USERNAME, r.text[:200])
+        return ai_user_id, None
+    ai_token = r.json()["token"]
+    log.info("Created %s access token", OLLAMA_AI_USERNAME)
+    return ai_user_id, ai_token
+
+
+def create_hai_ai(admin_headers, team_id):
+    """Create or find HAI AI bot account (no WS listener — rig-agentic-hai handles its own).
+    Returns (bot_user_id, bot_token) or (None, None)."""
     bot_user_id = None
     r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
     if r.ok:
-        for bot in r.json():
-            if bot.get("username") == OLLAMA_BOT_USERNAME:
-                bot_user_id = bot["user_id"]
-                log.info("Found existing %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
+        for entry in r.json():
+            if entry.get("username") == HAI_AI_USERNAME:
+                bot_user_id = entry["user_id"]
+                log.info("Found existing %s: %s", HAI_AI_USERNAME, bot_user_id)
                 break
     if not bot_user_id:
         r = mm_api("POST", "/bots", admin_headers, json={
-            "username": OLLAMA_BOT_USERNAME,
-            "display_name": "Ollama 14B-Q8 AI",
-            "description": "Chat with Qwen 2.5 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
+            "username": HAI_AI_USERNAME,
+            "display_name": "HAI Agent (Qwen 1.5B)",
+            "description": "Lightweight infra agent with strict guardrails. DM me or @mention. Always on (CPU, oci-apps).",
         })
         if r.ok or r.status_code == 201:
             bot_user_id = r.json()["user_id"]
-            log.info("Created %s: %s", OLLAMA_BOT_USERNAME, bot_user_id)
+            log.info("Created %s: %s", HAI_AI_USERNAME, bot_user_id)
         else:
-            log.error("Failed to create %s: %s", OLLAMA_BOT_USERNAME, r.text[:200])
+            log.error("Failed to create %s: %s", HAI_AI_USERNAME, r.text[:200])
             return None, None
     mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
         "team_id": team_id, "user_id": bot_user_id,
     })
     r = mm_api("POST", f"/users/{bot_user_id}/tokens", admin_headers, json={
-        "description": f"{OLLAMA_BOT_USERNAME} runtime",
+        "description": f"{HAI_AI_USERNAME} runtime",
     })
     if not r.ok:
-        log.error("Failed to create %s token: %s", OLLAMA_BOT_USERNAME, r.text[:200])
+        log.error("Failed to create %s token: %s", HAI_AI_USERNAME, r.text[:200])
         return bot_user_id, None
     bot_token = r.json()["token"]
-    log.info("Created %s access token", OLLAMA_BOT_USERNAME)
+    log.info("Created %s access token: %s", HAI_AI_USERNAME, bot_token)
     return bot_user_id, bot_token
 
 
-def ollama_ws_listener(bot_user_id, bot_token):
-    """WebSocket listener for Ollama bot — DMs + @mentions."""
+def ollama_ws_listener(ai_user_id, ai_token):
+    """WebSocket listener for Ollama AI — DMs + @mentions."""
     ws_url = MM_URL.replace("http://", "ws://").replace("https://", "wss://") + "/api/v4/websocket"
-    bot_headers = {"Authorization": f"Bearer {bot_token}"}
+    ai_headers = {"Authorization": f"Bearer {ai_token}"}
 
     def on_message(ws, message):
         try:
@@ -1167,7 +1228,7 @@ def ollama_ws_listener(bot_user_id, bot_token):
             post = json.loads(post_data["post"])
         except (KeyError, json.JSONDecodeError):
             return
-        if post.get("user_id") == bot_user_id:
+        if post.get("user_id") == ai_user_id:
             return
         text = post.get("message", "").strip()
         if not text:
@@ -1176,21 +1237,21 @@ def ollama_ws_listener(bot_user_id, bot_token):
         is_dm = channel_type == "D"
         if not is_dm:
             # In channels and group DMs, require explicit @mention in text
-            if f"@{OLLAMA_BOT_USERNAME}" not in text.lower():
+            if f"@{OLLAMA_AI_USERNAME}" not in text.lower():
                 return
-            text = re.sub(rf"@{re.escape(OLLAMA_BOT_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
+            text = re.sub(rf"@{re.escape(OLLAMA_AI_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
             if not text:
                 text = "hello"
 
         channel_id = post["channel_id"]
         root_id = post.get("id", "") if not is_dm else ""
-        log.info("%s %s: %s", OLLAMA_BOT_USERNAME, "DM" if is_dm else "mention", text[:80])
+        log.info("%s %s: %s", OLLAMA_AI_USERNAME, "DM" if is_dm else "mention", text[:80])
 
         def _post_reply(msg):
             body = {"channel_id": channel_id, "message": msg}
             if root_id:
                 body["root_id"] = root_id
-            mm_api("POST", "/posts", bot_headers, json=body)
+            mm_api("POST", "/posts", ai_headers, json=body)
 
         cmd_lower = text.lower().strip()
         if cmd_lower == "clear":
@@ -1225,7 +1286,7 @@ def ollama_ws_listener(bot_user_id, bot_token):
                     if not ok:
                         # VM/Ollama not ready — full wake chain + chat
                         _post_reply(wake_msg)
-                        _ollama_wake_and_reply(channel_id, root_id, text, bot_headers)
+                        _ollama_wake_and_reply(channel_id, root_id, text, ai_headers)
                         return
                     response = ollama_chat(channel_id, text)
                     _post_reply(response)
@@ -1241,15 +1302,15 @@ def ollama_ws_listener(bot_user_id, bot_token):
         ws.send(json.dumps({
             "seq": 1,
             "action": "authentication_challenge",
-            "data": {"token": bot_token},
+            "data": {"token": ai_token},
         }))
-        log.info("%s WebSocket connected", OLLAMA_BOT_USERNAME)
+        log.info("%s WebSocket connected", OLLAMA_AI_USERNAME)
 
     def on_error(ws, error):
-        log.warning("%s WebSocket error: %s", OLLAMA_BOT_USERNAME, error)
+        log.warning("%s WebSocket error: %s", OLLAMA_AI_USERNAME, error)
 
     def on_close(ws, code, msg):
-        log.warning("%s WebSocket closed: %s %s", OLLAMA_BOT_USERNAME, code, msg)
+        log.warning("%s WebSocket closed: %s %s", OLLAMA_AI_USERNAME, code, msg)
 
     while True:
         try:
@@ -1262,18 +1323,18 @@ def ollama_ws_listener(bot_user_id, bot_token):
             )
             ws.run_forever(ping_interval=30, ping_timeout=10, origin="https://chat.diegonmarcos.com")
         except Exception as e:
-            log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_BOT_USERNAME, e)
+            log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_AI_USERNAME, e)
         time.sleep(5)
 
 
-def setup_ollama_sidebar(admin_headers, user_id, team_id, bot_user_id):
-    """Create DM channel with ollama AI and put it in the C3 sidebar category."""
-    r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, bot_user_id])
+def setup_ollama_sidebar(admin_headers, user_id, team_id, ai_user_id):
+    """Create DM channel with Ollama AI and put it in the C3 sidebar category."""
+    r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, ai_user_id])
     if not r.ok:
-        log.warning("Failed to create DM with %s: %s", OLLAMA_BOT_USERNAME, r.text[:100])
+        log.warning("Failed to create DM with %s: %s", OLLAMA_AI_USERNAME, r.text[:100])
         return
     dm_channel_id = r.json()["id"]
-    log.info("DM channel with %s: %s", OLLAMA_BOT_USERNAME, dm_channel_id)
+    log.info("DM channel with %s: %s", OLLAMA_AI_USERNAME, dm_channel_id)
 
     r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers)
     if not r.ok:
@@ -1302,13 +1363,13 @@ def setup_ollama_sidebar(admin_headers, user_id, team_id, bot_user_id):
                 "id": c3_cat["id"], "user_id": user_id, "team_id": team_id,
                 "display_name": "C3", "type": "custom", "channel_ids": ids,
             })
-            log.info("Added %s DM to C3 sidebar category", OLLAMA_BOT_USERNAME)
+            log.info("Added %s DM to C3 sidebar category", OLLAMA_AI_USERNAME)
     else:
         mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
             "user_id": user_id, "team_id": team_id,
             "display_name": "C3", "type": "custom", "channel_ids": [dm_channel_id],
         })
-        log.info("Created C3 sidebar category with %s DM", OLLAMA_BOT_USERNAME)
+        log.info("Created C3 sidebar category with %s DM", OLLAMA_AI_USERNAME)
 
 
 # ── Profile Icons ──────────────────────────────────────────
@@ -1351,18 +1412,18 @@ def make_colored_png(letter, color, size=128):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-def set_account_icons(admin_headers, bot_ids, user_ids):
-    """Set profile icons for bots and AI users at bootstrap (all PNG via /users/{id}/image)."""
+def set_account_icons(admin_headers, account_ids):
+    """Set profile icons for all bot/AI accounts at bootstrap (PNG via /users/{id}/image)."""
     icons = {
         "c3-bot": ("#00B8D9", "C3"),
-        OLLAMA_BOT_USERNAME: ("#FF1744", "Q"),
+        OLLAMA_AI_USERNAME: ("#FF1744", "Q"),
+        HAI_AI_USERNAME: ("#00BCD4", "H"),
         "claude-opus-ai": ("#FF6B35", "O"),
         "claude-sonnet-ai": ("#7B61FF", "S"),
         "claude-haiku-ai": ("#00C853", "H"),
     }
-    all_ids = {**bot_ids, **user_ids}
     for username, (color, letter) in icons.items():
-        uid = all_ids.get(username)
+        uid = account_ids.get(username)
         if not uid:
             continue
         png_data = make_colored_png(letter, color)
@@ -1393,9 +1454,9 @@ def main():
 
     # Register /c3 slash command and start HTTP server
     register_slash_command(headers, team_id)
-    server = HTTPServer(("0.0.0.0", 8888), C3CommandHandler)
+    server = HTTPServer(("0.0.0.0", 8887), C3CommandHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    log.info("C3 command server listening on :8888")
+    log.info("C3 command server listening on :8887")
 
     # Get ALL channels (public + private) for bot membership
     r = mm_api("GET", f"/teams/{team_id}/channels?per_page=200", headers)
@@ -1423,28 +1484,37 @@ def main():
     else:
         log.warning("C3 bot creation failed — slash command still works")
 
-    # Create ollama bot and start WebSocket listener
-    ollama_user_id, ollama_token = create_ollama_bot(headers, team_id)
+    # Create Ollama AI and start WebSocket listener
+    ollama_user_id, ollama_token = create_ollama_ai(headers, team_id)
     if ollama_user_id and ollama_token:
         add_bot_to_channels(headers, ollama_user_id, all_channel_ids)
         threading.Thread(target=ollama_ws_listener, args=(ollama_user_id, ollama_token), daemon=True).start()
         setup_ollama_sidebar(headers, user_id, team_id, ollama_user_id)
-        log.info("%s ready — DM @%s or @mention", OLLAMA_BOT_USERNAME, OLLAMA_BOT_USERNAME)
+        log.info("%s ready — DM @%s or @mention", OLLAMA_AI_USERNAME, OLLAMA_AI_USERNAME)
     else:
-        log.warning("%s creation failed", OLLAMA_BOT_USERNAME)
+        log.warning("%s creation failed", OLLAMA_AI_USERNAME)
 
-    # Set profile icons for bots and AI users
-    bot_ids = {}
+    # Create HAI AI bot account (no WS listener — rig-agentic-hai handles its own)
+    hai_user_id, hai_token = create_hai_ai(headers, team_id)
+    if hai_user_id:
+        add_bot_to_channels(headers, hai_user_id, all_channel_ids)
+        log.info("%s ready — token logged above, add to rig-agentic-hai secrets.yaml", HAI_AI_USERNAME)
+    else:
+        log.warning("%s creation failed", HAI_AI_USERNAME)
+
+    # Set profile icons for bots and AI accounts
+    account_ids = {}
     if bot_user_id:
-        bot_ids["c3-bot"] = bot_user_id
+        account_ids["c3-bot"] = bot_user_id
     if ollama_user_id:
-        bot_ids[OLLAMA_BOT_USERNAME] = ollama_user_id
-    ai_user_ids = {}
+        account_ids[OLLAMA_AI_USERNAME] = ollama_user_id
+    if hai_user_id:
+        account_ids[HAI_AI_USERNAME] = hai_user_id
     for info in CLAUDE_USERS:
         r = mm_api("GET", f"/users/username/{info['username']}", headers)
         if r.ok:
-            ai_user_ids[info["username"]] = r.json()["id"]
-    set_account_icons(headers, bot_ids, ai_user_ids)
+            account_ids[info["username"]] = r.json()["id"]
+    set_account_icons(headers, account_ids)
 
     log.info("Bootstrap complete. Starting ntfy bridge loop.")
 

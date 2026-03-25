@@ -1,0 +1,18 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_mail-mcp/src/flake.nix  ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_mail-mcp/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  mail-mcp:
+    image: ghcr.io/diegonmarcos/mail-mcp:latest
+    container_name: mail-mcp
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      MAIL_HOST: 10.0.0.3
+

@@ -1,0 +1,31 @@
+{
+  "name": "hedgedoc",
+  "description": "Collaborative markdown editor",
+  "dns": "hedgedoc.app",
+  "ports": {
+    "app": 3018,
+    "db": 5439
+  },
+  "category": "app",
+  "domain": "doc.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/hedgedoc"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/hedgedoc",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

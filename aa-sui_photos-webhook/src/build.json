@@ -1,0 +1,9 @@
+{
+  "name": "photos-webhook",
+  "description": "PhotoPrism Webhook + S3 Processor",
+  "category": "app",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/photos-webhook"
+  }
+}

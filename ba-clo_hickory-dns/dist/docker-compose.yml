@@ -2,13 +2,8 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-<<<<<<< Updated upstream
 # ║ Source: ~/git/cloud/a_solutions/ba-clo_hickory-dns/src/flake.nix
 # ║ Rebuild: build.sh ship
-=======
-# ║ Source: ~/git/cloud/a_solutions/ba-clo_hickory-dns/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/ba-clo_hickory-dns/build.sh ship ║
->>>>>>> Stashed changes
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   hickory-dns:
@@ -16,7 +11,6 @@ services:
     container_name: hickory-dns
     network_mode: host
     restart: unless-stopped
-<<<<<<< Updated upstream
     stop_grace_period: 30s
     read_only: true
     tmpfs:
@@ -25,13 +19,6 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-=======
-    ports:
-      - "10.0.0.1:53:53/tcp"
-      - "10.0.0.1:53:53/udp"
-    volumes:
-      - ./config/named.toml:/etc/named.toml:ro
->>>>>>> Stashed changes
     dns:
       - 1.1.1.1
       - 8.8.8.8

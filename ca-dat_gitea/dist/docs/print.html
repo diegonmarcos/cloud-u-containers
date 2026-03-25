@@ -175,6 +175,11 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="gitea---lightweight-self-hosted-git-service"><a class="header" href="#gitea---lightweight-self-hosted-git-service">Gitea - Lightweight self-hosted Git service</a></h1>
+<h2 id="network"><a class="header" href="#network">Network</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td><code>git.diegonmarcos.com</code></td></tr>
+</tbody></table>
+</div>
 <h2 id="containers"><a class="header" href="#containers">Containers</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>
 <tr><td><code>container_name</code></td><td><code>gitea</code></td></tr>
@@ -189,24 +194,23 @@
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="generated-configuration-files"><a class="header" href="#generated-configuration-files">Generated Configuration Files</a></h1>
 <p>These files are produced by nix build and deployed to the VM.</p>
 <h2 id="docker-composeyml"><a class="header" href="#docker-composeyml">docker-compose.yml</a></h2>
-<pre><code class="language-yaml">services:
+<pre><code class="language-yaml"># ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_gitea/src/flake.nix      ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_gitea/build.sh ship     ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
   gitea:
     image: gitea/gitea:latest
     container_name: gitea
-    restart: unless-stopped
-    ports:
-      - "10.0.0.6:3017:3000"
-      - "10.0.0.6:2222:22"
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    networks:
-      - gitea_backup_network
-
-networks:
-  gitea_backup_network:
-    driver: bridge
 
 volumes:
   gitea_data:

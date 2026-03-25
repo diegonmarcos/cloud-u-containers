@@ -1,0 +1,31 @@
+{
+  "name": "ntfy",
+  "description": "Push notification server",
+  "dns": "ntfy.app",
+  "category": "tools",
+  "domain": "rss.diegonmarcos.com",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/ntfy",
+    "excludes": [
+      "cache"
+    ]
+  },
+  "proxy": {
+    "primary": {
+      "domain": "rss.diegonmarcos.com",
+      "auth": "ntfy-3tier"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "ports": {
+    "app": 8090
+  }
+}

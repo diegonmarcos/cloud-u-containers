@@ -1,31 +1,40 @@
 #!/bin/sh
-# Hickory DNS init — fetch zones from C3 API if missing
+# Hickory DNS init — fetch zones from cloud-data repo if missing
 # Runs as compose pre_hook before docker compose up
-set -e
 cd "$(dirname "$0")"
 CONFIG_DIR="./config"
 ZONES_DIR="$CONFIG_DIR/zones"
 NAMED_TOML="$CONFIG_DIR/named.toml"
-C3_API="https://api.diegonmarcos.com/c3-api"
+DNS_JSON="https://raw.githubusercontent.com/diegonmarcos/cloud-data/main/cloud-data-dns-services.json"
 SUFFIX="app"
 LISTEN_IP="10.0.0.1"
 
 # If zones already exist, skip
-if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ]; then
+# Regenerate if: zones missing, OR init.sh is newer than named.toml (new deploy)
+if [ -f "$NAMED_TOML" ] && [ -d "$ZONES_DIR" ] && [ ! ./init.sh -nt "$NAMED_TOML" ]; then
   ZONE_COUNT=$(ls "$ZONES_DIR"/*.zone 2>/dev/null | wc -l)
   if [ "$ZONE_COUNT" -gt 0 ]; then
-    echo "[init] $ZONE_COUNT zones found — skipping C3 API fetch"
+    echo "[init] $ZONE_COUNT zones found, init.sh unchanged — skipping"
     exit 0
   fi
 fi
 
-echo "[init] Zones missing — fetching DNS registry from C3 API..."
+echo "[init] Regenerating zones from cloud-data repo..."
+rm -rf "$ZONES_DIR"
 mkdir -p "$ZONES_DIR"
 
-# Fetch DNS registry
-REGISTRY=$(curl -sf --max-time 10 "$C3_API/dns-registry" 2>/dev/null || echo "")
+# Remove stale Docker directory mount
+if [ -d "$NAMED_TOML" ]; then
+  rm -rf "$NAMED_TOML"
+fi
+docker compose down 2>/dev/null || true
+
+# Fetch — use Cloudflare DNS since Hickory (what we're bootstrapping) is down
+REGISTRY=$(curl -sf --max-time 15 --dns-servers 1.1.1.1 "$DNS_JSON" 2>/dev/null || \
+           curl -sf --max-time 15 "$DNS_JSON" 2>/dev/null || echo "")
+
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
-  echo "[init] WARNING: C3 API unreachable — forwarder only"
+  echo "[init] WARNING: fetch failed — forwarder only"
   cat > "$NAMED_TOML" << 'EOF'
 listen_addrs_ipv4 = ["10.0.0.1"]
 listen_port = 53
@@ -42,24 +51,24 @@ EOF
   exit 0
 fi
 
-echo "[init] Generating zones from registry..."
+echo "[init] Generating zones..."
 
-# Generate zone files
-echo "$REGISTRY" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-for name, info in data.get('services', {}).items():
-    ip = info.get('ip', '')
-    if not ip: continue
-    with open(sys.argv[1] + '/' + name + '.${SUFFIX}.zone', 'w') as f:
-        f.write('\$ORIGIN ' + name + '.${SUFFIX}.\n\$TTL 60\n')
-        f.write('@  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60\n')
-        f.write('@  IN NS   hickory-dns.${SUFFIX}.\n')
-        f.write('@  IN A    ' + ip + '\n')
-    print(f'  {name}.${SUFFIX} -> {ip}')
-" "$ZONES_DIR" 2>&1 || echo "[init] WARNING: python3 parse failed"
+# Parse with jq, generate zone files
+PAIRS="/tmp/hickory-dns-pairs.txt"
+echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' > "$PAIRS" 2>/dev/null || true
+while read -r name ip; do
+  [ -z "$name" ] || [ -z "$ip" ] && continue
+  cat > "$ZONES_DIR/${name}.${SUFFIX}.zone" << ZONE
+\$ORIGIN ${name}.${SUFFIX}.
+\$TTL 60
+@  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60
+@  IN NS   hickory-dns.${SUFFIX}.
+@  IN A    ${ip}
+ZONE
+done < "$PAIRS"
+rm -f "$PAIRS"
 
-# Generate named.toml from zone files
+# Generate named.toml
 {
   echo "listen_addrs_ipv4 = [\"$LISTEN_IP\"]"
   echo "listen_port = 53"

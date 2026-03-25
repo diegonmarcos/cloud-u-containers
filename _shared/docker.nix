@@ -129,7 +129,7 @@ in {
     tmpfs ? [ "/tmp" ],       # tmpfs mounts for read_only containers (override if needed)
 
     # Policy overrides
-    restart ? "no",  # containers DON'T auto-restart — container-init.sh handles sequential startup
+    restart ? "unless-stopped",
     stopGracePeriod ? "30s",
     pidsLimit ? 256,          # max processes per container (0 = no limit)
     dns ? ["10.0.0.1" "1.1.1.1"],  # Hickory DNS first, Cloudflare fallback — ALL containers

@@ -1,0 +1,40 @@
+{
+  "name": "vaultwarden",
+  "description": "Bitwarden password manager",
+  "dns": "vaultwarden.app",
+  "category": "mic",
+  "domain": "vault.diegonmarcos.com",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/vaultwarden",
+    "excludes": [
+      "data"
+    ]
+  },
+  "secrets": {
+    "escape_dollars": true
+  },
+  "proxy": {
+    "primary": {
+      "domain": "vault.diegonmarcos.com",
+      "auth": "none"
+    }
+  },
+  "health": {
+    "path": "/alive"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "vaultwarden_data"
+    ]
+  },
+  "ports": {
+    "app": 8880
+  }
+}

@@ -37,20 +37,6 @@ access_control:
   rules:
     - domain: auth.diegonmarcos.com
       policy: bypass
-    - domain: vault.diegonmarcos.com
-      resources:
-        - "^/api.*"
-        - "^/identity.*"
-        - "^/icons.*"
-        - "^/notifications.*"
-        - "^/attachments.*"
-      policy: bypass
-    - domain: vault.diegonmarcos.com
-      resources:
-        - "^/admin.*"
-      policy: two_factor
-    - domain: vault.diegonmarcos.com
-      policy: bypass
     - domain: db.diegonmarcos.com
       resources:
         - "^/api/.*"

@@ -1,0 +1,10 @@
+{
+  "name": "db-agent",
+  "description": "Central DB Backup Agent (deployed on all VMs)",
+  "category": "data",
+  "multi_vm": true,
+  "deploy": {
+    "host": "all",
+    "remote_path": "/opt/containers/db-agent"
+  }
+}

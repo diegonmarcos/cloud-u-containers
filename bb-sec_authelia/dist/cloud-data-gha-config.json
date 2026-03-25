@@ -1,0 +1,303 @@
+{
+  "_generated": "2026-03-25T11:31:19.372Z",
+  "_source": "local tsx via getConfig()",
+  "vms": {
+    "oci-mail": {
+      "ssh_secret": "OCI_SSH_KEY",
+      "host": "130.110.251.193",
+      "user": "ubuntu"
+    },
+    "oci-analytics": {
+      "ssh_secret": "OCI_SSH_KEY",
+      "host": "129.151.228.66",
+      "user": "ubuntu"
+    },
+    "oci-apps": {
+      "ssh_secret": "OCI_SSH_KEY",
+      "host": "82.70.229.129",
+      "user": "ubuntu"
+    },
+    "gcp-t4": {
+      "ssh_secret": "GCP_T4_SSH_KEY",
+      "host_secret": "GCP_T4_HOST",
+      "user_secret": "GCP_T4_USER"
+    },
+    "gcp-proxy": {
+      "ssh_secret": "GCP_PROXY_SSH_KEY",
+      "host_secret": "GCP_PROXY_HOST",
+      "user_secret": "GCP_PROXY_USER"
+    }
+  },
+  "services": {
+    "code-server": {
+      "dir": "aa-sui_code-server",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "etherpad": {
+      "dir": "aa-sui_etherpad",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "filebrowser": {
+      "dir": "aa-sui_filebrowser",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "google-workspace-mcp": {
+      "dir": "aa-sui_google-workspace-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "grist": {
+      "dir": "aa-sui_grist",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "hedgedoc": {
+      "dir": "aa-sui_hedgedoc",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "mail-mcp": {
+      "dir": "aa-sui_mail-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "mattermost-bots": {
+      "dir": "aa-sui_mattermost-bots",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "mattermost-mcp": {
+      "dir": "aa-sui_mattermost-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "photoprism": {
+      "dir": "aa-sui_photoprism",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "photos-webhook": {
+      "dir": "aa-sui_photos-webhook",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "radicale": {
+      "dir": "aa-sui_radicale",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "revealmd": {
+      "dir": "aa-sui_revealmd",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "snappymail": {
+      "dir": "aa-sui_snappymail",
+      "vm": "oci-mail",
+      "has_docker": false
+    },
+    "smtp-proxy": {
+      "dir": "aa-sui_tools-smtp-proxy",
+      "vm": "oci-mail",
+      "has_docker": false
+    },
+    "stalwart": {
+      "dir": "aa-sui_tools-stalwart",
+      "vm": "oci-mail",
+      "has_docker": false
+    },
+    "vaultwarden": {
+      "dir": "ab-mic_vaultwarden",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "crawlee-cloud": {
+      "dir": "ac-fin_crawlee-cloud",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "quant-lab-light": {
+      "dir": "ac-fin_quant-lab-light",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "ollama": {
+      "dir": "ad-agi_ollama",
+      "vm": "gcp-t4",
+      "has_docker": false
+    },
+    "ollama-hai": {
+      "dir": "ad-agi_ollama-hai",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "rig-agentic-hai-1.5bq4": {
+      "dir": "ad-agi_rig-agentic-hai-1.5bq4",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "rig-agentic-sonn-14bq8": {
+      "dir": "ad-agi_rig-agentic-sonn-14bq8",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "hickory-dns": {
+      "dir": "ba-clo_hickory-dns",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "authelia": {
+      "dir": "bb-sec_authelia",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "caddy": {
+      "dir": "bb-sec_caddy",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "introspect-proxy": {
+      "dir": "bb-sec_introspect-proxy",
+      "vm": "gcp-proxy",
+      "has_docker": true
+    },
+    "orchestrator": {
+      "dir": "bb-sec_orchestrator",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "sauron-central": {
+      "dir": "bb-sec_sauron-central",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "alerts-api": {
+      "dir": "bc-obs_alerts-api",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "c3-infra-api": {
+      "dir": "bc-obs_c3-infra-api",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "c3-infra-mcp": {
+      "dir": "bc-obs_c3-infra-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "c3-services-api": {
+      "dir": "bc-obs_c3-services-api",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "c3-services-mcp": {
+      "dir": "bc-obs_c3-services-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "cloud-cgc-mcp": {
+      "dir": "bc-obs_cloud-cgc-mcp",
+      "vm": "oci-apps",
+      "has_docker": true
+    },
+    "cloud-spec": {
+      "dir": "bc-obs_cloud-spec",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "dagu": {
+      "dir": "bc-obs_dagu",
+      "vm": "oci-mail",
+      "has_docker": false
+    },
+    "dozzle": {
+      "dir": "bc-obs_dozzle",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "fluent-bit": {
+      "dir": "bc-obs_fluent-bit",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "lgtm": {
+      "dir": "bc-obs_lgtm",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "matomo": {
+      "dir": "bc-obs_matomo",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "nocodb": {
+      "dir": "bc-obs_nocodb",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "ntfy": {
+      "dir": "bc-obs_ntfy",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "sauron-forwarder": {
+      "dir": "bc-obs_sauron-forwarder",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "syslog-forwarder": {
+      "dir": "bc-obs_syslog-forwarder",
+      "vm": "oci-mail",
+      "has_docker": false
+    },
+    "umami": {
+      "dir": "bc-obs_umami",
+      "vm": "oci-analytics",
+      "has_docker": false
+    },
+    "windmill": {
+      "dir": "bc-obs_windmill",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "backup-borg": {
+      "dir": "ca-dat_backup-borg",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "backup-bup": {
+      "dir": "ca-dat_backup-bup",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "backup-gitea": {
+      "dir": "ca-dat_backup-gitea",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "gitea": {
+      "dir": "ca-dat_gitea",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "kg-graph": {
+      "dir": "ca-dat_kg-graph",
+      "vm": "oci-apps",
+      "has_docker": false
+    },
+    "postlite": {
+      "dir": "ca-dat_postlite",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    },
+    "redis": {
+      "dir": "ca-dat_redis",
+      "vm": "gcp-proxy",
+      "has_docker": false
+    }
+  }
+}

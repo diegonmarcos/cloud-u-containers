@@ -1,0 +1,9 @@
+{
+  "name": "backup-borg",
+  "description": "Media Backups SSH Server (Borg deduplication)",
+  "category": "data",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/backup-borg"
+  }
+}

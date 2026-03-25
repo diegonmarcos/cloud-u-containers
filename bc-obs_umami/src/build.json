@@ -1,0 +1,41 @@
+{
+  "name": "umami",
+  "description": "Umami Analytics - lightweight privacy-focused web analytics",
+  "dns": "umami.app",
+  "category": "tools",
+  "domain": "analytics.diegonmarcos.com/umami",
+  "deploy": {
+    "host": "oci-analytics",
+    "remote_path": "/opt/containers/umami"
+  },
+  "lifecycle": {
+    "site-id": [
+      {
+        "action": "exec",
+        "vm": "oci-analytics",
+        "container": "umami-setup",
+        "script": "cat /output/site_id"
+      }
+    ]
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "analytics.diegonmarcos.com",
+      "base_path": "/umami",
+      "auth": "two_factor",
+      "paths": {
+        "/script.js": {
+          "auth": "public"
+        },
+        "/api/send": {
+          "auth": "public"
+        }
+      }
+    },
+    "app_hub": false
+  },
+  "ports": {
+    "app": 3000
+  }
+}

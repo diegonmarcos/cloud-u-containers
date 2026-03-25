@@ -1,0 +1,38 @@
+{
+  "name": "authelia",
+  "description": "SSO and 2FA authentication portal",
+  "dns": "authelia.app",
+  "ports": {
+    "app": 9091,
+    "redis": 6380
+  },
+  "category": "sec",
+  "domain": "auth.diegonmarcos.com",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/authelia"
+  },
+  "secrets": {
+    "jwks_file": "jwks_key.yaml",
+    "jwks_dest": "config/oidc_jwks.pem",
+    "escape_dollars": true
+  },
+  "proxy": {
+    "primary": {
+      "domain": "auth.diegonmarcos.com",
+      "auth": "bypass"
+    },
+    "app_hub": false
+  },
+  "health": {
+    "path": "/api/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}

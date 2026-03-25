@@ -1,0 +1,23 @@
+{
+  "name": "hickory-dns",
+  "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+  "dns": "hickory-dns.app",
+  "ports": {
+    "dns": 53
+  },
+  "category": "cloud",
+  "domain": "dns.internal",
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/hickory-dns",
+    "excludes": [
+      "config/**"
+    ]
+  },
+  "compose": {
+    "pre_hook": "init.sh"
+  },
+  "build": {
+    "include_cloud_data": "true"
+  }
+}

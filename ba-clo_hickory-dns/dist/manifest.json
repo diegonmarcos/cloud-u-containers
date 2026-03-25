@@ -1,21 +1,5 @@
 [
   {
-    "file": "authelia-acl.json",
-    "name": "authelia acl"
-  },
-  {
-    "file": "backup-targets.json",
-    "name": "backup targets"
-  },
-  {
-    "file": "caddy-routes.json",
-    "name": "caddy routes"
-  },
-  {
-    "file": "cloud-configs.json",
-    "name": "cloud configs"
-  },
-  {
     "file": "cloud-data-authelia-acl.json",
     "name": "cloud data authelia acl"
   },
@@ -52,6 +36,10 @@
     "name": "cloud data firewall rules"
   },
   {
+    "file": "cloud-data-home-manager.json",
+    "name": "cloud data home manager"
+  },
+  {
     "file": "cloud-data-log-routing.json",
     "name": "cloud data log routing"
   },
@@ -74,49 +62,5 @@
   {
     "file": "cloud-data-wireguard-peers.json",
     "name": "cloud data wireguard peers"
-  },
-  {
-    "file": "cloud-deps.json",
-    "name": "cloud deps"
-  },
-  {
-    "file": "cloud-topology.json",
-    "name": "cloud topology"
-  },
-  {
-    "file": "cloudflare-dns.json",
-    "name": "cloudflare dns"
-  },
-  {
-    "file": "container-resources.json",
-    "name": "container resources"
-  },
-  {
-    "file": "dns-services.json",
-    "name": "dns services"
-  },
-  {
-    "file": "firewall-rules.json",
-    "name": "firewall rules"
-  },
-  {
-    "file": "log-routing.json",
-    "name": "log routing"
-  },
-  {
-    "file": "matomo-sites.json",
-    "name": "matomo sites"
-  },
-  {
-    "file": "monitoring-targets.json",
-    "name": "monitoring targets"
-  },
-  {
-    "file": "ntfy-acl.json",
-    "name": "ntfy acl"
-  },
-  {
-    "file": "wireguard-peers.json",
-    "name": "wireguard peers"
   }
 ]

@@ -1,10 +1,17 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   mattermost:
     image: ngrie/mattermost-team-edition-arm:10.11
     container_name: mattermost
-    restart: unless-stopped
-    ports:
-      - "10.0.0.6:8065:8065"
+    command: mattermost server
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - ./data/mattermost/config:/mattermost/config
       - ./data/mattermost/data:/mattermost/data
@@ -26,14 +33,15 @@ services:
       - MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true
       - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
       - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
-      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=mattermost-bots
+      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=localhost
     depends_on:
       postgres:
         condition: service_healthy
   postgres:
     image: postgres:16-alpine
     container_name: mattermost-postgres
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     env_file:
@@ -41,6 +49,7 @@ services:
     environment:
       - POSTGRES_DB=mattermost
       - POSTGRES_USER=mattermost
+      - PGPORT=5435
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
       interval: 10s
@@ -50,9 +59,8 @@ services:
   mattermost-bots:
     image: python:3.12-slim
     container_name: mattermost-bots
-    restart: unless-stopped
-    ports:
-      - "10.0.0.6:8888:8888"
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
       - ./requirements-bridge.txt:/app/requirements.txt:ro
@@ -62,18 +70,13 @@ services:
     environment:
       - NTFY_URL=http://10.0.0.1:8090
       - TOPICS=vcs_commits,vcs_pull-requests,vcs_issues-releases,cicd_deploy-digest,infra_mesh-health,infra_endpoints,infra_dns,infra_resources,infra_containers,ops_summary,ops_backups,ops_cron,security_audit,security_tls,security_connections,security_yara
-      - MM_URL=http://mattermost:8065
-      - C3_API_URL=http://c3-api:8080
+      - MM_URL=http://localhost:8065
+      - C3_API_URL=http://c3-infra-mcp-api:8080
       - OLLAMA_URL=http://10.0.0.8:11434
       - OLLAMA_MODEL=deepseek-r1:14b-qwen-distill-q8_0
       - OLLAMA_VM=gcp-t4
-    networks:
-      - default
-      - c3-api
+      - AUTHELIA_OIDC_CLIENT_ID=mattermost-cc
+      - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_MATTERMOST_SECRET}
+      - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
     depends_on:
       - mattermost
-
-networks:
-  c3-api:
-    external: true
-    name: c3-api_default

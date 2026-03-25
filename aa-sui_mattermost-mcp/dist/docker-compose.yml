@@ -1,0 +1,21 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_mattermost-mcp/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_mattermost-mcp/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  mattermost-mcp:
+    image: ghcr.io/diegonmarcos/mattermost-mcp:latest
+    container_name: mattermost-mcp
+    restart: "no"  # container-init handles startup
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      MM_URL: https://chat.diegonmarcos.com
+      MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
+      MM_ADMIN_USERNAME: me@diegonmarcos.com
+      CLAUDE_MODEL: opus
+

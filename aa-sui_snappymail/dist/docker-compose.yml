@@ -16,6 +16,9 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     volumes:
       - ./data:/var/lib/snappymail
     healthcheck:

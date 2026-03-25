@@ -1,21 +1,37 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: aa-sui_code-server/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   code-server:
     image: linuxserver/code-server:latest
     container_name: code-server
+    network_mode: host
     restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
-      TZ: Europe/Madrid
-      PUID: 1000
-      PGID: 1000
       DEFAULT_WORKSPACE: /workspace
-    ports:
-      - "10.0.0.6:8443:8443"
+      PGID: 1000
+      PUID: 1000
+      TZ: Europe/Madrid
     volumes:
       - ./config:/config
       - /home/ubuntu/workspace:/workspace
-    networks:
-      - dev_network
-
-networks:
-  dev_network:
-    external: true
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true

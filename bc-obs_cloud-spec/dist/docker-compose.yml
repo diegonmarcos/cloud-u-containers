@@ -1,10 +1,16 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_cloud-spec/src/flake.nix ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_cloud-spec/build.sh ship ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   cloud-spec:
     image: busybox:latest
     container_name: cloud-spec
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
+    network_mode: host
     command: busybox httpd -f -p 3080 -h /srv
     volumes:
       - ./site:/srv:ro
-    ports:
-      - "3080:3080"

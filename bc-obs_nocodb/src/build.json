@@ -1,0 +1,35 @@
+{
+  "name": "nocodb",
+  "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
+  "dns": "nocodb.app",
+  "ports": {
+    "app": 8085,
+    "db": 5441
+  },
+  "category": "tools",
+  "domain": "db.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/home/ubuntu/nocodb"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "db.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/api/v1/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "nocodb_data"
+    ]
+  }
+}

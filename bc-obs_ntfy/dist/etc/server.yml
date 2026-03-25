@@ -20,5 +20,8 @@ enable-login: true
 enable-signup: false
 enable-reservations: false
 
+# Listen on non-default port (host networking — port 80 is Caddy's)
+listen-http: :8090
+
 # Behind reverse proxy (Authelia handles auth)
 behind-proxy: true

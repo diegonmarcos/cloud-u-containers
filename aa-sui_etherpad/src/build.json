@@ -1,0 +1,31 @@
+{
+  "name": "etherpad",
+  "description": "Etherpad collaborative editor",
+  "dns": "etherpad.app",
+  "ports": {
+    "app": 3012,
+    "db": 5436
+  },
+  "category": "app",
+  "domain": "pad.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/etherpad"
+  },
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "app.diegonmarcos.com",
+      "base_path": "/etherpad",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  }
+}
