@@ -93,7 +93,7 @@
           volumes:
             - ./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro
             - ./cache:/var/cache/ntfy
-            - syslog-central-logs:/var/log:ro
+            - /var/log:/var/log:ro
           environment:
             - TZ=Europe/Paris
             - PYTHONUNBUFFERED=1
@@ -115,9 +115,7 @@
           depends_on:
             - ntfy
 
-      volumes:
-        syslog-central-logs:
-          external: true
+      volumes: {}
 
     '';
 
