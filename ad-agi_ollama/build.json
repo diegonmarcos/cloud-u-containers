@@ -4,6 +4,14 @@
   "category": "agi",
   "deploy": {
     "host": "gcp-t4",
-    "remote_path": "/opt/containers/ollama"
-  }
+    "remote_path": "/opt/containers/ollama",
+    "fallback_host": "vast-ollama"
+  },
+  "port": 11434,
+  "dns": "ollama.app",
+  "models": [
+    "deepseek-r1:14b",
+    "qwen2.5:14b"
+  ],
+  "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
 }

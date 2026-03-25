@@ -1,6 +1,7 @@
 {
   "name": "mattermost-bots",
   "description": "Mattermost team chat with ntfy bridge and C3 command bot",
+  "port": 8065,
   "dns": "mattermost.app",
   "ports": {
     "app": 8065,

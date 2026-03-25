@@ -189,6 +189,10 @@ function main() {
       ...(entry.monitoring ? { monitoring: entry.monitoring } : {}),
       ...(entry.backup ? { backup: entry.backup } : {}),
       ...(entry.notifications ? { notifications: entry.notifications } : {}),
+      // Deploy overrides
+      ...(entry.fallback_vm ? { fallback_vm: resolveVmId(entry.fallback_vm, aliasToVmId, vms) } : {}),
+      // Spread extra service-specific fields (models, notes, etc.)
+      ...(entry.extra || {}),
     };
 
     // Preserve extra fields from existing
@@ -324,9 +328,16 @@ function main() {
     services,
   };
 
-  // Also keep native section if it existed
+  // Preserve sections from existing that aren't generated
   if (existing?.native) {
     (topology as any).native = existing.native;
+  }
+  // Merge deps from config.json (global, not generated)
+  const configJsonPath = join(CLOUD_ROOT, "config.json");
+  if (existsSync(configJsonPath)) {
+    const config = JSON.parse(readFileSync(configJsonPath, "utf-8"));
+    if (config.deps) (topology as any).deps = config.deps;
+    if (config.engine_folder) (topology as any).engine_folder = config.engine_folder;
   }
 
   // 11. Write cloud-data-topology.json
