@@ -36,7 +36,8 @@
     "app_hub": false
   },
   "ports": {
-    "app": 3000
+    "app": 3006,
+    "db": 5442
   },
   "backup": {
     "enabled": true
@@ -45,7 +46,7 @@
     "app": {
       "container_name": "umami",
       "image": "ghcr.io/umami-software/umami:latest",
-      "port": 3000,
+      "port": 3006,
       "port_env": null,
       "dns": "umami.app",
       "public": true,
@@ -61,7 +62,7 @@
     "db": {
       "container_name": "umami-db",
       "image": "postgres:16-alpine",
-      "port": 5432,
+      "port": 5442,
       "port_env": null,
       "dns": "umami-db.app",
       "public": false,

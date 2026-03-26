@@ -3,7 +3,7 @@
   "description": "VS Code IDE (ide.diegonmarcos.com)",
   "dns": "code-server.app",
   "ports": {
-    "app": 8443
+    "app": 8444
   },
   "category": "app",
   "domain": "ide.diegonmarcos.com",
