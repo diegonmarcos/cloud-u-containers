@@ -923,6 +923,53 @@ function deriveDeps(c: any): DerivedFile {
 // Main
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Per-service connection data — resolves service name → IP + port from deploy.host + build.json */
+function deriveServiceConnections(c: any): DerivedFile {
+  const vms = c.vms as Record<string, any>;
+  const services = c.services as Record<string, any>;
+  const aliasMap = buildAliasToVm(vms);
+
+  // For each service: resolve deploy.host (ssh alias) → VM → wg_ip, include ports
+  const svcMap: Record<string, { ip: string; ports: Record<string, number>; vm: string }> = {};
+
+  for (const [svcName, svc] of Object.entries(services)) {
+    const vmEntry = vms[svc.vm];
+    if (!vmEntry?.wg_ip) continue;
+
+    // Collect ports from containers
+    const ports: Record<string, number> = {};
+    for (const [role, ct] of Object.entries(svc.containers ?? {})) {
+      const port = (ct as any).port;
+      if (port) ports[role] = port;
+    }
+
+    svcMap[svcName] = {
+      ip: vmEntry.wg_ip,
+      ports,
+      vm: vmEntry.ssh_alias ?? svc.vm,
+    };
+  }
+
+  // Also include VMs list for services like dagu that need SSH to all VMs
+  const vmList = Object.entries(vms)
+    .filter(([, vm]: [string, any]) => vm.wg_ip && vm.ssh_alias)
+    .map(([vmId, vm]: [string, any]) => ({
+      vm_id: vmId,
+      alias: vm.ssh_alias,
+      ip: vm.wg_ip,
+      user: vm.user ?? "ubuntu",
+    }));
+
+  return {
+    name: "cloud-data-service-connections.json",
+    data: {
+      _generated: now(),
+      services: svcMap,
+      vms: vmList,
+    },
+  };
+}
+
 function main() {
   console.log("derive-cloud-data: reading consolidated file...\n");
 
@@ -937,8 +984,9 @@ function main() {
     mkdirSync(CLOUD_DATA_DIR, { recursive: true });
   }
 
-  // Run all 17 derivations
+  // Run all 18 derivations
   const derived: DerivedFile[] = [
+    deriveServiceConnections(consolidated),
     deriveDnsServices(consolidated),
     deriveCaddyRoutes(consolidated),
     deriveAutheliaAcl(consolidated),

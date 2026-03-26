@@ -7,11 +7,12 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "rig-agentic-sonn-14bq8";
       port = 8090;
-      ollama_url = "http://10.0.0.8:11434";
+      ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
       c3_api_url = "http://c3-api.app:8081";
       c3_mcp_url = "http://c3-mcp.app:3100";

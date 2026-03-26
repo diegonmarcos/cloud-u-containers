@@ -114,14 +114,10 @@
 
     # ── SSH shorthand used across all workflows ──────────────────────────
     sshCmd = "ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
-    # VM list derived from monitoring-targets.json at runtime (fallback to hardcoded)
+    # VM list derived from monitoring-targets.json at runtime
     monTargets = "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json";
     vmListCmd = ''
-      if [ -f "${monTargets}" ]; then
-        jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "${monTargets}" | tr '\n' ' '
-      else
-        echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
-      fi
+      jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "${monTargets}" | tr '\n' ' '
     '';
 
     # ── DAG workflows ────────────────────────────────────────────────────

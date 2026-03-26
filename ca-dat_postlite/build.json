@@ -2,6 +2,16 @@
   "name": "postlite",
   "description": "SQLite REST API (WireGuard only)",
   "category": "data",
+  "ports": {
+    "npm_rest": 8880,
+    "vaultwarden_rest": 8881,
+    "ntfy_rest": 8882,
+    "authelia_rest": 8883,
+    "npm_pg": 5433,
+    "vaultwarden_pg": 5434,
+    "ntfy_pg": 5435,
+    "authelia_pg": 5436
+  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/postlite"
