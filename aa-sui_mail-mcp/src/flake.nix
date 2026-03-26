@@ -11,7 +11,7 @@
     config = {
       container_name = "mail-mcp";
       image = "ghcr.io/diegonmarcos/mail-mcp:latest";
-      mail_host = "10.0.0.3";  # oci-mail WireGuard IP — direct, bypasses gcp-proxy Caddy L4
+      mail_host = "mail.diegonmarcos.com";  # Use domain for TLS cert match (cert is for mail.diegonmarcos.com, not WG IP)
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
