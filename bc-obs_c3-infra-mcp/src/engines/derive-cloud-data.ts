@@ -497,16 +497,74 @@ function deriveMonitoringTargets(c: any): DerivedFile {
 
 function deriveBackupTargets(c: any): DerivedFile {
   const services = c.services as Record<string, any>;
+  const vms = c.vms as Record<string, any>;
+
+  // Build VM alias lookup
+  const vmIdToAlias: Record<string, string> = {};
+  const vmById: Record<string, any> = {};
+  for (const [vmId, vm] of Object.entries(vms) as [string, any][]) {
+    if (vm.ssh_alias) vmIdToAlias[vmId] = vm.ssh_alias;
+    vmById[vmId] = vm;
+  }
 
   const targets: any[] = [];
-  for (const [svcName, svc] of Object.entries(services)) {
-    if (svc.backup?.enabled) {
-      targets.push({
-        service: svcName,
-        vm: svc.vm,
-        volumes: svc.backup.volumes ?? [],
-      });
+  const byVm: Record<string, { wg_ip: string; user: string; databases: any[]; volumes: string[] }> = {};
+
+  for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
+    if (!svc.backup?.enabled) continue;
+
+    const vmAlias = vmIdToAlias[svc.vm] ?? svc.vm;
+    const vm = vmById[svc.vm];
+
+    // Scan containers for DB metadata
+    const databases: any[] = [];
+    if (svc.containers) {
+      for (const [ctKey, ct] of Object.entries(svc.containers) as [string, any][]) {
+        const hasDbFields = ct.db_user || ct.db_name || ct.db_path || ct.dump_cmd;
+        const isDbImage = /^(postgres|mariadb|mysql):/.test(ct.image ?? "");
+
+        if (!hasDbFields && !isDbImage) continue;
+
+        // Infer dump type from image
+        let type = "custom";
+        if (ct.db_path) type = "sqlite";
+        else if (ct.dump_cmd) type = "custom";
+        else if (/^postgres:/.test(ct.image ?? "")) type = "postgres";
+        else if (/^mariadb:/.test(ct.image ?? "")) type = "mariadb";
+        else if (/^mysql:/.test(ct.image ?? "")) type = "mariadb";
+
+        databases.push({
+          service: svcName,
+          container: ct.container_name,
+          container_key: ctKey,
+          type,
+          ...(ct.db_user ? { user: ct.db_user } : {}),
+          ...(ct.db_name ? { db: ct.db_name } : {}),
+          ...(ct.db_path ? { path: ct.db_path } : {}),
+          ...(ct.dump_cmd ? { dump_cmd: ct.dump_cmd } : {}),
+        });
+      }
     }
+
+    targets.push({
+      service: svcName,
+      vm: svc.vm,
+      vm_alias: vmAlias,
+      volumes: svc.backup.volumes ?? [],
+      databases,
+    });
+
+    // Group by VM
+    if (!byVm[vmAlias]) {
+      byVm[vmAlias] = {
+        wg_ip: vm?.wg_ip ?? "",
+        user: vm?.user ?? "ubuntu",
+        databases: [],
+        volumes: [],
+      };
+    }
+    byVm[vmAlias].databases.push(...databases);
+    byVm[vmAlias].volumes.push(...(svc.backup.volumes ?? []));
   }
 
   return {
@@ -515,6 +573,7 @@ function deriveBackupTargets(c: any): DerivedFile {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/backup-targets",
       targets,
+      by_vm: byVm,
     },
   };
 }

@@ -38,6 +38,9 @@
   "ports": {
     "app": 3000
   },
+  "backup": {
+    "enabled": true
+  },
   "containers": {
     "app": {
       "container_name": "umami",
@@ -68,7 +71,9 @@
       ],
       "env_file": false,
       "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "32M" } },
-      "read_only": false
+      "read_only": false,
+      "db_user": "umami",
+      "db_name": "umami"
     },
     "setup": {
       "container_name": "umami-setup",

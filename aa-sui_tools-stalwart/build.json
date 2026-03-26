@@ -77,7 +77,8 @@
       "env_file": false,
       "depends_on": [],
       "resources": { "limits": { "memory": "512M" }, "reservations": { "memory": "64M" } },
-      "read_only": false
+      "read_only": false,
+      "dump_cmd": "stalwart-mail --export /tmp/stalwart-export"
     }
   }
 }

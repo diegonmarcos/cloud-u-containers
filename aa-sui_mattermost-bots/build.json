@@ -78,7 +78,9 @@
       ],
       "env_file": true,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "mattermost",
+      "db_name": "mattermost"
     },
     "bots": {
       "container_name": "mattermost-bots",

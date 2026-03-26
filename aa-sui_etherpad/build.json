@@ -74,7 +74,12 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "etherpad",
+      "db_name": "etherpad"
     }
+  },
+  "backup": {
+    "enabled": true
   }
 }

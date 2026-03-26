@@ -77,7 +77,9 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "nocodb",
+      "db_name": "nocodb"
     }
   }
 }

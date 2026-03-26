@@ -106,6 +106,11 @@ export interface ContainerSpec {
   read_only?: boolean;
   capabilities?: string[];
   log_level?: string;
+  // Database metadata — for backup dump generation
+  db_user?: string | null;     // Database user for pg_dump/mariadb-dump
+  db_name?: string | null;     // Database name to dump
+  db_path?: string | null;     // Path to sqlite/file DB inside the container
+  dump_cmd?: string | null;    // Custom dump command (runs via docker exec)
 }
 
 export interface BuildJsonEntry {

@@ -61,7 +61,9 @@
       ],
       "env_file": true,
       "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "64M" } },
-      "read_only": false
+      "read_only": false,
+      "db_user": "windmill",
+      "db_name": "windmill"
     },
     "worker": {
       "container_name": "windmill-worker",

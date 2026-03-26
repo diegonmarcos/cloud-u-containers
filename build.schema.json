@@ -297,6 +297,56 @@
         }
       }
     },
+    "containers": {
+      "type": "object",
+      "description": "Multi-container declarations keyed by role (e.g. 'app', 'db', 'redis')",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["container_name", "image"],
+        "properties": {
+          "container_name": { "type": "string" },
+          "image": { "type": "string" },
+          "port": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
+          "port_env": { "type": ["string", "null"] },
+          "dns": { "type": ["string", "null"] },
+          "public": { "type": "boolean" },
+          "proxy": { "type": ["object", "null"] },
+          "healthcheck": { "type": ["string", "null"] },
+          "monitoring": { "type": ["object", "null"] },
+          "volumes": { "type": "array", "items": { "type": "string" } },
+          "env_file": { "type": "boolean" },
+          "depends_on": { "type": "array", "items": { "type": "string" } },
+          "resources": { "type": ["object", "null"] },
+          "read_only": { "type": "boolean" },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "log_level": { "type": "string" },
+          "db_user": { "type": ["string", "null"], "description": "Database user for pg_dump/mariadb-dump" },
+          "db_name": { "type": ["string", "null"], "description": "Database name to dump" },
+          "db_path": { "type": ["string", "null"], "description": "Path to sqlite/file DB inside the container" },
+          "dump_cmd": { "type": ["string", "null"], "description": "Custom dump command (runs via docker exec)" }
+        }
+      }
+    },
+    "dns": {
+      "type": "string",
+      "description": "Internal DNS name (e.g. 'service.app')"
+    },
+    "ssh_port": {
+      "type": "integer",
+      "description": "SSH port for git services"
+    },
+    "gitea": {
+      "type": "object",
+      "description": "Gitea-specific configuration"
+    },
+    "frozen": {
+      "type": "boolean",
+      "description": "When true, service is archived and not actively deployed"
+    },
+    "notifications": {
+      "type": "object",
+      "description": "Notification configuration (ntfy topics, failure/recovery alerts)"
+    },
     "lifecycle": {
       "type": "object",
       "description": "Custom lifecycle actions (wake/sleep/custom commands) for on-demand services",

@@ -36,6 +36,9 @@
     "dns_check": true,
     "endpoint_check": true
   },
+  "backup": {
+    "enabled": true
+  },
   "containers": {
     "app": {
       "container_name": "crawlee_api",
@@ -110,7 +113,9 @@
       ],
       "env_file": true,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "crawlee",
+      "db_name": "crawlee"
     },
     "redis": {
       "container_name": "crawlee_redis",

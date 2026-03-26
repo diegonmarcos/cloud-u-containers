@@ -63,7 +63,12 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "quant_user",
+      "db_name": "quantlab"
     }
+  },
+  "backup": {
+    "enabled": true
   }
 }
