@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;
@@ -42,9 +43,9 @@
           SHOW_PASSWORD_HINT = config.show_password_hint;
           WEBSOCKET_ENABLED = "\"true\"";
           LOG_LEVEL = "warn";
-          SMTP_HOST = "10.0.0.3";
+          SMTP_HOST = svc.stalwart.ip;
           SMTP_FROM = "noreply@diegonmarcos.com";
-          SMTP_PORT = "\"465\"";
+          SMTP_PORT = "\"${toString svc.stalwart.ports.smtp}\"";
           SMTP_SECURITY = "force_tls";
           SMTP_USERNAME = "noreply@diegonmarcos.com";
           SMTP_PASSWORD = "\${SMTP_PASSWORD}";

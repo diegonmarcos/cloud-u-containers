@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       dns_port = buildJson.ports.dns;
@@ -63,7 +64,7 @@ $TTL 60
       zone_file_path = "/etc/zones/${name}.${suffix}.zone"
 '') names);
       in pkgs.writeText "named.toml" ''
-      listen_addrs_ipv4 = ["10.0.0.1"]
+      listen_addrs_ipv4 = ["${svc."hickory-dns".ip}"]
       listen_port = ${toString config.dns_port}
 
       # ── Per-service zones (<name>.app → WG IP) ──

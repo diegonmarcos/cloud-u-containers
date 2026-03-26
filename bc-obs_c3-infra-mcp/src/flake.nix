@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       container_name = buildJson.name;
@@ -36,7 +37,7 @@
           "NODE_ENV=production"
           "GIT_BASE=/root/git"
           "MM_URL=${config.mattermost_url}"
-          "DAGU_API=http://10.0.0.3:8070"
+          "DAGU_API=http://${svc.dagu.ip}:${toString svc.dagu.ports.app}"
           "PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         ];
         volumes = [
