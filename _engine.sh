@@ -277,7 +277,7 @@ step_build() {
     BUILD_LOG=$(mktemp)
     REPO_ROOT="$SERVICE_DIR/../.."
 
-    # nix build — runs directly (in GHA this is already inside cloud-ci container)
+    # nix build — runs directly (in GHA this is already inside cloud-builder container)
     git config --global --add safe.directory "$REPO_ROOT" 2>/dev/null || true
     nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
         log_error "nix build failed:"
