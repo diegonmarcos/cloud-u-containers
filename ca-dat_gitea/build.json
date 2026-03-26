@@ -27,6 +27,20 @@
     "dns_check": true,
     "endpoint_check": true
   },
+  "ssh_port": 2222,
+  "gitea": {
+    "org": "diego",
+    "mirrors": {
+      "unix":       { "upstream": "https://github.com/diegonmarcos/unix.git" },
+      "cloud":      { "upstream": "https://github.com/diegonmarcos/cloud.git" },
+      "cloud-data": { "upstream": "https://github.com/diegonmarcos/cloud-data.git" },
+      "front":      { "upstream": "https://github.com/diegonmarcos/front.git" },
+      "front-data": { "upstream": "https://github.com/diegonmarcos/front-data.git" },
+      "tools":      { "upstream": "https://github.com/diegonmarcos/tools.git" },
+      "vault":      { "upstream": "https://github.com/diegonmarcos/vault.git", "private": true }
+    },
+    "mirror_interval": "1h"
+  },
   "backup": {
     "enabled": true,
     "volumes": [
