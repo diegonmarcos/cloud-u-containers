@@ -458,7 +458,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.service_api_call",
-    "Call any discovered service API endpoint. First use service_get_spec to understand available endpoints, then use this tool to make the actual call. Resolves service domain via Rust API discovery.",
+    "Call any discovered service API endpoint. First use service_get_spec to understand available endpoints, then use this tool to make the actual call. Resolves service domain via C3 API discovery.",
     {
       service: z.string().describe("Service name (e.g. authelia, matomo, photoprism)"),
       method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH"]).optional().describe("HTTP method (default: GET)"),

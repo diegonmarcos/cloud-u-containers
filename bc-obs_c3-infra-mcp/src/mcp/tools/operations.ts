@@ -187,7 +187,7 @@ export function registerOperationsTools(server: McpServer) {
 
   server.tool(
     "devops.docker.control",
-    "Start/stop/restart a container via SSH. Use for debugging or when Rust API is down. Prefer container_start/stop/restart for normal operations.",
+    "Start/stop/restart a container via SSH. Use for debugging or when C3 API is down. Prefer container_start/stop/restart for normal operations.",
     {
       vm: z.string().describe("VM ID or SSH alias"),
       container: z.string().describe("Container name"),
@@ -477,21 +477,21 @@ export function registerOperationsTools(server: McpServer) {
 
   server.tool(
     "devops.vm.start",
-    "Start a VM via the Rust API (handles OCI/GCP abstraction)",
+    "Start a VM via the C3 API (handles OCI/GCP abstraction)",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmStart(vm)),
   );
 
   server.tool(
     "devops.vm.stop",
-    "Stop a VM gracefully via the Rust API",
+    "Stop a VM gracefully via the C3 API",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmStop(vm)),
   );
 
   server.tool(
     "devops.vm.reset",
-    "Reset/force-restart a VM via the Rust API",
+    "Reset/force-restart a VM via the C3 API",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmReset(vm)),
   );
@@ -507,7 +507,7 @@ export function registerOperationsTools(server: McpServer) {
 
   server.tool(
     "devops.container.start",
-    "Start a container via the Rust API (preferred — handles VM auto-wake and validation).",
+    "Start a container via the C3 API (preferred — handles VM auto-wake and validation).",
     {
       vm: z.string().describe("VM ID or SSH alias"),
       name: z.string().describe("Container name"),

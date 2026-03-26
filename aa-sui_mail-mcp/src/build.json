@@ -23,5 +23,28 @@
   },
   "ports": {
     "app": 3103
+  },
+  "containers": {
+    "app": {
+      "container_name": "mail-mcp",
+      "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
+      "port": 3103,
+      "port_env": null,
+      "dns": "mail-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/mail-mcp"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
