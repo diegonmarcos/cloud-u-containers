@@ -93,7 +93,27 @@ steps:
         return 0
       }
 
-      # ── Fetch all endpoints ──────────────────────────────────────
+      # ── Fetch consolidated mother file ──────────────────────────
+      # _cloud-data-consolidated.json is the v2 source — all others derive from it
+      fetch_consolidated() {
+        local target="$REPO_DIR/_cloud-data-consolidated.json"
+        local tmp="$target.tmp"
+        if curl -sf --max-time 60 "$C3_API/cloud-data/consolidated" > "$tmp" 2>/dev/null; then
+          local sz=$(wc -c < "$tmp")
+          if [ "$sz" -gt 1000 ] && jq '._meta.version' "$tmp" > /dev/null 2>&1; then
+            jq '.' "$tmp" > "${tmp}.pretty" 2>/dev/null && mv "${tmp}.pretty" "$tmp"
+            mv "$tmp" "$target"
+            echo "OK _cloud-data-consolidated.json (${sz} bytes)"
+            return 0
+          fi
+        fi
+        rm -f "$tmp"
+        echo "SKIP _cloud-data-consolidated.json (not available yet)"
+        return 0
+      }
+      fetch_consolidated
+
+      # ── Fetch all per-consumer endpoints ────────────────────────
       ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager"
 
       OK=0
