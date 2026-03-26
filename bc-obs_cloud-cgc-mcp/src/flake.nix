@@ -27,12 +27,6 @@
       # ║ Source: ~/git/cloud/a_solutions/bc-obs_cloud-cgc-mcp/                      ║
       # ║ Rebuild: build.sh ship                                                     ║
       # ╚═════════════════════════════════════════════════════════════════════════════╝
-      volumes:
-        octocode_db:
-          external: true
-        octocode_repos:
-          external: true
-
       services:
         cloud-cgc-mcp:
           image: ${config.image}
@@ -43,11 +37,9 @@
             MCP_TRANSPORT: http
             MCP_HTTP_PORT: "${config.http_port}"
             CONFIG_PATH: "${config.data_path}/config.json"
-            GIT_ROOT: "/repos"
+            GIT_ROOT: "/home/diego/Mounts/Git"
           volumes:
             - ./data:${config.data_path}:ro
-            - octocode_db:/root/.local/share/octocode:ro
-            - octocode_repos:/repos:ro
           healthcheck:
             test: ["CMD", "node", "-e", "fetch('http://localhost:${config.http_port}/mcp').catch(()=>process.exit(1))"]
             interval: 30s
