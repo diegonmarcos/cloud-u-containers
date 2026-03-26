@@ -4,7 +4,7 @@
   "frozen": true,
   "category": "fin",
   "ports": {
-    "app": 8888,
+    "app": 8890,
     "db": 5437
   },
   "deploy": {
@@ -15,12 +15,12 @@
     "research": {
       "container_name": "quant_full_research",
       "image": "quay.io/jupyter/scipy-notebook:latest",
-      "port": 8888,
+      "port": 8890,
       "port_env": null,
       "dns": null,
       "public": false,
       "proxy": null,
-      "healthcheck": "curl -sf http://localhost:8888/api || exit 1",
+      "healthcheck": "curl -sf http://localhost:8890/api || exit 1",
       "volumes": [
         "./notebooks:/home/jovyan/work",
         "quant_full_shared_data:/home/jovyan/data"

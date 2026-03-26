@@ -6,7 +6,7 @@
     "app": 3000,
     "dashboard": 3001,
     "db": 5433,
-    "redis": 6380,
+    "redis": 6381,
     "minio": 9000
   },
   "category": "fin",
@@ -120,11 +120,11 @@
     "redis": {
       "container_name": "crawlee_redis",
       "image": "redis:7-alpine",
-      "port": 6380,
+      "port": 6381,
       "port_env": null,
       "dns": "crawlee-redis.app",
       "public": false,
-      "healthcheck": "redis-cli -p 6380 ping",
+      "healthcheck": "redis-cli -p 6381 ping",
       "volumes": [
         "crawlee_redis:/data"
       ],

@@ -14,6 +14,7 @@
       domain = buildJson.domain;
       container_name = "umami";
       port = buildJson.ports.app;
+      db_port = buildJson.ports.db;
       db_container = "umami-db";
     };
 
@@ -40,7 +41,7 @@
           env_file:
             - .secrets
           environment:
-            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@localhost:5432/umami
+            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@localhost:${toString config.db_port}/umami
             DATABASE_TYPE: postgresql
             APP_SECRET: ''${APP_SECRET}
             BASE_PATH: /umami

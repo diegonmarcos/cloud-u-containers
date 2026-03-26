@@ -36,6 +36,7 @@
     "app_hub": false
   },
   "ports": {
-    "app": 3000
+    "app": 3006,
+    "db": 5442
   }
 }
