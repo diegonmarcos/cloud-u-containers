@@ -26,6 +26,9 @@
 
       dockerCompose = docker.mkCompose pkgs {
         banner = docker.banner "aa-sui_code-server/src/flake.nix";
+        volumes = {
+          code_server_config = {};
+        };
         services = {
           code-server = docker.mkService {
             name = "code-server";
@@ -33,7 +36,7 @@
             container_name = config.container_name;
             ports = [ "10.0.0.6:${toString config.port}:8443" ];
             volumes = [
-              "./config:/config"
+              "code_server_config:/config"
               "/home/ubuntu/workspace:/workspace"
             ];
             environment = {

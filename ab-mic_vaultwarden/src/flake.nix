@@ -50,7 +50,11 @@
           SMTP_PASSWORD = "\${SMTP_PASSWORD}";
           ADMIN_TOKEN = "\${ADMIN_TOKEN}";
         };
-        volumes = [ "./data:/data" ];
+        volumes = [ "vaultwarden_data:/data" ];
+      };
+
+      volumes = {
+        vaultwarden_data = {};
       };
     };
 

@@ -34,6 +34,9 @@
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/flake.nix";
+      volumes = {
+        stalwart_data = {};
+      };
       services = {
         stalwart = docker.mkService {
           name = "stalwart";
@@ -45,7 +48,7 @@
             "TZ=${config.timezone}"
           ];
           volumes = [
-            "./data:/opt/stalwart-mail/data"
+            "stalwart_data:/opt/stalwart-mail/data"
             "./config.toml:/opt/stalwart-mail/etc/config.toml:ro"
             "./dkim:/opt/stalwart-mail/dkim:ro"
           ];
@@ -245,18 +248,6 @@
       done < .secrets
       envsubst "$ENV_VARS" < config.toml.tpl > config.toml
 
-      # Clear ACME data if domains changed (forces new cert with all SANs)
-      ACME_DOMAINS="mail.${config.domain},imap.${config.domain},smtp.${config.domain}"
-      ACME_STAMP="data/.acme-domains"
-      if [ -f "$ACME_STAMP" ]; then
-        OLD_DOMAINS=$(cat "$ACME_STAMP")
-        if [ "$OLD_DOMAINS" != "$ACME_DOMAINS" ]; then
-          echo "[init] ACME domains changed — clearing cert cache for re-issue"
-          rm -rf data/acme
-        fi
-      fi
-      echo "$ACME_DOMAINS" > "$ACME_STAMP"
-
       # Decode DKIM private key from base64
       if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
         echo "[init] Writing DKIM private key..."
@@ -264,9 +255,6 @@
         echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > dkim/${config.domain}.dkim.key
         chmod 600 dkim/${config.domain}.dkim.key
       fi
-
-      # Ensure data directory exists
-      mkdir -p data/db data/blobs data/acme
 
       echo "[init] Done."
     '';
