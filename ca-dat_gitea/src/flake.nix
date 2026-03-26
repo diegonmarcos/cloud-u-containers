@@ -40,6 +40,8 @@
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
+          env_file:
+            - .secrets
           environment:
             GITEA__server__HTTP_PORT: "${toString config.port_http}"
             GITEA__server__SSH_PORT: "${toString config.port_ssh}"
@@ -75,26 +77,55 @@
     in pkgs.writeText "init-mirrors.sh" ''
       #!/usr/bin/env bash
       # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ AUTO-GENERATED — converge Gitea org + mirror repos              ║
-      # ║ Source: build.json .gitea.mirrors                               ║
+      # ║ AUTO-GENERATED — bootstrap Gitea admin + converge mirror repos  ║
+      # ║ Source: build.json .gitea.mirrors + secrets.yaml                ║
       # ║ Run: after container is healthy (container-init calls this)     ║
+      # ║ Idempotent: safe to run multiple times                          ║
       # ╚══════════════════════════════════════════════════════════════════╝
       set -uo pipefail
       API="http://localhost:${toString config.port_http}/api/v1"
-      TOKEN="''${GITEA_ADMIN_TOKEN:?GITEA_ADMIN_TOKEN required}"
-      AUTH="-H \"Authorization: token $TOKEN\""
+      CONTAINER="${config.container_name}"
 
+      # ── Step 1: Create admin user (idempotent) ────────────────────
+      echo "── Bootstrapping admin user ──"
+      docker exec "$CONTAINER" gitea admin user create \
+        --username "''${GITEA_ADMIN_USER}" \
+        --password "''${GITEA_ADMIN_PASSWORD}" \
+        --email "''${GITEA_ADMIN_EMAIL}" \
+        --admin \
+        --must-change-password=false 2>&1 | grep -v "already exists" || true
+
+      # ── Step 2: Get or create API token ───────────────────────────
+      echo "── Obtaining API token ──"
+      TOKEN_FILE="/opt/containers/gitea/.gitea-token"
+      if [ -f "$TOKEN_FILE" ]; then
+        TOKEN=$(cat "$TOKEN_FILE")
+      else
+        TOKEN=$(curl -sf -X POST "$API/users/''${GITEA_ADMIN_USER}/tokens" \
+          -u "''${GITEA_ADMIN_USER}:''${GITEA_ADMIN_PASSWORD}" \
+          -H "Content-Type: application/json" \
+          -d '{"name":"init-mirrors","scopes":["all"]}' | jq -r '.sha1') || true
+        if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+          echo "$TOKEN" > "$TOKEN_FILE"
+          chmod 600 "$TOKEN_FILE"
+          echo "  Token created and saved"
+        else
+          echo "  FAIL: could not create token"
+          exit 1
+        fi
+      fi
+
+      AUTH="-H \"Authorization: token $TOKEN\""
       api() { eval curl -sf "$AUTH" -H "'Content-Type: application/json'" "$@"; }
 
+      # ── Step 3: Ensure org exists ─────────────────────────────────
       echo "── Converging Gitea mirrors ──"
-
-      # Ensure org exists
       if ! api "$API/orgs/${config.org}" >/dev/null 2>&1; then
         echo "Creating org: ${config.org}"
         api -X POST "$API/orgs" -d '{"username":"${config.org}","visibility":"public"}' >/dev/null
       fi
 
-      # Ensure each mirror repo exists
+      # ── Step 4: Ensure each mirror repo exists ────────────────────
       ${concatMapStrings (m: ''
       if ! api "$API/repos/${config.org}/${m.name}" >/dev/null 2>&1; then
         echo "Creating mirror: ${config.org}/${m.name} ← ${m.upstream}"
