@@ -85,19 +85,19 @@ if [ -f "$CONFIG" ]; then
     BUILD_COPY_ONLY="$(get_config build.copy_only)"
 fi
 
-# ── Profile override: CLOUD_PROFILE=<name> reads build_<name>.json ──────
+# ── Profile: CLOUD_PROFILE=<name> → build_<name>.json is source of truth ──
 if [ -n "${CLOUD_PROFILE:-}" ]; then
     PROFILE_JSON="$SERVICE_DIR/../../build_${CLOUD_PROFILE}.json"
     if [ -f "$PROFILE_JSON" ]; then
-        # Skip excluded services
-        if node -e "const f=require('$PROFILE_JSON');process.exit(f.excluded_services&&f.excluded_services.includes('$SERVICE_NAME')?0:1)" 2>/dev/null; then
-            log "PROFILE[$CLOUD_PROFILE]: $SERVICE_NAME excluded — skipping"
+        # Profile declares deploy.host per service — read it
+        P_HOST=$(node -e "const f=require('$PROFILE_JSON');const s=(f.services||{})['$SERVICE_NAME'];process.stdout.write(s&&s.deploy&&s.deploy.host||'')")
+        if [ -n "$P_HOST" ]; then
+            DEPLOY_HOST="$P_HOST"
+            FORCE_DEPLOY=1
+        else
+            log "PROFILE[$CLOUD_PROFILE]: $SERVICE_NAME not in profile — skipping"
             exit 0
         fi
-        # Resolve deploy target: exact match > wildcard > original
-        P_HOST=$(node -e "const f=require('$PROFILE_JSON');const o=f.deploy_overrides||{};process.stdout.write(o['$SERVICE_NAME']||o['*']||'')")
-        [ -n "$P_HOST" ] && DEPLOY_HOST="$P_HOST"
-        FORCE_DEPLOY=1
     fi
 fi
 
