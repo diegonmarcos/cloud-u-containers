@@ -7,12 +7,13 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "ollama-hai";
       image = "ollama/ollama:latest";
       api_port = 11435;
-      wg_ip = "10.0.0.6";
+      wg_ip = svc."ollama-hai".ip;
       timezone = "America/Chicago";
       keep_alive = "-1";
       models = [

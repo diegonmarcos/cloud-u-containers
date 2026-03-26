@@ -9,6 +9,7 @@
     # Support both architectures (output is text-only)
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;
@@ -185,7 +186,7 @@
         - name: Matomo MariaDB
           type: mysql
           access: proxy
-          url: 10.0.0.4:3306
+          url: ${svc.matomo.ip}:${toString svc.matomo.ports.db}
           database: matomo
           user: matomo
           secureJsonData:
@@ -194,7 +195,7 @@
         - name: NPM SQLite (Postlite)
           type: postgres
           access: proxy
-          url: 10.0.0.1:5433
+          url: ${svc.postlite.ip}:${toString svc.postlite.ports.npm_pg}
           database: database
           user: any
           secureJsonData:
@@ -205,7 +206,7 @@
         - name: Vaultwarden SQLite (Postlite)
           type: postgres
           access: proxy
-          url: 10.0.0.1:5434
+          url: ${svc.postlite.ip}:${toString svc.postlite.ports.vaultwarden_pg}
           database: db
           user: any
           secureJsonData:
@@ -216,7 +217,7 @@
         - name: ntfy SQLite (Postlite)
           type: postgres
           access: proxy
-          url: 10.0.0.1:5435
+          url: ${svc.postlite.ip}:${toString svc.postlite.ports.ntfy_pg}
           database: cache
           user: any
           secureJsonData:
@@ -227,7 +228,7 @@
         - name: Authelia SQLite (Postlite)
           type: postgres
           access: proxy
-          url: 10.0.0.1:5436
+          url: ${svc.postlite.ip}:${toString svc.postlite.ports.authelia_pg}
           database: db
           user: any
           secureJsonData:

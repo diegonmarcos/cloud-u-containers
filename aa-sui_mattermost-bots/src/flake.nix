@@ -9,6 +9,8 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
+
     config = {
       container_name = "mattermost";
       postgres_container = "mattermost-postgres";
@@ -21,22 +23,18 @@
       domain = buildJson.domain;
       port = buildJson.ports.app;
       postgres_port = buildJson.ports.db;
-      wg_ip = "10.0.0.6";
-      ntfy_url = "http://10.0.0.1:8090";
+      wg_ip = svc."mattermost-bots".ip;
+      ntfy_url = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
       # Scraped from bc-obs_ntfy/src/topic-scanner.py CONFIGURED_TOPICS
       topics = builtins.concatStringsSep "," (import ./ntfy-topics.nix);
       timezone = "America/Chicago";
-      ollama_url = "http://10.0.0.8:11434";
+      ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
       ollama_model = "deepseek-r1:14b-qwen-distill-q8_0";
-      ollama_vm = "gcp-t4";
+      ollama_vm = svc.ollama.vm;
     };
 
     title = "Mattermost Team Chat";
     docker = import ../../_shared/docker.nix;
-
-    # WireGuard IPs
-    gcp = "10.0.0.1";
-    flex0 = "10.0.0.6";
 
     # ── Docker Compose ──────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
@@ -186,7 +184,7 @@
 
 
       C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
-      OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
+      OLLAMA_URL = os.environ.get("OLLAMA_URL", "${config.ollama_url}")  # from cloud-data
       OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
       OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
       OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"
