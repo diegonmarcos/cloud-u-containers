@@ -83,5 +83,26 @@
     "volumes": [
       "matomo_data"
     ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "matomo-hybrid",
+      "image": null,
+      "port": 8080,
+      "port_env": null,
+      "dns": "matomo.app",
+      "public": true,
+      "proxy": { "domain": "analytics.diegonmarcos.com", "auth": "two_factor" },
+      "healthcheck": "/",
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "matomo_matomo_data:/var/www/html",
+        "matomo_matomo_db:/var/lib/mysql",
+        "matomo_inbox:/inbox"
+      ],
+      "env_file": false,
+      "resources": { "limits": { "memory": "1024M" }, "reservations": { "memory": "64M" } },
+      "read_only": false
+    }
   }
 }

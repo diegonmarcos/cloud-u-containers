@@ -84,6 +84,30 @@ export interface NotificationsConfig {
   on_recovery?: boolean;
 }
 
+// ── Container spec — per-container declaration in build.json ───────────
+export interface ContainerSpec {
+  container_name: string;
+  image: string;
+  port?: number | null;
+  port_env?: string | null;
+  dns?: string | null;
+  public: boolean;
+  proxy?: ProxyPrimaryConfig | null;
+  healthcheck?: string | null;
+  monitoring?: MonitoringConfig | null;
+  volumes?: string[];
+  env_file?: boolean;
+  depends_on?: string[];
+  resources?: {
+    memory?: string;
+    cpu?: string;
+    pids?: number;
+  } | null;
+  read_only?: boolean;
+  capabilities?: string[];
+  log_level?: string;
+}
+
 export interface BuildJsonEntry {
   name: string;
   category: string;
@@ -102,6 +126,8 @@ export interface BuildJsonEntry {
   monitoring?: MonitoringConfig;
   backup?: BackupConfig;
   notifications?: NotificationsConfig;
+  // Multi-container declarations (new schema)
+  containers?: Record<string, ContainerSpec>;
   // Deploy overrides
   fallback_vm?: string;          // deploy.fallback_host → resolved to VM ID
   // Pass-through: any extra top-level fields from build.json (models, notes, etc.)
@@ -165,16 +191,43 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         ? folder.replace(/^[a-z]{2}-[a-z]{3}_/, "")
         : undefined;
 
-      // Derive dns from name if not explicitly set
-      const port: number | undefined = bj.port;
-      const dns: string | undefined = bj.dns ?? (port ? `${name}.app` : undefined);
+      // ── Container-aware parsing ──────────────────────────────────
+      // If build.json has `containers` key → new multi-container schema
+      // Otherwise → legacy flat schema (derive primary from top-level fields)
+      const containers: Record<string, ContainerSpec> | undefined = bj.containers;
+
+      // For backward compat: derive flat port/dns from containers or top-level
+      let port: number | undefined;
+      let dns: string | undefined;
+      let primaryDomain: string | undefined = bj.domain;
+      let primaryProxy: ProxyConfig | undefined = bj.proxy;
+      let primaryHealth: HealthConfig | undefined = bj.health;
+      let primaryMonitoring: MonitoringConfig | undefined = bj.monitoring;
+
+      if (containers) {
+        // Find primary container: first with public=true, or key "app"
+        const primaryKey = Object.keys(containers).find(k => containers[k].public) || "app";
+        const primary = containers[primaryKey];
+        if (primary) {
+          port = primary.port ?? undefined;
+          dns = primary.dns ?? (port ? `${name}.app` : undefined);
+          if (primary.proxy?.domain) primaryDomain = primary.proxy.domain;
+          if (primary.proxy) primaryProxy = { primary: primary.proxy };
+          if (primary.healthcheck) primaryHealth = { path: primary.healthcheck };
+          if (primary.monitoring) primaryMonitoring = primary.monitoring;
+        }
+      } else {
+        // Legacy flat schema
+        port = bj.port;
+        dns = bj.dns ?? (port ? `${name}.app` : undefined);
+      }
 
       // Collect extra top-level fields not handled above
       const knownKeys = new Set([
         "name", "description", "category", "domain", "deploy", "dns", "port",
         "ports", "proxy", "health", "monitoring", "backup", "notifications",
         "docker", "secrets", "build", "compose", "lifecycle", "terraform",
-        "multi_vm", "frozen", "version",
+        "multi_vm", "frozen", "version", "containers",
       ]);
       const extra: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(bj)) {
@@ -185,20 +238,22 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         name,
         category,
         vm: host,
-        domain: bj.domain,
+        domain: primaryDomain,
         description: bj.description || "",
         flake,
         folder,
-        // Standardized routing fields
+        // Standardized routing fields (derived from containers or flat)
         ...(port != null ? { port } : {}),
         ...(dns ? { dns } : {}),
-        // Pass through declarative infrastructure fields if present
-        ...(bj.proxy ? { proxy: bj.proxy } : {}),
+        // Pass through declarative infrastructure fields
+        ...(primaryProxy ? { proxy: primaryProxy } : {}),
         ...(bj.ports ? { ports: bj.ports } : {}),
-        ...(bj.health ? { health: bj.health } : {}),
-        ...(bj.monitoring ? { monitoring: bj.monitoring } : {}),
+        ...(primaryHealth ? { health: primaryHealth } : {}),
+        ...(primaryMonitoring ? { monitoring: primaryMonitoring } : {}),
         ...(bj.backup ? { backup: bj.backup } : {}),
         ...(bj.notifications ? { notifications: bj.notifications } : {}),
+        // Multi-container declarations (new schema)
+        ...(containers ? { containers } : {}),
         // Deploy overrides
         ...(fallbackHost ? { fallback_vm: fallbackHost } : {}),
         // Extra service-specific fields (models, notes, etc.)
@@ -210,4 +265,28 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
   }
 
   return entries;
+}
+
+// ── normalizeToContainers ─────────────────────────────────────────────
+// Converts a flat-schema BuildJsonEntry into a uniform containers format.
+// If containers already exist, returns them as-is.
+// Used by the consolidated generator for uniform internal representation.
+export function normalizeToContainers(entry: BuildJsonEntry): Record<string, ContainerSpec> {
+  if (entry.containers) return entry.containers;
+
+  // Synthesize a single "app" container from flat fields
+  const container: ContainerSpec = {
+    container_name: entry.name,
+    image: "", // not known from flat schema — flake.nix owns it
+    public: !!entry.domain,
+    ...(entry.port != null ? { port: entry.port } : {}),
+    ...(entry.dns ? { dns: entry.dns } : {}),
+    ...(entry.domain && entry.proxy?.primary ? {
+      proxy: entry.proxy.primary,
+    } : {}),
+    ...(entry.health?.path ? { healthcheck: entry.health.path } : {}),
+    ...(entry.monitoring ? { monitoring: entry.monitoring } : {}),
+  };
+
+  return { app: container };
 }

@@ -39,5 +39,30 @@
   },
   "compose": {
     "pre_hook": "mkdir -p data/cloud-data data/front-data && cp -f cloud-data-*.json cloud-data-*.md data/cloud-data/ 2>/dev/null; cp -f front-*.json data/front-data/ 2>/dev/null; cp -f config.json data/ 2>/dev/null; echo 'data dir ready'"
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-cgc-mcp",
+      "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest",
+      "port": 3105,
+      "port_env": "MCP_HTTP_PORT",
+      "dns": "cloud-cgc-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/cloud-cgc-mcp"
+      },
+      "healthcheck": "/mcp",
+      "monitoring": null,
+      "volumes": [
+        "./data:/data:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

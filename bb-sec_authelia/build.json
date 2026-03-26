@@ -34,5 +34,40 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "authelia",
+      "image": "authelia/authelia:4.39.15",
+      "port": 9091,
+      "port_env": null,
+      "dns": "authelia.app",
+      "public": true,
+      "proxy": { "domain": "auth.diegonmarcos.com", "auth": "bypass" },
+      "healthcheck": "/api/health",
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "./config:/config"
+      ],
+      "env_file": true,
+      "depends_on": ["redis"],
+      "resources": null,
+      "read_only": false
+    },
+    "redis": {
+      "container_name": "authelia-redis",
+      "image": "redis:7-bookworm",
+      "port": 6380,
+      "port_env": null,
+      "dns": "authelia-redis.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "authelia_redis_data:/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false
+    }
   }
 }

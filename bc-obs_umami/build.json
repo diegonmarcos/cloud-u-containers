@@ -37,5 +37,55 @@
   },
   "ports": {
     "app": 3000
+  },
+  "containers": {
+    "app": {
+      "container_name": "umami",
+      "image": "ghcr.io/umami-software/umami:latest",
+      "port": 3000,
+      "port_env": null,
+      "dns": "umami.app",
+      "public": true,
+      "proxy": { "domain": "analytics.diegonmarcos.com", "base_path": "/umami", "auth": "two_factor" },
+      "healthcheck": "curl -sf http://localhost:3000/api/heartbeat || exit 1",
+      "monitoring": { "tls_check": true },
+      "volumes": [],
+      "env_file": true,
+      "depends_on": ["db"],
+      "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "32M" } },
+      "read_only": false
+    },
+    "db": {
+      "container_name": "umami-db",
+      "image": "postgres:16-alpine",
+      "port": 5432,
+      "port_env": null,
+      "dns": "umami-db.app",
+      "public": false,
+      "healthcheck": "pg_isready -U umami",
+      "volumes": [
+        "umami_db_data:/var/lib/postgresql/data"
+      ],
+      "env_file": false,
+      "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "32M" } },
+      "read_only": false
+    },
+    "setup": {
+      "container_name": "umami-setup",
+      "image": "curlimages/curl:latest",
+      "port": null,
+      "port_env": null,
+      "dns": "umami-setup.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "./setup.sh:/setup/setup.sh:ro",
+        "umami_config:/output"
+      ],
+      "env_file": true,
+      "depends_on": ["app"],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

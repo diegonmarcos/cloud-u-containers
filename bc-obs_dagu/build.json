@@ -30,5 +30,38 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "dagu",
+      "image": "dagu-ssh:local",
+      "port": 8070,
+      "port_env": null,
+      "dns": "dagu.app",
+      "public": true,
+      "proxy": {
+        "domain": "workflows.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./data:/var/lib/dagu/data",
+        "./dags:/var/lib/dagu/dags",
+        "./base.yaml:/var/lib/dagu/base.yaml:ro",
+        "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro",
+        "/opt/ssh-keys/dagu:/root/.ssh:ro"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "256m"
+      },
+      "read_only": false
+    }
   }
 }

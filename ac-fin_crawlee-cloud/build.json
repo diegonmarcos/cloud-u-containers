@@ -35,5 +35,112 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "crawlee_api",
+      "image": "crawlee-cloud-api:local",
+      "port": 3000,
+      "port_env": "PORT",
+      "dns": "crawlee.app",
+      "public": true,
+      "proxy": { "domain": "api.diegonmarcos.com", "base_path": "/crawlee", "auth": "two_factor" },
+      "healthcheck": "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
+      "monitoring": { "tls_check": true },
+      "volumes": [],
+      "env_file": true,
+      "depends_on": ["db", "redis", "minio"],
+      "resources": null,
+      "read_only": false
+    },
+    "runner": {
+      "container_name": "crawlee_runner",
+      "image": "crawlee-cloud-runner:local",
+      "port": null,
+      "port_env": null,
+      "dns": "crawlee-runner.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "/var/run/docker.sock:/var/run/docker.sock"
+      ],
+      "env_file": true,
+      "depends_on": ["app"],
+      "resources": null,
+      "read_only": false
+    },
+    "dashboard": {
+      "container_name": "crawlee_dashboard",
+      "image": "crawlee-cloud-dashboard:local",
+      "port": 3001,
+      "port_env": "PORT",
+      "dns": "crawlee-dashboard.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": ["app"],
+      "resources": null,
+      "read_only": false
+    },
+    "scheduler": {
+      "container_name": "crawlee_scheduler",
+      "image": "crawlee-cloud-api:local",
+      "port": null,
+      "port_env": null,
+      "dns": "crawlee-scheduler.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": ["db", "redis"],
+      "resources": null,
+      "read_only": false
+    },
+    "db": {
+      "container_name": "crawlee_db",
+      "image": "postgres:16-alpine",
+      "port": 5433,
+      "port_env": "PGPORT",
+      "dns": "crawlee-db.app",
+      "public": false,
+      "healthcheck": "pg_isready -U $POSTGRES_USER",
+      "volumes": [
+        "crawlee_postgres:/var/lib/postgresql/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false
+    },
+    "redis": {
+      "container_name": "crawlee_redis",
+      "image": "redis:7-alpine",
+      "port": 6380,
+      "port_env": null,
+      "dns": "crawlee-redis.app",
+      "public": false,
+      "healthcheck": "redis-cli -p 6380 ping",
+      "volumes": [
+        "crawlee_redis:/data"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    },
+    "minio": {
+      "container_name": "crawlee_minio",
+      "image": "minio/minio:latest",
+      "port": 9000,
+      "port_env": null,
+      "dns": "crawlee-minio.app",
+      "public": false,
+      "healthcheck": "curl -f http://localhost:9000/minio/health/live",
+      "volumes": [
+        "crawlee_minio:/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false
+    }
   }
 }

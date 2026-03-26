@@ -23,5 +23,32 @@
       "auth": "two_factor",
       "landing_page": "mymail"
     }
+  },
+  "containers": {
+    "app": {
+      "container_name": "snappymail",
+      "image": "djmaze/snappymail:latest",
+      "port": 8888,
+      "port_env": null,
+      "dns": "snappymail.app",
+      "public": true,
+      "proxy": {
+        "domain": "webmail.diegonmarcos.com",
+        "auth": "two_factor",
+        "landing_page": "mymail"
+      },
+      "healthcheck": "/",
+      "monitoring": null,
+      "volumes": [
+        "./data:/var/lib/snappymail"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "64M",
+        "mem_reservation": "16M"
+      },
+      "read_only": false
+    }
   }
 }

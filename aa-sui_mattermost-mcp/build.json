@@ -23,5 +23,28 @@
   },
   "ports": {
     "app": 3102
+  },
+  "containers": {
+    "app": {
+      "container_name": "mattermost-mcp",
+      "image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
+      "port": 3102,
+      "port_env": null,
+      "dns": "mattermost-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/mattermost-mcp"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

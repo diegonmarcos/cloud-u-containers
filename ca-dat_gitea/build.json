@@ -32,5 +32,26 @@
     "volumes": [
       "gitea_data"
     ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "gitea",
+      "image": "gitea/gitea:latest",
+      "port": 3017,
+      "port_env": "GITEA__server__HTTP_PORT",
+      "dns": "gitea.app",
+      "public": true,
+      "proxy": { "domain": "git.diegonmarcos.com", "auth": "two_factor" },
+      "healthcheck": "curl -f http://localhost:3017/",
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "gitea_data:/data",
+        "/etc/timezone:/etc/timezone:ro",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    }
   }
 }

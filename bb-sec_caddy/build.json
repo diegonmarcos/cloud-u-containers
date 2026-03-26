@@ -84,5 +84,56 @@
   },
   "ports": {
     "app": 443
+  },
+  "containers": {
+    "app": {
+      "container_name": "caddy",
+      "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
+      "port": 443,
+      "port_env": null,
+      "dns": "caddy.app",
+      "public": true,
+      "proxy": {
+        "type": "special",
+        "comment": "Caddy IS the reverse proxy — serves all domains"
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./Caddyfile:/etc/caddy/Caddyfile:ro",
+        "./error.html:/srv/error.html:ro",
+        "./dashboard.html:/srv/dashboard.html:ro",
+        "./ntfy-setup.html:/srv/ntfy-setup.html:ro",
+        "./wkd:/srv/wkd:ro",
+        "./logs:/var/log/caddy",
+        "caddy_data:/data",
+        "caddy_config:/config"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "introspect-proxy"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "introspect-proxy": {
+      "container_name": "introspect-proxy",
+      "image": "introspect-proxy:latest",
+      "port": 4182,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": "/health",
+      "monitoring": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "96M",
+        "mem_reservation": "48M"
+      },
+      "read_only": false
+    }
   }
 }

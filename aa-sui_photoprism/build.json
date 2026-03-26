@@ -33,5 +33,73 @@
       "photoprism_originals",
       "photoprism_storage"
     ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "photoprism_app",
+      "image": "photoprism/photoprism:latest",
+      "port": 3013,
+      "port_env": "PHOTOPRISM_HTTP_PORT",
+      "dns": "photoprism.app",
+      "public": true,
+      "proxy": {
+        "domain": "photos.diegonmarcos.com",
+        "auth": "two_factor",
+        "landing_page": "myphotos"
+      },
+      "healthcheck": "/api/v1/status",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "photoprism_storage:/photoprism/storage",
+        "/opt/containers/photoprism/originals:/photoprism/originals:ro"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "db",
+        "rclone"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "db": {
+      "container_name": "photoprism_mariadb",
+      "image": "mariadb:11",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": "cmd",
+      "monitoring": null,
+      "volumes": [
+        "mariadb_data:/var/lib/mysql"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    },
+    "rclone": {
+      "container_name": "photoprism_rclone",
+      "image": "rclone/rclone:latest",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": "cmd",
+      "monitoring": null,
+      "volumes": [
+        "/opt/containers/photoprism/originals:/data:shared"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

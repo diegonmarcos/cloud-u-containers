@@ -5,5 +5,29 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/fluent-bit"
+  },
+  "containers": {
+    "app": {
+      "container_name": "fluent-bit",
+      "image": "fluent/fluent-bit:latest",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "/opt/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro",
+        "/opt/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro",
+        "/var/lib/docker/containers:/var/lib/docker/containers:ro",
+        "/var/log:/var/log:ro",
+        "fluent-bit-db:/fluent-bit/db"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
