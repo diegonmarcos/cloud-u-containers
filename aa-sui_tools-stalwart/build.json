@@ -78,7 +78,7 @@
       "depends_on": [],
       "resources": { "limits": { "memory": "512M" }, "reservations": { "memory": "64M" } },
       "read_only": false,
-      "dump_cmd": "stalwart-mail --export /tmp/stalwart-export"
+      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
     }
   }
 }
