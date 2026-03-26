@@ -173,7 +173,13 @@ function main() {
     const svc: Service = {
       category: entry.category,
       vm: vmId,
-      containers: compose.containers.length > 0 ? compose.containers : existingSvc?.containers || [],
+      containers: compose.containers.length > 0
+        ? compose.containers
+        : Array.isArray(existingSvc?.containers)
+          ? existingSvc.containers
+          : existingSvc?.containers
+            ? Object.values(existingSvc.containers).map((c: any) => c.container_name || "unknown")
+            : [],
       description: entry.description || existingSvc?.description || "",
       ...(entry.domain ? { domain: entry.domain } : existingSvc?.domain ? { domain: existingSvc.domain } : {}),
       ...(entry.flake ? { flake: entry.flake } : existingSvc?.flake ? { flake: existingSvc.flake } : {}),
@@ -218,7 +224,11 @@ function main() {
     const vm = vms[svc.vm];
     if (!vm) continue;
     if (svc.containers) {
-      for (const c of svc.containers) {
+      // Handle both array (legacy compose names) and Record (new build.json schema)
+      const containerList = Array.isArray(svc.containers)
+        ? svc.containers
+        : Object.values(svc.containers).map((c: any) => c.container_name || c.name || "unknown");
+      for (const c of containerList) {
         if (!vm.containers.includes(c)) vm.containers.push(c);
       }
     }
