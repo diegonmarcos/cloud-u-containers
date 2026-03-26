@@ -277,47 +277,18 @@ step_build() {
     BUILD_LOG=$(mktemp)
     REPO_ROOT="$SERVICE_DIR/../.."
 
-    # Strategy: cloud-ci Docker image (GHA) → direct nix build (local)
-    if [ -n "$CLOUD_CI_IMAGE" ]; then
-        # GHA: run nix build inside cloud-ci container (clean nix store, no stale cache)
-        log "Building inside cloud-ci container..."
-        rm -rf "$DIST_DIR"
-        mkdir -p "$DIST_DIR"
-        SVC_REL="a_solutions/$(basename "$SERVICE_DIR")/src"
-        docker run --rm \
-            -v "$REPO_ROOT:/workspace" \
-            -v "$DIST_DIR:/output" \
-            -w "/workspace/$SVC_REL" \
-            "$CLOUD_CI_IMAGE" \
-            bash -c '
-                git config --global --add safe.directory /workspace
-                RESULT=$(nix build --impure --no-link --print-out-paths --option eval-cache false)
-                [ -z "$RESULT" ] && exit 1
-                cp -rL "$RESULT/"* /output/
-                chmod -R 777 /output/
-            ' 2>"$BUILD_LOG" || {
-            log_error "nix build (cloud-ci container) failed:"
-            cat "$BUILD_LOG" >&2
-            rm -f "$BUILD_LOG"
-            for f in $CLOUD_DATA_STAGED; do
-                git -C "$REPO_ROOT" reset HEAD "$(realpath --relative-to="$REPO_ROOT" "$f")" 2>/dev/null || true
-                rm -f "$f"
-            done
-            return 1
-        }
-    else
-        # Local: direct nix build
-        nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
-            log_error "nix build failed:"
-            cat "$BUILD_LOG" >&2
-            rm -f "$BUILD_LOG"
-            for f in $CLOUD_DATA_STAGED; do
-                git -C "$REPO_ROOT" reset HEAD "$(realpath --relative-to="$REPO_ROOT" "$f")" 2>/dev/null || true
-                rm -f "$f"
-            done
-            return 1
-        }
-    fi
+    # nix build — runs directly (in GHA this is already inside cloud-ci container)
+    git config --global --add safe.directory "$REPO_ROOT" 2>/dev/null || true
+    nix build --option eval-cache false --out-link "$SERVICE_DIR/.result" 2>"$BUILD_LOG" || {
+        log_error "nix build failed:"
+        cat "$BUILD_LOG" >&2
+        rm -f "$BUILD_LOG"
+        for f in $CLOUD_DATA_STAGED; do
+            git -C "$REPO_ROOT" reset HEAD "$(realpath --relative-to="$REPO_ROOT" "$f")" 2>/dev/null || true
+            rm -f "$f"
+        done
+        return 1
+    }
 
     # Show warnings
     if [ -s "$BUILD_LOG" ]; then
@@ -327,18 +298,16 @@ step_build() {
     fi
     rm -f "$BUILD_LOG"
 
-    # Copy from .result to dist/ (local builds only — Docker path already wrote to dist/)
-    if [ -z "$CLOUD_CI_IMAGE" ]; then
-        rm -rf "$DIST_DIR"
-        mkdir -p "$DIST_DIR"
-        if [ "$PRESERVE_SYMLINKS" = "true" ]; then
-            cp -ra "$SERVICE_DIR/.result/"* "$DIST_DIR/"
-        else
-            cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
-        fi
-        chmod -R u+w "$DIST_DIR"
-        rm -f "$SERVICE_DIR/.result"
+    # Copy from .result to dist/
+    rm -rf "$DIST_DIR"
+    mkdir -p "$DIST_DIR"
+    if [ "$PRESERVE_SYMLINKS" = "true" ]; then
+        cp -ra "$SERVICE_DIR/.result/"* "$DIST_DIR/"
+    else
+        cp -rL "$SERVICE_DIR/.result/"* "$DIST_DIR/"
     fi
+    chmod -R u+w "$DIST_DIR"
+    rm -f "$SERVICE_DIR/.result"
 
     # Post-build: unstage and remove cloud-data files from src/
     for f in $CLOUD_DATA_STAGED; do
