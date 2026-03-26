@@ -27,5 +27,54 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "etherpad_app",
+      "image": "etherpad/etherpad:latest",
+      "port": 3012,
+      "port_env": "PORT",
+      "dns": "etherpad.app",
+      "public": true,
+      "proxy": {
+        "type": "path",
+        "parent_domain": "app.diegonmarcos.com",
+        "base_path": "/etherpad",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "etherpad_data:/opt/etherpad-lite/var"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "db"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "db": {
+      "container_name": "etherpad_postgres",
+      "image": "postgres:16-alpine",
+      "port": 5436,
+      "port_env": "PGPORT",
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": "cmd",
+      "monitoring": null,
+      "volumes": [
+        "postgres_data:/var/lib/postgresql/data"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

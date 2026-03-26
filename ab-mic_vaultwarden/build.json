@@ -36,5 +36,32 @@
   },
   "ports": {
     "app": 8880
+  },
+  "containers": {
+    "app": {
+      "container_name": "vaultwarden",
+      "image": "vaultwarden/server:latest",
+      "port": 8880,
+      "port_env": "ROCKET_PORT",
+      "dns": "vaultwarden.app",
+      "public": true,
+      "proxy": {
+        "domain": "vault.diegonmarcos.com",
+        "auth": "none"
+      },
+      "healthcheck": "/alive",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./data:/data"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

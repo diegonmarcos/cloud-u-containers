@@ -13,5 +13,31 @@
     "deepseek-r1:14b",
     "qwen2.5:14b"
   ],
-  "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
+  "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8).",
+  "containers": {
+    "app": {
+      "container_name": "ollama",
+      "image": "ollama/ollama:latest",
+      "port": 11434,
+      "port_env": null,
+      "dns": "ollama.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "ollama_data:/root/.ollama"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "gpu": {
+          "driver": "nvidia",
+          "count": 1,
+          "capabilities": ["gpu"]
+        }
+      },
+      "read_only": false
+    }
+  }
 }

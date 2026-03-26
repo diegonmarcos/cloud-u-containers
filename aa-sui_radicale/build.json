@@ -24,5 +24,33 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "radicale",
+      "image": "tomsquest/docker-radicale:latest",
+      "port": 5232,
+      "port_env": null,
+      "dns": "radicale.app",
+      "public": true,
+      "proxy": {
+        "domain": "cal.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/.web/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./data:/data",
+        "./config:/config:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
