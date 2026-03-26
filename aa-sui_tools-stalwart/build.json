@@ -56,7 +56,9 @@
     ]
   },
   "ports": {
-    "app": 8443
+    "app": 8443,
+    "smtp": 465,
+    "imap": 993
   },
   "containers": {
     "app": {

@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "dozzle";
@@ -26,7 +27,7 @@
           name = "dozzle";
           image = config.image;
           container_name = config.container_name;
-          ports = ["10.0.0.4:${toString config.port}:${toString config.port}"];
+          ports = ["${svc.dozzle.ip}:${toString config.port}:${toString config.port}"];
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
           environment = [
             "DOZZLE_LEVEL=info"

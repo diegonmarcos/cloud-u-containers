@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;
@@ -92,7 +93,7 @@ ${mkResourceLines rule.resources_two_factor}
             "authelia_data:/data"
           ];
           allowWritableBindMounts = true;  # ./config has templates processed by init.sh entrypoint (regeneratable)
-          ports = ["10.0.0.1:${toString config.port}:9091"];
+          ports = ["${svc.authelia.ip}:${toString config.port}:9091"];
           networks = ["auth-net"];
           depends_on = { redis = {}; };
           skipReadOnly = true;
@@ -197,7 +198,7 @@ ${mkResourceLines rule.resources_two_factor}
       notifier:
         disable_startup_check: true
         smtp:
-          address: submissions://10.0.0.3:465
+          address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
           username: no-reply@diegonmarcos.com
           password: ''\${AUTHELIA_SMTP_PASSWORD}
           sender: "Authelia <no-reply@diegonmarcos.com>"

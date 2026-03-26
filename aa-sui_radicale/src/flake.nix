@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;
@@ -25,7 +26,7 @@
 
       [auth]
       type = imap
-      imap_host = 10.0.0.3:993
+      imap_host = ${svc.stalwart.ip}:${toString svc.stalwart.ports.imap}
       imap_security = tls
 
       [storage]
@@ -52,7 +53,7 @@
             name = "radicale";
             image = config.image;
             container_name = config.container_name;
-            ports = [ "10.0.0.6:${toString config.port}:5232" ];
+            ports = [ "${svc.radicale.ip}:${toString config.port}:5232" ];
             networks = [ "default" ];
             volumes = [
               "radicale_data:/data"

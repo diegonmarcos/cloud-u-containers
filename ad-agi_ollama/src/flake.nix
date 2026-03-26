@@ -7,13 +7,14 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
 
     # Configuration options (non-secret)
     config = {
       container_name = "ollama";
       image = "ollama/ollama:latest";
       api_port = 11434;
-      wg_ip = "10.0.0.8";
+      wg_ip = svc.ollama.ip;
       timezone = "America/Chicago";
       keep_alive = "5m";
       kv_cache_type = "q4_0";

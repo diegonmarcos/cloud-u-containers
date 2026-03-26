@@ -7,7 +7,9 @@
     "remote_path": "/opt/containers/ollama",
     "fallback_host": "vast-ollama"
   },
-  "port": 11434,
+  "ports": {
+    "app": 11434
+  },
   "dns": "ollama.app",
   "models": [
     "deepseek-r1:14b",
