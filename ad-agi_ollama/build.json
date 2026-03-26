@@ -2,6 +2,9 @@
   "name": "ollama",
   "description": "Ollama LLM Server \u2014 DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
   "category": "agi",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "deploy": {
     "host": "gcp-t4",
     "remote_path": "/opt/containers/ollama",

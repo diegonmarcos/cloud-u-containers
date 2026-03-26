@@ -6,6 +6,9 @@
     "app": 9999
   },
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "logs.diegonmarcos.com",
   "deploy": {
     "host": "oci-analytics",

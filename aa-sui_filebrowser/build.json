@@ -6,6 +6,9 @@
     "app": 3015
   },
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "files.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",

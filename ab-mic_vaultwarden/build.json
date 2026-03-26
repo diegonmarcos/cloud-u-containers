@@ -3,6 +3,9 @@
   "description": "Bitwarden password manager",
   "dns": "vaultwarden.app",
   "category": "mic",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "vault.diegonmarcos.com",
   "deploy": {
     "host": "gcp-proxy",
