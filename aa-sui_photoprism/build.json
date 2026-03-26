@@ -81,7 +81,9 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_user": "root",
+      "db_name": "photoprism"
     },
     "rclone": {
       "container_name": "photoprism_rclone",

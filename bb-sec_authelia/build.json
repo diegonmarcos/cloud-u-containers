@@ -35,6 +35,9 @@
     "dns_check": true,
     "endpoint_check": true
   },
+  "backup": {
+    "enabled": true
+  },
   "containers": {
     "app": {
       "container_name": "authelia",
@@ -52,7 +55,8 @@
       "env_file": true,
       "depends_on": ["redis"],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_path": "/config/db.sqlite3"
     },
     "redis": {
       "container_name": "authelia-redis",

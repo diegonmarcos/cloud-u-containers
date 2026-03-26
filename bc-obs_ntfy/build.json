@@ -28,6 +28,9 @@
   "ports": {
     "app": 8090
   },
+  "backup": {
+    "enabled": true
+  },
   "containers": {
     "app": {
       "container_name": "ntfy",
@@ -53,7 +56,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_path": "/var/cache/ntfy/cache.db"
     },
     "syslog-bridge": {
       "container_name": "syslog-bridge",

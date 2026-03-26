@@ -55,7 +55,8 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "db_path": "/persist/grist-sessions.db"
     }
   }
 }
