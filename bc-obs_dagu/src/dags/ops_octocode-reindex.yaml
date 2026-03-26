@@ -1,0 +1,67 @@
+schedule: "0 3 * * *"
+env:
+  - SSH: ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - OCI_APPS: ubuntu@10.0.0.6
+  - NTFY_URL: http://10.0.0.1:8090
+  - OCTOCODE_IMAGE: octocode-fastembed:aarch64
+  - GIT_IMAGE: alpine/git:latest
+  # local_dir:github_repo pairs — local dir is what octocode indexes, github_repo is the clone source
+  - REPO_MAP: cloud:cloud cloud-data:cloud-data front:diegonmarcos.github.io front-data:front-data unix:unix tools:ops-Tooling
+  - ALL_DIRS: cloud cloud-data front front-data unix tools
+mailOn:
+  failure: true
+  success: false
+steps:
+  - name: pull-repos
+    command: |
+      for entry in $REPO_MAP; do
+        DIR=$(echo "$entry" | cut -d: -f1)
+        REMOTE=$(echo "$entry" | cut -d: -f2)
+        echo "=== Pulling $DIR (from $REMOTE) ==="
+        $SSH "$OCI_APPS" "docker run --rm \
+          -v octocode_repos:/repos \
+          -v /opt/ssh-keys/dagu:/root/.ssh:ro \
+          --entrypoint sh \
+          $GIT_IMAGE -c '
+            export GIT_SSH_COMMAND=\"ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null\"
+            if [ ! -d /repos/$DIR/.git ]; then
+              git clone --depth 1 git@github.com:diegonmarcos/$REMOTE.git /repos/$DIR
+            else
+              cd /repos/$DIR && git fetch origin main && git reset --hard origin/main
+            fi
+          '" || echo "WARN: Failed to pull $DIR"
+      done
+      echo "All repos pulled"
+
+  - name: reindex
+    depends:
+      - pull-repos
+    command: |
+      echo "=== Running octocode reindex ==="
+      $SSH "$OCI_APPS" "docker run --rm \
+        -v octocode_db:/root/.local/share/octocode \
+        -v octocode_repos:/repos:ro \
+        $OCTOCODE_IMAGE \
+        sh -c '
+          for r in $ALL_DIRS; do
+            echo \"=== Indexing \$r ===\"
+            cd /repos/\$r && octocode clear 2>/dev/null; octocode index 2>&1 | tail -5
+          done
+          echo \"=== Reindex complete ===\"
+        '"
+
+  - name: restart-mcp
+    depends:
+      - reindex
+    command: |
+      echo "=== Restarting cloud-cgc-mcp ==="
+      $SSH "$OCI_APPS" "docker restart cloud-cgc-mcp" || echo "WARN: restart failed"
+
+  - name: notify
+    depends:
+      - restart-mcp
+    command: |
+      curl -sf -d "Octocode reindex complete for: $ALL_DIRS" \
+        -H "Title: Octocode Reindex" \
+        -H "Tags: mag,white_check_mark" \
+        "$NTFY_URL/ops" 2>/dev/null || true
