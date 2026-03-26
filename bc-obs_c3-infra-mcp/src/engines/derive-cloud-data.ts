@@ -936,11 +936,17 @@ function deriveServiceConnections(c: any): DerivedFile {
     const vmEntry = vms[svc.vm];
     if (!vmEntry?.wg_ip) continue;
 
-    // Collect ports from containers
+    // Collect ports: declared_ports (from build.json "ports") takes priority,
+    // then supplement with container ports for any roles not already declared
     const ports: Record<string, number> = {};
+    if (svc.declared_ports && typeof svc.declared_ports === "object") {
+      for (const [k, v] of Object.entries(svc.declared_ports)) {
+        if (typeof v === "number") ports[k] = v;
+      }
+    }
     for (const [role, ct] of Object.entries(svc.containers ?? {})) {
       const port = (ct as any).port;
-      if (port) ports[role] = port;
+      if (port && !ports[role]) ports[role] = port;
     }
 
     svcMap[svcName] = {
