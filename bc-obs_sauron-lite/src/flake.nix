@@ -22,6 +22,7 @@
     };
 
     title = "Sauron Lite - Lightweight file integrity and malware scanner";
+    docker = import ../../_shared/docker.nix;
 
     # Dockerfile for the scanner
     mkDockerfile = pkgs: pkgs.writeText "Dockerfile" ''
@@ -151,183 +152,73 @@
       }
     '';
 
-    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-      # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-lite/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_sauron-lite/build.sh ship ║
-      # ╚══════════════════════════════════════════════════════════════════╝
-
-      services:
-        sauron:
-          build: .
-          container_name: ${config.container_name}
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            # Watch paths (read-only)
-            - /etc:/watch/etc:ro
-            - /home:/watch/home:ro
-            # YARA rules
-            - ./yara-rules:/etc/sauron/yara-rules:ro
-            # Persistent logs and queue
-            - ./data/logs:/var/log/sauron
-            - ./data/queue:/var/spool/sauron
-          environment:
-            TZ: ${config.timezone}
-            VM_NAME: "''${VM_NAME:-unknown}"
-            WATCH_DIRS: /watch/etc /watch/home
-            QUEUE_FILE: /var/spool/sauron/scan-queue.txt
-            ALERTS_FILE: /var/log/sauron/alerts.jsonl
-            RULES_DIR: /etc/sauron/yara-rules
-          mem_limit: ${config.mem_limit}
-          cpus: ${config.cpu_limit}
-          cpu_shares: 256
-          logging:
-            driver: "json-file"
-            options:
-              max-size: "5m"
-              max-file: "2"
-          healthcheck:
-            test: ["CMD", "pgrep", "-f", "inotifywait"]
-            interval: 60s
-            timeout: 5s
-            retries: 3
-
-        forwarder:
-          image: debian:bookworm-slim
-          container_name: sauron-forwarder
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          entrypoint: ["/bin/sh", "-c"]
-          command:
-            - |
-              apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
-              echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
-              tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
-                echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true
-              done
-          volumes:
-            - ./data/logs:/var/log/sauron:ro
-          environment:
-            CENTRAL_HOST: ${config.central_host}
-            CENTRAL_PORT: "${toString config.central_port}"
-          depends_on:
-            - sauron
-          mem_limit: 16m
-          cpus: "0.05"
-    '';
-
-    # .env template
-    mkEnvTemplate = pkgs: pkgs.writeText "env.template" ''
-      # VM name for identification in alerts
-      VM_NAME=oci-f-micro_1
-
-      # Central sauron server (for alert forwarding)
-      CENTRAL_HOST=${config.central_host}
-      CENTRAL_PORT=${toString config.central_port}
-    '';
-
-
-    # ── Documentation ────────────────────────────────────────────────────
-    mkDocs = pkgs: defaultPkg: let
-      inherit (pkgs.lib) concatMapStrings hasSuffix optionalString filter subtractLists removeSuffix;
-      inherit (builtins) attrNames readDir pathExists;
-
-      portKeys = filter (k: hasSuffix "_port" k || k == "port") (attrNames config);
-      imageKeys = filter (k: hasSuffix "_image" k || k == "image") (attrNames config);
-      containerKeys = filter (k: hasSuffix "_container" k || k == "container_name") (attrNames config);
-      domainKeys = filter (k: k == "domain" || k == "base_domain") (attrNames config);
-      otherKeys = subtractLists (portKeys ++ imageKeys ++ containerKeys ++ domainKeys) (attrNames config);
-
-      row = k: let
-        v = config.${k};
-        vs = if builtins.isBool v then (if v then "true" else "false")
-             else if builtins.isAttrs v || builtins.isList v then builtins.toJSON v
-             else toString v;
-      in "| `${k}` | `${vs}` |\n";
-      section = heading: keys: optionalString (keys != []) ''
-        ## ${heading}
-        | Key | Value |
-        |-----|-------|
-        ${concatMapStrings row keys}
-      '';
-
-      hasNarrative = pathExists ./docs;
-      narrativeFiles = if hasNarrative
-        then filter (f: hasSuffix ".md" f) (attrNames (readDir ./docs))
-        else [];
-
-      specMd = pkgs.writeText "spec.md" ''
-        # ${title}
-        ${section "Network" (domainKeys ++ portKeys)}
-        ${section "Containers" (containerKeys ++ imageKeys)}
-        ${section "Configuration" otherKeys}
-      '';
-
-      summaryMd = pkgs.writeText "SUMMARY.md" ''
-        # Summary
-        - [Specification](./spec.md)
-        - [Generated Configs](./configs.md)
-        ${concatMapStrings (f: "- [${removeSuffix ".md" f}](./${f})\n") narrativeFiles}
-      '';
-
-      bookToml = pkgs.writeText "book.toml" ''
-        [book]
-        title = "${title}"
-        [output.html]
-        default-theme = "ayu"
-      '';
-    in pkgs.runCommand "docs" {
-      nativeBuildInputs = [ pkgs.mdbook pkgs.file ];
-    } ''
-      mkdir -p build/src
-      cp ${bookToml} build/book.toml
-      cp ${summaryMd} build/src/SUMMARY.md
-      cp ${specMd} build/src/spec.md
-      ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2>/dev/null || true"}
-
-      # Generate configs.md from packages.default output
-      echo "# Generated Configuration Files" > build/src/configs.md
-      echo "" >> build/src/configs.md
-      echo 'These files are produced by nix build and deployed to the VM.' >> build/src/configs.md
-      echo "" >> build/src/configs.md
-      find ${defaultPkg} -type f | sort | while read -r f; do
-        relpath="''${f#${defaultPkg}/}"
-        case "$relpath" in
-          .secrets|*.secrets|*.lock|*.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.eot) continue ;;
-        esac
-        case "$relpath" in
-          *.yml|*.yaml)   lang="yaml" ;;
-          *.json)         lang="json" ;;
-          *.toml)         lang="toml" ;;
-          *.py)           lang="python" ;;
-          *.sh)           lang="bash" ;;
-          *.js|*.ts)      lang="javascript" ;;
-          *.tf)           lang="hcl" ;;
-          *.conf|*.cnf)   lang="ini" ;;
-          *.html)         lang="html" ;;
-          *.sql)          lang="sql" ;;
-          *.zone)         lang="dns" ;;
-          Dockerfile*)    lang="dockerfile" ;;
-          Caddyfile*)     lang="caddy" ;;
-          *)              lang="" ;;
-        esac
-        if file -b --mime-type "$f" | grep -q "^text/"; then
-          echo '## '"$relpath" >> build/src/configs.md
-          echo "" >> build/src/configs.md
-          echo "~~~$lang" >> build/src/configs.md
-          cat "$f" >> build/src/configs.md
-          echo "" >> build/src/configs.md
-          echo '~~~' >> build/src/configs.md
-          echo "" >> build/src/configs.md
-        fi
+    mkForwarderSh = pkgs: pkgs.writeText "forwarder.sh" ''
+      #!/bin/sh
+      apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
+      echo "Forwarding alerts to $CENTRAL_HOST:$CENTRAL_PORT"
+      tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
+        echo "$line" | nc -w1 $CENTRAL_HOST $CENTRAL_PORT 2>/dev/null || true
       done
-
-      cd build && mdbook build -d $out
     '';
+
+    mkDockerCompose = pkgs: docker.mkCompose pkgs {
+      banner = docker.banner "~/git/cloud/a_solutions/bc-obs_sauron-lite/src/flake.nix";
+      volumes = {
+        sauron_logs = {};
+        sauron_queue = {};
+      };
+      services = {
+        sauron = docker.mkService {
+          name = "sauron";
+          build = ".";
+          container_name = config.container_name;
+          restart = "no";
+          skipReadOnly = true;
+          volumes = [
+            "/etc:/watch/etc:ro"
+            "/home:/watch/home:ro"
+            "./yara-rules:/etc/sauron/yara-rules:ro"
+            "sauron_logs:/var/log/sauron"
+            "sauron_queue:/var/spool/sauron"
+          ];
+          environment = {
+            TZ = config.timezone;
+            VM_NAME = "\${VM_NAME:-unknown}";
+            WATCH_DIRS = "/watch/etc /watch/home";
+            QUEUE_FILE = "/var/spool/sauron/scan-queue.txt";
+            ALERTS_FILE = "/var/log/sauron/alerts.jsonl";
+            RULES_DIR = "/etc/sauron/yara-rules";
+          };
+          memLimit = config.mem_limit;
+          cpuLimit = config.cpu_limit;
+          healthcheck = {
+            test = ''["CMD", "pgrep", "-f", "inotifywait"]'';
+            interval = "60s";
+            timeout = "5s";
+            retries = 3;
+          };
+        };
+        forwarder = docker.mkService {
+          name = "forwarder";
+          image = "debian:bookworm-slim";
+          container_name = "sauron-forwarder";
+          restart = "no";
+          skipReadOnly = true;
+          entrypoint = ["/bin/sh" "/forwarder.sh"];
+          volumes = [
+            "sauron_logs:/var/log/sauron:ro"
+            "./forwarder.sh:/forwarder.sh:ro"
+          ];
+          environment = {
+            CENTRAL_HOST = config.central_host;
+            CENTRAL_PORT = "\"${toString config.central_port}\"";
+          };
+          depends_on = { sauron = {}; };
+          memLimit = "16m";
+          cpuLimit = "0.05";
+        };
+      };
+    };
 
   in {
     packages = forAllSystems (system: let
@@ -336,6 +227,8 @@
       defaultPkg = pkgs.runCommand "sauron-lite-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${mkForwarderSh pkgs} $out/forwarder.sh
+        chmod +x $out/forwarder.sh
         mkdir -p $out/yara-rules/custom
         cp ${./Dockerfile} $out/Dockerfile
         cp ${./entrypoint.sh} $out/entrypoint.sh
@@ -347,7 +240,7 @@
       '';
     in {
       default = defaultPkg;
-      docs = mkDocs pkgs defaultPkg;
+      docs = docker.mkDocs pkgs { inherit title config defaultPkg; docsPath = ./docs; };
     });
   };
 }

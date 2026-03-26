@@ -624,7 +624,7 @@
           "./dashboard.html:/srv/dashboard.html:ro"
           "./ntfy-setup.html:/srv/ntfy-setup.html:ro"
           "./wkd:/srv/wkd:ro"
-          "./logs:/var/log/caddy"
+          "caddy_logs:/var/log/caddy"
           "caddy_data:/data"
           "caddy_config:/config"
         ];
@@ -657,6 +657,7 @@
 
       volumes.caddy_data = { driver = "local"; };
       volumes.caddy_config = { driver = "local"; };
+      volumes.caddy_logs = { driver = "local"; };
     };
 
   in {

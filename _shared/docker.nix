@@ -62,6 +62,21 @@ let
         else true;
     in builtins.all check ports;
 
+  # Validate volume bindings — writable bind mounts (./path:/target without :ro)
+  # are dangerous because rsync --delete can wipe runtime data.
+  # Use named volumes for persistent data instead.
+  validateVolumes = allowBindWrites: vols:
+    let
+      isWritableBind = v:
+        let
+          startsWithDot = builtins.substring 0 2 v == "./";
+          endsWithRo = builtins.match ".*:ro$" v != null;
+        in startsWithDot && !endsWithRo;
+      offenders = builtins.filter isWritableBind vols;
+    in
+      if allowBindWrites || offenders == [] then true
+      else builtins.throw "Writable bind mount '${builtins.head offenders}' detected — rsync --delete can wipe this data! Use named volumes (e.g. 'myapp_data:/data') for persistent data. Set allowWritableBindMounts = true ONLY for regeneratable config dirs.";
+
 in {
 
   # ══════════════════════════════════════════════════════════════════
@@ -131,6 +146,7 @@ in {
     allowPublicPorts ? false, # true = allow 0.0.0.0 port bindings
     skipReadOnly ? false,     # true = don't set read_only (services that write to root fs)
     tmpfs ? [ "/tmp" ],       # tmpfs mounts for read_only containers (override if needed)
+    allowWritableBindMounts ? false,  # true = allow ./path:/target without :ro (DANGEROUS — rsync can wipe data)
 
     # Policy overrides
     restart ? "unless-stopped",
@@ -144,8 +160,6 @@ in {
     extraYaml ? "",
   }:
     let
-      _ = validatePorts allowPublicPorts ports;
-
       # ── Image or build ──
       imageLine = if image != null then "${i2}image: ${image}" else "";
       buildLines =
@@ -289,7 +303,9 @@ in {
         (if extraYaml != "" then extraYaml else "")
       ];
 
-    in builtins.concatStringsSep "\n" sections;
+    in assert validatePorts allowPublicPorts ports;
+       assert validateVolumes allowWritableBindMounts volumes;
+       builtins.concatStringsSep "\n" sections;
 
 
   # ══════════════════════════════════════════════════════════════════

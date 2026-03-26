@@ -87,7 +87,11 @@ ${mkResourceLines rule.resources_two_factor}
           entrypoint = ["sh" "/config/init.sh"];
           env_file = [".secrets"];
           environment = { TZ = config.timezone; };
-          volumes = ["./config:/config"];
+          volumes = [
+            "./config:/config"
+            "authelia_data:/data"
+          ];
+          allowWritableBindMounts = true;  # ./config has templates processed by init.sh entrypoint (regeneratable)
           ports = ["10.0.0.1:${toString config.port}:9091"];
           networks = ["auth-net"];
           depends_on = { redis = {}; };
@@ -107,6 +111,7 @@ ${mkResourceLines rule.resources_two_factor}
       };
       volumes = {
         authelia_redis_data = {};
+        authelia_data = {};
       };
       networks = {
         auth-net = { driver = "bridge"; };
@@ -187,7 +192,7 @@ ${mkResourceLines rule.resources_two_factor}
       storage:
         encryption_key: ''\${AUTHELIA_STORAGE_ENCRYPTION_KEY}
         local:
-          path: /config/db.sqlite3
+          path: /data/db.sqlite3
 
       notifier:
         disable_startup_check: true

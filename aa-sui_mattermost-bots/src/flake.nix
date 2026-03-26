@@ -32,96 +32,106 @@
     };
 
     title = "Mattermost Team Chat";
+    docker = import ../../_shared/docker.nix;
 
     # WireGuard IPs
     gcp = "10.0.0.1";
     flex0 = "10.0.0.6";
 
     # ── Docker Compose ──────────────────────────────────────────
-    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-      # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/build.sh ship ║
-      # ╚══════════════════════════════════════════════════════════════════╝
-      services:
-        mattermost:
-          image: ${config.image}
-          container_name: ${config.container_name}
-          command: mattermost server
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - ./data/mattermost/config:/mattermost/config
-            - ./data/mattermost/data:/mattermost/data
-            - ./data/mattermost/logs:/mattermost/logs
-            - ./data/mattermost/plugins:/mattermost/plugins
-            - ./data/mattermost/client-plugins:/mattermost/client/plugins
-          env_file:
-            - .secrets
-          environment:
-            - TZ=${config.timezone}
-            - MM_SQLSETTINGS_DRIVERNAME=postgres
-            - MM_SERVICESETTINGS_SITEURL=https://${config.domain}
-            - MM_SERVICESETTINGS_LISTENADDRESS=:${toString config.port}
-            - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
-            - MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true
-            - MM_SERVICESETTINGS_ENABLECOMMANDS=true
-            - MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION=true
-            - MM_SERVICESETTINGS_ENABLEUSERACCESSTOKENS=true
-            - MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true
-            - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
-            - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
-            - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=localhost
-          depends_on:
-            postgres:
-              condition: service_healthy
-        postgres:
-          image: ${config.postgres_image}
-          container_name: ${config.postgres_container}
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - ./data/postgres:/var/lib/postgresql/data
-          env_file:
-            - .secrets
-          environment:
-            - POSTGRES_DB=mattermost
-            - POSTGRES_USER=mattermost
-            - PGPORT=${toString config.postgres_port}
-          healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
-            interval: 10s
-            timeout: 5s
-            retries: 5
-
-        mattermost-bots:
-          image: ${config.bridge_image}
-          container_name: ${config.bridge_container}
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
-            - ./requirements-bridge.txt:/app/requirements.txt:ro
-          entrypoint: ["/bin/sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"]
-          env_file:
-            - .secrets
-          environment:
-            - NTFY_URL=${config.ntfy_url}
-            - TOPICS=${config.topics}
-            - MM_URL=http://localhost:${toString config.port}
-            - C3_API_URL=${config.c3_api}
-            - OLLAMA_URL=${config.ollama_url}
-            - OLLAMA_MODEL=${config.ollama_model}
-            - OLLAMA_VM=${config.ollama_vm}
-            - AUTHELIA_OIDC_CLIENT_ID=mattermost-cc
-            - AUTHELIA_OIDC_CLIENT_SECRET=''${AUTHELIA_OIDC_MATTERMOST_SECRET}
-            - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
-          depends_on:
-            - mattermost
-    '';
+    mkDockerCompose = pkgs: docker.mkCompose pkgs {
+      banner = docker.banner "~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix";
+      volumes = {
+        mattermost_config = {};
+        mattermost_data = {};
+        mattermost_logs = {};
+        mattermost_plugins = {};
+        mattermost_client_plugins = {};
+        mattermost_postgres = {};
+      };
+      services = {
+        mattermost = docker.mkService {
+          name = "mattermost";
+          image = config.image;
+          container_name = config.container_name;
+          command = "mattermost server";
+          restart = "no";
+          skipReadOnly = true;
+          volumes = [
+            "mattermost_config:/mattermost/config"
+            "mattermost_data:/mattermost/data"
+            "mattermost_logs:/mattermost/logs"
+            "mattermost_plugins:/mattermost/plugins"
+            "mattermost_client_plugins:/mattermost/client/plugins"
+          ];
+          env_file = [".secrets"];
+          environment = [
+            "TZ=${config.timezone}"
+            "MM_SQLSETTINGS_DRIVERNAME=postgres"
+            "MM_SERVICESETTINGS_SITEURL=https://${config.domain}"
+            "MM_SERVICESETTINGS_LISTENADDRESS=:${toString config.port}"
+            "MM_PLUGINSETTINGS_ENABLEUPLOADS=true"
+            "MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true"
+            "MM_SERVICESETTINGS_ENABLECOMMANDS=true"
+            "MM_SERVICESETTINGS_ENABLEBOTACCOUNTCREATION=true"
+            "MM_SERVICESETTINGS_ENABLEUSERACCESSTOKENS=true"
+            "MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE=true"
+            "MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en"
+            "MM_DISPLAYSETTINGS_CLOCKFORMAT=24h"
+            "MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=localhost"
+          ];
+          depends_on = { postgres = { condition = "service_healthy"; }; };
+        };
+        postgres = docker.mkService {
+          name = "postgres";
+          image = config.postgres_image;
+          container_name = config.postgres_container;
+          restart = "no";
+          skipReadOnly = true;
+          volumes = [
+            "mattermost_postgres:/var/lib/postgresql/data"
+          ];
+          env_file = [".secrets"];
+          environment = [
+            "POSTGRES_DB=mattermost"
+            "POSTGRES_USER=mattermost"
+            "PGPORT=${toString config.postgres_port}"
+          ];
+          healthcheck = {
+            test = ''["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]'';
+            interval = "10s";
+            timeout = "5s";
+            retries = 5;
+          };
+        };
+        mattermost-bots = docker.mkService {
+          name = "mattermost-bots";
+          image = config.bridge_image;
+          container_name = config.bridge_container;
+          restart = "no";
+          skipReadOnly = true;
+          volumes = [
+            "./ntfy-bridge.py:/app/ntfy-bridge.py:ro"
+            "./requirements-bridge.txt:/app/requirements.txt:ro"
+          ];
+          entrypoint = ["/bin/sh" "-c" "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"];
+          env_file = [".secrets"];
+          environment = [
+            "NTFY_URL=${config.ntfy_url}"
+            "TOPICS=${config.topics}"
+            "MM_URL=http://localhost:${toString config.port}"
+            "C3_API_URL=${config.c3_api}"
+            "OLLAMA_URL=${config.ollama_url}"
+            "OLLAMA_MODEL=${config.ollama_model}"
+            "OLLAMA_VM=${config.ollama_vm}"
+            "AUTHELIA_OIDC_CLIENT_ID=mattermost-cc"
+            "AUTHELIA_OIDC_CLIENT_SECRET=\${AUTHELIA_OIDC_MATTERMOST_SECRET}"
+            "AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token"
+          ];
+          depends_on = { mattermost = {}; };
+        };
+      };
+    };
 
     # ── ntfy bridge script ──────────────────────────────────────
     mkBridge = pkgs: pkgs.writeText "ntfy-bridge.py" ''
@@ -1666,13 +1676,9 @@
     # ── Init dirs (compose pre_hook) ──────────────────────────────
     mkInitDirs = pkgs: pkgs.writeText "init-dirs.sh" ''
       #!/bin/sh
-      # Mattermost runs as uid 2000 inside the container
-      MM_UID=2000
-      MM_GID=2000
-      for dir in data/mattermost/config data/mattermost/data data/mattermost/logs data/mattermost/plugins data/mattermost/client-plugins data/postgres; do
-        mkdir -p "$dir"
-      done
-      sudo chown -R $MM_UID:$MM_GID data/mattermost
+      # Named volumes handle directory creation and ownership automatically.
+      # This script is kept for backward compatibility with the build.sh engine.
+      echo "[init] Named volumes in use — no host-side directory setup needed."
     '';
 
     # ── Bridge requirements ─────────────────────────────────────
@@ -1680,103 +1686,6 @@
       requests>=2.31.0
       websocket-client>=1.6.0
       Pillow>=10.1.0
-    '';
-
-    # ── Documentation ────────────────────────────────────────────────────
-    mkDocs = pkgs: defaultPkg: let
-      inherit (pkgs.lib) concatMapStrings hasSuffix optionalString filter subtractLists removeSuffix;
-      inherit (builtins) attrNames readDir pathExists;
-
-      portKeys = filter (k: hasSuffix "_port" k || k == "port") (attrNames config);
-      imageKeys = filter (k: hasSuffix "_image" k || k == "image") (attrNames config);
-      containerKeys = filter (k: hasSuffix "_container" k || k == "container_name") (attrNames config);
-      domainKeys = filter (k: k == "domain" || k == "base_domain") (attrNames config);
-      otherKeys = subtractLists (portKeys ++ imageKeys ++ containerKeys ++ domainKeys) (attrNames config);
-
-      row = k: let
-        v = config.${k};
-        vs = if builtins.isBool v then (if v then "true" else "false")
-             else if builtins.isAttrs v || builtins.isList v then builtins.toJSON v
-             else toString v;
-      in "| `${k}` | `${vs}` |\n";
-      section = heading: keys: optionalString (keys != []) ''
-        ## ${heading}
-        | Key | Value |
-        |-----|-------|
-        ${concatMapStrings row keys}
-      '';
-
-      hasNarrative = pathExists ./docs;
-      narrativeFiles = if hasNarrative
-        then filter (f: hasSuffix ".md" f) (attrNames (readDir ./docs))
-        else [];
-
-      specMd = pkgs.writeText "spec.md" ''
-        # ${title}
-        ${section "Network" (domainKeys ++ portKeys)}
-        ${section "Containers" (containerKeys ++ imageKeys)}
-        ${section "Configuration" otherKeys}
-      '';
-
-      summaryMd = pkgs.writeText "SUMMARY.md" ''
-        # Summary
-        - [Specification](./spec.md)
-        - [Generated Configs](./configs.md)
-        ${concatMapStrings (f: "- [${removeSuffix ".md" f}](./${f})\n") narrativeFiles}
-      '';
-
-      bookToml = pkgs.writeText "book.toml" ''
-        [book]
-        title = "${title}"
-        [output.html]
-        default-theme = "ayu"
-      '';
-    in pkgs.runCommand "docs" {
-      nativeBuildInputs = [ pkgs.mdbook pkgs.file ];
-    } ''
-      mkdir -p build/src
-      cp ${bookToml} build/book.toml
-      cp ${summaryMd} build/src/SUMMARY.md
-      cp ${specMd} build/src/spec.md
-      ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2>/dev/null || true"}
-
-      echo "# Generated Configuration Files" > build/src/configs.md
-      echo "" >> build/src/configs.md
-      echo 'These files are produced by nix build and deployed to the VM.' >> build/src/configs.md
-      echo "" >> build/src/configs.md
-      find ${defaultPkg} -type f | sort | while read -r f; do
-        relpath="''${f#${defaultPkg}/}"
-        case "$relpath" in
-          .secrets|*.secrets|*.lock|*.png|*.jpg|*.gif|*.ico|*.woff*|*.ttf|*.eot) continue ;;
-        esac
-        case "$relpath" in
-          *.yml|*.yaml)   lang="yaml" ;;
-          *.json)         lang="json" ;;
-          *.toml)         lang="toml" ;;
-          *.py)           lang="python" ;;
-          *.sh)           lang="bash" ;;
-          *.js|*.ts)      lang="javascript" ;;
-          *.tf)           lang="hcl" ;;
-          *.conf|*.cnf)   lang="ini" ;;
-          *.html)         lang="html" ;;
-          *.sql)          lang="sql" ;;
-          *.zone)         lang="dns" ;;
-          Dockerfile*)    lang="dockerfile" ;;
-          Caddyfile*)     lang="caddy" ;;
-          *)              lang="" ;;
-        esac
-        if file -b --mime-type "$f" | grep -q "^text/"; then
-          echo '## '"$relpath" >> build/src/configs.md
-          echo "" >> build/src/configs.md
-          echo "~~~$lang" >> build/src/configs.md
-          cat "$f" >> build/src/configs.md
-          echo "" >> build/src/configs.md
-          echo '~~~' >> build/src/configs.md
-          echo "" >> build/src/configs.md
-        fi
-      done
-
-      cd build && mdbook build -d $out
     '';
 
   in {
@@ -1793,7 +1702,7 @@
       '';
     in {
       default = defaultPkg;
-      docs = mkDocs pkgs defaultPkg;
+      docs = docker.mkDocs pkgs { inherit title config defaultPkg; docsPath = ./docs; };
     });
   };
 }
