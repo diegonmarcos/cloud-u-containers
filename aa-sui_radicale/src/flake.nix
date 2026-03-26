@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ../../../cloud-data/cloud-data-service-connections.json)).services;
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;

@@ -9,6 +9,9 @@
     "tempo": 3210
   },
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "grafana.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",

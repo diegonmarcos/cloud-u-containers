@@ -8,6 +8,9 @@
     "db": 5435
   },
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "chat.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
