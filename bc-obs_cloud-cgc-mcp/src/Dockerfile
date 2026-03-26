@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Octocode binary with fastembed — from our ARM GHCR image
-# Index data comes from external named volume at runtime
+# Octocode binary + Lance DB + repos — all baked in from ARM GHCR image
 COPY --from=octocode /usr/local/bin/octocode /usr/local/bin/octocode
+COPY --from=octocode /root/.local/share/octocode/ /root/.local/share/octocode/
+COPY --from=octocode /home/diego/Mounts/Git/ /home/diego/Mounts/Git/
 RUN octocode --version
+
+ENV GIT_ROOT=/home/diego/Mounts/Git
 
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev

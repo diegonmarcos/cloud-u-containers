@@ -57,9 +57,7 @@
       "healthcheck": "/mcp",
       "monitoring": null,
       "volumes": [
-        "./data:/data:ro",
-        "octocode_db:/root/.local/share/octocode:ro",
-        "octocode_repos:/repos:ro"
+        "./data:/data:ro"
       ],
       "env_file": false,
       "depends_on": [],
