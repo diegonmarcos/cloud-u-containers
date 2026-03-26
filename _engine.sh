@@ -84,6 +84,23 @@ if [ -f "$CONFIG" ]; then
     TERRAFORM_TFVARS_TEMPLATE="$(get_config terraform.tfvars_template)"
     BUILD_COPY_ONLY="$(get_config build.copy_only)"
 fi
+
+# ── Profile override: CLOUD_PROFILE=<name> reads build_<name>.json ──────
+if [ -n "${CLOUD_PROFILE:-}" ]; then
+    PROFILE_JSON="$SERVICE_DIR/../../build_${CLOUD_PROFILE}.json"
+    if [ -f "$PROFILE_JSON" ]; then
+        # Skip excluded services
+        if node -e "const f=require('$PROFILE_JSON');process.exit(f.excluded_services&&f.excluded_services.includes('$SERVICE_NAME')?0:1)" 2>/dev/null; then
+            log "PROFILE[$CLOUD_PROFILE]: $SERVICE_NAME excluded — skipping"
+            exit 0
+        fi
+        # Resolve deploy target: exact match > wildcard > original
+        P_HOST=$(node -e "const f=require('$PROFILE_JSON');const o=f.deploy_overrides||{};process.stdout.write(o['$SERVICE_NAME']||o['*']||'')")
+        [ -n "$P_HOST" ] && DEPLOY_HOST="$P_HOST"
+        FORCE_DEPLOY=1
+    fi
+fi
+
 # SSH multiplexing: one connection reused across all steps, kept alive 120s
 SSH_OPTS="-o ControlMaster=auto -o ControlPath=/tmp/ssh-mux-%r@%h:%p -o ControlPersist=120 -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
 
