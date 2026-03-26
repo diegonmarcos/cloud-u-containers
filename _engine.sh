@@ -85,11 +85,10 @@ if [ -f "$CONFIG" ]; then
     BUILD_COPY_ONLY="$(get_config build.copy_only)"
 fi
 
-# ── Profile: CLOUD_PROFILE=<name> → build_<name>.json is source of truth ──
+# ── Profile system: CLOUD_PROFILE selects active topology ────────────
 if [ -n "${CLOUD_PROFILE:-}" ]; then
     PROFILE_JSON="$SERVICE_DIR/../../build_${CLOUD_PROFILE}.json"
     if [ -f "$PROFILE_JSON" ]; then
-        # Profile declares deploy.host per service — read it
         P_HOST=$(node -e "const f=require('$PROFILE_JSON');const s=(f.services||{})['$SERVICE_NAME'];process.stdout.write(s&&s.deploy&&s.deploy.host||'')")
         if [ -n "$P_HOST" ]; then
             DEPLOY_HOST="$P_HOST"
