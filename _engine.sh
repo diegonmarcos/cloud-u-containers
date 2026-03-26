@@ -817,22 +817,24 @@ step_terraform() {
         return 1
     fi
 
-    # Generate terraform.tfvars from template + secrets (if template exists)
+    # Generate terraform.tfvars from template (always), then substitute secrets (if present)
     TFVARS_TEMPLATE="$SRC_DIR/${TERRAFORM_TFVARS_TEMPLATE:-terraform.tfvars.template}"
-    if [ -f "$TFVARS_TEMPLATE" ] && [ -f "$DIST_DIR/.secrets" ]; then
-        log "Generating terraform.tfvars from template + secrets"
+    if [ -f "$TFVARS_TEMPLATE" ]; then
         cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
-        while IFS='=' read -r key val; do
-            case "$key" in "") continue ;; esac
-            awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
-                if (index($0, key) == 1 && index($0, pat)) {
-                    print key " = \"" val "\""
-                } else {
-                    print
-                }
-            }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
-            mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
-        done < "$DIST_DIR/.secrets"
+        if [ -f "$DIST_DIR/.secrets" ]; then
+            log "Substituting secrets into terraform.tfvars"
+            while IFS='=' read -r key val; do
+                case "$key" in "") continue ;; esac
+                awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
+                    if (index($0, key) == 1 && index($0, pat)) {
+                        print key " = \"" val "\""
+                    } else {
+                        print
+                    }
+                }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
+                mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
+            done < "$DIST_DIR/.secrets"
+        fi
         log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
     fi
 
@@ -856,22 +858,25 @@ step_terraform_plan() {
         return 1
     fi
 
-    # Generate tfvars if needed (same as step_terraform)
+    # Generate tfvars from template (always), then substitute secrets (if present)
     TFVARS_TEMPLATE="$SRC_DIR/${TERRAFORM_TFVARS_TEMPLATE:-terraform.tfvars.template}"
-    if [ -f "$TFVARS_TEMPLATE" ] && [ -f "$DIST_DIR/.secrets" ] && [ ! -f "$DIST_DIR/terraform.tfvars" ]; then
-        log "Generating terraform.tfvars from template + secrets"
+    if [ -f "$TFVARS_TEMPLATE" ] && [ ! -f "$DIST_DIR/terraform.tfvars" ]; then
         cp "$TFVARS_TEMPLATE" "$DIST_DIR/terraform.tfvars"
-        while IFS='=' read -r key val; do
-            case "$key" in "") continue ;; esac
-            awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
-                if (index($0, key) == 1 && index($0, pat)) {
-                    print key " = \"" val "\""
-                } else {
-                    print
-                }
-            }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
-            mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
-        done < "$DIST_DIR/.secrets"
+        if [ -f "$DIST_DIR/.secrets" ]; then
+            log "Substituting secrets into terraform.tfvars"
+            while IFS='=' read -r key val; do
+                case "$key" in "") continue ;; esac
+                awk -v pat="= \"INJECTED_FROM_SECRETS\"" -v key="$key" -v val="$val" '{
+                    if (index($0, key) == 1 && index($0, pat)) {
+                        print key " = \"" val "\""
+                    } else {
+                        print
+                    }
+                }' "$DIST_DIR/terraform.tfvars" > "$DIST_DIR/terraform.tfvars.tmp"
+                mv "$DIST_DIR/terraform.tfvars.tmp" "$DIST_DIR/terraform.tfvars"
+            done < "$DIST_DIR/.secrets"
+        fi
+        log "terraform.tfvars ready ($(grep -c '=' "$DIST_DIR/terraform.tfvars") vars)"
     fi
 
     log "terraform init"
