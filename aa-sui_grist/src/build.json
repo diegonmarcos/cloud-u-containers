@@ -30,5 +30,33 @@
     "volumes": [
       "grist_data"
     ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "grist_app",
+      "image": "gristlabs/grist:latest",
+      "port": 3011,
+      "port_env": "PORT",
+      "dns": "grist.app",
+      "public": true,
+      "proxy": {
+        "domain": "sheets.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "grist_data:/persist"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "db_path": "/persist/grist-sessions.db"
+    }
   }
 }

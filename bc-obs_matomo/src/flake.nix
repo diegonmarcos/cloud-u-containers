@@ -42,6 +42,7 @@
       services:
         matomo-hybrid:
           build: .
+          image: ghcr.io/diegonmarcos/matomo-hybrid:latest
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
