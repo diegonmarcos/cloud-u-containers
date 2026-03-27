@@ -34,5 +34,34 @@
   },
   "health": {
     "path": "/mcp"
+  },
+  "containers": {
+    "app": {
+      "container_name": "c3-infra-mcp",
+      "image": "ghcr.io/diegonmarcos/c3-infra-mcp:latest",
+      "port": 3100,
+      "port_env": "MCP_HTTP_PORT",
+      "dns": "c3-infra-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/c3-infra-mcp"
+      },
+      "healthcheck": "/mcp",
+      "monitoring": null,
+      "volumes": [
+        "/opt/ssh-keys/c3-infra-mcp:/root/.ssh:ro",
+        "/nix/store:/nix/store:ro",
+        "~/.nix-profile/bin:/usr/local/nix-bin:ro",
+        "~/.config/gcloud:/root/.config/gcloud",
+        "c3_git_repos:/root/git"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

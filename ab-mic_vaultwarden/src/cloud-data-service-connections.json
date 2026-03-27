@@ -1,0 +1,428 @@
+{
+  "_generated": "2026-03-26T19:44:27.427Z",
+  "services": {
+    "code-server": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8444
+      },
+      "vm": "oci-apps"
+    },
+    "etherpad": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3012,
+        "db": 5436
+      },
+      "vm": "oci-apps"
+    },
+    "filebrowser": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3015
+      },
+      "vm": "oci-apps"
+    },
+    "google-workspace-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3104
+      },
+      "vm": "oci-apps"
+    },
+    "grist": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3011
+      },
+      "vm": "oci-apps"
+    },
+    "hedgedoc": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3018,
+        "db": 5439
+      },
+      "vm": "oci-apps"
+    },
+    "mail-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3103
+      },
+      "vm": "oci-apps"
+    },
+    "mattermost-bots": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8065,
+        "db": 5435
+      },
+      "vm": "oci-apps"
+    },
+    "mattermost-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3102
+      },
+      "vm": "oci-apps"
+    },
+    "photoprism": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3013
+      },
+      "vm": "oci-apps"
+    },
+    "photos-webhook": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "radicale": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 5232
+      },
+      "vm": "oci-apps"
+    },
+    "revealmd": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3014
+      },
+      "vm": "oci-apps"
+    },
+    "snappymail": {
+      "ip": "10.0.0.3",
+      "ports": {
+        "app": 8888
+      },
+      "vm": "oci-mail"
+    },
+    "smtp-proxy": {
+      "ip": "10.0.0.3",
+      "ports": {},
+      "vm": "oci-mail"
+    },
+    "stalwart": {
+      "ip": "10.0.0.3",
+      "ports": {
+        "app": 8443,
+        "smtp": 465,
+        "imap": 993
+      },
+      "vm": "oci-mail"
+    },
+    "vaultwarden": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 8880
+      },
+      "vm": "gcp-proxy"
+    },
+    "crawlee-cloud": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3000,
+        "dashboard": 3001,
+        "db": 5433,
+        "redis": 6381,
+        "minio": 9000
+      },
+      "vm": "oci-apps"
+    },
+    "quant-lab-full": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8890,
+        "db": 5437,
+        "research": 8890
+      },
+      "vm": "oci-apps"
+    },
+    "quant-lab-light": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8889,
+        "engine": 5001,
+        "db": 5434,
+        "research": 8889
+      },
+      "vm": "oci-apps"
+    },
+    "ollama": {
+      "ip": "10.0.0.8",
+      "ports": {
+        "app": 11434
+      },
+      "vm": "gcp-t4"
+    },
+    "ollama-hai": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 11435
+      },
+      "vm": "oci-apps"
+    },
+    "rig-agentic-hai-1.5bq4": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "rig-agentic-sonn-14bq8": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "hickory-dns": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "dns": 53,
+        "app": 53
+      },
+      "vm": "gcp-proxy"
+    },
+    "authelia": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 9091,
+        "redis": 6380
+      },
+      "vm": "gcp-proxy"
+    },
+    "caddy": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 443,
+        "introspect-proxy": 4182
+      },
+      "vm": "gcp-proxy"
+    },
+    "introspect-proxy": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 4182
+      },
+      "vm": "gcp-proxy"
+    },
+    "orchestrator": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "sauron-central": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "alerts-api": {
+      "ip": "10.0.0.4",
+      "ports": {},
+      "vm": "oci-analytics"
+    },
+    "c3-infra-api": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8081
+      },
+      "vm": "oci-apps"
+    },
+    "c3-infra-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3100
+      },
+      "vm": "oci-apps"
+    },
+    "c3-services-api": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8082
+      },
+      "vm": "oci-apps"
+    },
+    "c3-services-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3101
+      },
+      "vm": "oci-apps"
+    },
+    "cloud-cgc-mcp": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3105
+      },
+      "vm": "oci-apps"
+    },
+    "cloud-spec": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3080
+      },
+      "vm": "oci-apps"
+    },
+    "dagu": {
+      "ip": "10.0.0.3",
+      "ports": {
+        "app": 8070
+      },
+      "vm": "oci-mail"
+    },
+    "dozzle": {
+      "ip": "10.0.0.4",
+      "ports": {
+        "app": 9999
+      },
+      "vm": "oci-analytics"
+    },
+    "fluent-bit": {
+      "ip": "10.0.0.4",
+      "ports": {},
+      "vm": "oci-analytics"
+    },
+    "lgtm": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "grafana": 3200,
+        "loki": 3110,
+        "mimir": 9009,
+        "tempo": 3210
+      },
+      "vm": "oci-apps"
+    },
+    "matomo": {
+      "ip": "10.0.0.4",
+      "ports": {
+        "app": 8080,
+        "db": 3306
+      },
+      "vm": "oci-analytics"
+    },
+    "nocodb": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8085,
+        "db": 5441
+      },
+      "vm": "oci-apps"
+    },
+    "ntfy": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 8090
+      },
+      "vm": "gcp-proxy"
+    },
+    "sauron-forwarder": {
+      "ip": "10.0.0.4",
+      "ports": {},
+      "vm": "oci-analytics"
+    },
+    "syslog-forwarder": {
+      "ip": "10.0.0.3",
+      "ports": {},
+      "vm": "oci-mail"
+    },
+    "umami": {
+      "ip": "10.0.0.4",
+      "ports": {
+        "app": 3006,
+        "db": 5442
+      },
+      "vm": "oci-analytics"
+    },
+    "windmill": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8000,
+        "db": 5440
+      },
+      "vm": "oci-apps"
+    },
+    "backup-borg": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "backup-bup": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "backup-gitea": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3002,
+        "ssh": 2222
+      },
+      "vm": "oci-apps"
+    },
+    "gitea": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3017
+      },
+      "vm": "oci-apps"
+    },
+    "kg-graph": {
+      "ip": "10.0.0.6",
+      "ports": {},
+      "vm": "oci-apps"
+    },
+    "postlite": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "npm_rest": 8880,
+        "vaultwarden_rest": 8881,
+        "ntfy_rest": 8882,
+        "authelia_rest": 8883,
+        "npm_pg": 5433,
+        "vaultwarden_pg": 5434,
+        "ntfy_pg": 5435,
+        "authelia_pg": 5436
+      },
+      "vm": "gcp-proxy"
+    },
+    "redis": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 6379
+      },
+      "vm": "gcp-proxy"
+    }
+  },
+  "vms": [
+    {
+      "vm_id": "oci-E2-f_0",
+      "alias": "oci-mail",
+      "ip": "10.0.0.3",
+      "user": "ubuntu"
+    },
+    {
+      "vm_id": "oci-E2-f_1",
+      "alias": "oci-analytics",
+      "ip": "10.0.0.4",
+      "user": "ubuntu"
+    },
+    {
+      "vm_id": "oci-A1-f_0",
+      "alias": "oci-apps",
+      "ip": "10.0.0.6",
+      "user": "ubuntu"
+    },
+    {
+      "vm_id": "gcp-T4-p_0",
+      "alias": "gcp-t4",
+      "ip": "10.0.0.8",
+      "user": "diego"
+    },
+    {
+      "vm_id": "gcp-E2-f_0",
+      "alias": "gcp-proxy",
+      "ip": "10.0.0.1",
+      "user": "diego"
+    }
+  ]
+}

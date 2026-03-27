@@ -9,6 +9,9 @@
     "tempo": 3210
   },
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "grafana.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
@@ -29,5 +32,73 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "grafana": {
+      "container_name": "lgtm_grafana",
+      "image": "grafana/grafana:latest",
+      "port": 3200,
+      "port_env": "GF_SERVER_HTTP_PORT",
+      "dns": "grafana.app",
+      "public": true,
+      "proxy": { "domain": "grafana.diegonmarcos.com", "auth": "two_factor" },
+      "healthcheck": "wget -q --spider http://localhost:3200/api/health",
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "grafana_data:/var/lib/grafana"
+      ],
+      "env_file": false,
+      "depends_on": ["loki"],
+      "resources": null,
+      "read_only": false
+    },
+    "loki": {
+      "container_name": "lgtm_loki",
+      "image": "grafana/loki:latest",
+      "port": 3110,
+      "port_env": null,
+      "dns": "lgtm-loki.app",
+      "public": false,
+      "healthcheck": "busybox wget -qO /dev/null http://127.0.0.1:3110/ready",
+      "volumes": [
+        "loki_data:/loki",
+        "/home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    },
+    "tempo": {
+      "container_name": "lgtm_tempo",
+      "image": "grafana/tempo:2.7.2",
+      "port": 3210,
+      "port_env": null,
+      "dns": "lgtm-tempo.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "tempo_data:/var/tempo",
+        "./config/tempo.yaml:/etc/tempo/tempo.yaml:ro"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    },
+    "mimir": {
+      "container_name": "lgtm_mimir",
+      "image": "grafana/mimir:latest",
+      "port": 9009,
+      "port_env": null,
+      "dns": "lgtm-mimir.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [
+        "mimir_data:/data",
+        "./config/mimir.yaml:/etc/mimir/mimir.yaml:ro"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    }
   }
 }
