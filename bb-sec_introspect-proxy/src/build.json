@@ -17,5 +17,23 @@
   },
   "proxy": {
     "app_hub": false
+  },
+  "containers": {
+    "app": {
+      "container_name": "introspect-proxy",
+      "image": "ghcr.io/diegonmarcos/introspect-proxy:latest",
+      "port": 4182,
+      "port_env": null,
+      "dns": "introspect-proxy.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": "/health",
+      "monitoring": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
