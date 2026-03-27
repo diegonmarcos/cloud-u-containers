@@ -619,6 +619,18 @@ step_compose() {
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping compose"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
+    # Ensure Docker daemon is running on target VM (start if not)
+    if ! ssh $SSH_OPTS "$DEPLOY_HOST" "docker info >/dev/null 2>&1"; then
+        log_warn "Docker daemon not running on $DEPLOY_HOST — starting it"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "sudo systemctl start docker" 2>/dev/null || true
+        sleep 3
+        if ! ssh $SSH_OPTS "$DEPLOY_HOST" "docker info >/dev/null 2>&1"; then
+            log_error "Docker daemon failed to start on $DEPLOY_HOST"
+            return 1
+        fi
+        log "Docker daemon started on $DEPLOY_HOST"
+    fi
+
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
     # Image strategy: binary > registry pull (always fresh)
