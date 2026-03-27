@@ -193,8 +193,17 @@ step_docker_local() {
         docker buildx use multiarch 2>/dev/null
     fi
 
+    # Use dist/ as build context if it exists (nix-generated files live there)
+    # Fall back to src/ for services that don't use nix build
+    BUILD_CONTEXT="$SRC_DIR"
+    if [ -d "$DIST_DIR" ] && [ -f "$DIST_DIR/$DOCKERFILE" ]; then
+        BUILD_CONTEXT="$DIST_DIR"
+    elif [ -d "$DIST_DIR" ]; then
+        BUILD_CONTEXT="$DIST_DIR"
+    fi
+
     log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
-    log "── Dockerfile: $SRC_DIR/$DOCKERFILE ──"
+    log "── Dockerfile: $SRC_DIR/$DOCKERFILE (context: $BUILD_CONTEXT) ──"
     cat "$SRC_DIR/$DOCKERFILE" 2>/dev/null || true
     log "── docker buildx build --push (verbose) ──"
 
@@ -207,7 +216,7 @@ step_docker_local() {
         --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
         --cache-to "type=registry,ref=$FULL_IMAGE:buildcache,mode=max" \
         --file "$SRC_DIR/$DOCKERFILE" \
-        "$SRC_DIR/" 2>&1 | while IFS= read -r line; do printf "[docker-local] %s\n" "$line"; done
+        "$BUILD_CONTEXT/" 2>&1 | while IFS= read -r line; do printf "[docker-local] %s\n" "$line"; done
 
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
 
@@ -1041,8 +1050,8 @@ case "${1:-all}" in
     health)   step_health ;;
     all)      step_build; step_docs; step_secrets ;;
     ship)
-        step_docker
         step_build
+        step_docker
         step_secrets
         step_compose_build
         # Skip deploy+compose if dist/ output is unchanged since last ship
