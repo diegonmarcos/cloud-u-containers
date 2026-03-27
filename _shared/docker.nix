@@ -103,6 +103,7 @@ in {
   mkGhcrBuild = {
     name,                                    # GHCR package name (e.g. "vaultwarden")
     fromImage,                               # Original image (e.g. "vaultwarden/server:latest")
+    description ? name,                      # Human-readable description for OCI label
     configFiles ? [],                        # [ { src = "file"; dst = "/path/in/image"; } ]
     registry ? "ghcr.io/diegonmarcos",       # GHCR registry prefix
   }: {
@@ -112,7 +113,14 @@ in {
       dockerfile_inline =
         "FROM ${fromImage}"
         + builtins.concatStringsSep "" (map (f: "\nCOPY ${f.src} ${f.dst}") configFiles)
-        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud\"";
+        # Self-documenting: bake docker-compose.yml into image for inspection
+        + "\nCOPY docker-compose.yml /opt/cloud-docs/docker-compose.yml"
+        # OCI standard labels
+        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud\""
+        + "\nLABEL org.opencontainers.image.description=\"${description}\""
+        + "\nLABEL org.opencontainers.image.title=\"${name}\""
+        + "\nLABEL cloud.diegonmarcos.from-image=\"${fromImage}\""
+        + "\nLABEL cloud.diegonmarcos.registry=\"${registry}\"";
     };
   };
 
