@@ -144,8 +144,11 @@ step_docker_remote() {
     ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
     rsync -avzL --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
 
-    log "Building Docker image on $DEPLOY_HOST (remote)"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 docker build -t $FULL_IMAGE:latest -f $DOCKERFILE ."
+    log "Building Docker image on $DEPLOY_HOST (remote, verbose)"
+    log "── Dockerfile: $DOCKERFILE ──"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "cat $REMOTE_BUILD_DIR/$DOCKERFILE" 2>/dev/null || true
+    log "── docker build (verbose) ──"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain docker build --progress=plain -t $FULL_IMAGE:latest -f $DOCKERFILE . 2>&1" | while IFS= read -r line; do printf "[docker-remote] %s\n" "$line"; done
 
     ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
     log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
@@ -170,16 +173,20 @@ step_docker_local() {
         [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
-    log "Building Docker image: $FULL_IMAGE"
+    log "Building Docker image: $FULL_IMAGE (verbose)"
+    log "── Dockerfile: $SRC_DIR/$DOCKERFILE ──"
+    cat "$SRC_DIR/$DOCKERFILE" 2>/dev/null || true
+    log "── docker buildx build --push (verbose) ──"
 
-    docker buildx build \
+    BUILDKIT_PROGRESS=plain docker buildx build \
+        --progress=plain \
         --push \
         --tag "$FULL_IMAGE:latest" \
         --tag "$FULL_IMAGE:$SHA_TAG" \
         --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
         --cache-to "type=registry,ref=$FULL_IMAGE:buildcache,mode=max" \
         --file "$SRC_DIR/$DOCKERFILE" \
-        "$SRC_DIR/"
+        "$SRC_DIR/" 2>&1 | while IFS= read -r line; do printf "[docker-local] %s\n" "$line"; done
 
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
 
@@ -972,8 +979,13 @@ step_compose_build() {
         return 0
     fi
 
-    # Build + push all services with build: sections
-    docker compose build --push
+    # Build + push all services with build: sections (verbose output)
+    log "── dockerfile_inline content ──"
+    grep -A20 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" || true
+    log "── docker compose build --push (verbose) ──"
+    BUILDKIT_PROGRESS=plain docker compose build --push --progress=plain 2>&1 | while IFS= read -r line; do
+        printf "[compose-build] %s\n" "$line"
+    done
 
     log "GHCR images built and pushed"
 }
