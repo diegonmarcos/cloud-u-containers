@@ -24,6 +24,15 @@
     title = "Sauron Lite - Lightweight file integrity and malware scanner";
     docker = import ../../_shared/docker.nix;
 
+    # GHCR image for forwarder: bake forwarder.sh into image
+    ghcrForwarder = docker.mkGhcrBuild {
+      name = "sauron-forwarder";
+      fromImage = "debian:bookworm-slim";
+      configFiles = [
+        { src = "forwarder.sh"; dst = "/forwarder.sh"; }
+      ];
+    };
+
     # Dockerfile for the scanner
     mkDockerfile = pkgs: pkgs.writeText "Dockerfile" ''
       FROM debian:bookworm-slim
@@ -170,6 +179,7 @@
       services = {
         sauron = docker.mkService {
           name = "sauron";
+          image = "ghcr.io/diegonmarcos/sauron:latest";
           build = ".";
           container_name = config.container_name;
           restart = "no";
@@ -177,7 +187,6 @@
           volumes = [
             "/etc:/watch/etc:ro"
             "/home:/watch/home:ro"
-            "./yara-rules:/etc/sauron/yara-rules:ro"
             "sauron_logs:/var/log/sauron"
             "sauron_queue:/var/spool/sauron"
           ];
@@ -200,14 +209,14 @@
         };
         forwarder = docker.mkService {
           name = "forwarder";
-          image = "debian:bookworm-slim";
+          image = ghcrForwarder.image;
+          build = ghcrForwarder.build;
           container_name = "sauron-forwarder";
           restart = "no";
           skipReadOnly = true;
           entrypoint = ["/bin/sh" "/forwarder.sh"];
           volumes = [
             "sauron_logs:/var/log/sauron:ro"
-            "./forwarder.sh:/forwarder.sh:ro"
           ];
           environment = {
             CENTRAL_HOST = config.central_host;

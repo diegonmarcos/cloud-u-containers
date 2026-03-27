@@ -23,6 +23,37 @@
     };
 
     title = "Quant Lab Full - Research + Analytics + ML + Risk + Trading + Postgres";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-quant-research = docker.mkGhcrBuild {
+      name = "quant-full-research";
+      fromImage = config.research_image;
+    };
+
+    ghcr-quant-analytics = docker.mkGhcrBuild {
+      name = "quant-full-analytics";
+      fromImage = config.analytics_image;
+    };
+
+    ghcr-quant-ml = docker.mkGhcrBuild {
+      name = "quant-full-ml";
+      fromImage = config.ml_image;
+    };
+
+    ghcr-quant-risk = docker.mkGhcrBuild {
+      name = "quant-full-risk";
+      fromImage = config.risk_image;
+    };
+
+    ghcr-quant-engine = docker.mkGhcrBuild {
+      name = "quant-full-engine";
+      fromImage = config.engine_image;
+    };
+
+    ghcr-quant-db = docker.mkGhcrBuild {
+      name = "quant-full-db";
+      fromImage = config.db_image;
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -34,7 +65,12 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
-          image: ${config.research_image}
+          image: ${ghcr-quant-research.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.research_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_research
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -54,7 +90,12 @@
             start_period: 60s
 
         analytics:
-          image: ${config.analytics_image}
+          image: ${ghcr-quant-analytics.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.analytics_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_analytics
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -67,7 +108,12 @@
                    tail -f /dev/null"
 
         ml_brain:
-          image: ${config.ml_image}
+          image: ${ghcr-quant-ml.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.ml_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_ml
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -88,7 +134,12 @@
                    tail -f /dev/null"
 
         risk_manager:
-          image: ${config.risk_image}
+          image: ${ghcr-quant-risk.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.risk_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_risk
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -101,7 +152,12 @@
                    tail -f /dev/null"
 
         execution_engine:
-          image: ${config.engine_image}
+          image: ${ghcr-quant-engine.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.engine_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_engine
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -114,7 +170,12 @@
                    tail -f /dev/null"
 
         database:
-          image: ${config.db_image}
+          image: ${ghcr-quant-db.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.db_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_full_db
           restart: "no"  # container-init handles startup
           network_mode: host

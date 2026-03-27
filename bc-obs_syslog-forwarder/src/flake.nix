@@ -7,10 +7,17 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
+
+    # GHCR image: wrap public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "syslog-forwarder";
+      fromImage = "balabit/syslog-ng:4.4.0";
+    };
 
     config = {
       container_name = "syslog-forwarder";
-      image = "balabit/syslog-ng:4.4.0";
+      image = ghcr.image;
     };
 
     title = "Syslog Forwarder - syslog-ng log forwarding to central server";
@@ -26,6 +33,10 @@
       services:
         syslog-forwarder:
           image: ${config.image}
+          build:
+            context: ${ghcr.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcr.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

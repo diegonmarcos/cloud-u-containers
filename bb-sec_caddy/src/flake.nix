@@ -609,21 +609,31 @@
 
     docker = import ../../_shared/docker.nix;
 
+    # GHCR image: bake Caddyfile + static files into caddy image
+    ghcrCaddy = docker.mkGhcrBuild {
+      name = "caddy";
+      fromImage = "ghcr.io/diegonmarcos/caddy-l4:latest";
+      configFiles = [
+        { src = "Caddyfile"; dst = "/etc/caddy/Caddyfile"; }
+        { src = "error.html"; dst = "/srv/error.html"; }
+        { src = "dashboard.html"; dst = "/srv/dashboard.html"; }
+        { src = "ntfy-setup.html"; dst = "/srv/ntfy-setup.html"; }
+        { src = "wkd"; dst = "/srv/wkd"; }
+      ];
+    };
+
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/bb-sec_caddy/src/flake.nix";
 
       services.caddy = docker.mkService {
         name = "caddy";
-        image = "ghcr.io/diegonmarcos/caddy-l4:latest";
+        image = ghcrCaddy.image;
+        build = ghcrCaddy.build;
         container_name = config.container_name;
         networkMode = "host";
         env_file = [ ".secrets" ];
         volumes = [
-          "./Caddyfile:/etc/caddy/Caddyfile:ro"
-          "./error.html:/srv/error.html:ro"
-          "./dashboard.html:/srv/dashboard.html:ro"
-          "./ntfy-setup.html:/srv/ntfy-setup.html:ro"
-          "./wkd:/srv/wkd:ro"
+          # Config is baked into image — only persistent data volumes remain
           "caddy_logs:/var/log/caddy"
           "caddy_data:/data"
           "caddy_config:/config"
@@ -633,10 +643,10 @@
         skipReadOnly = true;  # caddy writes to /data, /config, /var/log
       };
 
+      # introspect-proxy already built+pushed by bb-sec_introspect-proxy pipeline
       services.introspect-proxy = docker.mkService {
         name = "introspect-proxy";
-        build = "./introspect-proxy";
-        image = "introspect-proxy:latest";
+        image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
         networkMode = "host";
         environment = {
           JWKS_URL = "https://auth.diegonmarcos.com/jwks.json";

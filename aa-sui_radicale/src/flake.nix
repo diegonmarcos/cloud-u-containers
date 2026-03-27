@@ -11,10 +11,19 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
+    # GHCR image: bake config into image (no bind mount needed)
+    ghcr = docker.mkGhcrBuild {
+      name = "radicale";
+      fromImage = "tomsquest/docker-radicale:latest";
+      configFiles = [
+        { src = "config/config"; dst = "/config/config"; }
+      ];
+    };
+
     config = {
       domain = buildJson.domain;
       container_name = "radicale";
-      image = "tomsquest/docker-radicale:latest";
+      image = ghcr.image;
       port = buildJson.ports.app;
     };
 
@@ -52,12 +61,12 @@
           radicale = docker.mkService {
             name = "radicale";
             image = config.image;
+            build = ghcr.build;
             container_name = config.container_name;
             ports = [ "${svc.radicale.ip}:${toString config.port}:5232" ];
             networks = [ "default" ];
             volumes = [
               "radicale_data:/data"
-              "./config:/config:ro"
             ];
             environment = [
               "TAKE_FILE_OWNERSHIP=true"

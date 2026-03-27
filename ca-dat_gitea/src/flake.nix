@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
@@ -14,9 +15,15 @@
     mirrors = giteaConfig.mirrors;
     mirrorNames = builtins.attrNames mirrors;
 
+    # GHCR image: wrap public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "gitea";
+      fromImage = "gitea/gitea:latest";
+    };
+
     config = {
       container_name = "gitea";
-      image = "gitea/gitea:latest";
+      image = ghcr.image;
       port_http = buildJson.ports.app;
       port_ssh = buildJson.ssh_port;
       domain = buildJson.domain;
@@ -37,6 +44,10 @@
       services:
         gitea:
           image: ${config.image}
+          build:
+            context: ${ghcr.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcr.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

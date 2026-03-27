@@ -15,7 +15,7 @@
       domain = buildJson.domain;
       base_domain = "diegonmarcos.com";
       container_name = "authelia";
-      image = "authelia/authelia:4.39.15";
+      image = ghcr.image;
       port = buildJson.ports.app;
       redis_port = toString buildJson.ports.redis;
       timezone = "Europe/Madrid";
@@ -23,6 +23,18 @@
 
     title = "Authelia 2FA Authentication";
     docker = import ../../_shared/docker.nix;
+
+    # GHCR image: bake config templates + init script into image
+    # init.sh substitutes secrets at container start
+    ghcr = docker.mkGhcrBuild {
+      name = "authelia";
+      fromImage = "authelia/authelia:4.39.15";
+      configFiles = [
+        { src = "config/configuration.yml.tpl"; dst = "/config/configuration.yml.tpl"; }
+        { src = "config/users_database.yml.tpl"; dst = "/config/users_database.yml.tpl"; }
+        { src = "config/init.sh"; dst = "/config/init.sh"; }
+      ];
+    };
 
     # ACL rules from external JSON (cloud-data-authelia-acl.json)
     # Falls back to a minimal default if the file doesn't exist
@@ -83,16 +95,15 @@ ${mkResourceLines rule.resources_two_factor}
       services = {
         authelia = docker.mkService {
           name = "authelia";
-          image = config.image;
+          image = ghcr.image;
+          build = ghcr.build;
           container_name = config.container_name;
           entrypoint = ["sh" "/config/init.sh"];
           env_file = [".secrets"];
           environment = { TZ = config.timezone; };
           volumes = [
-            "./config:/config"
             "authelia_data:/data"
           ];
-          allowWritableBindMounts = true;  # ./config has templates processed by init.sh entrypoint (regeneratable)
           ports = ["${svc.authelia.ip}:${toString config.port}:9091"];
           networks = ["auth-net"];
           depends_on = { redis = {}; };

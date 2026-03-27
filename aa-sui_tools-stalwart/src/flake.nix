@@ -31,6 +31,17 @@
     title = "Stalwart Mail Server";
     docker = import ../../_shared/docker.nix;
 
+    # GHCR image: bake config template + init script into image
+    # init.sh substitutes secrets and decodes DKIM key at container start
+    ghcr = docker.mkGhcrBuild {
+      name = "stalwart";
+      fromImage = "stalwartlabs/mail-server:v0.11";
+      configFiles = [
+        { src = "config.toml.tpl"; dst = "/opt/stalwart-mail/etc/config.toml.tpl"; }
+        { src = "init.sh"; dst = "/opt/stalwart-mail/init.sh"; }
+      ];
+    };
+
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/flake.nix";
@@ -40,8 +51,11 @@
       services = {
         stalwart = docker.mkService {
           name = "stalwart";
-          image = "stalwartlabs/mail-server:v0.11";
+          image = ghcr.image;
+          build = ghcr.build;
           container_name = "stalwart";
+          entrypoint = ["sh" "/opt/stalwart-mail/init.sh"];
+          env_file = [".secrets"];
           skipCapDrop = true;
           skipReadOnly = true;
           environment = [
@@ -49,8 +63,6 @@
           ];
           volumes = [
             "stalwart_data:/opt/stalwart-mail/data"
-            "./config.toml:/opt/stalwart-mail/etc/config.toml:ro"
-            "./dkim:/opt/stalwart-mail/dkim:ro"
           ];
           memLimit = "512M";
           memReservation = "64M";
@@ -231,32 +243,22 @@
     mkInitSh = pkgs: pkgs.writeText "init.sh" ''
       #!/bin/sh
       set -e
-      cd "$(dirname "$0")"
-
-      # Stop Mailu if still running (migration from Mailu → Stalwart)
-      if [ -f /opt/mailu/docker-compose.yml ]; then
-        echo "[init] Stopping Mailu (migration to Stalwart)..."
-        (cd /opt/mailu && docker compose down 2>/dev/null) || true
-      fi
 
       ENV_VARS='$ADMIN_PASSWORD $ME_PASSWORD $NOREPLY_PASSWORD $OCI_RELAYUSER $OCI_RELAYPASSWORD $AWS_RELAYUSER $AWS_RELAYPASSWORD $DKIM_PRIVATE_KEY_B64 $CF_DNS_API_TOKEN'
 
       echo "[init] Substituting secrets into config.toml..."
-      while IFS='=' read -r _key _val; do
-        case "$_key" in ""|\#*) continue ;; esac
-        export "$_key=$_val"
-      done < .secrets
-      envsubst "$ENV_VARS" < config.toml.tpl > config.toml
+      envsubst "$ENV_VARS" < /opt/stalwart-mail/etc/config.toml.tpl > /opt/stalwart-mail/etc/config.toml
 
       # Decode DKIM private key from base64
       if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
         echo "[init] Writing DKIM private key..."
-        mkdir -p dkim
-        echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > dkim/${config.domain}.dkim.key
-        chmod 600 dkim/${config.domain}.dkim.key
+        mkdir -p /opt/stalwart-mail/dkim
+        echo "$DKIM_PRIVATE_KEY_B64" | base64 -d > /opt/stalwart-mail/dkim/${config.domain}.dkim.key
+        chmod 600 /opt/stalwart-mail/dkim/${config.domain}.dkim.key
       fi
 
-      echo "[init] Done."
+      echo "[init] Starting Stalwart..."
+      exec /usr/local/bin/stalwart-mail --config /opt/stalwart-mail/etc/config.toml
     '';
 
   in {

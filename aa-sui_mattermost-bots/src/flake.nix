@@ -36,6 +36,25 @@
     title = "Mattermost Team Chat";
     docker = import ../../_shared/docker.nix;
 
+    ghcr-mattermost = docker.mkGhcrBuild {
+      name = "mattermost";
+      fromImage = config.image;
+    };
+
+    ghcr-mattermost-db = docker.mkGhcrBuild {
+      name = "mattermost-db";
+      fromImage = config.postgres_image;
+    };
+
+    ghcr-mattermost-bots = docker.mkGhcrBuild {
+      name = "mattermost-bots";
+      fromImage = config.bridge_image;
+      configFiles = [
+        { src = "ntfy-bridge.py"; dst = "/app/ntfy-bridge.py"; }
+        { src = "requirements-bridge.txt"; dst = "/app/requirements.txt"; }
+      ];
+    };
+
     # ── Docker Compose ──────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix";
@@ -50,7 +69,8 @@
       services = {
         mattermost = docker.mkService {
           name = "mattermost";
-          image = config.image;
+          image = ghcr-mattermost.image;
+          build = ghcr-mattermost.build;
           container_name = config.container_name;
           command = "mattermost server";
           restart = "no";
@@ -82,7 +102,8 @@
         };
         postgres = docker.mkService {
           name = "postgres";
-          image = config.postgres_image;
+          image = ghcr-mattermost-db.image;
+          build = ghcr-mattermost-db.build;
           container_name = config.postgres_container;
           restart = "no";
           skipReadOnly = true;
@@ -104,14 +125,12 @@
         };
         mattermost-bots = docker.mkService {
           name = "mattermost-bots";
-          image = config.bridge_image;
+          image = ghcr-mattermost-bots.image;
+          build = ghcr-mattermost-bots.build;
           container_name = config.bridge_container;
           restart = "no";
           skipReadOnly = true;
-          volumes = [
-            "./ntfy-bridge.py:/app/ntfy-bridge.py:ro"
-            "./requirements-bridge.txt:/app/requirements.txt:ro"
-          ];
+          volumes = [];
           entrypoint = ["/bin/sh" "-c" "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"];
           env_file = [".secrets"];
           environment = [

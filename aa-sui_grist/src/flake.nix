@@ -19,6 +19,11 @@
 
     title = "Grist - Modern collaborative spreadsheet (Google Sheets alternative)";
 
+    ghcr = docker.mkGhcrBuild {
+      name = "grist";
+      fromImage = config.image;
+    };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -28,7 +33,8 @@
         services = {
           grist = docker.mkService {
             name = "grist";
-            image = config.image;
+            image = ghcr.image;
+            build = ghcr.build;
             container_name = config.container_name;
             portEnv = { PORT = config.port; };
             skipReadOnly = true;

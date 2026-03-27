@@ -23,6 +23,27 @@
     };
 
     title = "Crawlee Cloud - Self-hosted Apify-compatible scraping platform";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-crawlee-db = docker.mkGhcrBuild {
+      name = "crawlee-db";
+      fromImage = "postgres:16-alpine";
+    };
+
+    ghcr-crawlee-redis = docker.mkGhcrBuild {
+      name = "crawlee-redis";
+      fromImage = "redis:7-alpine";
+    };
+
+    ghcr-crawlee-minio = docker.mkGhcrBuild {
+      name = "crawlee-minio";
+      fromImage = "minio/minio:latest";
+    };
+
+    ghcr-crawlee-minio-mc = docker.mkGhcrBuild {
+      name = "crawlee-minio-mc";
+      fromImage = "minio/mc:latest";
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -137,7 +158,12 @@
         # ═══ DATA STORES (standard images) ═══
 
         crawlee_db:
-          image: postgres:16-alpine
+          image: ${ghcr-crawlee-db.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM postgres:16-alpine
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: crawlee_db
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -154,7 +180,12 @@
             retries: 5
 
         crawlee_redis:
-          image: redis:7-alpine
+          image: ${ghcr-crawlee-redis.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM redis:7-alpine
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: crawlee_redis
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -168,7 +199,12 @@
             retries: 5
 
         crawlee_minio:
-          image: minio/minio:latest
+          image: ${ghcr-crawlee-minio.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM minio/minio:latest
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: crawlee_minio
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -187,7 +223,12 @@
             retries: 5
 
         minio_init:
-          image: minio/mc:latest
+          image: ${ghcr-crawlee-minio-mc.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM minio/mc:latest
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: crawlee_minio_init
           network_mode: host
           depends_on:

@@ -7,11 +7,19 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
       port = buildJson.ports.app;
     };
+
+    # GHCR image: wraps busybox for static file serving
+    ghcr = docker.mkGhcrBuild {
+      name = "cloud-spec";
+      fromImage = "busybox:latest";
+    };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -25,24 +33,23 @@
         cd build && mdbook build -d $out
       '';
 
-      compose = pkgs.writeText "docker-compose.yml" ''
-        # ╔══════════════════════════════════════════════════════════════════╗
-        # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-        # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-        # ╠══════════════════════════════════════════════════════════════════╣
-        # ║ Source: ~/git/cloud/a_solutions/bc-obs_cloud-spec/src/flake.nix ║
-        # ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_cloud-spec/build.sh ship ║
-        # ╚══════════════════════════════════════════════════════════════════╝
-        services:
-          cloud-spec:
-            image: busybox:latest
-            container_name: cloud-spec
-            restart: "no"  # container-init handles startup
-            network_mode: host
-            command: busybox httpd -f -p ${toString config.port} -h /srv
-            volumes:
-              - ./site:/srv:ro
-      '';
+      compose = docker.mkCompose pkgs {
+        banner = docker.banner "~/git/cloud/a_solutions/bc-obs_cloud-spec/src/flake.nix";
+
+        services.cloud-spec = docker.mkService {
+          name = "cloud-spec";
+          image = ghcr.image;
+          build = ghcr.build;
+          container_name = "cloud-spec";
+          restart = "no";
+          networkMode = "host";
+          command = "busybox httpd -f -p ${toString config.port} -h /srv";
+          volumes = [
+            "./site:/srv:ro"
+          ];
+          skipReadOnly = true;
+        };
+      };
 
     in {
       default = pkgs.runCommand "cloud-spec" {} ''

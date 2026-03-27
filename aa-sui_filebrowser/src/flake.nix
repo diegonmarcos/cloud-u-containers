@@ -20,6 +20,11 @@
 
     title = "Filebrowser - Web file manager";
 
+    ghcr = docker.mkGhcrBuild {
+      name = "filebrowser";
+      fromImage = config.image;
+    };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -29,7 +34,8 @@
         services = {
           filebrowser = docker.mkService {
             name = "filebrowser";
-            image = config.image;
+            image = ghcr.image;
+            build = ghcr.build;
             container_name = config.container_name;
             networkMode = null;
             ports = [ "${svc.filebrowser.ip}:${toString config.port}:8080" ];

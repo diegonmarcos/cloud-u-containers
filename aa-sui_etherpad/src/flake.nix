@@ -25,6 +25,16 @@
 
     title = "Etherpad - Real-time collaborative document editor";
 
+    ghcr-etherpad = docker.mkGhcrBuild {
+      name = "etherpad";
+      fromImage = config.image;
+    };
+
+    ghcr-etherpad-db = docker.mkGhcrBuild {
+      name = "etherpad-db";
+      fromImage = config.db_image;
+    };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -34,7 +44,8 @@
         services = {
           etherpad = docker.mkService {
             name = "etherpad";
-            image = config.image;
+            image = ghcr-etherpad.image;
+            build = ghcr-etherpad.build;
             container_name = config.container_name;
             skipReadOnly = true;
             volumes = [
@@ -69,7 +80,8 @@
 
           postgres = docker.mkService {
             name = "postgres";
-            image = config.db_image;
+            image = ghcr-etherpad-db.image;
+            build = ghcr-etherpad-db.build;
             container_name = config.db_container;
             skipReadOnly = true;
             # Fix UID mismatch: Debian postgres=999, Alpine postgres=70

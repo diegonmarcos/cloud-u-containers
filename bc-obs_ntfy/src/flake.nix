@@ -20,6 +20,30 @@
     title = "ntfy Push Notifications + syslog-bridge + github-rss";
     docker = import ../../_shared/docker.nix;
 
+    # GHCR images: bake config into each container
+    ghcrNtfy = docker.mkGhcrBuild {
+      name = "ntfy";
+      fromImage = config.image;
+      configFiles = [
+        { src = "etc/server.yml"; dst = "/etc/ntfy/server.yml"; }
+        { src = "init-ntfy.sh"; dst = "/init-ntfy.sh"; }
+      ];
+    };
+    ghcrSyslogBridge = docker.mkGhcrBuild {
+      name = "ntfy-syslog-bridge";
+      fromImage = "python:3.11-slim";
+      configFiles = [
+        { src = "syslog-to-ntfy.py"; dst = "/app/syslog-to-ntfy.py"; }
+      ];
+    };
+    ghcrGithubRss = docker.mkGhcrBuild {
+      name = "ntfy-github-rss";
+      fromImage = "python:3.11-slim";
+      configFiles = [
+        { src = "github-rss-to-ntfy.py"; dst = "/app/github-rss-to-ntfy.py"; }
+      ];
+    };
+
     mkServerConfig = pkgs: pkgs.writeText "server.yml" ''
       # ntfy server configuration (auth enabled)
       base-url: https://${config.domain}
@@ -67,7 +91,8 @@
       services = {
         ntfy = docker.mkService {
           name = "ntfy";
-          image = config.image;
+          image = ghcrNtfy.image;
+          build = ghcrNtfy.build;
           container_name = config.container_name;
           restart = "no";
           skipReadOnly = true;
@@ -76,19 +101,17 @@
           environment = ["TZ=Europe/Paris"];
           volumes = [
             "ntfy_cache:/var/cache/ntfy"
-            "./etc:/etc/ntfy:ro"
-            "./init-ntfy.sh:/init-ntfy.sh:ro"
           ];
         };
         syslog-bridge = docker.mkService {
           name = "syslog-bridge";
-          image = "python:3.11-slim";
+          image = ghcrSyslogBridge.image;
+          build = ghcrSyslogBridge.build;
           container_name = "syslog-bridge";
           restart = "no";
           skipReadOnly = true;
           command = "python -u /app/syslog-to-ntfy.py";
           volumes = [
-            "./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro"
             "ntfy_cache:/var/cache/ntfy"
             "/var/log:/var/log:ro"
           ];
@@ -97,13 +120,13 @@
         };
         github-rss = docker.mkService {
           name = "github-rss";
-          image = "python:3.11-slim";
+          image = ghcrGithubRss.image;
+          build = ghcrGithubRss.build;
           container_name = "github-rss";
           restart = "no";
           skipReadOnly = true;
           command = "python -u /app/github-rss-to-ntfy.py";
           volumes = [
-            "./github-rss-to-ntfy.py:/app/github-rss-to-ntfy.py:ro"
             "ntfy_cache:/var/cache/ntfy"
           ];
           environment = ["TZ=Europe/Paris" "PYTHONUNBUFFERED=1"];

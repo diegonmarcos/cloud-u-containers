@@ -90,13 +90,20 @@ ${zoneBlocks}
 
     # init.sh is a separate file (not inline nix string — avoids escaping issues)
 
+    # ── GHCR image wrapping ─────────────────────────────────────────────
+    ghcr-hickory = docker.mkGhcrBuild {
+      name = "hickory-dns";
+      fromImage = "hickorydns/hickory-dns:latest";
+    };
+
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/ba-clo_hickory-dns/src/flake.nix";
       services = {
         hickory-dns = docker.mkService {
           name = "hickory-dns";
-          image = "hickorydns/hickory-dns:latest";
+          image = ghcr-hickory.image;
+          build = ghcr-hickory.build;
           container_name = "hickory-dns";
           skipCapDrop = true;
           environment = [

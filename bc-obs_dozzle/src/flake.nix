@@ -20,12 +20,18 @@
     title = "Dozzle - Real-time Docker log viewer";
     docker = import ../../_shared/docker.nix;
 
+    ghcr-dozzle = docker.mkGhcrBuild {
+      name = "dozzle";
+      fromImage = config.image;
+    };
+
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/bc-obs_dozzle/src/flake.nix";
       services = {
         dozzle = docker.mkService {
           name = "dozzle";
-          image = config.image;
+          image = ghcr-dozzle.image;
+          build = ghcr-dozzle.build;
           container_name = config.container_name;
           ports = ["${svc.dozzle.ip}:${toString config.port}:${toString config.port}"];
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];

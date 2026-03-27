@@ -23,6 +23,12 @@
     };
 
     title = "Ollama HAI (ARM CPU — qwen2.5:1.5b + nomic-embed-text)";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-ollama-hai = docker.mkGhcrBuild {
+      name = "ollama-hai";
+      fromImage = config.image;
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════════╗
@@ -34,7 +40,12 @@
       # ╚══════════════════════════════════════════════════════════════════════╝
       services:
         ollama-hai:
-          image: ${config.image}
+          image: ${ghcr-ollama-hai.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
