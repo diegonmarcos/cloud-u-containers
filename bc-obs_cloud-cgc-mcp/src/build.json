@@ -35,7 +35,8 @@
       "index.ts",
       "config.ts",
       "context.ts",
-      "tools"
+      "tools",
+      "shared"
     ]
   },
   "compose": {
