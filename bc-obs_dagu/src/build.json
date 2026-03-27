@@ -7,6 +7,11 @@
   },
   "category": "tools",
   "domain": "workflows.diegonmarcos.com",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "dagu",
+    "dockerfile": "Dockerfile"
+  },
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/dagu",
@@ -34,7 +39,7 @@
   "containers": {
     "app": {
       "container_name": "dagu",
-      "image": "dagu-ssh:local",
+      "image": "ghcr.io/diegonmarcos/dagu:latest",
       "port": 8070,
       "port_env": null,
       "dns": "dagu.app",

@@ -8,6 +8,11 @@
   },
   "category": "tools",
   "domain": "analytics.diegonmarcos.com",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "matomo-hybrid",
+    "dockerfile": "matomo-hybrid/Dockerfile"
+  },
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/matomo",

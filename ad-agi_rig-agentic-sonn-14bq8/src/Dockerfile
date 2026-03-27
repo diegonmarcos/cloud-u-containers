@@ -29,6 +29,8 @@ COPY --from=builder /build/rig-agentic-binary /app/rig-agentic
 RUN useradd -m -u 1000 -G docker appuser && chown -R appuser:appuser /app
 USER appuser
 
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+
 ENV RIG_PORT=8090
 ENV RUST_LOG=rig_agentic=info
 

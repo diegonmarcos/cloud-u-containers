@@ -52,7 +52,7 @@
           build:
             context: .
             dockerfile: Dockerfile
-          image: rig-agentic-hai:latest
+          image: ghcr.io/diegonmarcos/rig-agentic-hai:latest
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

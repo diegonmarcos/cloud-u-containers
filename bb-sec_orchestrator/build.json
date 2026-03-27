@@ -2,6 +2,11 @@
   "name": "orchestrator",
   "description": "Container orchestrator \u2014 resource budget management for on-demand services",
   "category": "sec",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "orchestrator",
+    "dockerfile": "Dockerfile"
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/orchestrator"

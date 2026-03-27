@@ -21,5 +21,7 @@ COPY webhook.py .
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
     CMD curl -f http://localhost:5001/health || exit 1
 
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+
 # Run webhook processor
 CMD ["python", "webhook.py", "flask"]
