@@ -2,8 +2,31 @@
   "name": "ollama-hai",
   "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
   "category": "agi",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "ports": {
+    "app": 11435
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/ollama-hai"
+  },
+  "containers": {
+    "app": {
+      "container_name": "ollama-hai",
+      "image": "ollama/ollama:latest",
+      "port": 11435,
+      "port_env": null,
+      "dns": "ollama-hai.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "volumes": ["ollama_hai_data:/root/.ollama"],
+      "env_file": false,
+      "depends_on": [],
+      "resources": { "limits": { "memory": "6G" } },
+      "read_only": false
+    }
   }
 }

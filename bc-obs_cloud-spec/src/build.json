@@ -17,5 +17,24 @@
   },
   "ports": {
     "app": 3080
+  },
+  "containers": {
+    "app": {
+      "container_name": "cloud-spec",
+      "image": "busybox:latest",
+      "port": 3080,
+      "port_env": null,
+      "dns": "c3-spec.app",
+      "public": true,
+      "proxy": { "type": "path", "parent_domain": "cloud.diegonmarcos.com", "base_path": "/spec", "auth": "two_factor" },
+      "healthcheck": null,
+      "volumes": [
+        "./site:/srv:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

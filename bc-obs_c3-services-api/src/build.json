@@ -1,33 +1,27 @@
 {
-  "name": "c3-infra-api",
-  "description": "C3 REST API \u2014 Cloud Control Center Fastify API",
-  "dns": "c3-infra-api.app",
+  "name": "c3-services-api",
+  "description": "C3 Services REST API \u2014 service API gateway Fastify API",
+  "dns": "c3-services-api.app",
   "ports": {
-    "app": 8081
+    "app": 8082
   },
-  "category": "sec",
-  "domain": "api.diegonmarcos.com/c3-api",
+  "category": "obs",
+  "domain": "api.diegonmarcos.com/services",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "c3-infra-api",
+    "image": "c3-services-api",
     "dockerfile": "Dockerfile"
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-infra-api"
-  },
-  "build": {
-    "include_cloud_data": "true"
-  },
-  "secrets": {
-    "escape_dollars": "true"
+    "remote_path": "/opt/containers/c3-services-api"
   },
   "proxy": {
     "primary": {
-      "auth": "two_factor",
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
-      "base_path": "/c3-api",
+      "base_path": "/services",
+      "auth": "two_factor",
       "paths": {
         "/docs/json": {
           "auth": "public"
@@ -36,7 +30,7 @@
     }
   },
   "health": {
-    "path": "/c3-api/health"
+    "path": "/services/health"
   },
   "monitoring": {
     "tls_check": true,
@@ -45,16 +39,16 @@
   },
   "containers": {
     "app": {
-      "container_name": "c3-infra-api",
-      "image": "ghcr.io/diegonmarcos/c3-infra-api:latest",
-      "port": 8081,
+      "container_name": "c3-services-api",
+      "image": "ghcr.io/diegonmarcos/c3-services-api:latest",
+      "port": 8082,
       "port_env": "PORT",
-      "dns": "c3-infra-api.app",
+      "dns": "c3-services-api.app",
       "public": true,
       "proxy": {
         "type": "path",
         "parent_domain": "api.diegonmarcos.com",
-        "base_path": "/c3-api",
+        "base_path": "/services",
         "auth": "two_factor"
       },
       "healthcheck": "/health",
@@ -63,13 +57,7 @@
         "dns_check": true,
         "endpoint_check": true
       },
-      "volumes": [
-        "/opt/ssh-keys/c3-infra-api:/root/.ssh:ro",
-        "/nix/store:/nix/store:ro",
-        "~/.nix-profile/bin:/usr/local/nix-bin:ro",
-        "~/.config/gcloud:/root/.config/gcloud",
-        "c3_git_repos:/root/git"
-      ],
+      "volumes": [],
       "env_file": true,
       "depends_on": [],
       "resources": null,

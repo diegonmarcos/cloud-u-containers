@@ -1,0 +1,24 @@
+{
+  "_generated": "2026-03-26T19:44:27.434Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/firewall-rules",
+  "vms": {
+    "oci-mail": {
+      "ingress": []
+    },
+    "oci-analytics": {
+      "ingress": []
+    },
+    "oci-apps": {
+      "ingress": []
+    },
+    "gcp-t4": {
+      "ingress": []
+    },
+    "gcp-proxy": {
+      "ingress": []
+    },
+    "vast-ollama": {
+      "ingress": []
+    }
+  }
+}

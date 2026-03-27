@@ -26,5 +26,34 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "revealmd_app",
+      "image": "webpronl/reveal-md:latest",
+      "port": 3014,
+      "port_env": null,
+      "dns": "revealmd.app",
+      "public": true,
+      "proxy": {
+        "type": "path",
+        "parent_domain": "app.diegonmarcos.com",
+        "base_path": "/revealmd",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "slides_data:/slides"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
