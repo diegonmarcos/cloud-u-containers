@@ -27,5 +27,80 @@
   },
   "ports": {
     "app": 8090
+  },
+  "backup": {
+    "enabled": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "ntfy",
+      "image": "binwiederhier/ntfy",
+      "port": 8090,
+      "port_env": null,
+      "dns": "ntfy.app",
+      "public": true,
+      "proxy": {
+        "domain": "rss.diegonmarcos.com",
+        "auth": "ntfy-3tier"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./cache:/var/cache/ntfy",
+        "./etc:/etc/ntfy"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "db_path": "/var/cache/ntfy/cache.db"
+    },
+    "syslog-bridge": {
+      "container_name": "syslog-bridge",
+      "image": "python:3.11-slim",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro",
+        "./cache:/var/cache/ntfy",
+        "/var/log:/var/log:ro"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "app"
+      ],
+      "resources": null,
+      "read_only": false
+    },
+    "github-rss": {
+      "container_name": "github-rss",
+      "image": "python:3.11-slim",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./github-rss-to-ntfy.py:/app/github-rss-to-ntfy.py:ro",
+        "./cache:/var/cache/ntfy"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "app"
+      ],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
