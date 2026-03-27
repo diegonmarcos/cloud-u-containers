@@ -65,7 +65,7 @@
           build:
             context: .
             dockerfile: Dockerfile
-          image: postlite:latest
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-npm
           restart: on-failure:3
           network_mode: host
@@ -74,7 +74,7 @@
           command: ["-addr", ":5433", "-data-dir", "/data"]
 
         postlite-vaultwarden:
-          image: postlite:latest
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-vaultwarden
           restart: on-failure:3
           network_mode: host
@@ -83,7 +83,7 @@
           command: ["-addr", ":5434", "-data-dir", "/data"]
 
         postlite-ntfy:
-          image: postlite:latest
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-ntfy
           restart: on-failure:3
           network_mode: host
@@ -92,7 +92,7 @@
           command: ["-addr", ":5435", "-data-dir", "/data"]
 
         postlite-authelia:
-          image: postlite:latest
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-authelia
           restart: on-failure:3
           network_mode: host

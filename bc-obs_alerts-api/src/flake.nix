@@ -21,6 +21,7 @@
       services = {
         alerts-api = docker.mkService {
           name = "alerts-api";
+          image = "ghcr.io/diegonmarcos/alerts-api:latest";
           build = ".";
           container_name = config.container_name;
           cpuLimit = "0.1";

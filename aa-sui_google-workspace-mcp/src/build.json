@@ -23,5 +23,30 @@
       "base_path": "/g-workspace"
     },
     "app_hub": false
+  },
+  "containers": {
+    "app": {
+      "container_name": "google-workspace-mcp",
+      "image": "ghcr.io/diegonmarcos/google-workspace-mcp:latest",
+      "port": 3104,
+      "port_env": "PORT",
+      "dns": "g-workspace-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/g-workspace"
+      },
+      "healthcheck": "/health",
+      "monitoring": null,
+      "volumes": [
+        "./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }

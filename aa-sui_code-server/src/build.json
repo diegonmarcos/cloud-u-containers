@@ -24,5 +24,33 @@
     "tls_check": true,
     "dns_check": true,
     "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "code-server",
+      "image": "linuxserver/code-server:latest",
+      "port": 8444,
+      "port_env": null,
+      "dns": "code-server.app",
+      "public": true,
+      "proxy": {
+        "domain": "ide.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./config:/config",
+        "/home/ubuntu/workspace:/workspace"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false
+    }
   }
 }
