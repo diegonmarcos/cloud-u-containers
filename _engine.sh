@@ -202,9 +202,13 @@ step_docker_local() {
         BUILD_CONTEXT="$DIST_DIR"
     fi
 
+    # Dockerfile path must be inside build context for buildx container driver
+    DOCKERFILE_PATH="$SRC_DIR/$DOCKERFILE"
+    [ "$BUILD_CONTEXT" = "$DIST_DIR" ] && [ -f "$DIST_DIR/$DOCKERFILE" ] && DOCKERFILE_PATH="$DIST_DIR/$DOCKERFILE"
+
     log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
-    log "── Dockerfile: $SRC_DIR/$DOCKERFILE (context: $BUILD_CONTEXT) ──"
-    cat "$SRC_DIR/$DOCKERFILE" 2>/dev/null || true
+    log "── Dockerfile: $DOCKERFILE_PATH (context: $BUILD_CONTEXT) ──"
+    cat "$DOCKERFILE_PATH" 2>/dev/null || true
     log "── docker buildx build --push (verbose) ──"
 
     BUILDKIT_PROGRESS=plain docker buildx build \
@@ -215,7 +219,7 @@ step_docker_local() {
         --tag "$FULL_IMAGE:$SHA_TAG" \
         --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
         --cache-to "type=registry,ref=$FULL_IMAGE:buildcache,mode=max" \
-        --file "$SRC_DIR/$DOCKERFILE" \
+        --file "$DOCKERFILE_PATH" \
         "$BUILD_CONTEXT/" 2>&1 | while IFS= read -r line; do printf "[docker-local] %s\n" "$line"; done
 
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
