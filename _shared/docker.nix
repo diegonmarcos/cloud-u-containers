@@ -194,7 +194,7 @@ in {
     allowWritableBindMounts ? false,  # true = allow ./path:/target without :ro (DANGEROUS — rsync can wipe data)
 
     # Policy overrides
-    restart ? "unless-stopped",
+    restart ? "no",             # container-init owns lifecycle, Docker must NOT auto-start
     stopGracePeriod ? "30s",
     pidsLimit ? 256,          # max processes per container (0 = no limit)
     dns ? ["10.0.0.1" "1.1.1.1"],  # Hickory DNS first, Cloudflare fallback — ALL containers
