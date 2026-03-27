@@ -56,6 +56,31 @@
     ]
   },
   "ports": {
-    "app": 8443
+    "app": 8443,
+    "smtp": 465,
+    "imap": 993
+  },
+  "containers": {
+    "app": {
+      "container_name": "stalwart",
+      "image": "stalwartlabs/mail-server:v0.11",
+      "port": 8443,
+      "port_env": null,
+      "dns": "stalwart.app",
+      "public": true,
+      "proxy": { "domain": "mail.diegonmarcos.com", "auth": "two_factor", "tls_skip_verify": true },
+      "healthcheck": "/",
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "./data:/opt/stalwart-mail/data",
+        "./config.toml:/opt/stalwart-mail/etc/config.toml:ro",
+        "./dkim:/opt/stalwart-mail/dkim:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": { "limits": { "memory": "512M" }, "reservations": { "memory": "64M" } },
+      "read_only": false,
+      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
+    }
   }
 }
