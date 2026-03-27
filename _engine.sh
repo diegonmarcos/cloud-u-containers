@@ -946,6 +946,12 @@ step_compose_build() {
     [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
     [ ! -f "$DIST_DIR/docker-compose.yml" ] && { log "No docker-compose.yml in dist/"; return 1; }
 
+    # Docker CLI required (installed in cloud-builder image)
+    if ! command -v docker >/dev/null 2>&1; then
+        log_warn "Docker CLI not available — skipping compose-build"
+        return 0
+    fi
+
     # Check if docker-compose.yml has any build: sections
     if ! grep -q 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" 2>/dev/null; then
         log "No dockerfile_inline in docker-compose.yml -- skipping compose-build"
