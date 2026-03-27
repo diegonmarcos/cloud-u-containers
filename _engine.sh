@@ -220,6 +220,21 @@ step_docker_local() {
 
     log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
 
+    # Ensure GHCR package is public (CRITICAL — private packages are forbidden)
+    PKG_NAME=$(echo "$FULL_IMAGE" | awk -F/ '{print $NF}')
+    if command -v gh >/dev/null 2>&1; then
+        PKG_VIS=$(gh api "/user/packages/container/${PKG_NAME}" --jq '.visibility' 2>/dev/null || echo "unknown")
+        if [ "$PKG_VIS" = "private" ]; then
+            log_warn "GHCR package '$PKG_NAME' is PRIVATE — attempting to fix via repo link"
+            # Delete and let GHA re-push (GHA push = auto-public)
+            log_warn "Package will become public on next GHA ship. Triggering workflow..."
+            gh workflow run "Ship → CI image" --repo "${GITHUB_REPOSITORY:-diegonmarcos/cloud}" 2>/dev/null || true
+            log_error "PRIVATE PACKAGE DETECTED: $PKG_NAME — push from GHA to make public"
+        elif [ "$PKG_VIS" = "public" ]; then
+            log "Package $PKG_NAME: public ✓"
+        fi
+    fi
+
     # Save hash to temp (step_build wipes dist/, so persist outside it)
     echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
     DOCKER_IMAGE_CHANGED=true
@@ -1032,6 +1047,17 @@ step_compose_build() {
     fi
 
     log "GHCR images built and pushed"
+
+    # Verify all pushed packages are public (CRITICAL)
+    if command -v gh >/dev/null 2>&1; then
+        grep -o 'ghcr.io/diegonmarcos/[^:]*' "$DIST_DIR/docker-compose.yml" 2>/dev/null | sort -u | while read -r img; do
+            PKG_NAME=$(echo "$img" | awk -F/ '{print $NF}')
+            PKG_VIS=$(gh api "/user/packages/container/${PKG_NAME}" --jq '.visibility' 2>/dev/null || echo "unknown")
+            if [ "$PKG_VIS" = "private" ]; then
+                log_error "PRIVATE PACKAGE: $PKG_NAME — push from GHA to make public"
+            fi
+        done
+    fi
 }
 
 # ── Main ─────────────────────────────────────────────────────────────
