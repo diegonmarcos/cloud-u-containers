@@ -301,7 +301,9 @@ step_build() {
     # Pre-build: update cloud-data submodule + copy files into src/
     # (nix flakes can't see git submodule contents — this bridges the gap)
     CLOUD_DATA_STAGED=""
-    if [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
+    if [ "$INCLUDE_CLOUD_DATA" = "true" ] && [ -z "${CLOUD_DATA_PRESTAGED_BY_CI:-}" ]; then
+        # In CI, cloud-builder-ship.sh pre-stages all files before parallel dispatch
+        # to avoid git index race conditions. Only do this in local/serial builds.
         CLOUD_DATA_DIR="$SERVICE_DIR/../../cloud-data"
         # Auto-update submodule to latest remote
         if [ -f "$SERVICE_DIR/../../.gitmodules" ]; then
@@ -323,6 +325,8 @@ step_build() {
             done
             log "Staged cloud-data/*.json into src/ for nix build"
         fi
+    elif [ "$INCLUDE_CLOUD_DATA" = "true" ]; then
+        log "cloud-data already pre-staged by CI — skipping"
     fi
 
     # Inject build.json into src/ so flakes can read ports/config
@@ -371,10 +375,13 @@ step_build() {
     rm -f "$SERVICE_DIR/.result"
 
     # Post-build: unstage and remove cloud-data files from src/
-    for f in $CLOUD_DATA_STAGED; do
-        git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
-        rm -f "$f"
-    done
+    # In CI, cleanup is handled by cloud-builder-ship.sh after all parallel jobs finish
+    if [ -z "${CLOUD_DATA_PRESTAGED_BY_CI:-}" ]; then
+        for f in $CLOUD_DATA_STAGED; do
+            git -C "$SERVICE_DIR/../.." reset HEAD "$(realpath --relative-to="$SERVICE_DIR/../.." "$f")" 2>/dev/null || true
+            rm -f "$f"
+        done
+    fi
 
     # Carry over docker source hash from step_docker (if image was rebuilt)
     if [ -f "$SERVICE_DIR/.docker-src-hash-new" ]; then
