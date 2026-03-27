@@ -206,6 +206,12 @@ step_docker_local() {
     DOCKERFILE_PATH="$SRC_DIR/$DOCKERFILE"
     [ "$BUILD_CONTEXT" = "$DIST_DIR" ] && [ -f "$DIST_DIR/$DOCKERFILE" ] && DOCKERFILE_PATH="$DIST_DIR/$DOCKERFILE"
 
+    # Ensure multiarch buildx builder exists (supports registry cache + multi-platform)
+    if ! docker buildx inspect multiarch >/dev/null 2>&1; then
+        docker buildx create --name multiarch --use >/dev/null 2>&1
+    fi
+    docker buildx use multiarch 2>/dev/null
+
     log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
     log "── Dockerfile: $DOCKERFILE_PATH (context: $BUILD_CONTEXT) ──"
     cat "$DOCKERFILE_PATH" 2>/dev/null || true
