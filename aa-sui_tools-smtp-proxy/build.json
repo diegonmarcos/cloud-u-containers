@@ -1,5 +1,10 @@
 {
   "name": "smtp-proxy",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "smtp-proxy",
+    "dockerfile": "Dockerfile"
+  },
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/smtp-proxy"

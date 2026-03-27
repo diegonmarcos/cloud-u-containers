@@ -11,5 +11,26 @@
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/backup-gitea"
+  },
+  "containers": {
+    "app": {
+      "container_name": "gitea",
+      "image": "gitea/gitea:latest",
+      "port": 3002,
+      "port_env": null,
+      "dns": "backup-gitea.app",
+      "public": true,
+      "proxy": { "domain": "git.diegonmarcos.com", "auth": "two_factor" },
+      "healthcheck": null,
+      "monitoring": { "tls_check": true },
+      "volumes": [
+        "gitea_data:/data",
+        "/etc/timezone:/etc/timezone:ro",
+        "/etc/localtime:/etc/localtime:ro"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false
+    }
   }
 }

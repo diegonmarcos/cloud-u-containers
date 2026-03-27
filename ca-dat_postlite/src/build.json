@@ -12,6 +12,11 @@
     "ntfy_pg": 5435,
     "authelia_pg": 5436
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "postlite",
+    "dockerfile": "Dockerfile"
+  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/postlite"

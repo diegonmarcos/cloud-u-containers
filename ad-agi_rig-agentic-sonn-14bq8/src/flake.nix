@@ -34,7 +34,7 @@
           build:
             context: .
             dockerfile: Dockerfile
-          image: rig-agentic-sonn-14bq8:latest
+          image: ghcr.io/diegonmarcos/rig-agentic-sonn:latest
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

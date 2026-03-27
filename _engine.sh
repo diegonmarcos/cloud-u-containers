@@ -70,6 +70,7 @@ if [ -f "$CONFIG" ]; then
     DOCKER_FILE="$(get_config docker.dockerfile)"
     DOCKER_BINARY="$(get_config docker.binary)"
     DOCKER_BINARY_NAME="$(get_config docker.binary_name)"
+    DOCKER_PLATFORM="$(get_config docker.platform)"
     SEQUENTIAL_RESTART="$(get_config deploy.sequential_restart)"
     COMPOSE_FLAGS="$(get_config deploy.compose_flags)"
     ESCAPE_DOLLARS="$(get_config secrets.escape_dollars)"
@@ -173,17 +174,24 @@ step_docker_local() {
         [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
-    # Auto-detect platform from deploy host
+    # Platform: explicit override from build.json or auto-detect from deploy host
     PLATFORM_FLAG=""
-    case "$DEPLOY_HOST" in
-        oci-apps|oci-apps-1|oci-apps-2)
-            PLATFORM_FLAG="--platform=linux/amd64,linux/arm64"
-            log "ARM host ($DEPLOY_HOST) — multi-arch build"
-            docker buildx inspect multiarch >/dev/null 2>&1 || \
-                docker buildx create --name multiarch --use >/dev/null 2>&1
-            docker buildx use multiarch 2>/dev/null
-            ;;
-    esac
+    if [ -n "$DOCKER_PLATFORM" ]; then
+        PLATFORM_FLAG="--platform=$DOCKER_PLATFORM"
+        log "Explicit platform: $DOCKER_PLATFORM (from build.json docker.platform)"
+    else
+        case "$DEPLOY_HOST" in
+            oci-apps|oci-apps-1|oci-apps-2)
+                PLATFORM_FLAG="--platform=linux/amd64,linux/arm64"
+                log "ARM host ($DEPLOY_HOST) — multi-arch build"
+                ;;
+        esac
+    fi
+    if echo "$PLATFORM_FLAG" | grep -q ','; then
+        docker buildx inspect multiarch >/dev/null 2>&1 || \
+            docker buildx create --name multiarch --use >/dev/null 2>&1
+        docker buildx use multiarch 2>/dev/null
+    fi
 
     log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
     log "── Dockerfile: $SRC_DIR/$DOCKERFILE ──"

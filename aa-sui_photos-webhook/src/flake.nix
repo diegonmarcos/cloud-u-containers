@@ -58,6 +58,7 @@
         };
         photos-webhook = docker.mkService {
           name = "photos-webhook";
+          image = "ghcr.io/diegonmarcos/photos-webhook:latest";
           build = { context = "."; dockerfile = "Dockerfile"; };
           container_name = config.webhook_container;
           restart = "no";

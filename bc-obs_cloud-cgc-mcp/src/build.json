@@ -9,7 +9,8 @@
   "docker": {
     "image": "cloud-cgc-mcp",
     "dockerfile": "Dockerfile",
-    "registry": "ghcr.io/diegonmarcos"
+    "registry": "ghcr.io/diegonmarcos",
+    "platform": "linux/arm64"
   },
   "deploy": {
     "host": "oci-apps",
