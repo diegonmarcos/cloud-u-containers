@@ -7,8 +7,24 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+
+    # GHCR images: wrap public images with OCI label for GHCR
+    ghcrUmami = docker.mkGhcrBuild {
+      name = "umami";
+      fromImage = "ghcr.io/umami-software/umami:latest";
+    };
+    ghcrUmamiDb = docker.mkGhcrBuild {
+      name = "umami-db";
+      fromImage = "postgres:16-alpine";
+    };
+    ghcrUmamiSetup = docker.mkGhcrBuild {
+      name = "umami-setup";
+      fromImage = "curlimages/curl:latest";
+      configFiles = [ { src = "setup.sh"; dst = "/setup/setup.sh"; } ];
+    };
 
     config = {
       domain = buildJson.domain;
@@ -34,7 +50,11 @@
 
       services:
         umami:
-          image: ghcr.io/umami-software/umami:latest
+          image: ${ghcrUmami.image}
+          build:
+            context: ${ghcrUmami.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmami.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -63,7 +83,11 @@
                 memory: 32M
 
         umami-db:
-          image: postgres:16-alpine
+          image: ${ghcrUmamiDb.image}
+          build:
+            context: ${ghcrUmamiDb.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmamiDb.build.dockerfile_inline}
           container_name: ${config.db_container}
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -86,7 +110,11 @@
                 memory: 32M
 
         umami-setup:
-          image: curlimages/curl:latest
+          image: ${ghcrUmamiSetup.image}
+          build:
+            context: ${ghcrUmamiSetup.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmamiSetup.build.dockerfile_inline}
           container_name: umami-setup
           restart: "no"
           network_mode: host
@@ -97,7 +125,6 @@
               condition: service_healthy
           entrypoint: ["/bin/sh", "/setup/setup.sh"]
           volumes:
-            - ./setup.sh:/setup/setup.sh:ro
             - umami_config:/output
 
       volumes:

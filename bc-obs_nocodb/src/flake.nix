@@ -19,6 +19,17 @@
     };
 
     title = "NocoDB Database UI";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-nocodb = docker.mkGhcrBuild {
+      name = "nocodb";
+      fromImage = config.image;
+    };
+
+    ghcr-nocodb-db = docker.mkGhcrBuild {
+      name = "nocodb-db";
+      fromImage = "postgres:16-bookworm";
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -30,7 +41,12 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         nocodb:
-          image: ${config.image}
+          image: ${ghcr-nocodb.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -62,7 +78,12 @@
             start_period: 30s
 
         nocodb-db:
-          image: postgres:16-bookworm
+          image: ${ghcr-nocodb-db.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM postgres:16-bookworm
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: nocodb-db
           restart: "no"  # container-init handles startup
           network_mode: host

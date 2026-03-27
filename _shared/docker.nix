@@ -28,6 +28,12 @@ let
 
   # ── Helpers ─────────────────────────────────────────────────────
 
+  # Indent each line of a multi-line string
+  indentLines = prefix: str:
+    builtins.concatStringsSep "\n"
+      (map (l: if l == "" then "" else "${prefix}${l}")
+        (builtins.filter builtins.isString (builtins.split "\n" str)));
+
   # Render environment as YAML — supports both map { K = "V"; } and list [ "K=V" ]
   renderEnv = env:
     if builtins.isList env then
@@ -78,6 +84,37 @@ let
       else builtins.throw "Writable bind mount '${builtins.head offenders}' detected — rsync --delete can wipe this data! Use named volumes (e.g. 'myapp_data:/data') for persistent data. Set allowWritableBindMounts = true ONLY for regeneratable config dirs.";
 
 in {
+
+  # ══════════════════════════════════════════════════════════════════
+  # mkGhcrBuild: generate GHCR image + inline Dockerfile build config
+  # ══════════════════════════════════════════════════════════════════
+  #
+  # Returns { image, build } attrs to spread into mkService.
+  # Wraps any public image into a thin GHCR image with config baked in.
+  #
+  # Usage in flake:
+  #   ghcr = docker.mkGhcrBuild {
+  #     name = "vaultwarden";
+  #     fromImage = "vaultwarden/server:latest";
+  #     configFiles = [ { src = "config.json"; dst = "/data/config.json"; } ];
+  #   };
+  #   ... docker.mkService { image = ghcr.image; build = ghcr.build; ... }
+
+  mkGhcrBuild = {
+    name,                                    # GHCR package name (e.g. "vaultwarden")
+    fromImage,                               # Original image (e.g. "vaultwarden/server:latest")
+    configFiles ? [],                        # [ { src = "file"; dst = "/path/in/image"; } ]
+    registry ? "ghcr.io/diegonmarcos",       # GHCR registry prefix
+  }: {
+    image = "${registry}/${name}:latest";
+    build = {
+      context = ".";
+      dockerfile_inline =
+        "FROM ${fromImage}"
+        + builtins.concatStringsSep "" (map (f: "\nCOPY ${f.src} ${f.dst}") configFiles)
+        + "\nLABEL org.opencontainers.image.source=\"https://github.com/diegonmarcos/cloud\"";
+    };
+  };
 
   # ══════════════════════════════════════════════════════════════════
   # banner: DO NOT EDIT header for generated files
@@ -166,7 +203,8 @@ in {
         if build == null then ""
         else if builtins.isString build then "${i2}build: ${build}"
         else "${i2}build:\n${i3}context: ${build.context}"
-          + (if build ? dockerfile then "\n${i3}dockerfile: ${build.dockerfile}" else "");
+          + (if build ? dockerfile then "\n${i3}dockerfile: ${build.dockerfile}" else "")
+          + (if build ? dockerfile_inline then "\n${i3}dockerfile_inline: |\n${indentLines "${i3}  " build.dockerfile_inline}" else "");
 
       # ── Ports ──
       portLines = if ports == [] then ""

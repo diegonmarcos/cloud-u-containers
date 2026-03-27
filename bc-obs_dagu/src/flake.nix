@@ -11,7 +11,7 @@
 
     config = {
       container_name = "dagu";
-      image = "ghcr.io/dagu-org/dagu:1.30.3";
+      image = "ghcr.io/diegonmarcos/dagu:latest";
       port = buildJson.ports.app;
       domain = buildJson.domain;
     };
@@ -28,7 +28,7 @@
         dagu = docker.mkService {
           name = "dagu";
           build = { context = "."; dockerfile = "Dockerfile"; };
-          image = "dagu-ssh:local";
+          image = config.image;
           container_name = config.container_name;
           entrypoint = ["dagu" "start-all"];
           skipReadOnly = true;
@@ -50,9 +50,6 @@
           env_file = [".secrets"];
           volumes = [
             "dagu_data:/var/lib/dagu/data"
-            "./dags:/var/lib/dagu/dags:ro"
-            "./base.yaml:/var/lib/dagu/base.yaml:ro"
-            "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro"
             "/opt/ssh-keys/dagu:/root/.ssh:ro"
           ];
           memLimit = "256m";

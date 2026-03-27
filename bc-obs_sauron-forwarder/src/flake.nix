@@ -7,10 +7,17 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
+
+    # GHCR image: wrap public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "sauron-forwarder";
+      fromImage = "debian:bookworm-slim";
+    };
 
     config = {
       container_name = "sauron-forwarder";
-      image = "debian:bookworm-slim";
+      image = ghcr.image;
     };
 
     title = "Sauron Forwarder - Alert forwarding to central sauron via netcat";
@@ -26,6 +33,10 @@
       services:
         sauron-forwarder:
           image: ${config.image}
+          build:
+            context: ${ghcr.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcr.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

@@ -7,10 +7,17 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
+
+    # GHCR image: wrap public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "redis";
+      fromImage = "redis:alpine";
+    };
 
     config = {
       container_name = "redis";
-      image = "redis:alpine";
+      image = ghcr.image;
       maxmemory = "128mb";
       maxmemory_policy = "allkeys-lru";
     };
@@ -28,6 +35,10 @@
       services:
         redis:
           image: ${config.image}
+          build:
+            context: ${ghcr.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcr.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

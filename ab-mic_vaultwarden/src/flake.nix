@@ -11,10 +11,16 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
+    # GHCR image: wraps public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "vaultwarden";
+      fromImage = "vaultwarden/server:latest";
+    };
+
     config = {
       domain = buildJson.domain;
       container_name = "vaultwarden";
-      image = "vaultwarden/server:latest";
+      image = ghcr.image;
       port = buildJson.ports.app;
       timezone = "Europe/Madrid";
 
@@ -31,6 +37,7 @@
       services.vaultwarden = docker.mkService {
         name = "vaultwarden";
         image = config.image;
+        build = ghcr.build;
         container_name = config.container_name;
         networkMode = "host";
 

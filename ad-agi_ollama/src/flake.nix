@@ -26,6 +26,12 @@
     };
 
     title = "Ollama LLM Server";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-ollama = docker.mkGhcrBuild {
+      name = "ollama";
+      fromImage = config.image;
+    };
 
     # Generate docker-compose.yml
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -38,7 +44,12 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         ollama:
-          image: ${config.image}
+          image: ${ghcr-ollama.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

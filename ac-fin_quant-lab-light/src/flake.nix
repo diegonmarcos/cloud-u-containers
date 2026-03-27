@@ -19,6 +19,22 @@
     };
 
     title = "Quant Lab Light - Jupyter + NautilusTrader + Postgres";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-quant-light-research = docker.mkGhcrBuild {
+      name = "quant-light-research";
+      fromImage = config.research_image;
+    };
+
+    ghcr-quant-light-engine = docker.mkGhcrBuild {
+      name = "quant-light-engine";
+      fromImage = config.engine_image;
+    };
+
+    ghcr-quant-light-db = docker.mkGhcrBuild {
+      name = "quant-light-db";
+      fromImage = config.db_image;
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -30,7 +46,12 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         research:
-          image: ${config.research_image}
+          image: ${ghcr-quant-light-research.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.research_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_light_research
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -51,7 +72,12 @@
             start_period: 60s
 
         engine:
-          image: ${config.engine_image}
+          image: ${ghcr-quant-light-engine.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.engine_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_light_engine
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -66,7 +92,12 @@
                    tail -f /dev/null"
 
         db:
-          image: ${config.db_image}
+          image: ${ghcr-quant-light-db.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.db_image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: quant_light_db
           restart: "no"  # container-init handles startup
           network_mode: host

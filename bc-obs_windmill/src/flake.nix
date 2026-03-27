@@ -16,6 +16,17 @@
     };
 
     title = "Windmill - Workflow orchestration platform";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-windmill-db = docker.mkGhcrBuild {
+      name = "windmill-db";
+      fromImage = "postgres:16-alpine";
+    };
+
+    ghcr-windmill = docker.mkGhcrBuild {
+      name = "windmill";
+      fromImage = "ghcr.io/windmill-labs/windmill:main";
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -31,7 +42,12 @@
 
       services:
         windmill-db:
-          image: postgres:16-alpine
+          image: ${ghcr-windmill-db.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM postgres:16-alpine
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: windmill-db
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -57,7 +73,12 @@
             retries: 5
 
         windmill-server:
-          image: ghcr.io/windmill-labs/windmill:main
+          image: ${ghcr-windmill.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ghcr.io/windmill-labs/windmill:main
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: windmill-server
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -100,7 +121,12 @@
             start_period: 30s
 
         windmill-worker:
-          image: ghcr.io/windmill-labs/windmill:main
+          image: ${ghcr-windmill.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ghcr.io/windmill-labs/windmill:main
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: windmill-worker
           restart: "no"  # container-init handles startup
           network_mode: host

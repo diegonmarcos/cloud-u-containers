@@ -7,10 +7,17 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
+
+    # GHCR image: wrap public image with OCI label for GHCR
+    ghcr = docker.mkGhcrBuild {
+      name = "fluent-bit";
+      fromImage = "fluent/fluent-bit:latest";
+    };
 
     config = {
       container_name = "fluent-bit";
-      image = "fluent/fluent-bit:latest";
+      image = ghcr.image;
     };
 
     title = "Fluent Bit - Log processor and forwarder";
@@ -26,6 +33,10 @@
       services:
         fluent-bit:
           image: ${config.image}
+          build:
+            context: ${ghcr.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcr.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

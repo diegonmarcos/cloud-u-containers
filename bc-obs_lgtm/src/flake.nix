@@ -8,8 +8,29 @@
   outputs = { self, nixpkgs }: let
     # Support both architectures (output is text-only)
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+
+    # GHCR images: wrap public images with OCI label for GHCR
+    ghcrGrafana = docker.mkGhcrBuild {
+      name = "lgtm-grafana";
+      fromImage = "grafana/grafana:latest";
+    };
+    ghcrLoki = docker.mkGhcrBuild {
+      name = "lgtm-loki";
+      fromImage = "grafana/loki:latest";
+    };
+    ghcrTempo = docker.mkGhcrBuild {
+      name = "lgtm-tempo";
+      fromImage = "grafana/tempo:2.7.2";
+      configFiles = [ { src = "config/tempo.yaml"; dst = "/etc/tempo/tempo.yaml"; } ];
+    };
+    ghcrMimir = docker.mkGhcrBuild {
+      name = "lgtm-mimir";
+      fromImage = "grafana/mimir:latest";
+      configFiles = [ { src = "config/mimir.yaml"; dst = "/etc/mimir/mimir.yaml"; } ];
+    };
 
     config = {
       domain = buildJson.domain;
@@ -34,7 +55,11 @@
       # Deployed on: oci-A1-f_0 (Oracle Flex — consolidated)
       services:
         grafana:
-          image: grafana/grafana:latest
+          image: ${ghcrGrafana.image}
+          build:
+            context: ${ghcrGrafana.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrGrafana.build.dockerfile_inline}
           container_name: lgtm_grafana
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -55,7 +80,11 @@
             retries: 3
 
         loki:
-          image: grafana/loki:latest
+          image: ${ghcrLoki.image}
+          build:
+            context: ${ghcrLoki.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrLoki.build.dockerfile_inline}
           container_name: lgtm_loki
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -71,23 +100,29 @@
             start_period: 120s
 
         tempo:
-          image: grafana/tempo:2.7.2
+          image: ${ghcrTempo.image}
+          build:
+            context: ${ghcrTempo.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrTempo.build.dockerfile_inline}
           container_name: lgtm_tempo
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - tempo_data:/var/tempo
-            - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
           command: ["-config.file=/etc/tempo/tempo.yaml"]
 
         mimir:
-          image: grafana/mimir:latest
+          image: ${ghcrMimir.image}
+          build:
+            context: ${ghcrMimir.build.context}
+            dockerfile_inline: |
+              ${builtins.replaceStrings ["\n"] ["\n        "] ghcrMimir.build.dockerfile_inline}
           container_name: lgtm_mimir
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - mimir_data:/data
-            - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
           command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
 
       volumes:

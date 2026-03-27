@@ -20,6 +20,14 @@
 
     docker = import ../../_shared/docker.nix;
 
+    ghcr-photos-db = docker.mkGhcrBuild {
+      name = "photos-webhook-db";
+      fromImage = config.db_image;
+      configFiles = [
+        { src = "schema.sql"; dst = "/docker-entrypoint-initdb.d/01-schema.sql"; }
+      ];
+    };
+
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_photos-webhook/src/flake.nix";
       volumes = {
@@ -28,7 +36,8 @@
       services = {
         photos-db = docker.mkService {
           name = "photos-db";
-          image = config.db_image;
+          image = ghcr-photos-db.image;
+          build = ghcr-photos-db.build;
           container_name = config.db_container;
           restart = "no";
           skipReadOnly = true;
@@ -39,7 +48,6 @@
           };
           volumes = [
             "photos_db_data:/var/lib/postgresql/data"
-            "./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro"
           ];
           healthcheck = {
             test = ''["CMD-SHELL", "pg_isready -U ${config.db_user} -d ${config.db_name}"]'';

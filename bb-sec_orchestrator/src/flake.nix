@@ -16,6 +16,12 @@
     title = "Container Orchestrator";
     docker = import ../../_shared/docker.nix;
 
+    # GHCR image: wraps alpine with jq/socat/bc/docker-cli + baked-in config
+    ghcr = docker.mkGhcrBuild {
+      name = "orchestrator";
+      fromImage = "alpine:latest";
+    };
+
     # ── Manifest: resource budgets for all services ──────────────────────
     mkManifest = pkgs: pkgs.writeText "manifest.json" (builtins.toJSON {
       vm = {
@@ -191,6 +197,9 @@
     mkDockerfile = pkgs: pkgs.writeText "Dockerfile" ''
       FROM alpine:latest
       RUN apk add --no-cache jq socat bc docker-cli
+      COPY orchestrator.sh /app/orchestrator.sh
+      COPY manifest.json /app/manifest.json
+      LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
       ENTRYPOINT ["/bin/sh", "/app/orchestrator.sh"]
     '';
 
@@ -199,14 +208,12 @@
       services = {
         orchestrator = docker.mkService {
           name = "orchestrator";
+          image = ghcr.image;
           build = ".";
-          image = "orchestrator:local";
           container_name = config.container_name;
           ports = ["127.0.0.1:${toString config.api_port}:${toString config.api_port}"];
           volumes = [
             "/var/run/docker.sock:/var/run/docker.sock"
-            "./orchestrator.sh:/app/orchestrator.sh:ro"
-            "./manifest.json:/app/manifest.json:ro"
             "orchestrator_state:/app/state"
             "orchestrator_logs:/app/logs"
           ];

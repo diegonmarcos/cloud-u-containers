@@ -938,6 +938,40 @@ step_clean_remote() {
     fi
 }
 
+# ── Step: Compose build + push (GHCR images from dockerfile_inline) ──
+# Builds all services in docker-compose.yml that have a `build:` section
+# and pushes them to GHCR. Requires GHCR login before calling.
+step_compose_build() {
+    CURRENT_STEP="compose-build"
+    [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
+    [ ! -f "$DIST_DIR/docker-compose.yml" ] && { log "No docker-compose.yml in dist/"; return 1; }
+
+    # Check if docker-compose.yml has any build: sections
+    if ! grep -q 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" 2>/dev/null; then
+        log "No dockerfile_inline in docker-compose.yml -- skipping compose-build"
+        return 0
+    fi
+
+    log "Building + pushing GHCR images from docker-compose.yml"
+    cd "$DIST_DIR"
+
+    # GHCR login (GHA provides GITHUB_TOKEN, local uses gh auth token)
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+    elif command -v gh >/dev/null 2>&1; then
+        gh auth token | docker login ghcr.io -u "$(gh api user --jq .login)" --password-stdin
+    else
+        log_warn "No GHCR credentials — skipping push (build-only)"
+        docker compose build
+        return 0
+    fi
+
+    # Build + push all services with build: sections
+    docker compose build --push
+
+    log "GHCR images built and pushed"
+}
+
 # ── Main ─────────────────────────────────────────────────────────────
 echo "========================================"
 echo "  Build: $SERVICE_NAME"
@@ -950,12 +984,14 @@ case "${1:-all}" in
     secrets)  step_secrets ;;
     deploy)   step_deploy ;;
     compose)  step_compose ;;
+    compose-build) step_compose_build ;;
     health)   step_health ;;
     all)      step_build; step_docs; step_secrets ;;
     ship)
         step_docker
         step_build
         step_secrets
+        step_compose_build
         # Skip deploy+compose if dist/ output is unchanged since last ship
         NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
         # Read hash from VM (persists across ephemeral GHA runners)

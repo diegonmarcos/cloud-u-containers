@@ -20,6 +20,11 @@
 
     title = "Code Server (VS Code in browser)";
 
+    ghcr = docker.mkGhcrBuild {
+      name = "code-server";
+      fromImage = config.image;
+    };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -32,7 +37,8 @@
         services = {
           code-server = docker.mkService {
             name = "code-server";
-            image = config.image;
+            image = ghcr.image;
+            build = ghcr.build;
             container_name = config.container_name;
             ports = [ "${toString config.port}:8443" ];
             volumes = [

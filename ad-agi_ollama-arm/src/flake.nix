@@ -23,6 +23,12 @@
     };
 
     title = "Ollama LLM Server (ARM CPU)";
+    docker = import ../../_shared/docker.nix;
+
+    ghcr-ollama-arm = docker.mkGhcrBuild {
+      name = "ollama-arm";
+      fromImage = config.image;
+    };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
       # ╔══════════════════════════════════════════════════════════════════╗
@@ -34,7 +40,12 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         ollama:
-          image: ${config.image}
+          image: ${ghcr-ollama-arm.image}
+          build:
+            context: .
+            dockerfile_inline: |
+              FROM ${config.image}
+              LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host

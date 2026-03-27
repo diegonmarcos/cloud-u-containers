@@ -88,6 +88,11 @@
       echo "[init] Done — configs mounted directly into container via named volume overlays."
     '';
 
+    ghcr = docker.mkGhcrBuild {
+      name = "snappymail";
+      fromImage = "djmaze/snappymail:latest";
+    };
+
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_snappymail/src/flake.nix";
       volumes = {
@@ -96,7 +101,8 @@
       services = {
         snappymail = docker.mkService {
           name = "snappymail";
-          image = "djmaze/snappymail:latest";
+          image = ghcr.image;
+          build = ghcr.build;
           container_name = "snappymail";
           skipReadOnly = true;
           volumes = [
