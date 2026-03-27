@@ -173,7 +173,19 @@ step_docker_local() {
         [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
-    log "Building Docker image: $FULL_IMAGE (verbose)"
+    # Auto-detect platform from deploy host
+    PLATFORM_FLAG=""
+    case "$DEPLOY_HOST" in
+        oci-apps|oci-apps-1|oci-apps-2)
+            PLATFORM_FLAG="--platform=linux/amd64,linux/arm64"
+            log "ARM host ($DEPLOY_HOST) — multi-arch build"
+            docker buildx inspect multiarch >/dev/null 2>&1 || \
+                docker buildx create --name multiarch --use >/dev/null 2>&1
+            docker buildx use multiarch 2>/dev/null
+            ;;
+    esac
+
+    log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
     log "── Dockerfile: $SRC_DIR/$DOCKERFILE ──"
     cat "$SRC_DIR/$DOCKERFILE" 2>/dev/null || true
     log "── docker buildx build --push (verbose) ──"
@@ -181,6 +193,7 @@ step_docker_local() {
     BUILDKIT_PROGRESS=plain docker buildx build \
         --progress=plain \
         --push \
+        $PLATFORM_FLAG \
         --tag "$FULL_IMAGE:latest" \
         --tag "$FULL_IMAGE:$SHA_TAG" \
         --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
@@ -208,22 +221,11 @@ step_docker_local() {
 step_docker() {
     [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json -- skipping"; return 0; }
 
-    # Auto-detect: only oci-apps (aarch64) builds on VM. All x86_64 VMs build on GHA runner.
-    # REMOTE_BUILD env var overrides auto-detection.
-    if [ -z "${REMOTE_BUILD:-}" ]; then
-        case "$DEPLOY_HOST" in
-            oci-apps|oci-apps-1|oci-apps-2)
-                REMOTE_BUILD=true
-                log "Auto-detected ARM host ($DEPLOY_HOST) — building on VM"
-                ;;
-            *)
-                REMOTE_BUILD=false
-                log "Auto-detected x86_64 host ($DEPLOY_HOST) — building on GHA runner"
-                ;;
-        esac
-    fi
-
-    if [ "$REMOTE_BUILD" = "true" ]; then
+    # All builds happen locally (GHA runner / desktop) with buildx multi-arch.
+    # ARM VMs (oci-apps) get --platform linux/amd64,linux/arm64.
+    # REMOTE_BUILD=true is legacy — only use if explicitly forced.
+    if [ "${REMOTE_BUILD:-}" = "true" ]; then
+        log "REMOTE_BUILD=true forced — building on VM (legacy)"
         step_docker_remote
     else
         step_docker_local
