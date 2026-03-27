@@ -979,13 +979,38 @@ step_compose_build() {
         return 0
     fi
 
+    # Auto-detect platform from deploy host (ARM VMs get multi-arch builds)
+    PLATFORM=""
+    case "$DEPLOY_HOST" in
+        oci-apps|oci-apps-1|oci-apps-2)
+            PLATFORM="linux/amd64,linux/arm64"
+            log "ARM host detected ($DEPLOY_HOST) — building multi-arch: $PLATFORM"
+            # Ensure buildx builder exists for multi-platform
+            docker buildx inspect multiarch >/dev/null 2>&1 || \
+                docker buildx create --name multiarch --use >/dev/null 2>&1
+            docker buildx use multiarch 2>/dev/null
+            ;;
+        *)
+            log "x86 host ($DEPLOY_HOST) — building linux/amd64"
+            ;;
+    esac
+
     # Build + push all services with build: sections (verbose output)
     log "── dockerfile_inline content ──"
     grep -A20 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" || true
     log "── docker compose build --push (verbose) ──"
-    BUILDKIT_PROGRESS=plain docker compose build --push --progress=plain 2>&1 | while IFS= read -r line; do
-        printf "[compose-build] %s\n" "$line"
-    done
+    if [ -n "$PLATFORM" ]; then
+        # Multi-arch: use buildx bake with platform override
+        BUILDKIT_PROGRESS=plain docker buildx bake --push --progress=plain \
+            --set "*.platform=$PLATFORM" \
+            -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
+            printf "[compose-build] %s\n" "$line"
+        done
+    else
+        BUILDKIT_PROGRESS=plain docker compose build --push --progress=plain 2>&1 | while IFS= read -r line; do
+            printf "[compose-build] %s\n" "$line"
+        done
+    fi
 
     log "GHCR images built and pushed"
 }
