@@ -30,16 +30,16 @@
       {
         "key": "spf",
         "name": "diegonmarcos.com",
-        "content": "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com ~all",
+        "content": "v=spf1 ip4:130.110.251.193 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com -all",
         "ttl": 300,
-        "comment": "SPF: CF Email Routing + AWS SES (primary) + OCI relay (fallback)"
+        "comment": "SPF: Stalwart VM IP + CF Email Routing + AWS SES + OCI relay — hardfail"
       },
       {
         "key": "dmarc",
         "name": "_dmarc",
-        "content": "v=DMARC1; p=reject; rua=mailto:postmaster@diegonmarcos.com",
+        "content": "v=DMARC1; p=reject; sp=reject; rua=mailto:postmaster@diegonmarcos.com; ruf=mailto:postmaster@diegonmarcos.com; fo=1",
         "ttl": 300,
-        "comment": "DMARC: reject spoofed emails"
+        "comment": "DMARC: reject spoofed emails + subdomain policy + forensic reports"
       },
       {
         "key": "ses_mail_from_spf",
@@ -51,10 +51,9 @@
     ],
 
     "dkim_records": [
-      { "key": "dkim_mailu",      "name": "dkim._domainkey",     "var": "dkim_mailu_public_key",  "ttl": 300, "comment": "Mailu DKIM - selector: dkim" },
-      { "key": "dkim_cloudflare", "name": "cf2024-1._domainkey", "var": "dkim_cf_public_key",     "ttl": 1,   "comment": "Cloudflare Email Routing DKIM (auto-managed by CF)" },
-      { "key": "dkim_google",     "name": "google._domainkey",   "var": "dkim_google_public_key", "ttl": 1,   "comment": "Google Workspace DKIM (legacy)" },
-      { "key": "dkim_mail",       "name": "mail._domainkey",     "var": "dkim_mail_public_key",   "ttl": 300, "comment": "Mailu legacy DKIM selector" }
+      { "key": "dkim_stalwart",   "name": "dkim._domainkey",     "var": "dkim_stalwart_public_key", "ttl": 300, "comment": "Stalwart DKIM - selector: dkim" },
+      { "key": "dkim_cloudflare", "name": "cf2024-1._domainkey", "var": "dkim_cf_public_key",       "ttl": 1,   "comment": "Cloudflare Email Routing DKIM (auto-managed by CF)" },
+      { "key": "dkim_google",     "name": "google._domainkey",   "var": "dkim_google_public_key",   "ttl": 1,   "comment": "Google Workspace DKIM (legacy)" }
     ],
 
     "ses_dkim_cnames": [

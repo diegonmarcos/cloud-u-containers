@@ -42,8 +42,8 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
-variable "dkim_mailu_public_key" {
-  description = "Mailu DKIM public key (dkim._domainkey)"
+variable "dkim_stalwart_public_key" {
+  description = "Stalwart DKIM public key (dkim._domainkey)"
   type        = string
 }
 
@@ -54,11 +54,6 @@ variable "dkim_cf_public_key" {
 
 variable "dkim_google_public_key" {
   description = "Google Workspace DKIM key (google._domainkey)"
-  type        = string
-}
-
-variable "dkim_mail_public_key" {
-  description = "Mailu legacy DKIM key (mail._domainkey)"
   type        = string
 }
 
@@ -89,10 +84,9 @@ variable "ses_dkim_token_3" {
 # Map variable names to values for dynamic DKIM lookup
 locals {
   dkim_vars = {
-    dkim_mailu_public_key  = var.dkim_mailu_public_key
-    dkim_cf_public_key     = var.dkim_cf_public_key
-    dkim_google_public_key = var.dkim_google_public_key
-    dkim_mail_public_key   = var.dkim_mail_public_key
+    dkim_stalwart_public_key = var.dkim_stalwart_public_key
+    dkim_cf_public_key       = var.dkim_cf_public_key
+    dkim_google_public_key   = var.dkim_google_public_key
   }
 
   ses_dkim_tokens = {
@@ -294,5 +288,5 @@ resource "cloudflare_zone_settings_override" "ssl_settings" {
 # =============================================================================
 
 output "email_architecture" {
-  value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Mailu front:25"
+  value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Stalwart :25"
 }
