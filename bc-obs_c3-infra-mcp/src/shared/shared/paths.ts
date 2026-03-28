@@ -48,7 +48,7 @@ export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(HOME, ".config/sops/age/keys.txt");
-export const AUTHELIA_TOKEN_PATH = join(GIT_BASE, "vault/A0_keys/providers/authelia/oauth/authelia_tokens.json");
+export const AUTHELIA_TOKEN_PATH = join(HOME, ".config/authelia/tokens.json");
 // C3 API endpoints - mesh primary (oci-apps), public fallback with auth
 export const C3_API_MESH = "http://10.0.0.6:8081";
 export const C3_API_PUBLIC = "https://api.diegonmarcos.com/c3-api";
