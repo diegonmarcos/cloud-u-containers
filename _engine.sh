@@ -653,7 +653,7 @@ step_compose() {
         log "Image built locally"
     elif [ -n "$FULL_IMAGE" ]; then
         log "Pulling latest image from registry"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose pull --ignore-buildable" || true
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose config --images 2>/dev/null | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done" || true
     fi
 
     # Pre-compose hook (e.g. mailu init.sh)
@@ -677,9 +677,11 @@ step_compose() {
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d $BUILD_FLAG"
     else
         # Standard: pull first (while old containers run), then down + up (instant, no pulling)
+        # Uses 'docker pull' instead of 'docker compose pull' — compose pull spawns heavy Go binary
+        # that triggers cpu-watchdog on E2 micros (94% CPU → KILLED)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
         log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && for svc in \$(docker compose config --services 2>/dev/null); do echo \"  pull: \$svc\"; ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG pull --ignore-buildable \$svc 2>/dev/null || true; done"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
         # Only --build on ARM VMs. x86 VMs (gcp-proxy, oci-mail, oci-analytics) use pre-built images.
         BUILD_FLAG=""

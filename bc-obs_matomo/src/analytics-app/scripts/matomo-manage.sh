@@ -79,7 +79,7 @@ case "${1:-}" in
         ;;
     update)
         echo "Updating Matomo images..."
-        run_remote "cd ~/matomo && docker-compose pull && docker-compose up -d"
+        run_remote "cd ~/matomo && docker compose config --images 2>/dev/null | sort -u | while read img; do docker pull \"\$img\" 2>/dev/null || true; done && docker compose up -d"
         echo "✅ Matomo updated"
         ;;
     shell)

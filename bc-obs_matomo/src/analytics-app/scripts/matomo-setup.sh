@@ -116,7 +116,7 @@ ssh -i "${SSH_KEY}" "${SSH_USER}@${SERVER_IP}" << 'ENDSSH'
 set -e
 cd ~/matomo
 echo "Pulling Docker images..."
-docker-compose pull
+docker compose config --images 2>/dev/null | sort -u | while read img; do echo "  pull: $img"; docker pull "$img" 2>/dev/null || true; done
 echo "Starting containers..."
 docker-compose up -d
 echo "Waiting for services to start..."
