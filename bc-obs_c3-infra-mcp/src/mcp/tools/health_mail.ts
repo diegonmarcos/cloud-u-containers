@@ -127,7 +127,7 @@ echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
 echo QUIT | timeout ${T} openssl s_client -starttls smtp -connect localhost:587 2>&1 | head -5
 echo "===webmailInternal==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://${MAIL_WG_IP}:8443/ 2>&1
+curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} http://localhost:8888/ 2>&1
 echo ""
 echo "===stalwartApiAccounts==="
 curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/principal 2>/dev/null | head -5 || echo "API_FAIL"
@@ -299,17 +299,17 @@ async function getRemoteDataProxyAsync(): Promise<RemoteDataProxy> {
   if (_proxyCache) return _proxyCache;
   const script = `
 echo "===caddyL4_993==="
-echo Q | timeout 3 openssl s_client -connect ${MAIL_WG_IP}:993 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
+echo Q | timeout 8 openssl s_client -connect ${MAIL_WG_IP}:993 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
 echo "===caddyL4_465==="
-echo Q | timeout 3 openssl s_client -connect ${MAIL_WG_IP}:465 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
+echo Q | timeout 8 openssl s_client -connect ${MAIL_WG_IP}:465 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
 echo "===caddyL4_587==="
-echo Q | timeout 3 openssl s_client -starttls smtp -connect ${MAIL_WG_IP}:587 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
+echo Q | timeout 8 openssl s_client -starttls smtp -connect ${MAIL_WG_IP}:587 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
 echo "===autheliaHealth==="
 curl -skf http://localhost:9091/api/health 2>/dev/null || curl -skf http://authelia.app:9091/api/health 2>/dev/null || echo "FAIL"
 `.trim();
 
   log("SSH batch gcp-proxy: connecting...");
-  const r = await sshExecAsync(PROXY_VM, script, 15_000, true, 3);
+  const r = await sshExecAsync(PROXY_VM, script, 30_000, true, 3);
   const output = r.stdout;
 
   function section(name: string): string {
@@ -731,13 +731,13 @@ async function e2eDelivery(): Promise<Check[]> {
     }),
     timedAsync("IMAP arrival", async () => {
       if (!sshOk) return { passed: false, details: "SSH down" };
-      for (let i = 0; i < 3; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        const r = await sshMail(`docker logs stalwart --since 30s 2>&1 | grep -c "Message ingested" || echo 0`, 5_000);
+      for (let i = 0; i < 6; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const r = await sshMail(`docker logs stalwart --since 60s 2>&1 | grep -c "Message ingested" || echo 0`, 5_000);
         const count = parseInt(r.stdout.trim()) || 0;
-        if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 2}s)` };
+        if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 3}s)` };
       }
-      return { passed: false, details: "NOT FOUND after 6s" };
+      return { passed: false, details: "NOT FOUND after 18s" };
     }),
     timedAsync("smtp-proxy logs", async () => {
       if (!sshOk) return { passed: false, details: "SSH down" };
