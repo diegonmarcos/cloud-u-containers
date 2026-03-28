@@ -16,7 +16,7 @@
     # GHCR images: one per container
     ghcrSyslog = docker.mkGhcrBuild {
       name = "sauron-syslog";
-      fromImage = "balabit/syslog-ng:4.4.0";
+      fromImage = "ghcr.io/axoflow/axosyslog:4.8.1";
       configFiles = [
         { src = "syslog-ng-central.conf"; dst = "/etc/syslog-ng/syslog-ng.conf"; }
       ];
@@ -55,7 +55,7 @@
           networkMode = "host";
           command = ''["python", "/app/app.py"]'';
           volumes = [
-            "siem-data:/var/log/siem:ro"
+            "siem-data:/var/log/siem"
           ];
           environment = [ "DB_PATH=/var/log/siem/alerts.db" ];
           skipReadOnly = true;
