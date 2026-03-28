@@ -14,7 +14,7 @@ terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = local.config.provider.version
+      version = "~> 4.0"
     }
   }
 }
