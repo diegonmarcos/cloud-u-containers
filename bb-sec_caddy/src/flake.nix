@@ -242,6 +242,8 @@
         hasMaxUpload = (route.max_upload or null) != null;
         hasTimeout = (route.timeout or null) != null;
         hasTlsSkipVerify = route.tls_skip_verify or false;
+        tlsServerName = route.tls_server_name or null;
+        hasTlsServerName = tlsServerName != null;
         hasLandingPage = (route.landing_page or null) != null;
         hasBypassPaths = (route.bypass_paths or null) != null;
 
@@ -252,13 +254,27 @@
           max_size ${route.max_upload}
         }'' else "";
 
-        # Build the upstream URL — prepend https:// for tls_skip_verify
-        upstreamUrl = if hasTlsSkipVerify then "https://${route.upstream}" else route.upstream;
+        # Build the upstream URL — prepend https:// for TLS upstreams
+        upstreamUrl = if hasTlsServerName || hasTlsSkipVerify then "https://${route.upstream}" else route.upstream;
 
         # Build the main proxy block
         proxyBlock =
           if isNoAuth then
             "    reverse_proxy ${route.upstream}"
+          else if hasTlsServerName && hasTimeout then
+            mkProtectedCustom upstreamUrl ''
+          transport http {
+            tls
+            tls_server_name ${tlsServerName}
+            read_timeout ${route.timeout}
+            write_timeout ${route.timeout}
+          }''
+          else if hasTlsServerName then
+            mkProtectedCustom upstreamUrl ''
+          transport http {
+            tls
+            tls_server_name ${tlsServerName}
+          }''
           else if hasTlsSkipVerify && hasTimeout then
             mkProtectedCustom upstreamUrl ''
           transport http {

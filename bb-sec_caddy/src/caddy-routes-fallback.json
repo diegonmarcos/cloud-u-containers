@@ -37,9 +37,9 @@
     {
       "domain": "mail.diegonmarcos.com",
       "upstream": "stalwart.app:443",
-      "tls_skip_verify": true,
+      "tls_server_name": "mail.diegonmarcos.com",
       "landing_page": "mymail",
-      "comment": "Stalwart web admin (HTTPS)"
+      "comment": "Stalwart web admin (HTTPS upstream, TLS SNI override)"
     },
     {
       "domain": "webmail.diegonmarcos.com",
