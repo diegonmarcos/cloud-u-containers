@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.434Z",
+  "_generated": "2026-03-28T12:20:25.732Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -126,7 +126,7 @@
       "vm_id": "oci-A1-f_0",
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
+      "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -202,7 +202,6 @@
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
         "rig-agentic-sonn-14bq8",
-        "orchestrator",
         "sauron-central",
         "c3-infra-api",
         "c3-infra-mcp",
@@ -382,7 +381,7 @@
         "wg_ip": "10.0.0.6",
         "endpoint": "82.70.229.129:51820",
         "role": "spoke",
-        "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
+        "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
         "wg_port": 51820,
         "public_ip": "82.70.229.129"
       },

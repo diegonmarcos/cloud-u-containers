@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.434Z",
+  "_generated": "2026-03-28T12:20:25.733Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/wireguard-peers",
   "hub": "gcp-E2-f_0",
   "peers": [
@@ -43,6 +43,22 @@
       "wg_ip": "10.0.0.1",
       "public_ip": "35.226.147.64",
       "user": "diego"
+    },
+    {
+      "vm_id": "",
+      "name": "surface",
+      "wg_ip": "10.0.0.5",
+      "public_ip": "dynamic",
+      "user": "",
+      "role": "client"
+    },
+    {
+      "vm_id": "",
+      "name": "termux",
+      "wg_ip": "10.0.0.9",
+      "public_ip": "dynamic",
+      "user": "",
+      "role": "client"
     }
   ]
 }

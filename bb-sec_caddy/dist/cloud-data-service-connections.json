@@ -1,10 +1,10 @@
 {
-  "_generated": "2026-03-26T19:44:27.427Z",
+  "_generated": "2026-03-28T12:20:25.730Z",
   "services": {
     "code-server": {
       "ip": "10.0.0.6",
       "ports": {
-        "app": 8444
+        "app": 8443
       },
       "vm": "oci-apps"
     },
@@ -108,7 +108,7 @@
     "stalwart": {
       "ip": "10.0.0.3",
       "ports": {
-        "app": 8443,
+        "app": 443,
         "smtp": 465,
         "imap": 993
       },
@@ -205,11 +205,6 @@
         "app": 4182
       },
       "vm": "gcp-proxy"
-    },
-    "orchestrator": {
-      "ip": "10.0.0.6",
-      "ports": {},
-      "vm": "oci-apps"
     },
     "sauron-central": {
       "ip": "10.0.0.6",

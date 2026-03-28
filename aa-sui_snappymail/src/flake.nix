@@ -107,10 +107,11 @@
           skipReadOnly = true;
           volumes = [
             "snappymail_data:/var/lib/snappymail"
-            "./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini"
-            "./config/domains:/var/lib/snappymail/_data_/_default_/domains:ro"
+            "./config/application.ini:/opt/snappymail-config/application.ini:ro"
+            "./config/domains:/var/lib/snappymail/_data_/_default_/domains"
           ];
-          allowWritableBindMounts = true;  # config overlay on named volume (regeneratable)
+          entrypoint = [ "/bin/sh" "-c" "cp -f /opt/snappymail-config/application.ini /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true; exec /entrypoint.sh" ];
+          allowWritableBindMounts = true;  # config overlay on named volume
           memLimit = "64M";
           memReservation = "16M";
           healthcheck = {

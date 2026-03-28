@@ -975,7 +975,7 @@ handle_path /mail-mcp/* {
   }
 }
 handle_path /g-workspace/* {
-  reverse_proxy google-workspace-mcp.app:3104 {
+  reverse_proxy g-workspace-mcp.app:3104 {
     flush_interval -1
   }
 }
