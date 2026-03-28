@@ -55,7 +55,14 @@ services:
       - mattermost_logs:/mattermost/logs
       - mattermost_plugins:/mattermost/plugins
       - mattermost_client_plugins:/mattermost/client/plugins
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:
@@ -106,7 +113,14 @@ services:
     depends_on:
       mattermost:
         condition: service_started
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:
@@ -151,7 +165,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

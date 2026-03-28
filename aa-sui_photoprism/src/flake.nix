@@ -83,7 +83,7 @@
               retries = 3;
               start_period = "15s";
             };
-            extraYaml = "    devices:\n      - /dev/fuse";
+            extraYaml = "    privileged: true\n    devices:\n      - /dev/fuse";
           };
 
           photoprism = docker.mkService {

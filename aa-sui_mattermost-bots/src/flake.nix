@@ -238,13 +238,18 @@
               log.info("Admin login OK (user exists)")
               return r.headers.get("Token", "")
 
+          log.info("Admin login failed (%d), attempting user creation...", r.status_code)
           r = mm_api("POST", "/users", {}, json={
               "email": MM_ADMIN_EMAIL,
               "username": MM_ADMIN_USERNAME,
               "password": MM_ADMIN_PASSWORD,
           })
-          if not (r.ok or r.status_code == 201) and "already exists" not in r.text.lower():
-              r.raise_for_status()
+          err_text = r.text.lower()
+          if not (r.ok or r.status_code == 201):
+              if "already exists" in err_text or "no_open_server" in err_text or r.status_code == 403:
+                  log.warning("User creation blocked (%d): %s", r.status_code, r.text[:200])
+              else:
+                  r.raise_for_status()
           log.info("Admin user created/exists: %s", MM_ADMIN_USERNAME)
 
           r = mm_api("POST", "/users/login", {}, json={
