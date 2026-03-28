@@ -180,9 +180,9 @@ in {
     startAfter ? [],          # list of service names — auto-generates depends_on with service_healthy
 
     # Resource limits (Docker Compose v2 deploy syntax)
-    memLimit ? null,          # e.g. "256M"
-    memReservation ? null,    # e.g. "128M"
-    cpuLimit ? null,          # e.g. "0.5"
+    memLimit ? "512M",        # default: 512MB max per container
+    memReservation ? "64M",   # default: 64MB guaranteed per container
+    cpuLimit ? "1.0",         # default: 1 CPU core max per container (50% of 2-core VM)
 
     # Security escape hatches
     skipCapDrop ? false,      # DEPRECATED — cap_drop removed, kept for backward compat
