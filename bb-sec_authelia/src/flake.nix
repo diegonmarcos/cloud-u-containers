@@ -103,6 +103,7 @@ ${mkResourceLines rule.resources_two_factor}
           environment = { TZ = config.timezone; };
           volumes = [
             "authelia_data:/data"
+            "./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro"
           ];
           ports = ["${svc.authelia.ip}:${toString config.port}:9091"];
           networks = ["auth-net"];
@@ -661,20 +662,27 @@ ${mkResourceLines rule.resources_two_factor}
       cp /config/users_database.yml.tpl /config/users_database.yml
       subst /config/users_database.yml AUTHELIA_USER_DIEGO_HASH
 
-      # Inject JWKS private key into configuration
+      # Inject JWKS private key into configuration (POSIX shell — works on BusyBox Alpine)
       if [ -f /config/oidc_jwks.pem ]; then
         echo "[init] Injecting OIDC JWKS key into configuration..."
-        awk '
-          /key: __JWKS_KEY__/ {
-            match($0, /^[[:space:]]*/); ind = substr($0, 1, RLENGTH)
-            print ind "key: |"
-            while ((getline line < "/config/oidc_jwks.pem") > 0)
-              print ind "  " line
-            next
-          }
-          { print }
-        ' /config/configuration.yml > /config/configuration.yml.tmp
-        mv /config/configuration.yml.tmp /config/configuration.yml
+        LINE=$(grep -n '__JWKS_KEY__' /config/configuration.yml | head -1 | cut -d: -f1)
+        if [ -n "$LINE" ]; then
+          IND=$(sed -n "''${LINE}p" /config/configuration.yml | sed 's/key:.*//')
+          {
+            head -n $((LINE - 1)) /config/configuration.yml
+            printf '%skey: |\n' "$IND"
+            while IFS= read -r pem_line; do
+              printf '%s  %s\n' "$IND" "$pem_line"
+            done < /config/oidc_jwks.pem
+            tail -n +$((LINE + 1)) /config/configuration.yml
+          } > /config/configuration.yml.tmp
+          mv /config/configuration.yml.tmp /config/configuration.yml
+          echo "[init] JWKS key injected successfully"
+        else
+          echo "[init] WARNING: __JWKS_KEY__ placeholder not found"
+        fi
+      else
+        echo "[init] WARNING: /config/oidc_jwks.pem not found — OIDC will not work"
       fi
 
       echo "[init] Starting Authelia..."

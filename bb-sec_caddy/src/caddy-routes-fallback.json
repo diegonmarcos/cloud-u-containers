@@ -162,7 +162,7 @@
         { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
         { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
         { "base_path": "/mail-mcp", "upstream": "mail-mcp.app:3103" },
-        { "base_path": "/g-workspace", "upstream": "google-workspace-mcp.app:3104" }
+        { "base_path": "/g-workspace", "upstream": "g-workspace-mcp.app:3104" }
       ]
     }
   ],
