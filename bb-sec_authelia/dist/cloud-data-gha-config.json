@@ -1,6 +1,6 @@
 {
-  "_generated": "2026-03-25T11:31:19.372Z",
-  "_source": "local tsx via getConfig()",
+  "_generated": "2026-03-26T19:44:27.434Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/gha-config",
   "vms": {
     "oci-mail": {
       "ssh_secret": "OCI_SSH_KEY",
@@ -171,7 +171,7 @@
     },
     "sauron-central": {
       "dir": "bb-sec_sauron-central",
-      "vm": "oci-analytics",
+      "vm": "oci-apps",
       "has_docker": false
     },
     "alerts-api": {

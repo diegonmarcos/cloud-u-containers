@@ -2,65 +2,83 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_photoprism/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_photoprism/build.sh ship ║
+# ║ Source: aa-sui_photoprism/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# PhotoPrism - AI-powered photo management
-# Deployed on: oci-A1-f_1 (Oracle Flex)
-# Originals mounted from OCI Object Storage via rclone
-
 services:
-  rclone:
-    image: rclone/rclone:latest
-    container_name: photoprism_rclone
-    restart: unless-stopped
+  mariadb:
+    image: ghcr.io/diegonmarcos/photoprism-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mariadb:11
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="photoprism-db"
+        LABEL org.opencontainers.image.title="photoprism-db"
+        LABEL cloud.diegonmarcos.from-image="mariadb:11"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: photoprism_mariadb
     network_mode: host
-    cap_add:
-      - SYS_ADMIN
-    devices:
-      - /dev/fuse
-    security_opt:
-      - apparmor:unconfined
-    environment:
-      - RCLONE_CONFIG_OCI_TYPE=s3
-      - RCLONE_CONFIG_OCI_PROVIDER=Other
-      - RCLONE_CONFIG_OCI_ACCESS_KEY_ID=${OCI_S3_ACCESS_KEY}
-      - RCLONE_CONFIG_OCI_SECRET_ACCESS_KEY=${OCI_S3_SECRET_KEY}
-      - RCLONE_CONFIG_OCI_ENDPOINT=https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
-      - RCLONE_CONFIG_OCI_REGION=eu-marseille-1
-      - RCLONE_CONFIG_OCI_ACL=private
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
+    environment:
+      - MARIADB_AUTO_UPGRADE=1
+      - MARIADB_INITDB_SKIP_TZINFO=1
+      - MARIADB_DATABASE=${MARIADB_DATABASE:-photoprism}
+      - MARIADB_USER=${MARIADB_USER:-photoprism}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changeme}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changeme}
     volumes:
-      - /opt/containers/photoprism/originals:/data:shared
-    command: >
-      mount oci:my-photos
-      /data
-      --allow-other
-      --allow-non-empty
-      --vfs-cache-mode full
-      --vfs-cache-max-size 1G
-      --vfs-read-chunk-size 32M
-      --vfs-read-chunk-size-limit 256M
-      --dir-cache-time 5m
-      --log-level INFO
+      - mariadb_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'ls', '/data']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   photoprism:
-    image: photoprism/photoprism:latest
+    image: ghcr.io/diegonmarcos/photoprism:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM photoprism/photoprism:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="photoprism"
+        LABEL org.opencontainers.image.title="photoprism"
+        LABEL cloud.diegonmarcos.from-image="photoprism/photoprism:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: photoprism_app
-    restart: unless-stopped
     network_mode: host
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
-    volumes:
-      - photoprism_storage:/photoprism/storage
-      - /opt/containers/photoprism/originals:/photoprism/originals:ro
     environment:
       - PHOTOPRISM_HTTP_PORT=3013
       - PHOTOPRISM_ADMIN_USER=admin
@@ -93,37 +111,74 @@ services:
         condition: service_healthy
       rclone:
         condition: service_healthy
+    volumes:
+      - photoprism_storage:/photoprism/storage
+      - /opt/containers/photoprism/originals:/photoprism/originals:ro
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO /dev/null http://127.0.0.1:3013/api/v1/status']
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
-  mariadb:
-    image: mariadb:11
-    container_name: photoprism_mariadb
-    restart: unless-stopped
+  rclone:
+    image: ghcr.io/diegonmarcos/photoprism-rclone:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM rclone/rclone:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="photoprism-rclone"
+        LABEL org.opencontainers.image.title="photoprism-rclone"
+        LABEL cloud.diegonmarcos.from-image="rclone/rclone:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: photoprism_rclone
     network_mode: host
+    command: mount oci:my-photos /data --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 1G --vfs-read-chunk-size 32M --vfs-read-chunk-size-limit 256M --dir-cache-time 5m --log-level INFO
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
-    volumes:
-      - mariadb_data:/var/lib/mysql
     environment:
-      - MARIADB_AUTO_UPGRADE=1
-      - MARIADB_INITDB_SKIP_TZINFO=1
-      - MARIADB_DATABASE=${MARIADB_DATABASE:-photoprism}
-      - MARIADB_USER=${MARIADB_USER:-photoprism}
-      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changeme}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changeme}
+      - RCLONE_CONFIG_OCI_TYPE=s3
+      - RCLONE_CONFIG_OCI_PROVIDER=Other
+      - RCLONE_CONFIG_OCI_ACCESS_KEY_ID=${OCI_S3_ACCESS_KEY}
+      - RCLONE_CONFIG_OCI_SECRET_ACCESS_KEY=${OCI_S3_SECRET_KEY}
+      - RCLONE_CONFIG_OCI_ENDPOINT=https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
+      - RCLONE_CONFIG_OCI_REGION=eu-marseille-1
+      - RCLONE_CONFIG_OCI_ACL=private
+    volumes:
+      - /opt/containers/photoprism/originals:/data:shared
     healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+      test: ['CMD', 'ls', '/data']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    devices:
+      - /dev/fuse
 volumes:
-  photoprism_storage:
-    driver: local
   mariadb_data:
-    driver: local
+  photoprism_storage:

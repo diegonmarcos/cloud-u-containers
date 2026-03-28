@@ -7,10 +7,21 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   radicale:
-    image: tomsquest/docker-radicale:latest
+    image: ghcr.io/diegonmarcos/radicale:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM tomsquest/docker-radicale:latest
+        COPY config/config /config/config
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="radicale"
+        LABEL org.opencontainers.image.title="radicale"
+        LABEL cloud.diegonmarcos.from-image="tomsquest/docker-radicale:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: radicale
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     read_only: true
     tmpfs:
@@ -25,8 +36,7 @@ services:
     environment:
       - TAKE_FILE_OWNERSHIP=true
     volumes:
-      - ./data:/data
-      - ./config:/config:ro
+      - radicale_data:/data
     healthcheck:
       test: curl -f http://localhost:5232/.web/ || exit 1
       interval: 30s
@@ -42,3 +52,5 @@ services:
       - no-new-privileges:true
 networks:
   default:
+volumes:
+  radicale_data:

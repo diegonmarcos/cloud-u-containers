@@ -7,11 +7,24 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   authelia:
-    image: authelia/authelia:4.39.15
+    image: ghcr.io/diegonmarcos/authelia:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM authelia/authelia:4.39.15
+        COPY config/configuration.yml.tpl /config/configuration.yml.tpl
+        COPY config/users_database.yml.tpl /config/users_database.yml.tpl
+        COPY config/init.sh /config/init.sh
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="authelia"
+        LABEL org.opencontainers.image.title="authelia"
+        LABEL cloud.diegonmarcos.from-image="authelia/authelia:4.39.15"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: authelia
     network_mode: host
     entrypoint: ["sh", "/config/init.sh"]
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -28,7 +41,7 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ./config:/config
+      - authelia_data:/data
     pids_limit: 256
     logging:
       driver: "json-file"
@@ -45,7 +58,7 @@ services:
     container_name: authelia-redis
     network_mode: host
     command: sh -c 'redis-server --port 6380 --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -70,4 +83,5 @@ networks:
   auth-net:
     driver: bridge
 volumes:
+  authelia_data:
   authelia_redis_data:

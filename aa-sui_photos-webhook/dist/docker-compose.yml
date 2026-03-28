@@ -2,58 +2,100 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_photos-webhook/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_photos-webhook/build.sh ship ║
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_photos-webhook/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   photos-db:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/photos-webhook-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        COPY schema.sql /docker-entrypoint-initdb.d/01-schema.sql
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="photos-webhook-db"
+        LABEL org.opencontainers.image.title="photos-webhook-db"
+        LABEL cloud.diegonmarcos.from-image="postgres:16-alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: photos-db
     network_mode: host
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       POSTGRES_DB: photos
-      POSTGRES_USER: photos_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-SECURE_PASSWORD_HERE}
+      POSTGRES_USER: photos_user
     volumes:
       - photos_db_data:/var/lib/postgresql/data
-      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-    restart: "no"  # container-init handles startup
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U photos_user -d photos"]
       interval: 10s
       timeout: 5s
       retries: 5
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   photos-webhook:
+    image: ghcr.io/diegonmarcos/photos-webhook:latest
     build:
       context: .
       dockerfile: Dockerfile
     container_name: photos-webhook
     network_mode: host
+    command: python webhook.py flask
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       DB_HOST: localhost
       DB_NAME: photos
-      DB_USER: photos_user
       DB_PASSWORD: ${DB_PASSWORD:-SECURE_PASSWORD_HERE}
+      DB_USER: photos_user
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
-      S3_REGION: eu-marseille-1
       S3_BUCKET: photos
-      WEBHOOK_PORT: 5002
+      S3_REGION: eu-marseille-1
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      WEBHOOK_PORT: "5002"
     depends_on:
       photos-db:
         condition: service_healthy
     volumes:
-      - ./webhook.py:/app/webhook.py
-      - ./requirements.txt:/app/requirements.txt
-    restart: "no"  # container-init handles startup
-    command: python webhook.py flask
+      - ./webhook.py:/app/webhook.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 10s
       timeout: 5s
       retries: 5
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   photos_db_data:
     driver: local

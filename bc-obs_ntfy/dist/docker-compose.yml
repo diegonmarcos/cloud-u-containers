@@ -2,66 +2,134 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bc-obs_ntfy/src/flake.nix       ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_ntfy/build.sh ship      ║
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_ntfy/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# ntfy - Push Notification Server
-# Deployed on: gcp-E2-f_0 (35.226.147.64)
-# Domain: rss.diegonmarcos.com
-
 services:
-  ntfy:
-    image: binwiederhier/ntfy
-    container_name: ntfy
-    restart: "no"  # container-init handles startup
+  github-rss:
+    image: ghcr.io/diegonmarcos/ntfy-github-rss:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        COPY github-rss-to-ntfy.py /app/github-rss-to-ntfy.py
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="ntfy-github-rss"
+        LABEL org.opencontainers.image.title="ntfy-github-rss"
+        LABEL cloud.diegonmarcos.from-image="python:3.11-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: github-rss
     network_mode: host
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-        NTFY_PASSWORD="$$NTFY_ADMIN_PASSWORD" ntfy user add --role=admin admin 2>/dev/null || true
-        NTFY_PASSWORD="$$NTFY_ADMIN_PASSWORD" ntfy user change-pass admin 2>/dev/null || true
-        NTFY_PASSWORD="$$NTFY_USER_PASSWORD" ntfy user add diego 2>/dev/null || true
-        NTFY_PASSWORD="$$NTFY_USER_PASSWORD" ntfy user change-pass diego 2>/dev/null || true
-        exec ntfy serve
+    command: python -u /app/github-rss-to-ntfy.py
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    environment:
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      ntfy:
+        condition: service_started
+    volumes:
+      - ntfy_cache:/var/cache/ntfy
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  ntfy:
+    image: ghcr.io/diegonmarcos/ntfy:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM binwiederhier/ntfy
+        COPY etc/server.yml /etc/ntfy/server.yml
+        COPY init-ntfy.sh /init-ntfy.sh
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="ntfy"
+        LABEL org.opencontainers.image.title="ntfy"
+        LABEL cloud.diegonmarcos.from-image="binwiederhier/ntfy"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: ntfy
+    network_mode: host
+    entrypoint: ["/init-ntfy.sh"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
     environment:
       - TZ=Europe/Paris
     volumes:
-      - ./cache:/var/cache/ntfy
-      - ./etc:/etc/ntfy
+      - ntfy_cache:/var/cache/ntfy
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   syslog-bridge:
-    image: python:3.11-slim
+    image: ghcr.io/diegonmarcos/ntfy-syslog-bridge:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        COPY syslog-to-ntfy.py /app/syslog-to-ntfy.py
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="ntfy-syslog-bridge"
+        LABEL org.opencontainers.image.title="ntfy-syslog-bridge"
+        LABEL cloud.diegonmarcos.from-image="python:3.11-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: syslog-bridge
-    restart: "no"  # container-init handles startup
     network_mode: host
     command: python -u /app/syslog-to-ntfy.py
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    environment:
+      - TZ=Europe/Paris
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      ntfy:
+        condition: service_started
     volumes:
-      - ./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro
-      - ./cache:/var/cache/ntfy
+      - ntfy_cache:/var/cache/ntfy
       - /var/log:/var/log:ro
-    environment:
-      - TZ=Europe/Paris
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - ntfy
-
-  github-rss:
-    image: python:3.11-slim
-    container_name: github-rss
-    restart: "no"  # container-init handles startup
-    network_mode: host
-    command: python -u /app/github-rss-to-ntfy.py
-    volumes:
-      - ./github-rss-to-ntfy.py:/app/github-rss-to-ntfy.py:ro
-      - ./cache:/var/cache/ntfy
-    environment:
-      - TZ=Europe/Paris
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - ntfy
-
-volumes: {}
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  ntfy_cache:

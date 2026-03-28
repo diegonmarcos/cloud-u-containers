@@ -7,6 +7,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   smtp-proxy:
+    image: ghcr.io/diegonmarcos/smtp-proxy:latest
     build: .
     container_name: smtp-proxy
     restart: "no"  # container-init handles startup

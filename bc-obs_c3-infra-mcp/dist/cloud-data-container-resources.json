@@ -1,21 +1,11 @@
 {
-  "_generated": "2026-03-24T15:20:08.827Z",
-  "_source": "cloud-data-topology.json via /cloud-data/container-resources",
+  "_generated": "2026-03-26T19:44:27.437Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/container-resources",
   "services": {
-    "affine": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "hedgedoc_app",
-        "hedgedoc_postgres"
-      ],
-      "resources": null
-    },
     "code-server": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "code-server"
       ],
@@ -23,8 +13,8 @@
     },
     "etherpad": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "etherpad_app",
         "etherpad_postgres"
@@ -33,17 +23,26 @@
     },
     "filebrowser": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "filebrowser_app"
       ],
       "resources": null
     },
+    "google-workspace-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "google-workspace-mcp"
+      ],
+      "resources": null
+    },
     "grist": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "grist_app"
       ],
@@ -51,45 +50,47 @@
     },
     "hedgedoc": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "hedgedoc_app",
         "hedgedoc_postgres"
       ],
       "resources": null
     },
-    "mailu-mcp": {
-      "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+    "mail-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "mailu-mcp"
+        "mail-mcp"
       ],
       "resources": null
     },
     "mattermost-bots": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "mattermost",
-        "mattermost-bots",
-        "mattermost-postgres"
+        "mattermost-postgres",
+        "mattermost-bots"
       ],
       "resources": null
     },
     "mattermost-mcp": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [],
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "mattermost-mcp"
+      ],
       "resources": null
     },
     "photoprism": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "photoprism_app",
         "photoprism_mariadb",
@@ -99,18 +100,17 @@
     },
     "photos-webhook": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "photos-db",
         "photos-webhook"
       ],
       "resources": null
     },
     "radicale": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "radicale"
       ],
@@ -118,51 +118,54 @@
     },
     "revealmd": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "revealmd_app"
       ],
       "resources": null
     },
-    "mailu": {
+    "snappymail": {
       "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
-        "admin",
-        "antispam",
-        "front",
-        "imap",
-        "redis",
-        "resolver",
-        "smtp",
-        "webmail"
+        "snappymail"
       ],
-      "resources": null
+      "resources": {
+        "mem_limit": "64M",
+        "mem_reservation": "16M"
+      }
     },
     "smtp-proxy": {
       "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "smtp-proxy"
       ],
       "resources": null
     },
-    "syncthing": {
+    "stalwart": {
       "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
-        "syncthing"
+        "stalwart"
       ],
-      "resources": null
+      "resources": {
+        "limits": {
+          "memory": "512M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      }
     },
     "vaultwarden": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "vaultwarden"
       ],
@@ -170,46 +173,60 @@
     },
     "crawlee-cloud": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "crawlee_api",
-        "crawlee_dashboard",
-        "crawlee_db",
-        "crawlee_minio",
-        "crawlee_minio_init",
-        "crawlee_redis",
         "crawlee_runner",
-        "crawlee_scheduler"
+        "crawlee_dashboard",
+        "crawlee_scheduler",
+        "crawlee_db",
+        "crawlee_redis",
+        "crawlee_minio"
       ],
       "resources": null
     },
     "quant-lab-full": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "quant-lab-full"
+        "quant_full_research",
+        "quant_full_analytics",
+        "quant_full_ml",
+        "quant_full_risk",
+        "quant_full_engine",
+        "quant_full_db"
       ],
       "resources": null
     },
     "quant-lab-light": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "quant-lab-light"
+        "quant_light_research",
+        "quant_light_engine",
+        "quant_light_db"
       ],
       "resources": null
     },
     "ollama": {
       "vm": "gcp-t4",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 15,
+      "vm_cpu": 4,
       "containers": [
         "ollama"
       ],
-      "resources": null
+      "resources": {
+        "gpu": {
+          "driver": "nvidia",
+          "count": 1,
+          "capabilities": [
+            "gpu"
+          ]
+        }
+      }
     },
     "ollama-arm": {
       "vm": "oci-apps-2",
@@ -220,28 +237,79 @@
       ],
       "resources": null
     },
-    "rig-agentic": {
+    "ollama-hai": {
       "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "ollama-hai"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "6G"
+        }
+      }
+    },
+    "rig-agentic-hai-1.5bq4": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "rig-agentic-hai-1.5bq4"
+      ],
+      "resources": null
+    },
+    "rig-agentic-sonn-14bq8": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "rig-agentic-sonn-14bq8"
+      ],
+      "resources": null
+    },
+    "cloudflare": {
+      "vm": "local",
       "vm_ram_gb": null,
       "vm_cpu": null,
       "containers": [
-        "rig"
+        "cloudflare"
+      ],
+      "resources": null
+    },
+    "cloudflare-worker": {
+      "vm": "local",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "cloudflare-worker"
+      ],
+      "resources": null
+    },
+    "gcloud": {
+      "vm": "local",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "gcloud"
       ],
       "resources": null
     },
     "hickory-dns": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "hickory-dns"
       ],
-      "resources": null
+      "resources": {
+        "mem_limit": "64M"
+      }
     },
     "authelia": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "authelia",
         "authelia-redis"
@@ -250,73 +318,142 @@
     },
     "caddy": {
       "vm": "gcp-proxy",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
+      "containers": [
+        "caddy",
+        "introspect-proxy"
+      ],
+      "resources": {
+        "mem_limit": "96M",
+        "mem_reservation": "48M"
+      }
+    },
+    "caddy-l4-image": {
+      "vm": "local",
       "vm_ram_gb": null,
       "vm_cpu": null,
       "containers": [
-        "caddy",
+        "caddy-l4-image"
+      ],
+      "resources": null
+    },
+    "introspect-proxy": {
+      "vm": "gcp-proxy",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
+      "containers": [
         "introspect-proxy"
       ],
       "resources": null
     },
     "orchestrator": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "orchestrator"
       ],
       "resources": null
     },
-    "rust-api": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "rust-api"
-      ],
-      "resources": null
-    },
     "sauron-central": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "siem-api",
-        "syslog-central"
+        "sauron-central"
       ],
       "resources": null
     },
     "alerts-api": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm": "oci-analytics",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "alerts-api"
       ],
       "resources": null
     },
+    "c3-infra-api": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "c3-infra-api"
+      ],
+      "resources": null
+    },
+    "c3-infra-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "c3-infra-mcp"
+      ],
+      "resources": null
+    },
+    "c3-services-api": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "c3-services-api"
+      ],
+      "resources": null
+    },
+    "c3-services-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "c3-services-mcp"
+      ],
+      "resources": null
+    },
+    "cloud-cgc-mcp": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "cloud-cgc-mcp"
+      ],
+      "resources": null
+    },
+    "cloud-spec": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
+        "cloud-spec"
+      ],
+      "resources": null
+    },
     "dagu": {
       "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "dagu"
       ],
-      "resources": null
+      "resources": {
+        "mem_limit": "256m"
+      }
     },
     "dozzle": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm": "oci-analytics",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "dozzle"
       ],
-      "resources": null
+      "resources": {
+        "mem_limit": "64m"
+      }
     },
     "fluent-bit": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm": "oci-analytics",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "fluent-bit"
       ],
@@ -324,29 +461,36 @@
     },
     "lgtm": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "lgtm_grafana",
         "lgtm_loki",
-        "lgtm_mimir",
-        "lgtm_tempo"
+        "lgtm_tempo",
+        "lgtm_mimir"
       ],
       "resources": null
     },
     "matomo": {
       "vm": "oci-analytics",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "matomo-hybrid"
       ],
-      "resources": null
+      "resources": {
+        "limits": {
+          "memory": "1024M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      }
     },
     "nocodb": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "nocodb",
         "nocodb-db"
@@ -355,76 +499,128 @@
     },
     "ntfy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
-        "github-rss",
         "ntfy",
-        "ntfy-topic-scanner",
-        "syslog-bridge"
+        "syslog-bridge",
+        "github-rss"
       ],
       "resources": null
     },
     "sauron-forwarder": {
       "vm": "oci-analytics",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "sauron-forwarder"
       ],
       "resources": null
     },
-    "syslog-forwarder": {
-      "vm": "oci-mail",
+    "sauron-lite": {
+      "vm": "all",
       "vm_ram_gb": null,
       "vm_cpu": null,
+      "containers": [
+        "sauron-lite"
+      ],
+      "resources": null
+    },
+    "syslog-forwarder": {
+      "vm": "oci-mail",
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "syslog-forwarder"
       ],
       "resources": null
     },
-    "windmill": {
+    "umami": {
       "vm": "oci-analytics",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
-        "windmill-db",
+        "umami",
+        "umami-db",
+        "umami-setup"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "128M"
+        },
+        "reservations": {
+          "memory": "32M"
+        }
+      }
+    },
+    "windmill": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
+      "containers": [
         "windmill-server",
+        "windmill-db",
         "windmill-worker"
       ],
-      "resources": null
+      "resources": {
+        "limits": {
+          "memory": "256M",
+          "cpus": "0.5"
+        },
+        "reservations": {
+          "memory": "128M"
+        }
+      }
     },
     "backup-borg": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "borg-server"
+        "backup-borg"
       ],
       "resources": null
     },
     "backup-bup": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "bup-server"
+        "backup-bup"
       ],
       "resources": null
     },
     "backup-gitea": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "gitea"
       ],
       "resources": null
     },
-    "gitea": {
-      "vm": "oci-apps",
+    "c3-diego-personal-data-mcp": {
+      "vm": "local",
       "vm_ram_gb": null,
       "vm_cpu": null,
+      "containers": [
+        "c3-diego-personal-data-mcp"
+      ],
+      "resources": null
+    },
+    "db-agent": {
+      "vm": "all",
+      "vm_ram_gb": null,
+      "vm_cpu": null,
+      "containers": [
+        "db-agent"
+      ],
+      "resources": null
+    },
+    "gitea": {
+      "vm": "oci-apps",
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
         "gitea"
       ],
@@ -432,125 +628,28 @@
     },
     "kg-graph": {
       "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 24,
+      "vm_cpu": 4,
       "containers": [
-        "surrealdb"
+        "kg-graph"
       ],
       "resources": null
     },
     "postlite": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
-        "postlite-authelia",
-        "postlite-npm",
-        "postlite-ntfy",
-        "postlite-vaultwarden",
-        "sqlite-authelia",
-        "sqlite-npm",
-        "sqlite-ntfy",
-        "sqlite-vaultwarden"
+        "postlite"
       ],
       "resources": null
     },
     "redis": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
+      "vm_ram_gb": 1,
+      "vm_cpu": 1,
       "containers": [
         "redis"
-      ],
-      "resources": null
-    },
-    "c3-infra-mcp-api": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "c3-infra-mcp-api"
-      ],
-      "resources": null
-    },
-    "sauron-lite-micro1": {
-      "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "sauron"
-      ],
-      "resources": null
-    },
-    "sauron-lite-micro2": {
-      "vm": "oci-analytics",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "sauron"
-      ],
-      "resources": null
-    },
-    "sauron-lite-gcp": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "sauron"
-      ],
-      "resources": null
-    },
-    "sauron-lite-flex": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "sauron"
-      ],
-      "resources": null
-    },
-    "syslog-forwarder-micro1": {
-      "vm": "oci-mail",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "syslog-forwarder"
-      ],
-      "resources": null
-    },
-    "db-agent-gcp": {
-      "vm": "gcp-proxy",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "db-agent"
-      ],
-      "resources": null
-    },
-    "db-agent-micro2": {
-      "vm": "oci-analytics",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "db-agent"
-      ],
-      "resources": null
-    },
-    "db-agent-flex": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "db-agent"
-      ],
-      "resources": null
-    },
-    "rig": {
-      "vm": "oci-apps",
-      "vm_ram_gb": null,
-      "vm_cpu": null,
-      "containers": [
-        "rig"
       ],
       "resources": null
     }

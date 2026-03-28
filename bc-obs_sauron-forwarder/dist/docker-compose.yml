@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   sauron-forwarder:
-    image: debian:bookworm-slim
+    image: ghcr.io/diegonmarcos/sauron-forwarder:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM debian:bookworm-slim
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="sauron-forwarder"
+        LABEL org.opencontainers.image.title="sauron-forwarder"
+        LABEL cloud.diegonmarcos.from-image="debian:bookworm-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: sauron-forwarder
     restart: "no"  # container-init handles startup
     network_mode: host

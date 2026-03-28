@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   fluent-bit:
-    image: fluent/fluent-bit:latest
+    image: ghcr.io/diegonmarcos/fluent-bit:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM fluent/fluent-bit:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="fluent-bit"
+        LABEL org.opencontainers.image.title="fluent-bit"
+        LABEL cloud.diegonmarcos.from-image="fluent/fluent-bit:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: fluent-bit
     restart: "no"  # container-init handles startup
     network_mode: host

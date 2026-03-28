@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   vaultwarden:
-    image: vaultwarden/server:latest
+    image: ghcr.io/diegonmarcos/vaultwarden:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM vaultwarden/server:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="vaultwarden"
+        LABEL org.opencontainers.image.title="vaultwarden"
+        LABEL cloud.diegonmarcos.from-image="vaultwarden/server:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: vaultwarden
     network_mode: host
     restart: unless-stopped
@@ -40,7 +50,7 @@ services:
       SMTP_USERNAME: noreply@diegonmarcos.com
       WEBSOCKET_ENABLED: "true"
     volumes:
-      - ./data:/data
+      - vaultwarden_data:/data
     pids_limit: 256
     logging:
       driver: "json-file"
@@ -49,3 +59,5 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+volumes:
+  vaultwarden_data:

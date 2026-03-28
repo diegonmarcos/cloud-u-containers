@@ -2,19 +2,29 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bc-obs_dagu/src/flake.nix       ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_dagu/build.sh ship      ║
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_dagu/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   dagu:
+    image: ghcr.io/diegonmarcos/dagu:latest
     build:
       context: .
       dockerfile: Dockerfile
-    image: dagu-ssh:local
     container_name: dagu
-    entrypoint: ["dagu", "start-all"]
-    restart: unless-stopped
     network_mode: host
+    entrypoint: ["dagu", "start-all"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
     environment:
       - DAGU_HOST=0.0.0.0
       - DAGU_PORT=8070
@@ -29,13 +39,20 @@ services:
       - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
       - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_DAGU_SECRET}
       - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
-    env_file:
-      - .secrets
     volumes:
-      - ./data:/var/lib/dagu/data
-      - ./dags:/var/lib/dagu/dags
-      - ./base.yaml:/var/lib/dagu/base.yaml:ro
-      - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
+      - dagu_data:/var/lib/dagu/data
       - /opt/ssh-keys/dagu:/root/.ssh:ro
-    mem_limit: 256m
-
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          pids: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  dagu_data:

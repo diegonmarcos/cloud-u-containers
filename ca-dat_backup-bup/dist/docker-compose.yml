@@ -2,37 +2,47 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-bup/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_backup-bup/build.sh ship ║
+# ║ Source: ~/git/cloud/a_solutions/ca-dat_backup-bup/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# bup - Git-based backup for database dumps
-# Deploy to: oci-A1-f_1
-# Receives dumps from all servers via SSH
-
 services:
   bup:
-    image: alpine:3.20
+    image: ghcr.io/diegonmarcos/backup-bup:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM alpine:3.20
+        COPY authorized_keys /root/.ssh/authorized_keys
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="backup-bup"
+        LABEL org.opencontainers.image.title="backup-bup"
+        LABEL cloud.diegonmarcos.from-image="alpine:3.20"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: bup-server
-    restart: unless-stopped
     network_mode: host
-    command: >
-      sh -c "
-        apk add --no-cache restic openssh-server &&
-        mkdir -p /backup/databases /root/.ssh &&
-        chmod 700 /root/.ssh &&
-        ssh-keygen -A &&
-        echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config &&
-        /usr/sbin/sshd -D -p 2223
-      "
+    command: sh -c "apk add --no-cache restic openssh-server && mkdir -p /backup/databases /root/.ssh && chmod 700 /root/.ssh && ssh-keygen -A && echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config && /usr/sbin/sshd -D -p 2223"
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     volumes:
       - bup_data:/backup/databases
-      - ./authorized_keys:/root/.ssh/authorized_keys:ro
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 volumes:
   bup_data:
     driver: local
     driver_opts:
-      type: none
-      o: bind
       device: /backup/databases
-
+      o: bind
+      type: none

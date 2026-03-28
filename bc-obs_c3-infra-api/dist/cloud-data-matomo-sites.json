@@ -1,19 +1,14 @@
 {
-  "_generated": "2026-03-24T15:20:08.363Z",
-  "_source": "cloud-data-topology.json via /cloud-data/matomo-sites",
+  "_generated": "2026-03-26T19:44:27.439Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/matomo-sites",
   "sites": [
-    {
-      "name": "AFFiNE Collaborative Workspace (drive-notes-affine.diegonmarcos.com) — deployed via hedgedoc flake",
-      "url": "https://drive-notes-affine.diegonmarcos.com",
-      "service": "affine"
-    },
     {
       "name": "VS Code IDE (ide.diegonmarcos.com)",
       "url": "https://ide.diegonmarcos.com",
       "service": "code-server"
     },
     {
-      "name": "Etherpad collaborative editor (NEW - not deployed yet)",
+      "name": "Etherpad collaborative editor",
       "url": "https://pad.diegonmarcos.com",
       "service": "etherpad"
     },
@@ -24,7 +19,7 @@
     },
     {
       "name": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
-      "url": "https://grist.diegonmarcos.com",
+      "url": "https://sheets.diegonmarcos.com",
       "service": "grist"
     },
     {
@@ -53,14 +48,14 @@
       "service": "revealmd"
     },
     {
-      "name": "Mailu mail server stack (mail.diegonmarcos.com)",
-      "url": "https://mail.diegonmarcos.com",
-      "service": "mailu"
+      "name": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
+      "url": "https://webmail.diegonmarcos.com",
+      "service": "snappymail"
     },
     {
-      "name": "File Sync",
-      "url": "https://sync.diegonmarcos.com",
-      "service": "syncthing"
+      "name": "Stalwart Mail Server (mail.diegonmarcos.com)",
+      "url": "https://mail.diegonmarcos.com",
+      "service": "stalwart"
     },
     {
       "name": "Bitwarden password manager",
@@ -73,7 +68,7 @@
       "service": "crawlee-cloud"
     },
     {
-      "name": "Internal DNS server for WireGuard mesh (.internal zone)",
+      "name": "Internal DNS server for WireGuard mesh (per-service .app zones)",
       "url": "https://dns.internal",
       "service": "hickory-dns"
     },
@@ -83,18 +78,28 @@
       "service": "authelia"
     },
     {
-      "name": "Caddy reverse proxy (replaces NPM on gcp-proxy + oci-mail)",
+      "name": "Caddy reverse proxy + security dashboard (gcp-proxy)",
       "url": "https://proxy.diegonmarcos.com",
       "service": "caddy"
     },
     {
-      "name": "Cloud Rust API (api.diegonmarcos.com — default)",
-      "url": "https://api.diegonmarcos.com",
-      "service": "rust-api"
+      "name": "C3 REST API — Cloud Control Center Fastify API",
+      "url": "https://api.diegonmarcos.com/c3-api",
+      "service": "c3-infra-api"
+    },
+    {
+      "name": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+      "url": "https://mcp.diegonmarcos.com/c3-infra-mcp",
+      "service": "c3-infra-mcp"
+    },
+    {
+      "name": "C3 Services REST API — service API gateway Fastify API",
+      "url": "https://api.diegonmarcos.com/services",
+      "service": "c3-services-api"
     },
     {
       "name": "Dagu - Lightweight DAG-based workflow scheduler",
-      "url": "https://dagu.diegonmarcos.com",
+      "url": "https://workflows.diegonmarcos.com",
       "service": "dagu"
     },
     {
@@ -123,6 +128,11 @@
       "service": "ntfy"
     },
     {
+      "name": "Umami Analytics - lightweight privacy-focused web analytics",
+      "url": "https://analytics.diegonmarcos.com",
+      "service": "umami"
+    },
+    {
       "name": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
       "url": "https://windmill.diegonmarcos.com",
       "service": "windmill"
@@ -136,11 +146,6 @@
       "name": "Self-hosted Git service",
       "url": "https://git.diegonmarcos.com",
       "service": "gitea"
-    },
-    {
-      "name": "C3 — Cloud Control Center: MCP infrastructure server + Fastify API (api.diegonmarcos.com)",
-      "url": "https://api.diegonmarcos.com",
-      "service": "c3-infra-mcp-api"
     }
   ]
 }

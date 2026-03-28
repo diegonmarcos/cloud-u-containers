@@ -9,7 +9,17 @@
 # Deployed on: oci-A1-f_0 (Oracle Flex — consolidated)
 services:
   grafana:
-    image: grafana/grafana:latest
+    image: ghcr.io/diegonmarcos/lgtm-grafana:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM grafana/grafana:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="lgtm-grafana"
+        LABEL org.opencontainers.image.title="lgtm-grafana"
+        LABEL cloud.diegonmarcos.from-image="grafana/grafana:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: lgtm_grafana
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -30,7 +40,17 @@ services:
       retries: 3
 
   loki:
-    image: grafana/loki:latest
+    image: ghcr.io/diegonmarcos/lgtm-loki:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM grafana/loki:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="lgtm-loki"
+        LABEL org.opencontainers.image.title="lgtm-loki"
+        LABEL cloud.diegonmarcos.from-image="grafana/loki:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: lgtm_loki
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -46,23 +66,43 @@ services:
       start_period: 120s
 
   tempo:
-    image: grafana/tempo:2.7.2
+    image: ghcr.io/diegonmarcos/lgtm-tempo:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM grafana/tempo:2.7.2
+        COPY config/tempo.yaml /etc/tempo/tempo.yaml
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="lgtm-tempo"
+        LABEL org.opencontainers.image.title="lgtm-tempo"
+        LABEL cloud.diegonmarcos.from-image="grafana/tempo:2.7.2"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: lgtm_tempo
     restart: "no"  # container-init handles startup
     network_mode: host
     volumes:
       - tempo_data:/var/tempo
-      - ./config/tempo.yaml:/etc/tempo/tempo.yaml:ro
     command: ["-config.file=/etc/tempo/tempo.yaml"]
 
   mimir:
-    image: grafana/mimir:latest
+    image: ghcr.io/diegonmarcos/lgtm-mimir:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM grafana/mimir:latest
+        COPY config/mimir.yaml /etc/mimir/mimir.yaml
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="lgtm-mimir"
+        LABEL org.opencontainers.image.title="lgtm-mimir"
+        LABEL cloud.diegonmarcos.from-image="grafana/mimir:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: lgtm_mimir
     restart: "no"  # container-init handles startup
     network_mode: host
     volumes:
       - mimir_data:/data
-      - ./config/mimir.yaml:/etc/mimir/mimir.yaml:ro
     command: ["-config.file=/etc/mimir/mimir.yaml", "-target=all"]
 
 volumes:

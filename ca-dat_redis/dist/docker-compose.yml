@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   redis:
-    image: redis:alpine
+    image: ghcr.io/diegonmarcos/redis:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM redis:alpine
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="redis"
+        LABEL org.opencontainers.image.title="redis"
+        LABEL cloud.diegonmarcos.from-image="redis:alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: redis
     restart: "no"  # container-init handles startup
     network_mode: host

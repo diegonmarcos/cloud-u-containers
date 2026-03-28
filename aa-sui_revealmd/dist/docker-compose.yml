@@ -2,27 +2,48 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_revealmd/src/flake.nix   ║
-# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_revealmd/build.sh ship  ║
+# ║ Source: aa-sui_revealmd/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# RevealMD - Markdown to reveal.js presentations
-# Deployed on: oci-A1-f_1 (Oracle Flex)
-
 services:
   revealmd:
-    image: webpronl/reveal-md:latest
+    image: ghcr.io/diegonmarcos/revealmd:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM webpronl/reveal-md:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="revealmd"
+        LABEL org.opencontainers.image.title="revealmd"
+        LABEL cloud.diegonmarcos.from-image="webpronl/reveal-md:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: revealmd_app
-    restart: "no"  # container-init handles startup
     network_mode: host
+    command: /slides --watch --port 3014
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     volumes:
       - slides_data:/slides
-    command: /slides --watch --port 3014
     healthcheck:
       test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3014']
       interval: 30s
       timeout: 10s
       retries: 3
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   slides_data:
-    driver: local

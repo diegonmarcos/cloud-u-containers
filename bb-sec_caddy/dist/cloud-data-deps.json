@@ -1,10 +1,89 @@
 {
   "_meta": {
-    "generated_by": "c3-infra-mcp-api/src/engines/gen-deps.ts",
+    "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/deps",
-    "generated_at": "2026-03-25T14:19:08.893Z",
+    "generated_at": "2026-03-26T19:44:27.461Z",
     "total_services": 8,
     "total_packages": 23
+  },
+  "system": {
+    "node": {
+      "nix": "nodejs_20",
+      "apt": "nodejs",
+      "desc": "Node.js runtime (tsx, MCP servers)"
+    },
+    "git": {
+      "nix": "git",
+      "apt": "git",
+      "desc": "Version control"
+    },
+    "ssh": {
+      "nix": "openssh",
+      "apt": "openssh-client",
+      "desc": "SSH for VM deploy"
+    },
+    "jq": {
+      "nix": "jq",
+      "apt": "jq",
+      "desc": "JSON processing"
+    },
+    "sops": {
+      "nix": "sops",
+      "apt": null,
+      "desc": "Secrets decryption (age backend)"
+    },
+    "rsync": {
+      "nix": "rsync",
+      "apt": "rsync",
+      "desc": "File sync to VMs"
+    },
+    "age": {
+      "nix": "age",
+      "apt": null,
+      "desc": "Age encryption (sops backend)"
+    },
+    "curl": {
+      "nix": "curl",
+      "apt": "curl",
+      "desc": "HTTP client (health checks)"
+    }
+  },
+  "build": {
+    "mdbook": {
+      "nix": "mdbook",
+      "desc": "Documentation generator (nix build only)"
+    },
+    "file": {
+      "nix": "file",
+      "desc": "MIME type detection (nix build only)"
+    },
+    "typescript": {
+      "nix": "nodePackages.typescript",
+      "desc": "TypeScript compiler (nix build only)"
+    }
+  },
+  "optional": {
+    "rclone": {
+      "nix": "rclone",
+      "apt": "rclone",
+      "desc": "Cloud storage sync"
+    },
+    "yq": {
+      "nix": "yq-go",
+      "apt": null,
+      "desc": "YAML processing"
+    },
+    "wrangler": {
+      "nix": null,
+      "apt": null,
+      "npm": "wrangler",
+      "desc": "Cloudflare Workers CLI"
+    },
+    "wireguard": {
+      "nix": "wireguard-tools",
+      "apt": "wireguard-tools",
+      "desc": "WireGuard mesh status"
+    }
   },
   "node": {
     "merged": {

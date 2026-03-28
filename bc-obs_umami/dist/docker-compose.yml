@@ -11,14 +11,24 @@
 
 services:
   umami:
-    image: ghcr.io/umami-software/umami:latest
+    image: ghcr.io/diegonmarcos/umami:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ghcr.io/umami-software/umami:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="umami"
+        LABEL org.opencontainers.image.title="umami"
+        LABEL cloud.diegonmarcos.from-image="ghcr.io/umami-software/umami:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami
     restart: "no"  # container-init handles startup
     network_mode: host
     env_file:
       - .secrets
     environment:
-      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@localhost:5432/umami
+      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@localhost:5442/umami
       DATABASE_TYPE: postgresql
       APP_SECRET: ${APP_SECRET}
       BASE_PATH: /umami
@@ -27,7 +37,7 @@ services:
       umami-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/heartbeat || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3006/api/heartbeat || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -40,7 +50,17 @@ services:
           memory: 32M
 
   umami-db:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/umami-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="umami-db"
+        LABEL org.opencontainers.image.title="umami-db"
+        LABEL cloud.diegonmarcos.from-image="postgres:16-alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami-db
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -63,7 +83,18 @@ services:
           memory: 32M
 
   umami-setup:
-    image: curlimages/curl:latest
+    image: ghcr.io/diegonmarcos/umami-setup:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM curlimages/curl:latest
+        COPY setup.sh /setup/setup.sh
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="umami-setup"
+        LABEL org.opencontainers.image.title="umami-setup"
+        LABEL cloud.diegonmarcos.from-image="curlimages/curl:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami-setup
     restart: "no"
     network_mode: host
@@ -74,7 +105,6 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "/setup/setup.sh"]
     volumes:
-      - ./setup.sh:/setup/setup.sh:ro
       - umami_config:/output
 
 volumes:
