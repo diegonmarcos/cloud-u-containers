@@ -114,7 +114,7 @@ steps:
       fetch_consolidated
 
       # ── Fetch all per-consumer endpoints ────────────────────────
-      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager"
+      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager containers-gcp-proxy containers-oci-mail containers-oci-analytics containers-oci-apps containers-gcp-t4"
 
       OK=0
       SKIP=0
