@@ -35,7 +35,7 @@
           ];
           networks = [];
           healthcheck = {
-            test = ''["CMD", "curl", "-f", "http://localhost:5000/api/health"]'';
+            test = ''["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')\""]'';
             interval = "30s";
             timeout = "10s";
             retries = 3;

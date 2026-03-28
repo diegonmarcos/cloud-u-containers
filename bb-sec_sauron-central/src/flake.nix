@@ -41,8 +41,10 @@
           container_name = "syslog-central";
           restart = "no";
           networkMode = "host";
+          skipReadOnly = true;
           volumes = [
             "siem-data:/var/log/siem"
+            "syslog-state:/var/lib/syslog-ng"
           ];
         };
 
@@ -64,6 +66,7 @@
 
       volumes = {
         siem-data = {};
+        syslog-state = {};
       };
     };
 

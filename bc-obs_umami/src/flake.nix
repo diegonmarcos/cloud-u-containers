@@ -64,6 +64,7 @@
             DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@localhost:${toString config.db_port}/umami
             DATABASE_TYPE: postgresql
             APP_SECRET: ''${APP_SECRET}
+            PORT: "${toString config.port}"
             BASE_PATH: /umami
             DISABLE_TELEMETRY: "1"
           depends_on:
@@ -95,10 +96,12 @@
             POSTGRES_DB: umami
             POSTGRES_USER: umami
             POSTGRES_PASSWORD: ''${DB_PASSWORD}
+            PGPORT: "${toString config.db_port}"
+          command: ["-p", "${toString config.db_port}"]
           volumes:
             - umami_db_data:/var/lib/postgresql/data
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U umami"]
+            test: ["CMD-SHELL", "pg_isready -U umami -p ${toString config.db_port}"]
             interval: 10s
             timeout: 5s
             retries: 5
