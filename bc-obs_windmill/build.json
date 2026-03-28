@@ -45,7 +45,7 @@
       ],
       "env_file": true,
       "depends_on": ["db"],
-      "resources": { "limits": { "memory": "256M", "cpus": "0.5" }, "reservations": { "memory": "128M" } },
+      "resources": { "limits": { "memory": "512M", "cpus": "1.0" }, "reservations": { "memory": "256M" } },
       "read_only": false
     },
     "db": {

@@ -216,22 +216,19 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     ...(group.landing_page ? { landing_page: group.landing_page } : {}),
   }));
 
-  // ── GitHub Pages proxies: from flat routes with github.io upstream ──
-  const githubPagesProxies: any[] = [];
-  for (const fr of flatRoutes) {
-    const domain: string = fr.domain ?? "";
-    if (domain.includes("/")) continue; // Skip path-based
-    if (fr.upstream === "diegonmarcos.github.io" || fr.upstream?.includes("github.io")) {
-      // Infer github_path from domain
-      const subdomain = domain.split(".")[0];
-      const githubPath = subdomain === "diegonmarcos" ? "landpage" : subdomain;
-      githubPagesProxies.push({
-        domain,
-        github_path: githubPath,
-        ...(fr.wkd ? { wkd: true } : {}),
-      });
-    }
-  }
+  // ── GitHub Pages proxies: from caddy build.json proxy.github_pages_proxies ──
+  const caddyBuildJsonPath = join(CLOUD_ROOT, "a_solutions/bb-sec_caddy/src/build.json");
+  const caddyBuildJson = existsSync(caddyBuildJsonPath)
+    ? JSON.parse(readFileSync(caddyBuildJsonPath, "utf-8"))
+    : {};
+  const githubPagesProxies: any[] = (caddyBuildJson.proxy?.github_pages_proxies ?? []).map(
+    (entry: any) => ({
+      domain: entry.domain,
+      github_path: entry.github_path,
+      ...(entry.wkd ? { wkd: true } : {}),
+      ...(entry.comment ? { comment: entry.comment } : {}),
+    }),
+  );
 
   // ── MCP routes: streaming services ──
   const mcpEndpoints: any[] = [];
@@ -405,6 +402,18 @@ function deriveWireguardPeers(c: any): DerivedFile {
       wg_ip: peer.wg_ip,
       public_ip: peer.endpoint?.replace(/:.*$/, "") ?? peer.public_ip ?? "",
       user: vmUser,
+    });
+  }
+
+  // Add client peers (Surface, Termux, etc.) from wg.clients
+  for (const [name, client] of Object.entries(wg.clients ?? {}) as [string, any][]) {
+    meshPeers.push({
+      vm_id: "",
+      name,
+      wg_ip: client.wg_ip,
+      public_ip: "dynamic",
+      user: "",
+      role: client.role || "client",
     });
   }
 
