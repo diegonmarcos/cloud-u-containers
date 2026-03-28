@@ -36,7 +36,7 @@
     },
     {
       "domain": "mail.diegonmarcos.com",
-      "upstream": "stalwart.app:8443",
+      "upstream": "stalwart.app:443",
       "tls_skip_verify": true,
       "landing_page": "mymail",
       "comment": "Stalwart web admin (HTTPS)"
