@@ -3,7 +3,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 1
   },
-  "_generated": "2026-03-26T19:44:27.433Z",
+  "_generated": "2026-03-28T12:20:25.732Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
     {
@@ -25,7 +25,7 @@
   "routes": [
     {
       "domain": "ide.diegonmarcos.com",
-      "upstream": "code-server.app:8444",
+      "upstream": "code-server.app:8443",
       "comment": "VS Code IDE (ide.diegonmarcos.com)"
     },
     {
@@ -57,7 +57,7 @@
     },
     {
       "domain": "mail.diegonmarcos.com",
-      "upstream": "stalwart.app:8443",
+      "upstream": "stalwart.app:443",
       "tls_skip_verify": true,
       "comment": "Stalwart Mail Server (mail.diegonmarcos.com)"
     },
@@ -222,7 +222,30 @@
       "landing_page": "cloud"
     }
   ],
-  "github_pages_proxies": [],
+  "github_pages_proxies": [
+    {
+      "domain": "diegonmarcos.com, www.diegonmarcos.com",
+      "github_path": "landpage",
+      "wkd": true,
+      "comment": "Landing page + WKD (Web Key Directory for PGP)"
+    },
+    {
+      "domain": "linktree.diegonmarcos.com",
+      "github_path": "linktree"
+    },
+    {
+      "domain": "nexus.diegonmarcos.com",
+      "github_path": "nexus"
+    },
+    {
+      "domain": "suite.diegonmarcos.com",
+      "github_path": "suite"
+    },
+    {
+      "domain": "maps.diegonmarcos.com",
+      "github_path": "mymaps"
+    }
+  ],
   "mcp_routes": [
     {
       "parent_domain": "mcp.diegonmarcos.com",

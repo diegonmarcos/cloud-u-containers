@@ -1,0 +1,17 @@
+{
+  "_generated": "2026-03-28T02:16:56.743Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+  "vm": "gcp-t4",
+  "vm_id": "gcp-T4-p_0",
+  "services": [
+    {
+      "name": "ollama",
+      "dir": "ad-agi_ollama",
+      "compose_path": "/opt/containers/ollama",
+      "images": [
+        "ollama/ollama:latest"
+      ],
+      "has_docker_build": false
+    }
+  ]
+}

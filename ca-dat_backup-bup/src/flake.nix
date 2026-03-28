@@ -33,7 +33,7 @@
         image = ghcr.image;
         build = ghcr.build;
         container_name = config.container_name;
-        restart = "unless-stopped";
+        restart = "no";  # container-init handles startup
         networkMode = "host";
         command = ''
           sh -c "apk add --no-cache restic openssh-server && mkdir -p /backup/databases /root/.ssh && chmod 700 /root/.ssh && ssh-keygen -A && echo 'PermitRootLogin prohibit-password' >> /etc/ssh/sshd_config && /usr/sbin/sshd -D -p ${toString config.ssh_port}"'';

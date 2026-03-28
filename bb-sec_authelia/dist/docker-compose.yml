@@ -42,7 +42,15 @@ services:
         condition: service_started
     volumes:
       - authelia_data:/data
-    pids_limit: 256
+      - ./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:
@@ -71,7 +79,14 @@ services:
       - .secrets
     volumes:
       - authelia_redis_data:/data
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

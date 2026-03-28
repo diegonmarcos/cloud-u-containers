@@ -1,0 +1,49 @@
+{
+  "_generated": "2026-03-28T02:16:56.743Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+  "vm": "oci-mail",
+  "vm_id": "oci-E2-f_0",
+  "services": [
+    {
+      "name": "snappymail",
+      "dir": "aa-sui_snappymail",
+      "compose_path": "/opt/containers/snappymail",
+      "images": [
+        "djmaze/snappymail:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "smtp-proxy",
+      "dir": "aa-sui_tools-smtp-proxy",
+      "compose_path": "/opt/containers/smtp-proxy",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "stalwart",
+      "dir": "aa-sui_tools-stalwart",
+      "compose_path": "/opt/containers/stalwart",
+      "images": [
+        "stalwartlabs/mail-server:v0.11"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "dagu",
+      "dir": "bc-obs_dagu",
+      "compose_path": "/opt/containers/dagu",
+      "images": [
+        "ghcr.io/diegonmarcos/dagu:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "syslog-forwarder",
+      "dir": "bc-obs_syslog-forwarder",
+      "compose_path": "/opt/containers/syslog-forwarder",
+      "images": [],
+      "has_docker_build": false
+    }
+  ]
+}

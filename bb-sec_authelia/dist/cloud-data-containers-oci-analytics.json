@@ -1,0 +1,58 @@
+{
+  "_generated": "2026-03-28T02:16:56.743Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+  "vm": "oci-analytics",
+  "vm_id": "oci-E2-f_1",
+  "services": [
+    {
+      "name": "alerts-api",
+      "dir": "bc-obs_alerts-api",
+      "compose_path": "/opt/containers/alerts-api",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "dozzle",
+      "dir": "bc-obs_dozzle",
+      "compose_path": "/opt/containers/dozzle",
+      "images": [
+        "amir20/dozzle:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "fluent-bit",
+      "dir": "bc-obs_fluent-bit",
+      "compose_path": "/opt/containers/fluent-bit",
+      "images": [
+        "fluent/fluent-bit:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "matomo",
+      "dir": "bc-obs_matomo",
+      "compose_path": "/opt/containers/matomo",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "sauron-forwarder",
+      "dir": "bc-obs_sauron-forwarder",
+      "compose_path": "/opt/containers/sauron-forwarder",
+      "images": [],
+      "has_docker_build": false
+    },
+    {
+      "name": "umami",
+      "dir": "bc-obs_umami",
+      "compose_path": "/opt/containers/umami",
+      "images": [
+        "ghcr.io/umami-software/umami:latest",
+        "postgres:16-alpine",
+        "curlimages/curl:latest"
+      ],
+      "has_docker_build": false
+    }
+  ]
+}

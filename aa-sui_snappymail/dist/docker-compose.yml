@@ -20,6 +20,7 @@ services:
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: snappymail
     network_mode: host
+    entrypoint: ["/bin/sh", "-c", "cp -f /opt/snappymail-config/application.ini /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true; exec /entrypoint.sh"]
     restart: no
     stop_grace_period: 30s
     ulimits:
@@ -31,8 +32,8 @@ services:
       - 1.1.1.1
     volumes:
       - snappymail_data:/var/lib/snappymail
-      - ./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini
-      - ./config/domains:/var/lib/snappymail/_data_/_default_/domains:ro
+      - ./config/application.ini:/opt/snappymail-config/application.ini:ro
+      - ./config/domains:/var/lib/snappymail/_data_/_default_/domains
     healthcheck:
       test: ['CMD', 'curl', '-sf', 'http://localhost:8888/']
       interval: 30s
@@ -43,6 +44,7 @@ services:
       resources:
         limits:
           memory: 64M
+          cpus: "1.0"
           pids: 256
         reservations:
           memory: 16M

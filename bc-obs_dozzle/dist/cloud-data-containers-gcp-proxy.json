@@ -1,0 +1,82 @@
+{
+  "_generated": "2026-03-28T02:16:56.743Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+  "vm": "gcp-proxy",
+  "vm_id": "gcp-E2-f_0",
+  "services": [
+    {
+      "name": "vaultwarden",
+      "dir": "ab-mic_vaultwarden",
+      "compose_path": "/opt/containers/vaultwarden",
+      "images": [
+        "vaultwarden/server:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "hickory-dns",
+      "dir": "ba-clo_hickory-dns",
+      "compose_path": "/opt/containers/hickory-dns",
+      "images": [
+        "hickorydns/hickory-dns:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "authelia",
+      "dir": "bb-sec_authelia",
+      "compose_path": "/opt/containers/authelia",
+      "images": [
+        "authelia/authelia:4.39.15",
+        "redis:7-bookworm"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "caddy",
+      "dir": "bb-sec_caddy",
+      "compose_path": "/opt/containers/caddy",
+      "images": [
+        "ghcr.io/diegonmarcos/caddy-l4:latest",
+        "introspect-proxy:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "introspect-proxy",
+      "dir": "bb-sec_introspect-proxy",
+      "compose_path": "/opt/containers/introspect-proxy",
+      "images": [
+        "ghcr.io/diegonmarcos/introspect-proxy:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "ntfy",
+      "dir": "bc-obs_ntfy",
+      "compose_path": "/opt/containers/ntfy",
+      "images": [
+        "binwiederhier/ntfy",
+        "python:3.11-slim",
+        "python:3.11-slim"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "postlite",
+      "dir": "ca-dat_postlite",
+      "compose_path": "/opt/containers/postlite",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "redis",
+      "dir": "ca-dat_redis",
+      "compose_path": "/opt/containers/redis",
+      "images": [
+        "redis:alpine"
+      ],
+      "has_docker_build": false
+    }
+  ]
+}

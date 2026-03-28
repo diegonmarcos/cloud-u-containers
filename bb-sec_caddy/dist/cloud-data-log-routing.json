@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.438Z",
+  "_generated": "2026-03-28T12:20:25.734Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/log-routing",
   "vms": {
     "oci-apps": [
@@ -191,11 +191,6 @@
       {
         "container": "rig-agentic-sonn-14bq8",
         "service": "rig-agentic-sonn-14bq8",
-        "log_level": "info"
-      },
-      {
-        "container": "orchestrator",
-        "service": "orchestrator",
         "log_level": "info"
       },
       {

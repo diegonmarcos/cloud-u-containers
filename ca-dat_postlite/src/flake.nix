@@ -28,7 +28,7 @@
         sqlite-npm:
           image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-npm
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/npm/data:/data
@@ -37,7 +37,7 @@
         sqlite-vaultwarden:
           image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-vaultwarden
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
@@ -46,7 +46,7 @@
         sqlite-ntfy:
           image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-ntfy
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
@@ -55,7 +55,7 @@
         sqlite-authelia:
           image: germanorizzo/ws4sqlite:v0.16.6
           container_name: sqlite-authelia
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
@@ -67,7 +67,7 @@
             dockerfile: Dockerfile
           image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-npm
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/npm/data:/data
@@ -76,7 +76,7 @@
         postlite-vaultwarden:
           image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-vaultwarden
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
@@ -85,7 +85,7 @@
         postlite-ntfy:
           image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-ntfy
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
@@ -94,7 +94,7 @@
         postlite-authelia:
           image: ghcr.io/diegonmarcos/postlite:latest
           container_name: postlite-authelia
-          restart: on-failure:3
+          restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
             - /home/diego/authelia/config:/data

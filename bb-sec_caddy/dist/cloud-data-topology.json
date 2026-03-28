@@ -109,7 +109,6 @@
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
         "rig-agentic-sonn-14bq8",
-        "orchestrator",
         "sauron-central",
         "c3-infra-api",
         "c3-infra-mcp",
@@ -133,18 +132,11 @@
         "kg-graph"
       ],
       "ports": [
-        "10.0.0.6:3015:8080",
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
+        "10.0.0.6:3015:8080"
       ],
       "networks": [
         "etherpad_net",
-        "default",
-        "crawlee_network"
+        "default"
       ],
       "specs": {
         "cpu": 4,
@@ -982,14 +974,14 @@
       "folder": "aa-sui_code-server",
       "description": "VS Code IDE (ide.diegonmarcos.com)",
       "domain": "ide.diegonmarcos.com",
-      "port": 8444,
+      "port": 8443,
       "dns": "code-server.app",
-      "upstream": "code-server.app:8444",
+      "upstream": "code-server.app:8443",
       "containers": {
         "app": {
           "container_name": "code-server",
           "image": "linuxserver/code-server:latest",
-          "port": 8444,
+          "port": 8443,
           "port_env": null,
           "dns": "code-server.app",
           "public": true,
@@ -1017,7 +1009,7 @@
         "code-server"
       ],
       "all_ports": [
-        "8444"
+        "8443"
       ],
       "all_dns": [
         "code-server.app"
@@ -1036,7 +1028,7 @@
         }
       },
       "declared_ports": {
-        "app": 8444
+        "app": 8443
       },
       "health": {
         "path": "/"
@@ -2112,14 +2104,14 @@
       "folder": "aa-sui_tools-stalwart",
       "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
       "domain": "mail.diegonmarcos.com",
-      "port": 8443,
+      "port": 443,
       "dns": "stalwart.app",
-      "upstream": "stalwart.app:8443",
+      "upstream": "stalwart.app:443",
       "containers": {
         "app": {
           "container_name": "stalwart",
           "image": "stalwartlabs/mail-server:v0.11",
-          "port": 8443,
+          "port": 443,
           "port_env": null,
           "dns": "stalwart.app",
           "public": true,
@@ -2155,7 +2147,7 @@
         "stalwart"
       ],
       "all_ports": [
-        "8443"
+        "443"
       ],
       "all_dns": [
         "stalwart.app"
@@ -2175,7 +2167,7 @@
         }
       },
       "declared_ports": {
-        "app": 8443,
+        "app": 443,
         "smtp": 465,
         "imap": 993
       },
@@ -2419,13 +2411,7 @@
         "3001",
         "5433",
         "6381",
-        "9000",
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
+        "9000"
       ],
       "all_dns": [
         "crawlee.app",
@@ -2447,17 +2433,8 @@
           "crawlee_runner",
           "crawlee_scheduler"
         ],
-        "ports": [
-          "3000:3000",
-          "3001:3001",
-          "5433:5432",
-          "6380:6379",
-          "9000:9000",
-          "9001:9001"
-        ],
-        "networks": [
-          "crawlee_network"
-        ]
+        "ports": [],
+        "networks": []
       },
       "proxy": {
         "primary": {
@@ -2898,7 +2875,7 @@
       "all_dns": [],
       "compose": {
         "containers": [
-          "rig"
+          "rig-agentic-sonn-14bq8"
         ],
         "ports": [],
         "networks": []
@@ -3283,31 +3260,6 @@
         "path": "/health"
       }
     },
-    "orchestrator": {
-      "category": "sec",
-      "vm": "oci-A1-f_0",
-      "folder": "bb-sec_orchestrator",
-      "description": "Container orchestrator — resource budget management for on-demand services",
-      "containers": {
-        "app": {
-          "container_name": "orchestrator",
-          "image": "",
-          "public": false
-        }
-      },
-      "container_names": [
-        "orchestrator"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [
-          "orchestrator"
-        ],
-        "ports": [],
-        "networks": []
-      }
-    },
     "sauron-central": {
       "category": "sec",
       "vm": "oci-A1-f_0",
@@ -3554,7 +3506,9 @@
         "c3-services-api.app"
       ],
       "compose": {
-        "containers": [],
+        "containers": [
+          "c3-services-api"
+        ],
         "ports": [],
         "networks": []
       },
@@ -3779,7 +3733,7 @@
       "containers": {
         "app": {
           "container_name": "dagu",
-          "image": "dagu-ssh:local",
+          "image": "ghcr.io/diegonmarcos/dagu:latest",
           "port": 8070,
           "port_env": null,
           "dns": "dagu.app",
@@ -4627,11 +4581,11 @@
           ],
           "resources": {
             "limits": {
-              "memory": "256M",
-              "cpus": "0.5"
+              "memory": "512M",
+              "cpus": "1.0"
             },
             "reservations": {
-              "memory": "128M"
+              "memory": "256M"
             }
           },
           "read_only": false

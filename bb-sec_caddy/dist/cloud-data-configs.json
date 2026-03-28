@@ -3,7 +3,7 @@
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/configs",
     "source": "_cloud-data-consolidated.json",
-    "generated_at": "2026-03-26T19:44:27.461Z"
+    "generated_at": "2026-03-28T12:20:25.747Z"
   },
   "services": [
     {
@@ -220,17 +220,8 @@
       "vm": "oci-A1-f_0",
       "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
       "domain": "api.diegonmarcos.com",
-      "ports": [
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
-      ],
-      "networks": [
-        "crawlee_network"
-      ],
+      "ports": [],
+      "networks": [],
       "containers": [
         "crawlee_api",
         "crawlee_runner",
@@ -543,18 +534,6 @@
       "networks": [],
       "containers": [
         "ollama-hai"
-      ]
-    },
-    {
-      "name": "orchestrator",
-      "category": "sec",
-      "vm": "oci-A1-f_0",
-      "description": "Container orchestrator — resource budget management for on-demand services",
-      "domain": "—",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "orchestrator"
       ]
     },
     {
@@ -1137,18 +1116,6 @@
       ]
     },
     {
-      "name": "orchestrator",
-      "category": "sec",
-      "vm": "oci-A1-f_0",
-      "description": "Container orchestrator — resource budget management for on-demand services",
-      "domain": "—",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "orchestrator"
-      ]
-    },
-    {
       "name": "postlite",
       "category": "data",
       "vm": "gcp-E2-f_0",
@@ -1268,17 +1235,8 @@
       "vm": "oci-A1-f_0",
       "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
       "domain": "api.diegonmarcos.com",
-      "ports": [
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
-      ],
-      "networks": [
-        "crawlee_network"
-      ],
+      "ports": [],
+      "networks": [],
       "containers": [
         "crawlee_api",
         "crawlee_runner",

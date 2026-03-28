@@ -1,0 +1,321 @@
+{
+  "_generated": "2026-03-28T02:16:56.743Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+  "vm": "oci-apps",
+  "vm_id": "oci-A1-f_0",
+  "services": [
+    {
+      "name": "code-server",
+      "dir": "aa-sui_code-server",
+      "compose_path": "/opt/containers/code-server",
+      "images": [
+        "linuxserver/code-server:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "etherpad",
+      "dir": "aa-sui_etherpad",
+      "compose_path": "/opt/containers/etherpad",
+      "images": [
+        "etherpad/etherpad:latest",
+        "postgres:16-alpine"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "filebrowser",
+      "dir": "aa-sui_filebrowser",
+      "compose_path": "/opt/containers/filebrowser",
+      "images": [
+        "filebrowser/filebrowser:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "google-workspace-mcp",
+      "dir": "aa-sui_google-workspace-mcp",
+      "compose_path": "/opt/containers/google-workspace-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/google-workspace-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "grist",
+      "dir": "aa-sui_grist",
+      "compose_path": "/opt/containers/grist",
+      "images": [
+        "gristlabs/grist:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "hedgedoc",
+      "dir": "aa-sui_hedgedoc",
+      "compose_path": "/opt/containers/hedgedoc",
+      "images": [
+        "quay.io/hedgedoc/hedgedoc:latest",
+        "postgres:16-alpine"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "mail-mcp",
+      "dir": "aa-sui_mail-mcp",
+      "compose_path": "/opt/containers/mail-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/mail-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "mattermost-bots",
+      "dir": "aa-sui_mattermost-bots",
+      "compose_path": "/opt/containers/mattermost-bots",
+      "images": [
+        "ngrie/mattermost-team-edition-arm:10.11",
+        "postgres:16-alpine",
+        "python:3.12-slim"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "mattermost-mcp",
+      "dir": "aa-sui_mattermost-mcp",
+      "compose_path": "/opt/containers/mattermost-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/mattermost-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "photoprism",
+      "dir": "aa-sui_photoprism",
+      "compose_path": "/opt/containers/photoprism",
+      "images": [
+        "photoprism/photoprism:latest",
+        "mariadb:11",
+        "rclone/rclone:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "photos-webhook",
+      "dir": "aa-sui_photos-webhook",
+      "compose_path": "/opt/containers/photos-webhook",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "radicale",
+      "dir": "aa-sui_radicale",
+      "compose_path": "/opt/containers/radicale",
+      "images": [
+        "tomsquest/docker-radicale:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "revealmd",
+      "dir": "aa-sui_revealmd",
+      "compose_path": "/opt/containers/revealmd",
+      "images": [
+        "webpronl/reveal-md:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "crawlee-cloud",
+      "dir": "ac-fin_crawlee-cloud",
+      "compose_path": "/opt/containers/crawlee-cloud",
+      "images": [
+        "postgres:16-alpine",
+        "redis:7-alpine",
+        "minio/minio:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "quant-lab-full",
+      "dir": "ac-fin_quant-lab-full",
+      "compose_path": "/opt/containers/quant-lab-full",
+      "images": [
+        "quay.io/jupyter/scipy-notebook:latest",
+        "python:3.12-slim",
+        "python:3.12-slim",
+        "python:3.12-slim",
+        "python:3.12-slim",
+        "postgres:16-alpine"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "quant-lab-light",
+      "dir": "ac-fin_quant-lab-light",
+      "compose_path": "/opt/containers/quant-lab-light",
+      "images": [
+        "quay.io/jupyter/scipy-notebook:latest",
+        "python:3.12-slim",
+        "postgres:16-alpine"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "ollama-hai",
+      "dir": "ad-agi_ollama-hai",
+      "compose_path": "/opt/containers/ollama-hai",
+      "images": [
+        "ollama/ollama:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "rig-agentic-hai-1.5bq4",
+      "dir": "ad-agi_rig-agentic-hai-1.5bq4",
+      "compose_path": "/opt/containers/rig-agentic-hai-1.5bq4",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "rig-agentic-sonn-14bq8",
+      "dir": "ad-agi_rig-agentic-sonn-14bq8",
+      "compose_path": "/opt/containers/rig-agentic-sonn-14bq8",
+      "images": [],
+      "has_docker_build": true
+    },
+    {
+      "name": "sauron-central",
+      "dir": "bb-sec_sauron-central",
+      "compose_path": "/opt/containers/sauron-central",
+      "images": [],
+      "has_docker_build": false
+    },
+    {
+      "name": "c3-infra-api",
+      "dir": "bc-obs_c3-infra-api",
+      "compose_path": "/opt/containers/c3-infra-api",
+      "images": [
+        "ghcr.io/diegonmarcos/c3-infra-api:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "c3-infra-mcp",
+      "dir": "bc-obs_c3-infra-mcp",
+      "compose_path": "/opt/containers/c3-infra-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/c3-infra-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "c3-services-api",
+      "dir": "bc-obs_c3-services-api",
+      "compose_path": "/opt/containers/c3-services-api",
+      "images": [
+        "ghcr.io/diegonmarcos/c3-services-api:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "c3-services-mcp",
+      "dir": "bc-obs_c3-services-mcp",
+      "compose_path": "/opt/containers/c3-services-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/c3-services-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "cloud-cgc-mcp",
+      "dir": "bc-obs_cloud-cgc-mcp",
+      "compose_path": "/opt/containers/cloud-cgc-mcp",
+      "images": [
+        "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest"
+      ],
+      "has_docker_build": true
+    },
+    {
+      "name": "cloud-spec",
+      "dir": "bc-obs_cloud-spec",
+      "compose_path": "/opt/containers/cloud-spec",
+      "images": [
+        "busybox:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "lgtm",
+      "dir": "bc-obs_lgtm",
+      "compose_path": "/opt/containers/lgtm",
+      "images": [
+        "grafana/grafana:latest",
+        "grafana/loki:latest",
+        "grafana/tempo:2.7.2",
+        "grafana/mimir:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "nocodb",
+      "dir": "bc-obs_nocodb",
+      "compose_path": "/opt/containers/nocodb",
+      "images": [
+        "nocodb/nocodb:latest",
+        "postgres:16-bookworm"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "windmill",
+      "dir": "bc-obs_windmill",
+      "compose_path": "/opt/containers/windmill",
+      "images": [
+        "ghcr.io/windmill-labs/windmill:main",
+        "postgres:16-alpine",
+        "ghcr.io/windmill-labs/windmill:main"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "backup-borg",
+      "dir": "ca-dat_backup-borg",
+      "compose_path": "/opt/containers/backup-borg",
+      "images": [],
+      "has_docker_build": false
+    },
+    {
+      "name": "backup-bup",
+      "dir": "ca-dat_backup-bup",
+      "compose_path": "/opt/containers/backup-bup",
+      "images": [],
+      "has_docker_build": false
+    },
+    {
+      "name": "backup-gitea",
+      "dir": "ca-dat_backup-gitea",
+      "compose_path": "/opt/containers/backup-gitea",
+      "images": [
+        "gitea/gitea:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "gitea",
+      "dir": "ca-dat_gitea",
+      "compose_path": "/opt/containers/gitea",
+      "images": [
+        "gitea/gitea:latest"
+      ],
+      "has_docker_build": false
+    },
+    {
+      "name": "kg-graph",
+      "dir": "ca-dat_kg-graph",
+      "compose_path": "/opt/containers/kg-graph",
+      "images": [],
+      "has_docker_build": false
+    }
+  ]
+}

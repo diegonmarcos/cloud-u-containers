@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.434Z",
+  "_generated": "2026-03-28T12:20:25.733Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/gha-config",
   "vms": {
     "oci-mail": {
@@ -82,7 +82,7 @@
     "photos-webhook": {
       "dir": "aa-sui_photos-webhook",
       "vm": "oci-apps",
-      "has_docker": false
+      "has_docker": true
     },
     "radicale": {
       "dir": "aa-sui_radicale",
@@ -102,7 +102,7 @@
     "smtp-proxy": {
       "dir": "aa-sui_tools-smtp-proxy",
       "vm": "oci-mail",
-      "has_docker": false
+      "has_docker": true
     },
     "stalwart": {
       "dir": "aa-sui_tools-stalwart",
@@ -137,12 +137,12 @@
     "rig-agentic-hai-1.5bq4": {
       "dir": "ad-agi_rig-agentic-hai-1.5bq4",
       "vm": "oci-apps",
-      "has_docker": false
+      "has_docker": true
     },
     "rig-agentic-sonn-14bq8": {
       "dir": "ad-agi_rig-agentic-sonn-14bq8",
       "vm": "oci-apps",
-      "has_docker": false
+      "has_docker": true
     },
     "hickory-dns": {
       "dir": "ba-clo_hickory-dns",
@@ -164,11 +164,6 @@
       "vm": "gcp-proxy",
       "has_docker": true
     },
-    "orchestrator": {
-      "dir": "bb-sec_orchestrator",
-      "vm": "oci-apps",
-      "has_docker": false
-    },
     "sauron-central": {
       "dir": "bb-sec_sauron-central",
       "vm": "oci-apps",
@@ -177,7 +172,7 @@
     "alerts-api": {
       "dir": "bc-obs_alerts-api",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "c3-infra-api": {
       "dir": "bc-obs_c3-infra-api",
@@ -212,7 +207,7 @@
     "dagu": {
       "dir": "bc-obs_dagu",
       "vm": "oci-mail",
-      "has_docker": false
+      "has_docker": true
     },
     "dozzle": {
       "dir": "bc-obs_dozzle",
@@ -232,7 +227,7 @@
     "matomo": {
       "dir": "bc-obs_matomo",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "nocodb": {
       "dir": "bc-obs_nocodb",
@@ -292,7 +287,7 @@
     "postlite": {
       "dir": "ca-dat_postlite",
       "vm": "gcp-proxy",
-      "has_docker": false
+      "has_docker": true
     },
     "redis": {
       "dir": "ca-dat_redis",

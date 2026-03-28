@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.437Z",
+  "_generated": "2026-03-28T12:20:25.734Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/container-resources",
   "services": {
     "code-server": {
@@ -347,15 +347,6 @@
       ],
       "resources": null
     },
-    "orchestrator": {
-      "vm": "oci-apps",
-      "vm_ram_gb": 24,
-      "vm_cpu": 4,
-      "containers": [
-        "orchestrator"
-      ],
-      "resources": null
-    },
     "sauron-central": {
       "vm": "oci-apps",
       "vm_ram_gb": 24,
@@ -564,11 +555,11 @@
       ],
       "resources": {
         "limits": {
-          "memory": "256M",
-          "cpus": "0.5"
+          "memory": "512M",
+          "cpus": "1.0"
         },
         "reservations": {
-          "memory": "128M"
+          "memory": "256M"
         }
       }
     },
