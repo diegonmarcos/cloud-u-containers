@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   syslog-forwarder:
-    image: balabit/syslog-ng:4.4.0
+    image: ghcr.io/diegonmarcos/syslog-forwarder:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM balabit/syslog-ng:4.4.0
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="syslog-forwarder"
+        LABEL org.opencontainers.image.title="syslog-forwarder"
+        LABEL cloud.diegonmarcos.from-image="balabit/syslog-ng:4.4.0"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: syslog-forwarder
     restart: "no"  # container-init handles startup
     network_mode: host

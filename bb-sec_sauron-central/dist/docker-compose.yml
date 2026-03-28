@@ -2,36 +2,84 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bb-sec_sauron-central/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bb-sec_sauron-central/build.sh ship ║
+# ║ Source: ~/git/cloud/a_solutions/bb-sec_sauron-central/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# Central Syslog Collector - Deploy on oci-analytics
-# Receives alerts from all VMs, stores in SQLite
-# Dormant by default — start manually: docker compose up -d
-
 services:
-  syslog-central:
-    image: balabit/syslog-ng:4.4.0
-    container_name: syslog-central
-    restart: "no"
-    network_mode: host
-    volumes:
-      - ./syslog-ng-central.conf:/etc/syslog-ng/syslog-ng.conf:ro
-      - siem-data:/var/log/siem
-
   siem-api:
-    image: python:3.11-slim
-    container_name: siem-api
-    restart: "no"
-    network_mode: host
+    image: ghcr.io/diegonmarcos/sauron-api:latest
     build:
       context: .
-      dockerfile: Dockerfile.api
-    volumes:
-      - siem-data:/var/log/siem:ro
-      - ./api:/app:ro
+      dockerfile_inline: |
+        FROM python:3.11-slim
+        COPY api/app.py /app/app.py
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="sauron-api"
+        LABEL org.opencontainers.image.title="sauron-api"
+        LABEL cloud.diegonmarcos.from-image="python:3.11-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: siem-api
+    network_mode: host
+    command: ["python", "/app/app.py"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - DB_PATH=/var/log/siem/alerts.db
+    volumes:
+      - siem-data:/var/log/siem:ro
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
+  syslog-central:
+    image: ghcr.io/diegonmarcos/sauron-syslog:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM balabit/syslog-ng:4.4.0
+        COPY syslog-ng-central.conf /etc/syslog-ng/syslog-ng.conf
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="sauron-syslog"
+        LABEL org.opencontainers.image.title="sauron-syslog"
+        LABEL cloud.diegonmarcos.from-image="balabit/syslog-ng:4.4.0"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: syslog-central
+    network_mode: host
+    restart: no
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    volumes:
+      - siem-data:/var/log/siem
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   siem-data:

@@ -2,22 +2,34 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/build.sh ship ║
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_mattermost-bots/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   mattermost:
-    image: ngrie/mattermost-team-edition-arm:10.11
+    image: ghcr.io/diegonmarcos/mattermost:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ngrie/mattermost-team-edition-arm:10.11
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="mattermost"
+        LABEL org.opencontainers.image.title="mattermost"
+        LABEL cloud.diegonmarcos.from-image="ngrie/mattermost-team-edition-arm:10.11"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: mattermost
-    command: mattermost server
-    restart: "no"  # container-init handles startup
     network_mode: host
-    volumes:
-      - ./data/mattermost/config:/mattermost/config
-      - ./data/mattermost/data:/mattermost/data
-      - ./data/mattermost/logs:/mattermost/logs
-      - ./data/mattermost/plugins:/mattermost/plugins
-      - ./data/mattermost/client-plugins:/mattermost/client/plugins
+    command: mattermost server
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
     environment:
@@ -37,34 +49,47 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-  postgres:
-    image: postgres:16-alpine
-    container_name: mattermost-postgres
-    restart: "no"  # container-init handles startup
-    network_mode: host
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    env_file:
-      - .secrets
-    environment:
-      - POSTGRES_DB=mattermost
-      - POSTGRES_USER=mattermost
-      - PGPORT=5435
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mattermost_config:/mattermost/config
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   mattermost-bots:
-    image: python:3.12-slim
+    image: ghcr.io/diegonmarcos/mattermost-bots:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        COPY ntfy-bridge.py /app/ntfy-bridge.py
+        COPY requirements-bridge.txt /app/requirements.txt
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="mattermost-bots"
+        LABEL org.opencontainers.image.title="mattermost-bots"
+        LABEL cloud.diegonmarcos.from-image="python:3.12-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: mattermost-bots
-    restart: "no"  # container-init handles startup
     network_mode: host
-    volumes:
-      - ./ntfy-bridge.py:/app/ntfy-bridge.py:ro
-      - ./requirements-bridge.txt:/app/requirements.txt:ro
     entrypoint: ["/bin/sh", "-c", "pip install --quiet -r /app/requirements.txt && python /app/ntfy-bridge.py"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     env_file:
       - .secrets
     environment:
@@ -79,4 +104,65 @@ services:
       - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_MATTERMOST_SECRET}
       - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
     depends_on:
-      - mattermost
+      mattermost:
+        condition: service_started
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: ghcr.io/diegonmarcos/mattermost-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="mattermost-db"
+        LABEL org.opencontainers.image.title="mattermost-db"
+        LABEL cloud.diegonmarcos.from-image="postgres:16-alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: mattermost-postgres
+    network_mode: host
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
+    environment:
+      - POSTGRES_DB=mattermost
+      - POSTGRES_USER=mattermost
+      - PGPORT=5435
+    volumes:
+      - mattermost_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  mattermost_client_plugins:
+  mattermost_config:
+  mattermost_data:
+  mattermost_logs:
+  mattermost_plugins:
+  mattermost_postgres:

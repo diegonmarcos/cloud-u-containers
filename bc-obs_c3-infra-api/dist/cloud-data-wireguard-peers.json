@@ -1,12 +1,11 @@
 {
-  "_generated": "2026-03-24T15:20:06.968Z",
-  "_source": "cloud-data-topology.json via /cloud-data/wireguard-peers",
-  "hub": null,
+  "_generated": "2026-03-26T19:44:27.434Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/wireguard-peers",
+  "hub": "gcp-E2-f_0",
   "peers": [
     "oci-E2-f_0",
     "oci-E2-f_1",
     "oci-A1-f_0",
-    "oci-A1-p_0",
     "gcp-T4-p_0"
   ],
   "mesh_peers": [
@@ -29,13 +28,6 @@
       "name": "oci-apps",
       "wg_ip": "10.0.0.6",
       "public_ip": "82.70.229.129",
-      "user": "ubuntu"
-    },
-    {
-      "vm_id": "oci-A1-p_0",
-      "name": "oci-apps-2",
-      "wg_ip": "10.0.0.7",
-      "public_ip": "79.72.28.10",
       "user": "ubuntu"
     },
     {

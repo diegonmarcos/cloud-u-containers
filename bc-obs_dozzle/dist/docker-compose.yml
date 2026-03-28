@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   dozzle:
-    image: amir20/dozzle:latest
+    image: ghcr.io/diegonmarcos/dozzle:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM amir20/dozzle:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="dozzle"
+        LABEL org.opencontainers.image.title="dozzle"
+        LABEL cloud.diegonmarcos.from-image="amir20/dozzle:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: dozzle
     network_mode: host
     restart: unless-stopped

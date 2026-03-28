@@ -1,18 +1,8 @@
 {
-  "_generated": "2026-03-24T15:20:09.293Z",
-  "_source": "cloud-data-topology.json via /cloud-data/log-routing",
+  "_generated": "2026-03-26T19:44:27.438Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/log-routing",
   "vms": {
     "oci-apps": [
-      {
-        "container": "hedgedoc_app",
-        "service": "affine",
-        "log_level": "info"
-      },
-      {
-        "container": "hedgedoc_postgres",
-        "service": "affine",
-        "log_level": "info"
-      },
       {
         "container": "code-server",
         "service": "code-server",
@@ -34,6 +24,11 @@
         "log_level": "info"
       },
       {
+        "container": "google-workspace-mcp",
+        "service": "google-workspace-mcp",
+        "log_level": "info"
+      },
+      {
         "container": "grist_app",
         "service": "grist",
         "log_level": "info"
@@ -49,7 +44,17 @@
         "log_level": "info"
       },
       {
+        "container": "mail-mcp",
+        "service": "mail-mcp",
+        "log_level": "info"
+      },
+      {
         "container": "mattermost",
+        "service": "mattermost-bots",
+        "log_level": "info"
+      },
+      {
+        "container": "mattermost-postgres",
         "service": "mattermost-bots",
         "log_level": "info"
       },
@@ -59,8 +64,8 @@
         "log_level": "info"
       },
       {
-        "container": "mattermost-postgres",
-        "service": "mattermost-bots",
+        "container": "mattermost-mcp",
+        "service": "mattermost-mcp",
         "log_level": "info"
       },
       {
@@ -76,11 +81,6 @@
       {
         "container": "photoprism_rclone",
         "service": "photoprism",
-        "log_level": "info"
-      },
-      {
-        "container": "photos-db",
-        "service": "photos-webhook",
         "log_level": "info"
       },
       {
@@ -104,32 +104,12 @@
         "log_level": "info"
       },
       {
-        "container": "crawlee_dashboard",
-        "service": "crawlee-cloud",
-        "log_level": "info"
-      },
-      {
-        "container": "crawlee_db",
-        "service": "crawlee-cloud",
-        "log_level": "info"
-      },
-      {
-        "container": "crawlee_minio",
-        "service": "crawlee-cloud",
-        "log_level": "info"
-      },
-      {
-        "container": "crawlee_minio_init",
-        "service": "crawlee-cloud",
-        "log_level": "info"
-      },
-      {
-        "container": "crawlee_redis",
-        "service": "crawlee-cloud",
-        "log_level": "info"
-      },
-      {
         "container": "crawlee_runner",
+        "service": "crawlee-cloud",
+        "log_level": "info"
+      },
+      {
+        "container": "crawlee_dashboard",
         "service": "crawlee-cloud",
         "log_level": "info"
       },
@@ -139,18 +119,78 @@
         "log_level": "info"
       },
       {
-        "container": "quant-lab-full",
+        "container": "crawlee_db",
+        "service": "crawlee-cloud",
+        "log_level": "info"
+      },
+      {
+        "container": "crawlee_redis",
+        "service": "crawlee-cloud",
+        "log_level": "info"
+      },
+      {
+        "container": "crawlee_minio",
+        "service": "crawlee-cloud",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_full_research",
         "service": "quant-lab-full",
         "log_level": "info"
       },
       {
-        "container": "quant-lab-light",
+        "container": "quant_full_analytics",
+        "service": "quant-lab-full",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_full_ml",
+        "service": "quant-lab-full",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_full_risk",
+        "service": "quant-lab-full",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_full_engine",
+        "service": "quant-lab-full",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_full_db",
+        "service": "quant-lab-full",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_light_research",
         "service": "quant-lab-light",
         "log_level": "info"
       },
       {
-        "container": "rig",
-        "service": "rig-agentic",
+        "container": "quant_light_engine",
+        "service": "quant-lab-light",
+        "log_level": "info"
+      },
+      {
+        "container": "quant_light_db",
+        "service": "quant-lab-light",
+        "log_level": "info"
+      },
+      {
+        "container": "ollama-hai",
+        "service": "ollama-hai",
+        "log_level": "info"
+      },
+      {
+        "container": "rig-agentic-hai-1.5bq4",
+        "service": "rig-agentic-hai-1.5bq4",
+        "log_level": "info"
+      },
+      {
+        "container": "rig-agentic-sonn-14bq8",
+        "service": "rig-agentic-sonn-14bq8",
         "log_level": "info"
       },
       {
@@ -159,8 +199,38 @@
         "log_level": "info"
       },
       {
-        "container": "rust-api",
-        "service": "rust-api",
+        "container": "sauron-central",
+        "service": "sauron-central",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-infra-api",
+        "service": "c3-infra-api",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-infra-mcp",
+        "service": "c3-infra-mcp",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-services-api",
+        "service": "c3-services-api",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-services-mcp",
+        "service": "c3-services-mcp",
+        "log_level": "info"
+      },
+      {
+        "container": "cloud-cgc-mcp",
+        "service": "cloud-cgc-mcp",
+        "log_level": "info"
+      },
+      {
+        "container": "cloud-spec",
+        "service": "cloud-spec",
         "log_level": "info"
       },
       {
@@ -174,12 +244,12 @@
         "log_level": "info"
       },
       {
-        "container": "lgtm_mimir",
+        "container": "lgtm_tempo",
         "service": "lgtm",
         "log_level": "info"
       },
       {
-        "container": "lgtm_tempo",
+        "container": "lgtm_mimir",
         "service": "lgtm",
         "log_level": "info"
       },
@@ -194,12 +264,27 @@
         "log_level": "info"
       },
       {
-        "container": "borg-server",
+        "container": "windmill-server",
+        "service": "windmill",
+        "log_level": "info"
+      },
+      {
+        "container": "windmill-db",
+        "service": "windmill",
+        "log_level": "info"
+      },
+      {
+        "container": "windmill-worker",
+        "service": "windmill",
+        "log_level": "info"
+      },
+      {
+        "container": "backup-borg",
         "service": "backup-borg",
         "log_level": "info"
       },
       {
-        "container": "bup-server",
+        "container": "backup-bup",
         "service": "backup-bup",
         "log_level": "info"
       },
@@ -214,75 +299,15 @@
         "log_level": "info"
       },
       {
-        "container": "surrealdb",
+        "container": "kg-graph",
         "service": "kg-graph",
-        "log_level": "info"
-      },
-      {
-        "container": "c3-infra-mcp-api",
-        "service": "c3-infra-mcp-api",
-        "log_level": "info"
-      },
-      {
-        "container": "sauron",
-        "service": "sauron-lite-flex",
-        "log_level": "info"
-      },
-      {
-        "container": "db-agent",
-        "service": "db-agent-flex",
-        "log_level": "info"
-      },
-      {
-        "container": "rig",
-        "service": "rig",
         "log_level": "info"
       }
     ],
     "oci-mail": [
       {
-        "container": "mailu-mcp",
-        "service": "mailu-mcp",
-        "log_level": "info"
-      },
-      {
-        "container": "admin",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "antispam",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "front",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "imap",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "redis",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "resolver",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "smtp",
-        "service": "mailu",
-        "log_level": "info"
-      },
-      {
-        "container": "webmail",
-        "service": "mailu",
+        "container": "snappymail",
+        "service": "snappymail",
         "log_level": "info"
       },
       {
@@ -291,8 +316,8 @@
         "log_level": "info"
       },
       {
-        "container": "syncthing",
-        "service": "syncthing",
+        "container": "stalwart",
+        "service": "stalwart",
         "log_level": "info"
       },
       {
@@ -303,16 +328,6 @@
       {
         "container": "syslog-forwarder",
         "service": "syslog-forwarder",
-        "log_level": "info"
-      },
-      {
-        "container": "sauron",
-        "service": "sauron-lite-micro1",
-        "log_level": "info"
-      },
-      {
-        "container": "syslog-forwarder",
-        "service": "syslog-forwarder-micro1",
         "log_level": "info"
       }
     ],
@@ -348,42 +363,12 @@
         "log_level": "info"
       },
       {
-        "container": "siem-api",
-        "service": "sauron-central",
-        "log_level": "info"
-      },
-      {
-        "container": "syslog-central",
-        "service": "sauron-central",
-        "log_level": "info"
-      },
-      {
-        "container": "alerts-api",
-        "service": "alerts-api",
-        "log_level": "info"
-      },
-      {
-        "container": "dozzle",
-        "service": "dozzle",
-        "log_level": "info"
-      },
-      {
-        "container": "fluent-bit",
-        "service": "fluent-bit",
-        "log_level": "info"
-      },
-      {
-        "container": "github-rss",
-        "service": "ntfy",
+        "container": "introspect-proxy",
+        "service": "introspect-proxy",
         "log_level": "info"
       },
       {
         "container": "ntfy",
-        "service": "ntfy",
-        "log_level": "info"
-      },
-      {
-        "container": "ntfy-topic-scanner",
         "service": "ntfy",
         "log_level": "info"
       },
@@ -393,58 +378,18 @@
         "log_level": "info"
       },
       {
-        "container": "postlite-authelia",
-        "service": "postlite",
+        "container": "github-rss",
+        "service": "ntfy",
         "log_level": "info"
       },
       {
-        "container": "postlite-npm",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "postlite-ntfy",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "postlite-vaultwarden",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "sqlite-authelia",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "sqlite-npm",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "sqlite-ntfy",
-        "service": "postlite",
-        "log_level": "info"
-      },
-      {
-        "container": "sqlite-vaultwarden",
+        "container": "postlite",
         "service": "postlite",
         "log_level": "info"
       },
       {
         "container": "redis",
         "service": "redis",
-        "log_level": "info"
-      },
-      {
-        "container": "sauron",
-        "service": "sauron-lite-gcp",
-        "log_level": "info"
-      },
-      {
-        "container": "db-agent",
-        "service": "db-agent-gcp",
         "log_level": "info"
       }
     ],
@@ -462,7 +407,49 @@
         "log_level": "info"
       }
     ],
+    "local": [
+      {
+        "container": "cloudflare",
+        "service": "cloudflare",
+        "log_level": "info"
+      },
+      {
+        "container": "cloudflare-worker",
+        "service": "cloudflare-worker",
+        "log_level": "info"
+      },
+      {
+        "container": "gcloud",
+        "service": "gcloud",
+        "log_level": "info"
+      },
+      {
+        "container": "caddy-l4-image",
+        "service": "caddy-l4-image",
+        "log_level": "info"
+      },
+      {
+        "container": "c3-diego-personal-data-mcp",
+        "service": "c3-diego-personal-data-mcp",
+        "log_level": "info"
+      }
+    ],
     "oci-analytics": [
+      {
+        "container": "alerts-api",
+        "service": "alerts-api",
+        "log_level": "info"
+      },
+      {
+        "container": "dozzle",
+        "service": "dozzle",
+        "log_level": "info"
+      },
+      {
+        "container": "fluent-bit",
+        "service": "fluent-bit",
+        "log_level": "info"
+      },
       {
         "container": "matomo-hybrid",
         "service": "matomo",
@@ -474,28 +461,30 @@
         "log_level": "info"
       },
       {
-        "container": "windmill-db",
-        "service": "windmill",
+        "container": "umami",
+        "service": "umami",
         "log_level": "info"
       },
       {
-        "container": "windmill-server",
-        "service": "windmill",
+        "container": "umami-db",
+        "service": "umami",
         "log_level": "info"
       },
       {
-        "container": "windmill-worker",
-        "service": "windmill",
+        "container": "umami-setup",
+        "service": "umami",
         "log_level": "info"
-      },
+      }
+    ],
+    "all": [
       {
-        "container": "sauron",
-        "service": "sauron-lite-micro2",
+        "container": "sauron-lite",
+        "service": "sauron-lite",
         "log_level": "info"
       },
       {
         "container": "db-agent",
-        "service": "db-agent-micro2",
+        "service": "db-agent",
         "log_level": "info"
       }
     ]

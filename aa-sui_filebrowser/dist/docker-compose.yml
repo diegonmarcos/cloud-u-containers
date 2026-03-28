@@ -7,9 +7,19 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   filebrowser:
-    image: filebrowser/filebrowser:latest
+    image: ghcr.io/diegonmarcos/filebrowser:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM filebrowser/filebrowser:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="filebrowser"
+        LABEL org.opencontainers.image.title="filebrowser"
+        LABEL cloud.diegonmarcos.from-image="filebrowser/filebrowser:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: filebrowser_app
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     read_only: true
     tmpfs:

@@ -7,9 +7,14 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   research:
-    image: quay.io/jupyter/scipy-notebook:latest
+    image: ghcr.io/diegonmarcos/quant-light-research:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM quay.io/jupyter/scipy-notebook:latest
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: quant_light_research
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     volumes:
       - ./notebooks:/home/jovyan/work
@@ -28,9 +33,14 @@ services:
       start_period: 60s
 
   engine:
-    image: python:3.12-slim
+    image: ghcr.io/diegonmarcos/quant-light-engine:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.12-slim
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: quant_light_engine
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     volumes:
       - ./strategies:/app/strategies
@@ -43,9 +53,14 @@ services:
              tail -f /dev/null"
 
   db:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/quant-light-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: quant_light_db
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     env_file:
       - .secrets

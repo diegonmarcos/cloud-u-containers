@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   grist:
-    image: gristlabs/grist:latest
+    image: ghcr.io/diegonmarcos/grist:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM gristlabs/grist:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="grist"
+        LABEL org.opencontainers.image.title="grist"
+        LABEL cloud.diegonmarcos.from-image="gristlabs/grist:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: grist_app
     network_mode: host
     restart: no

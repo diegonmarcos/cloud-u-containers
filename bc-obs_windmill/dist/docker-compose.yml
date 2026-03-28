@@ -11,7 +11,12 @@
 
 services:
   windmill-db:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/windmill-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: windmill-db
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -37,7 +42,12 @@ services:
       retries: 5
 
   windmill-server:
-    image: ghcr.io/windmill-labs/windmill:main
+    image: ghcr.io/diegonmarcos/windmill:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ghcr.io/windmill-labs/windmill:main
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: windmill-server
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -80,7 +90,12 @@ services:
       start_period: 30s
 
   windmill-worker:
-    image: ghcr.io/windmill-labs/windmill:main
+    image: ghcr.io/diegonmarcos/windmill:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ghcr.io/windmill-labs/windmill:main
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: windmill-worker
     restart: "no"  # container-init handles startup
     network_mode: host

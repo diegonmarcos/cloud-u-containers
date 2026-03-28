@@ -1,14 +1,35 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ad-agi_rig-agentic-sonn-14bq8/     ║
+# ║ Rebuild: build.sh ship                                              ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
-  rig:
+  rig-agentic-sonn-14bq8:
     build:
       context: .
       dockerfile: Dockerfile
-    image: rig-infra:latest
-    container_name: rig
-    restart: unless-stopped
+    image: ghcr.io/diegonmarcos/rig-agentic-sonn:latest
+    container_name: rig-agentic-sonn-14bq8
+    restart: "no"  # container-init handles startup
     network_mode: host
     env_file:
       - .secrets
+    environment:
+      - RIG_PORT=8090
+      - OLLAMA_URL=http://10.0.0.8:11434
+      - OLLAMA_API_BASE_URL=http://10.0.0.8:11434
+      - OLLAMA_MODEL=MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0
+      - C3_API_URL=http://c3-api.app:8081
+      - C3_MCP_URL=http://c3-mcp.app:3100
+      - MATTERMOST_URL=http://mattermost.app:8065
+      - GUARDRAIL_MAX_TURNS=20
+      - GUARDRAIL_DENIED_TOOLS=
+      - GUARDRAIL_ALLOWED_TOOLS=
+      - SELF_HEALING_ENABLED=true
+      - MM_BOT_MENTION=@ollama-14bq8-ai
+      - RUST_LOG=rig_agentic=info
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
@@ -17,3 +38,4 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+

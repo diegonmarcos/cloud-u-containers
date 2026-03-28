@@ -2,65 +2,101 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-lite/src/flake.nix ║
-# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_sauron-lite/build.sh ship ║
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_sauron-lite/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-
 services:
-  sauron:
-    build: .
-    container_name: sauron
-    restart: "no"  # container-init handles startup
+  forwarder:
+    image: ghcr.io/diegonmarcos/sauron-forwarder:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM debian:bookworm-slim
+        COPY forwarder.sh /forwarder.sh
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="sauron-forwarder"
+        LABEL org.opencontainers.image.title="sauron-forwarder"
+        LABEL cloud.diegonmarcos.from-image="debian:bookworm-slim"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: sauron-forwarder
     network_mode: host
-    volumes:
-      # Watch paths (read-only)
-      - /etc:/watch/etc:ro
-      - /home:/watch/home:ro
-      # YARA rules
-      - ./yara-rules:/etc/sauron/yara-rules:ro
-      # Persistent logs and queue
-      - ./data/logs:/var/log/sauron
-      - ./data/queue:/var/spool/sauron
+    entrypoint: ["/bin/sh", "/forwarder.sh"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
-      TZ: Europe/Madrid
-      VM_NAME: "${VM_NAME:-unknown}"
-      WATCH_DIRS: /watch/etc /watch/home
-      QUEUE_FILE: /var/spool/sauron/scan-queue.txt
-      ALERTS_FILE: /var/log/sauron/alerts.jsonl
-      RULES_DIR: /etc/sauron/yara-rules
-    mem_limit: 64m
-    cpus: 0.25
-    cpu_shares: 256
+      CENTRAL_HOST: 35.226.147.64
+      CENTRAL_PORT: "5514"
+    depends_on:
+      sauron:
+        condition: service_started
+    volumes:
+      - sauron_logs:/var/log/sauron:ro
+    deploy:
+      resources:
+        limits:
+          memory: 16m
+          cpus: "0.05"
+          pids: 256
     logging:
       driver: "json-file"
       options:
-        max-size: "5m"
-        max-file: "2"
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+  sauron:
+    image: ghcr.io/diegonmarcos/sauron:latest
+    build: .
+    container_name: sauron
+    network_mode: host
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    environment:
+      ALERTS_FILE: /var/log/sauron/alerts.jsonl
+      QUEUE_FILE: /var/spool/sauron/scan-queue.txt
+      RULES_DIR: /etc/sauron/yara-rules
+      TZ: Europe/Madrid
+      VM_NAME: ${VM_NAME:-unknown}
+      WATCH_DIRS: /watch/etc /watch/home
+    volumes:
+      - /etc:/watch/etc:ro
+      - /home:/watch/home:ro
+      - sauron_logs:/var/log/sauron
+      - sauron_queue:/var/spool/sauron
     healthcheck:
       test: ["CMD", "pgrep", "-f", "inotifywait"]
       interval: 60s
       timeout: 5s
       retries: 3
-
-  forwarder:
-    image: debian:bookworm-slim
-    container_name: sauron-forwarder
-    restart: "no"  # container-init handles startup
-    network_mode: host
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
-        echo "Forwarding alerts to $${CENTRAL_HOST}:$${CENTRAL_PORT}"
-        tail -F /var/log/sauron/alerts.jsonl 2>/dev/null | while read line; do
-          echo "$$line" | nc -w1 $${CENTRAL_HOST} $${CENTRAL_PORT} 2>/dev/null || true
-        done
-    volumes:
-      - ./data/logs:/var/log/sauron:ro
-    environment:
-      CENTRAL_HOST: 35.226.147.64
-      CENTRAL_PORT: "5514"
-    depends_on:
-      - sauron
-    mem_limit: 16m
-    cpus: "0.05"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.25"
+          pids: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  sauron_logs:
+  sauron_queue:

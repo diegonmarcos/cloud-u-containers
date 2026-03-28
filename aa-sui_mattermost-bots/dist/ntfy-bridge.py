@@ -49,7 +49,7 @@ def fetch_oidc_token():
 
 
 C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")  # from cloud-data
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
 OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
 OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"

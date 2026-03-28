@@ -2,17 +2,33 @@
 # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
 # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
 # ╠══════════════════════════════════════════════════════════════════╣
-# ║ Source: ~/git/cloud/a_solutions/aa-sui_hedgedoc/src/flake.nix   ║
-# ║ Rebuild: ~/git/cloud/a_solutions/aa-sui_hedgedoc/build.sh ship  ║
+# ║ Source: aa-sui_hedgedoc/src/flake.nix
+# ║ Rebuild: build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   hedgedoc:
-    image: quay.io/hedgedoc/hedgedoc:latest
+    image: ghcr.io/diegonmarcos/hedgedoc:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM quay.io/hedgedoc/hedgedoc:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="hedgedoc"
+        LABEL org.opencontainers.image.title="hedgedoc"
+        LABEL cloud.diegonmarcos.from-image="quay.io/hedgedoc/hedgedoc:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: hedgedoc_app
-    restart: "no"  # container-init handles startup
     network_mode: host
-    volumes:
-      - hedgedoc_uploads:/hedgedoc/public/uploads
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - CMD_PORT=3018
       - CMD_DOMAIN=doc.diegonmarcos.com
@@ -31,28 +47,61 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - hedgedoc_uploads:/hedgedoc/public/uploads
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 
   postgres:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/hedgedoc-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="hedgedoc-db"
+        LABEL org.opencontainers.image.title="hedgedoc-db"
+        LABEL cloud.diegonmarcos.from-image="postgres:16-alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: hedgedoc_postgres
-    restart: "no"  # container-init handles startup
     network_mode: host
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
     environment:
       - POSTGRES_USER=hedgedoc
       - POSTGRES_PASSWORD=hedgedoc
       - POSTGRES_DB=hedgedoc
       - PGDATA=/var/lib/postgresql/data/pgdata
       - PGPORT=5439
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U hedgedoc -p 5439']
       interval: 10s
       timeout: 5s
       retries: 5
-
+    pids_limit: 256
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   hedgedoc_uploads:
-    driver: local
   postgres_data:
-    driver: local

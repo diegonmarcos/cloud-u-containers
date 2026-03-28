@@ -7,10 +7,20 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   etherpad:
-    image: etherpad/etherpad:latest
+    image: ghcr.io/diegonmarcos/etherpad:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM etherpad/etherpad:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="etherpad"
+        LABEL org.opencontainers.image.title="etherpad"
+        LABEL cloud.diegonmarcos.from-image="etherpad/etherpad:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: etherpad_app
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -52,11 +62,21 @@ services:
       - no-new-privileges:true
 
   postgres:
-    image: postgres:16-alpine
+    image: ghcr.io/diegonmarcos/etherpad-db:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM postgres:16-alpine
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="etherpad-db"
+        LABEL org.opencontainers.image.title="etherpad-db"
+        LABEL cloud.diegonmarcos.from-image="postgres:16-alpine"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: etherpad_postgres
     network_mode: host
     entrypoint: ["sh", "-c", "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"]
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:

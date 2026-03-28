@@ -7,10 +7,23 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   stalwart:
-    image: stalwartlabs/mail-server:v0.11
+    image: ghcr.io/diegonmarcos/stalwart:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM stalwartlabs/mail-server:v0.11
+        COPY config.toml.tpl /opt/stalwart-mail/etc/config.toml.tpl
+        COPY init.sh /opt/stalwart-mail/init.sh
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="stalwart"
+        LABEL org.opencontainers.image.title="stalwart"
+        LABEL cloud.diegonmarcos.from-image="stalwartlabs/mail-server:v0.11"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: stalwart
     network_mode: host
-    restart: unless-stopped
+    entrypoint: ["sh", "/opt/stalwart-mail/init.sh"]
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -19,12 +32,12 @@ services:
     dns:
       - 10.0.0.1
       - 1.1.1.1
+    env_file:
+      - .secrets
     environment:
       - TZ=Europe/Madrid
     volumes:
-      - ./data:/opt/stalwart-mail/data
-      - ./config.toml:/opt/stalwart-mail/etc/config.toml:ro
-      - ./dkim:/opt/stalwart-mail/dkim:ro
+      - stalwart_data:/opt/stalwart-mail/data
     deploy:
       resources:
         limits:
@@ -39,3 +52,5 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+volumes:
+  stalwart_data:

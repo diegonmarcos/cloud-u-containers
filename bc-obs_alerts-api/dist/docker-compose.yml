@@ -7,10 +7,11 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   alerts-api:
+    image: ghcr.io/diegonmarcos/alerts-api:latest
     build: .
     container_name: alerts-api
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     read_only: true
     tmpfs:

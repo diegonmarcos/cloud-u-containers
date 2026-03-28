@@ -69,7 +69,7 @@ regulation:
 storage:
   encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
   local:
-    path: /config/db.sqlite3
+    path: /data/db.sqlite3
 
 notifier:
   disable_startup_check: true

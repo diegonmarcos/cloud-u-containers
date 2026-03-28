@@ -7,9 +7,14 @@
 # ╚══════════════════════════════════════════════════════════════════════╝
 services:
   ollama-hai:
-    image: ollama/ollama:latest
+    image: ghcr.io/diegonmarcos/ollama-hai:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ollama/ollama:latest
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: ollama-hai
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     volumes:
       - ollama_hai_data:/root/.ollama

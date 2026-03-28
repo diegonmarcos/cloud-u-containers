@@ -7,10 +7,20 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   snappymail:
-    image: djmaze/snappymail:latest
+    image: ghcr.io/diegonmarcos/snappymail:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM djmaze/snappymail:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="snappymail"
+        LABEL org.opencontainers.image.title="snappymail"
+        LABEL cloud.diegonmarcos.from-image="djmaze/snappymail:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: snappymail
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -20,7 +30,9 @@ services:
       - 10.0.0.1
       - 1.1.1.1
     volumes:
-      - ./data:/var/lib/snappymail
+      - snappymail_data:/var/lib/snappymail
+      - ./config/application.ini:/var/lib/snappymail/_data_/_default_/configs/application.ini
+      - ./config/domains:/var/lib/snappymail/_data_/_default_/domains:ro
     healthcheck:
       test: ['CMD', 'curl', '-sf', 'http://localhost:8888/']
       interval: 30s
@@ -41,3 +53,5 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+volumes:
+  snappymail_data:

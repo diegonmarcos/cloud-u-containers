@@ -7,10 +7,20 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   code-server:
-    image: linuxserver/code-server:latest
+    image: ghcr.io/diegonmarcos/code-server:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM linuxserver/code-server:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="code-server"
+        LABEL org.opencontainers.image.title="code-server"
+        LABEL cloud.diegonmarcos.from-image="linuxserver/code-server:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: code-server
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
@@ -25,7 +35,7 @@ services:
       PUID: 1000
       TZ: Europe/Madrid
     volumes:
-      - ./config:/config
+      - code_server_config:/config
       - /home/ubuntu/workspace:/workspace
     pids_limit: 256
     logging:
@@ -35,3 +45,5 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+volumes:
+  code_server_config:

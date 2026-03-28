@@ -7,15 +7,31 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   gitea:
-    image: gitea/gitea:latest
+    image: ghcr.io/diegonmarcos/gitea:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM gitea/gitea:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="gitea"
+        LABEL org.opencontainers.image.title="gitea"
+        LABEL cloud.diegonmarcos.from-image="gitea/gitea:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: gitea
     restart: "no"  # container-init handles startup
     network_mode: host
+    env_file:
+      - .secrets
     environment:
       GITEA__server__HTTP_PORT: "3017"
       GITEA__server__SSH_PORT: "2222"
-      GITEA__server__DISABLE_SSH: "true"
+      GITEA__server__DISABLE_SSH: "false"
       GITEA__server__ROOT_URL: "https://git.diegonmarcos.com"
+      GITEA__server__SSH_DOMAIN: "git.diegonmarcos.com"
+      GITEA__mirror__DEFAULT_INTERVAL: "1h"
+      GITEA__repository__ENABLE_PUSH_CREATE_USER: "true"
+      GITEA__repository__ENABLE_PUSH_CREATE_ORG: "true"
     volumes:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro

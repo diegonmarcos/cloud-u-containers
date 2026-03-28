@@ -1,23 +1,23 @@
 {
-  "_generated": "2026-03-24T15:20:06.041Z",
-  "_source": "cloud-data-topology.json via /cloud-data/firewall-rules",
+  "_generated": "2026-03-26T19:44:27.434Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/firewall-rules",
   "vms": {
-    "oci-apps": {
-      "ingress": []
-    },
     "oci-mail": {
       "ingress": []
     },
-    "gcp-proxy": {
+    "oci-analytics": {
+      "ingress": []
+    },
+    "oci-apps": {
       "ingress": []
     },
     "gcp-t4": {
       "ingress": []
     },
-    "oci-apps-2": {
+    "gcp-proxy": {
       "ingress": []
     },
-    "oci-analytics": {
+    "vast-ollama": {
       "ingress": []
     }
   }

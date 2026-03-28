@@ -1,9 +1,11 @@
 [package]
-name = "rig-infra"
-version = "0.1.0"
+name = "rig-agentic"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
+rig-core = { version = "0.31", features = ["rmcp"] }
+rmcp = { version = "0.13", features = ["client", "transport-streamable-http-client", "transport-streamable-http-client-reqwest"] }
 axum = "0.8"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -12,9 +14,10 @@ reqwest = { version = "0.12", features = ["json"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { version = "0.4", features = ["serde"] }
-
-# Phase 3+: uncomment when AI ops needed
-# rig-core = "0.6"
+uuid = { version = "1", features = ["v4"] }
+futures = "0.3"
+tokio-tungstenite = { version = "0.26", features = ["native-tls"] }
+url = "2"
 
 [profile.release]
 opt-level = "s"

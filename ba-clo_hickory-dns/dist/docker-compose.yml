@@ -7,10 +7,20 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   hickory-dns:
-    image: hickorydns/hickory-dns:latest
+    image: ghcr.io/diegonmarcos/hickory-dns:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM hickorydns/hickory-dns:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="hickory-dns"
+        LABEL org.opencontainers.image.title="hickory-dns"
+        LABEL cloud.diegonmarcos.from-image="hickorydns/hickory-dns:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: hickory-dns
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     read_only: true
     tmpfs:

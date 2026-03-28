@@ -10,7 +10,17 @@
 
 services:
   gitea:
-    image: gitea/gitea:latest
+    image: ghcr.io/diegonmarcos/backup-gitea:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM gitea/gitea:latest
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="backup-gitea"
+        LABEL org.opencontainers.image.title="backup-gitea"
+        LABEL cloud.diegonmarcos.from-image="gitea/gitea:latest"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: gitea
     restart: "no"  # container-init handles startup
     network_mode: host

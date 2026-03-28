@@ -1,15 +1,8 @@
 {
-  "_generated": "2026-03-24T15:20:07.897Z",
-  "_source": "cloud-data-topology.json via /cloud-data/cloudflare-dns",
+  "_generated": "2026-03-26T19:44:27.438Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/cloudflare-dns",
   "zone": "diegonmarcos.com",
   "records": [
-    {
-      "name": "drive-notes-affine.diegonmarcos.com",
-      "type": "CNAME",
-      "content": "diegonmarcos.com",
-      "proxied": true,
-      "service": "affine"
-    },
     {
       "name": "ide.diegonmarcos.com",
       "type": "CNAME",
@@ -32,7 +25,7 @@
       "service": "filebrowser"
     },
     {
-      "name": "grist.diegonmarcos.com",
+      "name": "sheets.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
       "proxied": true,
@@ -74,18 +67,18 @@
       "service": "revealmd"
     },
     {
+      "name": "webmail.diegonmarcos.com",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "snappymail"
+    },
+    {
       "name": "mail.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
       "proxied": true,
-      "service": "mailu"
-    },
-    {
-      "name": "sync.diegonmarcos.com",
-      "type": "CNAME",
-      "content": "diegonmarcos.com",
-      "proxied": true,
-      "service": "syncthing"
+      "service": "stalwart"
     },
     {
       "name": "vault.diegonmarcos.com",
@@ -102,13 +95,6 @@
       "service": "crawlee-cloud"
     },
     {
-      "name": "dns.internal",
-      "type": "CNAME",
-      "content": "diegonmarcos.com",
-      "proxied": true,
-      "service": "hickory-dns"
-    },
-    {
       "name": "auth.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
@@ -123,7 +109,28 @@
       "service": "caddy"
     },
     {
-      "name": "dagu.diegonmarcos.com",
+      "name": "api.diegonmarcos.com/c3-api",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "c3-infra-api"
+    },
+    {
+      "name": "mcp.diegonmarcos.com/c3-infra-mcp",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "c3-infra-mcp"
+    },
+    {
+      "name": "api.diegonmarcos.com/services",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "c3-services-api"
+    },
+    {
+      "name": "workflows.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
       "proxied": true,
@@ -165,6 +172,13 @@
       "service": "ntfy"
     },
     {
+      "name": "analytics.diegonmarcos.com",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "umami"
+    },
+    {
       "name": "windmill.diegonmarcos.com",
       "type": "CNAME",
       "content": "diegonmarcos.com",
@@ -177,6 +191,13 @@
       "content": "diegonmarcos.com",
       "proxied": true,
       "service": "backup-gitea"
+    },
+    {
+      "name": "git.diegonmarcos.com",
+      "type": "CNAME",
+      "content": "diegonmarcos.com",
+      "proxied": true,
+      "service": "gitea"
     }
   ]
 }

@@ -16,7 +16,7 @@
 | 4 | caddy | sec | gcp-E2-f_0 | proxy.diegonmarcos.com | caddy, introspect-proxy |
 | 5 | db-agent-gcp | data | gcp-E2-f_0 | — | db-agent |
 | 6 | hickory-dns | cloud | gcp-E2-f_0 | dns.internal | hickory-dns |
-| 7 | introspect-proxy | sec | gcp-E2-f_0 | — | — |
+| 7 | introspect-proxy | sec | gcp-E2-f_0 | — | introspect-proxy |
 | 8 | ntfy | tools | gcp-E2-f_0 | rss.diegonmarcos.com | github-rss, ntfy, syslog-bridge |
 | 9 | postlite | data | gcp-E2-f_0 | — | postlite-authelia, postlite-npm, postlite-ntfy, postlite-vaultwarden, sqlite-authelia, sqlite-npm, sqlite-ntfy, sqlite-vaultwarden |
 | 10 | redis | data | gcp-E2-f_0 | — | redis |
@@ -50,7 +50,7 @@
 | 38 | lgtm | tools | oci-A1-f_0 | grafana.diegonmarcos.com | lgtm_grafana, lgtm_loki, lgtm_mimir, lgtm_tempo |
 | 39 | mail-mcp | app | oci-A1-f_0 | — | mail-mcp |
 | 40 | mattermost-bots | app | oci-A1-f_0 | chat.diegonmarcos.com | mattermost, mattermost-bots, mattermost-postgres |
-| 41 | mattermost-mcp | app | oci-A1-f_0 | — | — |
+| 41 | mattermost-mcp | app | oci-A1-f_0 | — | mattermost-mcp |
 | 42 | nocodb | tools | oci-A1-f_0 | db.diegonmarcos.com | nocodb, nocodb-db |
 | 43 | ollama-hai | agi | oci-A1-f_0 | — | ollama-hai |
 | 44 | orchestrator | sec | oci-A1-f_0 | — | orchestrator |
@@ -84,7 +84,7 @@
 | 72 | sauron-central | sec | oci-E2-f_1 | — | siem-api, syslog-central |
 | 73 | sauron-forwarder | tools | oci-E2-f_1 | — | sauron-forwarder |
 | 74 | sauron-lite-micro2 | tools | oci-E2-f_1 | — | sauron |
-| 75 | umami | tools | oci-E2-f_1 | analytics.diegonmarcos.com/umami | — |
+| 75 | umami | tools | oci-E2-f_1 | analytics.diegonmarcos.com/umami | umami, umami-db, umami-setup |
 
 ### db-agent
 
@@ -166,7 +166,7 @@
 | VM | gcp-E2-f_0 |
 | Description | OIDC token introspection sidecar for Caddy Bearer auth |
 | Domain | — |
-| Containers | — |
+| Containers | introspect-proxy |
 | Ports | — |
 | Networks | — |
 
@@ -456,7 +456,7 @@
 | Domain | pad.diegonmarcos.com |
 | Containers | etherpad_app, etherpad_postgres |
 | Ports | 10.0.0.6:3012:9001 |
-| Networks | dev_network |
+| Networks | etherpad_net |
 
 ### filebrowser
 
@@ -574,7 +574,7 @@
 | VM | oci-A1-f_0 |
 | Description | Mattermost MCP server — chat tools via HTTP transport |
 | Domain | — |
-| Containers | — |
+| Containers | mattermost-mcp |
 | Ports | — |
 | Networks | — |
 
@@ -982,7 +982,7 @@
 | VM | oci-E2-f_1 |
 | Description | Umami Analytics - lightweight privacy-focused web analytics |
 | Domain | analytics.diegonmarcos.com/umami |
-| Containers | — |
+| Containers | umami, umami-db, umami-setup |
 | Ports | — |
 | Networks | — |
 
@@ -1028,9 +1028,6 @@
 | Domain | Policy | Resources |
 |--------|--------|-----------|
 | auth.diegonmarcos.com | bypass | — |
-| vault.diegonmarcos.com | bypass | ^/api.*, ^/identity.*, ^/icons.*, ^/notifications.*, ^/attachments.* |
-| vault.diegonmarcos.com | two_factor | ^/admin.* |
-| vault.diegonmarcos.com | bypass | — |
 | db.diegonmarcos.com | bypass | ^/api/.* |
 | db.diegonmarcos.com | two_factor | — |
 | *.diegonmarcos.com | two_factor | — |

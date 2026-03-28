@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v2
+    image: ghcr.io/diegonmarcos/kg-graph:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM surrealdb/surrealdb:v2
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="kg-graph"
+        LABEL org.opencontainers.image.title="kg-graph"
+        LABEL cloud.diegonmarcos.from-image="surrealdb/surrealdb:v2"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: surrealdb
     restart: "no"  # container-init handles startup
     network_mode: host

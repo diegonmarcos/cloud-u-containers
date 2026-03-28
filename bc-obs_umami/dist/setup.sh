@@ -3,7 +3,7 @@
 # Configures admin credentials + creates website
 set -e
 
-UMAMI_URL="http://localhost:3000"
+UMAMI_URL="http://localhost:3006"
 
 # Extract JSON field value using awk index() — no sed escaping issues
 json_val() {

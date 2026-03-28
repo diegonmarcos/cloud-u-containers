@@ -10,7 +10,7 @@ services:
     image: ghcr.io/diegonmarcos/introspect-proxy:latest
     container_name: introspect-proxy
     network_mode: host
-    restart: unless-stopped
+    restart: no
     stop_grace_period: 30s
     ulimits:
       nofile:
