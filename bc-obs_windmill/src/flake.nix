@@ -109,10 +109,10 @@
           deploy:
             resources:
               limits:
-                memory: 256M
-                cpus: '0.5'
+                memory: 512M
+                cpus: '1.0'
               reservations:
-                memory: 128M
+                memory: 256M
           healthcheck:
             test: ["CMD", "curl", "-f", "http://localhost:${toString config.port}/api/version"]
             interval: 30s

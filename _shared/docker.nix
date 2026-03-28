@@ -302,8 +302,9 @@ in {
         else "${i2}logging:\n${i3}driver: \"json-file\"\n${i3}options:\n${i3}  max-size: \"10m\"\n${i3}  max-file: \"3\"";
 
       securityLines = if skipSecurity then ""
-        else "${i2}security_opt:\n${i3}- no-new-privileges:true"
-          + (if capAdd != [] then "\n${i2}cap_add:\n" + builtins.concatStringsSep "\n" (map (c: "${i3}- ${c}") capAdd) else "");
+        else "${i2}security_opt:\n${i3}- no-new-privileges:true";
+
+      capAddLines = if capAdd != [] then "${i2}cap_add:\n" + builtins.concatStringsSep "\n" (map (c: "${i3}- ${c}") capAdd) else "";
 
       userLine = if user != null then "${i2}user: \"${user}\"" else "";
 
@@ -345,6 +346,7 @@ in {
         deployLines
         loggingLines
         securityLines
+        capAddLines
         userLine
         (if extraYaml != "" then extraYaml else "")
       ];
