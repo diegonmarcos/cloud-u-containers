@@ -56,7 +56,7 @@
     ]
   },
   "ports": {
-    "app": 8443,
+    "app": 443,
     "smtp": 465,
     "imap": 993
   },
@@ -64,7 +64,7 @@
     "app": {
       "container_name": "stalwart",
       "image": "stalwartlabs/mail-server:v0.11",
-      "port": 8443,
+      "port": 443,
       "port_env": null,
       "dns": "stalwart.app",
       "public": true,
