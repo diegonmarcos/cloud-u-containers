@@ -5,9 +5,12 @@ cd "$(dirname "$0")"
 CONFIG_DIR="./config"
 ZONES_DIR="$CONFIG_DIR/zones"
 NAMED_TOML="$CONFIG_DIR/named.toml"
-DNS_JSON="https://raw.githubusercontent.com/diegonmarcos/cloud-data/main/cloud-data-dns-services.json"
+# Cloud-data JSON: local file (deployed by build.sh), fallback to GitHub
+DNS_JSON_LOCAL="./cloud-data-dns-services.json"
+DNS_JSON_REMOTE="https://raw.githubusercontent.com/diegonmarcos/cloud-data/main/cloud-data-dns-services.json"
 SUFFIX="app"
-LISTEN_IP="10.0.0.1"
+# Listen IP: read from cloud-data at runtime, fallback to 0.0.0.0 if WG not ready
+LISTEN_IP=""
 
 # If zones already exist, skip
 # Regenerate if: zones missing, OR init.sh is newer than named.toml (new deploy)
@@ -29,14 +32,30 @@ if [ -d "$NAMED_TOML" ]; then
 fi
 docker compose down 2>/dev/null || true
 
-# Fetch — use Cloudflare DNS since Hickory (what we're bootstrapping) is down
-REGISTRY=$(curl -sf --max-time 15 --dns-servers 1.1.1.1 "$DNS_JSON" 2>/dev/null || \
-           curl -sf --max-time 15 "$DNS_JSON" 2>/dev/null || echo "")
+# Read from local cloud-data (declarative), fallback to GitHub fetch
+if [ -f "$DNS_JSON_LOCAL" ]; then
+  REGISTRY=$(cat "$DNS_JSON_LOCAL")
+  echo "[init] Using local cloud-data-dns-services.json"
+else
+  echo "[init] Local JSON missing — fetching from GitHub"
+  REGISTRY=$(curl -sf --max-time 15 --dns-servers 1.1.1.1 "$DNS_JSON_REMOTE" 2>/dev/null || \
+             curl -sf --max-time 15 "$DNS_JSON_REMOTE" 2>/dev/null || echo "")
+fi
+
+# Resolve listen IP from cloud-data, verify interface exists
+CLOUD_IP=$(echo "$REGISTRY" | jq -r '.services["hickory-dns"].ip // empty' 2>/dev/null)
+if [ -n "$CLOUD_IP" ] && ip addr show | grep -q "$CLOUD_IP"; then
+  LISTEN_IP="$CLOUD_IP"
+  echo "[init] Listen IP from cloud-data: $LISTEN_IP (interface up)"
+else
+  LISTEN_IP="0.0.0.0"
+  echo "[init] WG interface not ready — binding 0.0.0.0 (cloud-data IP: ${CLOUD_IP:-unknown})"
+fi
 
 if [ -z "$REGISTRY" ] || [ "$REGISTRY" = "{}" ]; then
   echo "[init] WARNING: fetch failed — forwarder only"
-  cat > "$NAMED_TOML" << 'EOF'
-listen_addrs_ipv4 = ["10.0.0.1"]
+  cat > "$NAMED_TOML" << EOF
+listen_addrs_ipv4 = ["$LISTEN_IP"]
 listen_port = 53
 [[zones]]
 zone = "."

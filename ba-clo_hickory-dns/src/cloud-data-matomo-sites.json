@@ -1,0 +1,151 @@
+{
+  "_generated": "2026-03-26T19:44:27.439Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/matomo-sites",
+  "sites": [
+    {
+      "name": "VS Code IDE (ide.diegonmarcos.com)",
+      "url": "https://ide.diegonmarcos.com",
+      "service": "code-server"
+    },
+    {
+      "name": "Etherpad collaborative editor",
+      "url": "https://pad.diegonmarcos.com",
+      "service": "etherpad"
+    },
+    {
+      "name": "FileBrowser web file manager (NEW - not deployed yet)",
+      "url": "https://files.diegonmarcos.com",
+      "service": "filebrowser"
+    },
+    {
+      "name": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
+      "url": "https://sheets.diegonmarcos.com",
+      "service": "grist"
+    },
+    {
+      "name": "Collaborative markdown editor",
+      "url": "https://doc.diegonmarcos.com",
+      "service": "hedgedoc"
+    },
+    {
+      "name": "Mattermost team chat with ntfy bridge and C3 command bot",
+      "url": "https://chat.diegonmarcos.com",
+      "service": "mattermost-bots"
+    },
+    {
+      "name": "PhotoPrism AI-powered photo management (oci-flex-1)",
+      "url": "https://photos.diegonmarcos.com",
+      "service": "photoprism"
+    },
+    {
+      "name": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
+      "url": "https://cal.diegonmarcos.com",
+      "service": "radicale"
+    },
+    {
+      "name": "Reveal.js markdown presentations (NEW - not deployed yet)",
+      "url": "https://slides.diegonmarcos.com",
+      "service": "revealmd"
+    },
+    {
+      "name": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
+      "url": "https://webmail.diegonmarcos.com",
+      "service": "snappymail"
+    },
+    {
+      "name": "Stalwart Mail Server (mail.diegonmarcos.com)",
+      "url": "https://mail.diegonmarcos.com",
+      "service": "stalwart"
+    },
+    {
+      "name": "Bitwarden password manager",
+      "url": "https://vault.diegonmarcos.com",
+      "service": "vaultwarden"
+    },
+    {
+      "name": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+      "url": "https://api.diegonmarcos.com",
+      "service": "crawlee-cloud"
+    },
+    {
+      "name": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+      "url": "https://dns.internal",
+      "service": "hickory-dns"
+    },
+    {
+      "name": "SSO and 2FA authentication portal",
+      "url": "https://auth.diegonmarcos.com",
+      "service": "authelia"
+    },
+    {
+      "name": "Caddy reverse proxy + security dashboard (gcp-proxy)",
+      "url": "https://proxy.diegonmarcos.com",
+      "service": "caddy"
+    },
+    {
+      "name": "C3 REST API — Cloud Control Center Fastify API",
+      "url": "https://api.diegonmarcos.com/c3-api",
+      "service": "c3-infra-api"
+    },
+    {
+      "name": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+      "url": "https://mcp.diegonmarcos.com/c3-infra-mcp",
+      "service": "c3-infra-mcp"
+    },
+    {
+      "name": "C3 Services REST API — service API gateway Fastify API",
+      "url": "https://api.diegonmarcos.com/services",
+      "service": "c3-services-api"
+    },
+    {
+      "name": "Dagu - Lightweight DAG-based workflow scheduler",
+      "url": "https://workflows.diegonmarcos.com",
+      "service": "dagu"
+    },
+    {
+      "name": "Dozzle - Real-time Docker log viewer",
+      "url": "https://logs.diegonmarcos.com",
+      "service": "dozzle"
+    },
+    {
+      "name": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
+      "url": "https://grafana.diegonmarcos.com",
+      "service": "lgtm"
+    },
+    {
+      "name": "Matomo hybrid analytics (oci-analytics)",
+      "url": "https://analytics.diegonmarcos.com",
+      "service": "matomo"
+    },
+    {
+      "name": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
+      "url": "https://db.diegonmarcos.com",
+      "service": "nocodb"
+    },
+    {
+      "name": "Push notification server",
+      "url": "https://rss.diegonmarcos.com",
+      "service": "ntfy"
+    },
+    {
+      "name": "Umami Analytics - lightweight privacy-focused web analytics",
+      "url": "https://analytics.diegonmarcos.com",
+      "service": "umami"
+    },
+    {
+      "name": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+      "url": "https://windmill.diegonmarcos.com",
+      "service": "windmill"
+    },
+    {
+      "name": "Self-hosted Gitea for git backups and mirroring",
+      "url": "https://git.diegonmarcos.com",
+      "service": "backup-gitea"
+    },
+    {
+      "name": "Self-hosted Git service",
+      "url": "https://git.diegonmarcos.com",
+      "service": "gitea"
+    }
+  ]
+}

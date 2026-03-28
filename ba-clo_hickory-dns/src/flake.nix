@@ -64,7 +64,8 @@ $TTL 60
       zone_file_path = "/etc/zones/${name}.${suffix}.zone"
 '') names);
       in pkgs.writeText "named.toml" ''
-      listen_addrs_ipv4 = ["${svc."hickory-dns".ip}"]
+      # 0.0.0.0 = safe default; init.sh regenerates with cloud-data IP if WG is up
+      listen_addrs_ipv4 = ["0.0.0.0"]
       listen_port = ${toString config.dns_port}
 
       # ── Per-service zones (<name>.app → WG IP) ──
