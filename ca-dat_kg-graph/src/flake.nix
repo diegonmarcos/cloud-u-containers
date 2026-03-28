@@ -50,9 +50,9 @@
           healthcheck:
             test: ["CMD", "/surreal", "is-ready", "--conn", "http://localhost:${toString config.port}"]
             interval: 15s
-            timeout: 5s
-            retries: 3
-            start_period: 10s
+            timeout: 15s
+            retries: 5
+            start_period: 30s
 
     '';
 
