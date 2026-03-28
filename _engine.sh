@@ -668,24 +668,23 @@ step_compose() {
         # Sequential restart: down -> settle -> start (avoids CPU spike on low-resource VMs)
         # Uses 'down' not 'stop' to release port bindings (stop keeps them bound)
         log "Stopping containers on $DEPLOY_HOST"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans" || true
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose down --remove-orphans" || true
         log "Waiting for CPU to settle..."
-        sleep 5
+        sleep 10
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-        # Only --build on ARM VMs (oci-apps*). x86 VMs use pre-built GHCR images — NEVER build on host.
         BUILD_FLAG=""
         case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG up -d $BUILD_FLAG"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d $BUILD_FLAG"
     else
         # Standard: pull first (while old containers run), then down + up (instant, no pulling)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
         log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && for svc in \$(docker compose config --services 2>/dev/null); do echo \"  pull: \$svc\"; docker compose $ENV_FILE_FLAG pull --ignore-buildable \$svc 2>/dev/null || true; done"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && for svc in \$(docker compose config --services 2>/dev/null); do echo \"  pull: \$svc\"; ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG pull --ignore-buildable \$svc 2>/dev/null || true; done"
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
         # Only --build on ARM VMs. x86 VMs (gcp-proxy, oci-mail, oci-analytics) use pre-built images.
         BUILD_FLAG=""
         case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose $ENV_FILE_FLAG up -d --force-recreate $BUILD_FLAG $EXTRA_FLAGS"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d --force-recreate $BUILD_FLAG $EXTRA_FLAGS"
     fi
 
     # Post-compose hook (e.g. mailu setup.sh)
