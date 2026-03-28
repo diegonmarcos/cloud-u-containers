@@ -22,7 +22,7 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       # SQLite REST API servers (ws4sqlite + postlite)
       # Deployed on: gcp-E2-f_0 (35.226.147.64)
-      # Access via WireGuard only (10.0.0.1:8880-8883, 5433-5436)
+      # Access via WireGuard only (10.0.0.1:8890-8893, 5433-5436)
 
       services:
         sqlite-npm:
@@ -32,7 +32,7 @@
           network_mode: host
           volumes:
             - /home/diego/npm/data:/data
-          command: ["-port", "8880", "-db", "/data/database.sqlite?mode=ro"]
+          command: ["-port", "8890", "-db", "/data/database.sqlite?mode=ro"]
 
         sqlite-vaultwarden:
           image: germanorizzo/ws4sqlite:v0.16.6
@@ -41,7 +41,7 @@
           network_mode: host
           volumes:
             - /home/diego/vaultwarden/data:/data
-          command: ["-port", "8881", "-db", "/data/db.sqlite3?mode=ro"]
+          command: ["-port", "8891", "-db", "/data/db.sqlite3?mode=ro"]
 
         sqlite-ntfy:
           image: germanorizzo/ws4sqlite:v0.16.6
@@ -50,7 +50,7 @@
           network_mode: host
           volumes:
             - /home/diego/ntfy/cache:/data
-          command: ["-port", "8882", "-db", "/data/cache.db?mode=ro"]
+          command: ["-port", "8892", "-db", "/data/cache.db?mode=ro"]
 
         sqlite-authelia:
           image: germanorizzo/ws4sqlite:v0.16.6
@@ -59,7 +59,7 @@
           network_mode: host
           volumes:
             - /home/diego/authelia/config:/data
-          command: ["-port", "8883", "-db", "/data/db.sqlite3?mode=ro"]
+          command: ["-port", "8893", "-db", "/data/db.sqlite3?mode=ro"]
 
         postlite-npm:
           build:
