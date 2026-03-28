@@ -747,6 +747,65 @@ function deriveNtfyAcl(c: any): DerivedFile {
   };
 }
 
+// Per-VM container manifests for docker-pull-up.sh
+// Produces one cloud-data-containers-{alias}.json per VM
+function deriveVmContainerManifests(c: any): DerivedFile[] {
+  const vms = c.vms as Record<string, any>;
+  const services = c.services as Record<string, any>;
+  const gha = c._gha ?? {};
+  const ghaServices = gha.services ?? {};
+  const vmIdToAlias = buildVmIdToAlias(vms);
+
+  const files: DerivedFile[] = [];
+
+  for (const [vmId, vm] of Object.entries(vms) as [string, any][]) {
+    const alias = vm.ssh_alias;
+    if (!alias) continue;
+
+    const vmServices: any[] = [];
+    for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
+      if (svc.vm !== vmId) continue;
+
+      // Collect all images from containers
+      const images: string[] = [];
+      for (const ct of Object.values(svc.containers ?? {})) {
+        const img = (ct as any).image;
+        if (img && img !== "" && !img.endsWith(":local")) {
+          images.push(img);
+        }
+      }
+
+      // Get has_docker from GHA config
+      const ghaEntry = ghaServices[svcName] ?? {};
+      const hasDockerBuild = ghaEntry.has_docker ?? false;
+      const dir = ghaEntry.dir ?? svc.folder ?? svcName;
+
+      vmServices.push({
+        name: svcName,
+        dir,
+        compose_path: `/opt/containers/${svcName}`,
+        images,
+        has_docker_build: hasDockerBuild,
+      });
+    }
+
+    if (vmServices.length === 0) continue;
+
+    files.push({
+      name: `cloud-data-containers-${alias}.json`,
+      data: {
+        _generated: now(),
+        _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
+        vm: alias,
+        vm_id: vmId,
+        services: vmServices,
+      },
+    });
+  }
+
+  return files;
+}
+
 function deriveTopology(c: any): DerivedFile {
   // Backward compat: produce the old topology format from consolidated data
   const vms = c.vms as Record<string, any>;
@@ -990,8 +1049,9 @@ function main() {
     mkdirSync(CLOUD_DATA_DIR, { recursive: true });
   }
 
-  // Run all 18 derivations
+  // Run all derivations (18 + per-VM container manifests)
   const derived: DerivedFile[] = [
+    ...deriveVmContainerManifests(consolidated),
     deriveServiceConnections(consolidated),
     deriveDnsServices(consolidated),
     deriveCaddyRoutes(consolidated),
