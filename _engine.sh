@@ -848,22 +848,29 @@ step_wrangler() {
     fi
 
     # Source Cloudflare credentials from vault (same auto-detect as SOPS_AGE_KEY_FILE)
-    if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
-        for cf_env in \
-            "$HOME/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env" \
-            "/home/diego/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
-            if [ -f "$cf_env" ]; then
-                CLOUDFLARE_API_KEY=$(grep '^CF_API_KEY=' "$cf_env" | cut -d= -f2)
-                CLOUDFLARE_EMAIL=$(grep '^CF_API_EMAIL=' "$cf_env" | cut -d= -f2)
+    # Wrangler auth priority: CLOUDFLARE_API_TOKEN > CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL
+    # Clear ALL legacy/conflicting vars first so wrangler sees exactly what we set.
+    unset CF_API_TOKEN CF_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL 2>/dev/null || true
+
+    for cf_env in \
+        "$HOME/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env" \
+        "/home/diego/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
+        if [ -f "$cf_env" ]; then
+            # Use Global API Key (CF_API_KEY) — has all permissions including Workers
+            _key=$(grep '^CF_API_KEY=' "$cf_env" | cut -d= -f2)
+            _email=$(grep '^CF_API_EMAIL=' "$cf_env" | cut -d= -f2)
+            if [ -n "$_key" ] && [ -n "$_email" ]; then
+                CLOUDFLARE_API_KEY="$_key"
+                CLOUDFLARE_EMAIL="$_email"
                 export CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
-                log "Loaded Cloudflare credentials from vault"
+                log "Loaded Cloudflare Global API Key from vault"
                 break
             fi
-        done
-    fi
+        fi
+    done
 
     if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
-        log_error "CLOUDFLARE_API_KEY not set and not found in vault"
+        log_error "CLOUDFLARE_API_KEY not found in vault"
         return 1
     fi
 
@@ -872,7 +879,8 @@ step_wrangler() {
     if command -v wrangler >/dev/null 2>&1; then
         wrangler deploy
     else
-        npx wrangler deploy
+        log_error "wrangler not found — install via nix or npm"
+        return 1
     fi
     log "Worker deployed to Cloudflare"
 }
@@ -1109,7 +1117,8 @@ case "${1:-all}" in
         step_build
         step_docker
         step_secrets
-        step_compose_build
+        # compose-build only for Docker-based services (skip wrangler/terraform)
+        [ "$WRANGLER_DEPLOY" != "true" ] && [ "$TERRAFORM_DEPLOY" != "true" ] && step_compose_build
         # Skip deploy+compose if dist/ output is unchanged since last ship
         NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
         # Read hash from VM (persists across ephemeral GHA runners)
