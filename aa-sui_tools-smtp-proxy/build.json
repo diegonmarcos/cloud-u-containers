@@ -1,5 +1,9 @@
 {
   "name": "smtp-proxy",
+  "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+  "dns": "smtp-proxy.app",
+  "category": "app",
+  "domain": "smtp.diegonmarcos.com",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "smtp-proxy",
@@ -8,5 +12,24 @@
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/smtp-proxy"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "smtp.diegonmarcos.com",
+      "auth": "none"
+    },
+    "app_hub": false
+  },
+  "ports": {
+    "app": 8080
+  },
+  "containers": {
+    "app": {
+      "container_name": "smtp-proxy",
+      "port": 8080,
+      "dns": "smtp-proxy.app",
+      "public": true,
+      "proxy": { "domain": "smtp.diegonmarcos.com", "auth": "none" }
+    }
   }
 }
