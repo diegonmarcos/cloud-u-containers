@@ -141,7 +141,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
   const routes: any[] = [];
   for (const [, svc] of Object.entries(services)) {
     const proxy = svc.proxy?.primary;
-    if (!proxy?.domain || proxy.type === "path" || proxy.type === "special" || proxy.streaming) continue;
+    if (!proxy?.domain || proxy.type === "path" || proxy.type === "special" || proxy.streaming || proxy.base_path) continue;
     const route: any = {
       domain: proxy.domain,
       ...(svc.upstream ? { upstream: svc.upstream } : {}),
@@ -159,8 +159,11 @@ function deriveCaddyRoutes(c: any): DerivedFile {
 
   for (const [, svc] of Object.entries(services)) {
     const proxy = svc.proxy?.primary;
-    if (!proxy || proxy.type !== "path" || proxy.streaming) continue;
-    const pd = proxy.parent_domain;
+    if (!proxy || proxy.streaming) continue;
+    // Include explicit path type OR services with base_path (implicit path route)
+    const isPathRoute = proxy.type === "path" || (proxy.base_path && proxy.domain);
+    if (!isPathRoute) continue;
+    const pd = proxy.parent_domain ?? proxy.domain;
     if (!pd) continue;
     if (!pathGroups[pd]) pathGroups[pd] = { paths: [], comment: "" };
     pathGroups[pd].paths.push({
@@ -282,6 +285,19 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     };
   }
 
+  // Exclude domains handled by special routes from regular routes/path_routes
+  const specialDomains = new Set(Object.values(special).map((s: any) => s.domain).filter(Boolean));
+  const filteredRoutes = routes.filter((r: any) => !specialDomains.has(r.domain));
+  const filteredPathRoutes = pathRoutes.filter((r: any) => !specialDomains.has(r.parent_domain));
+
+  // Deduplicate subdomain routes by domain (keep first occurrence)
+  const seenDomains = new Set<string>();
+  const dedupedRoutes = filteredRoutes.filter((r: any) => {
+    if (seenDomains.has(r.domain)) return false;
+    seenDomains.add(r.domain);
+    return true;
+  });
+
   return {
     name: "cloud-data-caddy-routes.json",
     data: {
@@ -292,8 +308,8 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
       l4_routes: l4Routes,
-      routes,
-      path_routes: pathRoutes,
+      routes: dedupedRoutes,
+      path_routes: filteredPathRoutes,
       github_pages_proxies: githubPagesProxies,
       mcp_routes: mcpRoutes,
       special,
