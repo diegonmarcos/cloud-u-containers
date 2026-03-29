@@ -48,6 +48,12 @@
       "comment": "SnappyMail webmail"
     },
     {
+      "domain": "smtp.diegonmarcos.com",
+      "upstream": "smtp-proxy.app:8080",
+      "auth": "none",
+      "comment": "HTTP-to-SMTP bridge for CF Email Routing"
+    },
+    {
       "domain": "workflows.diegonmarcos.com",
       "upstream": "dagu.app:8070",
       "comment": "Dagu workflow scheduler"

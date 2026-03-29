@@ -1073,13 +1073,13 @@ step_compose_build() {
     log "── docker compose build --push (verbose) ──"
     if [ -n "$PLATFORM" ]; then
         # Multi-arch: use buildx bake with platform override
-        BUILDKIT_PROGRESS=plain docker buildx bake --push --progress=plain \
+        BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
             --set "*.platform=$PLATFORM" \
             -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
             printf "[compose-build] %s\n" "$line"
         done
     else
-        BUILDKIT_PROGRESS=plain docker compose build --push --progress=plain 2>&1 | while IFS= read -r line; do
+        BUILDKIT_PROGRESS=plain docker compose build --no-cache --push --progress=plain 2>&1 | while IFS= read -r line; do
             printf "[compose-build] %s\n" "$line"
         done
     fi
