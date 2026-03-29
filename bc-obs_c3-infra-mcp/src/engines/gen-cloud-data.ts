@@ -11,6 +11,7 @@
 //   6. bb-sec_caddy/dist/Caddyfile                      → Caddy routes (parseCaddyfile)
 //   7. bb-sec_authelia/dist/config/configuration.yml.tpl → Authelia ACL (parseAuthelia)
 //   8. ba-clo_hickory-dns/dist/zones/                   → DNS zones (parseDNSZones)
+//   9. vault/A0_keys/providers/wireguard/*/publickey    → WG public keys (source of truth)
 //
 // Output:
 //   cloud-data/_cloud-data-consolidated.json
@@ -45,6 +46,7 @@ const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
 const OUTPUT_JSON = join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json");
+const VAULT_WG_DIR = join(GIT_BASE, "vault", "A0_keys", "providers", "wireguard");
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types
@@ -118,6 +120,21 @@ function main() {
   const aliasMap = buildAliasMap(configVms);
   console.log(`  config.json: ${Object.keys(configVms).length} VMs, owner=${config.owner?.name}`);
 
+  // ── 1b. Load WG public keys from vault (source of truth) ──────────────
+  const vaultWgKeys: Record<string, string> = {};
+  if (existsSync(VAULT_WG_DIR)) {
+    for (const entry of readdirSync(VAULT_WG_DIR, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const pubFile = join(VAULT_WG_DIR, entry.name, "publickey");
+      if (existsSync(pubFile)) {
+        vaultWgKeys[entry.name] = readFileSync(pubFile, "utf8").trim();
+      }
+    }
+    console.log(`  vault/wireguard: ${Object.keys(vaultWgKeys).length} public keys`);
+  } else {
+    console.log("  vault/wireguard: NOT FOUND — WG public keys will be null");
+  }
+
   // ── 2. Parse Terraform for VM specs, storage, firewalls ────────────────
   const tfData = parseTerraform(INFRA_DIR);
   const totalFwRules = tfData.firewalls.reduce((sum, fw) => sum + fw.rules.length, 0);
@@ -172,7 +189,7 @@ function main() {
       description: vm.description ?? "",
       // Config.json owns: wg, ssh, user, home, method, rescue, gha, public_ports
       wg_ip: vm.wg_ip,
-      wg_public_key: vm.wg_public_key ?? null,
+      wg_public_key: vaultWgKeys[vm.ssh_alias] ?? null,  // vault is source of truth
       wg_port: vm.wg_port ?? 51820,
       wg_role: vm.wg_role ?? "spoke",
       user: vm.user,
@@ -398,11 +415,16 @@ function main() {
         wgPeers.push({
           name: vm.ssh_alias,
           wg_ip: vm.wg_ip,
+          wg_public_key: vaultWgKeys[vm.ssh_alias] ?? null,
           endpoint: vm.ip ? `${vm.ip}:51820` : "dynamic",
           role: vm.wg_role || "spoke",
         });
       }
     }
+  }
+  // Enrich peers with wg_public_key from vault (source of truth)
+  for (const peer of wgPeers) {
+    peer.wg_public_key = vaultWgKeys[peer.name] ?? null;
   }
 
   // ── 14. Native section from config.json ────────────────────────────────
@@ -444,7 +466,12 @@ function main() {
     port: native.wireguard?.port ?? 51820,
     hub: native.wireguard?.wg_hub ?? null,
     peers: wgPeers,
-    clients: native.wireguard?.clients ?? {},
+    clients: Object.fromEntries(
+      Object.entries(native.wireguard?.clients ?? {}).map(([name, client]: [string, any]) => [
+        name,
+        { ...client, wg_public_key: vaultWgKeys[name] ?? client.wg_public_key ?? null },
+      ])
+    ),
   };
 
   // ── 16. GHA config (previously gen-gha-config.ts) ──────────────────────

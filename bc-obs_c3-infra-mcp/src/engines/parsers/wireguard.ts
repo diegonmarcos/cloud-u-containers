@@ -12,6 +12,7 @@ import { join } from "path";
 export interface WGPeer {
   name: string;
   wg_ip: string;
+  wg_public_key?: string | null;
   endpoint: string;
   role: "hub" | "spoke" | "client";
   port?: number;
