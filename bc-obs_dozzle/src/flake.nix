@@ -19,6 +19,7 @@
 
     title = "Dozzle - Real-time Docker log viewer";
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     ghcr-dozzle = docker.mkGhcrBuild {
       name = "dozzle";
@@ -33,11 +34,11 @@
           image = ghcr-dozzle.image;
           build = ghcr-dozzle.build;
           container_name = config.container_name;
+          portEnv = ports.envFor "app";
           ports = ["${svc.dozzle.ip}:${toString config.port}:${toString config.port}"];
           volumes = ["/var/run/docker.sock:/var/run/docker.sock:ro"];
           environment = [
             "DOZZLE_LEVEL=info"
-            "DOZZLE_ADDR=:${toString config.port}"
           ];
           memLimit = "64m";
           skipReadOnly = true;

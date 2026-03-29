@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
@@ -18,6 +19,7 @@
     config = {
       container_name = "redis";
       image = ghcr.image;
+      port = ports.valueOf "app";
       maxmemory = "128mb";
       maxmemory_policy = "allkeys-lru";
     };
@@ -44,11 +46,11 @@
           network_mode: host
           env_file:
             - .secrets
-          command: ["sh", "-c", "redis-server --appendonly yes --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass \"$$REDIS_PASSWORD\""]
+          command: ["sh", "-c", "redis-server --appendonly yes --port ${toString config.port} --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass \"$$REDIS_PASSWORD\""]
           volumes:
             - /data/redis:/data
           healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
+            test: ["CMD", "redis-cli", "-p", "${toString config.port}", "ping"]
             interval: 30s
             timeout: 10s
             retries: 3

@@ -50,7 +50,8 @@
       "resources": {
         "mem_limit": "64m"
       },
-      "read_only": false
+      "read_only": false,
+      "port_format": "colon"
     }
   }
 }

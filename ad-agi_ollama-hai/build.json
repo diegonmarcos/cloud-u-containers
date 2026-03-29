@@ -17,16 +17,23 @@
       "container_name": "ollama-hai",
       "image": "ollama/ollama:latest",
       "port": 11435,
-      "port_env": null,
+      "port_env": "OLLAMA_HOST",
       "dns": "ollama-hai.app",
       "public": false,
       "proxy": null,
       "healthcheck": null,
-      "volumes": ["ollama_hai_data:/root/.ollama"],
+      "volumes": [
+        "ollama_hai_data:/root/.ollama"
+      ],
       "env_file": false,
       "depends_on": [],
-      "resources": { "limits": { "memory": "6G" } },
-      "read_only": false
+      "resources": {
+        "limits": {
+          "memory": "6G"
+        }
+      },
+      "read_only": false,
+      "port_format": "host"
     }
   }
 }

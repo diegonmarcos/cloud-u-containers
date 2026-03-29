@@ -8,13 +8,14 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       domain = buildJson.domain;
       container_name = "nocodb";
       image = "nocodb/nocodb:latest";
-      port = buildJson.ports.app;
-      db_port = buildJson.ports.db;
+      port = ports.valueOf "app";
+      db_port = ports.valueOf "db";
       timezone = "Europe/Madrid";
     };
 

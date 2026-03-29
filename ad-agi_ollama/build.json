@@ -1,6 +1,6 @@
 {
   "name": "ollama",
-  "description": "Ollama LLM Server \u2014 DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
+  "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
   "category": "agi",
   "build": {
     "include_cloud_data": "true"
@@ -24,7 +24,7 @@
       "container_name": "ollama",
       "image": "ollama/ollama:latest",
       "port": 11434,
-      "port_env": null,
+      "port_env": "OLLAMA_HOST",
       "dns": "ollama.app",
       "public": false,
       "proxy": null,
@@ -39,10 +39,13 @@
         "gpu": {
           "driver": "nvidia",
           "count": 1,
-          "capabilities": ["gpu"]
+          "capabilities": [
+            "gpu"
+          ]
         }
       },
-      "read_only": false
+      "read_only": false,
+      "port_format": "host"
     }
   }
 }

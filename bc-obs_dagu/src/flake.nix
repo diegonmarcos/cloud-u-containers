@@ -18,6 +18,7 @@
 
     title = "Dagu - Lightweight DAG-based workflow scheduler";
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/bc-obs_dagu/src/flake.nix";
@@ -30,11 +31,11 @@
           build = { context = "."; dockerfile = "Dockerfile"; };
           image = config.image;
           container_name = config.container_name;
+          portEnv = ports.envFor "app";
           entrypoint = ["dagu" "start-all"];
           skipReadOnly = true;
           environment = [
             "DAGU_HOST=0.0.0.0"
-            "DAGU_PORT=${toString config.port}"
             "DAGU_DAGS_DIR=/var/lib/dagu/dags"
             "DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml"
             "DAGU_AUTH_MODE=basic"

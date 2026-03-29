@@ -47,23 +47,38 @@
       "container_name": "umami",
       "image": "ghcr.io/umami-software/umami:latest",
       "port": 3006,
-      "port_env": null,
+      "port_env": "PORT",
       "dns": "umami.app",
       "public": true,
-      "proxy": { "domain": "analytics.diegonmarcos.com", "base_path": "/umami", "auth": "two_factor" },
+      "proxy": {
+        "domain": "analytics.diegonmarcos.com",
+        "base_path": "/umami",
+        "auth": "two_factor"
+      },
       "healthcheck": "curl -sf http://localhost:3000/api/heartbeat || exit 1",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [],
       "env_file": true,
-      "depends_on": ["db"],
-      "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "32M" } },
+      "depends_on": [
+        "db"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "128M"
+        },
+        "reservations": {
+          "memory": "32M"
+        }
+      },
       "read_only": false
     },
     "db": {
       "container_name": "umami-db",
       "image": "postgres:16-alpine",
       "port": 5442,
-      "port_env": null,
+      "port_env": "PGPORT",
       "dns": "umami-db.app",
       "public": false,
       "healthcheck": "pg_isready -U umami",
@@ -71,7 +86,14 @@
         "umami_db_data:/var/lib/postgresql/data"
       ],
       "env_file": false,
-      "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "32M" } },
+      "resources": {
+        "limits": {
+          "memory": "128M"
+        },
+        "reservations": {
+          "memory": "32M"
+        }
+      },
       "read_only": false,
       "db_user": "umami",
       "db_name": "umami"
@@ -89,7 +111,9 @@
         "umami_config:/output"
       ],
       "env_file": true,
-      "depends_on": ["app"],
+      "depends_on": [
+        "app"
+      ],
       "resources": null,
       "read_only": false
     }

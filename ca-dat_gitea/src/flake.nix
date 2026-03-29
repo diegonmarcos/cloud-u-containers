@@ -10,6 +10,7 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     giteaConfig = buildJson.gitea;
     mirrors = giteaConfig.mirrors;
@@ -24,7 +25,7 @@
     config = {
       container_name = "gitea";
       image = ghcr.image;
-      port_http = buildJson.ports.app;
+      port_http = ports.valueOf "app";
       port_ssh = buildJson.ssh_port;
       domain = buildJson.domain;
       org = giteaConfig.org;

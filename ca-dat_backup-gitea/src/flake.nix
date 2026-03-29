@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
@@ -20,7 +21,7 @@
       domain = buildJson.domain;
       container_name = "gitea";
       image = ghcr.image;
-      http_port = buildJson.ports.app;
+      http_port = ports.valueOf "app";
       ssh_port = buildJson.ports.ssh;
       timezone = "Europe/Madrid";
 

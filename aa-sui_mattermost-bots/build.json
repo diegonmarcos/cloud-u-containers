@@ -50,12 +50,17 @@
       "container_name": "mattermost",
       "image": "ngrie/mattermost-team-edition-arm:10.11",
       "port": 8065,
-      "port_env": null,
+      "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
       "dns": "mattermost.app",
       "public": true,
-      "proxy": { "domain": "chat.diegonmarcos.com", "auth": "two_factor" },
+      "proxy": {
+        "domain": "chat.diegonmarcos.com",
+        "auth": "two_factor"
+      },
       "healthcheck": "/api/v4/system/ping",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "./data/mattermost/config:/mattermost/config",
         "./data/mattermost/data:/mattermost/data",
@@ -64,9 +69,12 @@
         "./data/mattermost/client-plugins:/mattermost/client/plugins"
       ],
       "env_file": true,
-      "depends_on": ["db"],
+      "depends_on": [
+        "db"
+      ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "port_format": "colon"
     },
     "db": {
       "container_name": "mattermost-postgres",
@@ -98,7 +106,9 @@
         "./requirements-bridge.txt:/app/requirements.txt:ro"
       ],
       "env_file": true,
-      "depends_on": ["app"],
+      "depends_on": [
+        "app"
+      ],
       "resources": null,
       "read_only": false
     }

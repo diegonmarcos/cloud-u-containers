@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
@@ -40,11 +41,11 @@
         build = ghcr.build;
         container_name = config.container_name;
         networkMode = "host";
+        portEnv = ports.envFor "app";
 
         env_file = [ ".secrets" ];
         environment = {
           DOMAIN = "https://${config.domain}";
-          ROCKET_PORT = "\"${toString config.port}\"";
           SIGNUPS_ALLOWED = config.signups_allowed;
           INVITATIONS_ALLOWED = config.invitations_allowed;
           SHOW_PASSWORD_HINT = config.show_password_hint;

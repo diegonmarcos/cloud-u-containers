@@ -8,11 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       container_name = "ollama-hai";
       image = "ollama/ollama:latest";
-      api_port = 11435;
+      api_port = ports.valueOf "app";
       wg_ip = svc."ollama-hai".ip;
       timezone = "America/Chicago";
       keep_alive = "-1";

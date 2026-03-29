@@ -35,6 +35,7 @@
 
     title = "Mattermost Team Chat";
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     ghcr-mattermost = docker.mkGhcrBuild {
       name = "mattermost";
@@ -72,6 +73,7 @@
           image = ghcr-mattermost.image;
           build = ghcr-mattermost.build;
           container_name = config.container_name;
+          portEnv = ports.envFor "app";
           command = "mattermost server";
           restart = "no";
           skipReadOnly = true;
@@ -87,7 +89,6 @@
             "TZ=${config.timezone}"
             "MM_SQLSETTINGS_DRIVERNAME=postgres"
             "MM_SERVICESETTINGS_SITEURL=https://${config.domain}"
-            "MM_SERVICESETTINGS_LISTENADDRESS=:${toString config.port}"
             "MM_PLUGINSETTINGS_ENABLEUPLOADS=true"
             "MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true"
             "MM_SERVICESETTINGS_ENABLECOMMANDS=true"
@@ -105,6 +106,7 @@
           image = ghcr-mattermost-db.image;
           build = ghcr-mattermost-db.build;
           container_name = config.postgres_container;
+          portEnv = ports.envFor "db";
           restart = "no";
           skipReadOnly = true;
           volumes = [
@@ -114,7 +116,6 @@
           environment = [
             "POSTGRES_DB=mattermost"
             "POSTGRES_USER=mattermost"
-            "PGPORT=${toString config.postgres_port}"
           ];
           healthcheck = {
             test = ''["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]'';

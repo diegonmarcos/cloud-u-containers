@@ -8,11 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       container_name = buildJson.name;
       image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
-      http_port = toString buildJson.ports.app;
+      http_port = toString (ports.valueOf "app");
       # CONFIG_PATH points to config.json; getRepoRoot() = parent dir
       # So /data/config.json -> getRepoRoot() = /data/
       # Then cloud-data/ = /data/cloud-data/, front-data/ = /data/front-data/
