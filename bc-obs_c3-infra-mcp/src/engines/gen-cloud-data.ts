@@ -143,7 +143,7 @@ function main() {
     vms[vmId] = {
       // Terraform owns: ip (fallback to config), specs
       ip: vm.ip,
-      specs: tfSpecs ?? vm.specs ?? {},
+      specs: { ...(vm.specs ?? {}), ...(tfSpecs ?? {}) },
       description: vm.description ?? "",
       // Config.json owns: wg, ssh, user, home, method, rescue, gha, public_ports
       wg_ip: vm.wg_ip,
