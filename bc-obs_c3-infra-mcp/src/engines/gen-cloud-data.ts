@@ -140,10 +140,35 @@ function main() {
       tfSpecs = tfData.vm_specs[vm.gcloud_instance]; // GCP: via gcloud_instance
     }
 
+    // Merge specs: config.json base, terraform overlay, machine_type lookup fallback
+    const mergedSpecs = { ...(vm.specs ?? {}), ...(tfSpecs ?? {}) };
+    // If cpu/ram still 0 (HCL parser can't handle for_each), resolve from machine_type lookup
+    const machineType = mergedSpecs.machine_type || mergedSpecs.shape || "";
+    if ((!mergedSpecs.cpu || mergedSpecs.cpu === 0 || !mergedSpecs.ram_gb || mergedSpecs.ram_gb === 0) && machineType) {
+      const MACHINE_SPECS: Record<string, { cpu: number; ram_gb: number }> = {
+        // GCP
+        "e2-micro":       { cpu: 2, ram_gb: 1 },
+        "e2-small":       { cpu: 2, ram_gb: 2 },
+        "e2-medium":      { cpu: 2, ram_gb: 4 },
+        "n1-standard-1":  { cpu: 1, ram_gb: 3.75 },
+        "n1-standard-2":  { cpu: 2, ram_gb: 7.5 },
+        "n1-standard-4":  { cpu: 4, ram_gb: 15 },
+        "n1-standard-8":  { cpu: 8, ram_gb: 30 },
+        // OCI
+        "VM.Standard.E2.1.Micro": { cpu: 1, ram_gb: 1 },
+        "VM.Standard.A1.Flex":    { cpu: 4, ram_gb: 24 },
+      };
+      const known = MACHINE_SPECS[machineType];
+      if (known) {
+        if (!mergedSpecs.cpu || mergedSpecs.cpu === 0) mergedSpecs.cpu = known.cpu;
+        if (!mergedSpecs.ram_gb || mergedSpecs.ram_gb === 0) mergedSpecs.ram_gb = known.ram_gb;
+      }
+    }
+
     vms[vmId] = {
       // Terraform owns: ip (fallback to config), specs
       ip: vm.ip,
-      specs: { ...(vm.specs ?? {}), ...(tfSpecs ?? {}) },
+      specs: mergedSpecs,
       description: vm.description ?? "",
       // Config.json owns: wg, ssh, user, home, method, rescue, gha, public_ports
       wg_ip: vm.wg_ip,
