@@ -152,8 +152,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     };
     routes.push(route);
   }
-  // introspect-proxy comment (no upstream, caddy-internal)
-  routes.push({ comment: "OIDC token introspection sidecar for Caddy Bearer auth" });
+  // introspect-proxy is caddy-internal (no external route — consumed by Caddy's forward_auth)
 
   // ── Path routes: group by parent_domain ──
   const pathGroups: Record<string, { paths: any[]; comment: string; fallback?: string; landing_page?: string }> = {};

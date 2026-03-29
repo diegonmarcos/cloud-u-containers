@@ -1,0 +1,36 @@
+{
+  "_generated": "2026-03-29T03:04:11.190Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/ntfy-acl",
+  "topics": {
+    "syslog": {
+      "publishers": [
+        "system"
+      ],
+      "desc": "System topic: syslog"
+    },
+    "github-releases": {
+      "publishers": [
+        "system"
+      ],
+      "desc": "System topic: github-releases"
+    },
+    "alerts": {
+      "publishers": [
+        "system"
+      ],
+      "desc": "System topic: alerts"
+    },
+    "health": {
+      "publishers": [
+        "system"
+      ],
+      "desc": "System topic: health"
+    },
+    "backups": {
+      "publishers": [
+        "system"
+      ],
+      "desc": "System topic: backups"
+    }
+  }
+}
