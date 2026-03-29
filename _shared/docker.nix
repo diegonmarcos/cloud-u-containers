@@ -105,6 +105,7 @@ in {
     fromImage,                               # Original image (e.g. "vaultwarden/server:latest")
     description ? name,                      # Human-readable description for OCI label
     configFiles ? [],                        # [ { src = "file"; dst = "/path/in/image"; } ]
+    extraDockerfileLines ? [],               # Extra Dockerfile lines (RUN, ENV, etc.) after COPY
     registry ? "ghcr.io/diegonmarcos",       # GHCR registry prefix
   }: {
     image = "${registry}/${name}:latest";
@@ -113,6 +114,7 @@ in {
       dockerfile_inline =
         "FROM ${fromImage}"
         + builtins.concatStringsSep "" (map (f: "\nCOPY ${f.src} ${f.dst}") configFiles)
+        + builtins.concatStringsSep "" (map (l: "\n${l}") extraDockerfileLines)
         # Self-documenting: bake docker-compose.yml into image for inspection
         + "\nCOPY docker-compose.yml /opt/cloud-docs/docker-compose.yml"
         # OCI standard labels
