@@ -40,6 +40,9 @@
         { src = "config.toml.tpl"; dst = "/opt/stalwart-mail/etc/config.toml.tpl"; }
         { src = "init.sh"; dst = "/opt/stalwart-mail/init.sh"; }
       ];
+      extraDockerfileLines = [
+        "RUN apt-get update && apt-get install -y --no-install-recommends gettext-base && rm -rf /var/lib/apt/lists/*"
+      ];
     };
 
     # ── Docker Compose ─────────────────────────────────────────────────
@@ -222,7 +225,7 @@
       password = "''\${AWS_RELAYPASSWORD}"
 
       [queue.outbound]
-      next-hop = ["oci-relay", "aws-relay"]
+      next-hop = "'oci-relay'"
 
       # ── Spam filter (built-in) ──────────────────────────────────────
       [spam.header]
