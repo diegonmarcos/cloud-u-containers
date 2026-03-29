@@ -14,6 +14,7 @@ services:
         FROM stalwartlabs/mail-server:v0.11
         COPY config.toml.tpl /opt/stalwart-mail/etc/config.toml.tpl
         COPY init.sh /opt/stalwart-mail/init.sh
+        RUN apt-get update && apt-get install -y --no-install-recommends gettext-base && rm -rf /var/lib/apt/lists/*
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
         LABEL org.opencontainers.image.description="stalwart"

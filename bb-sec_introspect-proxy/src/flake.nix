@@ -26,6 +26,8 @@
           container_name = "introspect-proxy";
           skipReadOnly = true;
           env_file = [".secrets"];
+          memLimit = "64M";
+          memReservation = "16M";
           healthcheck = {
             test = "['CMD', 'curl', '-sf', 'http://localhost:${config.port}/health']";
             interval = "30s";

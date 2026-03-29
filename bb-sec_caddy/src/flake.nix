@@ -657,6 +657,8 @@
         startAfter = [ "introspect-proxy" ];
         capAdd = [ "NET_BIND_SERVICE" ];  # needed for ports 80/443
         skipReadOnly = true;  # caddy writes to /data, /config, /var/log
+        memLimit = "128M";
+        memReservation = "48M";
       };
 
       # introspect-proxy already built+pushed by bb-sec_introspect-proxy pipeline
@@ -670,8 +672,8 @@
           REQUIRED_SCOPE = "authelia.bearer.authz";
           DEBUG = "\"true\"";
         };
-        memLimit = "96M";
-        memReservation = "48M";
+        memLimit = "64M";
+        memReservation = "16M";
         healthcheck = {
           test = ''["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')"]'';
           interval = "30s";

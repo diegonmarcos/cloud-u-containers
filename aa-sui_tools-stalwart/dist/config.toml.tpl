@@ -33,7 +33,7 @@ bind = ["0.0.0.0:4190"]
 protocol = "managesieve"
 
 [server.listener."https"]
-bind = ["0.0.0.0:8443"]
+bind = ["0.0.0.0:443"]
 protocol = "http"
 tls.implicit = true
 
@@ -147,7 +147,7 @@ username = "${AWS_RELAYUSER}"
 password = "${AWS_RELAYPASSWORD}"
 
 [queue.outbound]
-next-hop = ["oci-relay", "aws-relay"]
+next-hop = "'oci-relay'"
 
 # ── Spam filter (built-in) ──────────────────────────────────────
 [spam.header]

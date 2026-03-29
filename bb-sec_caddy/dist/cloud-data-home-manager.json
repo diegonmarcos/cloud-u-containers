@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-28T12:20:25.732Z",
+  "_generated": "2026-03-29T03:56:54.928Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -23,10 +23,12 @@
       "rescue_port": 2200,
       "specs": {
         "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 47,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro"
+        "shape": "VM.Standard.E2.1.Micro",
+        "cloud_name": "oci-E2-f_0",
+        "cloud_zone": "eu-marseille-1"
       },
       "public_ports": [
         {
@@ -101,10 +103,12 @@
       "rescue_port": 2200,
       "specs": {
         "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 47,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro"
+        "shape": "VM.Standard.E2.1.Micro",
+        "cloud_name": "oci-E2-f_1",
+        "cloud_zone": "eu-marseille-1"
       },
       "public_ports": [],
       "idle_shutdown": null,
@@ -126,7 +130,7 @@
       "vm_id": "oci-A1-f_0",
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
+      "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -135,9 +139,11 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 24,
-        "disk_gb": 100,
+        "disk_gb": 0,
         "arch": "aarch64",
-        "shape": "VM.Standard.A1.Flex"
+        "shape": "VM.Standard.A1.Flex",
+        "cloud_name": "oci-A1-f_0",
+        "cloud_zone": "eu-marseille-1"
       },
       "public_ports": [
         {
@@ -235,13 +241,16 @@
       "home": "/home/diego",
       "rescue_port": 2200,
       "specs": {
-        "cpu": 4,
-        "ram_gb": 15,
-        "disk_gb": 100,
+        "cpu": 0,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
-        "vram_gb": 16
+        "vram_gb": 16,
+        "machine_type": "n1-standard-4",
+        "cloud_name": "ollama-spot-gpu",
+        "cloud_zone": "us-central1-a"
       },
       "public_ports": [],
       "idle_shutdown": {
@@ -272,11 +281,14 @@
       "home": "/home/diego",
       "rescue_port": 2200,
       "specs": {
-        "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 30,
+        "cpu": 0,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "e2-micro"
+        "shape": "e2-small",
+        "machine_type": "e2-small",
+        "cloud_name": "arch-1",
+        "cloud_zone": "us-central1-a"
       },
       "public_ports": [
         {
@@ -381,7 +393,7 @@
         "wg_ip": "10.0.0.6",
         "endpoint": "82.70.229.129:51820",
         "role": "spoke",
-        "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
+        "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
         "wg_port": 51820,
         "public_ip": "82.70.229.129"
       },

@@ -110,6 +110,8 @@ ${mkResourceLines rule.resources_two_factor}
           depends_on = { redis = {}; };
           skipReadOnly = true;
           capAdd = ["DAC_OVERRIDE"];
+          memLimit = "128M";
+          memReservation = "32M";
         };
         redis = docker.mkService {
           name = "redis";
@@ -120,6 +122,8 @@ ${mkResourceLines rule.resources_two_factor}
           volumes = ["authelia_redis_data:/data"];
           networks = ["auth-net"];
           skipReadOnly = true;
+          memLimit = "48M";
+          memReservation = "16M";
         };
       };
       volumes = {

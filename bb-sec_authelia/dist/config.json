@@ -63,7 +63,7 @@
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
+      "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",

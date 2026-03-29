@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.431Z",
+  "_generated": "2026-03-29T03:04:11.186Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/dns-services",
   "suffix": "app",
   "services": {
@@ -8,6 +8,10 @@
       "desc": "VS Code IDE (ide.diegonmarcos.com)"
     },
     "etherpad": {
+      "ip": "10.0.0.6",
+      "desc": "Etherpad collaborative editor"
+    },
+    "etherpad-db": {
       "ip": "10.0.0.6",
       "desc": "Etherpad collaborative editor"
     },
@@ -24,6 +28,10 @@
       "desc": "Grist spreadsheet/database (sheets.diegonmarcos.com)"
     },
     "hedgedoc": {
+      "ip": "10.0.0.6",
+      "desc": "Collaborative markdown editor"
+    },
+    "hedgedoc-db": {
       "ip": "10.0.0.6",
       "desc": "Collaborative markdown editor"
     },
@@ -63,6 +71,10 @@
       "ip": "10.0.0.3",
       "desc": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
     },
+    "smtp-proxy": {
+      "ip": "10.0.0.3",
+      "desc": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)"
+    },
     "stalwart": {
       "ip": "10.0.0.3",
       "desc": "Stalwart Mail Server (mail.diegonmarcos.com)"
@@ -98,6 +110,26 @@
     "crawlee-minio": {
       "ip": "10.0.0.6",
       "desc": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
+    },
+    "quant-full-research": {
+      "ip": "10.0.0.6",
+      "desc": "Full quant stack: Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres"
+    },
+    "quant-full-db": {
+      "ip": "10.0.0.6",
+      "desc": "Full quant stack: Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres"
+    },
+    "quant-light-research": {
+      "ip": "10.0.0.6",
+      "desc": "Lightweight quant research: Jupyter + NautilusTrader + Postgres"
+    },
+    "quant-light-engine": {
+      "ip": "10.0.0.6",
+      "desc": "Lightweight quant research: Jupyter + NautilusTrader + Postgres"
+    },
+    "quant-light-db": {
+      "ip": "10.0.0.6",
+      "desc": "Lightweight quant research: Jupyter + NautilusTrader + Postgres"
     },
     "ollama": {
       "ip": "10.0.0.8",
@@ -180,6 +212,10 @@
       "desc": "Matomo hybrid analytics (oci-analytics)"
     },
     "nocodb": {
+      "ip": "10.0.0.6",
+      "desc": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)"
+    },
+    "nocodb-db": {
       "ip": "10.0.0.6",
       "desc": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)"
     },

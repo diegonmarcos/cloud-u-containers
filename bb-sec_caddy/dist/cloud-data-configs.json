@@ -3,7 +3,7 @@
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/configs",
     "source": "_cloud-data-consolidated.json",
-    "generated_at": "2026-03-28T12:20:25.747Z"
+    "generated_at": "2026-03-29T03:56:54.942Z"
   },
   "services": [
     {
@@ -707,8 +707,8 @@
       "name": "smtp-proxy",
       "category": "app",
       "vm": "oci-E2-f_0",
-      "description": "",
-      "domain": "—",
+      "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+      "domain": "smtp.diegonmarcos.com",
       "ports": [],
       "networks": [],
       "containers": [
@@ -1500,8 +1500,8 @@
       "name": "smtp-proxy",
       "category": "app",
       "vm": "oci-E2-f_0",
-      "description": "",
-      "domain": "—",
+      "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+      "domain": "smtp.diegonmarcos.com",
       "ports": [],
       "networks": [],
       "containers": [

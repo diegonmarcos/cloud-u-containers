@@ -366,13 +366,19 @@ function deriveHomeManager(c: any): DerivedFile {
 
 function deriveGhaConfig(c: any): DerivedFile {
   const ghaData = c._gha ?? {};
+  // Enrich GHA VMs with WG IPs from main VM data
+  const vms: Record<string, any> = {};
+  for (const [vmAlias, ghaVm] of Object.entries(ghaData.vms ?? {}) as [string, any][]) {
+    const mainVm = Object.values(c.vms ?? {}).find((v: any) => v.ssh_alias === vmAlias) as any;
+    vms[vmAlias] = { ...ghaVm, wg_ip: mainVm?.wg_ip ?? null };
+  }
 
   return {
     name: "cloud-data-gha-config.json",
     data: {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/gha-config",
-      vms: ghaData.vms ?? {},
+      vms,
       services: ghaData.services ?? {},
     },
   };

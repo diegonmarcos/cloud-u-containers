@@ -102,6 +102,8 @@
           volumes = [
             "ntfy_cache:/var/cache/ntfy"
           ];
+          memLimit = "64M";
+          memReservation = "16M";
         };
         syslog-bridge = docker.mkService {
           name = "syslog-bridge";
@@ -117,6 +119,8 @@
           ];
           environment = ["TZ=Europe/Paris" "PYTHONUNBUFFERED=1"];
           depends_on = { ntfy = {}; };
+          memLimit = "32M";
+          memReservation = "8M";
         };
         github-rss = docker.mkService {
           name = "github-rss";
@@ -131,6 +135,8 @@
           ];
           environment = ["TZ=Europe/Paris" "PYTHONUNBUFFERED=1"];
           depends_on = { ntfy = {}; };
+          memLimit = "32M";
+          memReservation = "8M";
         };
       };
     };

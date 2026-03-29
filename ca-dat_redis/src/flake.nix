@@ -49,6 +49,12 @@
           command: ["sh", "-c", "redis-server --appendonly yes --port ${toString config.port} --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass \"$$REDIS_PASSWORD\""]
           volumes:
             - /data/redis:/data
+          deploy:
+            resources:
+              limits:
+                memory: 48M
+              reservations:
+                memory: 16M
           healthcheck:
             test: ["CMD", "redis-cli", "-p", "${toString config.port}", "ping"]
             interval: 30s
