@@ -394,49 +394,62 @@ export function parseTerraform(infraDir: string): TerraformData {
     let tfJson: any = {};
     try { tfJson = JSON.parse(readFileSync(tfJsonPath, "utf-8")); } catch {}
 
+    // PRIMARY: Build specs from terraform.json (has resolved instance names)
+    if (tfJson.instances) {
+      for (const inst of tfJson.instances as any[]) {
+        const spec: VMSpecs = {
+          cpu: inst.ocpus || inst.cpu || 0,
+          ram_gb: inst.memory_in_gbs || inst.ram_gb || 0,
+          disk_gb: inst.boot_volume_size_in_gbs || inst.disk_gb || 0,
+          shape: inst.shape || inst.machine_type,
+          machine_type: inst.machine_type,
+          cloud_name: inst.name || inst.display_name,
+          cloud_zone: inst.zone || tfJson.provider?.zone || tfJson.provider?.region || "",
+        };
+        // Store under ALL possible keys so gen-cloud-data can find it
+        // OCI uses display_name as vmId, GCP uses gcloud_instance (=name)
+        for (const key of [inst.display_name, inst.name, inst.alias].filter(Boolean)) {
+          vm_specs[key as string] = { ...spec, ...(vm_specs[key as string] || {}) };
+        }
+      }
+    }
+    if (tfJson.buckets) {
+      for (const b of tfJson.buckets as any[]) {
+        storage.push({ provider: providerName, name: b.name, tier: b.storage_tier || b.access_type || "Standard" });
+      }
+    }
+
+    // SECONDARY: Merge additional data from HCL (firewalls, GPU, etc.)
     if (providerName === "oci") {
       const result = parseOCI(hcl);
-      Object.assign(vm_specs, result.specs);
-      storage.push(...result.storage);
+      // Merge HCL specs into terraform.json specs (HCL may have disk/GPU details)
+      for (const [k, v] of Object.entries(result.specs)) {
+        // Skip "each.value.*" keys from HCL
+        if (k.includes("each.value")) continue;
+        vm_specs[k] = { ...v, ...vm_specs[k] };
+      }
+      if (!tfJson.buckets) storage.push(...result.storage);
       firewalls.push(...parseOCIFirewalls(hcl));
       provider.services = [
-        ...Object.keys(result.specs).map((n) => `instance:${n}`),
-        ...result.storage.map((b) => `bucket:${b.name}`),
+        ...Object.keys(vm_specs).filter(k => !k.includes("each.value")).map((n) => `instance:${n}`),
+        ...storage.filter(s => s.provider === providerName).map((b) => `bucket:${b.name}`),
       ];
     } else if (providerName === "gcloud") {
       const result = parseGCP(hcl);
-      // GCP uses instance "name" field, need to map to VM IDs
-      Object.assign(vm_specs, result.specs);
-      storage.push(...result.storage);
+      for (const [k, v] of Object.entries(result.specs)) {
+        if (k.includes("each.value")) continue;
+        vm_specs[k] = { ...v, ...vm_specs[k] };
+      }
+      if (!tfJson.buckets) storage.push(...result.storage);
       firewalls.push(...parseGCPFirewalls(hcl));
       provider.services = [
-        ...Object.keys(result.specs).map((n) => `instance:${n}`),
-        ...result.storage.map((b) => `bucket:${b.name}`),
+        ...Object.keys(vm_specs).filter(k => !k.includes("each.value")).map((n) => `instance:${n}`),
+        ...storage.filter(s => s.provider === providerName).map((b) => `bucket:${b.name}`),
       ];
     } else if (providerName === "aws") {
       // AWS — detect SES, IAM, etc.
       if (hcl.includes("aws_ses_domain_identity")) {
         provider.services.push("ses-email");
-      }
-    }
-
-    // Merge cloud instance names + extra data from terraform.json
-    if (tfJson.instances) {
-      for (const inst of tfJson.instances as any[]) {
-        const alias = inst.alias || inst.display_name || inst.name;
-        if (alias && vm_specs[alias]) {
-          vm_specs[alias].cloud_name = inst.name || inst.display_name;
-          vm_specs[alias].cloud_zone = inst.zone || tfJson.provider?.zone || tfJson.provider?.region || "";
-        }
-      }
-    }
-    // Merge bucket data from terraform.json
-    if (tfJson.buckets) {
-      for (const b of tfJson.buckets as any[]) {
-        const exists = storage.find(s => s.name === b.name);
-        if (!exists) {
-          storage.push({ provider: providerName, name: b.name, tier: b.storage_tier || b.access_type || "Standard" });
-        }
       }
     }
 
