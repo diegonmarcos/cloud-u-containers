@@ -16,6 +16,9 @@ export interface VMSpecs {
   machine_type?: string;
   gpu?: string;
   gpu_vram?: string;
+  cloud_name?: string;    // actual instance name in cloud provider (e.g. "arch-1")
+  cloud_zone?: string;    // zone/region
+  cost?: string;          // cost tier (e.g. "Free", "Spot")
 }
 
 export interface StorageBucket {
@@ -386,6 +389,11 @@ export function parseTerraform(infraDir: string): TerraformData {
 
     const hcl = readFileSync(tfPath, "utf-8");
 
+    // Also read terraform.json for instance names, buckets, etc.
+    const tfJsonPath = join(infraDir, dir, "src", "terraform.json");
+    let tfJson: any = {};
+    try { tfJson = JSON.parse(readFileSync(tfJsonPath, "utf-8")); } catch {}
+
     if (providerName === "oci") {
       const result = parseOCI(hcl);
       Object.assign(vm_specs, result.specs);
@@ -409,6 +417,26 @@ export function parseTerraform(infraDir: string): TerraformData {
       // AWS — detect SES, IAM, etc.
       if (hcl.includes("aws_ses_domain_identity")) {
         provider.services.push("ses-email");
+      }
+    }
+
+    // Merge cloud instance names + extra data from terraform.json
+    if (tfJson.instances) {
+      for (const inst of tfJson.instances as any[]) {
+        const alias = inst.alias || inst.display_name || inst.name;
+        if (alias && vm_specs[alias]) {
+          vm_specs[alias].cloud_name = inst.name || inst.display_name;
+          vm_specs[alias].cloud_zone = inst.zone || tfJson.provider?.zone || tfJson.provider?.region || "";
+        }
+      }
+    }
+    // Merge bucket data from terraform.json
+    if (tfJson.buckets) {
+      for (const b of tfJson.buckets as any[]) {
+        const exists = storage.find(s => s.name === b.name);
+        if (!exists) {
+          storage.push({ provider: providerName, name: b.name, tier: b.storage_tier || b.access_type || "Standard" });
+        }
       }
     }
 
