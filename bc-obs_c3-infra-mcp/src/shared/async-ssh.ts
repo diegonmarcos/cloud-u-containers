@@ -1,6 +1,6 @@
 /**
  * Async SSH execution — non-blocking version of ssh.ts.
- * Reuses the same SSH multiplexing infrastructure (ControlMaster).
+ * Uses SSH aliases from ~/.ssh/config — no custom mux, no IP resolution.
  *
  * ERROR HANDLING: Every function catches all exceptions and returns
  * structured errors with timing. Never throws — always returns a result.
@@ -8,61 +8,7 @@
 
 import { execAsync } from "./async-exec.js";
 import type { ExecResult } from "./async-exec.js";
-import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
-import { SSH_IDENTITY } from "./paths.js";
-import { existsSync, statSync, mkdirSync } from "fs";
-import { join } from "path";
-import { tmpdir, homedir } from "os";
-
-// SSH config resolution (same as ssh.ts)
-const SSH_CONFIG_FLAG: string[] = (() => {
-  const home = process.env.HOME ?? homedir();
-  const cfg = join(home, ".ssh/config");
-  if (existsSync(cfg)) {
-    try {
-      const st = statSync(cfg);
-      if (st.uid === process.getuid?.()) return ["-F", cfg];
-    } catch {}
-  }
-  return ["-F", "/dev/null"];
-})();
-
-const CONTROL_DIR = join(tmpdir(), "mcp-ssh-mux");
-try {
-  mkdirSync(CONTROL_DIR, { recursive: true, mode: 0o700 });
-} catch {}
-
-function controlPath(alias: string): string {
-  return join(CONTROL_DIR, alias);
-}
-
-async function ensureMuxAsync(alias: string, target: string): Promise<void> {
-  const check = await execAsync(
-    "ssh",
-    [
-      ...SSH_CONFIG_FLAG,
-      "-o", `ControlPath=${controlPath(alias)}`,
-      "-O", "check", target,
-    ],
-    { timeout: 3_000 },
-  );
-  if (check.ok) return;
-
-  await execAsync(
-    "ssh",
-    [
-      ...SSH_CONFIG_FLAG,
-      "-o", "ConnectTimeout=10",
-      "-o", "StrictHostKeyChecking=accept-new",
-      "-o", "ControlMaster=auto",
-      "-o", `ControlPath=${controlPath(alias)}`,
-      "-o", "ControlPersist=300",
-      "-i", SSH_IDENTITY,
-      "-fN", target,
-    ],
-    { timeout: 15_000 },
-  );
-}
+import { resolveVmId, getVmSshAlias } from "./config.js";
 
 /** Error result with context */
 function errorResult(
@@ -82,8 +28,8 @@ function errorResult(
 }
 
 /**
- * Async SSH exec — non-blocking, reuses multiplexed connections.
- * Does NOT retry WG handshake (UP/HEALTH want fast failure, not retries).
+ * Async SSH exec via alias — non-blocking.
+ * All connection logic lives in ~/.ssh/config.
  * NEVER throws — catches all errors, returns structured result with timing.
  */
 export async function sshExecAsync(
@@ -105,50 +51,20 @@ export async function sshExecAsync(
   }
 
   const alias = getVmSshAlias(vmId);
-  let config: ReturnType<typeof getConfig>;
-  try {
-    config = getConfig();
-  } catch (err) {
-    return errorResult(
-      `Config load failed: ${err instanceof Error ? err.message : String(err)}`,
-      ctx, startMs,
-    );
-  }
-
-  const vmConfig = config.vms[vmId];
-  if (!vmConfig) {
-    return errorResult(`VM '${vmId}' not found in config`, ctx, startMs);
-  }
-
-  const host = vmConfig.wg_ip || vmConfig.ip || alias;
-  const user = vmConfig.user || "ubuntu";
-  const target = `${user}@${host}`;
-
-  try {
-    await ensureMuxAsync(alias, target);
-  } catch (err) {
-    return errorResult(
-      `SSH mux setup failed for ${alias} (${host}): ${err instanceof Error ? err.message : String(err)}`,
-      ctx, startMs,
-    );
-  }
 
   const result = await execAsync(
     "ssh",
     [
-      ...SSH_CONFIG_FLAG,
-      "-o", "ConnectTimeout=5",
-      "-o", "StrictHostKeyChecking=accept-new",
-      "-o", `ControlPath=${controlPath(alias)}`,
-      "-i", SSH_IDENTITY,
-      target, command,
+      "-o", "BatchMode=yes",
+      "-o", "ConnectTimeout=10",
+      alias, command,
     ],
     { timeout: timeout ?? 15_000 },
   );
 
   // Enrich timeout errors with SSH context
   if (result.timedOut) {
-    result.stderr = `[SSH TIMEOUT after ${result.timeoutMs}ms] ${alias} (${host})\n` +
+    result.stderr = `[SSH TIMEOUT after ${result.timeoutMs}ms] ${alias}\n` +
       `Command: ${command.slice(0, 300)}\n` +
       `Duration: ${result.durationMs}ms\n` +
       `Partial output (${result.stdout.length} bytes): ${result.stdout.slice(-200)}`;
