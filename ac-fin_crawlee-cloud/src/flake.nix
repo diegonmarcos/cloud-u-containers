@@ -12,14 +12,15 @@
   outputs = { self, nixpkgs, crawlee-src }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
-      api_port = buildJson.ports.app;
-      dashboard_port = buildJson.ports.dashboard;
-      minio_port = buildJson.ports.minio;
+      api_port = ports.valueOf "app";
+      dashboard_port = ports.valueOf "dashboard";
+      minio_port = ports.valueOf "minio";
       minio_console_port = 9001;
-      db_port = buildJson.ports.db;
-      redis_port = buildJson.ports.redis;
+      db_port = ports.valueOf "db";
+      redis_port = ports.valueOf "redis";
     };
 
     title = "Crawlee Cloud - Self-hosted Apify-compatible scraping platform";

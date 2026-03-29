@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
     config = {
@@ -46,13 +47,13 @@
             image = ghcr-hedgedoc.image;
             build = ghcr-hedgedoc.build;
             container_name = config.container_name;
+            portEnv = ports.envFor "app";
             restart = "no";
             skipReadOnly = true;
             volumes = [
               "hedgedoc_uploads:/hedgedoc/public/uploads"
             ];
             environment = [
-              "CMD_PORT=${toString config.port}"
               "CMD_DOMAIN=${config.domain}"
               "CMD_URL_ADDPORT=false"
               "CMD_PROTOCOL_USESSL=true"
@@ -77,6 +78,7 @@
             image = ghcr-hedgedoc-db.image;
             build = ghcr-hedgedoc-db.build;
             container_name = config.db_container;
+            portEnv = ports.envFor "db";
             restart = "no";
             skipReadOnly = true;
             volumes = [
@@ -87,7 +89,6 @@
               "POSTGRES_PASSWORD=${config.db_user}"
               "POSTGRES_DB=${config.db_name}"
               "PGDATA=/var/lib/postgresql/data/pgdata"
-              "PGPORT=${toString config.db_port}"
             ];
             healthcheck = {
               test = "['CMD-SHELL', 'pg_isready -U ${config.db_user} -p ${toString config.db_port}']";

@@ -8,9 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     config = {
       container_name = "mattermost-mcp";
       image = "ghcr.io/diegonmarcos/mattermost-mcp:latest";
+      port = ports.valueOf "app";
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -30,6 +34,7 @@
           env_file:
             - .secrets
           environment:
+            MCP_HTTP_PORT: "${toString config.port}"
             MM_URL: https://chat.diegonmarcos.com
             MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
             MM_ADMIN_USERNAME: me@diegonmarcos.com

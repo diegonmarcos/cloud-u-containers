@@ -17,12 +17,17 @@
       "container_name": "gitea",
       "image": "gitea/gitea:latest",
       "port": 3002,
-      "port_env": null,
+      "port_env": "GITEA__server__HTTP_PORT",
       "dns": "backup-gitea.app",
       "public": true,
-      "proxy": { "domain": "git.diegonmarcos.com", "auth": "two_factor" },
+      "proxy": {
+        "domain": "git.diegonmarcos.com",
+        "auth": "two_factor"
+      },
       "healthcheck": null,
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "gitea_data:/data",
         "/etc/timezone:/etc/timezone:ro",

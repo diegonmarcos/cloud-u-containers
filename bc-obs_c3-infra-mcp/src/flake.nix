@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
@@ -30,10 +31,10 @@
         container_name = config.container_name;
         networkMode = "host";
         skipReadOnly = true;
+        portEnv = ports.envFor "app";
 
         env_file = [ ".secrets" ];
         environment = [
-          "MCP_HTTP_PORT=${toString config.port}"
           "NODE_ENV=production"
           "GIT_BASE=/root/git"
           "MM_URL=${config.mattermost_url}"

@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
@@ -91,6 +92,7 @@
             image = ghcr-photoprism.image;
             build = ghcr-photoprism.build;
             container_name = config.app_container;
+            portEnv = ports.envFor "app";
             skipReadOnly = true;
             env_file = [ ".secrets" ];
             volumes = [
@@ -99,7 +101,6 @@
             ];
             allowWritableBindMounts = true;
             environment = [
-              "PHOTOPRISM_HTTP_PORT=${toString config.app_port}"
               "PHOTOPRISM_ADMIN_USER=admin"
               "PHOTOPRISM_ADMIN_PASSWORD=\${PHOTOPRISM_ADMIN_PASSWORD:-changeme}"
               "PHOTOPRISM_AUTH_MODE=password"

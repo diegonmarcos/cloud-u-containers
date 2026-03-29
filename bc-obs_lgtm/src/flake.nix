@@ -10,6 +10,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     # GHCR images: wrap public images with OCI label for GHCR
@@ -34,10 +35,10 @@
 
     config = {
       domain = buildJson.domain;
-      grafana_port = buildJson.ports.grafana;
-      loki_port = buildJson.ports.loki;
-      mimir_port = buildJson.ports.mimir;
-      tempo_port = buildJson.ports.tempo;
+      grafana_port = ports.valueOf "grafana";
+      loki_port = ports.valueOf "loki";
+      mimir_port = ports.valueOf "mimir";
+      tempo_port = ports.valueOf "tempo";
     };
 
     title = "LGTM Stack - Grafana Labs Observability (Loki, Grafana, Tempo, Mimir)";

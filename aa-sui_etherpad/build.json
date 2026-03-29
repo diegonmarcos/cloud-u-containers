@@ -63,7 +63,7 @@
       "image": "postgres:16-alpine",
       "port": 5436,
       "port_env": "PGPORT",
-      "dns": null,
+      "dns": "etherpad-db.app",
       "public": false,
       "proxy": null,
       "healthcheck": "cmd",

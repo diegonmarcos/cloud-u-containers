@@ -8,11 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       domain = buildJson.domain;
-      port = buildJson.ports.app;
-      db_port = buildJson.ports.db;
+      port = ports.valueOf "app";
+      db_port = ports.valueOf "db";
     };
 
     title = "Windmill - Workflow orchestration platform";
@@ -85,6 +86,7 @@
           env_file:
             - .secrets
           environment:
+            - PORT=${toString config.port}
             - DATABASE_URL=postgres://windmill:''${DB_PASSWORD}@localhost:${toString config.db_port}/windmill?sslmode=disable
             - MODE=server
             - BASE_URL=https://${config.domain}

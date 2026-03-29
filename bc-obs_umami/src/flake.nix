@@ -10,6 +10,7 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     # GHCR images: wrap public images with OCI label for GHCR
     ghcrUmami = docker.mkGhcrBuild {
@@ -29,8 +30,8 @@
     config = {
       domain = buildJson.domain;
       container_name = "umami";
-      port = buildJson.ports.app;
-      db_port = buildJson.ports.db;
+      port = ports.valueOf "app";
+      db_port = ports.valueOf "db";
       db_container = "umami-db";
     };
 

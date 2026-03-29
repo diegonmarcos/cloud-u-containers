@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
 
@@ -47,6 +48,7 @@
             image = ghcr-etherpad.image;
             build = ghcr-etherpad.build;
             container_name = config.container_name;
+            portEnv = ports.envFor "app";
             skipReadOnly = true;
             volumes = [
               "etherpad_data:/opt/etherpad-lite/var"
@@ -55,7 +57,6 @@
               "TITLE=Etherpad"
               "DEFAULT_PAD_TEXT=Welcome to Etherpad!"
               "ADMIN_PASSWORD=\${ETHERPAD_ADMIN_PASSWORD:-changeme}"
-              "PORT=${toString config.port}"
               "DB_TYPE=postgres"
               "DB_HOST=localhost"
               "DB_PORT=${config.db_port}"
@@ -83,6 +84,7 @@
             image = ghcr-etherpad-db.image;
             build = ghcr-etherpad-db.build;
             container_name = config.db_container;
+            portEnv = ports.envFor "db";
             skipReadOnly = true;
             # Fix UID mismatch: Debian postgres=999, Alpine postgres=70
             entrypoint = ["sh" "-c" "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"];
@@ -95,7 +97,6 @@
               "POSTGRES_PASSWORD=${config.db_user}"
               "POSTGRES_DB=${config.db_name}"
               "PGDATA=/var/lib/postgresql/data/pgdata"
-              "PGPORT=${config.db_port}"
             ];
             healthcheck = {
               test = "['CMD-SHELL', 'pg_isready -U ${config.db_user} -p ${config.db_port}']";

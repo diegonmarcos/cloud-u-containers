@@ -121,7 +121,7 @@
       "image": "introspect-proxy:latest",
       "port": 4182,
       "port_env": null,
-      "dns": null,
+      "dns": "introspect-proxy.app",
       "public": false,
       "proxy": null,
       "healthcheck": "/health",

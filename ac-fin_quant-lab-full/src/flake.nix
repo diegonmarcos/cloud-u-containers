@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       research_image = "quay.io/jupyter/scipy-notebook:latest";
@@ -16,10 +17,10 @@
       risk_image = "python:3.12-slim";
       engine_image = "python:3.12-slim";
       db_image = "postgres:16-alpine";
-      jupyter_port = buildJson.ports.app;
+      jupyter_port = ports.valueOf "research";
       dash_port = 8050;
       engine_port = 5000;
-      db_port = buildJson.ports.db;
+      db_port = ports.valueOf "db";
     };
 
     title = "Quant Lab Full - Research + Analytics + ML + Risk + Trading + Postgres";
@@ -81,7 +82,7 @@
             JUPYTER_ENABLE_LAB: "yes"
           command: >
             sh -c "pip install openbb polars plotly &&
-                   start-notebook.sh --NotebookApp.token='''"
+                   start-notebook.sh --NotebookApp.token=''' --ServerApp.port=${toString config.jupyter_port}"
           healthcheck:
             test: ["CMD-SHELL", "curl -sf http://localhost:${toString config.jupyter_port}/api || exit 1"]
             interval: 30s
@@ -185,6 +186,7 @@
             POSTGRES_USER: ''${POSTGRES_USER}
             POSTGRES_PASSWORD: ''${POSTGRES_PASSWORD}
             POSTGRES_DB: ''${POSTGRES_DB}
+            PGPORT: "${toString config.db_port}"
           volumes:
             - pg_data:/var/lib/postgresql/data
           healthcheck:

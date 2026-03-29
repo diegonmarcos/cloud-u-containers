@@ -1,6 +1,6 @@
 {
   "name": "mail-mcp",
-  "description": "Mail MCP server \u2014 IMAP/SMTP/Admin via Stalwart REST API",
+  "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
   "docker": {
@@ -29,7 +29,7 @@
       "container_name": "mail-mcp",
       "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
       "port": 3103,
-      "port_env": null,
+      "port_env": "PORT",
       "dns": "mail-mcp.app",
       "public": true,
       "proxy": {

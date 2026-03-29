@@ -33,19 +33,34 @@
       "container_name": "windmill-server",
       "image": "ghcr.io/windmill-labs/windmill:main",
       "port": 8000,
-      "port_env": null,
+      "port_env": "PORT",
       "dns": "windmill-app.app",
       "public": true,
-      "proxy": { "domain": "windmill.diegonmarcos.com", "auth": "two_factor" },
+      "proxy": {
+        "domain": "windmill.diegonmarcos.com",
+        "auth": "two_factor"
+      },
       "healthcheck": "curl -f http://localhost:8000/api/version",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "windmill-server-data:/tmp/windmill",
         "/var/run/docker.sock:/var/run/docker.sock"
       ],
       "env_file": true,
-      "depends_on": ["db"],
-      "resources": { "limits": { "memory": "512M", "cpus": "1.0" }, "reservations": { "memory": "256M" } },
+      "depends_on": [
+        "db"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "512M",
+          "cpus": "1.0"
+        },
+        "reservations": {
+          "memory": "256M"
+        }
+      },
       "read_only": false
     },
     "db": {
@@ -60,7 +75,14 @@
         "windmill-db-data:/var/lib/postgresql/data"
       ],
       "env_file": true,
-      "resources": { "limits": { "memory": "128M" }, "reservations": { "memory": "64M" } },
+      "resources": {
+        "limits": {
+          "memory": "128M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      },
       "read_only": false,
       "db_user": "windmill",
       "db_name": "windmill"
@@ -79,8 +101,18 @@
         "/opt/ssh-keys/windmill-worker:/home/windmill/.ssh:ro"
       ],
       "env_file": true,
-      "depends_on": ["app"],
-      "resources": { "limits": { "memory": "256M", "cpus": "0.5" }, "reservations": { "memory": "128M" } },
+      "depends_on": [
+        "app"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "256M",
+          "cpus": "0.5"
+        },
+        "reservations": {
+          "memory": "128M"
+        }
+      },
       "read_only": false
     }
   }

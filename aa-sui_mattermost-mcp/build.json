@@ -1,6 +1,6 @@
 {
   "name": "mattermost-mcp",
-  "description": "Mattermost MCP server \u2014 chat tools via HTTP transport",
+  "description": "Mattermost MCP server — chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
   "category": "app",
   "docker": {
@@ -29,7 +29,7 @@
       "container_name": "mattermost-mcp",
       "image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
       "port": 3102,
-      "port_env": null,
+      "port_env": "MCP_HTTP_PORT",
       "dns": "mattermost-mcp.app",
       "public": true,
       "proxy": {

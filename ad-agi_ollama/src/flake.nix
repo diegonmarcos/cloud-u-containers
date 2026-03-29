@@ -8,12 +8,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     # Configuration options (non-secret)
     config = {
       container_name = "ollama";
       image = "ollama/ollama:latest";
-      api_port = 11434;
+      api_port = ports.valueOf "app";
       wg_ip = svc.ollama.ip;
       timezone = "America/Chicago";
       keep_alive = "5m";
@@ -57,6 +58,7 @@
             - ollama_data:/root/.ollama
           environment:
             - TZ=${config.timezone}
+            - OLLAMA_HOST=0.0.0.0:${toString config.api_port}
             - OLLAMA_KEEP_ALIVE=${config.keep_alive}
             - OLLAMA_KV_CACHE_TYPE=${config.kv_cache_type}
             - NVIDIA_VISIBLE_DEVICES=all

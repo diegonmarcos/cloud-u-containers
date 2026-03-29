@@ -63,7 +63,7 @@
       "image": "postgres:16-alpine",
       "port": 5439,
       "port_env": "PGPORT",
-      "dns": null,
+      "dns": "hedgedoc-db.app",
       "public": false,
       "proxy": null,
       "healthcheck": "cmd",

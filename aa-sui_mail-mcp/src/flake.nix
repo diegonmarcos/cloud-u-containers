@@ -8,10 +8,14 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     config = {
       container_name = "mail-mcp";
       image = "ghcr.io/diegonmarcos/mail-mcp:latest";
       mail_host = "mail.diegonmarcos.com";  # Use domain for TLS cert match (cert is for mail.diegonmarcos.com, not WG IP)
+      port = ports.valueOf "app";
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -31,6 +35,7 @@
           env_file:
             - .secrets
           environment:
+            PORT: "${toString config.port}"
             MAIL_HOST: ${config.mail_host}
 
     '';

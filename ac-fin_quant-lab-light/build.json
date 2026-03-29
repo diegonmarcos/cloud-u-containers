@@ -17,7 +17,7 @@
       "image": "quay.io/jupyter/scipy-notebook:latest",
       "port": 8889,
       "port_env": null,
-      "dns": null,
+      "dns": "quant-light-research.app",
       "public": false,
       "proxy": null,
       "healthcheck": "curl -sf http://localhost:8889/api || exit 1",
@@ -35,7 +35,7 @@
       "image": "python:3.12-slim",
       "port": 5001,
       "port_env": null,
-      "dns": null,
+      "dns": "quant-light-engine.app",
       "public": false,
       "proxy": null,
       "healthcheck": null,
@@ -44,7 +44,9 @@
         "./data:/app/data"
       ],
       "env_file": false,
-      "depends_on": ["research"],
+      "depends_on": [
+        "research"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -53,7 +55,7 @@
       "image": "postgres:16-alpine",
       "port": 5434,
       "port_env": "PGPORT",
-      "dns": null,
+      "dns": "quant-light-db.app",
       "public": false,
       "proxy": null,
       "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",

@@ -9,11 +9,12 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       domain = buildJson.domain;
       container_name = "matomo-hybrid";
-      port = buildJson.ports.app;
+      port = ports.valueOf "app";
     };
 
     title = "Matomo Analytics (Hybrid Container)";
