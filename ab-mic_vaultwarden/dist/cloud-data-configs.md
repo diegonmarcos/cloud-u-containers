@@ -996,7 +996,7 @@
 | cal.diegonmarcos.com | radicale.app:5232 | authelia+bearer | no | — |
 | chat.diegonmarcos.com | mattermost.app:8065 | authelia+bearer | no | — |
 | photos.diegonmarcos.com | photoprism.app:3013 | authelia+bearer | no | — |
-| mail.diegonmarcos.com | stalwart.app:8443 | authelia+bearer | yes | — |
+| mail.diegonmarcos.com | stalwart.app:443 | authelia+bearer | yes | — |
 | webmail.diegonmarcos.com | snappymail.app:8888 | authelia+bearer | no | — |
 | workflows.diegonmarcos.com | dagu.app:8070 | authelia+bearer | no | — |
 | ide.diegonmarcos.com | code-server.app:8443 | authelia+bearer | no | — |

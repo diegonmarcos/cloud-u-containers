@@ -60,6 +60,8 @@
           ADMIN_TOKEN = "\${ADMIN_TOKEN}";
         };
         volumes = [ "vaultwarden_data:/data" ];
+        memLimit = "128M";
+        memReservation = "32M";
       };
 
       volumes = {

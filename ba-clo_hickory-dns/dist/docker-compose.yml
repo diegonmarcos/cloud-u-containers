@@ -40,11 +40,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
+          memory: 48M
           cpus: "1.0"
           pids: 256
         reservations:
-          memory: 64M
+          memory: 16M
     logging:
       driver: "json-file"
       options:

@@ -23,7 +23,7 @@ services:
     network_mode: host
     env_file:
       - .secrets
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    command: ["sh", "-c", "redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - /data/redis:/data
     healthcheck:

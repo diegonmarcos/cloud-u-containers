@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-28T12:20:25.734Z",
+  "_generated": "2026-03-29T03:56:54.930Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/container-resources",
   "services": {
     "code-server": {
@@ -127,7 +127,7 @@
     },
     "snappymail": {
       "vm": "oci-mail",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "snappymail"
@@ -139,7 +139,7 @@
     },
     "smtp-proxy": {
       "vm": "oci-mail",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "smtp-proxy"
@@ -148,7 +148,7 @@
     },
     "stalwart": {
       "vm": "oci-mail",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "stalwart"
@@ -164,8 +164,8 @@
     },
     "vaultwarden": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "vaultwarden"
       ],
@@ -213,8 +213,8 @@
     },
     "ollama": {
       "vm": "gcp-t4",
-      "vm_ram_gb": 15,
-      "vm_cpu": 4,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "ollama"
       ],
@@ -297,8 +297,8 @@
     },
     "hickory-dns": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "hickory-dns"
       ],
@@ -308,8 +308,8 @@
     },
     "authelia": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "authelia",
         "authelia-redis"
@@ -318,8 +318,8 @@
     },
     "caddy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "caddy",
         "introspect-proxy"
@@ -340,8 +340,8 @@
     },
     "introspect-proxy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "introspect-proxy"
       ],
@@ -358,7 +358,7 @@
     },
     "alerts-api": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "alerts-api"
@@ -421,7 +421,7 @@
     },
     "dagu": {
       "vm": "oci-mail",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "dagu"
@@ -432,7 +432,7 @@
     },
     "dozzle": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "dozzle"
@@ -443,7 +443,7 @@
     },
     "fluent-bit": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "fluent-bit"
@@ -464,7 +464,7 @@
     },
     "matomo": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "matomo-hybrid"
@@ -490,8 +490,8 @@
     },
     "ntfy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "ntfy",
         "syslog-bridge",
@@ -501,7 +501,7 @@
     },
     "sauron-forwarder": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "sauron-forwarder"
@@ -519,7 +519,7 @@
     },
     "syslog-forwarder": {
       "vm": "oci-mail",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "syslog-forwarder"
@@ -528,7 +528,7 @@
     },
     "umami": {
       "vm": "oci-analytics",
-      "vm_ram_gb": 1,
+      "vm_ram_gb": 0,
       "vm_cpu": 1,
       "containers": [
         "umami",
@@ -628,8 +628,8 @@
     },
     "postlite": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "postlite"
       ],
@@ -637,8 +637,8 @@
     },
     "redis": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 0,
+      "vm_cpu": 0,
       "containers": [
         "redis"
       ],

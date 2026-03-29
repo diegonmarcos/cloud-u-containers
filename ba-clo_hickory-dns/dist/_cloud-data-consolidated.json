@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-03-28T06:29:57.306Z",
+    "generated_at": "2026-03-29T03:04:10.819Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -21,10 +21,12 @@
       "ip": "130.110.251.193",
       "specs": {
         "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 47,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro"
+        "shape": "VM.Standard.E2.1.Micro",
+        "cloud_name": "oci-E2-f_0",
+        "cloud_zone": "eu-marseille-1"
       },
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
@@ -100,10 +102,12 @@
       "ip": "129.151.228.66",
       "specs": {
         "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 47,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro"
+        "shape": "VM.Standard.E2.1.Micro",
+        "cloud_name": "oci-E2-f_1",
+        "cloud_zone": "eu-marseille-1"
       },
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
@@ -135,13 +139,15 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 24,
-        "disk_gb": 100,
+        "disk_gb": 0,
         "arch": "aarch64",
-        "shape": "VM.Standard.A1.Flex"
+        "shape": "VM.Standard.A1.Flex",
+        "cloud_name": "oci-A1-f_0",
+        "cloud_zone": "eu-marseille-1"
       },
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
+      "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -236,13 +242,16 @@
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
       "specs": {
-        "cpu": 4,
-        "ram_gb": 15,
-        "disk_gb": 100,
+        "cpu": 0,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
-        "vram_gb": 16
+        "vram_gb": 16,
+        "machine_type": "n1-standard-4",
+        "cloud_name": "ollama-spot-gpu",
+        "cloud_zone": "us-central1-a"
       },
       "description": "GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM",
       "wg_ip": "10.0.0.8",
@@ -279,11 +288,14 @@
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
       "specs": {
-        "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 30,
+        "cpu": 0,
+        "ram_gb": 0,
+        "disk_gb": 0,
         "arch": "x86_64",
-        "shape": "e2-micro"
+        "shape": "e2-small",
+        "machine_type": "e2-small",
+        "cloud_name": "arch-1",
+        "cloud_zone": "us-central1-a"
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
@@ -895,7 +907,7 @@
           "image": "postgres:16-alpine",
           "port": 5436,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "etherpad-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -920,7 +932,8 @@
         "5436"
       ],
       "all_dns": [
-        "etherpad.app"
+        "etherpad.app",
+        "etherpad-db.app"
       ],
       "compose": {
         "containers": [
@@ -1220,7 +1233,7 @@
           "image": "postgres:16-alpine",
           "port": 5439,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "hedgedoc-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -1245,7 +1258,8 @@
         "5439"
       ],
       "all_dns": [
-        "hedgedoc.app"
+        "hedgedoc.app",
+        "hedgedoc-db.app"
       ],
       "compose": {
         "containers": [
@@ -1292,7 +1306,7 @@
           "container_name": "mail-mcp",
           "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
           "port": 3103,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "mail-mcp.app",
           "public": true,
           "proxy": {
@@ -1352,7 +1366,7 @@
           "container_name": "mattermost",
           "image": "ngrie/mattermost-team-edition-arm:10.11",
           "port": 8065,
-          "port_env": null,
+          "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
           "dns": "mattermost.app",
           "public": true,
           "proxy": {
@@ -1375,7 +1389,8 @@
             "db"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "port_format": "colon"
         },
         "db": {
           "container_name": "mattermost-postgres",
@@ -1474,7 +1489,7 @@
           "container_name": "mattermost-mcp",
           "image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
           "port": 3102,
-          "port_env": null,
+          "port_env": "MCP_HTTP_PORT",
           "dns": "mattermost-mcp.app",
           "public": true,
           "proxy": {
@@ -1888,26 +1903,48 @@
       "category": "app",
       "vm": "oci-E2-f_0",
       "folder": "aa-sui_tools-smtp-proxy",
-      "description": "",
+      "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+      "domain": "smtp.diegonmarcos.com",
       "flake": "tools-smtp-proxy",
+      "port": 8080,
+      "dns": "smtp-proxy.app",
+      "upstream": "smtp-proxy.app:8080",
       "containers": {
         "app": {
           "container_name": "smtp-proxy",
-          "image": "",
-          "public": false
+          "port": 8080,
+          "dns": "smtp-proxy.app",
+          "public": true,
+          "proxy": {
+            "domain": "smtp.diegonmarcos.com",
+            "auth": "none"
+          }
         }
       },
       "container_names": [
         "smtp-proxy"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "8080"
+      ],
+      "all_dns": [
+        "smtp-proxy.app"
+      ],
       "compose": {
         "containers": [
           "smtp-proxy"
         ],
         "ports": [],
         "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "smtp.diegonmarcos.com",
+          "auth": "none"
+        }
+      },
+      "declared_ports": {
+        "app": 8080
       }
     },
     "stalwart": {
@@ -2283,7 +2320,7 @@
           "image": "quay.io/jupyter/scipy-notebook:latest",
           "port": 8890,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-full-research.app",
           "public": false,
           "proxy": null,
           "healthcheck": "curl -sf http://localhost:8890/api || exit 1",
@@ -2372,8 +2409,8 @@
           "container_name": "quant_full_db",
           "image": "postgres:16-alpine",
           "port": 5437,
-          "port_env": null,
-          "dns": null,
+          "port_env": "PGPORT",
+          "dns": "quant-full-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",
@@ -2398,7 +2435,10 @@
         "8890",
         "5437"
       ],
-      "all_dns": [],
+      "all_dns": [
+        "quant-full-research.app",
+        "quant-full-db.app"
+      ],
       "compose": {
         "containers": [
           "quant_full_analytics",
@@ -2427,7 +2467,7 @@
           "image": "quay.io/jupyter/scipy-notebook:latest",
           "port": 8889,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-light-research.app",
           "public": false,
           "proxy": null,
           "healthcheck": "curl -sf http://localhost:8889/api || exit 1",
@@ -2445,7 +2485,7 @@
           "image": "python:3.12-slim",
           "port": 5001,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-light-engine.app",
           "public": false,
           "proxy": null,
           "healthcheck": null,
@@ -2465,7 +2505,7 @@
           "image": "postgres:16-alpine",
           "port": 5434,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "quant-light-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",
@@ -2490,7 +2530,11 @@
         "5001",
         "5434"
       ],
-      "all_dns": [],
+      "all_dns": [
+        "quant-light-research.app",
+        "quant-light-engine.app",
+        "quant-light-db.app"
+      ],
       "compose": {
         "containers": [
           "quant_light_db",
@@ -2522,7 +2566,7 @@
           "container_name": "ollama",
           "image": "ollama/ollama:latest",
           "port": 11434,
-          "port_env": null,
+          "port_env": "OLLAMA_HOST",
           "dns": "ollama.app",
           "public": false,
           "proxy": null,
@@ -2542,7 +2586,8 @@
               ]
             }
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "host"
         }
       },
       "container_names": [
@@ -2610,7 +2655,7 @@
           "container_name": "ollama-hai",
           "image": "ollama/ollama:latest",
           "port": 11435,
-          "port_env": null,
+          "port_env": "OLLAMA_HOST",
           "dns": "ollama-hai.app",
           "public": false,
           "proxy": null,
@@ -2625,7 +2670,8 @@
               "memory": "6G"
             }
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "host"
         }
       },
       "container_names": [
@@ -3552,7 +3598,7 @@
           "container_name": "dagu",
           "image": "ghcr.io/diegonmarcos/dagu:latest",
           "port": 8070,
-          "port_env": null,
+          "port_env": "DAGU_PORT",
           "dns": "dagu.app",
           "public": true,
           "proxy": {
@@ -3647,7 +3693,8 @@
           "resources": {
             "mem_limit": "64m"
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "colon"
         }
       },
       "container_names": [
@@ -3976,7 +4023,7 @@
           "image": "postgres:16-bookworm",
           "port": 5441,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "nocodb-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -4001,7 +4048,8 @@
         "5441"
       ],
       "all_dns": [
-        "nocodb.app"
+        "nocodb.app",
+        "nocodb-db.app"
       ],
       "compose": {
         "containers": [
@@ -4248,7 +4296,7 @@
           "container_name": "umami",
           "image": "ghcr.io/umami-software/umami:latest",
           "port": 3006,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "umami.app",
           "public": true,
           "proxy": {
@@ -4279,7 +4327,7 @@
           "container_name": "umami-db",
           "image": "postgres:16-alpine",
           "port": 5442,
-          "port_env": null,
+          "port_env": "PGPORT",
           "dns": "umami-db.app",
           "public": false,
           "healthcheck": "pg_isready -U umami",
@@ -4377,7 +4425,7 @@
           "container_name": "windmill-server",
           "image": "ghcr.io/windmill-labs/windmill:main",
           "port": 8000,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "windmill-app.app",
           "public": true,
           "proxy": {
@@ -4564,7 +4612,7 @@
           "container_name": "gitea",
           "image": "gitea/gitea:latest",
           "port": 3002,
-          "port_env": null,
+          "port_env": "GITEA__server__HTTP_PORT",
           "dns": "backup-gitea.app",
           "public": true,
           "proxy": {
@@ -4823,10 +4871,10 @@
         "networks": []
       },
       "declared_ports": {
-        "npm_rest": 8880,
-        "vaultwarden_rest": 8881,
-        "ntfy_rest": 8882,
-        "authelia_rest": 8883,
+        "npm_rest": 8890,
+        "vaultwarden_rest": 8891,
+        "ntfy_rest": 8892,
+        "authelia_rest": 8893,
         "npm_pg": 5433,
         "vaultwarden_pg": 5434,
         "ntfy_pg": 5435,
@@ -5035,8 +5083,13 @@
   "storage": [
     {
       "provider": "oci",
-      "name": "each.value.name",
-      "tier": "each.value.storage_tier"
+      "name": "archlinux-images",
+      "tier": "Standard"
+    },
+    {
+      "provider": "oci",
+      "name": "my-photos",
+      "tier": "Standard"
     }
   ],
   "dns": {
@@ -5050,6 +5103,12 @@
       },
       {
         "name": "etherpad.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "etherpad"
+      },
+      {
+        "name": "etherpad-db.app",
         "type": "A",
         "value": "10.0.0.6",
         "service": "etherpad"
@@ -5074,6 +5133,12 @@
       },
       {
         "name": "hedgedoc.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "hedgedoc"
+      },
+      {
+        "name": "hedgedoc-db.app",
         "type": "A",
         "value": "10.0.0.6",
         "service": "hedgedoc"
@@ -5133,6 +5198,12 @@
         "service": "snappymail"
       },
       {
+        "name": "smtp-proxy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "smtp-proxy"
+      },
+      {
         "name": "stalwart.app",
         "type": "A",
         "value": "10.0.0.3",
@@ -5185,6 +5256,36 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "crawlee-cloud"
+      },
+      {
+        "name": "quant-full-research.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-full"
+      },
+      {
+        "name": "quant-full-db.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-full"
+      },
+      {
+        "name": "quant-light-research.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
+      },
+      {
+        "name": "quant-light-engine.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
+      },
+      {
+        "name": "quant-light-db.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
       },
       {
         "name": "ollama.app",
@@ -5308,6 +5409,12 @@
       },
       {
         "name": "nocodb.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "nocodb"
+      },
+      {
+        "name": "nocodb-db.app",
         "type": "A",
         "value": "10.0.0.6",
         "service": "nocodb"
@@ -5643,10 +5750,12 @@
         "rescue_port": 2200,
         "specs": {
           "cpu": 1,
-          "ram_gb": 1,
-          "disk_gb": 47,
+          "ram_gb": 0,
+          "disk_gb": 0,
           "arch": "x86_64",
-          "shape": "VM.Standard.E2.1.Micro"
+          "shape": "VM.Standard.E2.1.Micro",
+          "cloud_name": "oci-E2-f_0",
+          "cloud_zone": "eu-marseille-1"
         },
         "public_ports": [
           {
@@ -5721,10 +5830,12 @@
         "rescue_port": 2200,
         "specs": {
           "cpu": 1,
-          "ram_gb": 1,
-          "disk_gb": 47,
+          "ram_gb": 0,
+          "disk_gb": 0,
           "arch": "x86_64",
-          "shape": "VM.Standard.E2.1.Micro"
+          "shape": "VM.Standard.E2.1.Micro",
+          "cloud_name": "oci-E2-f_1",
+          "cloud_zone": "eu-marseille-1"
         },
         "public_ports": [],
         "idle_shutdown": null,
@@ -5746,7 +5857,7 @@
         "vm_id": "oci-A1-f_0",
         "ip": "82.70.229.129",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": "96dKQvDhJt0vgOdRFqniHiH6BAIefeaGxJ13cn/842g=",
+        "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -5755,9 +5866,11 @@
         "specs": {
           "cpu": 4,
           "ram_gb": 24,
-          "disk_gb": 100,
+          "disk_gb": 0,
           "arch": "aarch64",
-          "shape": "VM.Standard.A1.Flex"
+          "shape": "VM.Standard.A1.Flex",
+          "cloud_name": "oci-A1-f_0",
+          "cloud_zone": "eu-marseille-1"
         },
         "public_ports": [
           {
@@ -5855,13 +5968,16 @@
         "home": "/home/diego",
         "rescue_port": 2200,
         "specs": {
-          "cpu": 4,
-          "ram_gb": 15,
-          "disk_gb": 100,
+          "cpu": 0,
+          "ram_gb": 0,
+          "disk_gb": 0,
           "arch": "x86_64",
           "shape": "n1-standard-4",
           "gpu": "NVIDIA T4",
-          "vram_gb": 16
+          "vram_gb": 16,
+          "machine_type": "n1-standard-4",
+          "cloud_name": "ollama-spot-gpu",
+          "cloud_zone": "us-central1-a"
         },
         "public_ports": [],
         "idle_shutdown": {
@@ -5892,11 +6008,14 @@
         "home": "/home/diego",
         "rescue_port": 2200,
         "specs": {
-          "cpu": 1,
-          "ram_gb": 1,
-          "disk_gb": 30,
+          "cpu": 0,
+          "ram_gb": 0,
+          "disk_gb": 0,
           "arch": "x86_64",
-          "shape": "e2-micro"
+          "shape": "e2-small",
+          "machine_type": "e2-small",
+          "cloud_name": "arch-1",
+          "cloud_zone": "us-central1-a"
         },
         "public_ports": [
           {

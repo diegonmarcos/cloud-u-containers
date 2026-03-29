@@ -1,0 +1,124 @@
+{
+  "provider": {
+    "version": "~> 4.0"
+  },
+
+  "domain": "diegonmarcos.com",
+  "proxy_ip": "35.226.147.64",
+  "account_id": "e5cb0a0c6f448e54f217de484259f0ae",
+
+  "dns_records": {
+    "a_records": [
+      { "name": "diegonmarcos.com", "proxied": false, "ttl": 300, "comment": null },
+      { "name": "www",              "proxied": false, "ttl": 300, "comment": null },
+      { "name": "*",                "proxied": false, "ttl": 1,   "comment": "Wildcard catch-all → GCP Caddy" },
+      { "name": "mail",             "proxied": false, "ttl": 300, "comment": "Caddy L4: webmail+IMAP+SMTP (needs A, wildcard skips)" }
+    ],
+
+    "cname_records": [
+      {
+        "key": "smtp_proxy_tunnel",
+        "name": "smtp-proxy",
+        "content": "90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com",
+        "proxied": true,
+        "ttl": 1,
+        "comment": "Cloudflare Tunnel → smtp-proxy on oci-mail"
+      }
+    ],
+
+    "txt_records": [
+      {
+        "key": "spf",
+        "name": "diegonmarcos.com",
+        "content": "v=spf1 ip4:130.110.251.193 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com -all",
+        "ttl": 300,
+        "comment": "SPF: Stalwart VM IP + CF Email Routing + AWS SES + OCI relay — hardfail"
+      },
+      {
+        "key": "dmarc",
+        "name": "_dmarc",
+        "content": "v=DMARC1; p=reject; sp=reject; rua=mailto:postmaster@diegonmarcos.com; ruf=mailto:postmaster@diegonmarcos.com; fo=1",
+        "ttl": 300,
+        "comment": "DMARC: reject spoofed emails + subdomain policy + forensic reports"
+      },
+      {
+        "key": "ses_mail_from_spf",
+        "name": "mail",
+        "content": "v=spf1 include:amazonses.com ~all",
+        "ttl": 300,
+        "comment": "AWS SES custom MAIL FROM - SPF for bounce subdomain"
+      }
+    ],
+
+    "dkim_records": [
+      { "key": "dkim_stalwart",   "name": "dkim._domainkey",     "var": "dkim_stalwart_public_key", "ttl": 300, "comment": "Stalwart DKIM - selector: dkim" },
+      { "key": "dkim_cloudflare", "name": "cf2024-1._domainkey", "var": "dkim_cf_public_key",       "ttl": 1,   "comment": "Cloudflare Email Routing DKIM (auto-managed by CF)" },
+      { "key": "dkim_google",     "name": "google._domainkey",   "var": "dkim_google_public_key",   "ttl": 1,   "comment": "Google Workspace DKIM (legacy)" }
+    ],
+
+    "ses_dkim_cnames": [
+      { "key": "ses_dkim_1", "var": "ses_dkim_token_1", "ttl": 300, "comment": "AWS SES DKIM 1/3" },
+      { "key": "ses_dkim_2", "var": "ses_dkim_token_2", "ttl": 300, "comment": "AWS SES DKIM 2/3" },
+      { "key": "ses_dkim_3", "var": "ses_dkim_token_3", "ttl": 300, "comment": "AWS SES DKIM 3/3" }
+    ],
+
+    "ses_verification": {
+      "name": "_amazonses",
+      "var": "ses_verification_token",
+      "ttl": 300,
+      "comment": "AWS SES domain verification"
+    },
+
+    "ses_mail_from_mx": {
+      "name": "mail",
+      "content": "feedback-smtp.us-east-1.amazonses.com",
+      "priority": 10,
+      "ttl": 300,
+      "comment": "AWS SES custom MAIL FROM - bounce handling"
+    },
+
+    "caa_records": [
+      {
+        "key": "caa_letsencrypt",
+        "name": "diegonmarcos.com",
+        "flags": "0",
+        "tag": "issue",
+        "value": "letsencrypt.org",
+        "ttl": 300,
+        "comment": "CAA: restrict cert issuance to Let's Encrypt only"
+      }
+    ]
+  },
+
+  "tunnel": {
+    "id": "90b644ed-1339-4fbe-a467-687012aa84ae",
+    "ingress_rules": [
+      { "hostname": "smtp-proxy.diegonmarcos.com", "service": "http://localhost:8080" }
+    ],
+    "catchall_service": "http_status:404"
+  },
+
+  "email_routing": {
+    "backup_email": "diegonmarcos@live.com",
+    "rules": [
+      {
+        "name": "Forward to Worker (Gmail + Stalwart)",
+        "enabled": true,
+        "priority": 0,
+        "match_type": "literal",
+        "match_field": "to",
+        "match_value": "me@diegonmarcos.com",
+        "action_type": "worker",
+        "action_value": ["email-forwarder"]
+      }
+    ]
+  },
+
+  "ssl_settings": {
+    "ssl": "full",
+    "always_use_https": "on",
+    "min_tls_version": "1.2",
+    "automatic_https_rewrites": "on",
+    "opportunistic_encryption": "on"
+  }
+}

@@ -115,7 +115,8 @@ ${zoneBlocks}
             "./config/zones:/etc/zones:ro"
           ];
           dns = ["1.1.1.1" "8.8.8.8"];
-          memLimit = "64M";
+          memLimit = "48M";
+          memReservation = "16M";
         };
       };
     };

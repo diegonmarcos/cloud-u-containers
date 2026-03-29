@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-28T06:29:57.561Z",
+  "_generated": "2026-03-29T03:04:11.186Z",
   "services": {
     "code-server": {
       "ip": "10.0.0.6",
@@ -102,7 +102,9 @@
     },
     "smtp-proxy": {
       "ip": "10.0.0.3",
-      "ports": {},
+      "ports": {
+        "app": 8080
+      },
       "vm": "oci-mail"
     },
     "stalwart": {
@@ -369,10 +371,10 @@
     "postlite": {
       "ip": "10.0.0.1",
       "ports": {
-        "npm_rest": 8880,
-        "vaultwarden_rest": 8881,
-        "ntfy_rest": 8882,
-        "authelia_rest": 8883,
+        "npm_rest": 8890,
+        "vaultwarden_rest": 8891,
+        "ntfy_rest": 8892,
+        "authelia_rest": 8893,
         "npm_pg": 5433,
         "vaultwarden_pg": 5434,
         "ntfy_pg": 5435,

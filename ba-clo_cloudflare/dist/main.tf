@@ -1,3 +1,15 @@
+# Cloudflare DNS, Email Routing, Tunnel — data-driven from terraform.json
+# All record values live in terraform.json; this file is a pure template.
+
+locals {
+  config = jsondecode(file("${path.module}/terraform.json"))
+  dns    = local.config.dns_records
+}
+
+# =============================================================================
+# Provider
+# =============================================================================
+
 terraform {
   required_providers {
     cloudflare = {
@@ -11,6 +23,8 @@ provider "cloudflare" {
   api_key = var.cloudflare_api_key
   email   = var.cloudflare_email
 }
+
+# ── Variables (secrets + DKIM keys — injected via tfvars) ────────────────────
 
 variable "cloudflare_api_key" {
   description = "Cloudflare Global API Key"
@@ -28,14 +42,8 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
-variable "cloudflare_account_id" {
-  description = "Cloudflare Account ID"
-  type        = string
-  default     = "e5cb0a0c6f448e54f217de484259f0ae"
-}
-
-variable "dkim_mailu_public_key" {
-  description = "Mailu DKIM public key (dkim._domainkey) - get from Mailu admin > Domains"
+variable "dkim_stalwart_public_key" {
+  description = "Stalwart DKIM public key (dkim._domainkey)"
   type        = string
 }
 
@@ -49,12 +57,6 @@ variable "dkim_google_public_key" {
   type        = string
 }
 
-variable "dkim_mail_public_key" {
-  description = "Mailu legacy DKIM key (mail._domainkey)"
-  type        = string
-}
-
-# AWS SES verification + DKIM tokens (from terraform output of b_infra/vps_aws/)
 variable "ses_verification_token" {
   description = "SES domain verification token (_amazonses TXT record)"
   type        = string
@@ -79,448 +81,190 @@ variable "ses_dkim_token_3" {
   default     = ""
 }
 
-# =============================================================================
-# DNS Records - Root & Wildcard
-# All HTTP traffic routes through GCP Caddy Proxy (35.226.147.64)
-# =============================================================================
+# Map variable names to values for dynamic DKIM lookup
+locals {
+  dkim_vars = {
+    dkim_stalwart_public_key = var.dkim_stalwart_public_key
+    dkim_cf_public_key       = var.dkim_cf_public_key
+    dkim_google_public_key   = var.dkim_google_public_key
+  }
 
-resource "cloudflare_record" "root" {
-  zone_id = var.cloudflare_zone_id
-  name    = "diegonmarcos.com"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "www" {
-  zone_id = var.cloudflare_zone_id
-  name    = "www"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "wildcard" {
-  zone_id = var.cloudflare_zone_id
-  name    = "*"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 1
-  comment = "Wildcard catch-all → GCP Caddy"
+  ses_dkim_tokens = {
+    ses_dkim_token_1 = var.ses_dkim_token_1
+    ses_dkim_token_2 = var.ses_dkim_token_2
+    ses_dkim_token_3 = var.ses_dkim_token_3
+  }
 }
 
 # =============================================================================
-# DNS Records - Service Subdomains (via GCP Caddy → WireGuard → target VM)
+# DNS Records — A records (all point to proxy_ip)
 # =============================================================================
 
-resource "cloudflare_record" "auth" {
-  zone_id = var.cloudflare_zone_id
-  name    = "auth"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Authelia 2FA"
-}
+resource "cloudflare_record" "a_records" {
+  for_each = { for idx, r in local.dns.a_records : r.name => r }
 
-resource "cloudflare_record" "analytics" {
   zone_id = var.cloudflare_zone_id
-  name    = "analytics"
+  name    = each.value.name
   type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Matomo Analytics via Caddy → oci-analytics"
-}
-
-resource "cloudflare_record" "photos" {
-  zone_id = var.cloudflare_zone_id
-  name    = "photos"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "PhotoPrism via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "cal" {
-  zone_id = var.cloudflare_zone_id
-  name    = "cal"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Radicale Calendar via Caddy → oci-mail"
-}
-
-resource "cloudflare_record" "ide" {
-  zone_id = var.cloudflare_zone_id
-  name    = "ide"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Code Server IDE via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "db" {
-  zone_id = var.cloudflare_zone_id
-  name    = "db"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "NocoDB via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "rss" {
-  zone_id = var.cloudflare_zone_id
-  name    = "rss"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Ntfy push notifications via Caddy on GCP"
-}
-
-resource "cloudflare_record" "proxy" {
-  zone_id = var.cloudflare_zone_id
-  name    = "proxy"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Caddy admin"
-}
-
-resource "cloudflare_record" "vault" {
-  zone_id = var.cloudflare_zone_id
-  name    = "vault"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Vaultwarden via Caddy on GCP"
-}
-
-resource "cloudflare_record" "drive_notes_affine" {
-  zone_id = var.cloudflare_zone_id
-  name    = "drive-notes-affine"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "AFFiNE workspace via Caddy → oci-apps-1"
-}
-
-resource "cloudflare_record" "suite" {
-  zone_id = var.cloudflare_zone_id
-  name    = "suite"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "linktree" {
-  zone_id = var.cloudflare_zone_id
-  name    = "linktree"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "cloud" {
-  zone_id = var.cloudflare_zone_id
-  name    = "cloud"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "nexus" {
-  zone_id = var.cloudflare_zone_id
-  name    = "nexus"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_record" "api" {
-  zone_id = var.cloudflare_zone_id
-  name    = "api"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Flask + Rust API via Caddy on GCP"
+  content = local.config.proxy_ip
+  proxied = each.value.proxied
+  ttl     = each.value.ttl
+  comment = each.value.comment
 }
 
 # =============================================================================
-# DNS Records - Mattermost Chat
+# DNS Records — CNAME records
 # =============================================================================
 
-resource "cloudflare_record" "chat" {
-  zone_id = var.cloudflare_zone_id
-  name    = "chat"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Mattermost via Caddy → oci-apps"
-}
+resource "cloudflare_record" "cname_records" {
+  for_each = { for r in local.dns.cname_records : r.key => r }
 
-# =============================================================================
-# DNS Records - Mail (direct to oci-mail - 130.110.251.193)
-# Cannot proxy SMTP ports through Cloudflare
-# =============================================================================
-
-resource "cloudflare_record" "mail" {
   zone_id = var.cloudflare_zone_id
-  name    = "mail"
-  type    = "A"
-  content = "35.226.147.64"
-  proxied = false
-  ttl     = 300
-  comment = "Mailu webmail via Caddy → oci-mail"
-}
-
-resource "cloudflare_record" "smtp" {
-  zone_id = var.cloudflare_zone_id
-  name    = "smtp"
-  type    = "A"
-  content = "130.110.251.193"
-  proxied = false
-  ttl     = 300
-  comment = "SMTP direct to oci-mail - used in SPF + outbound SMTP client config"
-}
-
-resource "cloudflare_record" "imap" {
-  zone_id = var.cloudflare_zone_id
-  name    = "imap"
-  type    = "A"
-  content = "130.110.251.193"
-  proxied = false
-  ttl     = 300
-  comment = "IMAP direct to oci-mail"
-}
-
-resource "cloudflare_record" "smtp_proxy_tunnel" {
-  zone_id = var.cloudflare_zone_id
-  name    = "smtp-proxy"
+  name    = each.value.name
   type    = "CNAME"
-  content = "90b644ed-1339-4fbe-a467-687012aa84ae.cfargotunnel.com"
-  proxied = true
-  ttl     = 1
-  comment = "Cloudflare Tunnel → smtp-proxy on oci-mail"
+  content = each.value.content
+  proxied = each.value.proxied
+  ttl     = each.value.ttl
+  comment = each.value.comment
 }
 
-# Tunnel ingress config — routes smtp-proxy.diegonmarcos.com → localhost:8080
-resource "cloudflare_zero_trust_tunnel_cloudflared_config" "smtp_proxy" {
-  account_id = var.cloudflare_account_id
-  tunnel_id  = "90b644ed-1339-4fbe-a467-687012aa84ae"
+# =============================================================================
+# DNS Records — TXT records (SPF, DMARC, SES SPF)
+# =============================================================================
+
+resource "cloudflare_record" "txt_records" {
+  for_each = { for r in local.dns.txt_records : r.key => r }
+
+  zone_id = var.cloudflare_zone_id
+  name    = each.value.name
+  type    = "TXT"
+  content = each.value.content
+  ttl     = each.value.ttl
+  comment = each.value.comment
+}
+
+# =============================================================================
+# DNS Records — DKIM TXT records (content from variables)
+# =============================================================================
+
+resource "cloudflare_record" "dkim_records" {
+  for_each = { for r in local.dns.dkim_records : r.key => r }
+
+  zone_id = var.cloudflare_zone_id
+  name    = each.value.name
+  type    = "TXT"
+  content = local.dkim_vars[each.value.var]
+  ttl     = each.value.ttl
+  comment = each.value.comment
+}
+
+# =============================================================================
+# DNS Records — AWS SES verification + DKIM CNAMEs
+# =============================================================================
+
+resource "cloudflare_record" "ses_verification" {
+  zone_id = var.cloudflare_zone_id
+  name    = local.dns.ses_verification.name
+  type    = "TXT"
+  content = var.ses_verification_token
+  ttl     = local.dns.ses_verification.ttl
+  comment = local.dns.ses_verification.comment
+}
+
+resource "cloudflare_record" "ses_dkim" {
+  for_each = { for r in local.dns.ses_dkim_cnames : r.key => r }
+
+  zone_id = var.cloudflare_zone_id
+  name    = "${local.ses_dkim_tokens[each.value.var]}._domainkey"
+  type    = "CNAME"
+  content = "${local.ses_dkim_tokens[each.value.var]}.dkim.amazonses.com"
+  ttl     = each.value.ttl
+  comment = each.value.comment
+}
+
+# =============================================================================
+# DNS Records — SES MAIL FROM (MX + SPF already in txt_records)
+# =============================================================================
+
+resource "cloudflare_record" "ses_mail_from_mx" {
+  zone_id  = var.cloudflare_zone_id
+  name     = local.dns.ses_mail_from_mx.name
+  type     = "MX"
+  content  = local.dns.ses_mail_from_mx.content
+  priority = local.dns.ses_mail_from_mx.priority
+  ttl      = local.dns.ses_mail_from_mx.ttl
+  comment  = local.dns.ses_mail_from_mx.comment
+}
+
+# =============================================================================
+# DNS Records — CAA
+# =============================================================================
+
+resource "cloudflare_record" "caa_records" {
+  for_each = { for r in local.dns.caa_records : r.key => r }
+
+  zone_id = var.cloudflare_zone_id
+  name    = each.value.name
+  type    = "CAA"
+  data {
+    flags = each.value.flags
+    tag   = each.value.tag
+    value = each.value.value
+  }
+  ttl     = each.value.ttl
+  comment = each.value.comment
+}
+
+# =============================================================================
+# Cloudflare Tunnel
+# =============================================================================
+
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "tunnels" {
+  account_id = local.config.account_id
+  tunnel_id  = local.config.tunnel.id
 
   config {
-    ingress_rule {
-      hostname = "smtp-proxy.diegonmarcos.com"
-      service  = "http://localhost:8080"
+    dynamic "ingress_rule" {
+      for_each = local.config.tunnel.ingress_rules
+      content {
+        hostname = ingress_rule.value.hostname
+        service  = ingress_rule.value.service
+      }
     }
     # Catch-all (required by Cloudflare)
     ingress_rule {
-      service = "http_status:404"
+      service = local.config.tunnel.catchall_service
     }
   }
 }
 
 # =============================================================================
-# Email Routing - Declarative (previously Dashboard-only)
-#
-# MX records (route1/2/3.mx.cloudflare.net) are auto-managed by CF Email Routing.
-#
-# EMAIL FLOW:
-#   INBOUND:  Sender → CF MX → Email Routing Rule → Worker "email-forwarder"
-#             → smtp-proxy (oci-mail:8080) → Mailu front:25
-#   OUTBOUND: Mailu → AWS SES relay (email-smtp.us-east-1.amazonaws.com:587)
+# Email Routing
 # =============================================================================
 
-# Verified destination for backup forwarding
 resource "cloudflare_email_routing_address" "backup" {
-  account_id = var.cloudflare_account_id
-  email      = "diegonmarcos@live.com"
+  account_id = local.config.account_id
+  email      = local.config.email_routing.backup_email
 }
 
-# Route me@diegonmarcos.com → Worker "email-forwarder"
-resource "cloudflare_email_routing_rule" "me_to_worker" {
+resource "cloudflare_email_routing_rule" "rules" {
+  for_each = { for idx, r in local.config.email_routing.rules : r.name => r }
+
   zone_id  = var.cloudflare_zone_id
-  name     = "Forward to Worker (Gmail + Stalwart)"
-  enabled  = true
-  priority = 0
+  name     = each.value.name
+  enabled  = each.value.enabled
+  priority = each.value.priority
 
   matcher {
-    type  = "literal"
-    field = "to"
-    value = "me@diegonmarcos.com"
+    type  = each.value.match_type
+    field = each.value.match_field
+    value = each.value.match_value
   }
 
   action {
-    type  = "worker"
-    value = ["email-forwarder"]
+    type  = each.value.action_type
+    value = each.value.action_value
   }
-}
-
-# =============================================================================
-# TXT Records - Email Authentication
-# =============================================================================
-
-# SPF - ONE record only (RFC 7208: multiple SPF records = permerror)
-# - include:_spf.mx.cloudflare.net          → authorizes CF Email Routing forwarding
-# - include:amazonses.com                   → authorizes AWS SES relay (primary)
-# - include:eu.rp.oracleemaildelivery.com   → authorizes OCI Email Delivery (fallback)
-# - a:smtp.diegonmarcos.com                 → authorizes direct Mailu outbound
-resource "cloudflare_record" "spf" {
-  zone_id = var.cloudflare_zone_id
-  name    = "diegonmarcos.com"
-  type    = "TXT"
-  content = "v=spf1 include:_spf.mx.cloudflare.net include:amazonses.com include:eu.rp.oracleemaildelivery.com a:smtp.diegonmarcos.com ~all"
-  ttl     = 300
-  comment = "SPF: CF Email Routing + AWS SES (primary) + OCI relay (fallback) + Mailu."
-}
-
-# DMARC - reject emails failing SPF+DKIM (domain spoofing protection)
-resource "cloudflare_record" "dmarc" {
-  zone_id = var.cloudflare_zone_id
-  name    = "_dmarc"
-  type    = "TXT"
-  content = "v=DMARC1; p=reject; rua=mailto:postmaster@diegonmarcos.com"
-  ttl     = 300
-  comment = "DMARC: reject spoofed emails"
-}
-
-# DKIM - Mailu (primary selector used by Mailu rspamd to sign outbound mail)
-resource "cloudflare_record" "dkim_mailu" {
-  zone_id = var.cloudflare_zone_id
-  name    = "dkim._domainkey"
-  type    = "TXT"
-  content = var.dkim_mailu_public_key
-  ttl     = 300
-  comment = "Mailu DKIM - selector: dkim"
-}
-
-# DKIM - Cloudflare Email Routing (auto-managed by CF for inbound forwarding)
-resource "cloudflare_record" "dkim_cloudflare" {
-  zone_id = var.cloudflare_zone_id
-  name    = "cf2024-1._domainkey"
-  type    = "TXT"
-  content = var.dkim_cf_public_key
-  ttl     = 1
-  comment = "Cloudflare Email Routing DKIM (auto-managed by CF)"
-}
-
-# DKIM - Google Workspace (legacy)
-resource "cloudflare_record" "dkim_google" {
-  zone_id = var.cloudflare_zone_id
-  name    = "google._domainkey"
-  type    = "TXT"
-  content = var.dkim_google_public_key
-  ttl     = 1
-  comment = "Google Workspace DKIM (legacy)"
-}
-
-# DKIM - Mailu legacy selector
-resource "cloudflare_record" "dkim_mail" {
-  zone_id = var.cloudflare_zone_id
-  name    = "mail._domainkey"
-  type    = "TXT"
-  content = var.dkim_mail_public_key
-  ttl     = 300
-  comment = "Mailu legacy DKIM selector"
-}
-
-# =============================================================================
-# TXT/CNAME Records - AWS SES (domain verification + DKIM + MAIL FROM)
-# Tokens from: b_infra/vps_aws/ terraform output
-# =============================================================================
-
-# SES domain verification
-resource "cloudflare_record" "ses_verification" {
-  zone_id = var.cloudflare_zone_id
-  name    = "_amazonses"
-  type    = "TXT"
-  content = var.ses_verification_token
-  ttl     = 300
-  comment = "AWS SES domain verification"
-}
-
-# SES Easy DKIM (3 CNAME records)
-resource "cloudflare_record" "ses_dkim_1" {
-  zone_id = var.cloudflare_zone_id
-  name    = "${var.ses_dkim_token_1}._domainkey"
-  type    = "CNAME"
-  content = "${var.ses_dkim_token_1}.dkim.amazonses.com"
-  ttl     = 300
-  comment = "AWS SES DKIM 1/3"
-}
-
-resource "cloudflare_record" "ses_dkim_2" {
-  zone_id = var.cloudflare_zone_id
-  name    = "${var.ses_dkim_token_2}._domainkey"
-  type    = "CNAME"
-  content = "${var.ses_dkim_token_2}.dkim.amazonses.com"
-  ttl     = 300
-  comment = "AWS SES DKIM 2/3"
-}
-
-resource "cloudflare_record" "ses_dkim_3" {
-  zone_id = var.cloudflare_zone_id
-  name    = "${var.ses_dkim_token_3}._domainkey"
-  type    = "CNAME"
-  content = "${var.ses_dkim_token_3}.dkim.amazonses.com"
-  ttl     = 300
-  comment = "AWS SES DKIM 3/3"
-}
-
-# Custom MAIL FROM — MX + SPF for mail.diegonmarcos.com (SES bounce subdomain)
-resource "cloudflare_record" "ses_mail_from_mx" {
-  zone_id  = var.cloudflare_zone_id
-  name     = "mail"
-  type     = "MX"
-  content  = "feedback-smtp.us-east-1.amazonses.com"
-  priority = 10
-  ttl      = 300
-  comment  = "AWS SES custom MAIL FROM - bounce handling"
-}
-
-resource "cloudflare_record" "ses_mail_from_spf" {
-  zone_id = var.cloudflare_zone_id
-  name    = "mail"
-  type    = "TXT"
-  content = "v=spf1 include:amazonses.com ~all"
-  ttl     = 300
-  comment = "AWS SES custom MAIL FROM - SPF for bounce subdomain"
-}
-
-# =============================================================================
-# DNS Records - Security
-# =============================================================================
-
-# CAA - Only Let's Encrypt may issue TLS certificates for this domain
-resource "cloudflare_record" "caa_letsencrypt" {
-  zone_id = var.cloudflare_zone_id
-  name    = "diegonmarcos.com"
-  type    = "CAA"
-  data {
-    flags = "0"
-    tag   = "issue"
-    value = "letsencrypt.org"
-  }
-  ttl     = 300
-  comment = "CAA: restrict cert issuance to Let's Encrypt only"
 }
 
 # =============================================================================
@@ -531,11 +275,11 @@ resource "cloudflare_zone_settings_override" "ssl_settings" {
   zone_id = var.cloudflare_zone_id
 
   settings {
-    ssl                      = "full"
-    always_use_https         = "on"
-    min_tls_version          = "1.2"
-    automatic_https_rewrites = "on"
-    opportunistic_encryption = "on"
+    ssl                      = local.config.ssl_settings.ssl
+    always_use_https         = local.config.ssl_settings.always_use_https
+    min_tls_version          = local.config.ssl_settings.min_tls_version
+    automatic_https_rewrites = local.config.ssl_settings.automatic_https_rewrites
+    opportunistic_encryption = local.config.ssl_settings.opportunistic_encryption
   }
 }
 
@@ -544,5 +288,5 @@ resource "cloudflare_zone_settings_override" "ssl_settings" {
 # =============================================================================
 
 output "email_architecture" {
-  value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Mailu front:25"
+  value = "CF Email Routing (MX) → Worker email-forwarder → smtp-proxy (oci-mail:8080) → Stalwart :25"
 }
