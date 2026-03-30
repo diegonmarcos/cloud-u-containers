@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerInboxTools } from "./tools/inbox.js";
 import { registerComposeTools } from "./tools/compose.js";
 import { registerAdminTools } from "./tools/admin.js";
+import { registerResendTools } from "./tools/resend.js";
 
 const log = (msg: string) => process.stderr.write(`[mail-mcp] ${msg}\n`);
 
@@ -25,8 +26,9 @@ async function main() {
     registerInboxTools(server);
     registerComposeTools(server);
     registerAdminTools(server);
+    registerResendTools(server);
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.0.0 (15 tools: 10 inbox, 3 compose, 2 admin)...");
+    log("Starting mail-mcp v1.1.0 (22 tools: 10 inbox, 3 compose, 2 admin, 7 resend)...");
     await server.connect(transport);
     log("Connected via stdio transport");
   }
