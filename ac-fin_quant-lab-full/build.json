@@ -1,5 +1,6 @@
 {
   "name": "quant-lab-full",
+  "enabled": false,
   "description": "Full quant stack: Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres",
   "frozen": true,
   "category": "fin",

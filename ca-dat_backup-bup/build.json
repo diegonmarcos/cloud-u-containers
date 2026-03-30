@@ -1,5 +1,6 @@
 {
   "name": "backup-bup",
+  "enabled": false,
   "description": "Database Backups SSH Server (bup)",
   "category": "data",
   "deploy": {
