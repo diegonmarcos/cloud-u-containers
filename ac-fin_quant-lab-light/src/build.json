@@ -4,7 +4,7 @@
   "ports": {
     "app": 8889,
     "engine": 5001,
-    "db": 5434
+    "db": 5443
   },
   "category": "fin",
   "deploy": {
@@ -51,7 +51,7 @@
     "db": {
       "container_name": "quant_light_db",
       "image": "postgres:16-alpine",
-      "port": 5434,
+      "port": 5443,
       "port_env": "PGPORT",
       "dns": null,
       "public": false,
