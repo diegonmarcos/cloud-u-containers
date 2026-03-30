@@ -3,6 +3,7 @@ export type ApiType = "openapi" | "custom-rest" | "custom-protocol" | "no-api";
 export interface ApiCapability {
   type: ApiType;
   specUrl?: string;
+  specPath?: string;  // relative path to spec endpoint (resolved to full URL at runtime)
   endpointCount: number;
   description: string;
 }
