@@ -76,7 +76,7 @@ export function registerFinOpsCloudTools(server: McpServer) {
   );
 
   server.tool(
-    "cloud-data-summary",
+    "obs.finops.cloud_summary",
     "Combined cloud summary — all OCI + GCP + AWS instances, resources, and costs in one call",
     {},
     async () => {
