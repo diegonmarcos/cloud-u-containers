@@ -7,14 +7,9 @@ let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
 const CONFIG_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Hardcoded fallback — used when cloud-data-topology.json VMs lack ssh_alias
-const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
-  "gcp-E2-f_0": "gcp-proxy",
-  "oci-E2-f_0": "oci-mail",
-  "oci-E2-f_1": "oci-analytics",
-  "oci-A1-f_0": "oci-apps",
-  // oci-A1-f_1 (oci-apps-1) DECOMMISSIONED 2026-02-28
-};
+// SSH alias fallback — only used if cloud-data-topology.json VMs lack ssh_alias.
+// Data-driven: populated from getConfig().vms at runtime. Empty = no fallback needed.
+const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {};
 
 export function getConfig(): InfraConfig {
   const now = Date.now();

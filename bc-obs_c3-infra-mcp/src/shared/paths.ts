@@ -49,9 +49,27 @@ export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(HOME, ".config/sops/age/keys.txt");
 export const AUTHELIA_TOKEN_PATH = join(HOME, ".config/authelia/tokens.json");
-// C3 API endpoints - mesh primary (oci-apps), public fallback with auth
-export const C3_API_MESH = "http://10.0.0.6:8081";
-export const C3_API_PUBLIC = "https://api.diegonmarcos.com/c3-api";
+// C3 API endpoints — resolved from cloud-data at import time
+// Lazy: read once, cache. Falls back to hardcoded if topology unavailable.
+function resolveC3Api(): { mesh: string; public: string } {
+  try {
+    const topo = JSON.parse(readFileSync(resolveConfigPath(), "utf-8"));
+    const c3Svc = topo.services?.["c3-infra-api"] ?? topo.services?.["c3-infra-mcp"];
+    const c3Vm = c3Svc?.vm;
+    const wgIp = c3Vm ? topo.vms?.[c3Vm]?.wg_ip : null;
+    const port = c3Svc?.port;
+    const domain = topo.owner?.domain ?? "diegonmarcos.com";
+    return {
+      mesh: wgIp && port ? `http://${wgIp}:${port}` : "http://10.0.0.6:8081",
+      public: `https://api.${domain}/c3-api`,
+    };
+  } catch {
+    return { mesh: "http://10.0.0.6:8081", public: "https://api.diegonmarcos.com/c3-api" };
+  }
+}
+const _c3Api = resolveC3Api();
+export const C3_API_MESH = _c3Api.mesh;
+export const C3_API_PUBLIC = _c3Api.public;
 
 export const FRONT_DIR = join(GIT_BASE, "front");
 export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");

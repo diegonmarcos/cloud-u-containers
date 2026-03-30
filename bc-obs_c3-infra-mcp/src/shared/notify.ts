@@ -7,7 +7,18 @@
 
 import { exec } from "./exec.js";
 
-const NTFY_URL = process.env.NTFY_URL ?? "https://rss.diegonmarcos.com/infra";
+// Resolve ntfy URL from cloud-data topology (env override available)
+function resolveNtfyUrl(): string {
+  if (process.env.NTFY_URL) return process.env.NTFY_URL;
+  try {
+    const { getConfig } = require("./config.js");
+    const config = getConfig();
+    const svc = config.services?.ntfy;
+    if (svc?.domain) return `https://${svc.domain.split("/")[0]}/infra`;
+  } catch {}
+  return "https://rss.diegonmarcos.com/infra";
+}
+const NTFY_URL = resolveNtfyUrl();
 
 export type Priority = "min" | "low" | "default" | "high" | "urgent";
 

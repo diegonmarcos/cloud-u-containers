@@ -20,17 +20,50 @@ import { profileContainer } from "../../shared/diagnostics.js";
 import { getBearerToken } from "../../shared/http.js";
 import { performance } from "node:perf_hooks";
 
-// ── Constants ────────────────────────────────────────────────────────────
-const MAIL_VM = "oci-E2-f_0";
-const C3_VM = "oci-A1-f_0";
-const PROXY_VM = "gcp-E2-f_0";
-const MAIL_DOMAIN = "mail.diegonmarcos.com";
-const MAIL_WG_IP = "10.0.0.3";
-const APPS_WG_IP = "10.0.0.6";
-const PROXY_WG_IP = "10.0.0.1";
-const MAIL_CONTAINERS = ["stalwart"];
-const TEST_FROM = "health@mails.diegonmarcos.com";
-const TEST_TO = "me@diegonmarcos.com";
+// ── Constants — resolved from cloud-data topology ────────────────────────
+import { getConfig } from "../../shared/config.js";
+
+function resolveMailConstants() {
+  try {
+    const config = getConfig();
+    const stalwart = config.services?.stalwart;
+    const mailVm = stalwart?.vm ?? "oci-E2-f_0";
+    const c3Svc = config.services?.["c3-infra-api"] ?? config.services?.["c3-infra-mcp"];
+    const c3Vm = c3Svc?.vm ?? "oci-A1-f_0";
+    const caddySvc = config.services?.caddy;
+    const proxyVm = caddySvc?.vm ?? "gcp-E2-f_0";
+    const domain = config.owner?.domain ?? "diegonmarcos.com";
+    return {
+      MAIL_VM: mailVm, C3_VM: c3Vm, PROXY_VM: proxyVm,
+      MAIL_DOMAIN: stalwart?.domain?.split("/")[0] ?? `mail.${domain}`,
+      MAIL_WG_IP: config.vms?.[mailVm]?.wg_ip ?? "10.0.0.3",
+      APPS_WG_IP: config.vms?.[c3Vm]?.wg_ip ?? "10.0.0.6",
+      PROXY_WG_IP: config.vms?.[proxyVm]?.wg_ip ?? "10.0.0.1",
+      MAIL_CONTAINERS: stalwart?.containers ?? ["stalwart"],
+      TEST_FROM: `health@mails.${domain}`,
+      TEST_TO: config.owner?.email ?? `me@${domain}`,
+    };
+  } catch {
+    return {
+      MAIL_VM: "oci-E2-f_0", C3_VM: "oci-A1-f_0", PROXY_VM: "gcp-E2-f_0",
+      MAIL_DOMAIN: "mail.diegonmarcos.com", MAIL_WG_IP: "10.0.0.3",
+      APPS_WG_IP: "10.0.0.6", PROXY_WG_IP: "10.0.0.1",
+      MAIL_CONTAINERS: ["stalwart"],
+      TEST_FROM: "health@mails.diegonmarcos.com", TEST_TO: "me@diegonmarcos.com",
+    };
+  }
+}
+const _mc = resolveMailConstants();
+const MAIL_VM = _mc.MAIL_VM;
+const C3_VM = _mc.C3_VM;
+const PROXY_VM = _mc.PROXY_VM;
+const MAIL_DOMAIN = _mc.MAIL_DOMAIN;
+const MAIL_WG_IP = _mc.MAIL_WG_IP;
+const APPS_WG_IP = _mc.APPS_WG_IP;
+const PROXY_WG_IP = _mc.PROXY_WG_IP;
+const MAIL_CONTAINERS = _mc.MAIL_CONTAINERS;
+const TEST_FROM = _mc.TEST_FROM;
+const TEST_TO = _mc.TEST_TO;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 interface Check { name: string; passed: boolean; details: string; durationMs: number; error?: string; }

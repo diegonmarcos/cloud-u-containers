@@ -209,6 +209,8 @@ function main() {
       ...(vm.gcloud_zone ? { gcloud_zone: vm.gcloud_zone } : {}),
       ...(vm.idle_shutdown ? { idle_shutdown: vm.idle_shutdown } : {}),
       ...(vm.notes ? { notes: vm.notes } : {}),
+      // Cloud provider instance ID (from terraform.json) — used by devops.vm.reset etc.
+      ...(mergedSpecs.instance_id ? { instance_id: mergedSpecs.instance_id } : {}),
       // Derived (populated below)
       services: [] as string[],
       container_count: 0,

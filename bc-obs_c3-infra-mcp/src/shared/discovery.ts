@@ -19,25 +19,19 @@ interface SpecCache {
 const specCache = new Map<string, SpecCache>();
 const SPEC_TTL = 5 * 60 * 1000; // 5 minutes
 
-// Known service domains — maps service name to domain
-// This replaces the Rust API's hardcoded service registry
-const SERVICE_DOMAINS: Record<string, string> = {
-  authelia: "auth.diegonmarcos.com",
-  caddy: "proxy.diegonmarcos.com",
-  vaultwarden: "vault.diegonmarcos.com",
-  ntfy: "rss.diegonmarcos.com",
-  matomo: "analytics.diegonmarcos.com",
-  mailu: "mail.diegonmarcos.com",
-  syncthing: "sync.diegonmarcos.com",
-  radicale: "cal.diegonmarcos.com",
-  photoprism: "photos.diegonmarcos.com",
-  nocodb: "db.diegonmarcos.com",
-  "code-server": "ide.diegonmarcos.com",
-  affine: "drive-notes-affine.diegonmarcos.com",
-  windmill: "windmill.diegonmarcos.com",
-  "c3-api": "api.diegonmarcos.com",
-  crawlee: "api.diegonmarcos.com",
-};
+// Service domains — data-driven from cloud-data topology
+// Reads service.domain from getConfig().services at call time
+function getServiceDomains(): Record<string, string> {
+  const config = getConfig();
+  const domains: Record<string, string> = {};
+  for (const [name, svc] of Object.entries(config.services)) {
+    if (svc.domain) {
+      // Strip path suffix from domain (e.g. "api.diegonmarcos.com/c3-api" → "api.diegonmarcos.com")
+      domains[name] = svc.domain.split("/")[0];
+    }
+  }
+  return domains;
+}
 
 // Base path prefix for services behind path-based routing on a shared domain
 const SERVICE_BASE_PATHS: Record<string, string> = {
@@ -66,7 +60,7 @@ export function listServices(): ServiceInfo[] {
       ? svc.vm
       : getVmSshAlias(svc.vm);
 
-    const domain = SERVICE_DOMAINS[name];
+    const domain = getServiceDomains()[name];
     const hasSpec = name in SPEC_PATHS;
 
     services.push({
@@ -92,7 +86,7 @@ export function getService(serviceName: string): ServiceInfo | null {
     ? svc.vm
     : getVmSshAlias(svc.vm);
 
-  const domain = SERVICE_DOMAINS[serviceName];
+  const domain = getServiceDomains()[serviceName];
   const hasSpec = serviceName in SPEC_PATHS;
 
   return {
@@ -113,7 +107,7 @@ export function probeSpec(serviceName: string): { ok: boolean; spec: unknown; er
     return { ok: true, spec: cached.data };
   }
 
-  const domain = SERVICE_DOMAINS[serviceName];
+  const domain = getServiceDomains()[serviceName];
   if (!domain) {
     return { ok: false, spec: null, error: `No domain configured for service: ${serviceName}` };
   }
@@ -147,7 +141,7 @@ export function getAllSpecs(): { ok: boolean; specs: Record<string, unknown>; er
   const errors: Record<string, string> = {};
 
   for (const serviceName of Object.keys(SPEC_PATHS)) {
-    if (!SERVICE_DOMAINS[serviceName]) continue;
+    if (!getServiceDomains()[serviceName]) continue;
 
     const result = probeSpec(serviceName);
     if (result.ok) {
@@ -198,7 +192,7 @@ export interface ServiceVersion {
 
 export function serviceVersion(serviceName: string): ServiceVersion {
   const versionInfo = VERSION_PATHS[serviceName];
-  const domain = SERVICE_DOMAINS[serviceName];
+  const domain = getServiceDomains()[serviceName];
 
   if (!versionInfo || !domain) {
     return { service: serviceName, version: "unknown", ok: false, error: "No version endpoint known" };
@@ -225,9 +219,9 @@ export function serviceVersion(serviceName: string): ServiceVersion {
 
 export function allServiceVersions(): ServiceVersion[] {
   return Object.keys(VERSION_PATHS)
-    .filter((name) => SERVICE_DOMAINS[name])
+    .filter((name) => getServiceDomains()[name])
     .map((name) => serviceVersion(name));
 }
 
-/** Expose SERVICE_DOMAINS and SERVICE_BASE_PATHS for other modules */
-export { SERVICE_DOMAINS, SERVICE_BASE_PATHS };
+/** Expose getServiceDomains and SERVICE_BASE_PATHS for other modules */
+export { getServiceDomains, SERVICE_BASE_PATHS };
