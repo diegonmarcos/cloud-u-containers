@@ -1,357 +1,264 @@
-import type { ServiceDefinition } from "./types.js";
+// Service definitions — data-driven from cloud-data topology
+//
+// Infrastructure fields (vm, wgIp, port, domain) come from cloud-data-topology.json.
+// API metadata (type, specUrl, endpointCount, description) is service-specific and stays here.
+//
+// When a service moves VMs or changes ports, only cloud-data needs updating — not this file.
 
-export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
-  // ── OpenAPI services ──────────────────────────────────────────
-  {
-    name: "nocodb",
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
+import type { ServiceDefinition, ApiCapability } from "./types.js";
+
+// ── API metadata per service (static, service-specific) ──────────────────
+// This is the ONLY thing that can't come from cloud-data.
+
+const API_META: Record<string, ApiCapability & { displayName?: string }> = {
+  nocodb: {
     displayName: "NocoDB",
-    description: "No-code database platform with spreadsheet UI",
-    vm: "oci-apps-1",
-    wgIp: "10.0.0.2",
-    port: 8085,
-    domain: "db.diegonmarcos.com",
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.2:8085/api/v1/meta/info",
-      endpointCount: 0,
-      description: "NocoDB REST API — tables, rows, views, fields",
-    },
+    type: "openapi",
+    endpointCount: 0,
+    description: "NocoDB REST API — tables, rows, views, fields",
   },
-  {
-    name: "gitea",
+  gitea: {
     displayName: "Gitea",
-    description: "Self-hosted Git service",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3000,
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.6:3000/swagger.json",
-      endpointCount: 0,
-      description: "Gitea REST API — repos, users, orgs, issues",
-    },
+    type: "openapi",
+    specPath: "/swagger.json",
+    endpointCount: 0,
+    description: "Gitea REST API — repos, users, orgs, issues",
   },
-  {
-    name: "mattermost",
+  mattermost: {
     displayName: "Mattermost",
-    description: "Team messaging and collaboration",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 8065,
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.6:8065/api/v4/opengraph",
-      endpointCount: 0,
-      description: "Mattermost REST API v4 — channels, posts, users, teams",
-    },
+    type: "openapi",
+    specPath: "/api/v4/opengraph",
+    endpointCount: 0,
+    description: "Mattermost REST API v4 — channels, posts, users, teams",
   },
-  {
-    name: "windmill",
+  windmill: {
     displayName: "Windmill",
-    description: "Developer platform for scripts, flows, and apps",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 8000,
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.4:8000/api/openapi.json",
-      endpointCount: 0,
-      description: "Windmill REST API — scripts, flows, schedules, resources",
-    },
+    type: "openapi",
+    specPath: "/api/openapi.json",
+    endpointCount: 0,
+    description: "Windmill REST API — scripts, flows, schedules, resources",
   },
-  {
-    name: "vaultwarden",
+  vaultwarden: {
     displayName: "Vaultwarden",
-    description: "Bitwarden-compatible password manager",
-    vm: "gcp-proxy",
-    wgIp: "10.0.0.1",
-    port: 80,
-    domain: "vault.diegonmarcos.com",
-    api: {
-      type: "openapi",
-      endpointCount: 0,
-      description: "Vaultwarden API — vaults, ciphers, organizations",
-    },
+    type: "openapi",
+    endpointCount: 0,
+    description: "Vaultwarden API — vaults, ciphers, organizations",
   },
-  {
-    name: "authelia",
+  authelia: {
     displayName: "Authelia",
-    description: "Authentication and authorization server",
-    vm: "gcp-proxy",
-    wgIp: "10.0.0.1",
-    port: 9091,
-    domain: "auth.diegonmarcos.com",
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.1:9091/api/openapi.yml",
-      endpointCount: 0,
-      description: "Authelia API — configuration, user info, OIDC",
-    },
+    type: "openapi",
+    specPath: "/api/openapi.yml",
+    endpointCount: 0,
+    description: "Authelia API — configuration, user info, OIDC",
   },
-
-  // ── Custom REST services ──────────────────────────────────────
-  {
-    name: "matomo",
+  matomo: {
     displayName: "Matomo",
-    description: "Web analytics platform",
-    vm: "oci-analytics",
-    wgIp: "10.0.0.4",
-    port: 8080,
-    domain: "analytics.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 5,
-      description: "Matomo Reporting API — visits, sites, actions, referrers",
-    },
+    type: "custom-rest",
+    endpointCount: 5,
+    description: "Matomo Reporting API — visits, sites, actions, referrers",
   },
-  {
-    name: "stalwart",
+  stalwart: {
     displayName: "Stalwart Mail Server",
-    description: "All-in-one mail server (IMAP/SMTP/JMAP/Sieve/DKIM)",
-    vm: "oci-mail",
-    wgIp: "10.0.0.3",
-    port: 8443,
-    domain: "mail.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 7,
-      description: "Stalwart Admin API — principals, queue, config, metrics",
-    },
+    type: "custom-rest",
+    endpointCount: 7,
+    description: "Stalwart Admin API — principals, queue, config, metrics",
   },
-  {
-    name: "snappymail",
+  snappymail: {
     displayName: "SnappyMail",
-    description: "Webmail frontend for Stalwart",
-    vm: "oci-mail",
-    wgIp: "10.0.0.3",
-    port: 8888,
-    domain: "mail.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 3,
-      description: "SnappyMail — health, domain config (PHP admin panel, no REST API)",
-    },
+    type: "custom-rest",
+    endpointCount: 3,
+    description: "SnappyMail — health, domain config (PHP admin panel, no REST API)",
   },
-  {
-    name: "syncthing",
+  syncthing: {
     displayName: "Syncthing",
-    description: "Continuous file synchronization",
-    vm: "oci-mail",
-    wgIp: "10.0.0.3",
-    port: 8384,
-    domain: "sync.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 4,
-      description: "Syncthing REST API — status, folders, devices, config",
-    },
+    type: "custom-rest",
+    endpointCount: 4,
+    description: "Syncthing REST API — status, folders, devices, config",
   },
-  {
-    name: "ntfy",
+  ntfy: {
     displayName: "ntfy",
-    description: "Push notification service",
-    vm: "gcp-proxy",
-    wgIp: "10.0.0.1",
-    port: 8090,
-    domain: "rss.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 5,
-      description: "ntfy API — publish, read, health, stats, account",
-    },
+    type: "custom-rest",
+    endpointCount: 5,
+    description: "ntfy API — publish, read, health, stats, account",
   },
-  {
-    name: "ollama",
+  ollama: {
     displayName: "Ollama",
-    description: "Local LLM inference server",
-    vm: "gcp-t4",
-    wgIp: "10.0.0.8",
-    port: 11434,
-    api: {
-      type: "custom-rest",
-      endpointCount: 3,
-      description: "Ollama API — chat completion, model listing, generation",
-    },
+    type: "custom-rest",
+    endpointCount: 3,
+    description: "Ollama API — chat completion, model listing, generation",
   },
-
-  // ── Custom protocol services ──────────────────────────────────
-  {
-    name: "radicale",
+  radicale: {
     displayName: "Radicale",
-    description: "CalDAV/CardDAV calendar and contacts server",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 5232,
-    domain: "cal.diegonmarcos.com",
-    api: {
-      type: "custom-protocol",
-      endpointCount: 3,
-      description: "Radicale CalDAV — calendars, contacts, events (XML→JSON wrapper)",
-    },
+    type: "custom-protocol",
+    endpointCount: 3,
+    description: "Radicale CalDAV — calendars, contacts, events (XML→JSON wrapper)",
   },
-
-  // ── Agentic AI ───────────────────────────────────────────────
-  {
-    name: "rig-heavy",
+  "rig-heavy": {
     displayName: "Rig Agent (Heavy)",
-    description: "DeepSeek R1 14B Q8 agentic AI with MCP tool calling",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 8090,
-    api: {
-      type: "custom-rest",
-      endpointCount: 5,
-      description: "Rig Agent API — run tasks, list tasks, get results, health, status",
-    },
+    type: "custom-rest",
+    endpointCount: 5,
+    description: "Rig Agent API — run tasks, list tasks, get results, health, status",
   },
-  {
-    name: "rig-light",
+  "rig-light": {
     displayName: "Rig Agent (Light)",
-    description: "Qwen 1.5B Q4 lightweight agentic AI with strict guardrails",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 8091,
-    api: {
-      type: "custom-rest",
-      endpointCount: 5,
-      description: "Rig Agent API — run tasks, list tasks, get results, health, status",
-    },
+    type: "custom-rest",
+    endpointCount: 5,
+    description: "Rig Agent API — run tasks, list tasks, get results, health, status",
   },
-
-  // ── Additional REST services ──────────────────────────────────
-  {
-    name: "grafana",
+  grafana: {
     displayName: "Grafana",
-    description: "Observability dashboards (Grafana + Loki + Mimir + Tempo)",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3200,
-    domain: "grafana.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 10,
-      description: "Grafana API — dashboards, alerts, datasources, annotations, folders",
-    },
+    type: "custom-rest",
+    endpointCount: 10,
+    description: "Grafana API — dashboards, alerts, datasources, annotations, folders",
   },
-  {
-    name: "grist",
+  grist: {
     displayName: "Grist",
-    description: "Spreadsheet-database hybrid",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3011,
-    domain: "sheets.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 7,
-      description: "Grist API — orgs, docs, tables, records, columns",
-    },
+    type: "custom-rest",
+    endpointCount: 7,
+    description: "Grist API — orgs, docs, tables, records, columns",
   },
-  {
-    name: "hedgedoc",
+  hedgedoc: {
     displayName: "HedgeDoc",
-    description: "Collaborative markdown notes",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3018,
-    domain: "doc.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 7,
-      description: "HedgeDoc API v2 — notes CRUD, user info, history",
-    },
+    type: "custom-rest",
+    endpointCount: 7,
+    description: "HedgeDoc API v2 — notes CRUD, user info, history",
   },
-  {
-    name: "filebrowser",
+  filebrowser: {
     displayName: "FileBrowser",
-    description: "Web file manager",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3015,
-    domain: "files.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 9,
-      description: "FileBrowser API — files, dirs, search, shares, usage",
-    },
+    type: "custom-rest",
+    endpointCount: 9,
+    description: "FileBrowser API — files, dirs, search, shares, usage",
   },
-  {
-    name: "etherpad",
+  etherpad: {
     displayName: "Etherpad",
-    description: "Real-time collaborative text editor",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3012,
-    domain: "pad.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 9,
-      description: "Etherpad HTTP API — pads, text, HTML, revisions, authors",
-    },
+    type: "custom-rest",
+    endpointCount: 9,
+    description: "Etherpad HTTP API — pads, text, HTML, revisions, authors",
   },
-  {
-    name: "photoprism",
+  photoprism: {
     displayName: "PhotoPrism",
-    description: "AI-powered photo management",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3013,
-    domain: "photos.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 8,
-      description: "PhotoPrism API — photos, albums, labels, faces, stats",
-    },
+    type: "custom-rest",
+    endpointCount: 8,
+    description: "PhotoPrism API — photos, albums, labels, faces, stats",
   },
-  {
-    name: "crawlee",
+  crawlee: {
     displayName: "Crawlee Cloud",
-    description: "Apify-compatible web scraping platform",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3000,
-    domain: "crawlee.diegonmarcos.com",
-    api: {
-      type: "openapi",
-      specUrl: "http://10.0.0.6:3000/openapi.json",
-      endpointCount: 8,
-      description: "Crawlee API — actors, runs, datasets, items",
-    },
+    type: "openapi",
+    specPath: "/openapi.json",
+    endpointCount: 8,
+    description: "Crawlee API — actors, runs, datasets, items",
   },
-  {
-    name: "umami",
+  umami: {
     displayName: "Umami",
-    description: "Privacy-focused web analytics",
-    vm: "oci-analytics",
-    wgIp: "10.0.0.4",
-    port: 3000,
-    domain: "analytics.diegonmarcos.com",
-    api: {
-      type: "custom-rest",
-      endpointCount: 6,
-      description: "Umami API — websites, stats, pageviews, metrics, events",
-    },
+    type: "custom-rest",
+    endpointCount: 6,
+    description: "Umami API — websites, stats, pageviews, metrics, events",
   },
-
-  // ── No-API services ───────────────────────────────────────────
-  {
-    name: "codeserver",
+  codeserver: {
     displayName: "Code Server",
-    description: "VS Code in the browser",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 8443,
-    domain: "ide.diegonmarcos.com",
-    api: { type: "no-api", endpointCount: 0, description: "No programmatic API" },
+    type: "no-api",
+    endpointCount: 0,
+    description: "No programmatic API",
   },
-  {
-    name: "affine",
+  affine: {
     displayName: "AFFiNE",
-    description: "Knowledge base and whiteboard",
-    vm: "oci-apps",
-    wgIp: "10.0.0.6",
-    port: 3010,
-    domain: "drive-notes-affine.diegonmarcos.com",
-    api: { type: "no-api", endpointCount: 0, description: "No programmatic API" },
+    type: "no-api",
+    endpointCount: 0,
+    description: "No programmatic API",
   },
-];
+  dagu: {
+    displayName: "Dagu",
+    type: "custom-rest",
+    endpointCount: 2,
+    description: "Dagu API — list DAGs, trigger runs",
+  },
+};
+
+// ── Load cloud-data topology ─────────────────────────────────────────────
+
+interface TopoVm {
+  wg_ip?: string;
+  ssh_alias?: string;
+  [k: string]: unknown;
+}
+interface TopoService {
+  vm?: string;
+  domain?: string;
+  port?: number;
+  description?: string;
+  [k: string]: unknown;
+}
+interface TopoData {
+  vms: Record<string, TopoVm>;
+  services: Record<string, TopoService>;
+}
+
+function loadTopology(): TopoData | null {
+  const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
+  const paths = [
+    join(gitBase, "cloud-data", "cloud-data-topology.json"),
+    join(gitBase, "cloud", "cloud-data", "cloud-data-topology.json"),
+  ];
+  for (const p of paths) {
+    if (!existsSync(p)) continue;
+    try {
+      return JSON.parse(readFileSync(p, "utf-8")) as TopoData;
+    } catch { /* skip */ }
+  }
+  return null;
+}
+
+// ── Build SERVICE_DEFINITIONS from cloud-data + API_META ─────────────────
+
+function buildDefinitions(): ServiceDefinition[] {
+  const topo = loadTopology();
+  if (!topo) {
+    console.error("[definitions] cloud-data-topology.json not found — using empty definitions");
+    return [];
+  }
+
+  const defs: ServiceDefinition[] = [];
+
+  for (const [svcName, meta] of Object.entries(API_META)) {
+    const svc = topo.services[svcName];
+    if (!svc) continue; // Service not in topology — skip
+
+    const vmId = svc.vm;
+    if (!vmId || vmId === "local") continue;
+
+    const vm = topo.vms[vmId];
+    if (!vm?.wg_ip) continue;
+
+    const port = svc.port;
+    if (!port) continue;
+
+    // Build specUrl from service base URL + specPath (if defined)
+    const baseUrl = `http://${vm.wg_ip}:${port}`;
+    const specPath = (meta as any).specPath as string | undefined;
+    const specUrl = meta.specUrl ?? (specPath ? `${baseUrl}${specPath}` : undefined);
+
+    defs.push({
+      name: svcName,
+      displayName: meta.displayName ?? svcName,
+      description: svc.description ?? meta.description,
+      vm: vm.ssh_alias ?? vmId,
+      wgIp: vm.wg_ip,
+      port,
+      ...(svc.domain ? { domain: svc.domain.split("/")[0] } : {}),
+      api: {
+        type: meta.type,
+        ...(specUrl ? { specUrl } : {}),
+        endpointCount: meta.endpointCount,
+        description: meta.description,
+      },
+    });
+  }
+
+  console.error(`[definitions] loaded ${defs.length} service definitions from cloud-data`);
+  return defs;
+}
+
+export const SERVICE_DEFINITIONS: ServiceDefinition[] = buildDefinitions();

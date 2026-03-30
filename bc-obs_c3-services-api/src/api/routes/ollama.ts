@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const OLLAMA_BASE = "http://10.0.0.6:11434";
+const OLLAMA_BASE = registry.getBaseUrl("ollama") ?? "http://10.0.0.8:11434";
 
 export async function registerOllamaRoutes(app: FastifyInstance) {
   app.get("/ollama/models", {

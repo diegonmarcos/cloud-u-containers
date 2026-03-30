@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const SYNCTHING_BASE = "http://10.0.0.3:8384";
+const SYNCTHING_BASE = registry.getBaseUrl("syncthing") ?? "http://10.0.0.3:8384";
 
 function syncthingGet(path: string): unknown {
   const apiKey = process.env.SYNCTHING_API_KEY ?? "";

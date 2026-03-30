@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const MATOMO_BASE = "http://10.0.0.4:8080";
+const MATOMO_BASE = registry.getBaseUrl("matomo") ?? "http://10.0.0.4:8080";
 
 function matomoApiCall(method: string, params: Record<string, string> = {}): unknown {
   const token = process.env.MATOMO_API_TOKEN ?? "";

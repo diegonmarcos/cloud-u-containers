@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
 import { XMLParser } from "fast-xml-parser";
+import { registry } from "../../registry/index.js";
 
-const RADICALE_BASE = "http://10.0.0.3:5232";
+const RADICALE_BASE = registry.getBaseUrl("radicale") ?? "http://10.0.0.6:5232";
 
 function radicaleRequest(method: string, path: string, body?: string): unknown {
   const user = process.env.RADICALE_USER ?? "";

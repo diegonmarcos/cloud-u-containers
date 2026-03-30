@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
+import { registry } from "../../registry/index.js";
 
-const MAILU_BASE = "http://10.0.0.3:8444";
+const MAILU_BASE = registry.getBaseUrl("stalwart") ?? "http://10.0.0.3:8444";
 
 function mailuGet(path: string): unknown {
   const apiKey = process.env.MAILU_API_KEY ?? "";
