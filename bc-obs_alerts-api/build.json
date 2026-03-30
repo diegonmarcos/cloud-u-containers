@@ -1,6 +1,8 @@
 {
   "name": "alerts-api",
   "description": "Security Alert Aggregation API",
+  "port": 5050,
+  "dns": "alerts-api.app",
   "category": "tools",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

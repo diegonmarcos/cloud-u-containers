@@ -1,6 +1,8 @@
 {
   "name": "photos-webhook",
   "description": "PhotoPrism Webhook + S3 Processor",
+  "port": 5002,
+  "dns": "photos-webhook.app",
   "category": "app",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
