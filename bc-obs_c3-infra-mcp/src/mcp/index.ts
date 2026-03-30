@@ -50,7 +50,7 @@ registerObservabilityExecTools(server);  //  A.5  devops-notify_*, devops-db_*  
 registerWorkflowTools(server);           //  B.1  workflows*                          (9)
 registerVpsOpsTools(server);             //  B.2  vps_*                               (7)
 registerDeliveryTools(server);           //  B.3  devops-build/secrets/backup*        (7)
-registerOperationsTools(server);         //  B.4  devops-ssh/docker/container/vm*    (27)
+registerOperationsTools(server);         //  B.4  devops-ssh/docker/container/vm*    (26)
 registerFrontendExecTools(server);       //  B.6  front-*                             (3)
 
 // ═══════════════════════════════════════════════════════════════════
