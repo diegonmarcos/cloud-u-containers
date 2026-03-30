@@ -119,10 +119,10 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     465: "SMTPS -- TLS passthrough to stalwart",
     587: "SMTP Submission -- TLS passthrough to stalwart",
   };
-  // Find oci-mail's public IP for upstream
+  // Find oci-mail's WG IP for upstream (Caddy L4 runs inside WG mesh)
   let ociMailIp = "";
   for (const vm of Object.values(vms) as any[]) {
-    if (vm.ssh_alias === "oci-mail") { ociMailIp = vm.ip; break; }
+    if (vm.ssh_alias === "oci-mail") { ociMailIp = vm.wg_ip ?? vm.ip; break; }
   }
   for (const vm of Object.values(vms) as any[]) {
     if (vm.ssh_alias !== "gcp-proxy") continue;
