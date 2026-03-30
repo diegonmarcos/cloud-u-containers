@@ -11,7 +11,7 @@
 
     config = {
       container_name = "rig-agentic-sonn-14bq8";
-      port = 8090;
+      port = 8091;
       ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
       c3_api_url = "http://c3-api.app:8081";

@@ -3,7 +3,7 @@
   "description": "Matomo hybrid analytics (oci-analytics)",
   "dns": "matomo.app",
   "ports": {
-    "app": 8080,
+    "app": 8084,
     "db": 3306
   },
   "category": "tools",
@@ -69,7 +69,7 @@
     "app": {
       "container_name": "matomo-hybrid",
       "image": null,
-      "port": 8080,
+      "port": 8084,
       "port_env": null,
       "dns": "matomo.app",
       "public": true,
