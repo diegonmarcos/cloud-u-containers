@@ -46,6 +46,9 @@ const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
 
 const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
 const OUTPUT_JSON = join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json");
+// Standalone clone used by health checkers (cloud-health-full-report reads relative to its own repo)
+const CLOUD_DATA_STANDALONE = join(GIT_BASE, "cloud-data");
+const OUTPUT_JSON_STANDALONE = join(CLOUD_DATA_STANDALONE, "_cloud-data-consolidated.json");
 const VAULT_WG_DIR = join(GIT_BASE, "vault", "A0_keys", "providers", "wireguard");
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -571,6 +574,12 @@ function main() {
 
   const jsonStr = JSON.stringify(consolidated, null, 2) + "\n";
   writeFileSync(OUTPUT_JSON, jsonStr);
+
+  // Also write to standalone cloud-data clone (used by health checkers like cloud-health-full-report)
+  if (existsSync(CLOUD_DATA_STANDALONE) && CLOUD_DATA_STANDALONE !== CLOUD_DATA_DIR) {
+    writeFileSync(OUTPUT_JSON_STANDALONE, jsonStr);
+    console.log(`gen-cloud-data: also written to standalone clone at ${CLOUD_DATA_STANDALONE}`);
+  }
 
   const svcCount = Object.keys(services).length;
   const vmCount = Object.keys(vms).length;

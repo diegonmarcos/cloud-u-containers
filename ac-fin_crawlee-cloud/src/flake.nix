@@ -70,18 +70,21 @@
           environment:
             NODE_ENV: production
             PORT: "${toString config.api_port}"
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
             REDIS_URL: redis://localhost:${toString config.redis_port}
             S3_ENDPOINT: http://localhost:${toString config.minio_port}
-            S3_ACCESS_KEY: ''${MINIO_USER}
-            S3_SECRET_KEY: ''${MINIO_PASSWORD}
             S3_BUCKET: crawlee-cloud
             S3_FORCE_PATH_STYLE: "true"
-            JWT_SECRET: ''${JWT_SECRET}
             RATE_LIMIT_MAX: "1000"
             LOG_LEVEL: info
-            ADMIN_EMAIL: ''${ADMIN_EMAIL}
-            ADMIN_PASSWORD: ''${ADMIN_PASSWORD}
+            DB_HOST: localhost
+            DB_PORT: "${toString config.db_port}"
+          command: >
+            sh -c '
+              export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+              export S3_ACCESS_KEY="$$MINIO_USER"
+              export S3_SECRET_KEY="$$MINIO_PASSWORD"
+              exec node packages/api/dist/index.js
+            '
           depends_on:
             crawlee_db:
               condition: service_healthy
@@ -109,8 +112,6 @@
           environment:
             NODE_ENV: production
             API_BASE_URL: http://localhost:${toString config.api_port}
-            API_TOKEN: ''${RUNNER_TOKEN}
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
             REDIS_URL: redis://localhost:${toString config.redis_port}
             DOCKER_SOCKET: /var/run/docker.sock
             DOCKER_NETWORK: host
@@ -118,6 +119,14 @@
             ACTOR_MAX_MEMORY_MB: "2048"
             ACTOR_DEFAULT_MEMORY_MB: "512"
             ACTOR_TIMEOUT_SECS: "3600"
+            DB_HOST: localhost
+            DB_PORT: "${toString config.db_port}"
+          command: >
+            sh -c '
+              export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+              export API_TOKEN="$$RUNNER_TOKEN"
+              exec node dist/index.js
+            '
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock
           depends_on:
@@ -150,11 +159,16 @@
           network_mode: host
           env_file:
             - .secrets
-          command: ["sleep", "infinity"]
           environment:
             NODE_ENV: production
-            DATABASE_URL: postgresql://''${POSTGRES_USER}:''${POSTGRES_PASSWORD}@localhost:${toString config.db_port}/''${POSTGRES_DB}
             REDIS_URL: redis://localhost:${toString config.redis_port}
+            DB_HOST: localhost
+            DB_PORT: "${toString config.db_port}"
+          command: >
+            sh -c '
+              export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+              exec sleep infinity
+            '
 
         # ═══ DATA STORES (standard images) ═══
 
@@ -175,7 +189,7 @@
           volumes:
             - crawlee_postgres:/var/lib/postgresql/data
           healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+            test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -209,12 +223,14 @@
           container_name: crawlee_minio
           restart: "no"  # container-init handles startup
           network_mode: host
-          command: server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"
           env_file:
             - .secrets
-          environment:
-            MINIO_ROOT_USER: ''${MINIO_USER}
-            MINIO_ROOT_PASSWORD: ''${MINIO_PASSWORD}
+          command: >
+            sh -c '
+              export MINIO_ROOT_USER="$$MINIO_USER"
+              export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD"
+              exec minio server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"
+            '
           volumes:
             - crawlee_minio:/data
           healthcheck:
@@ -239,7 +255,7 @@
             - .secrets
           entrypoint: >
             /bin/sh -c "
-            mc alias set myminio http://localhost:${toString config.minio_port} ''${MINIO_USER} ''${MINIO_PASSWORD};
+            mc alias set myminio http://localhost:${toString config.minio_port} $$MINIO_USER $$MINIO_PASSWORD;
             mc mb myminio/crawlee-cloud --ignore-existing;
             exit 0;
             "
