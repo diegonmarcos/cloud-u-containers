@@ -226,10 +226,8 @@
           env_file:
             - .secrets
           entrypoint: ["sh", "-c"]
-          command: >
-            export MINIO_ROOT_USER="$$MINIO_USER"
-            && export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD"
-            && exec minio server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"
+          command:
+            - 'export MINIO_ROOT_USER="$$MINIO_USER" && export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD" && exec minio server /data --address ":${toString config.minio_port}" --console-address ":${toString config.minio_console_port}"'
           volumes:
             - crawlee_minio:/data
           healthcheck:
