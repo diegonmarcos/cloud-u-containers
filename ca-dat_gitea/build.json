@@ -3,7 +3,7 @@
   "description": "Self-hosted Git service",
   "dns": "gitea.app",
   "ports": {
-    "app": 3017
+    "app": 3002
   },
   "category": "data",
   "domain": "git.diegonmarcos.com",
@@ -51,12 +51,12 @@
     "app": {
       "container_name": "gitea",
       "image": "gitea/gitea:latest",
-      "port": 3017,
+      "port": 3002,
       "port_env": "GITEA__server__HTTP_PORT",
       "dns": "gitea.app",
       "public": true,
       "proxy": { "domain": "git.diegonmarcos.com", "auth": "two_factor" },
-      "healthcheck": "curl -f http://localhost:3017/",
+      "healthcheck": "curl -f http://localhost:3002/",
       "monitoring": { "tls_check": true },
       "volumes": [
         "gitea_data:/data",
