@@ -1,4 +1,4 @@
-// ── Operations Pillar — "How we run it" (26 tools) ──
+// ── Operations Pillar — "How we run it" (25 tools) ──
 // SSH, Docker ops, VM/container/service lifecycle
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -63,36 +63,7 @@ function formatControl(result: { ok: boolean; message: string }) {
 }
 
 export function registerOperationsTools(server: McpServer) {
-  // ── SSH (2 tools, from ssh-tools.ts) ──
-
-  server.tool(
-    "devops.ssh.exec",
-    "Execute a command on a VM via SSH",
-    {
-      vm: z.string().describe("VM ID or SSH alias"),
-      command: z.string().describe("Command to execute"),
-      timeout: z.number().optional().describe("Timeout in ms (default: 30000)"),
-    },
-    async ({ vm, command, timeout }) => {
-      const vmId = resolveVmId(vm);
-      const result = sshExec(vmId, command, timeout);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: [
-              `SSH ${getVmSshAlias(vmId)} (${vmId}): ${result.ok ? "OK" : "FAILED"}`,
-              `Exit code: ${result.exitCode}`,
-              result.stdout ? `\n${result.stdout}` : "",
-              result.stderr ? `\nstderr: ${result.stderr}` : "",
-            ].join("\n"),
-          },
-        ],
-        isError: !result.ok,
-      };
-    }
-  );
+  // ── SSH (1 tool) ──
 
   server.tool(
     "devops.ssh.check",
