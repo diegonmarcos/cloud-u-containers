@@ -461,17 +461,17 @@ const HEALTH_PATHS: Record<string, string> = {
   windmill: "/api/version",
 };
 
-// Known service domains (duplicated from discovery for independence)
-const HEALTH_DOMAINS: Record<string, string> = {
-  authelia: "auth.diegonmarcos.com",
-  vaultwarden: "vault.diegonmarcos.com",
-  ntfy: "rss.diegonmarcos.com",
-  matomo: "analytics.diegonmarcos.com",
-  syncthing: "sync.diegonmarcos.com",
-  photoprism: "photos.diegonmarcos.com",
-  nocodb: "db.diegonmarcos.com",
-  windmill: "windmill.diegonmarcos.com",
-};
+// Service domains — data-driven from cloud-data topology (same as discovery.ts)
+function getHealthDomains(): Record<string, string> {
+  const config = getConfig();
+  const domains: Record<string, string> = {};
+  for (const [name, svc] of Object.entries(config.services)) {
+    if (svc.domain) {
+      domains[name] = svc.domain.split("/")[0];
+    }
+  }
+  return domains;
+}
 
 export interface EndpointHealthResult {
   service: string;
@@ -487,7 +487,7 @@ export function healthEndpoints(): EndpointHealthResult[] {
   const results: EndpointHealthResult[] = [];
 
   for (const [service, path] of Object.entries(HEALTH_PATHS)) {
-    const domain = HEALTH_DOMAINS[service];
+    const domain = getHealthDomains()[service];
     if (!domain) continue;
 
     const url = `https://${domain}${path}`;

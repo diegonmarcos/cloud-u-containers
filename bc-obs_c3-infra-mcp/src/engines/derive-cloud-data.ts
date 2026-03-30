@@ -872,6 +872,7 @@ function deriveTopology(c: any): DerivedFile {
       method: vm.method,
       ssh_alias: vm.ssh_alias,
       ...(vm.gcloud_instance ? { gcloud_instance: vm.gcloud_instance, gcloud_zone: vm.gcloud_zone } : {}),
+      ...(vm.instance_id ? { instance_id: vm.instance_id } : {}),
       description: vm.description,
       ...(vm.provider ? { provider: vm.provider, gpu: vm.specs?.gpu } : {}),
       gha: vm.gha,
@@ -921,6 +922,7 @@ function deriveTopology(c: any): DerivedFile {
   return {
     name: "cloud-data-topology.json",
     data: {
+      owner: c.owner ?? {},
       ssh_key: c.ssh_key,
       remote_base: c.remote_base,
       vms: oldVms,

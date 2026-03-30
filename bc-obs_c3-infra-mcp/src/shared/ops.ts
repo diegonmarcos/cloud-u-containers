@@ -5,7 +5,20 @@ import { join } from "path";
 import { audit } from "./audit.js";
 import { syncRepos } from "./paths.js";
 
-const DAGU_API = process.env.DAGU_API ?? "http://10.0.0.3:8070";
+// Resolve Dagu API from cloud-data topology (env override available)
+function resolveDaguApi(): string {
+  if (process.env.DAGU_API) return process.env.DAGU_API;
+  try {
+    const { readFileSync } = require("fs");
+    const { getConfigPath } = require("./paths.js");
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
+    const svc = topo.services?.dagu;
+    const vm = svc?.vm ? topo.vms?.[svc.vm] : null;
+    if (vm?.wg_ip && svc?.port) return `http://${vm.wg_ip}:${svc.port}`;
+  } catch {}
+  return "http://10.0.0.3:8070";
+}
+const DAGU_API = resolveDaguApi();
 const DAGU_USER = process.env.DAGU_USERNAME ?? "";
 const DAGU_PASS = process.env.DAGU_PASSWORD ?? "";
 

@@ -7,7 +7,16 @@ import { execAsync } from "../../shared/exec.js";
 import { DAGU_API, daguHeaders } from "../../shared/ops.js";
 
 const log = (msg: string) => process.stderr.write(`[workflows] ${msg}\n`);
-const GH_REPO = "diegonmarcos/cloud";
+// Resolve GitHub repo from cloud-data topology owner
+function resolveGhRepo(): string {
+  try {
+    const { getConfig } = require("../../shared/config.js");
+    const config = getConfig();
+    return `${config.owner?.github ?? "diegonmarcos"}/cloud`;
+  } catch {}
+  return "diegonmarcos/cloud";
+}
+const GH_REPO = resolveGhRepo();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // HELPERS

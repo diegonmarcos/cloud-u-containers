@@ -12,6 +12,7 @@ export interface VMSpecs {
   cpu: number;
   ram_gb: number;
   disk_gb: number;
+  arch?: string;          // cpu architecture (e.g. "x86_64", "aarch64")
   shape?: string;
   machine_type?: string;
   gpu?: string;
@@ -19,6 +20,7 @@ export interface VMSpecs {
   cloud_name?: string;    // actual instance name in cloud provider (e.g. "arch-1")
   cloud_zone?: string;    // zone/region
   cost?: string;          // cost tier (e.g. "Free", "Spot")
+  instance_id?: string;   // cloud provider instance ID (OCI OCID or GCP resource path)
 }
 
 export interface StorageBucket {
@@ -397,14 +399,17 @@ export function parseTerraform(infraDir: string): TerraformData {
     // PRIMARY: Build specs from terraform.json (has resolved instance names)
     if (tfJson.instances) {
       for (const inst of tfJson.instances as any[]) {
+        // Resolve instance_id: OCI uses "ocid", GCP uses "instance_id"
+        const instanceId = inst.ocid || inst.instance_id || undefined;
         const spec: VMSpecs = {
           cpu: inst.ocpus || inst.cpu || 0,
           ram_gb: inst.memory_in_gbs || inst.ram_gb || 0,
-          disk_gb: inst.boot_volume_size_in_gbs || inst.disk_gb || 0,
+          disk_gb: inst.boot_volume_size_in_gbs || inst.disk_gb || inst.disk_size_gb || 0,
           shape: inst.shape || inst.machine_type,
           machine_type: inst.machine_type,
           cloud_name: inst.name || inst.display_name,
           cloud_zone: inst.zone || tfJson.provider?.zone || tfJson.provider?.region || "",
+          ...(instanceId ? { instance_id: instanceId } : {}),
         };
         // Store under ALL possible keys so gen-cloud-data can find it
         // OCI uses display_name as vmId, GCP uses gcloud_instance (=name)
