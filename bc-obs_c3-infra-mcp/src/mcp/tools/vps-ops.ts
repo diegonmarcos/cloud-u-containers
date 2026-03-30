@@ -1,5 +1,5 @@
-// ── VPS Ops — Cloud provider CLI proxies (6 tools) ──
-// Wraps gcloud, oci, wrangler, gh, hcloud, cloudflare API
+// ── obs.debug.vps_* — Cloud provider CLI proxies (7 tools) ──
+// Wraps gcloud, oci, wrangler, gh, hcloud, cloudflare API, ghcr
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -314,13 +314,13 @@ async function runGhcr(action: string, _command: string): Promise<string> {
 
 export function registerVpsOpsTools(server: McpServer): void {
   const providers = [
-    { name: "devops.vps.gcloud", cli: "gcloud", desc: "Google Cloud CLI proxy — instances, disks, billing, firewall, IAM" },
-    { name: "devops.vps.oci", cli: "oci", desc: "Oracle Cloud CLI proxy — instances, volumes, VCN, budgets, limits" },
-    { name: "devops.vps.gh", cli: "gh", desc: "GitHub CLI proxy — repos, issues, PRs, runs, workflows, secrets" },
-    { name: "devops.vps.wrangler", cli: "wrangler", desc: "Cloudflare Wrangler CLI proxy — workers, KV, R2, pages" },
-    { name: "devops.vps.hetzner", cli: "hcloud", desc: "Hetzner Cloud CLI proxy — servers, volumes, firewalls, networks" },
-    { name: "devops.vps.cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy — zones, DNS, workers, firewall, analytics, tf-*" },
-    { name: "devops.vps.ghcr", cli: "ghcr", desc: "GitHub Container Registry — list images, tags, auth" },
+    { name: "obs.debug.vps_gcloud", cli: "gcloud", desc: "Google Cloud CLI proxy — instances, disks, billing, firewall, IAM" },
+    { name: "obs.debug.vps_oci", cli: "oci", desc: "Oracle Cloud CLI proxy — instances, volumes, VCN, budgets, limits" },
+    { name: "obs.debug.vps_gh", cli: "gh", desc: "GitHub CLI proxy — repos, issues, PRs, runs, workflows, secrets" },
+    { name: "obs.debug.vps_wrangler", cli: "wrangler", desc: "Cloudflare Wrangler CLI proxy — workers, KV, R2, pages" },
+    { name: "obs.debug.vps_hetzner", cli: "hcloud", desc: "Hetzner Cloud CLI proxy — servers, volumes, firewalls, networks" },
+    { name: "obs.debug.vps_cloudflare", cli: "cloudflare", desc: "Cloudflare API proxy — zones, DNS, workers, firewall, analytics, tf-*" },
+    { name: "obs.debug.vps_ghcr", cli: "ghcr", desc: "GitHub Container Registry — list images, tags, auth" },
   ];
 
   for (const { name, cli, desc } of providers) {

@@ -1,5 +1,5 @@
-// ── Operations Pillar — "How we run it" (25 tools) ──
-// SSH, Docker ops, VM/container/service lifecycle
+// ── devops.docker/ssh/vm/container/service.* + obs.debug.docker_logs* ──
+// SSH, Docker ops, VM/container/service lifecycle, container log tools
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -183,7 +183,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "devops.docker.logs",
+    "obs.debug.docker_logs",
     "Get Docker container logs. since format: '1h', '30m', '2024-01-01'",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -395,7 +395,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "devops.docker.logs_search",
+    "obs.debug.docker_logs_search",
     "Search container logs for a pattern (grep)",
     {
       vm: z.string().describe("VM ID or SSH alias"),
@@ -414,7 +414,7 @@ export function registerOperationsTools(server: McpServer) {
   );
 
   server.tool(
-    "devops.docker.logs_multi",
+    "obs.debug.docker_logs_multi",
     "Get logs from all containers for a service",
     {
       service: z.string().describe("Service name from cloud-data-topology.json"),

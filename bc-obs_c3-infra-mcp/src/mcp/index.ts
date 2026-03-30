@@ -3,70 +3,120 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 // ═══════════════════════════════════════════════════════════════════
-// A) OBSERVABILITY — health, finops, resources, notify/alerts
+// 1) obs.health.* — Health checks (cloud, mail, tier1/2/3, alive, declared, deployed, drift, endpoints, resources)
 // ═══════════════════════════════════════════════════════════════════
-import { registerHealthCloudTools } from "./tools/health_cloud.js";       // A.1 Health (cloud)
-import { registerHealthMailTools } from "./tools/health_mail.js";         // A.1 Health (mail)
-import { registerObservabilityReadTools } from "./tools/observability-read.js"; // A.2 Cloud Data
-import { registerFinOpsTools } from "./tools/finops.js";                  // A.4 FinOps
-import { registerFinOpsCloudTools } from "./tools/finops-cloud.js";       // A.4 FinOps Cloud
-import { registerObservabilityExecTools } from "./tools/observability.js"; // A.5 Notify/Alerts
+import { registerHealthCloudTools } from "./tools/health_cloud.js";             // obs.health.cloud*, resources*    (5)
+import { registerHealthMailTools } from "./tools/health_mail.js";               // obs.health.mail*                 (5)
+import { registerObservabilityReadTools } from "./tools/observability-read.js"; // obs.health.* (10) + obs.debug.* (15)
 
 // ═══════════════════════════════════════════════════════════════════
-// B) DEVOPS — workflows, vps, build/ship, containers, db, frontend
+// 2) obs.debug.* — Log aggregator (VPS CLIs, VM diagnostics, docker logs, profiles, tests, DB)
 // ═══════════════════════════════════════════════════════════════════
-import { registerWorkflowTools } from "./tools/workflows.js";            // B.1 Workflows
-import { registerVpsOpsTools } from "./tools/vps-ops.js";                // B.2 VPS Ops
-import { registerDeliveryTools } from "./tools/delivery.js";             // B.3 Build Ship System
-import { registerOperationsTools } from "./tools/operations.js";         // B.4 Container Management
-import { registerFrontendExecTools } from "./tools/frontend.js";         // B.6 Front-End
+import { registerVpsOpsTools } from "./tools/vps-ops.js";                      // obs.debug.vps_*                  (7)
+// NOTE: obs.debug.docker_logs* (3) are in operations.ts alongside devops.docker.*
+// NOTE: obs.debug.metrics/profile/vm/test/report/db (15) are in observability-read.ts
 
 // ═══════════════════════════════════════════════════════════════════
-// C) SECURITY
+// 3) devops.build.* — Build/ship/deploy pipeline
 // ═══════════════════════════════════════════════════════════════════
-import { registerSecurityExecTools } from "./tools/security.js";         // C.1 Security
+import { registerDeliveryTools } from "./tools/delivery.js";                   // devops.build.*                   (6)
+
+// ═══════════════════════════════════════════════════════════════════
+// 4) devops.docker/ssh/vm/container/service.* — Container & lifecycle ops
+// ═══════════════════════════════════════════════════════════════════
+import { registerOperationsTools } from "./tools/operations.js";               // devops.docker/ssh/vm/container/service.* (22)
+
+// ═══════════════════════════════════════════════════════════════════
+// 5) devops.workflows.* — GHA + Dagu
+// ═══════════════════════════════════════════════════════════════════
+import { registerWorkflowTools } from "./tools/workflows.js";                  // devops.workflows.*               (10)
+
+// ═══════════════════════════════════════════════════════════════════
+// 6) obs.finops.* — Cloud cost tracking & resource analysis
+// ═══════════════════════════════════════════════════════════════════
+import { registerFinOpsTools } from "./tools/finops.js";                       // obs.finops.all/vps/services/assets (4)
+import { registerFinOpsCloudTools } from "./tools/finops-cloud.js";            // obs.finops.oci/gcp/aws/cloud_summary (10)
+
+// ═══════════════════════════════════════════════════════════════════
+// 7) obs.notify.* + obs.db.* — Alerting & alert DB
+// ═══════════════════════════════════════════════════════════════════
+import { registerObservabilityExecTools } from "./tools/observability.js";     // obs.notify/db.*                  (8)
+
+// ═══════════════════════════════════════════════════════════════════
+// 8) sec.* — Security scanning & auditing
+// ═══════════════════════════════════════════════════════════════════
+import { registerSecurityExecTools } from "./tools/security.js";               // sec.*                            (7)
+
+// ═══════════════════════════════════════════════════════════════════
+// 9) devops.front.* — Front-end monorepo ops
+// ═══════════════════════════════════════════════════════════════════
+import { registerFrontendExecTools } from "./tools/frontend.js";               // devops.front.*                   (3)
 
 // ── Resources ────────────────────────────────────
 import { registerResources } from "./resources/index.js";
 
 const server = new McpServer({
   name: "cloud-infra",
-  version: "5.0.0",
+  version: "6.0.0",
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// A) OBSERVABILITY (53 tools)
+// 1) obs.health.* — Health checks
 // ═══════════════════════════════════════════════════════════════════
-registerHealthCloudTools(server);        //  A.1  health_cloud*, cloud_resources*     (5)
-registerHealthMailTools(server);         //  A.1  health_mail*                        (5)
-registerObservabilityReadTools(server);  //  A.2  cloud-data-health/profile/vm/db*   (24)
-registerFinOpsTools(server);             //  A.4  fin_ops*                            (4)
-registerFinOpsCloudTools(server);        //  A.4  cloud-data-oci/gcp/aws*            (10)
-registerObservabilityExecTools(server);  //  A.5  devops-notify_*, devops-db_*        (8)
+registerHealthCloudTools(server);                                               // (5)  obs.health.cloud*, resources*
+registerHealthMailTools(server);                                                // (5)  obs.health.mail*
+registerObservabilityReadTools(server);                                         // (25) obs.health.* (10) + obs.debug.* (15)
 
 // ═══════════════════════════════════════════════════════════════════
-// B) DEVOPS (55 tools)
+// 2) obs.debug.* — Log aggregator & diagnostics
 // ═══════════════════════════════════════════════════════════════════
-registerWorkflowTools(server);           //  B.1  workflows*                          (9)
-registerVpsOpsTools(server);             //  B.2  vps_*                               (7)
-registerDeliveryTools(server);           //  B.3  devops-build/secrets/backup*        (7)
-registerOperationsTools(server);         //  B.4  devops-ssh/docker/container/vm*    (26)
-registerFrontendExecTools(server);       //  B.6  front-*                             (3)
+registerVpsOpsTools(server);                                                    // (7)  obs.debug.vps_*
 
 // ═══════════════════════════════════════════════════════════════════
-// C) SECURITY (7 tools)
+// 3) devops.build.* — Build pipeline
 // ═══════════════════════════════════════════════════════════════════
-registerSecurityExecTools(server);       //  C.1  security*, cloud-data-security*     (7)
+registerDeliveryTools(server);                                                  // (6)  devops.build.*
+
+// ═══════════════════════════════════════════════════════════════════
+// 4) devops.docker/ssh/vm/container/service.* — Container & lifecycle
+// ═══════════════════════════════════════════════════════════════════
+registerOperationsTools(server);                                                // (25) devops.docker/ssh/* + obs.debug.docker_logs* (3)
+
+// ═══════════════════════════════════════════════════════════════════
+// 5) devops.workflows.* — GHA + Dagu
+// ═══════════════════════════════════════════════════════════════════
+registerWorkflowTools(server);                                                  // (10) devops.workflows.*
+
+// ═══════════════════════════════════════════════════════════════════
+// 6) obs.finops.* — Cost tracking
+// ═══════════════════════════════════════════════════════════════════
+registerFinOpsTools(server);                                                    // (4)  obs.finops.all/vps/services/assets
+registerFinOpsCloudTools(server);                                               // (10) obs.finops.oci/gcp/aws/cloud_summary
+
+// ═══════════════════════════════════════════════════════════════════
+// 7) obs.notify.* + obs.db.* — Alerting
+// ═══════════════════════════════════════════════════════════════════
+registerObservabilityExecTools(server);                                         // (8)  obs.notify/db.*
+
+// ═══════════════════════════════════════════════════════════════════
+// 8) sec.* — Security
+// ═══════════════════════════════════════════════════════════════════
+registerSecurityExecTools(server);                                              // (7)  sec.*
+
+// ═══════════════════════════════════════════════════════════════════
+// 9) devops.front.* — Frontend
+// ═══════════════════════════════════════════════════════════════════
+registerFrontendExecTools(server);                                              // (3)  devops.front.*
 
 // ── Resources (9) ────────────────────────────────
-registerResources(server);               //       cloud:// resources
+registerResources(server);                                                      //      cloud:// resources
 
 // All logging must go to stderr (stdout is JSON-RPC)
 const log = (msg: string) => process.stderr.write(`[cloud-infra] ${msg}\n`);
 
 async function main() {
   const transport = new StdioServerTransport();
-  log("Starting cloud-infra MCP server v5.0.0 (exec + READ tools consolidated)...");
+  log("Starting cloud-infra MCP server v6.0.0 (all 115 tools enabled, dot-separated categories)...");
   await server.connect(transport);
   log("Connected via stdio transport");
 }
