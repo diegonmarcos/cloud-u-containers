@@ -216,14 +216,18 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         const primary = containers[primaryKey];
         if (primary) {
           port = primary.port ?? undefined;
-          dns = primary.dns ?? (port ? `${name}.app` : undefined);
+          dns = primary.dns ?? undefined;
           if (primary.proxy?.domain) primaryDomain = primary.proxy.domain;
           if (primary.proxy) primaryProxy = { primary: primary.proxy };
           if (primary.healthcheck) primaryHealth = { path: primary.healthcheck };
           if (primary.monitoring) primaryMonitoring = primary.monitoring;
         }
-      } else {
-        // Legacy flat schema
+      }
+      // Fallback: top-level port/dns override empty container-level values
+      if (port == null && bj.port != null) port = bj.port;
+      if (dns == null) dns = bj.dns ?? (port ? `${name}.app` : undefined);
+      if (!port && !containers) {
+        // Legacy flat schema without containers key
         port = bj.port;
         dns = bj.dns ?? (port ? `${name}.app` : undefined);
       }
