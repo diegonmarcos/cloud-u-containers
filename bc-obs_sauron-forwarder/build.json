@@ -1,6 +1,7 @@
 {
   "name": "sauron-forwarder",
   "description": "Alert forwarding to central sauron",
+  "dns": "sauron-forwarder.app",
   "category": "tools",
   "deploy": {
     "host": "oci-analytics",

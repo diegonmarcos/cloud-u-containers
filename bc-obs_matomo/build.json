@@ -18,32 +18,7 @@
     "remote_path": "/opt/containers/matomo",
     "compose_flags": "--build"
   },
-  "lifecycle": {
-    "wake": [
-      {
-        "action": "exec",
-        "vm": "oci-analytics",
-        "container": "matomo-hybrid",
-        "script": "/scripts/matomo-wake.sh"
-      },
-      {
-        "action": "stats",
-        "vm": "oci-analytics"
-      }
-    ],
-    "sleep": [
-      {
-        "action": "exec",
-        "vm": "oci-analytics",
-        "container": "matomo-hybrid",
-        "script": "/scripts/matomo-sleep.sh"
-      },
-      {
-        "action": "stats",
-        "vm": "oci-analytics"
-      }
-    ]
-  },
+  "lifecycle": {},
   "proxy": {
     "primary": {
       "domain": "analytics.diegonmarcos.com",

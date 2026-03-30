@@ -1,5 +1,6 @@
 {
   "name": "syslog-forwarder",
+  "dns": "syslog-forwarder.app",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/syslog-forwarder"
