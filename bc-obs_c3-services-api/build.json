@@ -1,5 +1,6 @@
 {
   "name": "c3-services-api",
+  "enabled": false,
   "description": "C3 Services REST API \u2014 service API gateway Fastify API",
   "dns": "c3-services-api.app",
   "ports": {

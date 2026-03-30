@@ -253,6 +253,7 @@ function main() {
       vm: vmId,
       folder: entry.folder,
       description: entry.description,
+      enabled: entry.enabled ?? true,
       // Domain + routing
       ...(entry.domain ? { domain: entry.domain } : {}),
       ...(entry.flake ? { flake: entry.flake } : {}),
@@ -286,12 +287,14 @@ function main() {
     services[entry.name] = svc;
   }
 
-  // ── 6. Aggregate services → VMs ───────────────────────────────────────
+  // ── 6. Aggregate services → VMs (skip disabled services) ──────────────
   for (const [svcName, svc] of Object.entries(services)) {
     const vm = vms[svc.vm];
     if (!vm) continue;
     vm.services.push(svcName);
-    vm.container_count += (svc.container_names?.length ?? 0);
+    if (svc.enabled !== false) {
+      vm.container_count += (svc.container_names?.length ?? 0);
+    }
   }
 
   // ── 7. Firewalls (terraform + OS-level) ────────────────────────────────
@@ -541,6 +544,24 @@ function main() {
   };
 
   // ═══════════════════════════════════════════════════════════════════════
+  // Inject enabled flag from build.json (read directly to avoid tsx cache)
+  // ═══════════════════════════════════════════════════════════════════════
+  let disabledCount = 0;
+  for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
+    const bjPath = join(SOLUTIONS_DIR, svc.folder, "build.json");
+    if (existsSync(bjPath)) {
+      const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+      svc.enabled = bj.enabled ?? true;
+      if (!svc.enabled) disabledCount++;
+    } else {
+      svc.enabled = true;
+    }
+  }
+  if (disabledCount > 0) {
+    console.log(`  Disabled: ${disabledCount} services (enabled: false)`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // Write output
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -548,7 +569,8 @@ function main() {
     mkdirSync(CLOUD_DATA_DIR, { recursive: true });
   }
 
-  writeFileSync(OUTPUT_JSON, JSON.stringify(consolidated, null, 2) + "\n");
+  const jsonStr = JSON.stringify(consolidated, null, 2) + "\n";
+  writeFileSync(OUTPUT_JSON, jsonStr);
 
   const svcCount = Object.keys(services).length;
   const vmCount = Object.keys(vms).length;

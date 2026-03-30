@@ -1,5 +1,6 @@
 {
   "name": "kg-graph",
+  "enabled": false,
   "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
   "category": "data",
   "version": "0.1.0",

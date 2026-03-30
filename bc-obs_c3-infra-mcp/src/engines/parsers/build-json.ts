@@ -121,6 +121,7 @@ export interface BuildJsonEntry {
   description: string;
   flake?: string;
   folder: string;
+  enabled?: boolean;             // default: true — set false to exclude from topology containers
   // Standardized routing fields
   port?: number;               // Main listening port (REQUIRED for routable services)
   dns?: string;                // Internal DNS name, e.g. "{name}.app" (REQUIRED for routable services)
@@ -232,7 +233,7 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         "name", "description", "category", "domain", "deploy", "dns", "port",
         "ports", "proxy", "health", "monitoring", "backup", "notifications",
         "docker", "secrets", "build", "compose", "lifecycle", "terraform",
-        "multi_vm", "frozen", "version", "containers",
+        "multi_vm", "frozen", "version", "containers", "enabled",
       ]);
       const extra: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(bj)) {
@@ -247,6 +248,7 @@ export function scanBuildJsons(solutionsDir: string): BuildJsonEntry[] {
         description: bj.description || "",
         flake,
         folder,
+        enabled: bj.enabled ?? true,
         // Standardized routing fields (derived from containers or flat)
         ...(port != null ? { port } : {}),
         ...(dns ? { dns } : {}),

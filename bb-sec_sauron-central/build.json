@@ -1,5 +1,6 @@
 {
   "name": "sauron-central",
+  "enabled": false,
   "description": "Central Syslog Collector + SIEM API",
   "category": "sec",
   "deploy": {

@@ -1,5 +1,6 @@
 {
   "name": "postlite",
+  "enabled": false,
   "description": "SQLite REST API (WireGuard only)",
   "category": "data",
   "ports": {

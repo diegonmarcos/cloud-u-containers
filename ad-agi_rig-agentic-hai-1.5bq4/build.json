@@ -1,5 +1,6 @@
 {
   "name": "rig-agentic-hai-1.5bq4",
+  "enabled": false,
   "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
   "category": "agi",
   "version": "0.2.0",

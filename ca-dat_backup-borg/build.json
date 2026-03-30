@@ -1,5 +1,6 @@
 {
   "name": "backup-borg",
+  "enabled": false,
   "description": "Media Backups SSH Server (Borg deduplication)",
   "category": "data",
   "deploy": {
