@@ -5,16 +5,18 @@ import { registerInboxTools } from "./tools/inbox.js";
 import { registerComposeTools } from "./tools/compose.js";
 import { registerAdminTools } from "./tools/admin.js";
 import { registerResendTools } from "./tools/resend.js";
+import { registerDebugTools } from "./tools/debug.js";
 
 const log = (msg: string) => process.stderr.write(`[mail-mcp-http] ${msg}\n`);
 const SESSION_ID = "mail-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "mail-mcp", version: "1.1.0" });
+  const server = new McpServer({ name: "mail-mcp", version: "1.2.0" });
   registerInboxTools(server);
   registerComposeTools(server);
   registerAdminTools(server);
   registerResendTools(server);
+  registerDebugTools(server);
   return server;
 }
 
