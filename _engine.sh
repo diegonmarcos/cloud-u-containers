@@ -279,6 +279,41 @@ step_docker() {
     fi
 }
 
+# ── Step: Push configs image to GHCR (dist/ → busybox wrapper → GHCR) ─
+step_configs_push() {
+    CURRENT_STEP="configs-push"
+    [ ! -d "$DIST_DIR" ] && { log "No dist/ — skipping configs push"; return 0; }
+    [ ! -f "$DIST_DIR/docker-compose.yml" ] && { log "No docker-compose.yml — skipping configs push"; return 0; }
+
+    CONFIGS_IMAGE="${DOCKER_REGISTRY:-ghcr.io/diegonmarcos}/${SERVICE_NAME}-configs:latest"
+
+    # GHCR login
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin 2>/dev/null
+    elif command -v gh >/dev/null 2>&1; then
+        gh auth token 2>/dev/null | docker login ghcr.io -u "$(gh api user --jq .login 2>/dev/null)" --password-stdin 2>/dev/null
+    else
+        log_warn "No GHCR credentials — skipping configs push"
+        return 0
+    fi
+
+    # Generate Dockerfile: busybox + all dist/ files → /configs/
+    cat > "$DIST_DIR/Dockerfile.configs" <<'DEOF'
+FROM busybox:latest
+COPY . /configs/
+CMD ["sh", "-c", "cp -r /configs/. /out/ && echo '[configs] extracted to /out'"]
+DEOF
+
+    log "Building configs image: $CONFIGS_IMAGE"
+    docker build -q -t "$CONFIGS_IMAGE" -f "$DIST_DIR/Dockerfile.configs" "$DIST_DIR" || {
+        log_warn "Configs image build failed (non-fatal)"
+        return 0
+    }
+    docker push "$CONFIGS_IMAGE" 2>&1 | tail -3
+    rm -f "$DIST_DIR/Dockerfile.configs"
+    log "Pushed configs image: $CONFIGS_IMAGE"
+}
+
 # ── Step: Build nix flake (or copy-only for non-nix services) ────────
 step_build() {
     CURRENT_STEP="build"
@@ -559,6 +594,21 @@ step_deploy() {
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping deploy"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
     [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
+
+    # ── Docker config delivery: pull configs image on VM (no rsync) ──
+    CONFIGS_IMAGE="${DOCKER_REGISTRY:-ghcr.io/diegonmarcos}/${SERVICE_NAME}-configs:latest"
+    CONFIGS_DELIVERY="$(get_config deploy.configs_delivery 2>/dev/null || echo "")"
+    if [ "$CONFIGS_DELIVERY" = "docker" ] || [ "$SEQUENTIAL_RESTART" = "true" ]; then
+        log "Deploying via configs image: $CONFIGS_IMAGE"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH && \
+            docker pull $CONFIGS_IMAGE && \
+            docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE" && {
+            log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
+            return 0
+        } || log_warn "Configs image deploy failed — falling back to rsync"
+    fi
+
+    # ── Legacy rsync deploy (fallback) ──
 
     # Include binary + runtime Dockerfile for local image build on VM
     BINARY_PATH="/tmp/${SERVICE_NAME}-binary"
@@ -1159,6 +1209,7 @@ case "${1:-all}" in
     deploy)   step_deploy ;;
     compose)  step_compose ;;
     compose-build) step_compose_build ;;
+    configs-push) step_configs_push ;;
     health)   step_health ;;
     all)      step_build; step_docs; step_secrets ;;
     ship)
@@ -1167,6 +1218,8 @@ case "${1:-all}" in
         step_secrets
         # compose-build only for Docker-based services (skip wrangler/terraform)
         [ "$WRANGLER_DEPLOY" != "true" ] && [ "$TERRAFORM_DEPLOY" != "true" ] && step_compose_build
+        # Push configs image to GHCR (all services, enables docker-based deploy)
+        [ "$WRANGLER_DEPLOY" != "true" ] && [ "$TERRAFORM_DEPLOY" != "true" ] && step_configs_push
         # Skip deploy+compose if dist/ output is unchanged since last ship
         NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
         # Read hash from VM (persists across ephemeral GHA runners)
