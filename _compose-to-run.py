@@ -220,6 +220,19 @@ def main():
     if networks:
         print()
 
+    # Pull all images first (sequential, lightweight)
+    images = set()
+    for name in order:
+        img = services[name].get("image", "")
+        if img:
+            images.add(img)
+    if images:
+        print("# Pull latest images (ensures GHCR remote always wins)")
+        for img in sorted(images):
+            print(f'echo "  pull: {img}"')
+            print(f"docker pull {img} 2>/dev/null || true")
+        print()
+
     for name in order:
         svc = services[name]
         args = svc_to_run(name, svc, project, volumes)
