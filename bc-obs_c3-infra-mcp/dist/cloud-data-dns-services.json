@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-29T16:34:31.289Z",
+  "_generated": "2026-03-31T16:14:02.274Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/dns-services",
   "suffix": "app",
   "services": {
@@ -58,6 +58,10 @@
     "photoprism": {
       "ip": "10.0.0.6",
       "desc": "PhotoPrism AI-powered photo management (oci-flex-1)"
+    },
+    "photos-webhook": {
+      "ip": "10.0.0.6",
+      "desc": "PhotoPrism Webhook + S3 Processor"
     },
     "radicale": {
       "ip": "10.0.0.6",
@@ -139,6 +143,10 @@
       "ip": "10.0.0.6",
       "desc": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode"
     },
+    "rig-agentic-sonn-14bq8": {
+      "ip": "10.0.0.6",
+      "desc": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP"
+    },
     "hickory-dns": {
       "ip": "10.0.0.1",
       "desc": "Internal DNS server for WireGuard mesh (per-service .app zones)"
@@ -158,6 +166,10 @@
     "introspect-proxy": {
       "ip": "10.0.0.1",
       "desc": "OIDC token introspection sidecar for Caddy Bearer auth"
+    },
+    "alerts-api": {
+      "ip": "10.0.0.4",
+      "desc": "Security Alert Aggregation API"
     },
     "c3-infra-api": {
       "ip": "10.0.0.6",
@@ -191,6 +203,10 @@
       "ip": "10.0.0.4",
       "desc": "Dozzle - Real-time Docker log viewer"
     },
+    "fluent-bit": {
+      "ip": "10.0.0.4",
+      "desc": "Log processor and forwarder"
+    },
     "grafana": {
       "ip": "10.0.0.6",
       "desc": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)"
@@ -222,6 +238,14 @@
     "ntfy": {
       "ip": "10.0.0.1",
       "desc": "Push notification server"
+    },
+    "sauron-forwarder": {
+      "ip": "10.0.0.4",
+      "desc": "Alert forwarding to central sauron"
+    },
+    "syslog-forwarder": {
+      "ip": "10.0.0.3",
+      "desc": ""
     },
     "umami": {
       "ip": "10.0.0.4",

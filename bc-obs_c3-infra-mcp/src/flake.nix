@@ -17,7 +17,7 @@
       image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
       port = buildJson.ports.app;
       health_path = buildJson.health.path;
-      mattermost_url = "http://mattermost.app:8065";
+      mattermost_url = "http://mattermost.app";
     };
 
     title = buildJson.description;

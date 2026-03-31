@@ -338,7 +338,7 @@ echo Q | timeout 8 openssl s_client -connect ${MAIL_WG_IP}:465 -servername ${MAI
 echo "===caddyL4_587==="
 echo Q | timeout 8 openssl s_client -starttls smtp -connect ${MAIL_WG_IP}:587 -servername ${MAIL_DOMAIN} 2>&1 | grep -c CONNECTED
 echo "===autheliaHealth==="
-curl -skf http://localhost:9091/api/health 2>/dev/null || curl -skf http://authelia.app:9091/api/health 2>/dev/null || echo "FAIL"
+curl -skf http://localhost:9091/api/health 2>/dev/null || curl -skf http://authelia.app/api/health 2>/dev/null || echo "FAIL"
 `.trim();
 
   log("SSH batch gcp-proxy: connecting...");

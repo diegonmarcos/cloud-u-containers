@@ -157,7 +157,12 @@
           "base_path": "/crawlee",
           "upstream": "crawlee.app:3001",
           "comment": ""
-        }
+        },
+        { "base_path": "/dash-gcp-proxy", "upstream": "10.0.0.1:7681", "comment": "tmux dashboard (gcp-proxy)" },
+        { "base_path": "/dash-oci-mail", "upstream": "10.0.0.3:7681", "comment": "tmux dashboard (oci-mail)" },
+        { "base_path": "/dash-oci-analytics", "upstream": "10.0.0.4:7681", "comment": "tmux dashboard (oci-analytics)" },
+        { "base_path": "/dash-oci-apps", "upstream": "10.0.0.6:7681", "comment": "tmux dashboard (oci-apps)" },
+        { "base_path": "/dash-gcp-t4", "upstream": "10.0.0.8:7681", "comment": "tmux dashboard (gcp-t4)" }
       ],
       "comment": "App hub -- path-based routing",
       "fallback": "respond \"Not Found\" 404"
