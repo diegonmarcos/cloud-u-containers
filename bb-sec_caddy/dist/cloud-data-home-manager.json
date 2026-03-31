@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-30T00:46:09.138Z",
+  "_generated": "2026-03-30T18:11:43.491Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -15,7 +15,7 @@
       "vm_id": "oci-E2-f_0",
       "ip": "130.110.251.193",
       "wg_ip": "10.0.0.3",
-      "wg_public_key": null,
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -28,7 +28,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
       },
       "public_ports": [
         {
@@ -95,7 +96,7 @@
       "vm_id": "oci-E2-f_1",
       "ip": "129.151.228.66",
       "wg_ip": "10.0.0.4",
-      "wg_public_key": null,
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -108,7 +109,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_1",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
       },
       "public_ports": [],
       "idle_shutdown": null,
@@ -130,7 +132,7 @@
       "vm_id": "oci-A1-f_0",
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": null,
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -143,7 +145,8 @@
         "arch": "aarch64",
         "shape": "VM.Standard.A1.Flex",
         "cloud_name": "oci-A1-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
       },
       "public_ports": [
         {
@@ -243,14 +246,15 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 15,
-        "disk_gb": 0,
+        "disk_gb": 50,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
         "vram_gb": 16,
         "machine_type": "n1-standard-4",
         "cloud_name": "ollama-spot-gpu",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
       },
       "public_ports": [],
       "idle_shutdown": {
@@ -274,7 +278,7 @@
       "vm_id": "gcp-E2-f_0",
       "ip": "35.226.147.64",
       "wg_ip": "10.0.0.1",
-      "wg_public_key": null,
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_port": 51820,
       "wg_role": "hub",
       "user": "diego",
@@ -283,12 +287,13 @@
       "specs": {
         "cpu": 2,
         "ram_gb": 2,
-        "disk_gb": 0,
+        "disk_gb": 32,
         "arch": "x86_64",
         "shape": "e2-small",
         "machine_type": "e2-small",
         "cloud_name": "arch-1",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
       },
       "public_ports": [
         {
@@ -373,7 +378,7 @@
       {
         "name": "oci-mail",
         "wg_ip": "10.0.0.3",
-        "wg_public_key": null,
+        "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
         "endpoint": "130.110.251.193:51820",
         "role": "spoke",
         "wg_port": 51820,
@@ -382,7 +387,7 @@
       {
         "name": "oci-analytics",
         "wg_ip": "10.0.0.4",
-        "wg_public_key": null,
+        "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
         "endpoint": "129.151.228.66:51820",
         "role": "spoke",
         "wg_port": 51820,
@@ -391,7 +396,7 @@
       {
         "name": "oci-apps",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": null,
+        "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
         "endpoint": "82.70.229.129:51820",
         "role": "spoke",
         "wg_port": 51820,
@@ -409,7 +414,7 @@
       {
         "name": "gcp-proxy",
         "wg_ip": "10.0.0.1",
-        "wg_public_key": null,
+        "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
         "endpoint": "35.226.147.64:51820",
         "role": "hub",
         "wg_port": 51820,
@@ -420,17 +425,17 @@
       "surface": {
         "wg_ip": "10.0.0.5",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
       },
       "termux": {
         "wg_ip": "10.0.0.9",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
       },
       "gha-runner": {
         "wg_ip": "10.0.0.200",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
       }
     }
   },

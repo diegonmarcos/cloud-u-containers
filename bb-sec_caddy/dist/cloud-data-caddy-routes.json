@@ -3,9 +3,14 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 1
   },
-  "_generated": "2026-03-30T00:46:09.137Z",
+  "_generated": "2026-03-30T18:11:43.490Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
+    {
+      "port": 25,
+      "upstream": "10.0.0.3:25",
+      "comment": "SMTP inbound (Cloudflare MX)"
+    },
     {
       "port": 993,
       "upstream": "10.0.0.3:993",
@@ -163,17 +168,17 @@
         {
           "base_path": "/crawlee",
           "upstream": "crawlee.app:3000",
-          "comment": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
+          "comment": "Self-hosted Crawlee Cloud \u2014 Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
         },
         {
           "base_path": "/c3-api",
           "upstream": "c3-infra-api.app:8081",
-          "comment": "C3 REST API — Cloud Control Center Fastify API"
+          "comment": "C3 REST API \u2014 Cloud Control Center Fastify API"
         },
         {
           "base_path": "/services",
           "upstream": "c3-services-api.app:8082",
-          "comment": "C3 Services REST API — service API gateway Fastify API"
+          "comment": "C3 Services REST API \u2014 service API gateway Fastify API"
         },
         {
           "base_path": "/dash",
@@ -266,7 +271,7 @@
     "analytics": {
       "domain": "analytics.diegonmarcos.com",
       "comment": "Matomo (public tracking + protected admin) + Umami (path-based)",
-      "matomo_upstream": "matomo.app:8080",
+      "matomo_upstream": "matomo.app:8084",
       "umami_upstream": "umami.app:3006",
       "public_tracking_paths": [
         "/matomo.js",

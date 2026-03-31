@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-03-30T12:35:27.862Z",
+    "generated_at": "2026-03-30T18:10:59.753Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -26,7 +26,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
       },
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
@@ -89,6 +90,7 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
       "services": [
         "snappymail",
         "smtp-proxy",
@@ -107,7 +109,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_1",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
       },
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
@@ -124,6 +127,7 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
       "services": [
         "alerts-api",
         "dozzle",
@@ -143,7 +147,8 @@
         "arch": "aarch64",
         "shape": "VM.Standard.A1.Flex",
         "cloud_name": "oci-A1-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
       },
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
@@ -201,6 +206,7 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva",
       "services": [
         "code-server",
         "etherpad",
@@ -244,14 +250,15 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 15,
-        "disk_gb": 0,
+        "disk_gb": 50,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
         "vram_gb": 16,
         "machine_type": "n1-standard-4",
         "cloud_name": "ollama-spot-gpu",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
       },
       "description": "GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM",
       "wg_ip": "10.0.0.8",
@@ -280,6 +287,7 @@
         "network_threshold": 51200,
         "min_uptime_seconds": 600
       },
+      "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu",
       "services": [
         "ollama"
       ],
@@ -290,12 +298,13 @@
       "specs": {
         "cpu": 2,
         "ram_gb": 2,
-        "disk_gb": 0,
+        "disk_gb": 32,
         "arch": "x86_64",
         "shape": "e2-small",
         "machine_type": "e2-small",
         "cloud_name": "arch-1",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
@@ -346,6 +355,7 @@
       },
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
+      "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1",
       "services": [
         "vaultwarden",
         "hickory-dns",
@@ -1686,18 +1696,27 @@
       "folder": "aa-sui_photos-webhook",
       "description": "PhotoPrism Webhook + S3 Processor",
       "enabled": true,
+      "port": 5002,
+      "dns": "photos-webhook.app",
+      "upstream": "photos-webhook.app:5002",
       "containers": {
         "app": {
           "container_name": "photos-webhook",
           "image": "",
-          "public": false
+          "public": false,
+          "port": 5002,
+          "dns": "photos-webhook.app"
         }
       },
       "container_names": [
         "photos-webhook"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "5002"
+      ],
+      "all_dns": [
+        "photos-webhook.app"
+      ],
       "compose": {
         "containers": [
           "photos-db",
@@ -2533,7 +2552,7 @@
         "db": {
           "container_name": "quant_light_db",
           "image": "postgres:16-alpine",
-          "port": 5434,
+          "port": 5443,
           "port_env": "PGPORT",
           "dns": "quant-light-db.app",
           "public": false,
@@ -2558,7 +2577,7 @@
       "all_ports": [
         "8889",
         "5001",
-        "5434"
+        "5443"
       ],
       "all_dns": [
         "quant-light-research.app",
@@ -2577,7 +2596,7 @@
       "declared_ports": {
         "app": 8889,
         "engine": 5001,
-        "db": 5434
+        "db": 5443
       },
       "backup": {
         "enabled": true
@@ -2759,18 +2778,27 @@
       "folder": "ad-agi_rig-agentic-sonn-14bq8",
       "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
       "enabled": true,
+      "port": 8091,
+      "dns": "rig-agentic-sonn-14bq8.app",
+      "upstream": "rig-agentic-sonn-14bq8.app:8091",
       "containers": {
         "app": {
           "container_name": "rig-agentic-sonn-14bq8",
           "image": "",
-          "public": false
+          "public": false,
+          "port": 8091,
+          "dns": "rig-agentic-sonn-14bq8.app"
         }
       },
       "container_names": [
         "rig-agentic-sonn-14bq8"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "8091"
+      ],
+      "all_dns": [
+        "rig-agentic-sonn-14bq8.app"
+      ],
       "compose": {
         "containers": [
           "rig-agentic-sonn-14bq8"
@@ -3199,18 +3227,27 @@
       "folder": "bc-obs_alerts-api",
       "description": "Security Alert Aggregation API",
       "enabled": true,
+      "port": 5050,
+      "dns": "alerts-api.app",
+      "upstream": "alerts-api.app:5050",
       "containers": {
         "app": {
           "container_name": "alerts-api",
           "image": "",
-          "public": false
+          "public": false,
+          "port": 5050,
+          "dns": "alerts-api.app"
         }
       },
       "container_names": [
         "alerts-api"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "5050"
+      ],
+      "all_dns": [
+        "alerts-api.app"
+      ],
       "compose": {
         "containers": [
           "alerts-api"
@@ -3784,6 +3821,9 @@
       "folder": "bc-obs_fluent-bit",
       "description": "Log processor and forwarder",
       "enabled": true,
+      "port": 2020,
+      "dns": "fluent-bit.app",
+      "upstream": "fluent-bit.app:2020",
       "containers": {
         "app": {
           "container_name": "fluent-bit",
@@ -3960,14 +4000,14 @@
       "description": "Matomo hybrid analytics (oci-analytics)",
       "enabled": true,
       "domain": "analytics.diegonmarcos.com",
-      "port": 8080,
+      "port": 8084,
       "dns": "matomo.app",
-      "upstream": "matomo.app:8080",
+      "upstream": "matomo.app:8084",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
           "image": null,
-          "port": 8080,
+          "port": 8084,
           "port_env": null,
           "dns": "matomo.app",
           "public": true,
@@ -4001,7 +4041,7 @@
         "matomo-hybrid"
       ],
       "all_ports": [
-        "8080"
+        "8084"
       ],
       "all_dns": [
         "matomo.app"
@@ -4020,7 +4060,7 @@
         }
       },
       "declared_ports": {
-        "app": 8080,
+        "app": 8084,
         "db": 3306
       },
       "health": {
@@ -4270,18 +4310,22 @@
       "folder": "bc-obs_sauron-forwarder",
       "description": "Alert forwarding to central sauron",
       "enabled": true,
+      "dns": "sauron-forwarder.app",
       "containers": {
         "app": {
           "container_name": "sauron-forwarder",
           "image": "",
-          "public": false
+          "public": false,
+          "dns": "sauron-forwarder.app"
         }
       },
       "container_names": [
         "sauron-forwarder"
       ],
       "all_ports": [],
-      "all_dns": [],
+      "all_dns": [
+        "sauron-forwarder.app"
+      ],
       "compose": {
         "containers": [
           "sauron-forwarder"
@@ -4323,18 +4367,22 @@
       "folder": "bc-obs_syslog-forwarder",
       "description": "",
       "enabled": true,
+      "dns": "syslog-forwarder.app",
       "containers": {
         "app": {
           "container_name": "syslog-forwarder",
           "image": "",
-          "public": false
+          "public": false,
+          "dns": "syslog-forwarder.app"
         }
       },
       "container_names": [
         "syslog-forwarder"
       ],
       "all_ports": [],
-      "all_dns": [],
+      "all_dns": [
+        "syslog-forwarder.app"
+      ],
       "compose": {
         "containers": [
           "syslog-forwarder"
@@ -4786,14 +4834,14 @@
       "description": "Self-hosted Git service",
       "enabled": true,
       "domain": "git.diegonmarcos.com",
-      "port": 3017,
+      "port": 3002,
       "dns": "gitea.app",
-      "upstream": "gitea.app:3017",
+      "upstream": "gitea.app:3002",
       "containers": {
         "app": {
           "container_name": "gitea",
           "image": "gitea/gitea:latest",
-          "port": 3017,
+          "port": 3002,
           "port_env": "GITEA__server__HTTP_PORT",
           "dns": "gitea.app",
           "public": true,
@@ -4801,7 +4849,7 @@
             "domain": "git.diegonmarcos.com",
             "auth": "two_factor"
           },
-          "healthcheck": "curl -f http://localhost:3017/",
+          "healthcheck": "curl -f http://localhost:3002/",
           "monitoring": {
             "tls_check": true
           },
@@ -4820,7 +4868,7 @@
         "gitea"
       ],
       "all_ports": [
-        "3017"
+        "3002"
       ],
       "all_dns": [
         "gitea.app"
@@ -4839,10 +4887,10 @@
         }
       },
       "declared_ports": {
-        "app": 3017
+        "app": 3002
       },
       "health": {
-        "path": "curl -f http://localhost:3017/"
+        "path": "curl -f http://localhost:3002/"
       },
       "monitoring": {
         "tls_check": true
@@ -5252,6 +5300,12 @@
         "service": "photoprism"
       },
       {
+        "name": "photos-webhook.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "photos-webhook"
+      },
+      {
         "name": "radicale.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -5372,6 +5426,12 @@
         "service": "ollama-hai"
       },
       {
+        "name": "rig-agentic-sonn-14bq8.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "rig-agentic-sonn-14bq8"
+      },
+      {
         "name": "hickory-dns.app",
         "type": "A",
         "value": "10.0.0.1",
@@ -5400,6 +5460,12 @@
         "type": "A",
         "value": "10.0.0.1",
         "service": "introspect-proxy"
+      },
+      {
+        "name": "alerts-api.app",
+        "type": "A",
+        "value": "10.0.0.4",
+        "service": "alerts-api"
       },
       {
         "name": "c3-infra-api.app",
@@ -5496,6 +5562,18 @@
         "type": "A",
         "value": "10.0.0.1",
         "service": "ntfy"
+      },
+      {
+        "name": "sauron-forwarder.app",
+        "type": "A",
+        "value": "10.0.0.4",
+        "service": "sauron-forwarder"
+      },
+      {
+        "name": "syslog-forwarder.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "syslog-forwarder"
       },
       {
         "name": "umami.app",
@@ -5854,7 +5932,8 @@
           "arch": "x86_64",
           "shape": "VM.Standard.E2.1.Micro",
           "cloud_name": "oci-E2-f_0",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
         },
         "public_ports": [
           {
@@ -5934,7 +6013,8 @@
           "arch": "x86_64",
           "shape": "VM.Standard.E2.1.Micro",
           "cloud_name": "oci-E2-f_1",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
         },
         "public_ports": [],
         "idle_shutdown": null,
@@ -5969,7 +6049,8 @@
           "arch": "aarch64",
           "shape": "VM.Standard.A1.Flex",
           "cloud_name": "oci-A1-f_0",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
         },
         "public_ports": [
           {
@@ -6069,14 +6150,15 @@
         "specs": {
           "cpu": 4,
           "ram_gb": 15,
-          "disk_gb": 0,
+          "disk_gb": 50,
           "arch": "x86_64",
           "shape": "n1-standard-4",
           "gpu": "NVIDIA T4",
           "vram_gb": 16,
           "machine_type": "n1-standard-4",
           "cloud_name": "ollama-spot-gpu",
-          "cloud_zone": "us-central1-a"
+          "cloud_zone": "us-central1-a",
+          "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
         },
         "public_ports": [],
         "idle_shutdown": {
@@ -6109,12 +6191,13 @@
         "specs": {
           "cpu": 2,
           "ram_gb": 2,
-          "disk_gb": 0,
+          "disk_gb": 32,
           "arch": "x86_64",
           "shape": "e2-small",
           "machine_type": "e2-small",
           "cloud_name": "arch-1",
-          "cloud_zone": "us-central1-a"
+          "cloud_zone": "us-central1-a",
+          "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
         },
         "public_ports": [
           {

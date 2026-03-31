@@ -5,6 +5,14 @@
     order respond before handle
 
     layer4 {
+# SMTP inbound (Cloudflare MX)
+:25 {
+  route {
+    proxy {
+      upstream 10.0.0.3:25
+    }
+  }
+}
 # IMAPS -- TLS passthrough to stalwart
 :993 {
   route {
@@ -1118,7 +1126,7 @@ import request_limits
       path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
     }
     handle @tracking {
-      reverse_proxy matomo.app:8080
+      reverse_proxy matomo.app:8084
     }
 
     # Umami Analytics (path-based, strip /umami prefix before proxying)
@@ -1160,14 +1168,14 @@ forward_auth introspect-proxy.app:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy matomo.app:8080
+    reverse_proxy matomo.app:8084
   }
   handle {
 forward_auth authelia.app:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy matomo.app:8080
+    reverse_proxy matomo.app:8084
   }
 
 
