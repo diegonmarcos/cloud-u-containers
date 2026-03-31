@@ -676,28 +676,51 @@ step_compose() {
 
     ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
 
-    # Auto-detect E2 Micros (1GB RAM) — always use sequential restart to avoid freeze
+    # Auto-detect E2 Micros (≤2GB RAM) — use lightweight restart to avoid OOM freeze
     case "$DEPLOY_HOST" in
-        oci-mail|oci-analytics) SEQUENTIAL_RESTART="true" ;;
+        oci-mail|oci-analytics|gcp-proxy) SEQUENTIAL_RESTART="true" ;;
     esac
 
     if [ "$SEQUENTIAL_RESTART" = "true" ]; then
-        # Sequential restart: down -> settle -> start (avoids CPU spike on low-resource VMs)
-        # Uses 'down' not 'stop' to release port bindings (stop keeps them bound)
-        log "Sequential restart (low-resource VM: $DEPLOY_HOST)"
-        log "Stopping containers on $DEPLOY_HOST"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose down --remove-orphans" || true
-        log "Waiting for CPU to settle..."
-        sleep 10
-        # Pull after down (no competing containers, less memory pressure)
-        if [ -z "$DOCKER_IMAGE_CHANGED" ]; then
-            log "Pulling images on $DEPLOY_HOST (sequential, post-down)"
+        # E2 Micro strategy: avoid docker compose Go binary when possible
+        # If image changed: must docker rm + compose up (recreate from new image)
+        # If image same: docker stop + docker start (no Go binary, no OOM)
+        log "E2 Micro restart (low-resource VM: $DEPLOY_HOST)"
+
+        if [ -n "$DOCKER_IMAGE_CHANGED" ]; then
+            # Image changed — must recreate containers from new image
+            log "Image changed — recreating containers (docker rm + compose up)"
+            # Stop old containers one by one (lightweight, no Go binary)
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -q 2>/dev/null | xargs -r docker stop 2>/dev/null" || true
+            sleep 5
+            # Remove old containers
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -aq 2>/dev/null | xargs -r docker rm -f 2>/dev/null" || true
+            sleep 5
+            # Recreate with compose (unavoidable — needs Go binary to parse compose file)
+            log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d --no-build"
+        else
+            # Image unchanged — use docker stop/start (no Go binary, no OOM)
+            log "Image unchanged — using docker stop + start (lightweight)"
+            # Pull first (lightweight docker CLI, not compose)
+            log "Pulling images on $DEPLOY_HOST (sequential, lightweight)"
             ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
+            # Check if pull got a new image (compare image IDs)
+            IMAGE_UPDATED=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -q 2>/dev/null | head -1 | xargs -r docker inspect --format '{{.Image}}' 2>/dev/null" || echo "")
+            PULLED_IMAGE=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | head -1 | xargs -r docker inspect --format '{{.Id}}' 2>/dev/null" || echo "")
+            if [ -n "$IMAGE_UPDATED" ] && [ -n "$PULLED_IMAGE" ] && [ "$IMAGE_UPDATED" != "$PULLED_IMAGE" ]; then
+                log "Pull got new image — recreating"
+                ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -aq 2>/dev/null | xargs -r docker rm -f 2>/dev/null" || true
+                sleep 5
+                ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d --no-build"
+            else
+                # Same image — just stop + start (fastest, no OOM risk)
+                ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -q 2>/dev/null | xargs -r docker stop 2>/dev/null" || true
+                sleep 3
+                ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps -aq 2>/dev/null | xargs -r docker start 2>/dev/null" || true
+                log "Containers restarted via docker start"
+            fi
         fi
-        log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
-        BUILD_FLAG=""
-        case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d $BUILD_FLAG"
     else
         # Standard: pull first (while old containers run), then down + up (instant, no pulling)
         # Uses 'docker pull' instead of 'docker compose pull' — compose pull spawns heavy Go binary
