@@ -287,6 +287,14 @@ step_configs_push() {
 
     CONFIGS_IMAGE="${DOCKER_REGISTRY:-ghcr.io/diegonmarcos}/${SERVICE_NAME}-configs:latest"
 
+    # Skip if dist/ unchanged since last configs push
+    CONFIGS_HASH=$(find "$DIST_DIR" -type f ! -name 'Dockerfile.configs' ! -name '.configs-hash' -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
+    OLD_CONFIGS_HASH=$(cat "$SERVICE_DIR/.configs-hash" 2>/dev/null || echo "")
+    if [ "$CONFIGS_HASH" = "$OLD_CONFIGS_HASH" ] && [ -n "$CONFIGS_HASH" ]; then
+        log "Configs unchanged — skipping push ($CONFIGS_HASH)"
+        return 0
+    fi
+
     # GHCR login
     if [ -n "${GITHUB_TOKEN:-}" ]; then
         echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin 2>/dev/null
@@ -311,7 +319,8 @@ DEOF
     }
     docker push "$CONFIGS_IMAGE" 2>&1 | tail -3
     rm -f "$DIST_DIR/Dockerfile.configs"
-    log "Pushed configs image: $CONFIGS_IMAGE"
+    echo "$CONFIGS_HASH" > "$SERVICE_DIR/.configs-hash"
+    log "Pushed configs image: $CONFIGS_IMAGE ($CONFIGS_HASH)"
 }
 
 # ── Step: Build nix flake (or copy-only for non-nix services) ────────
