@@ -9,10 +9,11 @@ services:
   mail-mcp:
     image: ghcr.io/diegonmarcos/mail-mcp:latest
     container_name: mail-mcp
-    restart: unless-stopped
+    restart: "no"  # container-init handles startup
     network_mode: host
     env_file:
       - .secrets
     environment:
+      PORT: "3103"
       MAIL_HOST: mail.diegonmarcos.com
 

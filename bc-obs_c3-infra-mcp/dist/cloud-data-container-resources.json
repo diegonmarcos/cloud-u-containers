@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-26T19:44:27.437Z",
+  "_generated": "2026-03-29T16:34:31.293Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/container-resources",
   "services": {
     "code-server": {
@@ -164,8 +164,8 @@
     },
     "vaultwarden": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "vaultwarden"
       ],
@@ -297,8 +297,8 @@
     },
     "hickory-dns": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "hickory-dns"
       ],
@@ -308,8 +308,8 @@
     },
     "authelia": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "authelia",
         "authelia-redis"
@@ -318,8 +318,8 @@
     },
     "caddy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "caddy",
         "introspect-proxy"
@@ -340,19 +340,10 @@
     },
     "introspect-proxy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "introspect-proxy"
-      ],
-      "resources": null
-    },
-    "orchestrator": {
-      "vm": "oci-apps",
-      "vm_ram_gb": 24,
-      "vm_cpu": 4,
-      "containers": [
-        "orchestrator"
       ],
       "resources": null
     },
@@ -499,8 +490,8 @@
     },
     "ntfy": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "ntfy",
         "syslog-bridge",
@@ -564,11 +555,11 @@
       ],
       "resources": {
         "limits": {
-          "memory": "256M",
-          "cpus": "0.5"
+          "memory": "512M",
+          "cpus": "1.0"
         },
         "reservations": {
-          "memory": "128M"
+          "memory": "256M"
         }
       }
     },
@@ -637,8 +628,8 @@
     },
     "postlite": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "postlite"
       ],
@@ -646,8 +637,8 @@
     },
     "redis": {
       "vm": "gcp-proxy",
-      "vm_ram_gb": 1,
-      "vm_cpu": 1,
+      "vm_ram_gb": 2,
+      "vm_cpu": 2,
       "containers": [
         "redis"
       ],

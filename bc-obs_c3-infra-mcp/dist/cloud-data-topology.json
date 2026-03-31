@@ -25,7 +25,7 @@
       "specs": {
         "cpu": 1,
         "ram_gb": 1,
-        "disk_gb": 47,
+        "disk_gb": 0,
         "shape": "VM.Standard.E2.1.Micro"
       }
     },
@@ -55,7 +55,7 @@
       "specs": {
         "cpu": 1,
         "ram_gb": 1,
-        "disk_gb": 47,
+        "disk_gb": 0,
         "shape": "VM.Standard.E2.1.Micro"
       }
     },
@@ -109,7 +109,6 @@
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
         "rig-agentic-sonn-14bq8",
-        "orchestrator",
         "sauron-central",
         "c3-infra-api",
         "c3-infra-mcp",
@@ -133,23 +132,16 @@
         "kg-graph"
       ],
       "ports": [
-        "10.0.0.6:3015:8080",
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
+        "10.0.0.6:3015:8080"
       ],
       "networks": [
         "etherpad_net",
-        "default",
-        "crawlee_network"
+        "default"
       ],
       "specs": {
         "cpu": 4,
         "ram_gb": 24,
-        "disk_gb": 100,
+        "disk_gb": 0,
         "shape": "VM.Standard.A1.Flex"
       }
     },
@@ -186,8 +178,9 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 15,
-        "disk_gb": 100,
-        "shape": "n1-standard-4"
+        "disk_gb": 0,
+        "shape": "n1-standard-4",
+        "machine_type": "n1-standard-4"
       }
     },
     "gcp-E2-f_0": {
@@ -223,10 +216,11 @@
         "auth-net"
       ],
       "specs": {
-        "cpu": 1,
-        "ram_gb": 1,
-        "disk_gb": 30,
-        "shape": "e2-micro"
+        "cpu": 2,
+        "ram_gb": 2,
+        "disk_gb": 0,
+        "shape": "e2-small",
+        "machine_type": "e2-small"
       }
     },
     "vast-RTX-p_0": {
@@ -307,8 +301,13 @@
   "storage": [
     {
       "provider": "oci",
-      "name": "each.value.name",
-      "tier": "each.value.storage_tier"
+      "name": "archlinux-images",
+      "tier": "Standard"
+    },
+    {
+      "provider": "oci",
+      "name": "my-photos",
+      "tier": "Standard"
     }
   ],
   "firewalls": {
@@ -598,30 +597,35 @@
       {
         "name": "oci-mail",
         "wg_ip": "10.0.0.3",
+        "wg_public_key": null,
         "endpoint": "130.110.251.193:51820",
         "role": "spoke"
       },
       {
         "name": "oci-analytics",
         "wg_ip": "10.0.0.4",
+        "wg_public_key": null,
         "endpoint": "129.151.228.66:51820",
         "role": "spoke"
       },
       {
         "name": "oci-apps",
         "wg_ip": "10.0.0.6",
+        "wg_public_key": null,
         "endpoint": "82.70.229.129:51820",
         "role": "spoke"
       },
       {
         "name": "gcp-t4",
         "wg_ip": "10.0.0.8",
+        "wg_public_key": null,
         "endpoint": "34.173.227.250:51820",
         "role": "spoke"
       },
       {
         "name": "gcp-proxy",
         "wg_ip": "10.0.0.1",
+        "wg_public_key": null,
         "endpoint": "35.226.147.64:51820",
         "role": "hub"
       }
@@ -629,13 +633,18 @@
     "clients": {
       "surface": {
         "wg_ip": "10.0.0.5",
-        "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
-        "role": "client"
+        "role": "client",
+        "wg_public_key": null
       },
       "termux": {
         "wg_ip": "10.0.0.9",
-        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
-        "role": "client"
+        "role": "client",
+        "wg_public_key": null
+      },
+      "gha-runner": {
+        "wg_ip": "10.0.0.200",
+        "role": "client",
+        "wg_public_key": null
       }
     }
   },
@@ -650,6 +659,12 @@
       },
       {
         "name": "etherpad.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "etherpad"
+      },
+      {
+        "name": "etherpad-db.app",
         "type": "A",
         "value": "10.0.0.6",
         "service": "etherpad"
@@ -674,6 +689,12 @@
       },
       {
         "name": "hedgedoc.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "hedgedoc"
+      },
+      {
+        "name": "hedgedoc-db.app",
         "type": "A",
         "value": "10.0.0.6",
         "service": "hedgedoc"
@@ -733,6 +754,12 @@
         "service": "snappymail"
       },
       {
+        "name": "smtp-proxy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "smtp-proxy"
+      },
+      {
         "name": "stalwart.app",
         "type": "A",
         "value": "10.0.0.3",
@@ -785,6 +812,36 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "crawlee-cloud"
+      },
+      {
+        "name": "quant-full-research.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-full"
+      },
+      {
+        "name": "quant-full-db.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-full"
+      },
+      {
+        "name": "quant-light-research.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
+      },
+      {
+        "name": "quant-light-engine.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
+      },
+      {
+        "name": "quant-light-db.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "quant-lab-light"
       },
       {
         "name": "ollama.app",
@@ -913,6 +970,12 @@
         "service": "nocodb"
       },
       {
+        "name": "nocodb-db.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "nocodb"
+      },
+      {
         "name": "ntfy.app",
         "type": "A",
         "value": "10.0.0.1",
@@ -982,14 +1045,14 @@
       "folder": "aa-sui_code-server",
       "description": "VS Code IDE (ide.diegonmarcos.com)",
       "domain": "ide.diegonmarcos.com",
-      "port": 8444,
+      "port": 8443,
       "dns": "code-server.app",
-      "upstream": "code-server.app:8444",
+      "upstream": "code-server.app:8443",
       "containers": {
         "app": {
           "container_name": "code-server",
           "image": "linuxserver/code-server:latest",
-          "port": 8444,
+          "port": 8443,
           "port_env": null,
           "dns": "code-server.app",
           "public": true,
@@ -1017,7 +1080,7 @@
         "code-server"
       ],
       "all_ports": [
-        "8444"
+        "8443"
       ],
       "all_dns": [
         "code-server.app"
@@ -1036,7 +1099,7 @@
         }
       },
       "declared_ports": {
-        "app": 8444
+        "app": 8443
       },
       "health": {
         "path": "/"
@@ -1091,7 +1154,7 @@
           "image": "postgres:16-alpine",
           "port": 5436,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "etherpad-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -1116,7 +1179,8 @@
         "5436"
       ],
       "all_dns": [
-        "etherpad.app"
+        "etherpad.app",
+        "etherpad-db.app"
       ],
       "compose": {
         "containers": [
@@ -1416,7 +1480,7 @@
           "image": "postgres:16-alpine",
           "port": 5439,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "hedgedoc-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -1441,7 +1505,8 @@
         "5439"
       ],
       "all_dns": [
-        "hedgedoc.app"
+        "hedgedoc.app",
+        "hedgedoc-db.app"
       ],
       "compose": {
         "containers": [
@@ -1488,7 +1553,7 @@
           "container_name": "mail-mcp",
           "image": "ghcr.io/diegonmarcos/mail-mcp:latest",
           "port": 3103,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "mail-mcp.app",
           "public": true,
           "proxy": {
@@ -1548,7 +1613,7 @@
           "container_name": "mattermost",
           "image": "ngrie/mattermost-team-edition-arm:10.11",
           "port": 8065,
-          "port_env": null,
+          "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
           "dns": "mattermost.app",
           "public": true,
           "proxy": {
@@ -1571,7 +1636,8 @@
             "db"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "port_format": "colon"
         },
         "db": {
           "container_name": "mattermost-postgres",
@@ -1670,7 +1736,7 @@
           "container_name": "mattermost-mcp",
           "image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
           "port": 3102,
-          "port_env": null,
+          "port_env": "MCP_HTTP_PORT",
           "dns": "mattermost-mcp.app",
           "public": true,
           "proxy": {
@@ -2084,25 +2150,47 @@
       "category": "app",
       "vm": "oci-E2-f_0",
       "folder": "aa-sui_tools-smtp-proxy",
-      "description": "",
+      "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+      "domain": "smtp.diegonmarcos.com",
+      "port": 8080,
+      "dns": "smtp-proxy.app",
+      "upstream": "smtp-proxy.app:8080",
       "containers": {
         "app": {
           "container_name": "smtp-proxy",
-          "image": "",
-          "public": false
+          "port": 8080,
+          "dns": "smtp-proxy.app",
+          "public": true,
+          "proxy": {
+            "domain": "smtp.diegonmarcos.com",
+            "auth": "none"
+          }
         }
       },
       "container_names": [
         "smtp-proxy"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "8080"
+      ],
+      "all_dns": [
+        "smtp-proxy.app"
+      ],
       "compose": {
         "containers": [
           "smtp-proxy"
         ],
         "ports": [],
         "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "smtp.diegonmarcos.com",
+          "auth": "none"
+        }
+      },
+      "declared_ports": {
+        "app": 8080
       },
       "flake": "tools-smtp-proxy"
     },
@@ -2112,14 +2200,14 @@
       "folder": "aa-sui_tools-stalwart",
       "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
       "domain": "mail.diegonmarcos.com",
-      "port": 8443,
+      "port": 443,
       "dns": "stalwart.app",
-      "upstream": "stalwart.app:8443",
+      "upstream": "stalwart.app:443",
       "containers": {
         "app": {
           "container_name": "stalwart",
           "image": "stalwartlabs/mail-server:v0.11",
-          "port": 8443,
+          "port": 443,
           "port_env": null,
           "dns": "stalwart.app",
           "public": true,
@@ -2155,7 +2243,7 @@
         "stalwart"
       ],
       "all_ports": [
-        "8443"
+        "443"
       ],
       "all_dns": [
         "stalwart.app"
@@ -2175,7 +2263,7 @@
         }
       },
       "declared_ports": {
-        "app": 8443,
+        "app": 443,
         "smtp": 465,
         "imap": 993
       },
@@ -2419,13 +2507,7 @@
         "3001",
         "5433",
         "6381",
-        "9000",
-        "3000:3000",
-        "3001:3001",
-        "5433:5432",
-        "6380:6379",
-        "9000:9000",
-        "9001:9001"
+        "9000"
       ],
       "all_dns": [
         "crawlee.app",
@@ -2447,17 +2529,8 @@
           "crawlee_runner",
           "crawlee_scheduler"
         ],
-        "ports": [
-          "3000:3000",
-          "3001:3001",
-          "5433:5432",
-          "6380:6379",
-          "9000:9000",
-          "9001:9001"
-        ],
-        "networks": [
-          "crawlee_network"
-        ]
+        "ports": [],
+        "networks": []
       },
       "proxy": {
         "primary": {
@@ -2494,7 +2567,7 @@
           "image": "quay.io/jupyter/scipy-notebook:latest",
           "port": 8890,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-full-research.app",
           "public": false,
           "proxy": null,
           "healthcheck": "curl -sf http://localhost:8890/api || exit 1",
@@ -2583,8 +2656,8 @@
           "container_name": "quant_full_db",
           "image": "postgres:16-alpine",
           "port": 5437,
-          "port_env": null,
-          "dns": null,
+          "port_env": "PGPORT",
+          "dns": "quant-full-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",
@@ -2609,7 +2682,10 @@
         "8890",
         "5437"
       ],
-      "all_dns": [],
+      "all_dns": [
+        "quant-full-research.app",
+        "quant-full-db.app"
+      ],
       "compose": {
         "containers": [
           "quant_full_analytics",
@@ -2638,7 +2714,7 @@
           "image": "quay.io/jupyter/scipy-notebook:latest",
           "port": 8889,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-light-research.app",
           "public": false,
           "proxy": null,
           "healthcheck": "curl -sf http://localhost:8889/api || exit 1",
@@ -2656,7 +2732,7 @@
           "image": "python:3.12-slim",
           "port": 5001,
           "port_env": null,
-          "dns": null,
+          "dns": "quant-light-engine.app",
           "public": false,
           "proxy": null,
           "healthcheck": null,
@@ -2676,7 +2752,7 @@
           "image": "postgres:16-alpine",
           "port": 5434,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "quant-light-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",
@@ -2701,7 +2777,11 @@
         "5001",
         "5434"
       ],
-      "all_dns": [],
+      "all_dns": [
+        "quant-light-research.app",
+        "quant-light-engine.app",
+        "quant-light-db.app"
+      ],
       "compose": {
         "containers": [
           "quant_light_db",
@@ -2733,7 +2813,7 @@
           "container_name": "ollama",
           "image": "ollama/ollama:latest",
           "port": 11434,
-          "port_env": null,
+          "port_env": "OLLAMA_HOST",
           "dns": "ollama.app",
           "public": false,
           "proxy": null,
@@ -2753,7 +2833,8 @@
               ]
             }
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "host"
         }
       },
       "container_names": [
@@ -2816,7 +2897,7 @@
           "container_name": "ollama-hai",
           "image": "ollama/ollama:latest",
           "port": 11435,
-          "port_env": null,
+          "port_env": "OLLAMA_HOST",
           "dns": "ollama-hai.app",
           "public": false,
           "proxy": null,
@@ -2831,7 +2912,8 @@
               "memory": "6G"
             }
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "host"
         }
       },
       "container_names": [
@@ -2898,7 +2980,7 @@
       "all_dns": [],
       "compose": {
         "containers": [
-          "rig"
+          "rig-agentic-sonn-14bq8"
         ],
         "ports": [],
         "networks": []
@@ -3283,31 +3365,6 @@
         "path": "/health"
       }
     },
-    "orchestrator": {
-      "category": "sec",
-      "vm": "oci-A1-f_0",
-      "folder": "bb-sec_orchestrator",
-      "description": "Container orchestrator — resource budget management for on-demand services",
-      "containers": {
-        "app": {
-          "container_name": "orchestrator",
-          "image": "",
-          "public": false
-        }
-      },
-      "container_names": [
-        "orchestrator"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [
-          "orchestrator"
-        ],
-        "ports": [],
-        "networks": []
-      }
-    },
     "sauron-central": {
       "category": "sec",
       "vm": "oci-A1-f_0",
@@ -3554,7 +3611,9 @@
         "c3-services-api.app"
       ],
       "compose": {
-        "containers": [],
+        "containers": [
+          "c3-services-api"
+        ],
         "ports": [],
         "networks": []
       },
@@ -3779,9 +3838,9 @@
       "containers": {
         "app": {
           "container_name": "dagu",
-          "image": "dagu-ssh:local",
+          "image": "ghcr.io/diegonmarcos/dagu:latest",
           "port": 8070,
-          "port_env": null,
+          "port_env": "DAGU_PORT",
           "dns": "dagu.app",
           "public": true,
           "proxy": {
@@ -3876,7 +3935,8 @@
           "resources": {
             "mem_limit": "64m"
           },
-          "read_only": false
+          "read_only": false,
+          "port_format": "colon"
         }
       },
       "container_names": [
@@ -4205,7 +4265,7 @@
           "image": "postgres:16-bookworm",
           "port": 5441,
           "port_env": "PGPORT",
-          "dns": null,
+          "dns": "nocodb-db.app",
           "public": false,
           "proxy": null,
           "healthcheck": "cmd",
@@ -4230,7 +4290,8 @@
         "5441"
       ],
       "all_dns": [
-        "nocodb.app"
+        "nocodb.app",
+        "nocodb-db.app"
       ],
       "compose": {
         "containers": [
@@ -4477,7 +4538,7 @@
           "container_name": "umami",
           "image": "ghcr.io/umami-software/umami:latest",
           "port": 3006,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "umami.app",
           "public": true,
           "proxy": {
@@ -4508,7 +4569,7 @@
           "container_name": "umami-db",
           "image": "postgres:16-alpine",
           "port": 5442,
-          "port_env": null,
+          "port_env": "PGPORT",
           "dns": "umami-db.app",
           "public": false,
           "healthcheck": "pg_isready -U umami",
@@ -4606,7 +4667,7 @@
           "container_name": "windmill-server",
           "image": "ghcr.io/windmill-labs/windmill:main",
           "port": 8000,
-          "port_env": null,
+          "port_env": "PORT",
           "dns": "windmill-app.app",
           "public": true,
           "proxy": {
@@ -4627,11 +4688,11 @@
           ],
           "resources": {
             "limits": {
-              "memory": "256M",
-              "cpus": "0.5"
+              "memory": "512M",
+              "cpus": "1.0"
             },
             "reservations": {
-              "memory": "128M"
+              "memory": "256M"
             }
           },
           "read_only": false
@@ -4793,7 +4854,7 @@
           "container_name": "gitea",
           "image": "gitea/gitea:latest",
           "port": 3002,
-          "port_env": null,
+          "port_env": "GITEA__server__HTTP_PORT",
           "dns": "backup-gitea.app",
           "public": true,
           "proxy": {
@@ -5023,10 +5084,10 @@
         "networks": []
       },
       "declared_ports": {
-        "npm_rest": 8880,
-        "vaultwarden_rest": 8881,
-        "ntfy_rest": 8882,
-        "authelia_rest": 8883,
+        "npm_rest": 8890,
+        "vaultwarden_rest": 8891,
+        "ntfy_rest": 8892,
+        "authelia_rest": 8893,
         "npm_pg": 5433,
         "vaultwarden_pg": 5434,
         "ntfy_pg": 5435,
@@ -5093,30 +5154,35 @@
         {
           "name": "oci-mail",
           "wg_ip": "10.0.0.3",
+          "wg_public_key": null,
           "endpoint": "130.110.251.193:51820",
           "role": "spoke"
         },
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
+          "wg_public_key": null,
           "endpoint": "129.151.228.66:51820",
           "role": "spoke"
         },
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
+          "wg_public_key": null,
           "endpoint": "82.70.229.129:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-t4",
           "wg_ip": "10.0.0.8",
+          "wg_public_key": null,
           "endpoint": "34.173.227.250:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
+          "wg_public_key": null,
           "endpoint": "35.226.147.64:51820",
           "role": "hub"
         }
@@ -5124,13 +5190,18 @@
       "clients": {
         "surface": {
           "wg_ip": "10.0.0.5",
-          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": null
         },
         "termux": {
           "wg_ip": "10.0.0.9",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": null
+        },
+        "gha-runner": {
+          "wg_ip": "10.0.0.200",
+          "role": "client",
+          "wg_public_key": null
         }
       }
     },

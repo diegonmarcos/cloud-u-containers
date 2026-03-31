@@ -24,7 +24,7 @@
       "networks": [],
       "specs": {
         "cpu": 1,
-        "ram_gb": 0,
+        "ram_gb": 1,
         "disk_gb": 0,
         "shape": "VM.Standard.E2.1.Micro"
       }
@@ -54,7 +54,7 @@
       "networks": [],
       "specs": {
         "cpu": 1,
-        "ram_gb": 0,
+        "ram_gb": 1,
         "disk_gb": 0,
         "shape": "VM.Standard.E2.1.Micro"
       }
@@ -176,8 +176,8 @@
       ],
       "networks": [],
       "specs": {
-        "cpu": 0,
-        "ram_gb": 0,
+        "cpu": 4,
+        "ram_gb": 15,
         "disk_gb": 0,
         "shape": "n1-standard-4",
         "machine_type": "n1-standard-4"
@@ -216,8 +216,8 @@
         "auth-net"
       ],
       "specs": {
-        "cpu": 0,
-        "ram_gb": 0,
+        "cpu": 2,
+        "ram_gb": 2,
         "disk_gb": 0,
         "shape": "e2-small",
         "machine_type": "e2-small"
@@ -597,30 +597,35 @@
       {
         "name": "oci-mail",
         "wg_ip": "10.0.0.3",
+        "wg_public_key": null,
         "endpoint": "130.110.251.193:51820",
         "role": "spoke"
       },
       {
         "name": "oci-analytics",
         "wg_ip": "10.0.0.4",
+        "wg_public_key": null,
         "endpoint": "129.151.228.66:51820",
         "role": "spoke"
       },
       {
         "name": "oci-apps",
         "wg_ip": "10.0.0.6",
+        "wg_public_key": null,
         "endpoint": "82.70.229.129:51820",
         "role": "spoke"
       },
       {
         "name": "gcp-t4",
         "wg_ip": "10.0.0.8",
+        "wg_public_key": null,
         "endpoint": "34.173.227.250:51820",
         "role": "spoke"
       },
       {
         "name": "gcp-proxy",
         "wg_ip": "10.0.0.1",
+        "wg_public_key": null,
         "endpoint": "35.226.147.64:51820",
         "role": "hub"
       }
@@ -628,13 +633,18 @@
     "clients": {
       "surface": {
         "wg_ip": "10.0.0.5",
-        "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
-        "role": "client"
+        "role": "client",
+        "wg_public_key": null
       },
       "termux": {
         "wg_ip": "10.0.0.9",
-        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
-        "role": "client"
+        "role": "client",
+        "wg_public_key": null
+      },
+      "gha-runner": {
+        "wg_ip": "10.0.0.200",
+        "role": "client",
+        "wg_public_key": null
       }
     }
   },
@@ -5144,30 +5154,35 @@
         {
           "name": "oci-mail",
           "wg_ip": "10.0.0.3",
+          "wg_public_key": null,
           "endpoint": "130.110.251.193:51820",
           "role": "spoke"
         },
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
+          "wg_public_key": null,
           "endpoint": "129.151.228.66:51820",
           "role": "spoke"
         },
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
+          "wg_public_key": null,
           "endpoint": "82.70.229.129:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-t4",
           "wg_ip": "10.0.0.8",
+          "wg_public_key": null,
           "endpoint": "34.173.227.250:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
+          "wg_public_key": null,
           "endpoint": "35.226.147.64:51820",
           "role": "hub"
         }
@@ -5175,13 +5190,18 @@
       "clients": {
         "surface": {
           "wg_ip": "10.0.0.5",
-          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": null
         },
         "termux": {
           "wg_ip": "10.0.0.9",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": null
+        },
+        "gha-runner": {
+          "wg_ip": "10.0.0.200",
+          "role": "client",
+          "wg_public_key": null
         }
       }
     },
