@@ -13,7 +13,7 @@
     # Configuration options (non-secret)
     config = {
       container_name = "ollama";
-      image = "ollama/ollama:latest";
+      image = "ghcr.io/diegonmarcos/ollama:latest";
       api_port = ports.valueOf "app";
       wg_ip = svc.ollama.ip;
       timezone = "America/Chicago";

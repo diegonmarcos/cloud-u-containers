@@ -26,7 +26,7 @@
 
       services:
         sqlite-npm:
-          image: germanorizzo/ws4sqlite:v0.16.6
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: sqlite-npm
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -35,7 +35,7 @@
           command: ["-port", "8890", "-db", "/data/database.sqlite?mode=ro"]
 
         sqlite-vaultwarden:
-          image: germanorizzo/ws4sqlite:v0.16.6
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: sqlite-vaultwarden
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -44,7 +44,7 @@
           command: ["-port", "8891", "-db", "/data/db.sqlite3?mode=ro"]
 
         sqlite-ntfy:
-          image: germanorizzo/ws4sqlite:v0.16.6
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: sqlite-ntfy
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -53,7 +53,7 @@
           command: ["-port", "8892", "-db", "/data/cache.db?mode=ro"]
 
         sqlite-authelia:
-          image: germanorizzo/ws4sqlite:v0.16.6
+          image: ghcr.io/diegonmarcos/postlite:latest
           container_name: sqlite-authelia
           restart: "no"  # container-init handles startup
           network_mode: host
