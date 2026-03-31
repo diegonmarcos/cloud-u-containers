@@ -453,6 +453,8 @@ step_build() {
     if [ -f "$DIST_DIR/docker-compose.yml" ] && command -v python3 >/dev/null 2>&1; then
         CONVERTER="$SERVICE_DIR/../_compose-to-run.py"
         if [ -f "$CONVERTER" ]; then
+            # Create empty .secrets if missing (compose config needs it, docker-run.sh reads it at runtime)
+            [ -f "$DIST_DIR/.secrets" ] || touch "$DIST_DIR/.secrets"
             (cd "$DIST_DIR" && docker compose config --format json 2>/dev/null | python3 "$CONVERTER" > docker-run.sh 2>/dev/null) && {
                 chmod +x "$DIST_DIR/docker-run.sh"
                 log "Generated docker-run.sh (E2 Micro safe — no compose Go binary needed)"
