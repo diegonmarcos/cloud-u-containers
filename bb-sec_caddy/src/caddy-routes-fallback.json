@@ -1,81 +1,81 @@
 {
   "_meta": {
     "description": "Caddy route definitions — consumed by flake.nix to generate Caddyfile",
-    "format_version": 1
+    "format_version": 2
   },
 
   "l4_routes": [
-    { "port": 993, "upstream": "stalwart.app:993", "comment": "IMAPS — TLS passthrough to Stalwart" },
-    { "port": 465, "upstream": "stalwart.app:465", "comment": "SMTPS — TLS passthrough to Stalwart" },
-    { "port": 587, "upstream": "stalwart.app:587", "comment": "SMTP Submission — TCP passthrough to Stalwart" }
+    { "port": 993, "upstream": "10.0.0.3:993", "comment": "IMAPS — TLS passthrough to Stalwart" },
+    { "port": 465, "upstream": "10.0.0.3:465", "comment": "SMTPS — TLS passthrough to Stalwart" },
+    { "port": 587, "upstream": "10.0.0.3:587", "comment": "SMTP Submission — TCP passthrough to Stalwart" }
   ],
 
   "routes": [
     {
       "domain": "auth.diegonmarcos.com",
-      "upstream": "authelia.app:9091",
+      "upstream": "10.0.0.1:9091",
       "auth": "none",
       "comment": "Authelia itself — no forward_auth loop"
     },
     {
       "domain": "cal.diegonmarcos.com",
-      "upstream": "radicale.app:5232",
+      "upstream": "10.0.0.6:5232",
       "comment": "Radicale CalDAV/CardDAV"
     },
     {
       "domain": "chat.diegonmarcos.com",
-      "upstream": "mattermost.app:8065",
+      "upstream": "10.0.0.6:8065",
       "comment": "Mattermost team chat",
       "bypass_paths": ["/api/v4/*"]
     },
     {
       "domain": "photos.diegonmarcos.com",
-      "upstream": "photoprism.app:3013",
+      "upstream": "10.0.0.6:3013",
       "landing_page": "myphotos",
       "comment": "PhotoPrism"
     },
     {
       "domain": "mail.diegonmarcos.com",
-      "upstream": "stalwart.app:443",
+      "upstream": "10.0.0.3:443",
       "tls_skip_verify": true,
       "landing_page": "mymail",
       "comment": "Stalwart web admin (HTTPS upstream, skip verify — internal WG)"
     },
     {
       "domain": "webmail.diegonmarcos.com",
-      "upstream": "snappymail.app:8888",
+      "upstream": "10.0.0.3:8888",
       "landing_page": "mymail",
       "comment": "SnappyMail webmail"
     },
     {
       "domain": "smtp.diegonmarcos.com",
-      "upstream": "smtp-proxy.app:8080",
+      "upstream": "10.0.0.3:8080",
       "auth": "none",
       "comment": "HTTP-to-SMTP bridge for CF Email Routing"
     },
     {
       "domain": "workflows.diegonmarcos.com",
-      "upstream": "dagu.app:8070",
+      "upstream": "10.0.0.3:8070",
       "comment": "Dagu workflow scheduler"
     },
     {
       "domain": "ide.diegonmarcos.com",
-      "upstream": "code-server.app:8443",
+      "upstream": "10.0.0.6:8443",
       "comment": "Code Server IDE"
     },
     {
       "domain": "db.diegonmarcos.com",
-      "upstream": "nocodb.app:8085",
+      "upstream": "10.0.0.6:8085",
       "comment": "NocoDB"
     },
     {
       "domain": "sheets.diegonmarcos.com",
-      "upstream": "grist.app:3011",
+      "upstream": "10.0.0.6:3011",
       "comment": "Grist Sheets"
     },
     {
       "domain": "vault.diegonmarcos.com",
-      "upstream": "vaultwarden.app:8880",
+      "upstream": "10.0.0.1:8880",
       "auth": "none",
       "comment": "Vaultwarden password manager — own auth, Caddy → private backend"
     }
@@ -96,19 +96,19 @@
         },
         {
           "base_path": "/c3-api",
-          "upstream": "c3-infra-api.app:8081",
+          "upstream": "10.0.0.6:8081",
           "public_paths": ["/c3-api/docs/json"],
           "comment": "C3 — Cloud Control Center API"
         },
         {
           "base_path": "/services",
-          "upstream": "c3-services-api.app:8082",
+          "upstream": "10.0.0.6:8082",
           "public_paths": ["/services/docs/json"],
           "comment": "C3 Services — Unified Service API Gateway"
         },
         {
           "base_path": "/crawlee",
-          "upstream": "crawlee.app:3000",
+          "upstream": "10.0.0.6:3000",
           "public_paths": ["/crawlee/openapi.json"],
           "comment": "Crawlee scraping API"
         }
@@ -119,15 +119,15 @@
       "comment": "App hub — path-based routing",
       "fallback": "respond \"Not Found\" 404",
       "paths": [
-        { "base_path": "/windmill", "upstream": "windmill-app.app:8000" },
-        { "base_path": "/etherpad", "upstream": "etherpad.app:3012" },
-        { "base_path": "/filebrowser", "upstream": "filebrowser.app:3015" },
-        { "base_path": "/hedgedoc", "upstream": "hedgedoc.app:3018" },
-        { "base_path": "/revealmd", "upstream": "revealmd.app:3014" },
-        { "base_path": "/dozzle", "upstream": "dozzle.app:9999" },
-        { "base_path": "/grafana", "upstream": "grafana.app:3016" },
-        { "base_path": "/gitea", "upstream": "gitea.app:3017" },
-        { "base_path": "/crawlee", "upstream": "crawlee.app:3001" },
+        { "base_path": "/windmill", "upstream": "10.0.0.6:8000" },
+        { "base_path": "/etherpad", "upstream": "10.0.0.6:3012" },
+        { "base_path": "/filebrowser", "upstream": "10.0.0.6:3015" },
+        { "base_path": "/hedgedoc", "upstream": "10.0.0.6:3018" },
+        { "base_path": "/revealmd", "upstream": "10.0.0.6:3014" },
+        { "base_path": "/dozzle", "upstream": "10.0.0.4:9999" },
+        { "base_path": "/grafana", "upstream": "10.0.0.6:3016" },
+        { "base_path": "/gitea", "upstream": "10.0.0.6:3017" },
+        { "base_path": "/crawlee", "upstream": "10.0.0.6:3001" },
         { "base_path": "/dash-gcp-proxy", "upstream": "10.0.0.1:7681", "comment": "tmux dashboard (gcp-proxy)" },
         { "base_path": "/dash-oci-mail", "upstream": "10.0.0.3:7681", "comment": "tmux dashboard (oci-mail)" },
         { "base_path": "/dash-oci-analytics", "upstream": "10.0.0.4:7681", "comment": "tmux dashboard (oci-analytics)" },
@@ -142,7 +142,7 @@
       "paths": [
         {
           "base_path": "/spec",
-          "upstream": "c3-spec.app:3080",
+          "upstream": "10.0.0.6:3080",
           "redirect_bare": true,
           "comment": "C3 spec viewer"
         }
@@ -169,11 +169,11 @@
       "comment": "MCP — Streamable HTTP endpoints for Claude Code MCP clients",
       "fallback_message": "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp",
       "endpoints": [
-        { "base_path": "/c3-infra-mcp", "upstream": "c3-infra-mcp.app:3100" },
-        { "base_path": "/c3-services-mcp", "upstream": "c3-services-mcp.app:3101" },
-        { "base_path": "/mattermost-mcp", "upstream": "mattermost-mcp.app:3102" },
-        { "base_path": "/mail-mcp", "upstream": "mail-mcp.app:3103" },
-        { "base_path": "/g-workspace", "upstream": "g-workspace-mcp.app:3104" }
+        { "base_path": "/c3-infra-mcp", "upstream": "10.0.0.6:3100" },
+        { "base_path": "/c3-services-mcp", "upstream": "10.0.0.6:3101" },
+        { "base_path": "/mattermost-mcp", "upstream": "10.0.0.6:3102" },
+        { "base_path": "/mail-mcp", "upstream": "10.0.0.6:3103" },
+        { "base_path": "/g-workspace", "upstream": "10.0.0.6:3104" }
       ]
     }
   ],
@@ -181,14 +181,14 @@
   "special": {
     "ntfy": {
       "domain": "rss.diegonmarcos.com",
-      "upstream": "ntfy.app:8090",
+      "upstream": "10.0.0.1:8090",
       "comment": "ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia"
     },
     "analytics": {
       "domain": "analytics.diegonmarcos.com",
       "comment": "Matomo (public tracking + protected admin) + Umami (path-based)",
-      "matomo_upstream": "matomo.app:8080",
-      "umami_upstream": "umami.app:3000",
+      "matomo_upstream": "10.0.0.4:8080",
+      "umami_upstream": "10.0.0.4:3000",
       "public_tracking_paths": [
         "/matomo.js", "/matomo.php", "/piwik.js", "/piwik.php",
         "/collect.php", "/api.php", "/track.php", "/js/*"
@@ -199,5 +199,9 @@
       "domain": "proxy.diegonmarcos.com",
       "comment": "Infrastructure dashboard (static HTML)"
     }
-  }
+  },
+
+  "internal_routes": [],
+
+  "auth_upstreams": {}
 }

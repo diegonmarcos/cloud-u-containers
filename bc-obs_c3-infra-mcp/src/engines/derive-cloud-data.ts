@@ -62,7 +62,13 @@ function deriveDnsServices(c: any): DerivedFile {
   const vms = c.vms as Record<string, any>;
   const services = c.services as Record<string, any>;
 
-  // Build service entries: key = dns name without .app suffix, value = {ip, desc}
+  // All *.app zones resolve to Caddy (reverse proxy handles port routing)
+  // Find Caddy's WG IP from the caddy service entry
+  const caddySvc = services["caddy"];
+  const caddyVm = caddySvc ? vms[caddySvc.vm] : null;
+  const caddyIp = caddyVm?.wg_ip ?? "10.0.0.1";
+
+  // Build service entries: key = dns name without .app suffix, ip = Caddy's WG IP
   const svcEntries: Record<string, { ip: string; desc: string }> = {};
 
   for (const [svcName, svc] of Object.entries(services)) {
@@ -73,16 +79,15 @@ function deriveDnsServices(c: any): DerivedFile {
     for (const container of Object.values(svc.containers ?? {})) {
       const ct = container as any;
       if (ct.dns) {
-        // Strip .app suffix for the key
         const key = ct.dns.endsWith(".app") ? ct.dns.slice(0, -4) : ct.dns;
-        svcEntries[key] = { ip: vm.wg_ip, desc: svc.description ?? "" };
+        svcEntries[key] = { ip: caddyIp, desc: svc.description ?? "" };
       }
     }
 
     // Also add top-level dns if present and no container dns matched
     if (svc.dns && !Object.values(svc.containers ?? {}).some((ct: any) => ct.dns)) {
       const key = svc.dns.endsWith(".app") ? svc.dns.slice(0, -4) : svc.dns;
-      svcEntries[key] = { ip: vm.wg_ip, desc: svc.description ?? "" };
+      svcEntries[key] = { ip: caddyIp, desc: svc.description ?? "" };
     }
   }
 
@@ -101,6 +106,7 @@ function deriveDnsServices(c: any): DerivedFile {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/dns-services",
       suffix: "app",
+      caddy_ip: caddyIp,
       services: svcEntries,
       vms: vmMap,
     },
@@ -111,6 +117,24 @@ function deriveCaddyRoutes(c: any): DerivedFile {
   const services = c.services as Record<string, any>;
   const vms = c.vms as Record<string, any>;
   const flatRoutes: any[] = c.configs?.caddy?.routes ?? [];
+
+  // Build dns→wg_ip map to resolve any lingering name.app:port → WG_IP:port
+  const dnsToIp: Record<string, string> = {};
+  for (const [, svc] of Object.entries(services)) {
+    const vm = vms[svc.vm];
+    if (!vm?.wg_ip || !svc.dns) continue;
+    dnsToIp[svc.dns] = vm.wg_ip;
+    for (const ct of Object.values(svc.containers ?? {})) {
+      const c = ct as any;
+      if (c.dns) dnsToIp[c.dns] = vm.wg_ip;
+    }
+  }
+  const resolveUpstream = (upstream: string | undefined): string | undefined => {
+    if (!upstream) return upstream;
+    const m = upstream.match(/^([a-z0-9-]+\.app):(\d+)$/);
+    if (m && dnsToIp[m[1]]) return `${dnsToIp[m[1]]}:${m[2]}`;
+    return upstream;
+  };
 
   // ── L4 routes: derive from gcp-proxy public_ports for mail passthrough ──
   const l4Routes: any[] = [];
@@ -188,7 +212,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     if (pathGroups[parentDomain].paths.some((p: any) => p.base_path === basePath)) continue;
     const pathEntry: any = {
       base_path: basePath,
-      ...(fr.upstream && fr.upstream !== "static" ? { upstream: fr.upstream } : {}),
+      ...(fr.upstream && fr.upstream !== "static" ? { upstream: resolveUpstream(fr.upstream) } : {}),
       ...(fr.public_paths?.length > 0 ? { public_paths: fr.public_paths } : {}),
       ...(fr.upstream === "diegonmarcos.github.io" ? { type: "github_pages", github_path: basePath.replace(/^\//, ""), redirect_bare: true } : {}),
       comment: fr.comment ?? "",
@@ -298,12 +322,29 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     return true;
   });
 
+  // ── Internal routes: all services with upstream + dns → Caddy HTTP:80 listener ──
+  const internalRoutes: any[] = [];
+  for (const [, svc] of Object.entries(services)) {
+    if (!svc.upstream || !svc.dns) continue;
+    internalRoutes.push({
+      service: svc.dns,
+      upstream: svc.upstream,
+    });
+  }
+
+  // ── Auth upstreams: Caddy forward_auth targets (from cloud-data, not hardcoded) ──
+  const authUpstreams: Record<string, string> = {};
+  const authSvc = services["authelia"];
+  if (authSvc?.upstream) authUpstreams.authelia = authSvc.upstream;
+  const introspectSvc = services["introspect-proxy"];
+  if (introspectSvc?.upstream) authUpstreams.introspect_proxy = introspectSvc.upstream;
+
   return {
     name: "cloud-data-caddy-routes.json",
     data: {
       _meta: {
         description: "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
-        format_version: 1,
+        format_version: 2,
       },
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
@@ -313,6 +354,8 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       github_pages_proxies: githubPagesProxies,
       mcp_routes: mcpRoutes,
       special,
+      internal_routes: internalRoutes,
+      auth_upstreams: authUpstreams,
     },
   };
 }

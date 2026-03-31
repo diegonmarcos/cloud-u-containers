@@ -14,9 +14,9 @@
       port = 8091;
       ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
-      c3_api_url = "http://c3-api.app:8081";
-      c3_mcp_url = "http://c3-mcp.app:3100";
-      mattermost_url = "http://mattermost.app:8065";
+      c3_api_url = "http://c3-api.app";
+      c3_mcp_url = "http://c3-mcp.app";
+      mattermost_url = "http://mattermost.app";
     };
 
     title = "Rig Agentic AI";

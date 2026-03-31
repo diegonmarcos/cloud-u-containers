@@ -231,8 +231,9 @@ function main() {
     // Normalize to containers (new schema or synthesized from flat)
     const containers = normalizeToContainers(entry);
 
-    // Compute upstream from dns:port
-    const computedUpstream = entry.dns && entry.port ? `${entry.dns}:${entry.port}` : undefined;
+    // Compute upstream from WG_IP:port (raw IP, not DNS — Caddy proxies all *.app)
+    const vmWgIp = vmId ? vms[vmId]?.wg_ip : undefined;
+    const computedUpstream = vmWgIp && entry.port ? `${vmWgIp}:${entry.port}` : undefined;
 
     // Derive container names from containers spec
     const containerNames = Object.values(containers).map(c => c.container_name);

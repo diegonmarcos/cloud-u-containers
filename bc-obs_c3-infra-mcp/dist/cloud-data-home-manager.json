@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-29T16:34:31.290Z",
+  "_generated": "2026-03-31T16:14:02.276Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -28,7 +28,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
       },
       "public_ports": [
         {
@@ -108,7 +109,8 @@
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_1",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
       },
       "public_ports": [],
       "idle_shutdown": null,
@@ -143,7 +145,8 @@
         "arch": "aarch64",
         "shape": "VM.Standard.A1.Flex",
         "cloud_name": "oci-A1-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
       },
       "public_ports": [
         {
@@ -243,14 +246,15 @@
       "specs": {
         "cpu": 4,
         "ram_gb": 15,
-        "disk_gb": 0,
+        "disk_gb": 50,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
         "vram_gb": 16,
         "machine_type": "n1-standard-4",
         "cloud_name": "ollama-spot-gpu",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
       },
       "public_ports": [],
       "idle_shutdown": {
@@ -283,12 +287,13 @@
       "specs": {
         "cpu": 2,
         "ram_gb": 2,
-        "disk_gb": 0,
+        "disk_gb": 32,
         "arch": "x86_64",
         "shape": "e2-small",
         "machine_type": "e2-small",
         "cloud_name": "arch-1",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
       },
       "public_ports": [
         {

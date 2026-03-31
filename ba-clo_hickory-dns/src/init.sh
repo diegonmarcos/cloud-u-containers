@@ -72,17 +72,18 @@ fi
 
 echo "[init] Generating zones..."
 
-# Parse with jq, generate zone files
+# All *.app zones → Caddy — Caddy handles port routing internally
+CADDY_IP=$(echo "$REGISTRY" | jq -r '.caddy_ip // .services["caddy"].ip // "10.0.0.1"')
 PAIRS="/tmp/hickory-dns-pairs.txt"
-echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | "\(.key) \(.value.ip)"' > "$PAIRS" 2>/dev/null || true
-while read -r name ip; do
-  [ -z "$name" ] || [ -z "$ip" ] && continue
+echo "$REGISTRY" | jq -r '.services | to_entries[] | select(.value.ip) | .key' > "$PAIRS" 2>/dev/null || true
+while read -r name; do
+  [ -z "$name" ] && continue
   cat > "$ZONES_DIR/${name}.${SUFFIX}.zone" << ZONE
 \$ORIGIN ${name}.${SUFFIX}.
 \$TTL 60
 @  IN SOA  hickory-dns.${SUFFIX}. admin.${SUFFIX}. 1 3600 900 604800 60
 @  IN NS   hickory-dns.${SUFFIX}.
-@  IN A    ${ip}
+@  IN A    ${CADDY_IP}
 ZONE
 done < "$PAIRS"
 rm -f "$PAIRS"

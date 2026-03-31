@@ -32,7 +32,7 @@
       let
         cloudDataPath = ./cloud-data-caddy-routes.json;
         fallbackPath = ./caddy-routes-fallback.json;
-        emptyRoutes = { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; };
+        emptyRoutes = { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; internal_routes = []; auth_upstreams = {}; };
         cloudData = if builtins.pathExists cloudDataPath
           then builtins.fromJSON (builtins.readFile cloudDataPath)
           else null;
@@ -143,17 +143,18 @@
     secNoLimit = ''
         import security'';
 
-    # ── Auth snippets ────────────────────────────────────────────
-    # Authelia forward_auth — resolves via Hickory per-service zone (authelia.app)
+    # ── Auth snippets (upstreams from cloud-data, not hardcoded) ──
+    autheliaUpstream = caddyRoutes.auth_upstreams.authelia or "10.0.0.1:9091";
+    introspectUpstream = caddyRoutes.auth_upstreams.introspect_proxy or "10.0.0.1:4182";
+
     authelia = ''
-        forward_auth authelia.app:9091 {
+        forward_auth ${autheliaUpstream} {
           uri /api/authz/forward-auth
           copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
         }'';
 
-    # Bearer token auth via introspect-proxy — resolves via Hickory (introspect-proxy.app)
     bearer = ''
-        forward_auth introspect-proxy.app:4182 {
+        forward_auth ${introspectUpstream} {
           method GET
           uri /auth
           copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -549,11 +550,21 @@
       }
     '';
 
+    # ── Internal HTTP routes: portless *.app access via WireGuard ──
+    # No auth, no TLS, no security headers — WireGuard is the trust boundary
+    # Binds to 10.0.0.1:80 only (not public IP)
+    mkInternalRoute = route: ''
+      http://${route.service} {
+        bind 10.0.0.1
+        reverse_proxy ${route.upstream}
+      }
+    '';
+
     # ── Assemble the full Caddyfile ─────────────────────────────
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
-        # DNS: all .app upstreams resolved by Hickory DNS (10.0.0.1:53)
+        # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
         debug
         admin localhost:${toString config.admin_port}
         order respond before handle
@@ -606,6 +617,13 @@
     ${mkNtfyBlock}
 
     ${mkProxyDashboardBlock}
+
+      # ════════════════════════════════════════════════════════════
+      # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
+      # No auth, no TLS — WireGuard mesh is the trust boundary
+      # ════════════════════════════════════════════════════════════
+
+    ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
 
       # ════════════════════════════════════════════════════════════
       # CATCH-ALL — Custom error page for unknown/unconfigured domains

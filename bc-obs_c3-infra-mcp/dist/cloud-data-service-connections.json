@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-29T16:34:31.288Z",
+  "_generated": "2026-03-31T16:14:02.274Z",
   "services": {
     "code-server": {
       "ip": "10.0.0.6",
@@ -76,7 +76,9 @@
     },
     "photos-webhook": {
       "ip": "10.0.0.6",
-      "ports": {},
+      "ports": {
+        "app": 5002
+      },
       "vm": "oci-apps"
     },
     "radicale": {
@@ -148,7 +150,7 @@
       "ports": {
         "app": 8889,
         "engine": 5001,
-        "db": 5434,
+        "db": 5443,
         "research": 8889
       },
       "vm": "oci-apps"
@@ -174,7 +176,9 @@
     },
     "rig-agentic-sonn-14bq8": {
       "ip": "10.0.0.6",
-      "ports": {},
+      "ports": {
+        "app": 8091
+      },
       "vm": "oci-apps"
     },
     "hickory-dns": {
@@ -215,7 +219,9 @@
     },
     "alerts-api": {
       "ip": "10.0.0.4",
-      "ports": {},
+      "ports": {
+        "app": 5050
+      },
       "vm": "oci-analytics"
     },
     "c3-infra-api": {
@@ -292,7 +298,7 @@
     "matomo": {
       "ip": "10.0.0.4",
       "ports": {
-        "app": 8080,
+        "app": 8084,
         "db": 3306
       },
       "vm": "oci-analytics"
@@ -359,7 +365,7 @@
     "gitea": {
       "ip": "10.0.0.6",
       "ports": {
-        "app": 3017
+        "app": 3002
       },
       "vm": "oci-apps"
     },
