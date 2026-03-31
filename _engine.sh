@@ -450,12 +450,11 @@ step_build() {
     fi
 
     # Generate docker-run.sh from compose file (E2 Micros use this instead of compose)
-    if [ -f "$DIST_DIR/docker-compose.yml" ] && command -v python3 >/dev/null 2>&1; then
-        CONVERTER="$SERVICE_DIR/../_compose-to-run.py"
+    if [ -f "$DIST_DIR/docker-compose.yml" ]; then
+        CONVERTER="$SERVICE_DIR/../_compose-to-run.sh"
         if [ -f "$CONVERTER" ]; then
-            # Create empty .secrets if missing (compose config needs it, docker-run.sh reads it at runtime)
             [ -f "$DIST_DIR/.secrets" ] || touch "$DIST_DIR/.secrets"
-            (cd "$DIST_DIR" && docker compose config --format json 2>/dev/null | python3 "$CONVERTER" > docker-run.sh 2>/dev/null) && {
+            (cd "$DIST_DIR" && sh "$CONVERTER" docker-compose.yml > docker-run.sh 2>/dev/null) && {
                 chmod +x "$DIST_DIR/docker-run.sh"
                 log "Generated docker-run.sh (E2 Micro safe — no compose Go binary needed)"
             } || log_warn "docker-run.sh generation failed (non-fatal)"
