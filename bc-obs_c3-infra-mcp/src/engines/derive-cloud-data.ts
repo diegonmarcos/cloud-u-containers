@@ -331,6 +331,16 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       upstream: svc.upstream,
     });
   }
+  // VM dashboards: from HM build.json dashboard field → <alias>.app internal routes
+  const hmVms = c._home_manager?.vms ?? {};
+  for (const [, vm] of Object.entries(hmVms) as [string, any][]) {
+    if (vm.dashboard?.dns && vm.wg_ip) {
+      internalRoutes.push({
+        service: vm.dashboard.dns,
+        upstream: `${vm.wg_ip}:${vm.dashboard.port ?? 7681}`,
+      });
+    }
+  }
 
   // ── Auth upstreams: Caddy forward_auth targets (from cloud-data, not hardcoded) ──
   const authUpstreams: Record<string, string> = {};
