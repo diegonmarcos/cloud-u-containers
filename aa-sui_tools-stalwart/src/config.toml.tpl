@@ -130,6 +130,7 @@ report = true
 address = "@@OCI_RELAY_HOST@@"
 port = @@OCI_RELAY_PORT@@
 protocol = "smtp"
+tls.implicit = false
 tls.start-tls = true
 
 [remote."oci-relay".auth]
@@ -140,14 +141,17 @@ password = "${OCI_RELAYPASSWORD}"
 address = "@@AWS_RELAY_HOST@@"
 port = @@AWS_RELAY_PORT@@
 protocol = "smtp"
+tls.implicit = false
 tls.start-tls = true
 
 [remote."aws-relay".auth]
 username = "${AWS_RELAYUSER}"
 password = "${AWS_RELAYPASSWORD}"
 
+# ALL outbound goes through OCI relay (primary) with AWS fallback
+# No local delivery — Stalwart always relays, even for local domains
 [queue.outbound]
-next-hop = [{if = "is_local_domain('static', rcpt_domain)", then = "false"}, {else = "'oci-relay'"}]
+next-hop = [{if = "retry_num > 0", then = "'aws-relay'"}, {else = "'oci-relay'"}]
 
 # ── Spam filter (built-in) ──────────────────────────────────────
 [spam.header]

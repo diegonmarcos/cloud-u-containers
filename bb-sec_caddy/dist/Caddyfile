@@ -9,7 +9,7 @@
 :993 {
   route {
     proxy {
-      upstream 130.110.251.193:993
+      upstream 10.0.0.3:993
     }
   }
 }
@@ -17,7 +17,7 @@
 :465 {
   route {
     proxy {
-      upstream 130.110.251.193:465
+      upstream 10.0.0.3:465
     }
   }
 }
@@ -25,7 +25,7 @@
 :587 {
   route {
     proxy {
-      upstream 130.110.251.193:587
+      upstream 10.0.0.3:587
     }
   }
 }
@@ -396,39 +396,6 @@ import request_limits
 }
   }
 
-  # Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)
-  api.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy crawlee.app:3000
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy crawlee.app:3000
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
   # SSO and 2FA authentication portal
   auth.diegonmarcos.com {
 import security
@@ -528,39 +495,6 @@ forward_auth authelia.app:9091 {
 }
   }
 
-  # Matomo hybrid analytics (oci-analytics)
-  analytics.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy matomo.app:8080
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy matomo.app:8080
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
   # NocoDB database spreadsheet (nocodb.diegonmarcos.com)
   db.diegonmarcos.com {
 import security
@@ -582,72 +516,6 @@ forward_auth authelia.app:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy nocodb.app:8085
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Push notification server
-  rss.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy ntfy.app:8090
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy ntfy.app:8090
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Umami Analytics - lightweight privacy-focused web analytics
-  analytics.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy umami.app:3006
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy umami.app:3006
   }
 
     handle_errors {
@@ -714,39 +582,6 @@ forward_auth authelia.app:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy backup-gitea.app:3002
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Self-hosted Git service
-  git.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy gitea.app:3017
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy gitea.app:3017
   }
 
     handle_errors {
@@ -1081,6 +916,26 @@ reverse_proxy https://diegonmarcos.github.io {
 
 }
 
+handle_path /crawlee/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth introspect-proxy.app:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy crawlee.app:3000
+  }
+  handle {
+forward_auth authelia.app:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy crawlee.app:3000
+  }
+
+}
+
 handle_path /c3-api/* {
     @bearer header Authorization Bearer*
   handle @bearer {
@@ -1130,26 +985,6 @@ handle_path /dash/* {
   reverse_proxy https://diegonmarcos.github.io {
     header_up Host diegonmarcos.github.io
   }
-}
-
-handle_path /crawlee/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy crawlee.app:3000
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy crawlee.app:3000
-  }
-
 }
 handle {
   rewrite * /api{uri}

@@ -153,6 +153,11 @@ step_docker_remote() {
 
     ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
     log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
+
+    # Push to GHCR so step_compose pull gets the new image (not the stale registry copy)
+    log "Pushing $FULL_IMAGE:latest to registry from $DEPLOY_HOST"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "ionice -c3 nice -n19 docker push $FULL_IMAGE:latest 2>&1" | while IFS= read -r line; do printf "[docker-remote] %s\n" "$line"; done
+
     echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
     DOCKER_IMAGE_CHANGED=true
 }
@@ -646,8 +651,10 @@ step_compose() {
 
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
 
-    # Image strategy: binary > registry pull (always fresh)
-    if [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
+    # Image strategy: skip pull if just built (DOCKER_IMAGE_CHANGED), binary build, or registry pull
+    if [ -n "$DOCKER_IMAGE_CHANGED" ]; then
+        log "Image just built+pushed — skipping redundant pull"
+    elif [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
         log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
         log "Image built locally"
@@ -656,21 +663,37 @@ step_compose() {
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose config --images 2>/dev/null | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done" || true
     fi
 
-    # Pre-compose hook (e.g. mailu init.sh)
+    # Pre-compose hook — runs on HOST before compose up
+    # Skip if the hook is already used as container entrypoint (container paths won't exist on host)
     if [ -n "$COMPOSE_PRE_HOOK" ]; then
-        log "Running pre-compose hook: $COMPOSE_PRE_HOOK"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_PRE_HOOK && ./$COMPOSE_PRE_HOOK"
+        if ssh $SSH_OPTS "$DEPLOY_HOST" "grep -q 'entrypoint.*$COMPOSE_PRE_HOOK' $DEPLOY_PATH/docker-compose.yml 2>/dev/null"; then
+            log "Skipping pre_hook '$COMPOSE_PRE_HOOK' — already used as container entrypoint"
+        else
+            log "Running pre-compose hook: $COMPOSE_PRE_HOOK"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_PRE_HOOK && ./$COMPOSE_PRE_HOOK"
+        fi
     fi
 
     ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
 
+    # Auto-detect E2 Micros (1GB RAM) — always use sequential restart to avoid freeze
+    case "$DEPLOY_HOST" in
+        oci-mail|oci-analytics) SEQUENTIAL_RESTART="true" ;;
+    esac
+
     if [ "$SEQUENTIAL_RESTART" = "true" ]; then
         # Sequential restart: down -> settle -> start (avoids CPU spike on low-resource VMs)
         # Uses 'down' not 'stop' to release port bindings (stop keeps them bound)
+        log "Sequential restart (low-resource VM: $DEPLOY_HOST)"
         log "Stopping containers on $DEPLOY_HOST"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && ionice -c3 nice -n19 docker compose down --remove-orphans" || true
         log "Waiting for CPU to settle..."
         sleep 10
+        # Pull after down (no competing containers, less memory pressure)
+        if [ -z "$DOCKER_IMAGE_CHANGED" ]; then
+            log "Pulling images on $DEPLOY_HOST (sequential, post-down)"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
+        fi
         log "Starting containers on $DEPLOY_HOST:$DEPLOY_PATH"
         BUILD_FLAG=""
         case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
@@ -680,8 +703,10 @@ step_compose() {
         # Uses 'docker pull' instead of 'docker compose pull' — compose pull spawns heavy Go binary
         # that triggers cpu-watchdog on E2 micros (94% CPU → KILLED)
         EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
-        log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
+        if [ -z "$DOCKER_IMAGE_CHANGED" ]; then
+            log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
+            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
+        fi
         log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
         # Only --build on ARM VMs. x86 VMs (gcp-proxy, oci-mail, oci-analytics) use pre-built images.
         BUILD_FLAG=""
@@ -1071,19 +1096,30 @@ step_compose_build() {
     log "── dockerfile_inline content ──"
     grep -A20 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" || true
     log "── docker compose build --push (verbose) ──"
+    COMPOSE_BUILD_OK=""
     if [ -n "$PLATFORM" ]; then
         # Multi-arch: use buildx bake with platform override
-        BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
+        if BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
             --set "*.platform=$PLATFORM" \
             -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
             printf "[compose-build] %s\n" "$line"
-        done
+        done; then
+            COMPOSE_BUILD_OK=true
+        fi
     else
-        BUILDKIT_PROGRESS=plain docker compose build --no-cache --push --progress=plain 2>&1 | while IFS= read -r line; do
+        if BUILDKIT_PROGRESS=plain docker compose build --no-cache --push --progress=plain 2>&1 | while IFS= read -r line; do
             printf "[compose-build] %s\n" "$line"
-        done
+        done; then
+            COMPOSE_BUILD_OK=true
+        fi
     fi
 
+    if [ -z "$COMPOSE_BUILD_OK" ]; then
+        log_error "compose-build FAILED — aborting ship to prevent deploying stale image"
+        return 1
+    fi
+
+    DOCKER_IMAGE_CHANGED=true
     log "GHCR images built and pushed"
 
     # Verify all pushed packages are public (CRITICAL)

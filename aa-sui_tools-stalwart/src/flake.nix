@@ -74,8 +74,22 @@
     };
 
     # ── Stalwart config.toml template ──────────────────────────────────
-    # Secrets use ''${PLACEHOLDER} — substituted by init.sh from .secrets
-    mkConfigToml = pkgs: pkgs.writeText "config.toml.tpl" ''
+    # Source: src/config.toml.tpl (standalone file — no nix escaping needed)
+    # @@PLACEHOLDERS@@ substituted by nix, ${SECRETS} by init.sh at runtime
+    mkConfigToml = pkgs: pkgs.runCommand "config.toml.tpl" {} ''
+      substitute ${./config.toml.tpl} $out \
+        --replace-fail "@@DOMAIN@@" "${config.domain}" \
+        --replace-fail "@@MAIL_DOMAIN@@" "${config.mail_domain}" \
+        --replace-fail "@@PORT@@" "${toString config.port}" \
+        --replace-fail "@@OCI_RELAY_HOST@@" "${config.oci_relay_host}" \
+        --replace-fail "@@OCI_RELAY_PORT@@" "${config.oci_relay_port}" \
+        --replace-fail "@@AWS_RELAY_HOST@@" "${config.aws_relay_host}" \
+        --replace-fail "@@AWS_RELAY_PORT@@" "${config.aws_relay_port}" \
+        --replace-fail "@@MESSAGE_SIZE_LIMIT@@" "${config.message_size_limit}" \
+    '';
+
+    # Kept for reference — the old inline config was here (lines 78-243)
+    _mkConfigTomlOld = pkgs: pkgs.writeText "config.toml.tpl.old" ''
       # ╔══════════════════════════════════════════════════════════════════╗
       # ║ Stalwart Mail Server — declarative config (nix-generated)      ║
       # ║ Secrets substituted at deploy time by init.sh from .secrets    ║
@@ -225,7 +239,7 @@
       password = "''\${AWS_RELAYPASSWORD}"
 
       [queue.outbound]
-      next-hop = "'oci-relay'"
+      next-hop = [{if = "is_local_domain('static', rcpt_domain)", then = "false"}, {else = "'oci-relay'"}]
 
       # ── Spam filter (built-in) ──────────────────────────────────────
       [spam.header]

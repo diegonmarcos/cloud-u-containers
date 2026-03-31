@@ -15,7 +15,6 @@
     "oci-E2-f_0": {
       "ip": "130.110.251.193",
       "wg_ip": "10.0.0.3",
-      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -24,17 +23,59 @@
       "ssh_alias": "oci-mail",
       "rescue_port": 2200,
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
-      "specs": { "cpu": 1, "ram_gb": 1, "disk_gb": 47, "arch": "x86_64", "shape": "VM.Standard.E2.1.Micro" },
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 47,
+        "arch": "x86_64",
+        "shape": "VM.Standard.E2.1.Micro"
+      },
       "public_ports": [
-        { "port": 25, "proto": "tcp", "desc": "SMTP (Stalwart)" },
-        { "port": 465, "proto": "tcp", "desc": "SMTPS (Stalwart via Caddy L4)" },
-        { "port": 587, "proto": "tcp", "desc": "SMTP submission (Stalwart via Caddy L4)" },
-        { "port": 993, "proto": "tcp", "desc": "IMAPS (Stalwart via Caddy L4)" },
-        { "port": 4190, "proto": "tcp", "desc": "ManageSieve (Stalwart)" },
-        { "port": 8080, "proto": "tcp", "desc": "SMTP proxy (CF Worker ingress)" },
-        { "port": 8443, "proto": "tcp", "desc": "Stalwart web admin HTTPS" },
-        { "port": 22000, "proto": "tcp", "desc": "Syncthing transfer" },
-        { "port": 21027, "proto": "udp", "desc": "Syncthing discovery" }
+        {
+          "port": 25,
+          "proto": "tcp",
+          "desc": "SMTP (Stalwart)"
+        },
+        {
+          "port": 465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 587,
+          "proto": "tcp",
+          "desc": "SMTP submission (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart via Caddy L4)"
+        },
+        {
+          "port": 4190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
+        },
+        {
+          "port": 8080,
+          "proto": "tcp",
+          "desc": "SMTP proxy (CF Worker ingress)"
+        },
+        {
+          "port": 8443,
+          "proto": "tcp",
+          "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 22000,
+          "proto": "tcp",
+          "desc": "Syncthing transfer"
+        },
+        {
+          "port": 21027,
+          "proto": "udp",
+          "desc": "Syncthing discovery"
+        }
       ],
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
@@ -44,7 +85,6 @@
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
       "wg_ip": "10.0.0.4",
-      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -53,7 +93,13 @@
       "ssh_alias": "oci-analytics",
       "rescue_port": 2200,
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
-      "specs": { "cpu": 1, "ram_gb": 1, "disk_gb": 47, "arch": "x86_64", "shape": "VM.Standard.E2.1.Micro" },
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 47,
+        "arch": "x86_64",
+        "shape": "VM.Standard.E2.1.Micro"
+      },
       "public_ports": [],
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
@@ -63,7 +109,6 @@
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "+kT46gxAd55+niqMWoaAMfPuU9ZCg42cOymzehnErFQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -72,16 +117,54 @@
       "ssh_alias": "oci-apps",
       "rescue_port": 2200,
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) \u2014 Consolidated",
-      "specs": { "cpu": 4, "ram_gb": 24, "disk_gb": 100, "arch": "aarch64", "shape": "VM.Standard.A1.Flex" },
+      "specs": {
+        "cpu": 4,
+        "ram_gb": 24,
+        "disk_gb": 100,
+        "arch": "aarch64",
+        "shape": "VM.Standard.A1.Flex"
+      },
       "public_ports": [
-        { "port": 3010, "proto": "tcp", "desc": "AFFiNE" },
-        { "port": 8081, "proto": "tcp", "desc": "C3 API" },
-        { "port": 3000, "proto": "tcp", "desc": "Crawlee/Gitea/Backup" },
-        { "port": 3001, "proto": "tcp", "desc": "Crawlee API" },
-        { "port": 2222, "proto": "tcp", "desc": "Gitea SSH" },
-        { "port": 2223, "proto": "tcp", "desc": "Backup BUP SSH" },
-        { "port": 2224, "proto": "tcp", "desc": "Backup Borg SSH" },
-        { "port": 8099, "proto": "tcp", "desc": "cloud-spec httpd" }
+        {
+          "port": 3010,
+          "proto": "tcp",
+          "desc": "AFFiNE"
+        },
+        {
+          "port": 8081,
+          "proto": "tcp",
+          "desc": "C3 API"
+        },
+        {
+          "port": 3000,
+          "proto": "tcp",
+          "desc": "Crawlee/Gitea/Backup"
+        },
+        {
+          "port": 3001,
+          "proto": "tcp",
+          "desc": "Crawlee API"
+        },
+        {
+          "port": 2222,
+          "proto": "tcp",
+          "desc": "Gitea SSH"
+        },
+        {
+          "port": 2223,
+          "proto": "tcp",
+          "desc": "Backup BUP SSH"
+        },
+        {
+          "port": 2224,
+          "proto": "tcp",
+          "desc": "Backup Borg SSH"
+        },
+        {
+          "port": 8099,
+          "proto": "tcp",
+          "desc": "cloud-spec httpd"
+        }
       ],
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
@@ -91,7 +174,6 @@
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
       "wg_ip": "10.0.0.8",
-      "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "diego",
@@ -102,11 +184,25 @@
       "gcloud_instance": "ollama-spot-gpu",
       "gcloud_zone": "us-central1-a",
       "description": "GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM",
-      "specs": { "cpu": 4, "ram_gb": 15, "disk_gb": 100, "arch": "x86_64", "shape": "n1-standard-4", "gpu": "NVIDIA T4", "vram_gb": 16 },
+      "specs": {
+        "cpu": 4,
+        "ram_gb": 15,
+        "disk_gb": 100,
+        "arch": "x86_64",
+        "shape": "n1-standard-4",
+        "gpu": "NVIDIA T4",
+        "vram_gb": 16
+      },
       "public_ports": [],
       "provider": "gcp",
       "provisioning": "spot",
-      "idle_shutdown": { "timeout_hours": 1, "cpu_threshold": 60, "docker_cpu_threshold": 30, "network_threshold": 51200, "min_uptime_seconds": 600 },
+      "idle_shutdown": {
+        "timeout_hours": 1,
+        "cpu_threshold": 60,
+        "docker_cpu_threshold": 30,
+        "network_threshold": 51200,
+        "min_uptime_seconds": 600
+      },
       "gha": {
         "ssh_secret": "GCP_T4_SSH_KEY",
         "host_secret": "GCP_T4_HOST",
@@ -116,7 +212,6 @@
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
       "wg_ip": "10.0.0.1",
-      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_port": 51820,
       "wg_role": "hub",
       "user": "diego",
@@ -127,14 +222,44 @@
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
-      "specs": { "cpu": 1, "ram_gb": 1, "disk_gb": 30, "arch": "x86_64", "shape": "e2-micro" },
+      "specs": {
+        "cpu": 1,
+        "ram_gb": 1,
+        "disk_gb": 30,
+        "arch": "x86_64",
+        "shape": "e2-micro"
+      },
       "public_ports": [
-        { "port": 80, "proto": "tcp", "desc": "HTTP (Caddy)" },
-        { "port": 443, "proto": "tcp", "desc": "HTTPS (Caddy)" },
-        { "port": 443, "proto": "udp", "desc": "QUIC (Caddy)" },
-        { "port": 993, "proto": "tcp", "desc": "IMAPS (Caddy L4 → oci-mail)" },
-        { "port": 465, "proto": "tcp", "desc": "SMTPS (Caddy L4 → oci-mail)" },
-        { "port": 587, "proto": "tcp", "desc": "SMTP Submission (Caddy L4 → oci-mail)" }
+        {
+          "port": 80,
+          "proto": "tcp",
+          "desc": "HTTP (Caddy)"
+        },
+        {
+          "port": 443,
+          "proto": "tcp",
+          "desc": "HTTPS (Caddy)"
+        },
+        {
+          "port": 443,
+          "proto": "udp",
+          "desc": "QUIC (Caddy)"
+        },
+        {
+          "port": 993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 \u2192 oci-mail)"
+        },
+        {
+          "port": 465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 \u2192 oci-mail)"
+        },
+        {
+          "port": 587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 \u2192 oci-mail)"
+        }
       ],
       "gha": {
         "ssh_secret": "GCP_PROXY_SSH_KEY",
@@ -145,7 +270,6 @@
     "vast-RTX-p_0": {
       "ip": "TBD",
       "wg_ip": null,
-      "wg_public_key": null,
       "wg_port": null,
       "wg_role": null,
       "user": "root",
@@ -154,7 +278,14 @@
       "ssh_alias": "vast-ollama",
       "rescue_port": null,
       "description": "Vast.ai On-Demand - RTX A4000 (16GB VRAM) - Ollama LLM fallback",
-      "specs": { "cpu": null, "ram_gb": null, "disk_gb": null, "arch": "x86_64", "gpu": "RTX A4000", "vram_gb": 16 },
+      "specs": {
+        "cpu": null,
+        "ram_gb": null,
+        "disk_gb": null,
+        "arch": "x86_64",
+        "gpu": "RTX A4000",
+        "vram_gb": 16
+      },
       "public_ports": [],
       "provider": "vast.ai",
       "provisioning": "on-demand",
@@ -177,12 +308,14 @@
       "clients": {
         "surface": {
           "wg_ip": "10.0.0.5",
-          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
           "role": "client"
         },
         "termux": {
           "wg_ip": "10.0.0.9",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
+          "role": "client"
+        },
+        "gha-runner": {
+          "wg_ip": "10.0.0.200",
           "role": "client"
         }
       }
@@ -247,25 +380,83 @@
   },
   "deps": {
     "system": {
-      "node": { "nix": "nodejs_20", "apt": "nodejs", "desc": "Node.js runtime (tsx, MCP servers)" },
-      "git": { "nix": "git", "apt": "git", "desc": "Version control" },
-      "ssh": { "nix": "openssh", "apt": "openssh-client", "desc": "SSH for VM deploy" },
-      "jq": { "nix": "jq", "apt": "jq", "desc": "JSON processing" },
-      "sops": { "nix": "sops", "apt": null, "desc": "Secrets decryption (age backend)" },
-      "rsync": { "nix": "rsync", "apt": "rsync", "desc": "File sync to VMs" },
-      "age": { "nix": "age", "apt": null, "desc": "Age encryption (sops backend)" },
-      "curl": { "nix": "curl", "apt": "curl", "desc": "HTTP client (health checks)" }
+      "node": {
+        "nix": "nodejs_20",
+        "apt": "nodejs",
+        "desc": "Node.js runtime (tsx, MCP servers)"
+      },
+      "git": {
+        "nix": "git",
+        "apt": "git",
+        "desc": "Version control"
+      },
+      "ssh": {
+        "nix": "openssh",
+        "apt": "openssh-client",
+        "desc": "SSH for VM deploy"
+      },
+      "jq": {
+        "nix": "jq",
+        "apt": "jq",
+        "desc": "JSON processing"
+      },
+      "sops": {
+        "nix": "sops",
+        "apt": null,
+        "desc": "Secrets decryption (age backend)"
+      },
+      "rsync": {
+        "nix": "rsync",
+        "apt": "rsync",
+        "desc": "File sync to VMs"
+      },
+      "age": {
+        "nix": "age",
+        "apt": null,
+        "desc": "Age encryption (sops backend)"
+      },
+      "curl": {
+        "nix": "curl",
+        "apt": "curl",
+        "desc": "HTTP client (health checks)"
+      }
     },
     "build": {
-      "mdbook": { "nix": "mdbook", "desc": "Documentation generator (nix build only)" },
-      "file": { "nix": "file", "desc": "MIME type detection (nix build only)" },
-      "typescript": { "nix": "nodePackages.typescript", "desc": "TypeScript compiler (nix build only)" }
+      "mdbook": {
+        "nix": "mdbook",
+        "desc": "Documentation generator (nix build only)"
+      },
+      "file": {
+        "nix": "file",
+        "desc": "MIME type detection (nix build only)"
+      },
+      "typescript": {
+        "nix": "nodePackages.typescript",
+        "desc": "TypeScript compiler (nix build only)"
+      }
     },
     "optional": {
-      "rclone": { "nix": "rclone", "apt": "rclone", "desc": "Cloud storage sync" },
-      "yq": { "nix": "yq-go", "apt": null, "desc": "YAML processing" },
-      "wrangler": { "nix": null, "apt": null, "npm": "wrangler", "desc": "Cloudflare Workers CLI" },
-      "wireguard": { "nix": "wireguard-tools", "apt": "wireguard-tools", "desc": "WireGuard mesh status" }
+      "rclone": {
+        "nix": "rclone",
+        "apt": "rclone",
+        "desc": "Cloud storage sync"
+      },
+      "yq": {
+        "nix": "yq-go",
+        "apt": null,
+        "desc": "YAML processing"
+      },
+      "wrangler": {
+        "nix": null,
+        "apt": null,
+        "npm": "wrangler",
+        "desc": "Cloudflare Workers CLI"
+      },
+      "wireguard": {
+        "nix": "wireguard-tools",
+        "apt": "wireguard-tools",
+        "desc": "WireGuard mesh status"
+      }
     },
     "node": {
       "required": [
