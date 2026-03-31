@@ -67,7 +67,7 @@
         "extra_paths": [
           {
             "base_path": "/crawlee",
-            "upstream": "10.0.0.6:3001",
+            "upstream": "crawlee.app:3001",
             "comment": "Crawlee Cloud dashboard (separate from API)"
           }
         ]
