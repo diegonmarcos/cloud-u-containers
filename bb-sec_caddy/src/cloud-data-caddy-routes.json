@@ -1,0 +1,493 @@
+{
+  "_meta": {
+    "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
+    "format_version": 2
+  },
+  "_generated": "2026-03-31T22:41:13.733Z",
+  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
+  "l4_routes": [
+    {
+      "port": 993,
+      "upstream": "10.0.0.3:993",
+      "comment": "IMAPS -- TLS passthrough to stalwart"
+    },
+    {
+      "port": 465,
+      "upstream": "10.0.0.3:465",
+      "comment": "SMTPS -- TLS passthrough to stalwart"
+    },
+    {
+      "port": 587,
+      "upstream": "10.0.0.3:587",
+      "comment": "SMTP Submission -- TLS passthrough to stalwart"
+    }
+  ],
+  "routes": [
+    {
+      "domain": "ide.diegonmarcos.com",
+      "upstream": "10.0.0.6:8443",
+      "comment": "VS Code IDE (ide.diegonmarcos.com)"
+    },
+    {
+      "domain": "sheets.diegonmarcos.com",
+      "upstream": "10.0.0.6:3011",
+      "comment": "Grist spreadsheet/database (sheets.diegonmarcos.com)"
+    },
+    {
+      "domain": "chat.diegonmarcos.com",
+      "upstream": "10.0.0.6:8065",
+      "comment": "Mattermost team chat with ntfy bridge and C3 command bot"
+    },
+    {
+      "domain": "photos.diegonmarcos.com",
+      "upstream": "10.0.0.6:3013",
+      "landing_page": "myphotos",
+      "comment": "PhotoPrism AI-powered photo management (oci-flex-1)"
+    },
+    {
+      "domain": "cal.diegonmarcos.com",
+      "upstream": "10.0.0.6:5232",
+      "comment": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)"
+    },
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "upstream": "10.0.0.3:8888",
+      "landing_page": "mymail",
+      "comment": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
+    },
+    {
+      "domain": "smtp.diegonmarcos.com",
+      "upstream": "10.0.0.3:8080",
+      "auth": "none",
+      "comment": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)"
+    },
+    {
+      "domain": "mail.diegonmarcos.com",
+      "upstream": "10.0.0.3:443",
+      "tls_skip_verify": true,
+      "comment": "Stalwart Mail Server (mail.diegonmarcos.com)"
+    },
+    {
+      "domain": "vault.diegonmarcos.com",
+      "upstream": "10.0.0.1:8880",
+      "auth": "none",
+      "comment": "Bitwarden password manager"
+    },
+    {
+      "domain": "auth.diegonmarcos.com",
+      "upstream": "10.0.0.1:9091",
+      "comment": "SSO and 2FA authentication portal"
+    },
+    {
+      "domain": "workflows.diegonmarcos.com",
+      "upstream": "10.0.0.3:8070",
+      "comment": "Dagu - Lightweight DAG-based workflow scheduler"
+    },
+    {
+      "domain": "grafana.diegonmarcos.com",
+      "upstream": "10.0.0.6:3200",
+      "comment": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)"
+    },
+    {
+      "domain": "db.diegonmarcos.com",
+      "upstream": "10.0.0.6:8085",
+      "comment": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)"
+    },
+    {
+      "domain": "windmill.diegonmarcos.com",
+      "upstream": "10.0.0.6:8000",
+      "comment": "Windmill workflow orchestration (windmill.diegonmarcos.com)"
+    },
+    {
+      "domain": "git.diegonmarcos.com",
+      "upstream": "10.0.0.6:3002",
+      "comment": "Self-hosted Gitea for git backups and mirroring"
+    }
+  ],
+  "path_routes": [
+    {
+      "parent_domain": "app.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/etherpad",
+          "upstream": "10.0.0.6:3012",
+          "comment": "Etherpad collaborative editor"
+        },
+        {
+          "base_path": "/filebrowser",
+          "upstream": "10.0.0.6:3015",
+          "comment": "FileBrowser web file manager (NEW - not deployed yet)"
+        },
+        {
+          "base_path": "/hedgedoc",
+          "upstream": "10.0.0.6:3018",
+          "comment": "Collaborative markdown editor"
+        },
+        {
+          "base_path": "/revealmd",
+          "upstream": "10.0.0.6:3014",
+          "comment": "Reveal.js markdown presentations (NEW - not deployed yet)"
+        },
+        {
+          "base_path": "/dozzle",
+          "upstream": "10.0.0.4:9999",
+          "comment": "Dozzle - Real-time Docker log viewer"
+        },
+        {
+          "base_path": "/windmill",
+          "upstream": "10.0.0.6:8000",
+          "comment": ""
+        },
+        {
+          "base_path": "/grafana",
+          "upstream": "10.0.0.6:3016",
+          "comment": ""
+        },
+        {
+          "base_path": "/gitea",
+          "upstream": "10.0.0.6:3017",
+          "comment": ""
+        },
+        {
+          "base_path": "/crawlee",
+          "upstream": "10.0.0.6:3001",
+          "comment": ""
+        }
+      ],
+      "comment": "App hub -- path-based routing",
+      "fallback": "respond \"Not Found\" 404"
+    },
+    {
+      "parent_domain": "api.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/crawlee",
+          "upstream": "10.0.0.6:3000",
+          "comment": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
+        },
+        {
+          "base_path": "/c3-api",
+          "upstream": "10.0.0.6:8081",
+          "comment": "C3 REST API — Cloud Control Center Fastify API"
+        },
+        {
+          "base_path": "/services",
+          "upstream": "10.0.0.6:8082",
+          "comment": "C3 Services REST API — service API gateway Fastify API"
+        },
+        {
+          "base_path": "/dash",
+          "upstream": "diegonmarcos.github.io",
+          "type": "github_pages",
+          "github_path": "dash",
+          "redirect_bare": true,
+          "comment": ""
+        }
+      ],
+      "comment": "API hub -- path-based routing to backend APIs",
+      "landing_page": "api"
+    },
+    {
+      "parent_domain": "cloud.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/spec",
+          "upstream": "10.0.0.6:3080",
+          "comment": "Unified Cloud Documentation Portal"
+        }
+      ],
+      "comment": "Cloud dashboard + spec viewer",
+      "landing_page": "cloud"
+    }
+  ],
+  "github_pages_proxies": [
+    {
+      "domain": "diegonmarcos.com, www.diegonmarcos.com",
+      "github_path": "landpage",
+      "wkd": true,
+      "comment": "Landing page + WKD (Web Key Directory for PGP)"
+    },
+    {
+      "domain": "linktree.diegonmarcos.com",
+      "github_path": "linktree"
+    },
+    {
+      "domain": "nexus.diegonmarcos.com",
+      "github_path": "nexus"
+    },
+    {
+      "domain": "suite.diegonmarcos.com",
+      "github_path": "suite"
+    },
+    {
+      "domain": "maps.diegonmarcos.com",
+      "github_path": "mymaps"
+    }
+  ],
+  "mcp_routes": [
+    {
+      "parent_domain": "mcp.diegonmarcos.com",
+      "endpoints": [
+        {
+          "base_path": "/g-workspace",
+          "upstream": "10.0.0.6:3104"
+        },
+        {
+          "base_path": "/mail-mcp",
+          "upstream": "10.0.0.6:3103"
+        },
+        {
+          "base_path": "/mattermost-mcp",
+          "upstream": "10.0.0.6:3102"
+        },
+        {
+          "base_path": "/c3-infra-mcp",
+          "upstream": "10.0.0.6:3100"
+        },
+        {
+          "base_path": "/c3-services-mcp",
+          "upstream": "10.0.0.6:3101"
+        },
+        {
+          "base_path": "/cloud-cgc-mcp",
+          "upstream": "10.0.0.6:3105"
+        }
+      ],
+      "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients",
+      "fallback_message": "MCP Hub -- use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp"
+    }
+  ],
+  "special": {
+    "ntfy": {
+      "domain": "rss.diegonmarcos.com",
+      "upstream": "10.0.0.1:8090",
+      "comment": "ntfy notifications -- 3-tier auth: JWT bearer, tk_ bearer, cookie"
+    },
+    "analytics": {
+      "domain": "analytics.diegonmarcos.com",
+      "comment": "Matomo (public tracking + protected admin) + Umami (path-based)",
+      "matomo_upstream": "10.0.0.4:8084",
+      "umami_upstream": "10.0.0.4:3006",
+      "public_tracking_paths": [
+        "/matomo.js",
+        "/matomo.php",
+        "/piwik.js",
+        "/piwik.php",
+        "/collect.php",
+        "/api.php",
+        "/track.php",
+        "/js/*"
+      ],
+      "umami_public_paths": [
+        "/umami/script.js",
+        "/umami/api/send"
+      ]
+    },
+    "proxy_dashboard": {
+      "domain": "proxy.diegonmarcos.com",
+      "comment": "Infrastructure dashboard (static HTML)"
+    }
+  },
+  "internal_routes": [
+    {
+      "service": "code-server.app",
+      "upstream": "10.0.0.6:8443"
+    },
+    {
+      "service": "etherpad.app",
+      "upstream": "10.0.0.6:3012"
+    },
+    {
+      "service": "filebrowser.app",
+      "upstream": "10.0.0.6:3015"
+    },
+    {
+      "service": "g-workspace-mcp.app",
+      "upstream": "10.0.0.6:3104"
+    },
+    {
+      "service": "grist.app",
+      "upstream": "10.0.0.6:3011"
+    },
+    {
+      "service": "hedgedoc.app",
+      "upstream": "10.0.0.6:3018"
+    },
+    {
+      "service": "mail-mcp.app",
+      "upstream": "10.0.0.6:3103"
+    },
+    {
+      "service": "mattermost.app",
+      "upstream": "10.0.0.6:8065"
+    },
+    {
+      "service": "mattermost-mcp.app",
+      "upstream": "10.0.0.6:3102"
+    },
+    {
+      "service": "photoprism.app",
+      "upstream": "10.0.0.6:3013"
+    },
+    {
+      "service": "photos-webhook.app",
+      "upstream": "10.0.0.6:5002"
+    },
+    {
+      "service": "radicale.app",
+      "upstream": "10.0.0.6:5232"
+    },
+    {
+      "service": "revealmd.app",
+      "upstream": "10.0.0.6:3014"
+    },
+    {
+      "service": "snappymail.app",
+      "upstream": "10.0.0.3:8888"
+    },
+    {
+      "service": "smtp-proxy.app",
+      "upstream": "10.0.0.3:8080"
+    },
+    {
+      "service": "stalwart.app",
+      "upstream": "10.0.0.3:443"
+    },
+    {
+      "service": "vaultwarden.app",
+      "upstream": "10.0.0.1:8880"
+    },
+    {
+      "service": "crawlee.app",
+      "upstream": "10.0.0.6:3000"
+    },
+    {
+      "service": "ollama.app",
+      "upstream": "10.0.0.8:11434"
+    },
+    {
+      "service": "ollama-hai.app",
+      "upstream": "10.0.0.6:11435"
+    },
+    {
+      "service": "rig-agentic-sonn-14bq8.app",
+      "upstream": "10.0.0.6:8091"
+    },
+    {
+      "service": "hickory-dns.app",
+      "upstream": "10.0.0.1:53"
+    },
+    {
+      "service": "authelia.app",
+      "upstream": "10.0.0.1:9091"
+    },
+    {
+      "service": "caddy.app",
+      "upstream": "10.0.0.1:443"
+    },
+    {
+      "service": "introspect-proxy.app",
+      "upstream": "10.0.0.1:4182"
+    },
+    {
+      "service": "alerts-api.app",
+      "upstream": "10.0.0.4:5050"
+    },
+    {
+      "service": "c3-infra-api.app",
+      "upstream": "10.0.0.6:8081"
+    },
+    {
+      "service": "c3-infra-mcp.app",
+      "upstream": "10.0.0.6:3100"
+    },
+    {
+      "service": "c3-services-api.app",
+      "upstream": "10.0.0.6:8082"
+    },
+    {
+      "service": "c3-services-mcp.app",
+      "upstream": "10.0.0.6:3101"
+    },
+    {
+      "service": "cloud-cgc-mcp.app",
+      "upstream": "10.0.0.6:3105"
+    },
+    {
+      "service": "c3-spec.app",
+      "upstream": "10.0.0.6:3080"
+    },
+    {
+      "service": "dagu.app",
+      "upstream": "10.0.0.3:8070"
+    },
+    {
+      "service": "dozzle.app",
+      "upstream": "10.0.0.4:9999"
+    },
+    {
+      "service": "fluent-bit.app",
+      "upstream": "10.0.0.4:2020"
+    },
+    {
+      "service": "grafana.app",
+      "upstream": "10.0.0.6:3200"
+    },
+    {
+      "service": "matomo.app",
+      "upstream": "10.0.0.4:8084"
+    },
+    {
+      "service": "nocodb.app",
+      "upstream": "10.0.0.6:8085"
+    },
+    {
+      "service": "ntfy.app",
+      "upstream": "10.0.0.1:8090"
+    },
+    {
+      "service": "umami.app",
+      "upstream": "10.0.0.4:3006"
+    },
+    {
+      "service": "windmill-app.app",
+      "upstream": "10.0.0.6:8000"
+    },
+    {
+      "service": "backup-gitea.app",
+      "upstream": "10.0.0.6:3002"
+    },
+    {
+      "service": "gitea.app",
+      "upstream": "10.0.0.6:3002"
+    },
+    {
+      "service": "redis.app",
+      "upstream": "10.0.0.1:6379"
+    },
+    {
+      "service": "oci-mail.app",
+      "upstream": "10.0.0.3:7681"
+    },
+    {
+      "service": "oci-analytics.app",
+      "upstream": "10.0.0.4:7681"
+    },
+    {
+      "service": "oci-apps.app",
+      "upstream": "10.0.0.6:7681"
+    },
+    {
+      "service": "gcp-t4.app",
+      "upstream": "10.0.0.8:7681"
+    },
+    {
+      "service": "gcp-proxy.app",
+      "upstream": "10.0.0.1:7681"
+    }
+  ],
+  "auth_upstreams": {
+    "authelia": "10.0.0.1:9091",
+    "introspect_proxy": "10.0.0.1:4182"
+  }
+}
