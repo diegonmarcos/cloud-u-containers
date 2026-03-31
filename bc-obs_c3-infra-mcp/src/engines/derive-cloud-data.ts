@@ -394,8 +394,22 @@ function deriveHomeManager(c: any): DerivedFile {
   const vms = hmData.vms ?? {};
   const sshConfig = hmData.ssh_config ?? [];
 
-  // Enrich wireguard peers with wg_public_key from VM entries
+  // Enrich wireguard peers with wg_public_key from HM build.json + VM entries
   const wg = { ...(c.native?.wireguard ?? {}) };
+
+  // Read wg_public_key from each VM's HM build.json (authoritative source for per-VM keys)
+  const hmKeysByAlias = new Map<string, string>();
+  const HM_DIR = join(CLOUD_ROOT, "b_infra", "home-manager");
+  for (const vmAlias of ["gcp-proxy", "oci-mail", "oci-analytics", "oci-apps", "gcp-t4"]) {
+    try {
+      const buildJsonPath = join(HM_DIR, vmAlias, "build.json");
+      if (existsSync(buildJsonPath)) {
+        const buildJson = JSON.parse(readFileSync(buildJsonPath, "utf-8"));
+        if (buildJson.wg_public_key) hmKeysByAlias.set(vmAlias, buildJson.wg_public_key);
+      }
+    } catch { /* skip unreadable */ }
+  }
+
   if (Array.isArray(wg.peers) && c.vms) {
     const vmsByAlias = new Map<string, any>();
     for (const vm of Object.values(c.vms) as any[]) {
@@ -404,16 +418,35 @@ function deriveHomeManager(c: any): DerivedFile {
     wg.peers = wg.peers.map((peer: any) => {
       const vm = vmsByAlias.get(peer.name);
       const enriched: any = { ...peer };
-      if (vm?.wg_public_key && !peer.wg_public_key) enriched.wg_public_key = vm.wg_public_key;
+      // Priority: HM build.json > config.json VM entry > existing peer value
+      const hmKey = hmKeysByAlias.get(peer.name);
+      if (hmKey) enriched.wg_public_key = hmKey;
+      else if (vm?.wg_public_key && !peer.wg_public_key) enriched.wg_public_key = vm.wg_public_key;
       if (vm?.wg_port && !peer.wg_port) enriched.wg_port = vm.wg_port;
       if (vm?.ip && !peer.public_ip) enriched.public_ip = vm.ip;
       // Extract IP from endpoint "IP:PORT" if public_ip still missing
       if (!enriched.public_ip && peer.endpoint?.includes(":")) {
         enriched.public_ip = peer.endpoint.split(":")[0];
       }
-      if (Object.keys(enriched).length > Object.keys(peer).length) return enriched;
-      return peer;
+      return enriched;
     });
+  }
+
+  // Validate: warn if any peer still has null wg_public_key
+  if (Array.isArray(wg.peers)) {
+    for (const peer of wg.peers) {
+      if (!peer.wg_public_key) {
+        console.warn(`WARNING: wireguard peer "${peer.name}" has no wg_public_key — WG mesh will be broken for this peer`);
+      }
+    }
+  }
+  // Validate clients too
+  if (wg.clients) {
+    for (const [name, client] of Object.entries(wg.clients) as [string, any][]) {
+      if (!client.wg_public_key) {
+        console.warn(`WARNING: wireguard client "${name}" has no wg_public_key — WG mesh will be broken for this client`);
+      }
+    }
   }
 
   return {
