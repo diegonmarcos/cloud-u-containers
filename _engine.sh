@@ -305,7 +305,19 @@ step_configs_push() {
         return 0
     fi
 
-    # Generate Dockerfile: busybox + all dist/ files → /configs/
+    # Generate Dockerfile: busybox + all dist/ files EXCEPT secrets → /configs/
+    # Backup existing .dockerignore, replace with secrets-excluding one
+    [ -f "$DIST_DIR/.dockerignore" ] && cp "$DIST_DIR/.dockerignore" "$DIST_DIR/.dockerignore.bak"
+    cat > "$DIST_DIR/.dockerignore" <<'DEOF'
+.secrets
+.secrets.d/
+*.key
+*.pem
+*.age
+Dockerfile.configs
+.dockerignore.bak
+.configs-hash
+DEOF
     cat > "$DIST_DIR/Dockerfile.configs" <<'DEOF'
 FROM busybox:latest
 COPY . /configs/
@@ -318,9 +330,15 @@ DEOF
         return 0
     }
     docker push "$CONFIGS_IMAGE" 2>&1 | tail -3
+    # Restore original .dockerignore
     rm -f "$DIST_DIR/Dockerfile.configs"
+    if [ -f "$DIST_DIR/.dockerignore.bak" ]; then
+        mv "$DIST_DIR/.dockerignore.bak" "$DIST_DIR/.dockerignore"
+    else
+        rm -f "$DIST_DIR/.dockerignore"
+    fi
     echo "$CONFIGS_HASH" > "$SERVICE_DIR/.configs-hash"
-    log "Pushed configs image: $CONFIGS_IMAGE ($CONFIGS_HASH)"
+    log "Pushed configs image: $CONFIGS_IMAGE ($CONFIGS_HASH) — secrets EXCLUDED"
 }
 
 # ── Step: Build nix flake (or copy-only for non-nix services) ────────
@@ -612,7 +630,16 @@ step_deploy() {
         ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH && \
             docker pull $CONFIGS_IMAGE && \
             docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE" && {
-            log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
+            log "Deployed configs to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
+            # Secrets excluded from image — deploy via scp (encrypted at rest in sops, decrypted in dist/)
+            if [ -f "$DIST_DIR/.secrets" ]; then
+                scp $SSH_OPTS "$DIST_DIR/.secrets" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets" 2>/dev/null && \
+                    log "Deployed .secrets via scp" || log_warn ".secrets scp failed"
+            fi
+            if [ -d "$DIST_DIR/.secrets.d" ]; then
+                scp $SSH_OPTS -r "$DIST_DIR/.secrets.d" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets.d" 2>/dev/null && \
+                    log "Deployed .secrets.d via scp" || log_warn ".secrets.d scp failed"
+            fi
             return 0
         } || log_warn "Configs image deploy failed — falling back to rsync"
     fi
