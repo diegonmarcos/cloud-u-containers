@@ -115,7 +115,7 @@ ${mkResourceLines rule.resources_two_factor}
         };
         redis = docker.mkService {
           name = "redis";
-          image = "redis:7-bookworm";
+          image = "ghcr.io/diegonmarcos/redis:latest";
           container_name = "authelia-redis";
           env_file = [".secrets"];
           command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";

@@ -61,7 +61,7 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.api
-          image: crawlee-cloud-api:local
+          image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
           container_name: crawlee_api
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -103,7 +103,7 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.runner
-          image: crawlee-cloud-runner:local
+          image: ghcr.io/diegonmarcos/crawlee-cloud-runner:latest
           container_name: crawlee_runner
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -137,7 +137,7 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.dashboard
-          image: crawlee-cloud-dashboard:local
+          image: ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest
           container_name: crawlee_dashboard
           restart: "no"  # container-init handles startup
           network_mode: host
@@ -153,7 +153,7 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.api
-          image: crawlee-cloud-api:local
+          image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
           container_name: crawlee_scheduler
           restart: "no"  # container-init handles startup
           network_mode: host

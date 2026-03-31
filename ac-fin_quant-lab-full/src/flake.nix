@@ -11,12 +11,12 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
-      research_image = "quay.io/jupyter/scipy-notebook:latest";
-      analytics_image = "python:3.12-slim";
-      ml_image = "python:3.12-slim";  # ARM-compatible (pytorch installed via pip)
-      risk_image = "python:3.12-slim";
-      engine_image = "python:3.12-slim";
-      db_image = "postgres:16-alpine";
+      research_image = "ghcr.io/diegonmarcos/quant-light-research:latest";
+      analytics_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
+      ml_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
+      risk_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
+      engine_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
+      db_image = "ghcr.io/diegonmarcos/quant-light-db:latest";
       jupyter_port = ports.valueOf "research";
       dash_port = 8050;
       engine_port = 5000;
