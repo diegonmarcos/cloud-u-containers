@@ -127,12 +127,7 @@
         { "base_path": "/dozzle", "upstream": "10.0.0.4:9999" },
         { "base_path": "/grafana", "upstream": "10.0.0.6:3016" },
         { "base_path": "/gitea", "upstream": "10.0.0.6:3017" },
-        { "base_path": "/crawlee", "upstream": "10.0.0.6:3001" },
-        { "base_path": "/dash-gcp-proxy", "upstream": "10.0.0.1:7681", "comment": "tmux dashboard (gcp-proxy)" },
-        { "base_path": "/dash-oci-mail", "upstream": "10.0.0.3:7681", "comment": "tmux dashboard (oci-mail)" },
-        { "base_path": "/dash-oci-analytics", "upstream": "10.0.0.4:7681", "comment": "tmux dashboard (oci-analytics)" },
-        { "base_path": "/dash-oci-apps", "upstream": "10.0.0.6:7681", "comment": "tmux dashboard (oci-apps)" },
-        { "base_path": "/dash-gcp-t4", "upstream": "10.0.0.8:7681", "comment": "tmux dashboard (gcp-t4)" }
+        { "base_path": "/crawlee", "upstream": "10.0.0.6:3001" }
       ]
     },
     {

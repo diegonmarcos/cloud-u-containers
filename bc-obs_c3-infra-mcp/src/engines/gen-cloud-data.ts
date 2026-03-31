@@ -462,6 +462,20 @@ function main() {
     };
   }
 
+  // Enrich homeManagerVms with dashboard config from HM build.json files
+  const HM_DIR = join(INFRA_DIR, "home-manager");
+  for (const alias of Object.keys(homeManagerVms)) {
+    try {
+      const bjPath = join(HM_DIR, alias, "build.json");
+      if (existsSync(bjPath)) {
+        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+        if (bj.dashboard) {
+          homeManagerVms[alias].dashboard = bj.dashboard;
+        }
+      }
+    } catch { /* skip if unreadable */ }
+  }
+
   const sshEntries = Object.entries(homeManagerVms).map(([alias, v]: [string, any]) => ({
     host: alias,
     hostname: v.wg_ip ?? v.ip,
