@@ -1,5 +1,5 @@
 {
-  description = "Hickory DNS - Internal DNS server for WireGuard mesh (per-service .app zones)";
+  description = "Hickory DNS - Internal DNS server for WireGuard mesh (wildcard *.app → Caddy)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
