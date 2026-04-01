@@ -595,10 +595,8 @@ step_secrets() {
         KEY_COUNT=$((KEY_COUNT + 1))
     done
 
-    # Escape $ as $$ for docker-compose env_file interpolation
-    if [ "$ESCAPE_DOLLARS" = "true" ]; then
-        sed -i 's/[$]/&&/g' "$DIST_DIR/.secrets"
-    fi
+    # No dollar escaping — docker run --env-file reads literals.
+    # (docker compose needed $$ escaping, but we no longer use compose on VMs)
 
     # Extract JWKS key as PEM file (multi-line value can't go in env_file)
     if [ -n "$JWKS_FILE" ] && [ -f "$SRC_DIR/$JWKS_FILE" ]; then
@@ -628,7 +626,8 @@ step_deploy() {
     log "Deploying via configs image: $CONFIGS_IMAGE"
     ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH && \
         docker pull $CONFIGS_IMAGE && \
-        docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE" && {
+        docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE && \
+        sudo chown -R \$(whoami):\$(whoami) $DEPLOY_PATH" && {
         log "Deployed configs to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
     } || {
         log_warn "Configs image deploy failed — falling back to rsync"
