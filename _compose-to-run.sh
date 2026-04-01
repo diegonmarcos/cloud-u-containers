@@ -237,10 +237,8 @@ echo "$JSON" | jq -r '
     # Image
     " \($svc.image)" +
 
-    # Entrypoint args (elements [1:] of entrypoint array, placed after image)
     (if $svc.entrypoint and ($svc.entrypoint | type) == "array" and ($svc.entrypoint | length) > 1 then
       " \($svc.entrypoint[1:] | map(if contains(" ") then "\"\(.)\"" else . end) | join(" "))"
-    # Command (only if entrypoint doesn't have args)
     elif $svc.command then
       (if ($svc.command | type) == "array" then
         " \($svc.command | map(if contains(" ") then "\"\(.)\"" else . end) | join(" "))"
