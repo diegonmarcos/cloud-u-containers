@@ -22,6 +22,9 @@
       "dags"
     ]
   },
+  "compose": {
+    "custom": true
+  },
   "proxy": {
     "primary": {
       "domain": "workflows.diegonmarcos.com",

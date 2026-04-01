@@ -14,6 +14,9 @@
       "data"
     ]
   },
+  "compose": {
+    "custom": true
+  },
   "secrets": {
     "escape_dollars": true
   },

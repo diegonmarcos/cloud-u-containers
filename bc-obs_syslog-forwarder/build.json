@@ -4,5 +4,8 @@
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/syslog-forwarder"
+  },
+  "compose": {
+    "custom": true
   }
 }

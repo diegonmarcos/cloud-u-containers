@@ -11,6 +11,9 @@
       "cache"
     ]
   },
+  "compose": {
+    "custom": true
+  },
   "proxy": {
     "primary": {
       "domain": "rss.diegonmarcos.com",

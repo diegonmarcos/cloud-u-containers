@@ -12,5 +12,8 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/alerts-api"
+  },
+  "compose": {
+    "custom": true
   }
 }

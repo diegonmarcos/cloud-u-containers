@@ -15,6 +15,9 @@
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },
+  "compose": {
+    "custom": true
+  },
   "secrets": {
     "escape_dollars": "true"
   },

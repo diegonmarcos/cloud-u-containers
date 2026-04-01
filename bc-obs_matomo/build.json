@@ -18,6 +18,9 @@
     "remote_path": "/opt/containers/matomo",
     "compose_flags": "--build"
   },
+  "compose": {
+    "custom": true
+  },
   "lifecycle": {},
   "proxy": {
     "primary": {

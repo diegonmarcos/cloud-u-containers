@@ -10,6 +10,9 @@
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/introspect-proxy"
   },
+  "compose": {
+    "custom": true
+  },
   "docker": {
     "image": "introspect-proxy",
     "dockerfile": "Dockerfile",
