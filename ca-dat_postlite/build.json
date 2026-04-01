@@ -21,5 +21,8 @@
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/postlite"
+  },
+  "compose": {
+    "custom": true
   }
 }

@@ -13,6 +13,7 @@
     ]
   },
   "compose": {
+    "custom": true,
     "pre_hook": "init.sh"
   },
   "proxy": {

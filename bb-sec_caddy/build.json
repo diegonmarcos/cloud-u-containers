@@ -11,6 +11,9 @@
       "logs/"
     ]
   },
+  "compose": {
+    "custom": true
+  },
   "build": {
     "include_cloud_data": "true"
   },

@@ -550,12 +550,14 @@
       }
     '';
 
-    # ── Internal HTTP routes: portless *.app access via WireGuard ──
-    # No auth, no TLS, no security headers — WireGuard is the trust boundary
-    # Binds to 10.0.0.1:80 only (not public IP)
+    # ── Internal HTTPS routes: portless *.app access via WireGuard ──
+    # No auth, no security headers — WireGuard is the trust boundary
+    # TLS via Caddy's internal CA (self-signed) — required because .app HSTS preload
+    # Binds to 10.0.0.1:443 only (not public IP)
     mkInternalRoute = route: ''
-      http://${route.service} {
+      ${route.service} {
         bind 10.0.0.1
+        tls internal
         reverse_proxy ${route.upstream}
       }
     '';
@@ -568,6 +570,7 @@
         debug
         admin localhost:${toString config.admin_port}
         order respond before handle
+        auto_https disable_redirects
     ${mkL4Section}
       }
 

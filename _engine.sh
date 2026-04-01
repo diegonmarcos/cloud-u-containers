@@ -80,6 +80,7 @@ if [ -f "$CONFIG" ]; then
     INCLUDE_CLOUD_DATA="$(get_config build.include_cloud_data)"
     COMPOSE_PRE_HOOK="$(get_config compose.pre_hook)"
     COMPOSE_POST_HOOK="$(get_config compose.post_hook)"
+    COMPOSE_CUSTOM="$(get_config compose.custom)"
     WRANGLER_DEPLOY="$(get_config deploy.wrangler)"
     TERRAFORM_DEPLOY="$(get_config deploy.terraform)"
     TERRAFORM_TFVARS_TEMPLATE="$(get_config terraform.tfvars_template)"
@@ -511,17 +512,7 @@ step_build() {
         done
     fi
 
-    # TODO: docker-run.sh generation disabled — using docker compose directly for now
-    # if [ -f "$DIST_DIR/docker-compose.yml" ]; then
-    #     CONVERTER="$SERVICE_DIR/../_compose-to-run.sh"
-    #     if [ -f "$CONVERTER" ]; then
-    #         [ -f "$DIST_DIR/.secrets" ] || touch "$DIST_DIR/.secrets"
-    #         (cd "$DIST_DIR" && sh "$CONVERTER" docker-compose.yml > docker-run.sh 2>/dev/null) && {
-    #             chmod +x "$DIST_DIR/docker-run.sh"
-    #             log "Generated docker-run.sh (E2 Micro safe — no compose Go binary needed)"
-    #         } || log_warn "docker-run.sh generation failed (non-fatal)"
-    #     fi
-    # fi
+    # docker-run.sh generation moved to step_compose (compose.custom=true in build.json)
 
     log "Built files:"
     if [ "$PRESERVE_SYMLINKS" = "true" ]; then
@@ -759,10 +750,34 @@ step_compose() {
         fi
     fi
 
-    # Simple docker compose up
-    ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
-    log "Running docker compose up on $DEPLOY_HOST:$DEPLOY_PATH"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$ENV_FILE_FLAG up -d --force-recreate"
+    if [ "$COMPOSE_CUSTOM" = "true" ]; then
+        # ── Custom compose script: self-contained, used by both ship + container-init ──
+        SCRIPT_NAME="build-step-compose-custom.sh"
+        log "Generating $SCRIPT_NAME"
+        cat > "$DIST_DIR/$SCRIPT_NAME" <<'COMPOSE_SCRIPT'
+#!/bin/sh
+set -e
+if ! docker info >/dev/null 2>&1; then
+  echo "[compose-custom] Docker not running — starting..."
+  sudo systemctl start docker 2>/dev/null || true
+  sleep 5
+  docker info >/dev/null 2>&1 || { echo "[compose-custom] ERROR: Docker failed to start" >&2; exit 1; }
+fi
+ENV_FILE_FLAG=""
+[ -f .secrets ] && ENV_FILE_FLAG="--env-file .secrets"
+docker compose $ENV_FILE_FLAG up -d --force-recreate
+COMPOSE_SCRIPT
+        chmod +x "$DIST_DIR/$SCRIPT_NAME"
+
+        log "Deploying + running $SCRIPT_NAME on $DEPLOY_HOST"
+        rsync -az "$DIST_DIR/$SCRIPT_NAME" "$DEPLOY_HOST:$DEPLOY_PATH/$SCRIPT_NAME"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && sh $SCRIPT_NAME"
+    else
+        # ── Standard: direct docker compose up ──
+        ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
+        log "Running docker compose up on $DEPLOY_HOST:$DEPLOY_PATH"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$ENV_FILE_FLAG up -d --force-recreate"
+    fi
 
     # Post-hook
     if [ -n "$COMPOSE_POST_HOOK" ]; then

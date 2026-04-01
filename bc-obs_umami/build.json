@@ -8,6 +8,9 @@
     "host": "oci-analytics",
     "remote_path": "/opt/containers/umami"
   },
+  "compose": {
+    "custom": true
+  },
   "lifecycle": {
     "site-id": [
       {

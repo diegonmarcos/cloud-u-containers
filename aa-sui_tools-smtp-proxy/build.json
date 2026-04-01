@@ -13,6 +13,9 @@
     "host": "oci-mail",
     "remote_path": "/opt/containers/smtp-proxy"
   },
+  "compose": {
+    "custom": true
+  },
   "proxy": {
     "primary": {
       "domain": "smtp.diegonmarcos.com",

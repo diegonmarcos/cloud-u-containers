@@ -10,6 +10,9 @@
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/redis"
   },
+  "compose": {
+    "custom": true
+  },
   "containers": {
     "app": {
       "container_name": "redis",
