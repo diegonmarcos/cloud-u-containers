@@ -511,17 +511,17 @@ step_build() {
         done
     fi
 
-    # Generate docker-run.sh from compose file (E2 Micros use this instead of compose)
-    if [ -f "$DIST_DIR/docker-compose.yml" ]; then
-        CONVERTER="$SERVICE_DIR/../_compose-to-run.sh"
-        if [ -f "$CONVERTER" ]; then
-            [ -f "$DIST_DIR/.secrets" ] || touch "$DIST_DIR/.secrets"
-            (cd "$DIST_DIR" && sh "$CONVERTER" docker-compose.yml > docker-run.sh 2>/dev/null) && {
-                chmod +x "$DIST_DIR/docker-run.sh"
-                log "Generated docker-run.sh (E2 Micro safe — no compose Go binary needed)"
-            } || log_warn "docker-run.sh generation failed (non-fatal)"
-        fi
-    fi
+    # TODO: docker-run.sh generation disabled — using docker compose directly for now
+    # if [ -f "$DIST_DIR/docker-compose.yml" ]; then
+    #     CONVERTER="$SERVICE_DIR/../_compose-to-run.sh"
+    #     if [ -f "$CONVERTER" ]; then
+    #         [ -f "$DIST_DIR/.secrets" ] || touch "$DIST_DIR/.secrets"
+    #         (cd "$DIST_DIR" && sh "$CONVERTER" docker-compose.yml > docker-run.sh 2>/dev/null) && {
+    #             chmod +x "$DIST_DIR/docker-run.sh"
+    #             log "Generated docker-run.sh (E2 Micro safe — no compose Go binary needed)"
+    #         } || log_warn "docker-run.sh generation failed (non-fatal)"
+    #     fi
+    # fi
 
     log "Built files:"
     if [ "$PRESERVE_SYMLINKS" = "true" ]; then
@@ -732,7 +732,7 @@ step_deploy() {
     log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH"
 }
 
-# ── Step: Run containers on VM — docker-run.sh ONLY (no compose) ───
+# ── Step: Run containers on VM via docker compose ──────────────────
 step_compose() {
     CURRENT_STEP="compose"
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping compose"; return 0; }
@@ -759,14 +759,10 @@ step_compose() {
         fi
     fi
 
-    # Run docker-run.sh (universal — ALL VMs, no compose Go binary)
-    if ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/docker-run.sh"; then
-        log "Running docker-run.sh on $DEPLOY_HOST"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && sh docker-run.sh"
-    else
-        log_warn "No docker-run.sh — trying docker start on existing containers"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "docker ps -aq --filter 'name=$(basename $DEPLOY_PATH)' 2>/dev/null | xargs -r docker start" || true
-    fi
+    # Simple docker compose up
+    ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
+    log "Running docker compose up on $DEPLOY_HOST:$DEPLOY_PATH"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; docker compose \$ENV_FILE_FLAG up -d --force-recreate"
 
     # Post-hook
     if [ -n "$COMPOSE_POST_HOOK" ]; then
@@ -1132,6 +1128,8 @@ step_compose_build() {
             ;;
         *)
             log "x86 host ($DEPLOY_HOST) — building linux/amd64"
+            # Reset to default builder — stale multiarch driver breaks --push for single-platform
+            docker buildx use default 2>/dev/null || true
             ;;
     esac
 
@@ -1155,6 +1153,11 @@ step_compose_build() {
         done; then
             COMPOSE_BUILD_OK=true
         fi
+        # Explicit push — buildx docker-container driver may build locally without pushing
+        grep -o 'image:.*ghcr\.io/[^ "]*' "$DIST_DIR/docker-compose.yml" 2>/dev/null | sed 's/image: *//' | sort -u | while read -r img; do
+            log "Pushing $img"
+            docker push "$img" 2>&1 | tail -3
+        done
     fi
 
     if [ -z "$COMPOSE_BUILD_OK" ]; then
@@ -1163,6 +1166,8 @@ step_compose_build() {
     fi
 
     DOCKER_IMAGE_CHANGED=true
+    # Signal parent shell (background jobs can't set parent vars)
+    echo "1" > "$SERVICE_DIR/.image-changed"
     log "GHCR images built and pushed"
 
     # Verify all pushed packages are public (CRITICAL)
@@ -1203,6 +1208,7 @@ case "${1:-all}" in
         fi
 
         # ── Phase 1: BUILD (sequential — nix build produces dist/) ──
+        rm -f "$SERVICE_DIR/.image-changed"
         step_build
 
         # ── Phase 2: 3 PARALLEL JOBS (configs + service image + secrets) ──
@@ -1228,6 +1234,12 @@ case "${1:-all}" in
         [ $FAIL -gt 1 ] && { log_error "Too many parallel jobs failed ($FAIL/3)"; exit 1; }
 
         log "═══ Parallel jobs done ═══"
+
+        # Read image-changed flag from background step_compose_build (subshell can't set parent vars)
+        if [ -f "$SERVICE_DIR/.image-changed" ]; then
+            DOCKER_IMAGE_CHANGED=true
+            rm -f "$SERVICE_DIR/.image-changed"
+        fi
 
         # ── Phase 3: DEPLOY TO VM (configs image + secrets via scp) ──
         # Skip if unchanged
