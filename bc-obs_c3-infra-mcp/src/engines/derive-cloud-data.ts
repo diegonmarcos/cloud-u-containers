@@ -1202,10 +1202,10 @@ function main() {
   const summary: string[] = [];
   for (const file of derived) {
     const path = join(CLOUD_DATA_DIR, file.name);
-    const data = typeof file.data === "object" && !Array.isArray(file.data)
+    const output = typeof file.data === "object" && !Array.isArray(file.data)
       ? { _warning: DO_NOT_EDIT, ...file.data }
       : file.data;
-    const json = JSON.stringify(data, null, 2) + "\n";
+    const json = JSON.stringify(output, null, 2) + "\n";
     writeFileSync(path, json);
 
     // Count top-level entries for summary
