@@ -1088,7 +1088,7 @@
       "domain": "ide.diegonmarcos.com",
       "port": 8443,
       "dns": "code-server.app",
-      "upstream": "code-server.app:8443",
+      "upstream": "10.0.0.6:8443",
       "containers": {
         "app": {
           "container_name": "code-server",
@@ -1159,7 +1159,7 @@
       "domain": "pad.diegonmarcos.com",
       "port": 3012,
       "dns": "etherpad.app",
-      "upstream": "etherpad.app:3012",
+      "upstream": "10.0.0.6:3012",
       "containers": {
         "app": {
           "container_name": "etherpad_app",
@@ -1265,7 +1265,7 @@
       "domain": "files.diegonmarcos.com",
       "port": 3015,
       "dns": "filebrowser.app",
-      "upstream": "filebrowser.app:3015",
+      "upstream": "10.0.0.6:3015",
       "containers": {
         "app": {
           "container_name": "filebrowser_app",
@@ -1343,7 +1343,7 @@
       "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
       "port": 3104,
       "dns": "g-workspace-mcp.app",
-      "upstream": "g-workspace-mcp.app:3104",
+      "upstream": "10.0.0.6:3104",
       "containers": {
         "app": {
           "container_name": "google-workspace-mcp",
@@ -1408,7 +1408,7 @@
       "domain": "sheets.diegonmarcos.com",
       "port": 3011,
       "dns": "grist.app",
-      "upstream": "grist.app:3011",
+      "upstream": "10.0.0.6:3011",
       "containers": {
         "app": {
           "container_name": "grist_app",
@@ -1485,7 +1485,7 @@
       "domain": "doc.diegonmarcos.com",
       "port": 3018,
       "dns": "hedgedoc.app",
-      "upstream": "hedgedoc.app:3018",
+      "upstream": "10.0.0.6:3018",
       "containers": {
         "app": {
           "container_name": "hedgedoc_app",
@@ -1588,7 +1588,7 @@
       "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
       "port": 3103,
       "dns": "mail-mcp.app",
-      "upstream": "mail-mcp.app:3103",
+      "upstream": "10.0.0.6:3103",
       "containers": {
         "app": {
           "container_name": "mail-mcp",
@@ -1648,7 +1648,7 @@
       "domain": "chat.diegonmarcos.com",
       "port": 8065,
       "dns": "mattermost.app",
-      "upstream": "mattermost.app:8065",
+      "upstream": "10.0.0.6:8065",
       "containers": {
         "app": {
           "container_name": "mattermost",
@@ -1771,7 +1771,7 @@
       "description": "Mattermost MCP server — chat tools via HTTP transport",
       "port": 3102,
       "dns": "mattermost-mcp.app",
-      "upstream": "mattermost-mcp.app:3102",
+      "upstream": "10.0.0.6:3102",
       "containers": {
         "app": {
           "container_name": "mattermost-mcp",
@@ -1831,7 +1831,7 @@
       "domain": "photos.diegonmarcos.com",
       "port": 3013,
       "dns": "photoprism.app",
-      "upstream": "photoprism.app:3013",
+      "upstream": "10.0.0.6:3013",
       "containers": {
         "app": {
           "container_name": "photoprism_app",
@@ -1955,7 +1955,7 @@
       "description": "PhotoPrism Webhook + S3 Processor",
       "port": 5002,
       "dns": "photos-webhook.app",
-      "upstream": "photos-webhook.app:5002",
+      "upstream": "10.0.0.6:5002",
       "containers": {
         "app": {
           "container_name": "photos-webhook",
@@ -1991,7 +1991,7 @@
       "domain": "cal.diegonmarcos.com",
       "port": 5232,
       "dns": "radicale.app",
-      "upstream": "radicale.app:5232",
+      "upstream": "10.0.0.6:5232",
       "containers": {
         "app": {
           "container_name": "radicale",
@@ -2064,7 +2064,7 @@
       "domain": "slides.diegonmarcos.com",
       "port": 3014,
       "dns": "revealmd.app",
-      "upstream": "revealmd.app:3014",
+      "upstream": "10.0.0.6:3014",
       "containers": {
         "app": {
           "container_name": "revealmd_app",
@@ -2138,7 +2138,7 @@
       "domain": "webmail.diegonmarcos.com",
       "port": 8888,
       "dns": "snappymail.app",
-      "upstream": "snappymail.app:8888",
+      "upstream": "10.0.0.3:8888",
       "containers": {
         "app": {
           "container_name": "snappymail",
@@ -2204,7 +2204,7 @@
       "domain": "smtp.diegonmarcos.com",
       "port": 8080,
       "dns": "smtp-proxy.app",
-      "upstream": "smtp-proxy.app:8080",
+      "upstream": "10.0.0.3:8080",
       "containers": {
         "app": {
           "container_name": "smtp-proxy",
@@ -2252,7 +2252,7 @@
       "domain": "mail.diegonmarcos.com",
       "port": 443,
       "dns": "stalwart.app",
-      "upstream": "stalwart.app:443",
+      "upstream": "10.0.0.3:443",
       "containers": {
         "app": {
           "container_name": "stalwart",
@@ -2339,7 +2339,7 @@
       "domain": "vault.diegonmarcos.com",
       "port": 8880,
       "dns": "vaultwarden.app",
-      "upstream": "vaultwarden.app:8880",
+      "upstream": "10.0.0.1:8880",
       "containers": {
         "app": {
           "container_name": "vaultwarden",
@@ -2416,7 +2416,7 @@
       "domain": "api.diegonmarcos.com",
       "port": 3000,
       "dns": "crawlee.app",
-      "upstream": "crawlee.app:3000",
+      "upstream": "10.0.0.6:3000",
       "containers": {
         "app": {
           "container_name": "crawlee_api",
@@ -2857,7 +2857,7 @@
       "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
       "port": 11434,
       "dns": "ollama.app",
-      "upstream": "ollama.app:11434",
+      "upstream": "10.0.0.8:11434",
       "containers": {
         "app": {
           "container_name": "ollama",
@@ -2941,7 +2941,7 @@
       "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
       "port": 11435,
       "dns": "ollama-hai.app",
-      "upstream": "ollama-hai.app:11435",
+      "upstream": "10.0.0.6:11435",
       "containers": {
         "app": {
           "container_name": "ollama-hai",
@@ -3018,7 +3018,7 @@
       "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
       "port": 8091,
       "dns": "rig-agentic-sonn-14bq8.app",
-      "upstream": "rig-agentic-sonn-14bq8.app:8091",
+      "upstream": "10.0.0.6:8091",
       "containers": {
         "app": {
           "container_name": "rig-agentic-sonn-14bq8",
@@ -3122,7 +3122,7 @@
       "domain": "dns.internal",
       "port": 53,
       "dns": "hickory-dns.app",
-      "upstream": "hickory-dns.app:53",
+      "upstream": "10.0.0.1:53",
       "containers": {
         "app": {
           "container_name": "hickory-dns",
@@ -3174,7 +3174,7 @@
       "domain": "auth.diegonmarcos.com",
       "port": 9091,
       "dns": "authelia.app",
-      "upstream": "authelia.app:9091",
+      "upstream": "10.0.0.1:9091",
       "containers": {
         "app": {
           "container_name": "authelia",
@@ -3268,7 +3268,7 @@
       "domain": "proxy.diegonmarcos.com",
       "port": 443,
       "dns": "caddy.app",
-      "upstream": "caddy.app:443",
+      "upstream": "10.0.0.1:443",
       "containers": {
         "app": {
           "container_name": "caddy",
@@ -3379,7 +3379,7 @@
       "description": "OIDC token introspection sidecar for Caddy Bearer auth",
       "port": 4182,
       "dns": "introspect-proxy.app",
-      "upstream": "introspect-proxy.app:4182",
+      "upstream": "10.0.0.1:4182",
       "containers": {
         "app": {
           "container_name": "introspect-proxy",
@@ -3457,7 +3457,7 @@
       "description": "Security Alert Aggregation API",
       "port": 5050,
       "dns": "alerts-api.app",
-      "upstream": "alerts-api.app:5050",
+      "upstream": "10.0.0.4:5050",
       "containers": {
         "app": {
           "container_name": "alerts-api",
@@ -3492,7 +3492,7 @@
       "domain": "api.diegonmarcos.com/c3-api",
       "port": 8081,
       "dns": "c3-infra-api.app",
-      "upstream": "c3-infra-api.app:8081",
+      "upstream": "10.0.0.6:8081",
       "containers": {
         "app": {
           "container_name": "c3-infra-api",
@@ -3571,7 +3571,7 @@
       "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
       "port": 3100,
       "dns": "c3-infra-mcp.app",
-      "upstream": "c3-infra-mcp.app:3100",
+      "upstream": "10.0.0.6:3100",
       "containers": {
         "app": {
           "container_name": "c3-infra-mcp",
@@ -3641,7 +3641,7 @@
       "domain": "api.diegonmarcos.com/services",
       "port": 8082,
       "dns": "c3-services-api.app",
-      "upstream": "c3-services-api.app:8082",
+      "upstream": "10.0.0.6:8082",
       "containers": {
         "app": {
           "container_name": "c3-services-api",
@@ -3713,7 +3713,7 @@
       "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
       "port": 3101,
       "dns": "c3-services-mcp.app",
-      "upstream": "c3-services-mcp.app:3101",
+      "upstream": "10.0.0.6:3101",
       "containers": {
         "app": {
           "container_name": "c3-services-mcp",
@@ -3776,7 +3776,7 @@
       "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
       "port": 3105,
       "dns": "cloud-cgc-mcp.app",
-      "upstream": "cloud-cgc-mcp.app:3105",
+      "upstream": "10.0.0.6:3105",
       "containers": {
         "app": {
           "container_name": "cloud-cgc-mcp",
@@ -3841,7 +3841,7 @@
       "description": "Unified Cloud Documentation Portal",
       "port": 3080,
       "dns": "c3-spec.app",
-      "upstream": "c3-spec.app:3080",
+      "upstream": "10.0.0.6:3080",
       "containers": {
         "app": {
           "container_name": "cloud-spec",
@@ -3902,7 +3902,7 @@
       "domain": "workflows.diegonmarcos.com",
       "port": 8070,
       "dns": "dagu.app",
-      "upstream": "dagu.app:8070",
+      "upstream": "10.0.0.3:8070",
       "containers": {
         "app": {
           "container_name": "dagu",
@@ -3978,7 +3978,7 @@
       "domain": "logs.diegonmarcos.com",
       "port": 9999,
       "dns": "dozzle.app",
-      "upstream": "dozzle.app:9999",
+      "upstream": "10.0.0.4:9999",
       "containers": {
         "app": {
           "container_name": "dozzle",
@@ -4042,7 +4042,7 @@
       "description": "Log processor and forwarder",
       "port": 2020,
       "dns": "fluent-bit.app",
-      "upstream": "fluent-bit.app:2020",
+      "upstream": "10.0.0.4:2020",
       "containers": {
         "app": {
           "container_name": "fluent-bit",
@@ -4088,7 +4088,7 @@
       "domain": "grafana.diegonmarcos.com",
       "port": 3200,
       "dns": "grafana.app",
-      "upstream": "grafana.app:3200",
+      "upstream": "10.0.0.6:3200",
       "containers": {
         "grafana": {
           "container_name": "lgtm_grafana",
@@ -4219,7 +4219,7 @@
       "domain": "analytics.diegonmarcos.com",
       "port": 8084,
       "dns": "matomo.app",
-      "upstream": "matomo.app:8084",
+      "upstream": "10.0.0.4:8084",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
@@ -4301,7 +4301,7 @@
       "domain": "db.diegonmarcos.com",
       "port": 8085,
       "dns": "nocodb.app",
-      "upstream": "nocodb.app:8085",
+      "upstream": "10.0.0.6:8085",
       "containers": {
         "app": {
           "container_name": "nocodb",
@@ -4405,7 +4405,7 @@
       "domain": "rss.diegonmarcos.com",
       "port": 8090,
       "dns": "ntfy.app",
-      "upstream": "ntfy.app:8090",
+      "upstream": "10.0.0.1:8090",
       "containers": {
         "app": {
           "container_name": "ntfy",
@@ -4611,7 +4611,7 @@
       "domain": "analytics.diegonmarcos.com",
       "port": 3006,
       "dns": "umami.app",
-      "upstream": "umami.app:3006",
+      "upstream": "10.0.0.4:3006",
       "containers": {
         "app": {
           "container_name": "umami",
@@ -4740,7 +4740,7 @@
       "domain": "windmill.diegonmarcos.com",
       "port": 8000,
       "dns": "windmill-app.app",
-      "upstream": "windmill-app.app:8000",
+      "upstream": "10.0.0.6:8000",
       "containers": {
         "app": {
           "container_name": "windmill-server",
@@ -4927,7 +4927,7 @@
       "domain": "git.diegonmarcos.com",
       "port": 3002,
       "dns": "backup-gitea.app",
-      "upstream": "backup-gitea.app:3002",
+      "upstream": "10.0.0.6:3002",
       "containers": {
         "app": {
           "container_name": "gitea",
@@ -5040,7 +5040,7 @@
       "domain": "git.diegonmarcos.com",
       "port": 3002,
       "dns": "gitea.app",
-      "upstream": "gitea.app:3002",
+      "upstream": "10.0.0.6:3002",
       "containers": {
         "app": {
           "container_name": "gitea",
@@ -5180,7 +5180,7 @@
       "description": "In-memory data store",
       "port": 6379,
       "dns": "redis.app",
-      "upstream": "redis.app:6379",
+      "upstream": "10.0.0.1:6379",
       "containers": {
         "app": {
           "container_name": "redis",

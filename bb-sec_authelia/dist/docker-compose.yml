@@ -62,7 +62,7 @@ services:
       - DAC_OVERRIDE
 
   redis:
-    image: redis:7-bookworm
+    image: ghcr.io/diegonmarcos/redis:latest
     container_name: authelia-redis
     network_mode: host
     command: sh -c 'redis-server --port 6380 --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'

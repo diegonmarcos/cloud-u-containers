@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-30T18:11:43.491Z",
+  "_generated": "2026-03-31T22:41:13.734Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -90,6 +90,10 @@
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
+      },
+      "dashboard": {
+        "dns": "oci-mail.app",
+        "port": 7681
       }
     },
     "oci-analytics": {
@@ -126,6 +130,10 @@
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
+      },
+      "dashboard": {
+        "dns": "oci-analytics.app",
+        "port": 7681
       }
     },
     "oci-apps": {
@@ -231,6 +239,10 @@
       "gha": {
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
+      },
+      "dashboard": {
+        "dns": "oci-apps.app",
+        "port": 7681
       }
     },
     "gcp-t4": {
@@ -272,6 +284,10 @@
         "ssh_secret": "GCP_T4_SSH_KEY",
         "host_secret": "GCP_T4_HOST",
         "user_secret": "GCP_T4_USER"
+      },
+      "dashboard": {
+        "dns": "gcp-t4.app",
+        "port": 7681
       }
     },
     "gcp-proxy": {
@@ -343,6 +359,10 @@
         "ssh_secret": "GCP_PROXY_SSH_KEY",
         "host_secret": "GCP_PROXY_HOST",
         "user_secret": "GCP_PROXY_USER"
+      },
+      "dashboard": {
+        "dns": "gcp-proxy.app",
+        "port": 7681
       }
     },
     "vast-ollama": {
@@ -405,7 +425,7 @@
       {
         "name": "gcp-t4",
         "wg_ip": "10.0.0.8",
-        "wg_public_key": null,
+        "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
         "endpoint": "34.173.227.250:51820",
         "role": "spoke",
         "wg_port": 51820,
