@@ -12,6 +12,50 @@ JSON=$(docker compose -f "$INPUT" config --format json 2>/dev/null) || {
   echo "ERROR: docker compose config failed" >&2; exit 1
 }
 
+# Fix: docker compose config resolves relative volume paths to absolute (build-machine CWD).
+# On the VM, docker-run.sh runs from the deploy directory, so paths must be relative.
+BUILD_CWD=$(pwd)
+JSON=$(echo "$JSON" | jq --arg cwd "$BUILD_CWD" '
+  .services |= with_entries(
+    .value.volumes //= [] |
+    .value.volumes |= map(
+      if type == "object" and (.source | startswith($cwd + "/")) then
+        .source = "./" + (.source | ltrimstr($cwd + "/"))
+      elif type == "object" and (.source == $cwd) then
+        .source = "."
+      else . end
+    )
+  )
+')
+
+# Fix: docker compose config inlines env_file into environment and drops env_file.
+# If .secrets is empty at build time (secrets step hasn't run yet), env vars are lost.
+# Re-inject env_file per-service from the original YAML so docker-run.sh uses --env-file.
+# Parse original YAML: map service → env_file entries (handles standard compose format)
+SVC_ENVFILES=$(awk '
+  /^services:/ { in_svc=1; next }
+  in_svc && /^[^ ]/ { in_svc=0 }
+  in_svc && /^  [a-zA-Z_-]+:/ { sub(/:.*/, ""); gsub(/^ +/, ""); cur=$0; in_ef=0 }
+  in_svc && /^ *env_file:/ { in_ef=1; next }
+  in_svc && in_ef && /^ *- / { f=$0; gsub(/^ *- */, "", f); gsub(/ *$/, "", f); if(cur && f) print cur "=" f; next }
+  in_svc && in_ef && !/^ *- / && !/^ *#/ { in_ef=0 }
+' "$INPUT" 2>/dev/null) || true
+
+if [ -n "$SVC_ENVFILES" ]; then
+  # Build JSON: {"caddy": [".secrets"], ...}
+  EF_JSON=$(printf '%s\n' "$SVC_ENVFILES" | jq -R -s '
+    split("\n") | map(select(length > 0)) |
+    map(split("=") | {key: .[0], value: .[1]}) |
+    group_by(.key) | map({key: .[0].key, value: [.[].value]}) |
+    from_entries
+  ')
+  JSON=$(echo "$JSON" | jq --argjson ef "$EF_JSON" '
+    .services |= with_entries(
+      if $ef[.key] then .value.env_file = $ef[.key] else . end
+    )
+  ')
+fi
+
 PROJECT=$(echo "$JSON" | jq -r '.name // "unknown"')
 SERVICES=$(echo "$JSON" | jq -r '.services | keys[]')
 SVC_COUNT=$(echo "$SERVICES" | wc -l)
@@ -99,12 +143,32 @@ echo "$JSON" | jq -r '
       else " -p \(.)" end
     ) | join("")) +
 
+    # Read-only rootfs
+    (if $svc.read_only then " --read-only" else "" end) +
+
+    # tmpfs
+    ($svc.tmpfs // [] | map(" --tmpfs \(.)") | join("")) +
+
+    # DNS
+    ($svc.dns // [] | map(" --dns \(.)") | join("")) +
+
     # Volumes
     ($svc.volumes // [] | map(
       if type == "object" then
         " -v \(.source):\(.target)\(if .read_only then ":ro" else "" end)"
       else " -v \(.)" end
     ) | join("")) +
+
+    # Ulimits
+    (if $svc.ulimits then
+      ($svc.ulimits | to_entries | map(
+        if .value | type == "object" then
+          " --ulimit \(.key)=\(.value.soft):\(.value.hard)"
+        else
+          " --ulimit \(.key)=\(.value)"
+        end
+      ) | join(""))
+    else "" end) +
 
     # Environment
     (if ($svc.environment // null) | type == "object" then
@@ -163,7 +227,7 @@ echo "$JSON" | jq -r '
       ($svc.logging.options // {} | to_entries | map(" --log-opt \(.key)=\"\(.value)\"") | join(""))
     else "" end) +
 
-    # Entrypoint
+    # Entrypoint + args (array entrypoint: [0] = --entrypoint, [1:] = args after image)
     (if $svc.entrypoint then
       (if ($svc.entrypoint | type) == "array" then
         " --entrypoint \"\($svc.entrypoint[0])\""
@@ -173,8 +237,11 @@ echo "$JSON" | jq -r '
     # Image
     " \($svc.image)" +
 
-    # Command
-    (if $svc.command then
+    # Entrypoint args (elements [1:] of entrypoint array, placed after image)
+    (if $svc.entrypoint and ($svc.entrypoint | type) == "array" and ($svc.entrypoint | length) > 1 then
+      " \($svc.entrypoint[1:] | map(if contains(" ") then "\"\(.)\"" else . end) | join(" "))"
+    # Command (only if entrypoint doesn't have args)
+    elif $svc.command then
       (if ($svc.command | type) == "array" then
         " \($svc.command | map(if contains(" ") then "\"\(.)\"" else . end) | join(" "))"
       else " \($svc.command)" end)
