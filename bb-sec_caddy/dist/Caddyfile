@@ -1,18 +1,11 @@
   {
-    # DNS: all .app upstreams resolved by Hickory DNS (10.0.0.1:53)
+    # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
     debug
     admin localhost:2019
     order respond before handle
+    auto_https disable_redirects
 
     layer4 {
-# SMTP inbound (Cloudflare MX)
-:25 {
-  route {
-    proxy {
-      upstream 10.0.0.3:25
-    }
-  }
-}
 # IMAPS -- TLS passthrough to stalwart
 :993 {
   route {
@@ -119,19 +112,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy code-server.app:8443
+    reverse_proxy 10.0.0.6:8443
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy code-server.app:8443
+    reverse_proxy 10.0.0.6:8443
   }
 
     handle_errors {
@@ -152,19 +145,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy grist.app:3011
+    reverse_proxy 10.0.0.6:3011
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy grist.app:3011
+    reverse_proxy 10.0.0.6:3011
   }
 
     handle_errors {
@@ -185,19 +178,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy mattermost.app:8065
+    reverse_proxy 10.0.0.6:8065
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy mattermost.app:8065
+    reverse_proxy 10.0.0.6:8065
   }
 
     handle_errors {
@@ -228,19 +221,19 @@ reverse_proxy https://diegonmarcos.github.io {
 # All other paths → auth + upstream
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy photoprism.app:3013
+    reverse_proxy 10.0.0.6:3013
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy photoprism.app:3013
+    reverse_proxy 10.0.0.6:3013
   }
 
     handle_errors {
@@ -261,19 +254,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy radicale.app:5232
+    reverse_proxy 10.0.0.6:5232
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy radicale.app:5232
+    reverse_proxy 10.0.0.6:5232
   }
 
     handle_errors {
@@ -304,19 +297,19 @@ reverse_proxy https://diegonmarcos.github.io {
 # All other paths → auth + upstream
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy snappymail.app:8888
+    reverse_proxy 10.0.0.3:8888
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy snappymail.app:8888
+    reverse_proxy 10.0.0.3:8888
   }
 
     handle_errors {
@@ -335,7 +328,7 @@ import security
 import request_limits
 
 
-        reverse_proxy smtp-proxy.app:8080
+        reverse_proxy 10.0.0.3:8080
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -354,23 +347,23 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy https://stalwart.app:443 {
+    reverse_proxy https://10.0.0.3:443 {
       transport http {
   tls_insecure_skip_verify
 }
     }
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy https://stalwart.app:443 {
+    reverse_proxy https://10.0.0.3:443 {
       transport http {
   tls_insecure_skip_verify
 }
@@ -393,7 +386,7 @@ import security
 import request_limits
 
 
-        reverse_proxy vaultwarden.app:8880
+        reverse_proxy 10.0.0.1:8880
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -412,19 +405,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy authelia.app:9091
+    reverse_proxy 10.0.0.1:9091
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy authelia.app:9091
+    reverse_proxy 10.0.0.1:9091
   }
 
     handle_errors {
@@ -445,19 +438,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy dagu.app:8070
+    reverse_proxy 10.0.0.3:8070
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy dagu.app:8070
+    reverse_proxy 10.0.0.3:8070
   }
 
     handle_errors {
@@ -478,19 +471,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy grafana.app:3200
+    reverse_proxy 10.0.0.6:3200
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy grafana.app:3200
+    reverse_proxy 10.0.0.6:3200
   }
 
     handle_errors {
@@ -511,19 +504,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy nocodb.app:8085
+    reverse_proxy 10.0.0.6:8085
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy nocodb.app:8085
+    reverse_proxy 10.0.0.6:8085
   }
 
     handle_errors {
@@ -544,19 +537,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy windmill-app.app:8000
+    reverse_proxy 10.0.0.6:8000
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy windmill-app.app:8000
+    reverse_proxy 10.0.0.6:8000
   }
 
     handle_errors {
@@ -577,19 +570,19 @@ import request_limits
 
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy backup-gitea.app:3002
+    reverse_proxy 10.0.0.6:3002
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy backup-gitea.app:3002
+    reverse_proxy 10.0.0.6:3002
   }
 
     handle_errors {
@@ -722,19 +715,19 @@ import request_limits
 handle_path /etherpad/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy etherpad.app:3012
+    reverse_proxy 10.0.0.6:3012
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy etherpad.app:3012
+    reverse_proxy 10.0.0.6:3012
   }
 
 }
@@ -742,19 +735,19 @@ forward_auth authelia.app:9091 {
 handle_path /filebrowser/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy filebrowser.app:3015
+    reverse_proxy 10.0.0.6:3015
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy filebrowser.app:3015
+    reverse_proxy 10.0.0.6:3015
   }
 
 }
@@ -762,19 +755,19 @@ forward_auth authelia.app:9091 {
 handle_path /hedgedoc/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy hedgedoc.app:3018
+    reverse_proxy 10.0.0.6:3018
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy hedgedoc.app:3018
+    reverse_proxy 10.0.0.6:3018
   }
 
 }
@@ -782,19 +775,19 @@ forward_auth authelia.app:9091 {
 handle_path /revealmd/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy revealmd.app:3014
+    reverse_proxy 10.0.0.6:3014
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy revealmd.app:3014
+    reverse_proxy 10.0.0.6:3014
   }
 
 }
@@ -802,19 +795,19 @@ forward_auth authelia.app:9091 {
 handle_path /dozzle/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy dozzle.app:9999
+    reverse_proxy 10.0.0.4:9999
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy dozzle.app:9999
+    reverse_proxy 10.0.0.4:9999
   }
 
 }
@@ -822,19 +815,19 @@ forward_auth authelia.app:9091 {
 handle_path /windmill/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy windmill-app.app:8000
+    reverse_proxy 10.0.0.6:8000
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy windmill-app.app:8000
+    reverse_proxy 10.0.0.6:8000
   }
 
 }
@@ -842,19 +835,19 @@ forward_auth authelia.app:9091 {
 handle_path /grafana/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy grafana.app:3016
+    reverse_proxy 10.0.0.6:3016
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy grafana.app:3016
+    reverse_proxy 10.0.0.6:3016
   }
 
 }
@@ -862,19 +855,19 @@ forward_auth authelia.app:9091 {
 handle_path /gitea/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy gitea.app:3017
+    reverse_proxy 10.0.0.6:3017
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy gitea.app:3017
+    reverse_proxy 10.0.0.6:3017
   }
 
 }
@@ -882,119 +875,19 @@ forward_auth authelia.app:9091 {
 handle_path /crawlee/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy crawlee.app:3001
+    reverse_proxy 10.0.0.6:3001
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy crawlee.app:3001
-  }
-
-}
-
-handle_path /dash-gcp-proxy/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.1:7681
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.1:7681
-  }
-
-}
-
-handle_path /dash-oci-mail/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.3:7681
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.3:7681
-  }
-
-}
-
-handle_path /dash-oci-analytics/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.4:7681
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.4:7681
-  }
-
-}
-
-handle_path /dash-oci-apps/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:7681
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:7681
-  }
-
-}
-
-handle_path /dash-gcp-t4/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth introspect-proxy.app:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.8:7681
-  }
-  handle {
-forward_auth authelia.app:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.8:7681
+    reverse_proxy 10.0.0.6:3001
   }
 
 }
@@ -1027,19 +920,19 @@ reverse_proxy https://diegonmarcos.github.io {
 handle_path /crawlee/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy crawlee.app:3000
+    reverse_proxy 10.0.0.6:3000
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy crawlee.app:3000
+    reverse_proxy 10.0.0.6:3000
   }
 
 }
@@ -1047,19 +940,19 @@ forward_auth authelia.app:9091 {
 handle_path /c3-api/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy c3-infra-api.app:8081
+    reverse_proxy 10.0.0.6:8081
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy c3-infra-api.app:8081
+    reverse_proxy 10.0.0.6:8081
   }
 
 }
@@ -1067,19 +960,19 @@ forward_auth authelia.app:9091 {
 handle_path /services/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy c3-services-api.app:8082
+    reverse_proxy 10.0.0.6:8082
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy c3-services-api.app:8082
+    reverse_proxy 10.0.0.6:8082
   }
 
 }
@@ -1127,19 +1020,19 @@ reverse_proxy https://diegonmarcos.github.io {
 handle_path /spec/* {
     @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy c3-spec.app:3080
+    reverse_proxy 10.0.0.6:3080
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy c3-spec.app:3080
+    reverse_proxy 10.0.0.6:3080
   }
 
 }
@@ -1170,32 +1063,32 @@ reverse_proxy https://diegonmarcos.github.io {
 import security
 import request_limits
 handle_path /g-workspace/* {
-  reverse_proxy g-workspace-mcp.app:3104 {
+  reverse_proxy 10.0.0.6:3104 {
     flush_interval -1
   }
 }
 handle_path /mail-mcp/* {
-  reverse_proxy mail-mcp.app:3103 {
+  reverse_proxy 10.0.0.6:3103 {
     flush_interval -1
   }
 }
 handle_path /mattermost-mcp/* {
-  reverse_proxy mattermost-mcp.app:3102 {
+  reverse_proxy 10.0.0.6:3102 {
     flush_interval -1
   }
 }
 handle_path /c3-infra-mcp/* {
-  reverse_proxy c3-infra-mcp.app:3100 {
+  reverse_proxy 10.0.0.6:3100 {
     flush_interval -1
   }
 }
 handle_path /c3-services-mcp/* {
-  reverse_proxy c3-services-mcp.app:3101 {
+  reverse_proxy 10.0.0.6:3101 {
     flush_interval -1
   }
 }
 handle_path /cloud-cgc-mcp/* {
-  reverse_proxy cloud-cgc-mcp.app:3105 {
+  reverse_proxy 10.0.0.6:3105 {
     flush_interval -1
   }
 }
@@ -1226,7 +1119,7 @@ import request_limits
       path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
     }
     handle @tracking {
-      reverse_proxy matomo.app:8084
+      reverse_proxy 10.0.0.4:8084
     }
 
     # Umami Analytics (path-based, strip /umami prefix before proxying)
@@ -1235,24 +1128,24 @@ import request_limits
     }
     handle @umami_public {
       uri strip_prefix /umami
-      reverse_proxy umami.app:3006
+      reverse_proxy 10.0.0.4:3006
     }
     handle_path /umami/* {
       @umami_bearer header Authorization Bearer*
       handle @umami_bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-        reverse_proxy umami.app:3006
+        reverse_proxy 10.0.0.4:3006
       }
       handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-        reverse_proxy umami.app:3006
+        reverse_proxy 10.0.0.4:3006
       }
     }
     @umami_root path /umami
@@ -1263,19 +1156,19 @@ forward_auth authelia.app:9091 {
     # Protected Matomo admin dashboard (catch-all for non-umami, non-tracking)
       @bearer header Authorization Bearer*
   handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy matomo.app:8084
+    reverse_proxy 10.0.0.4:8084
   }
   handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy matomo.app:8084
+    reverse_proxy 10.0.0.4:8084
   }
 
 
@@ -1295,7 +1188,7 @@ forward_auth authelia.app:9091 {
 import security
 import request_limits
     handle /setup {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
@@ -1305,23 +1198,23 @@ forward_auth authelia.app:9091 {
     }
     @authelia_jwt header_regexp Authorization "^Bearer eyJ"
     handle @authelia_jwt {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-      reverse_proxy ntfy.app:8090
+      reverse_proxy 10.0.0.1:8090
     }
     @ntfy_token header_regexp Authorization "^Bearer tk_"
     handle @ntfy_token {
-      reverse_proxy ntfy.app:8090
+      reverse_proxy 10.0.0.1:8090
     }
     handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-      reverse_proxy ntfy.app:8090
+      reverse_proxy 10.0.0.1:8090
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -1340,7 +1233,7 @@ import security
 import request_limits
     @bearer header Authorization Bearer*
     handle @bearer {
-forward_auth introspect-proxy.app:4182 {
+forward_auth 10.0.0.1:4182 {
   method GET
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1350,7 +1243,7 @@ forward_auth introspect-proxy.app:4182 {
       file_server
     }
     handle {
-forward_auth authelia.app:9091 {
+forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
@@ -1367,6 +1260,306 @@ forward_auth authelia.app:9091 {
   }
 }
   }
+
+
+  # ════════════════════════════════════════════════════════════
+  # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
+  # No auth, no TLS — WireGuard mesh is the trust boundary
+  # ════════════════════════════════════════════════════════════
+
+code-server.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8443
+}
+
+etherpad.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3012
+}
+
+filebrowser.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3015
+}
+
+g-workspace-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3104
+}
+
+grist.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3011
+}
+
+hedgedoc.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3018
+}
+
+mail-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3103
+}
+
+mattermost.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8065
+}
+
+mattermost-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3102
+}
+
+photoprism.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3013
+}
+
+photos-webhook.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:5002
+}
+
+radicale.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:5232
+}
+
+revealmd.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3014
+}
+
+snappymail.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:8888
+}
+
+smtp-proxy.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:8080
+}
+
+stalwart.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:443
+}
+
+vaultwarden.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:8880
+}
+
+crawlee.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3000
+}
+
+ollama.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.8:11434
+}
+
+ollama-hai.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:11435
+}
+
+rig-agentic-sonn-14bq8.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8091
+}
+
+hickory-dns.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:53
+}
+
+authelia.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:9091
+}
+
+caddy.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:443
+}
+
+introspect-proxy.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:4182
+}
+
+alerts-api.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:5050
+}
+
+c3-infra-api.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8081
+}
+
+c3-infra-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3100
+}
+
+c3-services-api.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8082
+}
+
+c3-services-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3101
+}
+
+cloud-cgc-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3105
+}
+
+c3-spec.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3080
+}
+
+dagu.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:8070
+}
+
+dozzle.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:9999
+}
+
+fluent-bit.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:2020
+}
+
+grafana.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3200
+}
+
+matomo.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:8084
+}
+
+nocodb.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8085
+}
+
+ntfy.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:8090
+}
+
+umami.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:3006
+}
+
+windmill-app.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8000
+}
+
+backup-gitea.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3002
+}
+
+gitea.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3002
+}
+
+redis.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:6379
+}
+
+oci-mail.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:7681
+}
+
+oci-analytics.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.4:7681
+}
+
+oci-apps.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:7681
+}
+
+gcp-t4.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.8:7681
+}
+
+gcp-proxy.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:7681
+}
 
 
   # ════════════════════════════════════════════════════════════

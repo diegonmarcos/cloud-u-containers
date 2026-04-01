@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-03-29T03:04:11.185Z",
+  "_generated": "2026-03-31T22:41:13.730Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/vm-container-manifests",
   "vm": "oci-apps",
   "vm_id": "oci-A1-f_0",
