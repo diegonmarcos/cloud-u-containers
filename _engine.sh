@@ -622,29 +622,33 @@ step_deploy() {
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
     [ ! -d "$DIST_DIR" ] && { log "No dist/ -- run build first"; return 1; }
 
-    # ── Docker config delivery: pull configs image on VM (no rsync) ──
+    # ── Deploy: configs image (GHCR) + secrets (scp) — universal, all VMs ──
     CONFIGS_IMAGE="${DOCKER_REGISTRY:-ghcr.io/diegonmarcos}/${SERVICE_NAME}-configs:latest"
-    CONFIGS_DELIVERY="$(get_config deploy.configs_delivery 2>/dev/null || echo "")"
-    if [ "$CONFIGS_DELIVERY" = "docker" ] || [ "$SEQUENTIAL_RESTART" = "true" ]; then
-        log "Deploying via configs image: $CONFIGS_IMAGE"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH && \
-            docker pull $CONFIGS_IMAGE && \
-            docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE" && {
-            log "Deployed configs to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
-            # Secrets excluded from image — deploy via scp (encrypted at rest in sops, decrypted in dist/)
-            if [ -f "$DIST_DIR/.secrets" ]; then
-                scp $SSH_OPTS "$DIST_DIR/.secrets" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets" 2>/dev/null && \
-                    log "Deployed .secrets via scp" || log_warn ".secrets scp failed"
-            fi
-            if [ -d "$DIST_DIR/.secrets.d" ]; then
-                scp $SSH_OPTS -r "$DIST_DIR/.secrets.d" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets.d" 2>/dev/null && \
-                    log "Deployed .secrets.d via scp" || log_warn ".secrets.d scp failed"
-            fi
-            return 0
-        } || log_warn "Configs image deploy failed — falling back to rsync"
+
+    log "Deploying via configs image: $CONFIGS_IMAGE"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH && \
+        docker pull $CONFIGS_IMAGE && \
+        docker run --rm -v $DEPLOY_PATH:/out $CONFIGS_IMAGE" && {
+        log "Deployed configs to $DEPLOY_HOST:$DEPLOY_PATH (via configs image)"
+    } || {
+        log_warn "Configs image deploy failed — falling back to rsync"
+        # Rsync fallback (only if configs image unavailable, e.g. first-ever ship)
+        log "Deploying dist/ -> $DEPLOY_HOST:$DEPLOY_PATH (rsync fallback)"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "sudo mkdir -p $DEPLOY_PATH && sudo chown \$(whoami):\$(whoami) $DEPLOY_PATH"
+        rsync -az --compress-level=9 --checksum "$DIST_DIR/" "$DEPLOY_HOST:$DEPLOY_PATH/" 2>/dev/null || true
+    }
+
+    # Secrets: ALWAYS via scp (never in GHCR image)
+    if [ -f "$DIST_DIR/.secrets" ]; then
+        scp $SSH_OPTS "$DIST_DIR/.secrets" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets" 2>/dev/null && \
+            log "Deployed .secrets via scp" || log_warn ".secrets scp failed"
+    fi
+    if [ -d "$DIST_DIR/.secrets.d" ]; then
+        scp $SSH_OPTS -r "$DIST_DIR/.secrets.d" "$DEPLOY_HOST:$DEPLOY_PATH/.secrets.d" 2>/dev/null && \
+            log "Deployed .secrets.d via scp" || log_warn ".secrets.d scp failed"
     fi
 
-    # ── Legacy rsync deploy (fallback) ──
+    log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH"
 
     # Include binary + runtime Dockerfile for local image build on VM
     BINARY_PATH="/tmp/${SERVICE_NAME}-binary"
@@ -729,111 +733,53 @@ step_deploy() {
     log "Deployed to $DEPLOY_HOST:$DEPLOY_PATH"
 }
 
-# ── Step: Docker compose on VM ───────────────────────────────────────
+# ── Step: Run containers on VM — docker-run.sh ONLY (no compose) ───
 step_compose() {
     CURRENT_STEP="compose"
     [ -z "$DEPLOY_HOST" ] && { log "No deploy.host -- skipping compose"; return 0; }
     [ -z "$DEPLOY_PATH" ] && { log "ERROR: deploy.remote_path not set in build.json"; return 1; }
 
-    # Ensure Docker daemon is running on target VM (start if not)
+    # Ensure Docker daemon is running
     if ! ssh $SSH_OPTS "$DEPLOY_HOST" "docker info >/dev/null 2>&1"; then
-        log_warn "Docker daemon not running on $DEPLOY_HOST — starting it"
+        log_warn "Docker not running on $DEPLOY_HOST — starting"
         ssh $SSH_OPTS "$DEPLOY_HOST" "sudo systemctl start docker" 2>/dev/null || true
-        sleep 3
+        sleep 5
         if ! ssh $SSH_OPTS "$DEPLOY_HOST" "docker info >/dev/null 2>&1"; then
-            log_error "Docker daemon failed to start on $DEPLOY_HOST"
+            log_error "Docker failed to start on $DEPLOY_HOST"
             return 1
         fi
-        log "Docker daemon started on $DEPLOY_HOST"
     fi
 
-    FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
-
-    # Image strategy: skip pull if just built (DOCKER_IMAGE_CHANGED), binary build, or registry pull
-    if [ -n "$DOCKER_IMAGE_CHANGED" ]; then
-        log "Image just built+pushed — skipping redundant pull"
-    elif [ -n "$DOCKER_BINARY" ] && ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/$DOCKER_BINARY_NAME -a -f $DEPLOY_PATH/Dockerfile.runtime" 2>/dev/null; then
-        log "Building image locally on $DEPLOY_HOST (from pre-compiled binary)"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker build -q -t $FULL_IMAGE:latest -f Dockerfile.runtime ."
-        log "Image built locally"
-    elif [ -n "$FULL_IMAGE" ]; then
-        log "Pulling latest image from registry"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose config --images 2>/dev/null | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done" || true
-    fi
-
-    # Pre-compose hook — runs on HOST before compose up
-    # Skip if the hook is already used as container entrypoint (container paths won't exist on host)
+    # Pre-hook (runs on VM before containers start)
     if [ -n "$COMPOSE_PRE_HOOK" ]; then
         if ssh $SSH_OPTS "$DEPLOY_HOST" "grep -q 'entrypoint.*$COMPOSE_PRE_HOOK' $DEPLOY_PATH/docker-compose.yml 2>/dev/null"; then
-            log "Skipping pre_hook '$COMPOSE_PRE_HOOK' — already used as container entrypoint"
+            log "Skipping pre_hook '$COMPOSE_PRE_HOOK' — container entrypoint"
         else
-            log "Running pre-compose hook: $COMPOSE_PRE_HOOK"
+            log "Running pre-hook: $COMPOSE_PRE_HOOK"
             ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_PRE_HOOK && ./$COMPOSE_PRE_HOOK"
         fi
     fi
 
-    ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
-
-    # Auto-detect E2 Micros (≤2GB RAM) — use lightweight restart to avoid OOM freeze
-    case "$DEPLOY_HOST" in
-        oci-mail|oci-analytics|gcp-proxy) SEQUENTIAL_RESTART="true" ;;
-    esac
-
-    if [ "$SEQUENTIAL_RESTART" = "true" ]; then
-        # E2 Micro: ZERO docker compose calls. Use docker-run.sh (pre-generated at build time).
-        log "E2 Micro deploy (no compose Go binary): $DEPLOY_HOST"
-
-        # Stop + remove old containers (lightweight docker CLI only)
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker ps -aq --filter 'label=com.docker.compose.project' 2>/dev/null | xargs -r docker stop 2>/dev/null; docker ps -aq --filter 'label=com.docker.compose.project' 2>/dev/null | xargs -r docker rm -f 2>/dev/null" || true
-        sleep 3
-
-        # Use docker-run.sh if available (generated by build step from compose file)
-        if ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/docker-run.sh"; then
-            log "Running docker-run.sh (pre-generated, no compose)"
-            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && sh docker-run.sh"
-        else
-            # Fallback: try docker start on existing containers
-            log_warn "No docker-run.sh — falling back to docker start"
-            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker ps -aq --filter 'name=$(basename $DEPLOY_PATH)' 2>/dev/null | xargs -r docker start" || true
-        fi
+    # Run docker-run.sh (universal — ALL VMs, no compose Go binary)
+    if ssh $SSH_OPTS "$DEPLOY_HOST" "test -f $DEPLOY_PATH/docker-run.sh"; then
+        log "Running docker-run.sh on $DEPLOY_HOST"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && sh docker-run.sh"
     else
-        # Standard: pull first (while old containers run), then down + up (instant, no pulling)
-        # Uses 'docker pull' instead of 'docker compose pull' — compose pull spawns heavy Go binary
-        # that triggers cpu-watchdog on E2 micros (94% CPU → KILLED)
-        EXTRA_FLAGS="${COMPOSE_FLAGS:-}"
-        if [ -z "$DOCKER_IMAGE_CHANGED" ]; then
-            log "Pulling images on $DEPLOY_HOST (one at a time, old containers keep running)"
-            ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose $ENV_FILE_FLAG config --images 2>/dev/null | sort -u | while read img; do echo \"  pull: \$img\"; ionice -c3 nice -n19 docker pull \"\$img\" 2>/dev/null || true; done"
-        fi
-        log "Rebuilding $SERVICE_NAME on $DEPLOY_HOST:$DEPLOY_PATH"
-        # Only --build on ARM VMs. x86 VMs (gcp-proxy, oci-mail, oci-analytics) use pre-built images.
-        BUILD_FLAG=""
-        case "$DEPLOY_HOST" in oci-apps|oci-apps-1|oci-apps-2) BUILD_FLAG="--build" ;; esac
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose down --remove-orphans 2>/dev/null; ionice -c3 nice -n19 docker compose $ENV_FILE_FLAG up -d --force-recreate $BUILD_FLAG $EXTRA_FLAGS"
+        log_warn "No docker-run.sh — trying docker start on existing containers"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "docker ps -aq --filter 'name=$(basename $DEPLOY_PATH)' 2>/dev/null | xargs -r docker start" || true
     fi
 
-    # Post-compose hook (e.g. mailu setup.sh)
+    # Post-hook
     if [ -n "$COMPOSE_POST_HOOK" ]; then
-        log "Running post-compose hook: $COMPOSE_POST_HOOK"
+        log "Running post-hook: $COMPOSE_POST_HOOK"
         ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && chmod +x $COMPOSE_POST_HOOK && ./$COMPOSE_POST_HOOK"
     fi
 
-    # Verify containers actually started (not just Created)
+    # Verify
     log "Verifying containers are running..."
     sleep 3
-    local failed_containers
-    failed_containers=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose ps --format '{{.Name}} {{.State}}' 2>/dev/null | grep -v 'running\|exited' || true")
-    if [ -n "$failed_containers" ]; then
-        log "ERROR: Some containers failed to start:"
-        echo "$failed_containers" | while read -r line; do log "  $line"; done
-        # Show logs of failed containers
-        echo "$failed_containers" | while read -r cname cstate; do
-            log "  Logs for $cname:"
-            ssh $SSH_OPTS "$DEPLOY_HOST" "docker logs --tail 20 $cname 2>&1" | while read -r l; do log "    $l"; done
-        done
-        return 1
-    fi
-    log "All containers running"
+    ssh $SSH_OPTS "$DEPLOY_HOST" "docker ps --filter 'name=$(basename $DEPLOY_PATH)' --format '{{.Names}} {{.Status}}'" 2>/dev/null | while read -r line; do log "  $line"; done
+    log "Done."
 }
 
 # ── Health verification (post-deploy) ─────────────────────────────────
@@ -1249,16 +1195,44 @@ case "${1:-all}" in
     health)   step_health ;;
     all)      step_build; step_docs; step_secrets ;;
     ship)
+        # Special cases: wrangler/terraform have their own flow
+        if [ "$WRANGLER_DEPLOY" = "true" ]; then
+            step_build; step_secrets; step_wrangler; break
+        fi
+        if [ "$TERRAFORM_DEPLOY" = "true" ]; then
+            step_build; step_secrets; step_terraform; break
+        fi
+
+        # ── Phase 1: BUILD (sequential — nix build produces dist/) ──
         step_build
-        step_docker
-        step_secrets
-        # compose-build only for Docker-based services (skip wrangler/terraform)
-        [ "$WRANGLER_DEPLOY" != "true" ] && [ "$TERRAFORM_DEPLOY" != "true" ] && step_compose_build
-        # Push configs image to GHCR (all services, enables docker-based deploy)
-        [ "$WRANGLER_DEPLOY" != "true" ] && [ "$TERRAFORM_DEPLOY" != "true" ] && step_configs_push
-        # Skip deploy+compose if dist/ output is unchanged since last ship
+
+        # ── Phase 2: 3 PARALLEL JOBS (configs + service image + secrets) ──
+        log "═══ Parallel: configs-push + compose-build + secrets ═══"
+
+        # Job 1: Configs image → GHCR (no secrets)
+        step_configs_push &
+        PID_CONFIGS=$!
+
+        # Job 2: Service image → GHCR (if dockerfile_inline)
+        step_compose_build &
+        PID_IMAGE=$!
+
+        # Job 3: Secrets decrypt
+        step_secrets &
+        PID_SECRETS=$!
+
+        # Wait for all 3
+        FAIL=0
+        wait $PID_CONFIGS  || { log_warn "configs-push failed"; FAIL=$((FAIL+1)); }
+        wait $PID_IMAGE    || { log_warn "compose-build failed"; FAIL=$((FAIL+1)); }
+        wait $PID_SECRETS  || { log_error "secrets failed"; FAIL=$((FAIL+1)); }
+        [ $FAIL -gt 1 ] && { log_error "Too many parallel jobs failed ($FAIL/3)"; exit 1; }
+
+        log "═══ Parallel jobs done ═══"
+
+        # ── Phase 3: DEPLOY TO VM (configs image + secrets via scp) ──
+        # Skip if unchanged
         NEW_HASH=$(find "$DIST_DIR" -type f -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
-        # Read hash from VM (persists across ephemeral GHA runners)
         if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
             OLD_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat '$DEPLOY_PATH/.dist-hash' 2>/dev/null" 2>/dev/null || true)
         else
@@ -1266,16 +1240,9 @@ case "${1:-all}" in
         fi
         if [ "$OLD_HASH" = "$NEW_HASH" ] && [ -n "$NEW_HASH" ] && [ -z "$DOCKER_IMAGE_CHANGED" ] && [ -z "$FORCE_DEPLOY" ]; then
             log "Config unchanged, no image rebuild — skipping deploy+compose"
-        elif [ "$WRANGLER_DEPLOY" = "true" ]; then
-            step_wrangler
-            echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
-        elif [ "$TERRAFORM_DEPLOY" = "true" ]; then
-            step_terraform
-            echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
         else
             step_deploy
             step_compose
-            # Write hash to both local and VM (VM hash survives ephemeral runners)
             echo "$NEW_HASH" > "$SERVICE_DIR/.dist-hash"
             if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
                 ssh $SSH_OPTS "$DEPLOY_HOST" "echo '$NEW_HASH' > '$DEPLOY_PATH/.dist-hash'" 2>/dev/null || true
