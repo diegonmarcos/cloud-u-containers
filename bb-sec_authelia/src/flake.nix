@@ -99,7 +99,6 @@ ${mkResourceLines rule.resources_two_factor}
           build = ghcr.build;
           container_name = config.container_name;
           entrypoint = ["sh" "/config/init.sh"];
-          env_file = [".secrets"];
           environment = { TZ = config.timezone; };
           volumes = [
             "authelia_data:/data"
@@ -628,12 +627,7 @@ ${mkResourceLines rule.resources_two_factor}
       subst() {
         _file="$1"; shift
         for _var in "$@"; do
-          # Prefer .secrets.d file (immune to docker-compose $ interpolation)
-          if [ -f "/config/.secrets.d/$_var" ]; then
-            _val=$(cat "/config/.secrets.d/$_var")
-          else
-            eval _val="\$$_var"
-          fi
+          _val=$(cat "/config/.secrets.d/$_var")
           awk -v pat="\''${''${_var}}" -v rep="$_val" '{
             while (i = index($0, pat)) {
               $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
