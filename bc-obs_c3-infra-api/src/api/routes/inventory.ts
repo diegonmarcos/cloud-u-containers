@@ -933,20 +933,14 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       };
     }
 
-    // Build peers from native.wireguard.peers (has wg_public_key from build.json enrichment)
-    // Fallback to VMs with wg_ip if peers array exists in consolidated
-    const nativePeers = (wgConfig.peers ?? []) as any[];
-    const peers = nativePeers.length > 0
-      ? nativePeers.map((p: any) => ({
-          name: p.name, wg_ip: p.wg_ip, public_ip: p.public_ip ?? p.endpoint,
-          wg_public_key: p.wg_public_key, wg_port: p.wg_port ?? 51820, role: p.role ?? "spoke", endpoint: p.endpoint ?? p.public_ip,
-        }))
-      : Object.entries(vms)
-          .filter(([_, v]: any) => v.wg_ip && v.wg_public_key)
-          .map(([alias, v]: any) => ({
-            name: alias, wg_ip: v.wg_ip, public_ip: v.ip,
-            wg_public_key: v.wg_public_key, wg_port: v.wg_port, role: v.wg_role, endpoint: v.ip,
-          }));
+    // Build peers from VMs that have wg_ip (peers in config.json are VM ID strings)
+    // wg_public_key comes from VM config or HM build.json — filter out VMs without keys
+    const peers = Object.entries(vms)
+      .filter(([_, v]: any) => v.wg_ip)
+      .map(([alias, v]: any) => ({
+        name: alias, wg_ip: v.wg_ip, public_ip: v.ip,
+        wg_public_key: v.wg_public_key, wg_port: v.wg_port, role: v.wg_role, endpoint: v.ip,
+      }));
 
     const sshEntries = Object.entries(vms).map(([alias, v]: any) => ({
       host: alias, hostname: v.wg_ip ?? v.ip, user: v.user,
