@@ -933,13 +933,33 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       };
     }
 
-    // Build peers from VMs that have wg_ip (peers in config.json are VM ID strings)
-    // wg_public_key comes from VM config or HM build.json — filter out VMs without keys
+    // Build WG key lookup from HM build.json files (authoritative key source)
+    const hmKeysByAlias: Record<string, string> = {};
+    const hmDir = join(process.env.GIT_BASE ?? "", "cloud", "b_infra", "home-manager");
+    for (const alias of Object.keys(vms)) {
+      try {
+        const bjPath = join(hmDir, alias, "build.json");
+        const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+        if (bj.wg_public_key) hmKeysByAlias[alias] = bj.wg_public_key;
+      } catch { /* build.json not accessible — expected on VMs */ }
+    }
+
+    // Fallback: read existing keys from cloud-data-home-manager.json (preserved by derive)
+    const existingHmPath = join(process.env.GIT_BASE ?? "", "cloud", "cloud-data", "cloud-data-home-manager.json");
+    try {
+      const existing = JSON.parse(readFileSync(existingHmPath, "utf-8"));
+      for (const p of (existing.wireguard?.peers ?? [])) {
+        if (p.name && p.wg_public_key && !hmKeysByAlias[p.name]) hmKeysByAlias[p.name] = p.wg_public_key;
+      }
+    } catch { /* not available */ }
+
+    // Build peers from VMs that have wg_ip, enriched with keys
     const peers = Object.entries(vms)
       .filter(([_, v]: any) => v.wg_ip)
       .map(([alias, v]: any) => ({
         name: alias, wg_ip: v.wg_ip, public_ip: v.ip,
-        wg_public_key: v.wg_public_key, wg_port: v.wg_port, role: v.wg_role, endpoint: v.ip,
+        wg_public_key: v.wg_public_key ?? hmKeysByAlias[alias] ?? null,
+        wg_port: v.wg_port, role: v.wg_role, endpoint: v.ip,
       }));
 
     const sshEntries = Object.entries(vms).map(([alias, v]: any) => ({
