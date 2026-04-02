@@ -127,9 +127,12 @@ interface DaguDag {
 async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
   const r = await daguFetch("/api/v2/dags");
   if (!r.ok) return { dags: [], error: r.error };
-  const data = r.data as { DAGs?: Array<{ DAG?: DaguDag; Status?: unknown }> } | DaguDag[];
+  const data = r.data as any;
   if (Array.isArray(data)) return { dags: data };
-  if (data?.DAGs) return { dags: data.DAGs.map((d) => ({ ...d.DAG, Status: d.Status } as DaguDag)) };
+  // Dagu v2 API: lowercase "dags" array with nested "dag" objects
+  if (data?.dags) return { dags: data.dags.map((d: any) => ({ ...d.dag, Status: d.latestDAGRun?.status, StatusLabel: d.latestDAGRun?.statusLabel } as DaguDag)) };
+  // Dagu v1 API fallback: uppercase "DAGs"
+  if (data?.DAGs) return { dags: data.DAGs.map((d: any) => ({ ...d.DAG, Status: d.Status } as DaguDag)) };
   return { dags: [], error: "unexpected format" };
 }
 
