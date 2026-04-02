@@ -130,7 +130,11 @@ async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
   const data = r.data as any;
   if (Array.isArray(data)) return { dags: data };
   // Dagu v2 API: lowercase "dags" array with nested "dag" objects
-  if (data?.dags) return { dags: data.dags.map((d: any) => ({ ...d.dag, Status: d.latestDAGRun?.status, StatusLabel: d.latestDAGRun?.statusLabel } as DaguDag)) };
+  if (data?.dags) return { dags: data.dags.map((d: any) => ({
+    Name: d.dag?.name ?? d.fileName ?? "?",
+    Status: d.latestDAGRun ? { StatusText: d.latestDAGRun.statusLabel, StartedAt: d.latestDAGRun.startedAt, FinishedAt: d.latestDAGRun.finishedAt } : undefined,
+    Schedule: Array.isArray(d.dag?.schedule) ? d.dag.schedule.map((s: any) => s.expression).join(", ") : undefined,
+  } as DaguDag)) };
   // Dagu v1 API fallback: uppercase "DAGs"
   if (data?.DAGs) return { dags: data.DAGs.map((d: any) => ({ ...d.DAG, Status: d.Status } as DaguDag)) };
   return { dags: [], error: "unexpected format" };
