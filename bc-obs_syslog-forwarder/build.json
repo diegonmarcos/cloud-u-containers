@@ -7,5 +7,10 @@
   },
   "compose": {
     "custom": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "syslog-forwarder",
+    "dockerfile": "Dockerfile"
   }
 }

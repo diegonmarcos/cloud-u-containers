@@ -18,6 +18,11 @@
     "custom": true,
     "pre_hook": "init.sh"
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "snappymail",
+    "dockerfile": "Dockerfile"
+  },
   "proxy": {
     "primary": {
       "domain": "webmail.diegonmarcos.com",

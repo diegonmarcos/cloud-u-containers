@@ -11,6 +11,11 @@
   "compose": {
     "custom": true
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "fluent-bit",
+    "dockerfile": "Dockerfile"
+  },
   "containers": {
     "app": {
       "container_name": "fluent-bit",

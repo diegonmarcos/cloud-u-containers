@@ -3,5 +3,10 @@
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/syslog-forwarder"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "syslog-forwarder",
+    "dockerfile": "Dockerfile"
   }
 }

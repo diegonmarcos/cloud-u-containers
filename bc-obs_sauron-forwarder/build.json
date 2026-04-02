@@ -9,5 +9,10 @@
   },
   "compose": {
     "custom": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "sauron-forwarder",
+    "dockerfile": "Dockerfile"
   }
 }

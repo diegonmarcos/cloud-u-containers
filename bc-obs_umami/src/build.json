@@ -8,6 +8,11 @@
     "host": "oci-analytics",
     "remote_path": "/opt/containers/umami"
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "umami",
+    "dockerfile": "Dockerfile"
+  },
   "lifecycle": {
     "site-id": [
       {

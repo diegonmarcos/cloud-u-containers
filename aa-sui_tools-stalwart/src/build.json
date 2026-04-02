@@ -16,6 +16,11 @@
     "custom": true,
     "pre_hook": "init.sh"
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "stalwart",
+    "dockerfile": "Dockerfile"
+  },
   "proxy": {
     "primary": {
       "domain": "mail.diegonmarcos.com",
