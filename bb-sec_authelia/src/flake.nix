@@ -104,6 +104,7 @@ ${mkResourceLines rule.resources_two_factor}
           volumes = [
             "authelia_data:/data"
             "./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro"
+            "./.secrets.d:/config/.secrets.d:ro"
           ];
           ports = ["${svc.authelia.ip}:${toString config.port}:9091"];
           networks = ["auth-net"];
@@ -627,7 +628,12 @@ ${mkResourceLines rule.resources_two_factor}
       subst() {
         _file="$1"; shift
         for _var in "$@"; do
-          eval _val="\$$_var"
+          # Prefer .secrets.d file (immune to docker-compose $ interpolation)
+          if [ -f "/config/.secrets.d/$_var" ]; then
+            _val=$(cat "/config/.secrets.d/$_var")
+          else
+            eval _val="\$$_var"
+          fi
           awk -v pat="\''${''${_var}}" -v rep="$_val" '{
             while (i = index($0, pat)) {
               $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
