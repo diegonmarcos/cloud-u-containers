@@ -45,7 +45,7 @@
         volumes = [
           "/opt/ssh-keys/${config.container_name}:/root/.ssh:ro"
           "/nix/store:/nix/store:ro"
-          "~/.nix-profile/bin:/usr/local/nix-bin:ro"
+          "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro"
           "~/.config/gcloud:/root/.config/gcloud"
           "c3_git_repos:/root/git"
         ];
