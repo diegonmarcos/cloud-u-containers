@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 
 const exec = promisify(execFile);
 const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
-const GIT_ROOT = process.env.GIT_ROOT ?? "/home/diego/Mounts/Git";
+const GIT_ROOT = process.env.GIT_ROOT ?? "/home/diego/git";
 const REPOS: Record<string, string> = {
   cloud: `${GIT_ROOT}/cloud`,
   "cloud-data": `${GIT_ROOT}/cloud-data`,
