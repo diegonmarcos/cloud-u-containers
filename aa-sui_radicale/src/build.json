@@ -12,7 +12,7 @@
   "domain": "cal.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/home/ubuntu/radicale"
+    "remote_path": "/opt/containers/radicale"
   },
   "proxy": {
     "primary": {
