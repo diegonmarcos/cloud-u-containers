@@ -5,5 +5,10 @@
   "deploy": {
     "host": "oci-analytics",
     "remote_path": "/opt/containers/sauron-forwarder"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "sauron-forwarder",
+    "dockerfile": "Dockerfile"
   }
 }

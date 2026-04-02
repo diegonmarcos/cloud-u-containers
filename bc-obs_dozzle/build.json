@@ -18,6 +18,11 @@
   "compose": {
     "custom": true
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "dozzle",
+    "dockerfile": "Dockerfile"
+  },
   "secrets": {
     "escape_dollars": "true"
   },

@@ -11,6 +11,11 @@
   "compose": {
     "custom": true
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "umami",
+    "dockerfile": "Dockerfile"
+  },
   "lifecycle": {
     "site-id": [
       {

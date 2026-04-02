@@ -15,6 +15,11 @@
     "remote_path": "/opt/containers/dozzle",
     "compose_flags": "--build"
   },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "dozzle",
+    "dockerfile": "Dockerfile"
+  },
   "secrets": {
     "escape_dollars": "true"
   },
