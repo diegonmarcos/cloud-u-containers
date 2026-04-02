@@ -246,12 +246,10 @@ export function healthDrift(): DriftEntry[] {
       continue;
     }
 
-    // A service is considered "deployed" if any of its compose container names are running
-    const composeNames: string[] = (svc as any).compose?.containers ?? [];
+    // A service is "deployed" if any of its compose container names are running
+    const composeNames: string[] = (svc as any).compose?.containers ?? [serviceName];
     const matchingContainers = Array.from(vmContainers).filter((name) =>
-      composeNames.length > 0
-        ? composeNames.includes(name)
-        : name.includes(serviceName)
+      composeNames.includes(name)
     );
     const isDeployed = matchingContainers.length > 0;
 

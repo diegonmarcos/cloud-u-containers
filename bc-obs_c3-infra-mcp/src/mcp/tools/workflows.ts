@@ -118,25 +118,33 @@ async function ghaWorkflows(): Promise<{ id: number; name: string; state: string
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface DaguDag {
-  Name: string;
-  Status?: { Status?: number; StatusText?: string; StartedAt?: string; FinishedAt?: string };
-  Schedule?: string;
-  NextRun?: string;
+  name: string;
+  statusText?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  schedule?: string;
 }
 
 async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
   const r = await daguFetch("/api/v2/dags");
   if (!r.ok) return { dags: [], error: r.error };
   const data = r.data as any;
-  if (Array.isArray(data)) return { dags: data };
-  // Dagu v2 API: lowercase "dags" array with nested "dag" objects
+  // Dagu v2 API
   if (data?.dags) return { dags: data.dags.map((d: any) => ({
-    Name: d.dag?.name ?? d.fileName ?? "?",
-    Status: d.latestDAGRun ? { StatusText: d.latestDAGRun.statusLabel, StartedAt: d.latestDAGRun.startedAt, FinishedAt: d.latestDAGRun.finishedAt } : undefined,
-    Schedule: Array.isArray(d.dag?.schedule) ? d.dag.schedule.map((s: any) => s.expression).join(", ") : undefined,
-  } as DaguDag)) };
-  // Dagu v1 API fallback: uppercase "DAGs"
-  if (data?.DAGs) return { dags: data.DAGs.map((d: any) => ({ ...d.DAG, Status: d.Status } as DaguDag)) };
+    name: d.dag?.name ?? d.fileName ?? "?",
+    statusText: d.latestDAGRun?.statusLabel,
+    startedAt: d.latestDAGRun?.startedAt,
+    finishedAt: d.latestDAGRun?.finishedAt,
+    schedule: Array.isArray(d.dag?.schedule) ? d.dag.schedule.map((s: any) => s.expression).join(", ") : undefined,
+  })) };
+  // Dagu v1 API fallback
+  if (data?.DAGs) return { dags: data.DAGs.map((d: any) => ({
+    name: d.DAG?.Name ?? "?",
+    statusText: d.Status?.StatusText,
+    startedAt: d.Status?.StartedAt,
+    finishedAt: d.Status?.FinishedAt,
+    schedule: d.DAG?.Schedule,
+  })) };
   return { dags: [], error: "unexpected format" };
 }
 
@@ -318,17 +326,12 @@ async function workflowsDagu(): Promise<string> {
 
   sections.push(`${dags.length} DAGs\n`);
 
-  const rows = dags.map((d) => {
-    const status = d.Status as Record<string, unknown> | undefined;
-    const statusText = String(status?.StatusText ?? status?.Status ?? "unknown");
-    const started = status?.StartedAt ? timeAgo(String(status.StartedAt)) : "-";
-    return [
-      d.Name ?? "?",
-      statusText,
-      started,
-      d.Schedule ?? "-",
-    ];
-  });
+  const rows = dags.map((d) => [
+    d.name,
+    d.statusText ?? "unknown",
+    d.startedAt ? timeAgo(d.startedAt) : "-",
+    d.schedule ?? "-",
+  ]);
 
   sections.push(formatTable(["DAG", "Status", "Last Run", "Schedule"], rows));
 
@@ -351,15 +354,14 @@ async function workflowsDaguErrors(): Promise<string> {
   const failed: { name: string; status: string; when: string }[] = [];
 
   for (const d of dags) {
-    const status = d.Status as Record<string, unknown> | undefined;
-    const statusText = String(status?.StatusText ?? "").toLowerCase();
-    const finishedAt = status?.FinishedAt ? new Date(String(status.FinishedAt)).getTime() : 0;
+    const statusText = (d.statusText ?? "").toLowerCase();
+    const finishedAt = d.finishedAt ? new Date(d.finishedAt).getTime() : 0;
 
     if ((statusText === "error" || statusText === "failed" || statusText === "cancel") && finishedAt > cutoff) {
       failed.push({
-        name: d.Name ?? "?",
+        name: d.name,
         status: statusText,
-        when: status?.FinishedAt ? timeAgo(String(status.FinishedAt)) : "?",
+        when: d.finishedAt ? timeAgo(d.finishedAt) : "?",
       });
     }
   }
@@ -390,7 +392,7 @@ async function workflowsDaguTrigger(dagName?: string): Promise<string> {
 
     sections.push(`Triggering ${dags.length} DAGs...`);
     for (const d of dags) {
-      const name = d.Name;
+      const name = d.name;
       if (!name) continue;
       const r = await daguFetch(`/api/v2/dags/${encodeURIComponent(name)}/start`, "POST", "{}");
       sections.push(`  ${r.ok ? "✓" : "✗"} ${name}${r.ok ? "" : ` — ${r.error}`}`);
@@ -495,16 +497,12 @@ export function registerWorkflowTools(server: McpServer): void {
       if (error) return `Dagu API error: ${error}`;
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
       const ok = dags.filter((d) => {
-        const s = d.Status as Record<string, unknown> | undefined;
-        const st = String(s?.StatusText ?? "").toLowerCase();
-        const fin = s?.FinishedAt ? new Date(String(s.FinishedAt)).getTime() : 0;
+        const st = (d.statusText ?? "").toLowerCase();
+        const fin = d.finishedAt ? new Date(d.finishedAt).getTime() : 0;
         return (st === "success" || st === "done") && fin > cutoff;
       });
       if (ok.length === 0) return "No successful Dagu runs in the last 24 hours.";
-      const rows = ok.map((d) => {
-        const s = d.Status as Record<string, unknown> | undefined;
-        return [d.Name ?? "?", s?.FinishedAt ? timeAgo(String(s.FinishedAt)) : "?"];
-      });
+      const rows = ok.map((d) => [d.name, d.finishedAt ? timeAgo(d.finishedAt) : "?"]);
       return `DAGU SUCCESSES — LAST 24H\n${"═".repeat(70)}\n${ok.length} successful DAG(s)\n\n${formatTable(["DAG", "When"], rows)}`;
     }),
   );
@@ -519,7 +517,7 @@ export function registerWorkflowTools(server: McpServer): void {
       if (!dag) {
         const { dags, error } = await daguList();
         if (error) return `Dagu API error: ${error}`;
-        return `Available DAGs:\n${dags.map((d) => `  ${d.Name} (${d.Schedule ?? "manual"})`).join("\n")}`;
+        return `Available DAGs:\n${dags.map((d) => `  ${d.name} (${d.schedule ?? "manual"})`).join("\n")}`;
       }
       return workflowsDaguTrigger(dag);
     }),
