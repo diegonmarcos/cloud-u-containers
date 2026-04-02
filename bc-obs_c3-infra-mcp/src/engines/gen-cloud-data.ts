@@ -476,13 +476,28 @@ function main() {
     } catch { /* skip if unreadable */ }
   }
 
-  const sshEntries = Object.entries(homeManagerVms).map(([alias, v]: [string, any]) => ({
-    host: alias,
-    hostname: v.wg_ip ?? v.ip,
-    user: v.user,
-    identity_file: v.method === "gcloud" ? "~/.ssh/google_compute_engine" : "~/.ssh/vault_id_rsa",
-    port: 22,
-  }));
+  const sshEntries = Object.entries(homeManagerVms).flatMap(([alias, v]: [string, any]) => {
+    const idFile = v.method === "gcloud" ? "~/.ssh/google_compute_engine" : "~/.ssh/vault_id_rsa";
+    const hostname = v.wg_ip ?? v.ip;
+    const entries = [{
+      host: alias,
+      hostname,
+      user: v.user,
+      identity_file: idFile,
+      port: 22,
+    }];
+    // Dropbear rescue SSH alias (same host, port 2200)
+    if (v.rescue_port) {
+      entries.push({
+        host: `${alias}-dropbear`,
+        hostname,
+        user: v.user,
+        identity_file: idFile,
+        port: v.rescue_port,
+      });
+    }
+    return entries;
+  });
 
   const wireguardSection = {
     subnet: native.wireguard?.subnet ?? "10.0.0.0/24",

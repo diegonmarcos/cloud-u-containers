@@ -1,6 +1,6 @@
 {
-  "_generated": "2026-03-31T16:14:02.279Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/matomo-sites",
+  "_generated": "2026-04-02T17:15:09.273Z",
+  "_source": "cloud-data-topology.json via /cloud-data/matomo-sites",
   "sites": [
     {
       "name": "VS Code IDE (ide.diegonmarcos.com)",
@@ -89,17 +89,17 @@
     },
     {
       "name": "C3 REST API — Cloud Control Center Fastify API",
-      "url": "https://api.diegonmarcos.com/c3-api",
+      "url": "https://api.diegonmarcos.com",
       "service": "c3-infra-api"
     },
     {
       "name": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
-      "url": "https://mcp.diegonmarcos.com/c3-infra-mcp",
+      "url": "https://mcp.diegonmarcos.com",
       "service": "c3-infra-mcp"
     },
     {
       "name": "C3 Services REST API — service API gateway Fastify API",
-      "url": "https://api.diegonmarcos.com/services",
+      "url": "https://api.diegonmarcos.com",
       "service": "c3-services-api"
     },
     {
