@@ -6,7 +6,7 @@
   "domain": "mail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/stalwart",
+    "remote_path": "/opt/containers/stalwart",
     "excludes": [
       "data/**",
       "dkim/**"

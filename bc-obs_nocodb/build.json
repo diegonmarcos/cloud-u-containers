@@ -10,7 +10,7 @@
   "domain": "db.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/home/ubuntu/nocodb"
+    "remote_path": "/opt/containers/nocodb"
   },
   "proxy": {
     "primary": {

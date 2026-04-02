@@ -6,13 +6,14 @@
   "domain": "mail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/stalwart",
+    "remote_path": "/opt/containers/stalwart",
     "excludes": [
       "data/**",
       "dkim/**"
     ]
   },
   "compose": {
+    "custom": true,
     "pre_hook": "init.sh"
   },
   "proxy": {
@@ -23,23 +24,18 @@
       "landing_page": "mymail",
       "l4_ports": [
         {
-          "port": 25,
-          "upstream": "10.0.0.3:25",
-          "comment": "SMTP inbound (Cloudflare MX)"
-        },
-        {
           "port": 993,
-          "upstream": "10.0.0.3:993",
+          "upstream": "130.110.251.193:993",
           "comment": "IMAPS"
         },
         {
           "port": 465,
-          "upstream": "10.0.0.3:465",
+          "upstream": "130.110.251.193:465",
           "comment": "SMTPS"
         },
         {
           "port": 587,
-          "upstream": "10.0.0.3:587",
+          "upstream": "130.110.251.193:587",
           "comment": "SMTP Submission"
         }
       ]
