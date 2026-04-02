@@ -410,6 +410,19 @@ function deriveHomeManager(c: any): DerivedFile {
     } catch { /* skip unreadable */ }
   }
 
+  // Fallback: preserve existing keys from cloud-data-home-manager.json
+  // (critical when running on VMs where HM build.json isn't accessible)
+  const existingHmPath = join(CLOUD_DATA_DIR, "cloud-data-home-manager.json");
+  const existingKeysByName = new Map<string, string>();
+  if (existsSync(existingHmPath)) {
+    try {
+      const existing = JSON.parse(readFileSync(existingHmPath, "utf-8"));
+      for (const peer of (existing.wireguard?.peers ?? [])) {
+        if (peer.name && peer.wg_public_key) existingKeysByName.set(peer.name, peer.wg_public_key);
+      }
+    } catch { /* skip */ }
+  }
+
   if (Array.isArray(wg.peers) && c.vms) {
     const vmsByAlias = new Map<string, any>();
     for (const vm of Object.values(c.vms) as any[]) {
@@ -418,13 +431,14 @@ function deriveHomeManager(c: any): DerivedFile {
     wg.peers = wg.peers.map((peer: any) => {
       const vm = vmsByAlias.get(peer.name);
       const enriched: any = { ...peer };
-      // Priority: HM build.json > config.json VM entry > existing peer value
+      // Priority: HM build.json > config.json VM entry > existing cloud-data > peer value
       const hmKey = hmKeysByAlias.get(peer.name);
+      const existingKey = existingKeysByName.get(peer.name);
       if (hmKey) enriched.wg_public_key = hmKey;
       else if (vm?.wg_public_key && !peer.wg_public_key) enriched.wg_public_key = vm.wg_public_key;
+      else if (existingKey && !enriched.wg_public_key) enriched.wg_public_key = existingKey;
       if (vm?.wg_port && !peer.wg_port) enriched.wg_port = vm.wg_port;
       if (vm?.ip && !peer.public_ip) enriched.public_ip = vm.ip;
-      // Extract IP from endpoint "IP:PORT" if public_ip still missing
       if (!enriched.public_ip && peer.endpoint?.includes(":")) {
         enriched.public_ip = peer.endpoint.split(":")[0];
       }
