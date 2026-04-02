@@ -22,7 +22,6 @@ services:
     env_file:
       - .secrets
     environment:
-      - PORT=8081
       - NODE_ENV=production
       - GIT_BASE=/root/git
       - AUTHELIA_OIDC_CLIENT_ID=c3-infra-api
@@ -32,10 +31,11 @@ services:
       - CF_API_KEY=${CF_API_KEY}
       - CF_API_EMAIL=${CF_API_EMAIL}
       - PATH=/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - PORT=8081
     volumes:
       - /opt/ssh-keys/c3-infra-api:/root/.ssh:ro
       - /nix/store:/nix/store:ro
-      - ~/.nix-profile/bin:/usr/local/nix-bin:ro
+      - /home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro
       - ~/.config/gcloud:/root/.config/gcloud
       - c3_git_repos:/root/git
     healthcheck:
@@ -44,7 +44,14 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

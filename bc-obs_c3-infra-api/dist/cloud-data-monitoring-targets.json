@@ -1,219 +1,174 @@
 {
-  "_generated": "2026-03-26T19:44:27.435Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/monitoring-targets",
+  "_generated": "2026-04-02T16:40:09.302Z",
+  "_source": "cloud-data-topology.json via /cloud-data/monitoring-targets",
   "endpoint_checks": [
     {
-      "service": "code-server",
-      "url": "https://ide.diegonmarcos.com/"
+      "url": "https://ide.diegonmarcos.com/",
+      "name": "VS Code IDE (ide.diegonmarcos.com)",
+      "expected_status": 200
     },
     {
-      "service": "etherpad",
-      "url": "https://pad.diegonmarcos.com/"
+      "url": "https://pad.diegonmarcos.com/",
+      "name": "Etherpad collaborative editor",
+      "expected_status": 200
     },
     {
-      "service": "filebrowser",
-      "url": "https://files.diegonmarcos.com/health"
+      "url": "https://files.diegonmarcos.com/health",
+      "name": "FileBrowser web file manager (NEW - not deployed yet)",
+      "expected_status": 200
     },
     {
-      "service": "grist",
-      "url": "https://sheets.diegonmarcos.com/"
+      "url": "https://sheets.diegonmarcos.com/",
+      "name": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
+      "expected_status": 200
     },
     {
-      "service": "hedgedoc",
-      "url": "https://doc.diegonmarcos.com/"
+      "url": "https://doc.diegonmarcos.com/",
+      "name": "Collaborative markdown editor",
+      "expected_status": 200
     },
     {
-      "service": "photoprism",
-      "url": "https://photos.diegonmarcos.com/api/v1/status"
+      "url": "https://chat.diegonmarcos.com/api/v4/system/ping",
+      "name": "Mattermost team chat with ntfy bridge and C3 command bot",
+      "expected_status": 200
     },
     {
-      "service": "radicale",
-      "url": "https://cal.diegonmarcos.com/.web/"
+      "url": "https://photos.diegonmarcos.com/api/v1/status",
+      "name": "PhotoPrism AI-powered photo management (oci-flex-1)",
+      "expected_status": 200
     },
     {
-      "service": "revealmd",
-      "url": "https://slides.diegonmarcos.com/"
+      "url": "https://cal.diegonmarcos.com/.web/",
+      "name": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
+      "expected_status": 200
     },
     {
-      "service": "vaultwarden",
-      "url": "https://vault.diegonmarcos.com/alive"
+      "url": "https://slides.diegonmarcos.com/",
+      "name": "Reveal.js markdown presentations (NEW - not deployed yet)",
+      "expected_status": 200
     },
     {
-      "service": "c3-infra-api",
-      "url": "https://api.diegonmarcos.com/c3-api/health"
+      "url": "https://webmail.diegonmarcos.com/",
+      "name": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
+      "expected_status": 200
     },
     {
-      "service": "c3-services-api",
-      "url": "https://api.diegonmarcos.com/services/health"
+      "url": "https://mail.diegonmarcos.com/",
+      "name": "Stalwart Mail Server (mail.diegonmarcos.com)",
+      "expected_status": 200
     },
     {
-      "service": "dagu",
-      "url": "https://workflows.diegonmarcos.com/"
+      "url": "https://vault.diegonmarcos.com/alive",
+      "name": "Bitwarden password manager",
+      "expected_status": 200
     },
     {
-      "service": "nocodb",
-      "url": "https://db.diegonmarcos.com/api/v1/health"
+      "url": "https://api.diegonmarcos.comwget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
+      "name": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+      "expected_status": 200
     },
     {
-      "service": "ntfy",
-      "url": "https://rss.diegonmarcos.com/"
+      "url": "https://auth.diegonmarcos.com/api/health",
+      "name": "SSO and 2FA authentication portal",
+      "expected_status": 200
+    },
+    {
+      "url": "https://api.diegonmarcos.com/c3-api/health",
+      "name": "C3 REST API — Cloud Control Center Fastify API",
+      "expected_status": 200
+    },
+    {
+      "url": "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp",
+      "name": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+      "expected_status": 200
+    },
+    {
+      "url": "https://api.diegonmarcos.com/services/health",
+      "name": "C3 Services REST API — service API gateway Fastify API",
+      "expected_status": 200
+    },
+    {
+      "url": "https://workflows.diegonmarcos.com/",
+      "name": "Dagu - Lightweight DAG-based workflow scheduler",
+      "expected_status": 200
+    },
+    {
+      "url": "https://grafana.diegonmarcos.comwget -q --spider http://localhost:3200/api/health",
+      "name": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
+      "expected_status": 200
+    },
+    {
+      "url": "https://analytics.diegonmarcos.com/",
+      "name": "Matomo hybrid analytics (oci-analytics)",
+      "expected_status": 200
+    },
+    {
+      "url": "https://db.diegonmarcos.com/api/v1/health",
+      "name": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
+      "expected_status": 200
+    },
+    {
+      "url": "https://rss.diegonmarcos.com/",
+      "name": "Push notification server",
+      "expected_status": 200
+    },
+    {
+      "url": "https://analytics.diegonmarcos.comcurl -sf http://localhost:3000/api/heartbeat || exit 1",
+      "name": "Umami Analytics - lightweight privacy-focused web analytics",
+      "expected_status": 200
+    },
+    {
+      "url": "https://windmill.diegonmarcos.comcurl -f http://localhost:8000/api/version",
+      "name": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+      "expected_status": 200
+    },
+    {
+      "url": "https://git.diegonmarcos.comcurl -f http://localhost:3002/",
+      "name": "Self-hosted Git service",
+      "expected_status": 200
     }
   ],
   "dns_checks": [
-    {
-      "service": "code-server",
-      "domain": "ide.diegonmarcos.com"
-    },
-    {
-      "service": "etherpad",
-      "domain": "pad.diegonmarcos.com"
-    },
-    {
-      "service": "filebrowser",
-      "domain": "files.diegonmarcos.com"
-    },
-    {
-      "service": "grist",
-      "domain": "sheets.diegonmarcos.com"
-    },
-    {
-      "service": "hedgedoc",
-      "domain": "doc.diegonmarcos.com"
-    },
-    {
-      "service": "photoprism",
-      "domain": "photos.diegonmarcos.com"
-    },
-    {
-      "service": "radicale",
-      "domain": "cal.diegonmarcos.com"
-    },
-    {
-      "service": "revealmd",
-      "domain": "slides.diegonmarcos.com"
-    },
-    {
-      "service": "vaultwarden",
-      "domain": "vault.diegonmarcos.com"
-    },
-    {
-      "service": "c3-infra-api",
-      "domain": "api.diegonmarcos.com/c3-api"
-    },
-    {
-      "service": "c3-services-api",
-      "domain": "api.diegonmarcos.com/services"
-    },
-    {
-      "service": "dagu",
-      "domain": "workflows.diegonmarcos.com"
-    },
-    {
-      "service": "nocodb",
-      "domain": "db.diegonmarcos.com"
-    },
-    {
-      "service": "ntfy",
-      "domain": "rss.diegonmarcos.com"
-    }
+    "ide.diegonmarcos.com",
+    "pad.diegonmarcos.com",
+    "files.diegonmarcos.com",
+    "sheets.diegonmarcos.com",
+    "doc.diegonmarcos.com",
+    "photos.diegonmarcos.com",
+    "cal.diegonmarcos.com",
+    "slides.diegonmarcos.com",
+    "vault.diegonmarcos.com",
+    "api.diegonmarcos.com/c3-api",
+    "api.diegonmarcos.com/services",
+    "workflows.diegonmarcos.com",
+    "db.diegonmarcos.com",
+    "rss.diegonmarcos.com"
   ],
   "tls_checks": [
-    {
-      "service": "code-server",
-      "domain": "ide.diegonmarcos.com"
-    },
-    {
-      "service": "etherpad",
-      "domain": "pad.diegonmarcos.com"
-    },
-    {
-      "service": "filebrowser",
-      "domain": "files.diegonmarcos.com"
-    },
-    {
-      "service": "grist",
-      "domain": "sheets.diegonmarcos.com"
-    },
-    {
-      "service": "hedgedoc",
-      "domain": "doc.diegonmarcos.com"
-    },
-    {
-      "service": "mattermost-bots",
-      "domain": "chat.diegonmarcos.com"
-    },
-    {
-      "service": "photoprism",
-      "domain": "photos.diegonmarcos.com"
-    },
-    {
-      "service": "radicale",
-      "domain": "cal.diegonmarcos.com"
-    },
-    {
-      "service": "revealmd",
-      "domain": "slides.diegonmarcos.com"
-    },
-    {
-      "service": "stalwart",
-      "domain": "mail.diegonmarcos.com"
-    },
-    {
-      "service": "vaultwarden",
-      "domain": "vault.diegonmarcos.com"
-    },
-    {
-      "service": "crawlee-cloud",
-      "domain": "api.diegonmarcos.com"
-    },
-    {
-      "service": "authelia",
-      "domain": "auth.diegonmarcos.com"
-    },
-    {
-      "service": "c3-infra-api",
-      "domain": "api.diegonmarcos.com/c3-api"
-    },
-    {
-      "service": "c3-services-api",
-      "domain": "api.diegonmarcos.com/services"
-    },
-    {
-      "service": "dagu",
-      "domain": "workflows.diegonmarcos.com"
-    },
-    {
-      "service": "lgtm",
-      "domain": "grafana.diegonmarcos.com"
-    },
-    {
-      "service": "matomo",
-      "domain": "analytics.diegonmarcos.com"
-    },
-    {
-      "service": "nocodb",
-      "domain": "db.diegonmarcos.com"
-    },
-    {
-      "service": "ntfy",
-      "domain": "rss.diegonmarcos.com"
-    },
-    {
-      "service": "umami",
-      "domain": "analytics.diegonmarcos.com"
-    },
-    {
-      "service": "windmill",
-      "domain": "windmill.diegonmarcos.com"
-    },
-    {
-      "service": "backup-gitea",
-      "domain": "git.diegonmarcos.com"
-    },
-    {
-      "service": "gitea",
-      "domain": "git.diegonmarcos.com"
-    }
+    "ide.diegonmarcos.com",
+    "pad.diegonmarcos.com",
+    "files.diegonmarcos.com",
+    "sheets.diegonmarcos.com",
+    "doc.diegonmarcos.com",
+    "chat.diegonmarcos.com",
+    "photos.diegonmarcos.com",
+    "cal.diegonmarcos.com",
+    "slides.diegonmarcos.com",
+    "mail.diegonmarcos.com",
+    "vault.diegonmarcos.com",
+    "api.diegonmarcos.com",
+    "auth.diegonmarcos.com",
+    "api.diegonmarcos.com/c3-api",
+    "api.diegonmarcos.com/services",
+    "workflows.diegonmarcos.com",
+    "grafana.diegonmarcos.com",
+    "analytics.diegonmarcos.com",
+    "db.diegonmarcos.com",
+    "rss.diegonmarcos.com",
+    "analytics.diegonmarcos.com",
+    "windmill.diegonmarcos.com",
+    "git.diegonmarcos.com",
+    "git.diegonmarcos.com"
   ],
   "vms": [
     {

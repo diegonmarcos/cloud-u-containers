@@ -1,6 +1,6 @@
 {
-  "_generated": "2026-03-31T16:14:02.276Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/home-manager",
+  "_generated": "2026-04-02T17:15:11.339Z",
+  "_source": "config.json via /cloud-data/home-manager",
   "owner": {
     "name": "Diego Marcos",
     "email": "diegonmarcos@gmail.com",
@@ -25,59 +25,9 @@
         "cpu": 1,
         "ram_gb": 1,
         "disk_gb": 0,
-        "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro",
-        "cloud_name": "oci-E2-f_0",
-        "cloud_zone": "eu-marseille-1",
-        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
+        "shape": "VM.Standard.E2.1.Micro"
       },
-      "public_ports": [
-        {
-          "port": 25,
-          "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
-        },
-        {
-          "port": 465,
-          "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
-        },
-        {
-          "port": 587,
-          "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
-        },
-        {
-          "port": 993,
-          "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
-        },
-        {
-          "port": 4190,
-          "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
-        },
-        {
-          "port": 8080,
-          "proto": "tcp",
-          "desc": "SMTP proxy (CF Worker ingress)"
-        },
-        {
-          "port": 8443,
-          "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
-        },
-        {
-          "port": 22000,
-          "proto": "tcp",
-          "desc": "Syncthing transfer"
-        },
-        {
-          "port": 21027,
-          "proto": "udp",
-          "desc": "Syncthing discovery"
-        }
-      ],
+      "public_ports": [],
       "idle_shutdown": null,
       "containers": [
         "snappymail",
@@ -106,11 +56,7 @@
         "cpu": 1,
         "ram_gb": 1,
         "disk_gb": 0,
-        "arch": "x86_64",
-        "shape": "VM.Standard.E2.1.Micro",
-        "cloud_name": "oci-E2-f_1",
-        "cloud_zone": "eu-marseille-1",
-        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
+        "shape": "VM.Standard.E2.1.Micro"
       },
       "public_ports": [],
       "idle_shutdown": null,
@@ -118,9 +64,11 @@
         "alerts-api",
         "dozzle",
         "fluent-bit",
-        "matomo",
+        "matomo-hybrid",
         "sauron-forwarder",
-        "umami"
+        "umami",
+        "umami-db",
+        "umami-setup"
       ],
       "method": "key",
       "gha": {
@@ -142,72 +90,46 @@
         "cpu": 4,
         "ram_gb": 24,
         "disk_gb": 0,
-        "arch": "aarch64",
-        "shape": "VM.Standard.A1.Flex",
-        "cloud_name": "oci-A1-f_0",
-        "cloud_zone": "eu-marseille-1",
-        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
+        "shape": "VM.Standard.A1.Flex"
       },
-      "public_ports": [
-        {
-          "port": 3010,
-          "proto": "tcp",
-          "desc": "AFFiNE"
-        },
-        {
-          "port": 8081,
-          "proto": "tcp",
-          "desc": "C3 API"
-        },
-        {
-          "port": 3000,
-          "proto": "tcp",
-          "desc": "Crawlee/Gitea/Backup"
-        },
-        {
-          "port": 3001,
-          "proto": "tcp",
-          "desc": "Crawlee API"
-        },
-        {
-          "port": 2222,
-          "proto": "tcp",
-          "desc": "Gitea SSH"
-        },
-        {
-          "port": 2223,
-          "proto": "tcp",
-          "desc": "Backup BUP SSH"
-        },
-        {
-          "port": 2224,
-          "proto": "tcp",
-          "desc": "Backup Borg SSH"
-        },
-        {
-          "port": 8099,
-          "proto": "tcp",
-          "desc": "cloud-spec httpd"
-        }
-      ],
+      "public_ports": [],
       "idle_shutdown": null,
       "containers": [
         "code-server",
-        "etherpad",
-        "filebrowser",
+        "etherpad_app",
+        "etherpad_postgres",
+        "filebrowser_app",
         "google-workspace-mcp",
-        "grist",
-        "hedgedoc",
+        "grist_app",
+        "hedgedoc_app",
+        "hedgedoc_postgres",
         "mail-mcp",
+        "mattermost",
+        "mattermost-postgres",
         "mattermost-bots",
         "mattermost-mcp",
-        "photoprism",
+        "photoprism_app",
+        "photoprism_mariadb",
+        "photoprism_rclone",
         "photos-webhook",
         "radicale",
-        "revealmd",
-        "crawlee-cloud",
-        "quant-lab-full",
-        "quant-lab-light",
+        "revealmd_app",
+        "crawlee_api",
+        "crawlee_runner",
+        "crawlee_dashboard",
+        "crawlee_scheduler",
+        "crawlee_db",
+        "crawlee_redis",
+        "crawlee_minio",
+        "quant_full_research",
+        "quant_full_analytics",
+        "quant_full_ml",
+        "quant_full_risk",
+        "quant_full_engine",
+        "quant_full_db",
+        "quant_light_research",
+        "quant_light_engine",
+        "quant_light_db",
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
         "rig-agentic-sonn-14bq8",
@@ -218,12 +140,18 @@
         "c3-services-mcp",
         "cloud-cgc-mcp",
         "cloud-spec",
-        "lgtm",
+        "lgtm_grafana",
+        "lgtm_loki",
+        "lgtm_tempo",
+        "lgtm_mimir",
         "nocodb",
-        "windmill",
+        "nocodb-db",
+        "windmill-server",
+        "windmill-db",
+        "windmill-worker",
         "backup-borg",
         "backup-bup",
-        "backup-gitea",
+        "gitea",
         "gitea",
         "kg-graph"
       ],
@@ -247,14 +175,8 @@
         "cpu": 4,
         "ram_gb": 15,
         "disk_gb": 50,
-        "arch": "x86_64",
         "shape": "n1-standard-4",
-        "gpu": "NVIDIA T4",
-        "vram_gb": 16,
-        "machine_type": "n1-standard-4",
-        "cloud_name": "ollama-spot-gpu",
-        "cloud_zone": "us-central1-a",
-        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
+        "machine_type": "n1-standard-4"
       },
       "public_ports": [],
       "idle_shutdown": {
@@ -280,7 +202,7 @@
       "wg_ip": "10.0.0.1",
       "wg_public_key": null,
       "wg_port": 51820,
-      "wg_role": "hub",
+      "wg_role": "spoke",
       "user": "diego",
       "home": "/home/diego",
       "rescue_port": 2200,
@@ -288,53 +210,22 @@
         "cpu": 2,
         "ram_gb": 2,
         "disk_gb": 32,
-        "arch": "x86_64",
         "shape": "e2-small",
-        "machine_type": "e2-small",
-        "cloud_name": "arch-1",
-        "cloud_zone": "us-central1-a",
-        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
+        "machine_type": "e2-small"
       },
-      "public_ports": [
-        {
-          "port": 80,
-          "proto": "tcp",
-          "desc": "HTTP (Caddy)"
-        },
-        {
-          "port": 443,
-          "proto": "tcp",
-          "desc": "HTTPS (Caddy)"
-        },
-        {
-          "port": 443,
-          "proto": "udp",
-          "desc": "QUIC (Caddy)"
-        },
-        {
-          "port": 993,
-          "proto": "tcp",
-          "desc": "IMAPS (Caddy L4 → oci-mail)"
-        },
-        {
-          "port": 465,
-          "proto": "tcp",
-          "desc": "SMTPS (Caddy L4 → oci-mail)"
-        },
-        {
-          "port": 587,
-          "proto": "tcp",
-          "desc": "SMTP Submission (Caddy L4 → oci-mail)"
-        }
-      ],
+      "public_ports": [],
       "idle_shutdown": null,
       "containers": [
         "vaultwarden",
         "hickory-dns",
         "authelia",
+        "authelia-redis",
         "caddy",
         "introspect-proxy",
+        "introspect-proxy",
         "ntfy",
+        "syslog-bridge",
+        "github-rss",
         "postlite",
         "redis"
       ],
@@ -358,10 +249,7 @@
       "specs": {
         "cpu": null,
         "ram_gb": null,
-        "disk_gb": null,
-        "arch": "x86_64",
-        "gpu": "RTX A4000",
-        "vram_gb": 16
+        "disk_gb": null
       },
       "public_ports": [],
       "idle_shutdown": null,
@@ -373,69 +261,69 @@
   "wireguard": {
     "subnet": "10.0.0.0/24",
     "port": 51820,
-    "hub": "gcp-E2-f_0",
+    "hub": null,
     "peers": [
       {
         "name": "oci-mail",
         "wg_ip": "10.0.0.3",
+        "public_ip": "130.110.251.193",
         "wg_public_key": null,
-        "endpoint": "130.110.251.193:51820",
-        "role": "spoke",
         "wg_port": 51820,
-        "public_ip": "130.110.251.193"
+        "role": "spoke",
+        "endpoint": "130.110.251.193"
       },
       {
         "name": "oci-analytics",
         "wg_ip": "10.0.0.4",
+        "public_ip": "129.151.228.66",
         "wg_public_key": null,
-        "endpoint": "129.151.228.66:51820",
-        "role": "spoke",
         "wg_port": 51820,
-        "public_ip": "129.151.228.66"
+        "role": "spoke",
+        "endpoint": "129.151.228.66"
       },
       {
         "name": "oci-apps",
         "wg_ip": "10.0.0.6",
+        "public_ip": "82.70.229.129",
         "wg_public_key": null,
-        "endpoint": "82.70.229.129:51820",
-        "role": "spoke",
         "wg_port": 51820,
-        "public_ip": "82.70.229.129"
+        "role": "spoke",
+        "endpoint": "82.70.229.129"
       },
       {
         "name": "gcp-t4",
         "wg_ip": "10.0.0.8",
+        "public_ip": "34.173.227.250",
         "wg_public_key": null,
-        "endpoint": "34.173.227.250:51820",
-        "role": "spoke",
         "wg_port": 51820,
-        "public_ip": "34.173.227.250"
+        "role": "spoke",
+        "endpoint": "34.173.227.250"
       },
       {
         "name": "gcp-proxy",
         "wg_ip": "10.0.0.1",
+        "public_ip": "35.226.147.64",
         "wg_public_key": null,
-        "endpoint": "35.226.147.64:51820",
-        "role": "hub",
         "wg_port": 51820,
-        "public_ip": "35.226.147.64"
+        "role": "spoke",
+        "endpoint": "35.226.147.64"
       }
     ],
     "clients": {
       "surface": {
         "wg_ip": "10.0.0.5",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
       },
       "termux": {
         "wg_ip": "10.0.0.9",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
       },
       "gha-runner": {
         "wg_ip": "10.0.0.200",
         "role": "client",
-        "wg_public_key": null
+        "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
       }
     }
   },

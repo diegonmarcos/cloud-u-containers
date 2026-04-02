@@ -1,36 +1,31 @@
 {
-  "_generated": "2026-03-31T16:14:02.276Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/gha-config",
+  "_generated": "2026-04-02T17:15:10.878Z",
+  "_source": "config.json + build.json via /cloud-data/gha-config",
   "vms": {
     "oci-mail": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "130.110.251.193",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.3"
+      "user": "ubuntu"
     },
     "oci-analytics": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "129.151.228.66",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.4"
+      "user": "ubuntu"
     },
     "oci-apps": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "82.70.229.129",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.6"
+      "user": "ubuntu"
     },
     "gcp-t4": {
       "ssh_secret": "GCP_T4_SSH_KEY",
       "host_secret": "GCP_T4_HOST",
-      "user_secret": "GCP_T4_USER",
-      "wg_ip": "10.0.0.8"
+      "user_secret": "GCP_T4_USER"
     },
     "gcp-proxy": {
       "ssh_secret": "GCP_PROXY_SSH_KEY",
       "host_secret": "GCP_PROXY_HOST",
-      "user_secret": "GCP_PROXY_USER",
-      "host": "35.226.147.64"
+      "user_secret": "GCP_PROXY_USER"
     }
   },
   "services": {
