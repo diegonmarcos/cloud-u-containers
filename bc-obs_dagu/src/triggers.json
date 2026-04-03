@@ -1,3 +1,19 @@
 {
-  "github-push": ["sync_cloud-data", "sync_front-data"]
+  "github-push":           ["sync_cloud-data", "sync_front-data", "sync_gitea-mirrors"],
+  "vcs_commits":           ["sync_cloud-data", "sync_front-data"],
+  "vcs_pull-requests":     [],
+  "vcs_issues-releases":   [],
+  "cicd_deploy-digest":    ["ops_deploy-digest"],
+  "infra_mesh-health":     ["health_mesh-connectivity"],
+  "infra_endpoints":       ["health_service-endpoints"],
+  "infra_dns":             ["health_dns-resolution"],
+  "infra_resources":       ["health_system-resources"],
+  "infra_containers":      ["health_docker-containers"],
+  "ops_summary":           ["ops_summary", "report_daily"],
+  "ops_backups":           ["ops_backup-check"],
+  "ops_cron":              ["ops_cron-status"],
+  "security_audit":        ["security_auth-events"],
+  "security_tls":          ["security_tls-expiry"],
+  "security_connections":  ["security_ssh-audit"],
+  "security_yara":         ["security_sauron-integrity"]
 }
