@@ -1,4 +1,4 @@
-schedule: "*/5 * * * *"
+# No schedule — triggered by ntfy-dagu-bridge sidecar on GitHub push webhook
 env:
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - C3_API: http://10.0.0.6:8081
