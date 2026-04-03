@@ -159,25 +159,27 @@ a:hover{color:#845ef7;border-color:#845ef7}
     logEl.scrollTop=logEl.scrollHeight;
   }
 
-  // Step 1: Fetch topics from ntfy API (auth injected by Caddy)
-  log('info','Fetching active topics...');
-  fetch('/v1/topics')
+  // Step 1: Fetch topics from cloud-data ntfy-acl (C3 API), fallback to hardcoded
+  var FALLBACK_TOPICS=["github-push","vcs_commits","vcs_pull-requests","vcs_issues-releases","cicd_deploy-digest","infra_mesh-health","infra_endpoints","infra_dns","infra_resources","infra_containers","ops_summary","ops_backups","ops_cron","security_audit","security_tls","security_connections","security_yara"];
+  log('info','Fetching topic list from cloud-data...');
+  fetch('https://api.diegonmarcos.com/c3-api/cloud-data/ntfy-acl')
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     })
     .then(function(data){
-      topics=(Array.isArray(data)?data:[]).map(function(t){return t.topic||t});
-      if(topics.length===0){
-        log('warn','No topics found in cache — publish a message first');
-        return;
-      }
+      topics=Object.keys(data.topics||{});
+      if(topics.length===0) topics=FALLBACK_TOPICS;
       log('ok','Found '+topics.length+' topic(s): '+topics.join(', '));
       btn.disabled=false;
       androidBtn.disabled=false;
     })
     .catch(function(e){
-      log('err','Failed to fetch topics: '+e.message);
+      log('warn','API unavailable ('+e.message+') — using built-in list');
+      topics=FALLBACK_TOPICS;
+      log('ok','Loaded '+topics.length+' topics');
+      btn.disabled=false;
+      androidBtn.disabled=false;
     });
 
   // Android export — generate ntfy Android backup JSON
