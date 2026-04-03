@@ -1,6 +1,5 @@
 {
-  "github-push":           ["sync_cloud-data", "sync_front-data", "sync_gitea-mirrors"],
-  "vcs_commits":           ["sync_cloud-data", "sync_front-data"],
+  "vcs_commits":           ["sync_cloud-data", "sync_front-data", "sync_gitea-mirrors"],
   "vcs_pull-requests":     [],
   "vcs_issues-releases":   [],
   "cicd_deploy-digest":    ["ops_deploy-digest"],
