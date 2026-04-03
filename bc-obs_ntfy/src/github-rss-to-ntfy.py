@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
 
-NTFY_URL = 'http://ntfy:80'
+NTFY_URL = 'http://10.0.0.1:8090'
 STATE_FILE = '/var/cache/ntfy/github-seen.json'
 CHECK_INTERVAL = 300  # 5 minutes
 
