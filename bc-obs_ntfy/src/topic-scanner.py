@@ -14,27 +14,27 @@ REFRESH_INTERVAL = 30  # seconds
 # ALL configured channels (always shown, even if no messages yet)
 # Format: category_name-of-channel
 CONFIGURED_TOPICS = [
-    # VCS — version control events (from GitHub Atom feed)
-    "vcs_commits",              # Push/commit events
-    "vcs_pull-requests",        # PR open/close/merge events
-    "vcs_issues-releases",      # Issues, releases, tags, forks
-    # CI/CD — build & deploy pipeline
-    "cicd_deploy-digest",       # Container restarts & deploy activity
-    # Infrastructure — system & network health
-    "infra_mesh-health",        # WireGuard mesh connectivity checks
-    "infra_endpoints",          # HTTP service endpoint monitoring
-    "infra_dns",                # DNS resolution checks
-    "infra_resources",          # VM disk/memory/CPU usage
-    "infra_containers",         # Docker container health
-    # Operations — scheduled tasks & data
-    "ops_summary",              # Daily/weekly ops reports
+    # dev — source code events (git)
+    "dev_commits",              # Push/commit events
+    "dev_pull-requests",        # PR open/close/merge events
+    "dev_releases",             # Issues, releases, tags, forks
+    # deploy — build & deployment
+    "deploy_ship",              # build.sh ship / GHA deploys
+    "deploy_containers",        # Container restarts, image pulls
+    # health — runtime monitoring
+    "health_mesh",              # WireGuard mesh connectivity
+    "health_endpoints",         # HTTP service endpoint checks
+    "health_dns",               # DNS resolution checks
+    "health_resources",         # VM disk/memory/CPU usage
+    "health_containers",        # Docker container health
+    # ops — maintenance
     "ops_backups",              # Backup freshness status
-    "ops_cron",                 # Systemd timer/cron failures
-    # Security — threats, auth, certs
-    "security_audit",           # Auth log analysis & brute-force detection
-    "security_tls",             # TLS certificate expiry warnings
-    "security_connections",     # All SSH/sudo/connection events across VMs
-    "security_yara",            # YARA malware scanner alerts & status
+    "ops_reports",              # Daily/weekly summaries
+    # sec — security
+    "sec_audit",                # Auth log analysis & brute-force detection
+    "sec_tls",                  # TLS certificate expiry warnings
+    "sec_connections",          # SSH/sudo/connection events across VMs
+    "sec_yara",                 # YARA malware scanner alerts & status
 ]
 
 # Shared state

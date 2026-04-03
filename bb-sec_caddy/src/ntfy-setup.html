@@ -160,7 +160,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   }
 
   // Step 1: Fetch topics from cloud-data ntfy-acl (C3 API), fallback to hardcoded
-  var FALLBACK_TOPICS=["github-push","vcs_commits","vcs_pull-requests","vcs_issues-releases","cicd_deploy-digest","infra_mesh-health","infra_endpoints","infra_dns","infra_resources","infra_containers","ops_summary","ops_backups","ops_cron","security_audit","security_tls","security_connections","security_yara"];
+  var FALLBACK_TOPICS=["dev_commits","dev_pull-requests","dev_releases","deploy_ship","deploy_containers","health_mesh","health_endpoints","health_dns","health_resources","health_containers","ops_backups","ops_reports","sec_audit","sec_tls","sec_connections","sec_yara"];
   log('info','Fetching topic list from cloud-data...');
   fetch('https://api.diegonmarcos.com/c3-api/cloud-data/ntfy-acl')
     .then(function(r){

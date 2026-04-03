@@ -19,9 +19,9 @@ STATE_FILE = '/var/cache/ntfy/github-seen.json'
 CHECK_INTERVAL = 300  # 5 minutes
 
 # Topic routing based on event type
-TOPIC_COMMITS = 'vcs_commits'
-TOPIC_PRS = 'vcs_pull-requests'
-TOPIC_OTHER = 'vcs_issues-releases'
+TOPIC_COMMITS = 'dev_commits'
+TOPIC_PRS = 'dev_pull-requests'
+TOPIC_OTHER = 'dev_releases'
 
 # GitHub feeds to monitor
 GITHUB_FEEDS = [
