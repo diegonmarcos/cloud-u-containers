@@ -107,6 +107,9 @@
         echo "[fetch-token] Response: $RESPONSE"
       fi
 
+      # Start ntfy→dagu WebSocket bridge in background
+      ntfy-bridge.sh &
+
       exec dagu start-all
     '';
 
@@ -136,6 +139,9 @@
         cp ${mkFetchToken pkgs} $out/fetch-token.sh
         chmod +x $out/fetch-token.sh
         cp ${./Dockerfile} $out/Dockerfile
+        cp ${./triggers.json} $out/triggers.json
+        cp ${./ntfy-bridge.sh} $out/ntfy-bridge.sh
+        chmod +x $out/ntfy-bridge.sh
         cp -r ${./dags}/. $out/dags/
         chmod +x $out/dags/report_daily.sh 2>/dev/null || true
         chmod +x $out/dags/gha/*.sh 2>/dev/null || true
