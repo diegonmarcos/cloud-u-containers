@@ -465,6 +465,34 @@
 
     # ── Special route generators ──────────────────────────────────
 
+    mkMailBlock =
+      let mail = caddyRoutes.special.mail or null;
+      in if mail == null then ""
+      else ''
+      # ${mail.comment or "mail"}
+      ${mail.domain} {
+    ${sec}
+        # Root → landing page
+        @root path /
+        handle @root {
+          ${mkGithubProxy mail.landing_page}
+        }
+
+        # /webmail → redirect to SnappyMail login (before auth so it always fires)
+        redir /webmail /?/ permanent
+        redir /webmail/* /?/ permanent
+
+        # /servermail → landing page info section
+        redir /servermail /?page=server permanent
+        redir /servermail/* /?page=server permanent
+
+        # Everything else (/snappymail/... assets, /?/ login, etc.) → SnappyMail with auth
+        ${mkProtected mail.webmail_upstream}
+
+        ${handleErrors}
+      }
+    '';
+
     mkNtfyBlock =
       let ntfy = caddyRoutes.special.ntfy or null;
       in if ntfy == null then ""
@@ -638,6 +666,8 @@
       # ════════════════════════════════════════════════════════════
       # SPECIAL ROUTES (from special{})
       # ════════════════════════════════════════════════════════════
+
+    ${mkMailBlock}
 
     ${mkAnalyticsBlock}
 

@@ -118,18 +118,6 @@
       ]
     },
     {
-      "parent_domain": "mail.diegonmarcos.com",
-      "landing_page": "mymail",
-      "comment": "Mail hub — landing page + webmail",
-      "paths": [
-        {
-          "base_path": "/webmail",
-          "upstream": "10.0.0.3:8888",
-          "comment": "SnappyMail webmail client"
-        }
-      ]
-    },
-    {
       "parent_domain": "cloud.diegonmarcos.com",
       "comment": "Cloud dashboard + spec viewer",
       "landing_page": "cloud",
@@ -175,12 +163,18 @@
   "redirects": [
     {
       "domain": "webmail.diegonmarcos.com",
-      "target": "https://mail.diegonmarcos.com/webmail/",
-      "comment": "Legacy webmail subdomain → mail hub /webmail/"
+      "target": "https://mail.diegonmarcos.com/",
+      "comment": "Legacy webmail subdomain → mail hub"
     }
   ],
 
   "special": {
+    "mail": {
+      "domain": "mail.diegonmarcos.com",
+      "webmail_upstream": "10.0.0.3:8888",
+      "landing_page": "mymail",
+      "comment": "Mail hub — landing page + /webmail → SnappyMail + /servermail → static info"
+    },
     "ntfy": {
       "domain": "rss.diegonmarcos.com",
       "upstream": "10.0.0.1:8090",
