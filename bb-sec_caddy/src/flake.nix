@@ -472,21 +472,16 @@
       # ${mail.comment or "mail"}
       ${mail.domain} {
     ${sec}
-        # Root → landing page
-        @root path /
-        handle @root {
+        # /webmail → SnappyMail root
+        redir /webmail / permanent
+        redir /webmail/* / permanent
+
+        # /servermail → landing page (GitHub Pages)
+        handle /servermail* {
           ${mkGithubProxy mail.landing_page}
         }
 
-        # /webmail → redirect to SnappyMail login (before auth so it always fires)
-        redir /webmail /?/ permanent
-        redir /webmail/* /?/ permanent
-
-        # /servermail → landing page info section
-        redir /servermail /?page=server permanent
-        redir /servermail/* /?page=server permanent
-
-        # Everything else (/snappymail/... assets, /?/ login, etc.) → SnappyMail with auth
+        # Everything else (/, /snappymail/... assets) → SnappyMail with auth
         ${mkProtected mail.webmail_upstream}
 
         ${handleErrors}
