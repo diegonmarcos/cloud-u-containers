@@ -1,5 +1,5 @@
 {
-  description = "SnappyMail — Lightweight webmail client for Stalwart";
+  description = "SnappyMail — Lightweight webmail client for Maddy";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -19,16 +19,12 @@
     title = "SnappyMail";
     docker = import ../../_shared/docker.nix;
 
-    # ── SnappyMail domain config (IMAP + SMTP to Stalwart on localhost) ──
+    # ── SnappyMail domain config (IMAP + SMTP to Maddy on localhost) ──
     mkDomainConfig = pkgs: pkgs.writeText "diegonmarcos.com.ini" ''
       imap_host = "localhost"
       imap_port = 993
       imap_secure = "SSL"
       imap_short_login = 0
-
-      sieve_host = "localhost"
-      sieve_port = 4190
-      sieve_secure = "None"
 
       smtp_host = "localhost"
       smtp_port = 465
