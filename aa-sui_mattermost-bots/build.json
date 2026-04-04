@@ -14,7 +14,8 @@
   "domain": "chat.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mattermost-bots"
+    "remote_path": "/opt/containers/mattermost-bots",
+    "compose_flags": "--build"
   },
   "compose": {
     "pre_hook": "init-dirs.sh"
@@ -112,5 +113,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "mattermost-bots",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

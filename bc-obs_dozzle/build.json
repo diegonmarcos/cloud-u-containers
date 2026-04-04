@@ -21,7 +21,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "dozzle",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "secrets": {
     "escape_dollars": "true"

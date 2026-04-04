@@ -9,7 +9,8 @@
   "docker": {
     "image": "google-workspace-mcp",
     "dockerfile": "Dockerfile",
-    "registry": "ghcr.io/diegonmarcos"
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",

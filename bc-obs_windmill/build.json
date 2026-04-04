@@ -10,7 +10,8 @@
   "domain": "windmill.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/windmill"
+    "remote_path": "/opt/containers/windmill",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -115,5 +116,14 @@
       },
       "read_only": false
     }
+  },
+  "backup": {
+    "enabled": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "windmill",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

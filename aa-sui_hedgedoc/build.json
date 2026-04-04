@@ -10,7 +10,8 @@
   "domain": "doc.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/hedgedoc"
+    "remote_path": "/opt/containers/hedgedoc",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -81,5 +82,11 @@
   },
   "backup": {
     "enabled": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "hedgedoc",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

@@ -1,12 +1,13 @@
 {
   "name": "mattermost-mcp",
-  "description": "Mattermost MCP server — chat tools via HTTP transport",
+  "description": "Mattermost MCP server \u2014 chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
   "category": "app",
   "docker": {
     "image": "mattermost-mcp",
     "dockerfile": "Dockerfile",
-    "registry": "ghcr.io/diegonmarcos"
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",

@@ -10,7 +10,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/ollama-hai"
+    "remote_path": "/opt/containers/ollama-hai",
+    "compose_flags": "--build"
   },
   "containers": {
     "app": {
@@ -35,5 +36,11 @@
       "read_only": false,
       "port_format": "host"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "ollama-hai",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

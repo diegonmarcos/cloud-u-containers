@@ -103,5 +103,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "photoprism",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

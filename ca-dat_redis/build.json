@@ -8,7 +8,8 @@
   "category": "data",
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/redis"
+    "remote_path": "/opt/containers/redis",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true
@@ -31,5 +32,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "redis",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

@@ -14,7 +14,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "umami",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "lifecycle": {
     "site-id": [

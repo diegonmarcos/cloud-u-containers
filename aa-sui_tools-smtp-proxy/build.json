@@ -7,7 +7,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "smtp-proxy",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "deploy": {
     "host": "oci-mail",
@@ -32,7 +33,10 @@
       "port": 8080,
       "dns": "smtp-proxy.app",
       "public": true,
-      "proxy": { "domain": "smtp.diegonmarcos.com", "auth": "none" }
+      "proxy": {
+        "domain": "smtp.diegonmarcos.com",
+        "auth": "none"
+      }
     }
   }
 }

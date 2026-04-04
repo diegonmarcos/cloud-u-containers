@@ -1,13 +1,14 @@
 {
   "name": "rig-agentic-hai-1.5bq4",
   "enabled": false,
-  "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
+  "description": "Rig Agentic AI (HAI) \u2014 Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
   "category": "agi",
   "version": "0.2.0",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "rig-agentic-hai",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   },
   "build": {
     "extra_copy": [

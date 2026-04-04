@@ -9,7 +9,8 @@
     "remote_path": "/opt/containers/caddy",
     "excludes": [
       "logs/"
-    ]
+    ],
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true
@@ -138,5 +139,11 @@
       },
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "caddy",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

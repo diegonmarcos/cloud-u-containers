@@ -10,7 +10,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/quant-lab-full"
+    "remote_path": "/opt/containers/quant-lab-full",
+    "compose_flags": "--build"
   },
   "containers": {
     "research": {
@@ -120,5 +121,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "quant-lab-full",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

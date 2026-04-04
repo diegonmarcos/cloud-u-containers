@@ -21,7 +21,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "snappymail",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "proxy": {
     "primary": {

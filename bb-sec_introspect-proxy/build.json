@@ -16,7 +16,8 @@
   "docker": {
     "image": "introspect-proxy",
     "dockerfile": "Dockerfile",
-    "registry": "ghcr.io/diegonmarcos"
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "amd64"
   },
   "proxy": {
     "app_hub": false

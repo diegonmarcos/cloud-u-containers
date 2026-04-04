@@ -15,7 +15,8 @@
   "domain": "grafana.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/lgtm"
+    "remote_path": "/opt/containers/lgtm",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -41,14 +42,21 @@
       "port_env": "GF_SERVER_HTTP_PORT",
       "dns": "grafana.app",
       "public": true,
-      "proxy": { "domain": "grafana.diegonmarcos.com", "auth": "two_factor" },
+      "proxy": {
+        "domain": "grafana.diegonmarcos.com",
+        "auth": "two_factor"
+      },
       "healthcheck": "wget -q --spider http://localhost:3200/api/health",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "grafana_data:/var/lib/grafana"
       ],
       "env_file": false,
-      "depends_on": ["loki"],
+      "depends_on": [
+        "loki"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -100,5 +108,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "lgtm",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

@@ -9,7 +9,8 @@
     "remote_path": "/opt/containers/ntfy",
     "excludes": [
       "cache"
-    ]
+    ],
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true
@@ -105,5 +106,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "ntfy",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

@@ -4,7 +4,8 @@
   "dns": "c3-spec.app",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/cloud-spec"
+    "remote_path": "/opt/containers/cloud-spec",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -26,7 +27,12 @@
       "port_env": null,
       "dns": "c3-spec.app",
       "public": true,
-      "proxy": { "type": "path", "parent_domain": "cloud.diegonmarcos.com", "base_path": "/spec", "auth": "two_factor" },
+      "proxy": {
+        "type": "path",
+        "parent_domain": "cloud.diegonmarcos.com",
+        "base_path": "/spec",
+        "auth": "two_factor"
+      },
       "healthcheck": null,
       "volumes": [
         "./site:/srv:ro"
@@ -36,5 +42,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-spec",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

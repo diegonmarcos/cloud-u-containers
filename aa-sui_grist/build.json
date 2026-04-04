@@ -9,7 +9,8 @@
   "domain": "sheets.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/grist"
+    "remote_path": "/opt/containers/grist",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -58,5 +59,11 @@
       "read_only": false,
       "db_path": "/persist/grist-sessions.db"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "grist",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

@@ -12,7 +12,8 @@
   "domain": "files.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/filebrowser"
+    "remote_path": "/opt/containers/filebrowser",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -60,5 +61,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "filebrowser",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

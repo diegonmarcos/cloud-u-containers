@@ -10,7 +10,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "c3-infra-api",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",

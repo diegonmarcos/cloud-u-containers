@@ -8,7 +8,8 @@
   "deploy": {
     "host": "gcp-t4",
     "remote_path": "/opt/containers/ollama",
-    "fallback_host": "vast-ollama"
+    "fallback_host": "vast-ollama",
+    "compose_flags": "--build"
   },
   "ports": {
     "app": 11434
@@ -47,5 +48,11 @@
       "read_only": false,
       "port_format": "host"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "ollama",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

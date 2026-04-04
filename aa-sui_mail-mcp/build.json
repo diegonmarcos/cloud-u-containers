@@ -1,12 +1,13 @@
 {
   "name": "mail-mcp",
-  "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
+  "description": "Mail MCP server \u2014 IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
   "docker": {
     "image": "mail-mcp",
     "dockerfile": "Dockerfile",
-    "registry": "ghcr.io/diegonmarcos"
+    "registry": "ghcr.io/diegonmarcos",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",
