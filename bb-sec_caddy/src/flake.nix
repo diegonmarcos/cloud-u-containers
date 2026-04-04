@@ -59,6 +59,9 @@
           X-Frame-Options "SAMEORIGIN"
           Referrer-Policy "strict-origin-when-cross-origin"
           Permissions-Policy "camera=(), microphone=(), geolocation=()"
+          Access-Control-Allow-Origin "*"
+          Access-Control-Allow-Methods "GET, POST, OPTIONS"
+          Access-Control-Allow-Headers "Authorization, Content-Type"
           -Server
         }
       }

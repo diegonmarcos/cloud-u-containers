@@ -161,12 +161,22 @@ a:hover{color:#845ef7;border-color:#845ef7}
     logEl.scrollTop=logEl.scrollHeight;
   }
 
-  // Topics — source of truth: topic-scanner.py CONFIGURED_TOPICS
-  // Kept in sync by derive-cloud-data.ts → cloud-data-ntfy-acl.json
-  topics=["dev_commits","dev_pull-requests","dev_releases","deploy_ship","deploy_containers","health_mesh","health_endpoints","health_dns","health_resources","health_containers","ops_backups","ops_reports","sec_audit","sec_tls","sec_connections","sec_yara"];
-  log('ok','Loaded '+topics.length+' topics: '+topics.join(', '));
-  btn.disabled=false;
-  androidBtn.disabled=false;
+  // Fetch topics from cloud-data API, fallback to inline list
+  var FALLBACK=["dev_commits","dev_pull-requests","dev_releases","deploy_ship","deploy_containers","health_mesh","health_endpoints","health_dns","health_resources","health_containers","ops_backups","ops_reports","sec_audit","sec_tls","sec_connections","sec_yara"];
+  log('info','Fetching topics from cloud-data...');
+  fetch('https://api.diegonmarcos.com/c3-api/cloud-data/ntfy-acl')
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){
+      topics=Object.keys(data.topics||{});
+      if(topics.length===0) topics=FALLBACK;
+      log('ok','Found '+topics.length+' topics (live): '+topics.join(', '));
+      btn.disabled=false; androidBtn.disabled=false;
+    })
+    .catch(function(e){
+      topics=FALLBACK;
+      log('warn','API: '+e.message+' — using fallback ('+topics.length+' topics)');
+      btn.disabled=false; androidBtn.disabled=false;
+    });
 
   // Android export — generate ntfy Android backup JSON
   androidBtn.addEventListener('click',function(){
