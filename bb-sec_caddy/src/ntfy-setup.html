@@ -122,6 +122,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <div class="log" id="log"></div>
   <div class="actions">
     <button class="btn primary" id="subscribe-btn" disabled>Subscribe All</button>
+    <button class="btn secondary" id="clear-btn">Clear All</button>
     <button class="btn secondary" id="android-btn" disabled>Download for Android</button>
     <button class="btn secondary" id="go-btn" onclick="location.href='/'">Open ntfy</button>
   </div>
@@ -143,6 +144,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
 
   var logEl=document.getElementById('log');
   var btn=document.getElementById('subscribe-btn');
+  var clearBtn=document.getElementById('clear-btn');
   var androidBtn=document.getElementById('android-btn');
   var baseUrl=location.origin;
   var topics=[];
@@ -218,6 +220,31 @@ a:hover{color:#845ef7;border-color:#845ef7}
     a.download='ntfy-backup.json';
     a.click();
     log('ok','Downloaded ntfy-backup.json — import via ntfy app → Settings → Backup & Restore');
+  });
+
+  // Clear all subscriptions from ntfy IndexedDB
+  clearBtn.addEventListener('click',function(){
+    log('info','Clearing all subscriptions...');
+    var req=indexedDB.open('ntfy');
+    req.onsuccess=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains('subscriptions')){
+        log('warn','No subscriptions store found');
+        db.close();
+        return;
+      }
+      var tx=db.transaction('subscriptions','readwrite');
+      var store=tx.objectStore('subscriptions');
+      var countReq=store.count();
+      countReq.onsuccess=function(){
+        var count=countReq.result;
+        store.clear();
+        log('ok','Cleared '+count+' subscription(s)');
+        log('info','Refresh ntfy UI to see changes');
+      };
+      tx.onerror=function(e){ log('err','Clear failed: '+e.target.error); };
+    };
+    req.onerror=function(e){ log('err','Failed to open DB: '+e.target.error); };
   });
 
   // Step 2: Subscribe — write into ntfy IndexedDB
