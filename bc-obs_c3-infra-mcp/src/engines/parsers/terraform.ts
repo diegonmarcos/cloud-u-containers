@@ -1,4 +1,4 @@
-// terraform.ts — Extract VM specs + storage from b_infra/vps_*/src/main.tf
+// terraform.ts — Extract VM specs + storage from c_vps/vps_*/src/main.tf
 //
 // Parses HCL resource blocks via regex (not a full HCL parser).
 // Extracts: instance shapes/CPU/RAM/disk, object storage buckets, GPU info.
