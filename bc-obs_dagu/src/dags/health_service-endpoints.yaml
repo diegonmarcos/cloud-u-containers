@@ -24,7 +24,7 @@ steps:
         FAILED=$(cat /tmp/endpoints-failed.$$)
         rm -f /tmp/endpoints-failed.$$
         MSG=$(printf "DOWN endpoints:\n%s\n\nAction:\n  curl -v https://<domain>\n  ssh gcp-proxy 'docker logs caddy --tail 20'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
-        curl -s -X POST "$NTFY_URL/infra_endpoints" \
+        curl -s -X POST "$NTFY_URL/health_endpoints" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Service Endpoint DOWN" \
           -H "Priority: 5" \
