@@ -1,6 +1,12 @@
 #!/bin/sh
-# Hickory DNS init — wildcard *.app zone → Caddy IP
-# All .app names resolve to Caddy. Caddy handles per-service routing.
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║  REVERSE PROXY (CADDY) HANDLES ALL ROUTES                         ║
+# ║  DNS (HICKORY) IS WILDCARD ONLY: *.app → 10.0.0.1 (Caddy)        ║
+# ║                                                                    ║
+# ║  cloud-data-dns-services.json lists per-service WG IPs but those  ║
+# ║  are NOT used here. Hickory just does wildcard → Caddy IP.        ║
+# ║  Caddy reads per-service upstreams from caddy-routes.json.        ║
+# ╚══════════════════════════════════════════════════════════════════════╝
 # Runs as compose pre_hook before docker compose up
 cd "$(dirname "$0")"
 CONFIG_DIR="./config"

@@ -39,8 +39,11 @@
         fallback = if builtins.pathExists fallbackPath
           then builtins.fromJSON (builtins.readFile fallbackPath)
           else emptyRoutes;
-        # Use cloud-data if it has actual routes; otherwise use fallback
-        # Validate: cloud-data routes must have 'upstream' + 'domain' on each entry
+        # Use cloud-data if it has actual routes with raw WG IPs; otherwise use fallback
+        # NOTE: cloud-data-caddy-routes.json currently uses .app DNS names which resolve
+        # to Caddy itself via Hickory wildcard — so validation intentionally fails,
+        # falling back to caddy-routes-fallback.json which has raw WG IPs.
+        # TODO: fix cloud-data pipeline to emit WG IPs instead of .app names
         validRoutes = cloudData != null
           && (cloudData.routes or []) != []
           && builtins.all (r: r ? upstream && r ? domain) (cloudData.routes or []);
@@ -398,7 +401,9 @@
 
           in "${redirectBlock}${publicPathsBlock}\n${mainBlock}";
 
-        pathBlocks = lib.concatMapStringsSep "\n" mkPathEntry group.paths;
+        # Filter out stub entries (comment-only, no upstream/github_path)
+        activePaths = builtins.filter (p: p ? upstream || (p.type or null) == "github_pages") group.paths;
+        pathBlocks = lib.concatMapStringsSep "\n" mkPathEntry activePaths;
 
         landingRootBlock = if hasLandingPage then ''
         @root path /
@@ -444,6 +449,16 @@
         handle {
           respond "${fallbackMsg}" 200
         }
+        ${handleErrors}
+      }
+    '';
+
+    # Generate redirect blocks from redirects[]
+    mkRedirectRoute = route: ''
+      # ${route.comment or route.domain}
+      ${route.domain} {
+    ${sec}
+        redir ${route.target} permanent
         ${handleErrors}
       }
     '';
@@ -613,6 +628,12 @@
       # ════════════════════════════════════════════════════════════
 
     ${lib.concatMapStringsSep "\n" mkMcpRouteGroup caddyRoutes.mcp_routes}
+
+      # ════════════════════════════════════════════════════════════
+      # REDIRECTS (from redirects[])
+      # ════════════════════════════════════════════════════════════
+
+    ${lib.concatMapStringsSep "\n" mkRedirectRoute (caddyRoutes.redirects or [])}
 
       # ════════════════════════════════════════════════════════════
       # SPECIAL ROUTES (from special{})

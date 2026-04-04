@@ -5,9 +5,9 @@
   },
 
   "l4_routes": [
-    { "port": 993, "upstream": "10.0.0.3:993", "comment": "IMAPS — TLS passthrough to Stalwart" },
-    { "port": 465, "upstream": "10.0.0.3:465", "comment": "SMTPS — TLS passthrough to Stalwart" },
-    { "port": 587, "upstream": "10.0.0.3:587", "comment": "SMTP Submission — TCP passthrough to Stalwart" }
+    { "port": 993, "upstream": "10.0.0.3:993", "comment": "IMAPS — TLS passthrough to Maddy" },
+    { "port": 465, "upstream": "10.0.0.3:465", "comment": "SMTPS — TLS passthrough to Maddy" },
+    { "port": 587, "upstream": "10.0.0.3:587", "comment": "SMTP Submission — TCP passthrough to Maddy" }
   ],
 
   "routes": [
@@ -33,19 +33,6 @@
       "upstream": "10.0.0.6:3013",
       "landing_page": "myphotos",
       "comment": "PhotoPrism"
-    },
-    {
-      "domain": "mail.diegonmarcos.com",
-      "upstream": "10.0.0.3:443",
-      "tls_skip_verify": true,
-      "landing_page": "mymail",
-      "comment": "Stalwart web admin (HTTPS upstream, skip verify — internal WG)"
-    },
-    {
-      "domain": "webmail.diegonmarcos.com",
-      "upstream": "10.0.0.3:8888",
-      "landing_page": "mymail",
-      "comment": "SnappyMail webmail"
     },
     {
       "domain": "smtp.diegonmarcos.com",
@@ -131,6 +118,18 @@
       ]
     },
     {
+      "parent_domain": "mail.diegonmarcos.com",
+      "landing_page": "mymail",
+      "comment": "Mail hub — landing page + webmail",
+      "paths": [
+        {
+          "base_path": "/webmail",
+          "upstream": "10.0.0.3:8888",
+          "comment": "SnappyMail webmail client"
+        }
+      ]
+    },
+    {
       "parent_domain": "cloud.diegonmarcos.com",
       "comment": "Cloud dashboard + spec viewer",
       "landing_page": "cloud",
@@ -170,6 +169,14 @@
         { "base_path": "/mail-mcp", "upstream": "10.0.0.6:3103" },
         { "base_path": "/g-workspace", "upstream": "10.0.0.6:3104" }
       ]
+    }
+  ],
+
+  "redirects": [
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "target": "https://mail.diegonmarcos.com/webmail/",
+      "comment": "Legacy webmail subdomain → mail hub /webmail/"
     }
   ],
 
