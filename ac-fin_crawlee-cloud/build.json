@@ -1,6 +1,6 @@
 {
   "name": "crawlee-cloud",
-  "description": "Self-hosted Crawlee Cloud \u2014 Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+  "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
   "dns": "crawlee.app",
   "ports": {
     "app": 3000,
@@ -13,7 +13,8 @@
   "domain": "api.diegonmarcos.com/crawlee/",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/crawlee-cloud"
+    "remote_path": "/opt/containers/crawlee-cloud",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -47,12 +48,22 @@
       "port_env": "PORT",
       "dns": "crawlee.app",
       "public": true,
-      "proxy": { "domain": "api.diegonmarcos.com", "base_path": "/crawlee", "auth": "two_factor" },
+      "proxy": {
+        "domain": "api.diegonmarcos.com",
+        "base_path": "/crawlee",
+        "auth": "two_factor"
+      },
       "healthcheck": "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [],
       "env_file": true,
-      "depends_on": ["db", "redis", "minio"],
+      "depends_on": [
+        "db",
+        "redis",
+        "minio"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -68,7 +79,9 @@
         "/var/run/docker.sock:/var/run/docker.sock"
       ],
       "env_file": true,
-      "depends_on": ["app"],
+      "depends_on": [
+        "app"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -82,7 +95,9 @@
       "healthcheck": null,
       "volumes": [],
       "env_file": false,
-      "depends_on": ["app"],
+      "depends_on": [
+        "app"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -96,7 +111,10 @@
       "healthcheck": null,
       "volumes": [],
       "env_file": true,
-      "depends_on": ["db", "redis"],
+      "depends_on": [
+        "db",
+        "redis"
+      ],
       "resources": null,
       "read_only": false
     },
@@ -147,5 +165,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "crawlee-cloud",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

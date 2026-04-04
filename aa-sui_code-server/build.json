@@ -9,7 +9,8 @@
   "domain": "ide.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/code-server"
+    "remote_path": "/opt/containers/code-server",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -52,5 +53,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "code-server",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

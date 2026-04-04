@@ -7,10 +7,15 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "photos-webhook",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/photos-webhook"
-  }
+  },
+  "backup": {
+    "enabled": true
+  },
+  "containers": {}
 }

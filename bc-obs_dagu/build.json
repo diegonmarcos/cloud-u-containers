@@ -10,7 +10,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "dagu",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "deploy": {
     "host": "oci-mail",

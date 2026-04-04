@@ -9,7 +9,8 @@
   "domain": "git.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/gitea"
+    "remote_path": "/opt/containers/gitea",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -31,13 +32,28 @@
   "gitea": {
     "org": "diego",
     "mirrors": {
-      "unix":       { "upstream": "https://github.com/diegonmarcos/unix.git" },
-      "cloud":      { "upstream": "https://github.com/diegonmarcos/cloud.git" },
-      "cloud-data": { "upstream": "https://github.com/diegonmarcos/cloud-data.git" },
-      "front":      { "upstream": "https://github.com/diegonmarcos/front.git" },
-      "front-data": { "upstream": "https://github.com/diegonmarcos/front-data.git" },
-      "tools":      { "upstream": "https://github.com/diegonmarcos/tools.git" },
-      "vault":      { "upstream": "https://github.com/diegonmarcos/vault.git", "private": true }
+      "unix": {
+        "upstream": "https://github.com/diegonmarcos/unix.git"
+      },
+      "cloud": {
+        "upstream": "https://github.com/diegonmarcos/cloud.git"
+      },
+      "cloud-data": {
+        "upstream": "https://github.com/diegonmarcos/cloud-data.git"
+      },
+      "front": {
+        "upstream": "https://github.com/diegonmarcos/front.git"
+      },
+      "front-data": {
+        "upstream": "https://github.com/diegonmarcos/front-data.git"
+      },
+      "tools": {
+        "upstream": "https://github.com/diegonmarcos/tools.git"
+      },
+      "vault": {
+        "upstream": "https://github.com/diegonmarcos/vault.git",
+        "private": true
+      }
     },
     "mirror_interval": "1h"
   },
@@ -55,9 +71,14 @@
       "port_env": "GITEA__server__HTTP_PORT",
       "dns": "gitea.app",
       "public": true,
-      "proxy": { "domain": "git.diegonmarcos.com", "auth": "two_factor" },
+      "proxy": {
+        "domain": "git.diegonmarcos.com",
+        "auth": "two_factor"
+      },
       "healthcheck": "curl -f http://localhost:3002/",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "gitea_data:/data",
         "/etc/timezone:/etc/timezone:ro",
@@ -68,5 +89,11 @@
       "read_only": false,
       "db_path": "/data/gitea/gitea.db"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "gitea",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

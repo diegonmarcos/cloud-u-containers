@@ -10,7 +10,8 @@
   "domain": "db.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/nocodb"
+    "remote_path": "/opt/containers/nocodb",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -81,5 +82,11 @@
       "db_user": "nocodb",
       "db_name": "nocodb"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "nocodb",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

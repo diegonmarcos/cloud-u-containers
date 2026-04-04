@@ -9,7 +9,8 @@
   "category": "fin",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/quant-lab-light"
+    "remote_path": "/opt/containers/quant-lab-light",
+    "compose_flags": "--build"
   },
   "containers": {
     "research": {
@@ -72,5 +73,11 @@
   },
   "backup": {
     "enabled": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "quant-lab-light",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

@@ -11,6 +11,7 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "syslog-forwarder",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

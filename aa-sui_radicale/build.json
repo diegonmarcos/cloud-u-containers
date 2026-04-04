@@ -12,7 +12,8 @@
   "domain": "cal.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/radicale"
+    "remote_path": "/opt/containers/radicale",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -55,5 +56,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "radicale",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

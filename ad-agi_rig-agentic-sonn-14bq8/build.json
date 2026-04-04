@@ -1,6 +1,6 @@
 {
   "name": "rig-agentic-sonn-14bq8",
-  "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
+  "description": "Rig Agentic AI (Heavy) \u2014 DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
   "port": 8091,
   "dns": "rig-agentic-sonn-14bq8.app",
   "category": "agi",
@@ -8,7 +8,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "rig-agentic-sonn",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   },
   "build": {
     "include_cloud_data": "true",

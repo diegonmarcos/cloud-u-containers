@@ -16,7 +16,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "postlite",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "deploy": {
     "host": "gcp-proxy",

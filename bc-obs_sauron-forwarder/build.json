@@ -13,6 +13,7 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "sauron-forwarder",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

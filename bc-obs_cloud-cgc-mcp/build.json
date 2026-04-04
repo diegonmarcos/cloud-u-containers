@@ -1,6 +1,6 @@
 {
   "name": "cloud-cgc-mcp",
-  "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
@@ -10,7 +10,8 @@
     "image": "cloud-cgc-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "platform": "linux/arm64"
+    "platform": "linux/arm64",
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",

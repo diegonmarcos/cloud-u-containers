@@ -5,6 +5,13 @@
   "category": "sec",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/sauron-central"
+    "remote_path": "/opt/containers/sauron-central",
+    "compose_flags": "--build"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "sauron-central",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

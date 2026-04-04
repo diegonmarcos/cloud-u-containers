@@ -12,7 +12,8 @@
     "remote_path": "/opt/containers/hickory-dns",
     "excludes": [
       "config/**"
-    ]
+    ],
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true,
@@ -43,5 +44,11 @@
       },
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "hickory-dns",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

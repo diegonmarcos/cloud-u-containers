@@ -6,6 +6,17 @@
   "version": "0.1.0",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/kg-graph"
+    "remote_path": "/opt/containers/kg-graph",
+    "compose_flags": "--build"
+  },
+  "backup": {
+    "enabled": true
+  },
+  "containers": {},
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "kg-graph",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

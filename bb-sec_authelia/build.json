@@ -13,7 +13,8 @@
   },
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/authelia"
+    "remote_path": "/opt/containers/authelia",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true
@@ -49,14 +50,21 @@
       "port_env": null,
       "dns": "authelia.app",
       "public": true,
-      "proxy": { "domain": "auth.diegonmarcos.com", "auth": "bypass" },
+      "proxy": {
+        "domain": "auth.diegonmarcos.com",
+        "auth": "bypass"
+      },
       "healthcheck": "/api/health",
-      "monitoring": { "tls_check": true },
+      "monitoring": {
+        "tls_check": true
+      },
       "volumes": [
         "./config:/config"
       ],
       "env_file": true,
-      "depends_on": ["redis"],
+      "depends_on": [
+        "redis"
+      ],
       "resources": null,
       "read_only": false,
       "db_path": "/config/db.sqlite3"
@@ -76,5 +84,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "authelia",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   }
 }

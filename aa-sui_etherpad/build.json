@@ -10,7 +10,8 @@
   "domain": "pad.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/etherpad"
+    "remote_path": "/opt/containers/etherpad",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
@@ -81,5 +82,11 @@
   },
   "backup": {
     "enabled": true
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "etherpad",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

@@ -5,6 +5,13 @@
   "category": "data",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/backup-bup"
+    "remote_path": "/opt/containers/backup-bup",
+    "compose_flags": "--build"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "backup-bup",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

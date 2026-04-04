@@ -10,7 +10,8 @@
   "domain": "git.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/backup-gitea"
+    "remote_path": "/opt/containers/backup-gitea",
+    "compose_flags": "--build"
   },
   "containers": {
     "app": {
@@ -37,5 +38,11 @@
       "resources": null,
       "read_only": false
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "backup-gitea",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

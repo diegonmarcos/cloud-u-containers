@@ -5,6 +5,13 @@
   "category": "data",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/backup-borg"
+    "remote_path": "/opt/containers/backup-borg",
+    "compose_flags": "--build"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "backup-borg",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
   }
 }

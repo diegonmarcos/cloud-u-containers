@@ -14,7 +14,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "fluent-bit",
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
   },
   "containers": {
     "app": {
