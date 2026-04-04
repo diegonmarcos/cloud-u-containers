@@ -1,0 +1,70 @@
+{
+  "name": "maddy",
+  "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+  "dns": "maddy.app",
+  "category": "app",
+  "domain": "mail.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/maddy"
+  },
+  "compose": {
+    "custom": true,
+    "pre_hook": "init.sh"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "mail.diegonmarcos.com",
+      "auth": "two_factor",
+      "tls_skip_verify": true,
+      "landing_page": "mymail",
+      "l4_ports": [
+        { "port": 993, "upstream": "130.110.251.193:993", "comment": "IMAPS" },
+        { "port": 465, "upstream": "130.110.251.193:465", "comment": "SMTPS" },
+        { "port": 587, "upstream": "130.110.251.193:587", "comment": "SMTP Submission" }
+      ]
+    },
+    "app_hub": false
+  },
+  "health": { "path": "/" },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": ["maddy_data"]
+  },
+  "ports": {
+    "app": 443,
+    "smtp": 465,
+    "imap": 993
+  },
+  "containers": {
+    "app": {
+      "container_name": "maddy",
+      "image": "foxcpp/maddy:0.9",
+      "port": 443,
+      "dns": "maddy.app",
+      "public": true,
+      "proxy": {
+        "domain": "mail.diegonmarcos.com",
+        "auth": "two_factor",
+        "tls_skip_verify": true
+      },
+      "healthcheck": null,
+      "volumes": [
+        "maddy_data:/data",
+        "./dkim:/data/dkim:ro"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "limits": { "memory": "256M" },
+        "reservations": { "memory": "32M" }
+      },
+      "read_only": false
+    }
+  }
+}

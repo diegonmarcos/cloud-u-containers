@@ -123,6 +123,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <div class="actions">
     <button class="btn primary" id="subscribe-btn" disabled>Subscribe All</button>
     <button class="btn secondary" id="clear-btn">Clear All</button>
+    <button class="btn secondary" id="list-btn">List Channels</button>
     <button class="btn secondary" id="android-btn" disabled>Download for Android</button>
     <button class="btn secondary" id="go-btn" onclick="location.href='/'">Open ntfy</button>
   </div>
@@ -145,6 +146,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
   var logEl=document.getElementById('log');
   var btn=document.getElementById('subscribe-btn');
   var clearBtn=document.getElementById('clear-btn');
+  var listBtn=document.getElementById('list-btn');
   var androidBtn=document.getElementById('android-btn');
   var baseUrl=location.origin;
   var topics=[];
@@ -165,6 +167,21 @@ a:hover{color:#845ef7;border-color:#845ef7}
   topics=["dev_commits","dev_pull-requests","dev_releases","deploy_ship","deploy_containers","health_mesh","health_endpoints","health_dns","health_resources","health_containers","ops_backups","ops_reports","sec_audit","sec_tls","sec_connections","sec_yara"];
   log('ok',topics.length+' channels: '+topics.join(', '));
   btn.disabled=false; androidBtn.disabled=false;
+
+  // List all channels grouped by category
+  listBtn.addEventListener('click',function(){
+    var cats={};
+    topics.forEach(function(t){
+      var cat=t.split('_')[0];
+      if(!cats[cat]) cats[cat]=[];
+      cats[cat].push(t);
+    });
+    log('info','── Channels ──');
+    Object.keys(cats).forEach(function(cat){
+      log('ok',cat+': '+cats[cat].join(', '));
+    });
+    log('info','Total: '+topics.length+' channels in '+Object.keys(cats).length+' categories');
+  });
 
   // Android export — generate ntfy Android backup JSON
   androidBtn.addEventListener('click',function(){
