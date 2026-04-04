@@ -1,33 +1,21 @@
 {
   "name": "revealmd",
-  "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
+  "enabled": false,
+  "description": "Reveal.js markdown presentations (not deployed)",
   "dns": "revealmd.app",
   "ports": {
     "app": 3014
   },
   "category": "app",
-  "domain": "slides.diegonmarcos.com",
+  "domain": null,
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/revealmd",
     "compose_flags": "--build"
   },
-  "proxy": {
-    "primary": {
-      "type": "path",
-      "parent_domain": "app.diegonmarcos.com",
-      "base_path": "/revealmd",
-      "auth": "two_factor"
-    }
-  },
-  "health": {
-    "path": "/"
-  },
-  "monitoring": {
-    "tls_check": true,
-    "dns_check": true,
-    "endpoint_check": true
-  },
+  "proxy": null,
+  "health": null,
+  "monitoring": null,
   "containers": {
     "app": {
       "container_name": "revealmd_app",
@@ -36,18 +24,9 @@
       "port_env": null,
       "dns": "revealmd.app",
       "public": true,
-      "proxy": {
-        "type": "path",
-        "parent_domain": "app.diegonmarcos.com",
-        "base_path": "/revealmd",
-        "auth": "two_factor"
-      },
-      "healthcheck": "/",
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
-      },
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
       "volumes": [
         "slides_data:/slides"
       ],
