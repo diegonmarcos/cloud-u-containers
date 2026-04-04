@@ -14,6 +14,8 @@ REFRESH_INTERVAL = 30  # seconds
 # ALL configured channels (always shown, even if no messages yet)
 # Format: category_name-of-channel
 CONFIGURED_TOPICS = [
+    # universal inbox — all events
+    "all",                          # Every message from every channel
     # dev — source code events (git)
     "dev_commits",              # Push/commit events
     "dev_pull-requests",        # PR open/close/merge events

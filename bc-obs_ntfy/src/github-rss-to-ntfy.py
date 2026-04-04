@@ -79,7 +79,20 @@ def send_ntfy(topic, title, message, priority='default', tags=None, click=None):
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+            ok = resp.status == 200
+        # Also publish to universal inbox
+        if ok and topic != 'all':
+            all_req = urllib.request.Request(
+                f'{NTFY_URL}/all',
+                data=data,
+                headers={**headers, 'Tags': ','.join((tags or []) + [topic])},
+                method='POST'
+            )
+            try:
+                urllib.request.urlopen(all_req, timeout=5)
+            except Exception:
+                pass
+        return ok
     except Exception as e:
         print(f'ntfy error: {e}')
         return False
