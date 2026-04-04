@@ -4,7 +4,7 @@
 //
 // Input sources (NO self-referential read, NO ~/.ssh/config):
 //   1. config.json (repo root)                          → owner, vms overlay, native, vpss, deps
-//   2. b_infra/vps_*/src/main.tf                        → terraform VM specs/IPs/firewall/storage
+//   2. c_vps/vps_*/src/main.tf                           → terraform VM specs/IPs/firewall/storage
 //   3. a_solutions/*/build.json                         → services + containers (scanBuildJsons)
 //   4. a_solutions/*/dist/docker-compose.yml            → compose reconciliation (parseCompose)
 //   5. a_solutions/*/src/package.json                   → npm deps per service
@@ -41,14 +41,11 @@ const CLOUD_ROOT_DEFAULT = resolve(ENGINE_DIR, "../../../..");
 const GIT_BASE = process.env.GIT_BASE ?? resolve(CLOUD_ROOT_DEFAULT, "..");
 const CLOUD_ROOT = process.env.GIT_BASE ? join(GIT_BASE, "cloud") : CLOUD_ROOT_DEFAULT;
 const SOLUTIONS_DIR = join(CLOUD_ROOT, "a_solutions");
-const INFRA_DIR = join(CLOUD_ROOT, "b_infra");
+const INFRA_DIR = join(CLOUD_ROOT, "c_vps");
 const CONFIG_JSON = join(CLOUD_ROOT, "config.json");
 
-const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
+const CLOUD_DATA_DIR = join(GIT_BASE, "cloud-data");          // standalone repo — sole write target (cloud/cloud-data/ is read-only HTTPS submodule)
 const OUTPUT_JSON = join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json");
-// Standalone clone used by health checkers (cloud-health-full-report reads relative to its own repo)
-const CLOUD_DATA_STANDALONE = join(GIT_BASE, "cloud-data");
-const OUTPUT_JSON_STANDALONE = join(CLOUD_DATA_STANDALONE, "_cloud-data-consolidated.json");
 const VAULT_WG_DIR = join(GIT_BASE, "vault", "A0_keys", "providers", "wireguard");
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -411,7 +408,7 @@ function main() {
     vpss[prov.name] = {
       ...existing,
       has_terraform: prov.has_terraform,
-      folder: `b_infra/${prov.folder}`,
+      folder: `c_vps/${prov.folder}`,
     };
   }
 
@@ -607,11 +604,7 @@ function main() {
   const jsonStr = JSON.stringify(consolidated, null, 2) + "\n";
   writeFileSync(OUTPUT_JSON, jsonStr);
 
-  // Also write to standalone cloud-data clone (used by health checkers like cloud-health-full-report)
-  if (existsSync(CLOUD_DATA_STANDALONE) && CLOUD_DATA_STANDALONE !== CLOUD_DATA_DIR) {
-    writeFileSync(OUTPUT_JSON_STANDALONE, jsonStr);
-    console.log(`gen-cloud-data: also written to standalone clone at ${CLOUD_DATA_STANDALONE}`);
-  }
+  console.log(`gen-cloud-data: written to ${CLOUD_DATA_DIR}`);
 
   const svcCount = Object.keys(services).length;
   const vmCount = Object.keys(vms).length;
