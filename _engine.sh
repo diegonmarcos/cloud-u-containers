@@ -71,6 +71,7 @@ if [ -f "$CONFIG" ]; then
     DOCKER_BINARY="$(get_config docker.binary)"
     DOCKER_BINARY_NAME="$(get_config docker.binary_name)"
     DOCKER_PLATFORM="$(get_config docker.platform)"
+    DOCKER_ARCH="$(get_config docker.arch)"
     SEQUENTIAL_RESTART="$(get_config deploy.sequential_restart)"
     COMPOSE_FLAGS="$(get_config deploy.compose_flags)"
     ESCAPE_DOLLARS="$(get_config secrets.escape_dollars)"
@@ -125,137 +126,106 @@ DOCKER_IMAGE_CHANGED=""
 trap 'if [ -n "$CURRENT_STEP" ]; then log_error "Step '\''$CURRENT_STEP'\'' failed (exit $?)"; fi' EXIT
 
 # ── Step: Docker image build ─────────────────────────────────────────
-step_docker_remote() {
-    CURRENT_STEP="docker-remote"
+# Unified docker build: uses cloud-builder container for all builds.
+# Runner is set by `build.sh ship [runner]` (default: auto).
+# Architecture is declared in build.json docker.arch (default: amd64).
+step_docker() {
+    [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json -- skipping"; return 0; }
+
+    CURRENT_STEP="docker"
     FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
-    REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
-
-    # Smart build: hash src/ to skip rebuild when unchanged
-    LOCAL_HASH=$(find "$SRC_DIR" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -name 'secrets.yaml' -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
-    if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
-        REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.docker-src-hash 2>/dev/null" 2>/dev/null || true)
-        if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
-            log "Docker src unchanged (hash: $LOCAL_HASH) -- skipping remote Docker build"
-            return 0
-        fi
-        [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
-    fi
-
-    log "Syncing Docker context to $DEPLOY_HOST:$REMOTE_BUILD_DIR"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "mkdir -p $REMOTE_BUILD_DIR"
-    rsync -avzL --delete "$SRC_DIR/" "$DEPLOY_HOST:$REMOTE_BUILD_DIR/"
-
-    log "Building Docker image on $DEPLOY_HOST (remote, verbose)"
-    log "── Dockerfile: $DOCKERFILE ──"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "cat $REMOTE_BUILD_DIR/$DOCKERFILE" 2>/dev/null || true
-    log "── docker build (verbose) ──"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain docker build --progress=plain -t $FULL_IMAGE:latest -f $DOCKERFILE . 2>&1" | while IFS= read -r line; do printf "[docker-remote] %s\n" "$line"; done
-
-    ssh $SSH_OPTS "$DEPLOY_HOST" "rm -rf $REMOTE_BUILD_DIR"
-    log "Image built on $DEPLOY_HOST: $FULL_IMAGE:latest"
-
-    # Push to GHCR so step_compose pull gets the new image (not the stale registry copy)
-    log "Pushing $FULL_IMAGE:latest to registry from $DEPLOY_HOST"
-    ssh $SSH_OPTS "$DEPLOY_HOST" "ionice -c3 nice -n19 docker push $FULL_IMAGE:latest 2>&1" | while IFS= read -r line; do printf "[docker-remote] %s\n" "$line"; done
-
-    echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
-    DOCKER_IMAGE_CHANGED=true
-}
-
-step_docker_local() {
-    CURRENT_STEP="docker-local"
-    DOCKERFILE="${DOCKER_FILE:-Dockerfile}"
-    FULL_IMAGE="${DOCKER_REGISTRY:+$DOCKER_REGISTRY/}$DOCKER_IMAGE"
     SHA_TAG="${GITHUB_SHA:-$(git -C "$SERVICE_DIR" rev-parse HEAD 2>/dev/null || echo local)}"
 
-    # Smart build: hash entire src/ (Dockerfile + source code) to skip rebuild when unchanged
+    # Architecture from build.json (declarative, no hostname inference)
+    ARCH="${DOCKER_ARCH:-amd64}"
+    PLATFORM="linux/$ARCH"
+    log "Docker build: $FULL_IMAGE (arch: $ARCH, runner: ${RUNNER:-auto})"
+
+    # Smart hash: skip rebuild when src/ unchanged
     LOCAL_HASH=$(find "$SRC_DIR" -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -name 'secrets.yaml' -exec sha256sum {} \; 2>/dev/null | sort | sha256sum | cut -c1-16)
     if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_PATH" ]; then
         REMOTE_HASH=$(ssh $SSH_OPTS "$DEPLOY_HOST" "cat $DEPLOY_PATH/.docker-src-hash 2>/dev/null" 2>/dev/null || true)
         if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
-            log "Docker src unchanged (hash: $LOCAL_HASH) -- skipping Docker build"
+            log "Docker src unchanged ($LOCAL_HASH) — skipping"
             return 0
         fi
         [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
-    # Platform: explicit override from build.json or auto-detect from deploy host
-    PLATFORM_FLAG=""
-    if [ -n "$DOCKER_PLATFORM" ]; then
-        PLATFORM_FLAG="--platform=$DOCKER_PLATFORM"
-        log "Explicit platform: $DOCKER_PLATFORM (from build.json docker.platform)"
-    else
-        case "$DEPLOY_HOST" in
-            oci-apps|oci-apps-1|oci-apps-2)
-                PLATFORM_FLAG="--platform=linux/amd64,linux/arm64"
-                log "ARM host ($DEPLOY_HOST) — multi-arch build"
-                ;;
-        esac
-    fi
-    if echo "$PLATFORM_FLAG" | grep -q ','; then
-        docker buildx inspect multiarch >/dev/null 2>&1 || \
-            docker buildx create --name multiarch --use >/dev/null 2>&1
-        docker buildx use multiarch 2>/dev/null
-    fi
-
-    # Use dist/ as build context if it exists (nix-generated files live there)
-    # Fall back to src/ for services that don't use nix build
+    # Build context: prefer dist/ if Dockerfile exists there, else src/
     BUILD_CONTEXT="$SRC_DIR"
     if [ -d "$DIST_DIR" ] && [ -f "$DIST_DIR/$DOCKERFILE" ]; then
         BUILD_CONTEXT="$DIST_DIR"
-    elif [ -d "$DIST_DIR" ]; then
-        BUILD_CONTEXT="$DIST_DIR"
+    fi
+    DOCKERFILE_PATH="$BUILD_CONTEXT/$DOCKERFILE"
+
+    # GHCR login
+    if [ -n "${GITHUB_TOKEN:-}" ]; then
+        echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin 2>/dev/null
+    elif command -v gh >/dev/null 2>&1; then
+        gh auth token 2>/dev/null | docker login ghcr.io -u "$(gh api user --jq .login 2>/dev/null)" --password-stdin 2>/dev/null
     fi
 
-    # Dockerfile path must be inside build context for buildx container driver
-    DOCKERFILE_PATH="$SRC_DIR/$DOCKERFILE"
-    [ "$BUILD_CONTEXT" = "$DIST_DIR" ] && [ -f "$DIST_DIR/$DOCKERFILE" ] && DOCKERFILE_PATH="$DIST_DIR/$DOCKERFILE"
+    # Dispatch based on runner
+    case "${RUNNER:-auto}" in
+        auto|local)
+            # Ensure buildx builder exists
+            docker buildx inspect multiarch >/dev/null 2>&1 || \
+                docker buildx create --name multiarch --use >/dev/null 2>&1
+            docker buildx use multiarch 2>/dev/null
 
-    # Ensure multiarch buildx builder exists (supports registry cache + multi-platform)
-    if ! docker buildx inspect multiarch >/dev/null 2>&1; then
-        docker buildx create --name multiarch --use >/dev/null 2>&1
-    fi
-    docker buildx use multiarch 2>/dev/null
+            log "Building $FULL_IMAGE (platform: $PLATFORM) — local buildx"
+            BUILDKIT_PROGRESS=plain docker buildx build \
+                --progress=plain \
+                --push \
+                --no-cache \
+                --platform "$PLATFORM" \
+                --tag "$FULL_IMAGE:latest" \
+                --tag "$FULL_IMAGE:$SHA_TAG" \
+                --file "$DOCKERFILE_PATH" \
+                "$BUILD_CONTEXT/" 2>&1 | while IFS= read -r line; do printf "[docker] %s\n" "$line"; done
+            ;;
 
-    log "Building Docker image: $FULL_IMAGE ${PLATFORM_FLAG:+(multi-arch)} (verbose)"
-    log "── Dockerfile: $DOCKERFILE_PATH (context: $BUILD_CONTEXT) ──"
-    cat "$DOCKERFILE_PATH" 2>/dev/null || true
-    log "── docker buildx build --push (verbose) ──"
+        oci-apps|oci-apps-1|oci-apps-2)
+            # Build on ARM VM natively (fast, no QEMU)
+            REMOTE_BUILD_DIR="/tmp/${SERVICE_NAME}-docker-build"
+            log "Building $FULL_IMAGE on $RUNNER (native $ARCH)"
+            ssh $SSH_OPTS "$RUNNER" "mkdir -p $REMOTE_BUILD_DIR"
+            rsync -avzL --delete "$BUILD_CONTEXT/" "$RUNNER:$REMOTE_BUILD_DIR/"
+            ssh $SSH_OPTS "$RUNNER" "cd $REMOTE_BUILD_DIR && DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain docker build --no-cache --progress=plain -t $FULL_IMAGE:latest -f $DOCKERFILE . 2>&1" | while IFS= read -r line; do printf "[docker-$RUNNER] %s\n" "$line"; done
+            ssh $SSH_OPTS "$RUNNER" "ionice -c3 nice -n19 docker push $FULL_IMAGE:latest 2>&1" | while IFS= read -r line; do printf "[docker-$RUNNER] %s\n" "$line"; done
+            ssh $SSH_OPTS "$RUNNER" "rm -rf $REMOTE_BUILD_DIR"
+            ;;
 
-    BUILDKIT_PROGRESS=plain docker buildx build \
-        --progress=plain \
-        --push \
-        $PLATFORM_FLAG \
-        --tag "$FULL_IMAGE:latest" \
-        --tag "$FULL_IMAGE:$SHA_TAG" \
-        --cache-from "type=registry,ref=$FULL_IMAGE:latest" \
-        --cache-to "type=registry,ref=$FULL_IMAGE:buildcache,mode=max" \
-        --file "$DOCKERFILE_PATH" \
-        "$BUILD_CONTEXT/" 2>&1 | while IFS= read -r line; do printf "[docker-local] %s\n" "$line"; done
+        gha)
+            log "Runner=gha — skipping docker build (CI handles it)"
+            return 0
+            ;;
 
-    log "Pushed $FULL_IMAGE:latest + :$SHA_TAG"
+        *)
+            log_error "Unknown runner: $RUNNER (valid: auto, local, oci-apps, gha)"
+            return 1
+            ;;
+    esac
 
-    # Ensure GHCR package is public (CRITICAL — private packages are forbidden)
+    log "Pushed $FULL_IMAGE:latest"
+
+    # Ensure GHCR package is public
     PKG_NAME=$(echo "$FULL_IMAGE" | awk -F/ '{print $NF}')
     if command -v gh >/dev/null 2>&1; then
         PKG_VIS=$(gh api "/user/packages/container/${PKG_NAME}" --jq '.visibility' 2>/dev/null || echo "unknown")
-        if [ "$PKG_VIS" = "private" ]; then
-            log_warn "GHCR package '$PKG_NAME' is PRIVATE — attempting to fix via repo link"
-            # Delete and let GHA re-push (GHA push = auto-public)
-            log_warn "Package will become public on next GHA ship. Triggering workflow..."
-            gh workflow run "Ship → CI image" --repo "${GITHUB_REPOSITORY:-diegonmarcos/cloud}" 2>/dev/null || true
-            log_error "PRIVATE PACKAGE DETECTED: $PKG_NAME — push from GHA to make public"
-        elif [ "$PKG_VIS" = "public" ]; then
+        if [ "$PKG_VIS" = "public" ]; then
             log "Package $PKG_NAME: public ✓"
+        elif [ "$PKG_VIS" = "private" ]; then
+            log_error "PRIVATE PACKAGE: $PKG_NAME — needs GHA push to make public"
         fi
     fi
 
-    # Save hash to temp (step_build wipes dist/, so persist outside it)
     echo "$LOCAL_HASH" > "$SERVICE_DIR/.docker-src-hash-new"
     DOCKER_IMAGE_CHANGED=true
 
-    # Extract binary for direct transfer (avoids image pull/decompression on VM)
+    # Extract binary if needed (e.g. Rust binaries)
     if [ -n "$DOCKER_BINARY" ]; then
         log "Extracting binary from image"
         docker pull "$FULL_IMAGE:latest"
@@ -263,20 +233,6 @@ step_docker_local() {
         docker cp "$CONTAINER_ID:$DOCKER_BINARY" "/tmp/${SERVICE_NAME}-binary"
         docker rm "$CONTAINER_ID"
         log "Extracted binary ($(du -h "/tmp/${SERVICE_NAME}-binary" | cut -f1))"
-    fi
-}
-
-step_docker() {
-    [ -z "$DOCKER_IMAGE" ] && { log "No docker.image in build.json -- skipping"; return 0; }
-
-    # All builds happen locally (GHA runner / desktop) with buildx multi-arch.
-    # ARM VMs (oci-apps) get --platform linux/amd64,linux/arm64.
-    # REMOTE_BUILD=true is legacy — only use if explicitly forced.
-    if [ "${REMOTE_BUILD:-}" = "true" ]; then
-        log "REMOTE_BUILD=true forced — building on VM (legacy)"
-        step_docker_remote
-    else
-        step_docker_local
     fi
 }
 
@@ -403,11 +359,11 @@ step_build() {
         log "cloud-data already pre-staged by CI — skipping"
     fi
 
-    # Inject build.json into src/ so flakes can read ports/config
-    if [ -f "$SERVICE_DIR/build.json" ]; then
-        cp "$SERVICE_DIR/build.json" "$SRC_DIR/build.json"
+    # build.json: src/build.json is a symlink to ../build.json (root is source of truth)
+    if [ -f "$SERVICE_DIR/build.json" ] && [ ! -L "$SRC_DIR/build.json" ]; then
+        ln -sf ../build.json "$SRC_DIR/build.json"
         git -C "$SERVICE_DIR/../.." add -f "$(realpath --relative-to="$SERVICE_DIR/../.." "$SRC_DIR/build.json")" 2>/dev/null || true
-        log "Injected build.json into src/ for nix evaluation"
+        log "Created build.json symlink in src/"
     fi
 
     log "Building nix flake -> dist/"
@@ -556,38 +512,20 @@ step_secrets() {
     log "Decrypting secrets -> dist/.secrets"
     mkdir -p "$DIST_DIR"
 
-    # Decrypt → write ALL keys to both:
-    #   .secrets     = KEY=VALUE lines (docker-compose env_file)
-    #   .secrets.d/  = one raw file per key (ssh-keys.nix, file mounts)
-    # JWKS keys excluded (extracted separately below).
-    if ! command -v yq >/dev/null 2>&1; then
-        log "ERROR: yq required for YAML->env conversion"
-        return 1
-    fi
-
-    mkdir -p "$DIST_DIR/.secrets.d"
-    DECRYPTED=$(sops -d "$secrets_file")
-    KEY_COUNT=0
-    : > "$DIST_DIR/.secrets"
-
-    for key in $(printf '%s' "$DECRYPTED" | yq -r 'keys | .[] | select(. != "sops")'); do
-        [ -n "$JWKS_FILE" ] && [ "$key" = "AUTHELIA_OIDC_JWKS_KEY" ] && continue
-        val=$(printf '%s' "$DECRYPTED" | yq -r ".[\"$key\"]")
-        # .secrets.d/KEY — raw file (always written)
-        printf '%s\n' "$val" > "$DIST_DIR/.secrets.d/$key"
-        chmod 600 "$DIST_DIR/.secrets.d/$key"
-        # .secrets — KEY=VALUE (skip multiline values — they break env_file parsing)
-        line_count=$(printf '%s' "$val" | wc -l)
-        if [ "$line_count" -gt 0 ]; then
-            log "  $key: multiline — .secrets.d only"
-        else
-            printf '%s=%s\n' "$key" "$val" >> "$DIST_DIR/.secrets"
-        fi
-        KEY_COUNT=$((KEY_COUNT + 1))
-    done
-
-    # No dollar escaping — docker run --env-file reads literals.
-    # (docker compose needed $$ escaping, but we no longer use compose on VMs)
+    # sops decrypt → dotenv, then single-quote values containing $ so
+    # docker-compose env_file doesn't interpolate them as variables
+    sops -d --output-type dotenv "$secrets_file" | node -e "
+const lines = require('fs').readFileSync(0,'utf8').split('\n');
+for (const line of lines) {
+  if (!line || line.startsWith('#')) { console.log(line); continue; }
+  const eq = line.indexOf('=');
+  if (eq < 0) { console.log(line); continue; }
+  const k = line.slice(0, eq);
+  const v = line.slice(eq + 1);
+  // Single-quote values with \$ — compose treats single-quoted as literal
+  console.log(v.includes('\$') ? k + \"='\" + v + \"'\" : line);
+}
+" > "$DIST_DIR/.secrets"
 
     # Extract JWKS key as PEM file (multi-line value can't go in env_file)
     if [ -n "$JWKS_FILE" ] && [ -f "$SRC_DIR/$JWKS_FILE" ]; then
@@ -598,7 +536,7 @@ step_secrets() {
         log "JWKS key -> $JWKS_DEST_PATH"
     fi
 
-    log "Secrets decrypted ($(grep -c '=' "$DIST_DIR/.secrets" 2>/dev/null || echo 0) keys)"
+    log "Secrets decrypted"
 }
 
 # ── Step: Deploy dist/ to VM via rsync (manifest-based) ──────────────
@@ -765,6 +703,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 ENV_FILE_FLAG=""
 [ -f .secrets ] && ENV_FILE_FLAG="--env-file .secrets"
+docker compose $ENV_FILE_FLAG pull --quiet 2>/dev/null || true
 docker compose $ENV_FILE_FLAG up -d --force-recreate
 COMPOSE_SCRIPT
         chmod +x "$DIST_DIR/$SCRIPT_NAME"
@@ -776,7 +715,7 @@ COMPOSE_SCRIPT
         # ── Standard: direct docker compose up ──
         ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
         log "Running docker compose up on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$ENV_FILE_FLAG up -d --force-recreate"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$ENV_FILE_FLAG pull --quiet && docker compose \$ENV_FILE_FLAG up -d --force-recreate"
     fi
 
     # Post-hook
@@ -1130,49 +1069,25 @@ step_compose_build() {
         return 0
     fi
 
-    # Auto-detect platform from deploy host (ARM VMs get multi-arch builds)
-    PLATFORM=""
-    case "$DEPLOY_HOST" in
-        oci-apps|oci-apps-1|oci-apps-2)
-            PLATFORM="linux/amd64,linux/arm64"
-            log "ARM host detected ($DEPLOY_HOST) — building multi-arch: $PLATFORM"
-            # Ensure buildx builder exists for multi-platform
-            docker buildx inspect multiarch >/dev/null 2>&1 || \
-                docker buildx create --name multiarch --use >/dev/null 2>&1
-            docker buildx use multiarch 2>/dev/null
-            ;;
-        *)
-            log "x86 host ($DEPLOY_HOST) — building linux/amd64"
-            # Reset to default builder — stale multiarch driver breaks --push for single-platform
-            docker buildx use default 2>/dev/null || true
-            ;;
-    esac
+    # Platform from build.json docker.arch (declarative, no hostname inference)
+    ARCH="${DOCKER_ARCH:-amd64}"
+    PLATFORM="linux/$ARCH"
+    log "compose-build platform: $PLATFORM (from docker.arch)"
+    docker buildx inspect multiarch >/dev/null 2>&1 || \
+        docker buildx create --name multiarch --use >/dev/null 2>&1
+    docker buildx use multiarch 2>/dev/null
 
     # Build + push all services with build: sections (verbose output)
     log "── dockerfile_inline content ──"
     grep -A20 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" || true
     log "── docker compose build --push (verbose) ──"
     COMPOSE_BUILD_OK=""
-    if [ -n "$PLATFORM" ]; then
-        # Multi-arch: use buildx bake with platform override
-        if BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
-            --set "*.platform=$PLATFORM" \
-            -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
-            printf "[compose-build] %s\n" "$line"
-        done; then
-            COMPOSE_BUILD_OK=true
-        fi
-    else
-        if BUILDKIT_PROGRESS=plain docker compose build --no-cache --push --progress=plain 2>&1 | while IFS= read -r line; do
-            printf "[compose-build] %s\n" "$line"
-        done; then
-            COMPOSE_BUILD_OK=true
-        fi
-        # Explicit push — buildx docker-container driver may build locally without pushing
-        grep -o 'image:.*ghcr\.io/[^ "]*' "$DIST_DIR/docker-compose.yml" 2>/dev/null | sed 's/image: *//' | sort -u | while read -r img; do
-            log "Pushing $img"
-            docker push "$img" 2>&1 | tail -3
-        done
+    if BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
+        --set "*.platform=$PLATFORM" \
+        -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
+        printf "[compose-build] %s\n" "$line"
+    done; then
+        COMPOSE_BUILD_OK=true
     fi
 
     if [ -z "$COMPOSE_BUILD_OK" ]; then
@@ -1214,6 +1129,9 @@ case "${1:-all}" in
     health)   step_health ;;
     all)      step_build; step_docs; step_secrets ;;
     ship)
+        # Runner: where to build Docker images (auto, local, oci-apps, gha)
+        RUNNER="${2:-auto}"
+
         # Special cases: wrangler/terraform have their own flow
         if [ "$WRANGLER_DEPLOY" = "true" ]; then
             step_build; step_secrets; step_wrangler; break
@@ -1226,23 +1144,28 @@ case "${1:-all}" in
         rm -f "$SERVICE_DIR/.image-changed"
         step_build
 
-        # ── Phase 2: 3 PARALLEL JOBS (configs + service image + secrets) ──
-        log "═══ Parallel: configs-push + compose-build + secrets ═══"
+        # ── Phase 2: 4 PARALLEL JOBS (docker + configs + compose-build + secrets) ──
+        log "═══ Parallel: docker + configs-push + compose-build + secrets ═══"
 
-        # Job 1: Configs image → GHCR (no secrets)
+        # Job 1: Standalone Dockerfile → GHCR (if src/Dockerfile exists)
+        step_docker &
+        PID_DOCKER=$!
+
+        # Job 2: Configs image → GHCR (no secrets)
         step_configs_push &
         PID_CONFIGS=$!
 
-        # Job 2: Service image → GHCR (if dockerfile_inline)
+        # Job 3: Service image → GHCR (if dockerfile_inline)
         step_compose_build &
         PID_IMAGE=$!
 
-        # Job 3: Secrets decrypt
+        # Job 4: Secrets decrypt
         step_secrets &
         PID_SECRETS=$!
 
-        # Wait for all 3
+        # Wait for all 4
         FAIL=0
+        wait $PID_DOCKER   || { log_warn "docker build failed"; FAIL=$((FAIL+1)); }
         wait $PID_CONFIGS  || { log_warn "configs-push failed"; FAIL=$((FAIL+1)); }
         wait $PID_IMAGE    || { log_warn "compose-build failed"; FAIL=$((FAIL+1)); }
         wait $PID_SECRETS  || { log_error "secrets failed"; FAIL=$((FAIL+1)); }
@@ -1254,6 +1177,10 @@ case "${1:-all}" in
         if [ -f "$SERVICE_DIR/.image-changed" ]; then
             DOCKER_IMAGE_CHANGED=true
             rm -f "$SERVICE_DIR/.image-changed"
+        fi
+        # Read image-changed flag from background step_docker (subshell writes file)
+        if [ -f "$SERVICE_DIR/.docker-src-hash-new" ]; then
+            DOCKER_IMAGE_CHANGED=true
         fi
 
         # ── Phase 3: DEPLOY TO VM (configs image + secrets via scp) ──
