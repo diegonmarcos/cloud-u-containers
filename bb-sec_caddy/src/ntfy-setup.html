@@ -168,19 +168,9 @@ a:hover{color:#845ef7;border-color:#845ef7}
   log('ok',topics.length+' channels: '+topics.join(', '));
   btn.disabled=false; androidBtn.disabled=false;
 
-  // List all channels grouped by category
+  // List all channels comma-separated (copyable)
   listBtn.addEventListener('click',function(){
-    var cats={};
-    topics.forEach(function(t){
-      var cat=t.split('_')[0];
-      if(!cats[cat]) cats[cat]=[];
-      cats[cat].push(t);
-    });
-    log('info','── Channels ──');
-    Object.keys(cats).forEach(function(cat){
-      log('ok',cat+': '+cats[cat].join(', '));
-    });
-    log('info','Total: '+topics.length+' channels in '+Object.keys(cats).length+' categories');
+    log('ok',topics.join(','));
   });
 
   // Android export — generate ntfy Android backup JSON
