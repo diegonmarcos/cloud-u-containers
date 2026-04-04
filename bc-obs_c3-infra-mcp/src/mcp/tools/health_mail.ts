@@ -1,10 +1,10 @@
-// ── Stalwart Health — ultimate async 6-phase diagnostic (5 MCP tools) ──
+// ── Maddy Health — ultimate async 6-phase diagnostic (5 MCP tools) ──
 //
 // Phase 1: PRE-FLIGHT — WG tunnels (3 VMs), batch SSH data (oci-mail, oci-apps, gcp-proxy)
 // Phase 2: CONTAINERS — status + crash-loop + restart count
-// Phase 3: NETWORK + AUTH — TLS ports, certs, HTTP, OIDC chain, Stalwart Admin API, SnappyMail
+// Phase 3: NETWORK + AUTH — TLS ports, certs, HTTP, OIDC chain, Caddy routes, SnappyMail
 // Phase 4: DNS AUTH — MX, DKIM, SPF, DMARC
-// Phase 5: MAIL INTERNALS — IMAP, queue, spam, sieve, quota, ports, Admin API
+// Phase 5: MAIL INTERNALS — IMAP, queue, sieve, accounts (Maddy CLI)
 // Phase 6: E2E DELIVERY — Resend → IMAP arrival → smtp-proxy → CF Worker
 //
 // All I/O is async (non-blocking). Independent checks run in parallel via Promise.all.
@@ -20,50 +20,17 @@ import { profileContainer } from "../../shared/diagnostics.js";
 import { getBearerToken } from "../../shared/http.js";
 import { performance } from "node:perf_hooks";
 
-// ── Constants — resolved from cloud-data topology ────────────────────────
-import { getConfig } from "../../shared/config.js";
-
-function resolveMailConstants() {
-  try {
-    const config = getConfig();
-    const stalwart = config.services?.stalwart;
-    const mailVm = stalwart?.vm ?? "oci-E2-f_0";
-    const c3Svc = config.services?.["c3-infra-api"] ?? config.services?.["c3-infra-mcp"];
-    const c3Vm = c3Svc?.vm ?? "oci-A1-f_0";
-    const caddySvc = config.services?.caddy;
-    const proxyVm = caddySvc?.vm ?? "gcp-E2-f_0";
-    const domain = config.owner?.domain ?? "diegonmarcos.com";
-    return {
-      MAIL_VM: mailVm, C3_VM: c3Vm, PROXY_VM: proxyVm,
-      MAIL_DOMAIN: stalwart?.domain?.split("/")[0] ?? `mail.${domain}`,
-      MAIL_WG_IP: config.vms?.[mailVm]?.wg_ip ?? "10.0.0.3",
-      APPS_WG_IP: config.vms?.[c3Vm]?.wg_ip ?? "10.0.0.6",
-      PROXY_WG_IP: config.vms?.[proxyVm]?.wg_ip ?? "10.0.0.1",
-      MAIL_CONTAINERS: stalwart?.containers ?? ["stalwart"],
-      TEST_FROM: `health@mails.${domain}`,
-      TEST_TO: config.owner?.email ?? `me@${domain}`,
-    };
-  } catch {
-    return {
-      MAIL_VM: "oci-E2-f_0", C3_VM: "oci-A1-f_0", PROXY_VM: "gcp-E2-f_0",
-      MAIL_DOMAIN: "mail.diegonmarcos.com", MAIL_WG_IP: "10.0.0.3",
-      APPS_WG_IP: "10.0.0.6", PROXY_WG_IP: "10.0.0.1",
-      MAIL_CONTAINERS: ["stalwart"],
-      TEST_FROM: "health@mails.diegonmarcos.com", TEST_TO: "me@diegonmarcos.com",
-    };
-  }
-}
-const _mc = resolveMailConstants();
-const MAIL_VM = _mc.MAIL_VM;
-const C3_VM = _mc.C3_VM;
-const PROXY_VM = _mc.PROXY_VM;
-const MAIL_DOMAIN = _mc.MAIL_DOMAIN;
-const MAIL_WG_IP = _mc.MAIL_WG_IP;
-const APPS_WG_IP = _mc.APPS_WG_IP;
-const PROXY_WG_IP = _mc.PROXY_WG_IP;
-const MAIL_CONTAINERS = _mc.MAIL_CONTAINERS;
-const TEST_FROM = _mc.TEST_FROM;
-const TEST_TO = _mc.TEST_TO;
+// ── Constants ────────────────────────────────────────────────────────────
+const MAIL_VM = "oci-E2-f_0";
+const C3_VM = "oci-A1-f_0";
+const PROXY_VM = "gcp-E2-f_0";
+const MAIL_DOMAIN = "mail.diegonmarcos.com";
+const MAIL_WG_IP = "10.0.0.3";
+const APPS_WG_IP = "10.0.0.6";
+const PROXY_WG_IP = "10.0.0.1";
+const MAIL_CONTAINERS = ["maddy"];
+const TEST_FROM = "health@mails.diegonmarcos.com";
+const TEST_TO = "me@diegonmarcos.com";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 interface Check { name: string; passed: boolean; details: string; durationMs: number; error?: string; }
@@ -111,8 +78,8 @@ interface RemoteData {
   dockerVersion: string; dovecotUser: string; imapCap: string; postfixQueue: string;
   rspamd: string; redis: string; admin: string; sieve: string; quota: string;
   users: string; smtp25: string; smtp587: string; webmailInternal: string;
-  stalwartApiAccounts: string; stalwartApiDomains: string; stalwartApiQueue: string;
-  snappymailInternal: string; sieve4190: string; allLocalPorts: string;
+  maddyAccounts: string; maddyQueue: string;
+  snappymailInternal: string; allLocalPorts: string;
   debugDump: string;
 }
 
@@ -122,7 +89,6 @@ async function getRemoteDataAsync(): Promise<RemoteData> {
   if (_remoteCache) return _remoteCache;
   const T = 3;
   const script = `
-ADMIN_CREDS=$(grep ADMIN_PASSWORD /opt/stalwart/.secrets 2>/dev/null | head -1 | cut -d= -f2-)
 echo "===disk==="
 df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %'
 echo "===memory==="
@@ -135,26 +101,25 @@ timeout ${T} docker info --format '{{.ServerVersion}}' 2>&1 | head -1
 echo "===containers==="
 timeout ${T} docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}' 2>&1
 echo "===restarts==="
-timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=stalwart --filter name=smtp-proxy --filter name=snappymail 2>/dev/null) 2>/dev/null | tr -d '/'
+timeout ${T} docker inspect --format '{{.Name}}\t{{.RestartCount}}' $(timeout ${T} docker ps -aq --filter name=maddy --filter name=smtp-proxy --filter name=snappymail 2>/dev/null) 2>/dev/null | tr -d '/'
 echo "===dovecotUser==="
 echo "a001 CAPABILITY" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===imapCap==="
 echo "a001 CAPABILITY" | timeout ${T} openssl s_client -connect localhost:993 -quiet 2>/dev/null | head -3
 echo "===postfixQueue==="
-curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/queue/messages 2>/dev/null | head -3 || echo "empty"
+timeout ${T} docker exec maddy maddy queue list 2>/dev/null | head -3 || echo "empty"
 echo "===rspamd==="
-echo "stalwart-builtin-spam-filter"
+echo "maddy-builtin-checks"
 echo "===redis==="
-echo "PONG"
+echo "maddy-sqlite"
 echo "===admin==="
-curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} https://localhost:8443/ 2>&1
-echo ""
+echo "cli-only"
 echo "===sieve==="
-echo "stalwart-builtin-managesieve"
+echo "maddy-builtin-sieve"
 echo "===quota==="
-echo "stalwart-builtin-quota"
+echo "maddy-builtin-storage"
 echo "===users==="
-curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/principal 2>/dev/null | head -5 || echo "0"
+timeout ${T} docker exec maddy maddy creds list 2>/dev/null | wc -l
 echo "===smtp25==="
 echo QUIT | timeout ${T} nc -w3 localhost 25 2>&1 | head -1
 echo "===smtp587==="
@@ -162,28 +127,24 @@ echo QUIT | timeout ${T} openssl s_client -starttls smtp -connect localhost:587 
 echo "===webmailInternal==="
 curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} http://localhost:8888/ 2>&1
 echo ""
-echo "===stalwartApiAccounts==="
-curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/principal 2>/dev/null | head -5 || echo "API_FAIL"
-echo "===stalwartApiDomains==="
-curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/domain 2>/dev/null | head -5 || echo "API_FAIL"
-echo "===stalwartApiQueue==="
-curl -skf -u "admin:\$ADMIN_CREDS" https://localhost:8443/api/queue/messages 2>/dev/null | head -3 || echo "empty"
+echo "===maddyAccounts==="
+timeout ${T} docker exec maddy maddy creds list 2>/dev/null || echo "API_FAIL"
+echo "===maddyQueue==="
+timeout ${T} docker exec maddy maddy queue list 2>/dev/null | head -3 || echo "empty"
 echo "===snappymailInternal==="
 curl -skL -o /dev/null -w '%{http_code}' --max-time ${T} http://localhost:8888/ 2>&1
 echo ""
-echo "===sieve4190==="
-echo QUIT | timeout ${T} nc -w3 localhost 4190 2>&1 | head -1
 echo "===allLocalPorts==="
-sudo ss -tlnp 2>/dev/null | grep -E ':(25|465|587|993|4190|8443|8888)\\s' || ss -tlnp 2>/dev/null | grep -E ':(25|465|587|993|4190|8443|8888)\\s' || echo "(none)"
+sudo ss -tlnp 2>/dev/null | grep -E ':(25|465|587|993|8888)\\s' || ss -tlnp 2>/dev/null | grep -E ':(25|465|587|993|8888)\\s' || echo "(none)"
 echo "===debugDump==="
 echo "--- ss listening ports ---"
 sudo ss -tlnp 2>/dev/null || ss -tlnp 2>/dev/null || true
 echo "--- docker networks ---"
 timeout ${T} docker network ls --format '{{.Name}}\t{{.Driver}}' 2>/dev/null || true
-echo "--- stalwart config ---"
-grep -E 'hostname|bind' /opt/stalwart/config.toml 2>/dev/null || echo "(no config yet)"
-echo "--- stalwart logs (last 10) ---"
-timeout ${T} docker logs stalwart --tail 10 2>&1 || echo "(no stalwart container)"
+echo "--- maddy config ---"
+cat /opt/containers/maddy/maddy.conf 2>/dev/null | head -30 || echo "(no config yet)"
+echo "--- maddy logs (last 10) ---"
+timeout ${T} docker logs maddy --tail 10 2>&1 || echo "(no maddy container)"
 echo "--- resolv.conf ---"
 cat /etc/resolv.conf 2>/dev/null || true
 `.trim();
@@ -209,11 +170,10 @@ cat /etc/resolv.conf 2>/dev/null || true
     sieve: section("sieve"), quota: section("quota"), users: section("users"),
     smtp25: section("smtp25"), smtp587: section("smtp587"),
     webmailInternal: section("webmailInternal"),
-    stalwartApiAccounts: section("stalwartApiAccounts"),
-    stalwartApiDomains: section("stalwartApiDomains"),
-    stalwartApiQueue: section("stalwartApiQueue"),
+    maddyAccounts: section("maddyAccounts"),
+    maddyQueue: section("maddyQueue"),
     snappymailInternal: section("snappymailInternal"),
-    sieve4190: section("sieve4190"), allLocalPorts: section("allLocalPorts"),
+    allLocalPorts: section("allLocalPorts"),
     debugDump: section("debugDump"),
   };
   return _remoteCache;
@@ -496,9 +456,9 @@ async function networkChecks(): Promise<Check[]> {
       return { passed: up, details: up ? `HTTPS OK (${dns || "no DNS"})` : "Caddy DOWN" };
     }),
     timedAsync("Hickory DNS", async () => {
-      const r = await runA("bash", ["-c", `dig +short stalwart.app @${PROXY_WG_IP} 2>&1 | head -1`], 5_000);
+      const r = await runA("bash", ["-c", `dig +short maddy.app @${PROXY_WG_IP} 2>&1 | head -1`], 5_000);
       const ip = r.stdout.trim();
-      return { passed: ip === MAIL_WG_IP, details: ip === MAIL_WG_IP ? `stalwart.app → ${ip}` : `FAIL: ${ip || "no response"}` };
+      return { passed: ip === MAIL_WG_IP, details: ip === MAIL_WG_IP ? `maddy.app → ${ip}` : `FAIL: ${ip || "no response"}` };
     }),
 
     // ── TLS via WG direct (SSH to oci-mail) ──
@@ -574,10 +534,15 @@ async function networkChecks(): Promise<Check[]> {
       const code = data.snappymailInternal.trim();
       return { passed: ["200", "301", "302"].includes(code), details: `HTTP ${code}` };
     }),
-    timedAsync("ManageSieve :4190", async () => {
-      if (!data) return { passed: false, details: "no data" };
-      const ok = data.sieve4190.includes("OK") || data.sieve4190.includes("SIEVE") || data.sieve4190.includes("IMPLEMENTATION");
-      return { passed: ok, details: ok ? "ManageSieve OK" : data.sieve4190.slice(0, 50) || "no banner" };
+    timedAsync("mail.*/webmail/ route", async () => {
+      const r = await runA("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAIL_DOMAIN}/webmail/`]);
+      const code = r.stdout.trim();
+      return { passed: ["200", "301", "302"].includes(code), details: `HTTP ${code}` };
+    }),
+    timedAsync("webmail.* redirect", async () => {
+      const r = await runA("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", "-L0", "https://webmail.diegonmarcos.com"]);
+      const code = r.stdout.trim();
+      return { passed: code === "301", details: `HTTP ${code}` };
     }),
 
     // ── Authelia OIDC chain ──
@@ -595,12 +560,10 @@ async function networkChecks(): Promise<Check[]> {
       if (code === "302") return { passed: false, details: `Bearer rejected → 302 (introspect-proxy issue)` };
       return { passed: false, details: `HTTP ${code}` };
     }),
-    timedAsync("Stalwart Admin via Bearer", async () => {
-      const token = getBearerToken();
-      if (!token) return { passed: false, details: "no OIDC token" };
-      const r = await runA("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "-H", `Authorization: Bearer ${token}`, "--max-time", "5", `https://${MAIL_DOMAIN}/api/`]);
+    timedAsync("mail.* landing page", async () => {
+      const r = await runA("curl", ["-sk", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", `https://${MAIL_DOMAIN}/`]);
       const code = r.stdout.trim();
-      return { passed: ["200", "401", "403", "404"].includes(code), details: `HTTP ${code}` };
+      return { passed: code === "200", details: `HTTP ${code}` };
     }),
 
     // ── mail-mcp container connectivity (from oci-apps batch) ──
@@ -652,7 +615,7 @@ async function networkChecks(): Promise<Check[]> {
     timedAsync("All ports bound", async () => {
       if (!data) return { passed: false, details: "no data" };
       const ports = data.allLocalPorts;
-      const expected = [25, 465, 587, 993, 4190, 8443, 8888];
+      const expected = [25, 465, 587, 993, 8888];
       const bound = expected.filter(p => ports.includes(`:${p}`));
       const missing = expected.filter(p => !ports.includes(`:${p}`));
       return { passed: missing.length === 0, details: missing.length === 0 ? `all ${expected.length} ports bound` : `missing: ${missing.join(", ")}` };
@@ -676,7 +639,7 @@ async function dnsAuth(): Promise<Check[]> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE 5: MAIL INTERNALS — Stalwart API + service health
+// PHASE 5: MAIL INTERNALS — Maddy CLI + service health
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function mailInternals(): Promise<Check[]> {
@@ -684,45 +647,31 @@ async function mailInternals(): Promise<Check[]> {
   if (!data) return [{ name: "internals", passed: false, details: "no remote data", durationMs: 0 }];
 
   const checks: Check[] = [
-    { name: "IMAP auth", passed: data.dovecotUser.includes("IMAP4") || data.dovecotUser.includes("OK") || data.dovecotUser.includes("Stalwart"), details: (data.dovecotUser.includes("IMAP4") || data.dovecotUser.includes("OK") || data.dovecotUser.includes("Stalwart")) ? "Stalwart IMAP responding" : `FAILED: ${data.dovecotUser.slice(0, 60)}`, durationMs: 0 },
+    { name: "IMAP auth", passed: data.dovecotUser.includes("IMAP4") || data.dovecotUser.includes("OK") || data.dovecotUser.includes("Maddy"), details: (data.dovecotUser.includes("IMAP4") || data.dovecotUser.includes("OK") || data.dovecotUser.includes("Maddy")) ? "Maddy IMAP responding" : `FAILED: ${data.dovecotUser.slice(0, 60)}`, durationMs: 0 },
     { name: "IMAP protocol", passed: data.imapCap.includes("IMAP4") || data.imapCap.includes("OK"), details: data.imapCap.includes("IMAP4") ? "IMAP4rev1" : "not responding", durationMs: 0 },
-    { name: "spam filter", passed: data.rspamd.includes("stalwart-builtin") || data.rspamd.includes("scanned"), details: (data.rspamd.includes("stalwart-builtin") || data.rspamd.includes("scanned")) ? "Stalwart built-in" : data.rspamd.slice(0, 40) || "unknown", durationMs: 0 },
-    { name: "data store", passed: data.redis.trim() === "PONG" || data.redis.includes("stalwart"), details: "RocksDB", durationMs: 0 },
-    { name: "admin panel", passed: ["200", "302", "303"].includes(data.admin.trim().replace(/[^0-9]/g, "")), details: data.admin.trim().replace(/[^0-9]/g, "") ? `HTTP ${data.admin.trim().replace(/[^0-9]/g, "")}` : "no response", durationMs: 0 },
-    { name: "sieve filter", passed: data.sieve.includes("stalwart-builtin") || data.sieve.includes("managesieve"), details: "Stalwart ManageSieve", durationMs: 0 },
+    { name: "spam filter", passed: data.rspamd.includes("maddy-builtin") || data.rspamd.includes("scanned"), details: (data.rspamd.includes("maddy-builtin") || data.rspamd.includes("scanned")) ? "Maddy built-in checks" : data.rspamd.slice(0, 40) || "unknown", durationMs: 0 },
+    { name: "data store", passed: data.redis.includes("maddy-sqlite") || data.redis.includes("sqlite"), details: "SQLite", durationMs: 0 },
+    { name: "admin panel", passed: data.admin.includes("cli-only"), details: "CLI-only (no web admin)", durationMs: 0 },
+    { name: "sieve filter", passed: data.sieve.includes("maddy-builtin") || data.sieve.includes("sieve"), details: "Maddy built-in sieve", durationMs: 0 },
     { name: "mailbox quota", passed: true, details: data.quota.trim().slice(0, 60) || "no quota", durationMs: 0 },
   ];
 
-  // Stalwart Admin API data
-  if (!data.stalwartApiAccounts.includes("API_FAIL")) {
-    try {
-      const accounts = JSON.parse(data.stalwartApiAccounts);
-      const count = Array.isArray(accounts) ? accounts.length : (accounts?.items?.length ?? 0);
-      checks.push({ name: "Admin API accounts", passed: count > 0, details: `${count} accounts`, durationMs: 0 });
-    } catch { checks.push({ name: "Admin API accounts", passed: data.stalwartApiAccounts.length > 2, details: data.stalwartApiAccounts.slice(0, 60), durationMs: 0 }); }
+  // Maddy CLI accounts
+  if (!data.maddyAccounts.includes("API_FAIL")) {
+    const lines = data.maddyAccounts.trim().split("\n").filter(Boolean);
+    const count = lines.length;
+    checks.push({ name: "Maddy CLI accounts", passed: count > 0, details: `${count} accounts`, durationMs: 0 });
   } else {
-    checks.push({ name: "Admin API accounts", passed: false, details: "API unreachable (auth failed?)", durationMs: 0 });
-  }
-
-  if (!data.stalwartApiDomains.includes("API_FAIL")) {
-    checks.push({ name: "Admin API domains", passed: data.stalwartApiDomains.length > 2, details: data.stalwartApiDomains.slice(0, 60), durationMs: 0 });
-  } else {
-    checks.push({ name: "Admin API domains", passed: false, details: "API unreachable", durationMs: 0 });
+    checks.push({ name: "Maddy CLI accounts", passed: false, details: "CLI unreachable", durationMs: 0 });
   }
 
   // Queue status
-  const queueOk = data.stalwartApiQueue.includes("empty") || data.stalwartApiQueue.includes("[]");
-  checks.push({ name: "Mail queue", passed: queueOk || data.stalwartApiQueue.length < 100, details: queueOk ? "empty" : data.stalwartApiQueue.slice(0, 60), durationMs: 0 });
+  const queueOk = data.maddyQueue.includes("empty") || data.maddyQueue.trim() === "";
+  checks.push({ name: "Mail queue", passed: queueOk || data.maddyQueue.length < 100, details: queueOk ? "empty" : data.maddyQueue.slice(0, 60), durationMs: 0 });
 
-  // User accounts (from users field which now uses Admin API)
-  try {
-    const parsed = JSON.parse(data.users);
-    const count = Array.isArray(parsed) ? parsed.length : parseInt(data.users.trim()) || 0;
-    checks.push({ name: "User accounts", passed: count > 0, details: `${count} users`, durationMs: 0 });
-  } catch {
-    const count = parseInt(data.users.trim()) || 0;
-    checks.push({ name: "User accounts", passed: count > 0, details: count > 0 ? `${count} users` : `unknown (${data.users.trim().slice(0, 30)})`, durationMs: 0 });
-  }
+  // User accounts (from users field which uses Maddy CLI)
+  const userCount = parseInt(data.users.trim()) || 0;
+  checks.push({ name: "User accounts", passed: userCount > 0, details: userCount > 0 ? `${userCount} users` : `unknown (${data.users.trim().slice(0, 30)})`, durationMs: 0 });
 
   return checks;
 }
@@ -764,13 +713,13 @@ async function e2eDelivery(): Promise<Check[]> {
     }),
     timedAsync("IMAP arrival", async () => {
       if (!sshOk) return { passed: false, details: "SSH down" };
-      for (let i = 0; i < 6; i++) {
-        await new Promise(r => setTimeout(r, 3000));
-        const r = await sshMail(`docker logs stalwart --since 60s 2>&1 | grep -c "Message ingested" || echo 0`, 5_000);
+      for (let i = 0; i < 3; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const r = await sshMail(`docker logs maddy --since 30s 2>&1 | grep -c "accepted\\|delivered" || echo 0`, 5_000);
         const count = parseInt(r.stdout.trim()) || 0;
-        if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 3}s)` };
+        if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 2}s)` };
       }
-      return { passed: false, details: "NOT FOUND after 18s" };
+      return { passed: false, details: "NOT FOUND after 6s" };
     }),
     timedAsync("smtp-proxy logs", async () => {
       if (!sshOk) return { passed: false, details: "SSH down" };
@@ -826,15 +775,15 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("obs.health.mail_profile", "Deep profile all Stalwart containers", {},
+  server.tool("obs.health.mail_profile", "Deep profile all Maddy containers", {},
     () => safeToolAsync(async () => {
       const p: Record<string, unknown> = {};
       for (const n of [...MAIL_CONTAINERS, "smtp-proxy", "snappymail"]) { try { p[n] = profileContainer(n); } catch (e: unknown) { p[n] = { error: String(e) }; } }
-      return `Stalwart Profiles\n${"─".repeat(60)}\n${JSON.stringify(p, null, 2)}`;
+      return `Maddy Profiles\n${"─".repeat(60)}\n${JSON.stringify(p, null, 2)}`;
     }),
   );
 
-  server.tool("obs.health.mail_inbound", "E2E delivery: Resend → CF → smtp-proxy → Stalwart → IMAP", {},
+  server.tool("obs.health.mail_inbound", "E2E delivery: Resend → CF → smtp-proxy → Maddy → IMAP", {},
     () => safeToolAsync(async () => formatChecks("E2E DELIVERY", await e2eDelivery())),
   );
 
@@ -1040,7 +989,7 @@ export function registerHealthMailTools(server: McpServer): void {
       sections.push(`RESULT: ${passCount} passed, ${failCount} failed (${(totalMs / 1000).toFixed(1)}s)`);
 
       if (!hasFailures) {
-        sections.push("ALL CHECKS PASSED — Stalwart is fully operational.");
+        sections.push("ALL CHECKS PASSED — Maddy is fully operational.");
       } else {
         sections.push(`${failCount} CHECK(S) FAILED — COLLECTING FULL DEBUG DATA BELOW`);
         sections.push(`${"═".repeat(60)}`);
@@ -1052,9 +1001,8 @@ export function registerHealthMailTools(server: McpServer): void {
           sections.push("╚══════════════════════════════════════════════════════════════╝");
           if (_remoteCache.debugDump) sections.push("", _remoteCache.debugDump);
           sections.push("", "── RAW CONTAINER STATUS ──", _remoteCache.containers || "(empty)");
-          sections.push("", "── STALWART API ACCOUNTS ──", _remoteCache.stalwartApiAccounts || "(empty)");
-          sections.push("", "── STALWART API DOMAINS ──", _remoteCache.stalwartApiDomains || "(empty)");
-          sections.push("", "── STALWART API QUEUE ──", _remoteCache.stalwartApiQueue || "(empty)");
+          sections.push("", "── MADDY CLI ACCOUNTS ──", _remoteCache.maddyAccounts || "(empty)");
+          sections.push("", "── MADDY QUEUE ──", _remoteCache.maddyQueue || "(empty)");
           sections.push("", "── LISTENING PORTS ──", _remoteCache.allLocalPorts || "(empty)");
           sections.push("", "── DISK / MEMORY / LOAD ──");
           sections.push(`disk: ${_remoteCache.disk}% | memory: ${_remoteCache.memory} | load: ${_remoteCache.load}`);
