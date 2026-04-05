@@ -95,7 +95,10 @@
           container_name = config.container_name;
           entrypoint = ["sh" "/config/init.sh"];
           env_file = [".secrets"];
-          environment = { TZ = config.timezone; };
+          environment = {
+            TZ = config.timezone;
+            X_AUTHELIA_CONFIG_FILTERS = "template";
+          };
           volumes = [
             "authelia_data:/data"
             "./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro"
@@ -173,7 +176,12 @@
         - domain: "*.${config.base_domain}"
           policy: two_factor
 
+    identity_validation:
+      reset_password:
+        jwt_secret: '{{ env "AUTHELIA_JWT_SECRET" }}'
+
     session:
+      secret: '{{ env "AUTHELIA_SESSION_SECRET" }}'
       name: authelia_session
       cookies:
         - name: authelia_session
@@ -185,6 +193,7 @@
       redis:
         host: localhost
         port: ${config.redis_port}
+        password: '{{ env "AUTHELIA_REDIS_PASSWORD" }}'
 
     regulation:
       max_retries: 3
@@ -192,6 +201,7 @@
       ban_time: 15m
 
     storage:
+      encryption_key: '{{ env "AUTHELIA_STORAGE_ENCRYPTION_KEY" }}'
       local:
         path: /data/db.sqlite3
 
@@ -200,6 +210,7 @@
       smtp:
         address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
         username: no-reply@diegonmarcos.com
+        password: '{{ env "AUTHELIA_SMTP_PASSWORD" }}'
         sender: "Authelia <no-reply@diegonmarcos.com>"
         tls:
           server_name: mail.diegonmarcos.com
@@ -217,6 +228,7 @@
 
     identity_providers:
       oidc:
+        hmac_secret: '{{ env "AUTHELIA_OIDC_HMAC_SECRET" }}'
         lifespans:
           access_token: 87600h
           refresh_token: 87600h
@@ -224,6 +236,7 @@
           - key_id: main
             algorithm: RS256
             use: sig
+            key: {{ secret "/config/oidc_jwks.pem" }}
         cors:
           endpoints:
             - authorization
@@ -234,6 +247,7 @@
           allowed_origins_from_client_redirect_uris: true
         clients:
           - client_id: oauth2-proxy-npm
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_NPM_SECRET" }}'
             consent_mode: explicit
             client_name: NPM Proxy Manager
             public: false
@@ -252,6 +266,7 @@
             pkce_challenge_method: S256
 
           - client_id: nocodb
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_NOCODB_SECRET" }}'
             consent_mode: explicit
             client_name: NocoDB Database
             public: false
@@ -270,6 +285,7 @@
             pkce_challenge_method: S256
 
           - client_id: cloudflare-health-c3-api
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET" }}'
             consent_mode: explicit
             client_name: Cloudflare Worker Health Check
             public: false
@@ -295,6 +311,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-admin
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET" }}'
             consent_mode: explicit
             client_name: Claude AI Agent
             public: false
@@ -321,6 +338,7 @@
               - https://diegonmarcos.com/
 
           - client_id: cloud-admin
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET" }}'
             consent_mode: explicit
             client_name: Cloud Admin
             public: false
@@ -348,6 +366,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-opus
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Opus Agent
             public: false
@@ -375,6 +394,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-sonnet
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Sonnet Agent
             public: false
@@ -402,6 +422,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-haiku
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Haiku Agent
             public: false
@@ -429,6 +450,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: dagu-ops
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_DAGU_SECRET" }}'
             consent_mode: explicit
             client_name: Dagu Workflow Engine
             public: false
@@ -454,6 +476,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: dagu-cc
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET" }}'
             client_name: Dagu Service Account
             public: false
             authorization_policy: one_factor
@@ -467,6 +490,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: monitoring-read
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MONITORING_SECRET" }}'
             consent_mode: explicit
             client_name: Monitoring Read-Only
             public: false
@@ -492,6 +516,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: mattermost-ops
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET" }}'
             consent_mode: explicit
             client_name: Mattermost Bot
             public: false
@@ -518,6 +543,7 @@
               - https://rss.diegonmarcos.com/
 
           - client_id: mattermost-cc
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET" }}'
             client_name: Mattermost Service Account
             public: false
             authorization_policy: one_factor
@@ -532,6 +558,7 @@
               - https://rss.diegonmarcos.com/
 
           - client_id: c3-infra-mcp-api
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET" }}'
             client_name: C3 Infra MCP API
             public: false
             grant_types:
@@ -544,6 +571,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: cli
+            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLI_SECRET" }}'
             consent_mode: explicit
             client_name: CLI Access
             public: false
@@ -578,52 +606,19 @@
     mkInitScript = pkgs: pkgs.writeText "init.sh" ''
     #!/bin/sh
     set -e
-    SD=/config/.secrets.d
 
-    echo "[init] Loading secrets via _FILE references..."
-
-    # Standard secrets — _FILE suffix reads value from per-file in .secrets.d/
-    export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE="$SD/AUTHELIA_JWT_SECRET"
-    export AUTHELIA_SESSION_SECRET_FILE="$SD/AUTHELIA_SESSION_SECRET"
-    export AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE="$SD/AUTHELIA_STORAGE_ENCRYPTION_KEY"
-    export AUTHELIA_SESSION_REDIS_PASSWORD_FILE="$SD/AUTHELIA_REDIS_PASSWORD"
-    export AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE="$SD/AUTHELIA_SMTP_PASSWORD"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET_FILE="$SD/AUTHELIA_OIDC_HMAC_SECRET"
-
-    # OIDC client secrets (index matches client order in configuration.yml)
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_0_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_NPM_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_1_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_NOCODB_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_2_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_3_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_4_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_5_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_6_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_7_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_8_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_DAGU_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_9_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_10_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_MONITORING_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_11_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_12_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET_FILE="$SD/AUTHELIA_OIDC_CLIENT_CLI_SECRET"
-
-    # JWKS key from mounted PEM file
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
-
-    # Generate users database
     cat > /config/users_database.yml <<USERDB
     ---
     users:
       me@diegonmarcos.com:
         displayname: "Diego"
-        password: "$(cat $SD/AUTHELIA_USER_DIEGO_HASH)"
+        password: "$AUTHELIA_USER_DIEGO_HASH"
         email: me@diegonmarcos.com
         groups:
           - admins
           - users
     USERDB
 
-    echo "[init] Starting Authelia..."
     exec authelia --config /config/configuration.yml
     '';
 
