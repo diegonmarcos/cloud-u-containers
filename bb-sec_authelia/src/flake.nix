@@ -578,41 +578,7 @@
       #!/bin/sh
       set -e
 
-<<<<<<< Updated upstream
-      # Replace ''${VAR} placeholders with env values using awk (literal string, no regex)
-      # Usage: subst <file> VAR1 VAR2 ...
-      subst() {
-        _file="$1"; shift
-        for _var in "$@"; do
-          _val=$(cat "/config/.secrets.d/$_var")
-          awk -v pat="\''${''${_var}}" -v rep="$_val" '{
-            while (i = index($0, pat)) {
-              $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
-            }
-            print
-          }' "$_file" > "$_file.tmp"
-          mv "$_file.tmp" "$_file"
-        done
-      }
-||||||| Stash base
-      # Replace ''${VAR} placeholders with env values using awk (literal string, no regex)
-      # Usage: subst <file> VAR1 VAR2 ...
-      subst() {
-        _file="$1"; shift
-        for _var in "$@"; do
-          eval _val="\$$_var"
-          awk -v pat="\''${''${_var}}" -v rep="$_val" '{
-            while (i = index($0, pat)) {
-              $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
-            }
-            print
-          }' "$_file" > "$_file.tmp"
-          mv "$_file.tmp" "$_file"
-        done
-      }
-=======
       echo "[init] Mapping env vars to Authelia-native names..."
->>>>>>> Stashed changes
 
       # Standard secrets (custom name → Authelia native path)
       export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$AUTHELIA_JWT_SECRET"
