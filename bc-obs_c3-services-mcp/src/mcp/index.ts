@@ -5,6 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 // ── Meta ────────────────────────────────────────
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerProxyTools } from "./tools/proxy.js";
+import { registerDiscoveryTools } from "./tools/discovery.js";
 
 // ── Infra: ops, observability, automation ───────
 import { registerGrafanaTools } from "./tools/grafana.js";
@@ -28,12 +29,11 @@ import { registerGristTools } from "./tools/grist.js";
 import { registerHedgedocTools } from "./tools/hedgedoc.js";
 import { registerEtherpadTools } from "./tools/etherpad.js";
 import { registerSnappymailTools } from "./tools/snappymail.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 
 // ── Proxied child MCPs ──────────────────────────
-import { registerProxiedInfraTools, registerProxiedUserTools } from "./tools/proxy-mcp.js";
+import { registerProxiedInfraTools, registerProxiedUserTools, startProxyRetryLoop } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[c3-services] ${msg}\n`);
 
@@ -46,6 +46,7 @@ async function main() {
   // ── Meta ──────────────────────────────────────────────────────
   registerRegistryTools(server);      //  5: list, info, spec, registry-mcp_search, registry-mcp_get
   registerProxyTools(server);         //  1: generic proxy
+  registerDiscoveryTools(server);     //  1: discovery drift
 
   // ═══════════════════════════════════════════════════════════════
   // INFRA — ops, observability, automation, platform
@@ -75,7 +76,6 @@ async function main() {
   registerHedgedocTools(server);      //  7: notes, detail, content, create, delete, me, history
   registerEtherpadTools(server);      //  9: pads, text, html, create, set_text, delete, revisions, authors, users
   registerSnappymailTools(server);    //  3: health, domains, domain_config
-  registerStalwartTools(server);      //  7: users, user_detail, queue, config, metrics, queue_action, config_update
   registerRadicaleTools(server);      //  3: calendars, contacts, events
   registerVaultwardenTools(server);   //  4: health, status, users, orgs
   await registerProxiedUserTools(server); // mattermost-mcp, mail-mcp, google-workspace-mcp
@@ -85,6 +85,9 @@ async function main() {
   log("Starting c3-services MCP server v2.2.0 (140 native tools)...");
   await server.connect(transport);
   log("Connected via stdio transport");
+
+  // Background retry for child MCPs that failed initial connect
+  startProxyRetryLoop(server);
 }
 
 main().catch((err) => {

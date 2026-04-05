@@ -60,12 +60,6 @@ const API_META: Record<string, ApiCapability & { displayName?: string }> = {
     endpointCount: 5,
     description: "Matomo Reporting API — visits, sites, actions, referrers",
   },
-  stalwart: {
-    displayName: "Stalwart Mail Server",
-    type: "custom-rest",
-    endpointCount: 7,
-    description: "Stalwart Admin API — principals, queue, config, metrics",
-  },
   snappymail: {
     displayName: "SnappyMail",
     type: "custom-rest",
@@ -85,10 +79,16 @@ const API_META: Record<string, ApiCapability & { displayName?: string }> = {
     description: "ntfy API — publish, read, health, stats, account",
   },
   ollama: {
-    displayName: "Ollama",
+    displayName: "Ollama GPU (gcp-t4)",
     type: "custom-rest",
     endpointCount: 3,
-    description: "Ollama API — chat completion, model listing, generation",
+    description: "Ollama API — chat completion, model listing, generation (T4 GPU)",
+  },
+  "ollama-hai": {
+    displayName: "Ollama ARM (oci-apps)",
+    type: "custom-rest",
+    endpointCount: 3,
+    description: "Ollama API — chat completion, model listing, generation (A1 CPU)",
   },
   radicale: {
     displayName: "Radicale",
@@ -108,8 +108,8 @@ const API_META: Record<string, ApiCapability & { displayName?: string }> = {
     endpointCount: 5,
     description: "Rig Agent API — run tasks, list tasks, get results, health, status",
   },
-  grafana: {
-    displayName: "Grafana",
+  lgtm: {
+    displayName: "Grafana (LGTM Stack)",
     type: "custom-rest",
     endpointCount: 10,
     description: "Grafana API — dashboards, alerts, datasources, annotations, folders",

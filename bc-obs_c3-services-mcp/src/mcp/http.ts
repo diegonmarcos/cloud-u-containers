@@ -5,6 +5,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 // ── Meta ────────────────────────────────────────
 import { registerRegistryTools } from "./tools/registry.js";
 import { registerProxyTools } from "./tools/proxy.js";
+import { registerDiscoveryTools } from "./tools/discovery.js";
 // ── Infra ───────────────────────────────────────
 import { registerGrafanaTools } from "./tools/grafana.js";
 import { registerMatomoTools } from "./tools/matomo.js";
@@ -26,20 +27,20 @@ import { registerGristTools } from "./tools/grist.js";
 import { registerHedgedocTools } from "./tools/hedgedoc.js";
 import { registerEtherpadTools } from "./tools/etherpad.js";
 import { registerSnappymailTools } from "./tools/snappymail.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
 import { registerRadicaleTools } from "./tools/radicale.js";
 import { registerVaultwardenTools } from "./tools/vaultwarden.js";
 // ── Proxied ─────────────────────────────────────
-import { registerProxiedInfraTools, registerProxiedUserTools } from "./tools/proxy-mcp.js";
+import { registerProxiedInfraTools, registerProxiedUserTools, startProxyRetryLoop, connectedChildren } from "./tools/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mcp-http] ${msg}\n`);
 const SESSION_ID = "c3-services-mcp-session";
 
-async function createMcpServer(): Promise<McpServer> {
-  const server = new McpServer({ name: "c3-services", version: "2.2.0" });
+function createNativeServer(): McpServer {
+  const server = new McpServer({ name: "c3-services", version: "2.3.0" });
   // Meta
   registerRegistryTools(server);
   registerProxyTools(server);
+  registerDiscoveryTools(server);
   // Infra
   registerGrafanaTools(server);
   registerMatomoTools(server);
@@ -53,7 +54,6 @@ async function createMcpServer(): Promise<McpServer> {
   registerAutheliaTools(server);
   registerNocodbTools(server);
   registerRigTools(server);
-  await registerProxiedInfraTools(server);
   // User
   registerPhotoprismTools(server);
   registerFilebrowserTools(server);
@@ -62,11 +62,22 @@ async function createMcpServer(): Promise<McpServer> {
   registerHedgedocTools(server);
   registerEtherpadTools(server);
   registerSnappymailTools(server);
-  registerStalwartTools(server);
   registerRadicaleTools(server);
   registerVaultwardenTools(server);
-  await registerProxiedUserTools(server);
   return server;
+}
+
+/** Connect proxied child MCPs in background, send listChanged when each connects */
+function connectProxiesInBackground(server: McpServer): void {
+  (async () => {
+    await registerProxiedInfraTools(server);
+    await registerProxiedUserTools(server);
+    if (connectedChildren.size > 0) {
+      log(`Proxied tools registered — sending tools/list_changed`);
+      server.sendToolListChanged();
+    }
+    startProxyRetryLoop(server);
+  })().catch((err) => log(`Proxy background connect error: ${err}`));
 }
 
 let session: { transport: StreamableHTTPServerTransport; server: McpServer } | null = null;
@@ -84,11 +95,16 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse): Prom
   const clientSessionId = req.headers["mcp-session-id"] as string | undefined;
 
   if (req.method === "POST" && !clientSessionId) {
+    // New client connecting — recreate session with native tools,
+    // proxied tools join via retry loop + tools/list_changed notification
     log("New client initialize — recreating session");
+    connectedChildren.clear();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
-    const server = await createMcpServer();
+    const server = await createNativeServer();
     await server.connect(transport);
     session = { transport, server };
+    // Proxy tools connect in background, send listChanged when ready
+    connectProxiesInBackground(server);
     await session.transport.handleRequest(req, res);
   } else if (clientSessionId === SESSION_ID) {
     await session.transport.handleRequest(req, res);
@@ -104,7 +120,7 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse): Prom
 
 async function initSession(port: number): Promise<void> {
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
-  const server = await createMcpServer();
+  const server = createNativeServer();
   await server.connect(transport);
   session = { transport, server };
 
@@ -128,6 +144,9 @@ async function initSession(port: number): Promise<void> {
     req.write(body); req.end();
   });
   log(`Persistent session ready: ${SESSION_ID}`);
+
+  // Connect proxied child MCPs in background, notify client when ready
+  connectProxiesInBackground(server);
 }
 
 export function startMcpHttpServer(port: number = 3101): Promise<void> {
