@@ -133,440 +133,440 @@
     # Generate authelia configuration.yml (final config — no secret placeholders)
     # All secrets are provided via Authelia-native env vars (mapped by init.sh)
     mkAutheliaConfig = pkgs: pkgs.writeText "configuration.yml" ''
-      ---
-      theme: dark
+    ---
+    theme: dark
 
-      server:
-        address: tcp://0.0.0.0:9091/authelia
-        endpoints:
-          authz:
-            forward-auth:
-              implementation: ForwardAuth
-              authn_strategies:
-                - name: HeaderAuthorization
-                  schemes:
-                    - Bearer
-                - name: CookieSession
-            auth-request:
-              implementation: AuthRequest
-              authn_strategies:
-                - name: HeaderAuthorization
-                  schemes:
-                    - Bearer
-                - name: CookieSession
+    server:
+      address: tcp://0.0.0.0:9091/authelia
+      endpoints:
+        authz:
+          forward-auth:
+            implementation: ForwardAuth
+            authn_strategies:
+              - name: HeaderAuthorization
+                schemes:
+                  - Bearer
+              - name: CookieSession
+          auth-request:
+            implementation: AuthRequest
+            authn_strategies:
+              - name: HeaderAuthorization
+                schemes:
+                  - Bearer
+              - name: CookieSession
 
-      log:
-        level: info
+    log:
+      level: info
 
-      authentication_backend:
-        file:
-          path: /config/users_database.yml
-          watch: true
+    authentication_backend:
+      file:
+        path: /config/users_database.yml
+        watch: true
 
-      access_control:
-        default_policy: two_factor
-        rules:
-          - domain: ${config.domain}
-            policy: bypass
+    access_control:
+      default_policy: two_factor
+      rules:
+        - domain: ${config.domain}
+          policy: bypass
     ${accessControlYaml}
-          - domain: "*.${config.base_domain}"
-            policy: two_factor
+        - domain: "*.${config.base_domain}"
+          policy: two_factor
 
-      session:
-        name: authelia_session
-        cookies:
-          - name: authelia_session
-            domain: ${config.base_domain}
-            authelia_url: https://${config.domain}
-            inactivity: 5m
-            expiration: 1h
-            remember_me: 30d
-        redis:
-          host: localhost
-          port: ${config.redis_port}
+    session:
+      name: authelia_session
+      cookies:
+        - name: authelia_session
+          domain: ${config.base_domain}
+          authelia_url: https://${config.domain}
+          inactivity: 5m
+          expiration: 1h
+          remember_me: 30d
+      redis:
+        host: localhost
+        port: ${config.redis_port}
 
-      regulation:
-        max_retries: 3
-        find_time: 10m
-        ban_time: 15m
+    regulation:
+      max_retries: 3
+      find_time: 10m
+      ban_time: 15m
 
-      storage:
-        local:
-          path: /data/db.sqlite3
+    storage:
+      local:
+        path: /data/db.sqlite3
 
-      notifier:
-        disable_startup_check: true
-        smtp:
-          address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
-          username: no-reply@diegonmarcos.com
-          sender: "Authelia <no-reply@diegonmarcos.com>"
-          tls:
-            server_name: mail.diegonmarcos.com
+    notifier:
+      disable_startup_check: true
+      smtp:
+        address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
+        username: no-reply@diegonmarcos.com
+        sender: "Authelia <no-reply@diegonmarcos.com>"
+        tls:
+          server_name: mail.diegonmarcos.com
 
-      webauthn:
-        disable: false
-        display_name: ${config.base_domain}
-        attestation_conveyance_preference: indirect
-        timeout: 60s
+    webauthn:
+      disable: false
+      display_name: ${config.base_domain}
+      attestation_conveyance_preference: indirect
+      timeout: 60s
 
-      totp:
-        issuer: ${config.base_domain}
-        period: 30
-        skew: 1
+    totp:
+      issuer: ${config.base_domain}
+      period: 30
+      skew: 1
 
-      identity_providers:
-        oidc:
-          lifespans:
-            access_token: 87600h
-            refresh_token: 87600h
-          jwks:
-            - key_id: main
-              algorithm: RS256
-              use: sig
-          cors:
-            endpoints:
-              - authorization
-              - token
-              - revocation
-              - introspection
-              - userinfo
-            allowed_origins_from_client_redirect_uris: true
-          clients:
-            - client_id: oauth2-proxy-npm
-              consent_mode: explicit
-              client_name: NPM Proxy Manager
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - https://proxy.${config.base_domain}/oauth2/callback
-              scopes:
-                - openid
-                - profile
-                - email
-                - groups
-              userinfo_signed_response_alg: none
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
+    identity_providers:
+      oidc:
+        lifespans:
+          access_token: 87600h
+          refresh_token: 87600h
+        jwks:
+          - key_id: main
+            algorithm: RS256
+            use: sig
+        cors:
+          endpoints:
+            - authorization
+            - token
+            - revocation
+            - introspection
+            - userinfo
+          allowed_origins_from_client_redirect_uris: true
+        clients:
+          - client_id: oauth2-proxy-npm
+            consent_mode: explicit
+            client_name: NPM Proxy Manager
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://proxy.${config.base_domain}/oauth2/callback
+            scopes:
+              - openid
+              - profile
+              - email
+              - groups
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
 
-            - client_id: nocodb
-              consent_mode: explicit
-              client_name: NocoDB Database
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - https://db.${config.base_domain}/api/v1/auth/oidc/callback
-                - https://db.${config.base_domain}/api/v2/auth/oidc/callback
-              scopes:
-                - openid
-                - profile
-                - email
-              userinfo_signed_response_alg: none
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
+          - client_id: nocodb
+            consent_mode: explicit
+            client_name: NocoDB Database
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - https://db.${config.base_domain}/api/v1/auth/oidc/callback
+              - https://db.${config.base_domain}/api/v2/auth/oidc/callback
+            scopes:
+              - openid
+              - profile
+              - email
+            userinfo_signed_response_alg: none
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
 
-            - client_id: cloudflare-health-c3-api
-              consent_mode: explicit
-              client_name: Cloudflare Worker Health Check
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
+          - client_id: cloudflare-health-c3-api
+            consent_mode: explicit
+            client_name: Cloudflare Worker Health Check
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
 
-            - client_id: claude-admin
-              consent_mode: explicit
-              client_name: Claude AI Agent
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
+          - client_id: claude-admin
+            consent_mode: explicit
+            client_name: Claude AI Agent
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
 
-            - client_id: cloud-admin
-              consent_mode: explicit
-              client_name: Cloud Admin
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
-                - https://api.diegonmarcos.com/
+          - client_id: cloud-admin
+            consent_mode: explicit
+            client_name: Cloud Admin
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
+              - https://api.diegonmarcos.com/
 
-            - client_id: claude-opus
-              consent_mode: explicit
-              client_name: Claude Opus Agent
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
-                - https://api.diegonmarcos.com/
+          - client_id: claude-opus
+            consent_mode: explicit
+            client_name: Claude Opus Agent
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
+              - https://api.diegonmarcos.com/
 
-            - client_id: claude-sonnet
-              consent_mode: explicit
-              client_name: Claude Sonnet Agent
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
-                - https://api.diegonmarcos.com/
+          - client_id: claude-sonnet
+            consent_mode: explicit
+            client_name: Claude Sonnet Agent
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
+              - https://api.diegonmarcos.com/
 
-            - client_id: claude-haiku
-              consent_mode: explicit
-              client_name: Claude Haiku Agent
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
-                - https://api.diegonmarcos.com/
+          - client_id: claude-haiku
+            consent_mode: explicit
+            client_name: Claude Haiku Agent
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
+              - https://api.diegonmarcos.com/
 
-            - client_id: dagu-ops
-              consent_mode: explicit
-              client_name: Dagu Workflow Engine
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
+          - client_id: dagu-ops
+            consent_mode: explicit
+            client_name: Dagu Workflow Engine
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
 
-            - client_id: dagu-cc
-              client_name: Dagu Service Account
-              public: false
-              authorization_policy: one_factor
-              grant_types:
-                - client_credentials
-              scopes:
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
+          - client_id: dagu-cc
+            client_name: Dagu Service Account
+            public: false
+            authorization_policy: one_factor
+            grant_types:
+              - client_credentials
+            scopes:
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
 
-            - client_id: monitoring-read
-              consent_mode: explicit
-              client_name: Monitoring Read-Only
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
+          - client_id: monitoring-read
+            consent_mode: explicit
+            client_name: Monitoring Read-Only
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
 
-            - client_id: mattermost-ops
-              consent_mode: explicit
-              client_name: Mattermost Bot
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
-                - https://rss.diegonmarcos.com/
+          - client_id: mattermost-ops
+            consent_mode: explicit
+            client_name: Mattermost Bot
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
+              - https://rss.diegonmarcos.com/
 
-            - client_id: mattermost-cc
-              client_name: Mattermost Service Account
-              public: false
-              authorization_policy: one_factor
-              grant_types:
-                - client_credentials
-              scopes:
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
-                - https://rss.diegonmarcos.com/
+          - client_id: mattermost-cc
+            client_name: Mattermost Service Account
+            public: false
+            authorization_policy: one_factor
+            grant_types:
+              - client_credentials
+            scopes:
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
+              - https://rss.diegonmarcos.com/
 
-            - client_id: c3-infra-mcp-api
-              client_name: C3 Infra MCP API
-              public: false
-              grant_types:
-                - client_credentials
-              scopes:
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://api.diegonmarcos.com/
+          - client_id: c3-infra-mcp-api
+            client_name: C3 Infra MCP API
+            public: false
+            grant_types:
+              - client_credentials
+            scopes:
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://api.diegonmarcos.com/
 
-            - client_id: cli
-              consent_mode: explicit
-              client_name: CLI Access
-              public: false
-              authorization_policy: two_factor
-              redirect_uris:
-                - http://localhost:8400/callback
-              grant_types:
-                - authorization_code
-                - refresh_token
-              response_types:
-                - code
-              response_modes:
-                - form_post
-              scopes:
-                - offline_access
-                - authelia.bearer.authz
-              token_endpoint_auth_method: client_secret_basic
-              require_pushed_authorization_requests: true
-              require_pkce: true
-              pkce_challenge_method: S256
-              access_token_signed_response_alg: RS256
-              audience:
-                - https://*.diegonmarcos.com/
-                - https://diegonmarcos.com/
+          - client_id: cli
+            consent_mode: explicit
+            client_name: CLI Access
+            public: false
+            authorization_policy: two_factor
+            redirect_uris:
+              - http://localhost:8400/callback
+            grant_types:
+              - authorization_code
+              - refresh_token
+            response_types:
+              - code
+            response_modes:
+              - form_post
+            scopes:
+              - offline_access
+              - authelia.bearer.authz
+            token_endpoint_auth_method: client_secret_basic
+            require_pushed_authorization_requests: true
+            require_pkce: true
+            pkce_challenge_method: S256
+            access_token_signed_response_alg: RS256
+            audience:
+              - https://*.diegonmarcos.com/
+              - https://diegonmarcos.com/
     '';
 
     # Users database generated at runtime by init.sh from AUTHELIA_USER_DIEGO_HASH env var
@@ -575,54 +575,54 @@
     # Init script: map custom env var names → Authelia-native env var names, then exec
     # No awk/grep/sed — secrets flow via env file + native env var support
     mkInitScript = pkgs: pkgs.writeText "init.sh" ''
-      #!/bin/sh
-      set -e
+    #!/bin/sh
+    set -e
 
-      echo "[init] Mapping env vars to Authelia-native names..."
+    echo "[init] Mapping env vars to Authelia-native names..."
 
-      # Standard secrets (custom name → Authelia native path)
-      export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$AUTHELIA_JWT_SECRET"
-      export AUTHELIA_SESSION_REDIS_PASSWORD="$AUTHELIA_REDIS_PASSWORD"
-      export AUTHELIA_NOTIFIER_SMTP_PASSWORD="$AUTHELIA_SMTP_PASSWORD"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET="$AUTHELIA_OIDC_HMAC_SECRET"
+    # Standard secrets (custom name → Authelia native path)
+    export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$AUTHELIA_JWT_SECRET"
+    export AUTHELIA_SESSION_REDIS_PASSWORD="$AUTHELIA_REDIS_PASSWORD"
+    export AUTHELIA_NOTIFIER_SMTP_PASSWORD="$AUTHELIA_SMTP_PASSWORD"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET="$AUTHELIA_OIDC_HMAC_SECRET"
 
-      # OIDC client secrets (index matches client order in configuration.yml)
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_0_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NPM_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_1_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_2_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_3_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_4_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_5_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_6_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_7_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_8_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_9_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_10_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MONITORING_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_11_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_12_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLI_SECRET"
+    # OIDC client secrets (index matches client order in configuration.yml)
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_0_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NPM_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_1_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_2_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_3_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_4_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_5_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_6_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_7_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_8_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_9_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_10_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MONITORING_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_11_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_12_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLI_SECRET"
 
-      # JWKS key from mounted file (Authelia reads PEM content via _FILE suffix)
-      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
+    # JWKS key from mounted file (Authelia reads PEM content via _FILE suffix)
+    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
 
-      # AUTHELIA_SESSION_SECRET, AUTHELIA_STORAGE_ENCRYPTION_KEY already match native names
+    # AUTHELIA_SESSION_SECRET, AUTHELIA_STORAGE_ENCRYPTION_KEY already match native names
 
-      # Generate users database from sops-delivered env var (heredoc is single-pass, safe for $)
-      cat > /config/users_database.yml <<USERDB
-      ---
-      users:
-        me@diegonmarcos.com:
-          displayname: "Diego"
-          password: "$AUTHELIA_USER_DIEGO_HASH"
-          email: me@diegonmarcos.com
-          groups:
-            - admins
-            - users
-      USERDB
+    # Generate users database from sops-delivered env var (heredoc is single-pass, safe for $)
+    cat > /config/users_database.yml <<USERDB
+    ---
+    users:
+      me@diegonmarcos.com:
+        displayname: "Diego"
+        password: "$AUTHELIA_USER_DIEGO_HASH"
+        email: me@diegonmarcos.com
+        groups:
+          - admins
+          - users
+    USERDB
 
-      echo "[init] Starting Authelia..."
-      exec authelia --config /config/configuration.yml
+    echo "[init] Starting Authelia..."
+    exec authelia --config /config/configuration.yml
     '';
 
   in {
