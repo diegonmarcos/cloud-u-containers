@@ -198,13 +198,8 @@ step_docker() {
             ssh $SSH_OPTS "$RUNNER" "rm -rf $REMOTE_BUILD_DIR"
             ;;
 
-        gha)
-            log "Runner=gha — skipping docker build (CI handles it)"
-            return 0
-            ;;
-
         *)
-            log_error "Unknown runner: $RUNNER (valid: auto, local, oci-apps, gha)"
+            log_error "Unknown runner: $RUNNER (valid: auto, local, oci-apps)"
             return 1
             ;;
     esac
