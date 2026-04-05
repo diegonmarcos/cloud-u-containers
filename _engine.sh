@@ -522,6 +522,18 @@ for (const line of lines) {
 }
 " > "$DIST_DIR/.secrets"
 
+    # Split .secrets into per-file .secrets.d/ (one file per KEY, content = VALUE)
+    # Enables Docker/Authelia _FILE suffix pattern: SECRET_FILE=/config/.secrets.d/KEY
+    mkdir -p "$DIST_DIR/.secrets.d"
+    while IFS='=' read -r key val; do
+        case "$key" in ""|\#*) continue ;; esac
+        # Strip surrounding single quotes from compose-escaped values
+        val="${val#\'}"
+        val="${val%\'}"
+        printf '%s' "$val" > "$DIST_DIR/.secrets.d/$key"
+    done < "$DIST_DIR/.secrets"
+    log "Secrets split -> .secrets.d/ ($(ls "$DIST_DIR/.secrets.d" | wc -l) files)"
+
     # Extract JWKS key as PEM file (multi-line value can't go in env_file)
     if [ -n "$JWKS_FILE" ] && [ -f "$SRC_DIR/$JWKS_FILE" ]; then
         JWKS_DEST_PATH="${JWKS_DEST:-config/oidc_jwks.pem}"
