@@ -1,7 +1,7 @@
 // derive-cloud-data.ts — Derive ALL per-consumer JSON files from consolidated
 //
 // Input:  cloud-data/_cloud-data-consolidated.json
-// Output: cloud-data/cloud-data-*.json (17 files)
+// Output: cloud-data/cloud-data-*.json (18 files)
 //
 // Run: tsx derive-cloud-data.ts
 
@@ -16,7 +16,7 @@ const ENGINE_DIR = import.meta.dirname!;
 const CLOUD_ROOT_DEFAULT = resolve(ENGINE_DIR, "../../../..");
 const GIT_BASE = process.env.GIT_BASE ?? resolve(CLOUD_ROOT_DEFAULT, "..");
 const CLOUD_ROOT = process.env.GIT_BASE ? join(GIT_BASE, "cloud") : CLOUD_ROOT_DEFAULT;
-const CLOUD_DATA_DIR = join(CLOUD_ROOT, "cloud-data");
+const CLOUD_DATA_DIR = join(GIT_BASE, "cloud-data");          // standalone repo — read + write target
 const INPUT_JSON = join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json");
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -57,6 +57,150 @@ function buildVmIdToAlias(vms: Record<string, any>): Record<string, string> {
 // ═══════════════════════════════════════════════════════════════════════════
 // Derivation functions
 // ═══════════════════════════════════════════════════════════════════════════
+
+function deriveDatabases(c: any): DerivedFile {
+  const services = c.services as Record<string, any>;
+  const vms = c.vms as Record<string, any>;
+  const vmIdToAlias = buildVmIdToAlias(vms);
+
+  // ── DB type detection ──────────────────────────────────────────────────
+  const DB_IMAGE_RE: [RegExp, string][] = [
+    [/^(postgres|ghcr\.io\/.*postgres)/i, "postgres"],
+    [/^(mariadb|mysql)/i, "mariadb"],
+    [/^(redis|valkey)/i, "redis"],
+    [/^(surrealdb|ghcr\.io\/.*surrealdb)/i, "surrealdb"],
+    [/^(mongo)/i, "mongo"],
+  ];
+
+  function inferDbType(ct: any): string | null {
+    if (ct.db_path) return "sqlite";
+    const img = ct.image ?? "";
+    for (const [re, type] of DB_IMAGE_RE) {
+      if (re.test(img)) return type;
+    }
+    if (ct.dump_cmd) return "custom";
+    return null;
+  }
+
+  function isDbContainer(ct: any): boolean {
+    return !!(ct.db_user || ct.db_name || ct.db_path || ct.dump_cmd || inferDbType(ct));
+  }
+
+  // ── Scan all services ──────────────────────────────────────────────────
+  const databases: any[] = [];
+  const byType: Record<string, any[]> = {};
+  const byVm: Record<string, { wg_ip: string; user: string; databases: any[] }> = {};
+  const summary = { postgres: 0, mariadb: 0, redis: 0, sqlite: 0, surrealdb: 0, custom: 0, mongo: 0 };
+
+  for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
+    const vmAlias = vmIdToAlias[svc.vm] ?? svc.vm;
+    const vm = vms[svc.vm];
+    const enabled = svc.enabled !== false;
+
+    if (!svc.containers) continue;
+
+    for (const [ctKey, ct] of Object.entries(svc.containers) as [string, any][]) {
+      if (!isDbContainer(ct)) continue;
+
+      const type = inferDbType(ct) ?? "custom";
+      const port = ct.port ?? svc.declared_ports?.[ctKey] ?? null;
+      const dns = ct.dns ?? null;
+
+      const entry: any = {
+        service: svcName,
+        container: ct.container_name,
+        container_key: ctKey,
+        type,
+        enabled,
+        vm: svc.vm,
+        vm_alias: vmAlias,
+        wg_ip: vm?.wg_ip ?? null,
+        image: ct.image ?? null,
+        port,
+        dns,
+        ...(ct.db_user ? { user: ct.db_user } : {}),
+        ...(ct.db_name ? { db: ct.db_name } : {}),
+        ...(ct.db_path ? { path: ct.db_path } : {}),
+        ...(ct.dump_cmd ? { dump_cmd: ct.dump_cmd } : {}),
+        ...(ct.healthcheck ? { healthcheck: ct.healthcheck } : {}),
+        volumes: ct.volumes ?? [],
+        resources: ct.resources ?? null,
+        backup: svc.backup?.enabled ?? false,
+      };
+
+      // Connection string hint
+      if (type === "postgres" && ct.db_user && ct.db_name && vm?.wg_ip && port) {
+        entry.connection = `postgresql://${ct.db_user}@${vm.wg_ip}:${port}/${ct.db_name}`;
+      } else if (type === "mariadb" && ct.db_user && ct.db_name && vm?.wg_ip && port) {
+        entry.connection = `mysql://${ct.db_user}@${vm.wg_ip}:${port}/${ct.db_name}`;
+      } else if (type === "redis" && vm?.wg_ip && port) {
+        entry.connection = `redis://${vm.wg_ip}:${port}`;
+      }
+
+      databases.push(entry);
+
+      // Group by type
+      if (!byType[type]) byType[type] = [];
+      byType[type].push(entry);
+
+      // Count
+      if (type in summary) (summary as any)[type]++;
+
+      // Group by VM
+      if (!byVm[vmAlias]) {
+        byVm[vmAlias] = {
+          wg_ip: vm?.wg_ip ?? "",
+          user: vm?.user ?? "ubuntu",
+          databases: [],
+        };
+      }
+      byVm[vmAlias].databases.push(entry);
+    }
+  }
+
+  // ── VM-level system databases ──────────────────────────────────────────
+  const vmDatabases: Record<string, any> = {};
+  for (const [vmId, vm] of Object.entries(vms) as [string, any][]) {
+    const alias = vm.ssh_alias;
+    if (!alias) continue;
+
+    vmDatabases[alias] = {
+      vm_id: vmId,
+      wg_ip: vm.wg_ip ?? null,
+      system_dbs: [
+        {
+          name: "journald",
+          type: "binary",
+          path: "/var/log/journal/",
+          description: "systemd journal logs (binary)",
+          queryable: true,
+          tool: "journalctl",
+        },
+        {
+          name: "systemd-state",
+          type: "binary",
+          path: "/var/lib/systemd/",
+          description: "systemd persistent state (timers, random-seed)",
+          queryable: false,
+        },
+      ],
+    };
+  }
+
+  return {
+    name: "cloud-data-databases.json",
+    data: {
+      _generated: now(),
+      _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/databases",
+      total: databases.length,
+      summary,
+      databases,
+      by_type: byType,
+      by_vm: byVm,
+      vm_system_dbs: vmDatabases,
+    },
+  };
+}
 
 function deriveDnsServices(c: any): DerivedFile {
   const vms = c.vms as Record<string, any>;
@@ -853,33 +997,34 @@ function deriveMatomoSites(c: any): DerivedFile {
 
 function deriveNtfyAcl(c: any): DerivedFile {
   const ntfyConfig = c.configs?.ntfy;
+  const topicList: any[] = ntfyConfig?.topics ?? [];
 
-  // If ntfy config was parsed and has topics as a non-empty object, use it
-  if (ntfyConfig?.topics && typeof ntfyConfig.topics === "object" && !Array.isArray(ntfyConfig.topics)
-      && Object.keys(ntfyConfig.topics).length > 0) {
-    return {
-      name: "cloud-data-ntfy-acl.json",
-      data: {
-        _generated: now(),
-        _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/ntfy-acl",
-        topics: ntfyConfig.topics,
-      },
+  // Build topics object keyed by name, grouped by category
+  const topics: Record<string, any> = {};
+  const categories: Record<string, string[]> = {};
+
+  for (const t of topicList) {
+    topics[t.name] = {
+      category: t.category,
+      desc: t.desc,
+      publishers: t.publishers,
     };
+    const cat = t.category;
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(t.name);
   }
 
-  // Default system topics (used when parser returns empty array or no topics)
   return {
     name: "cloud-data-ntfy-acl.json",
     data: {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/ntfy-acl",
-      topics: {
-        syslog: { publishers: ["system"], desc: "System topic: syslog" },
-        "github-releases": { publishers: ["system"], desc: "System topic: github-releases" },
-        alerts: { publishers: ["system"], desc: "System topic: alerts" },
-        health: { publishers: ["system"], desc: "System topic: health" },
-        backups: { publishers: ["system"], desc: "System topic: backups" },
-      },
+      base_url: `https://${c.services?.ntfy?.dns?.domain ?? "rss.diegonmarcos.com"}`,
+      auth_default_access: ntfyConfig?.auth_default_access ?? "read-write",
+      users: ntfyConfig?.users ?? [],
+      all_topics: topicList.map((t: any) => t.name).join(","),
+      categories,
+      topics,
     },
   };
 }
@@ -1188,7 +1333,7 @@ function main() {
     mkdirSync(CLOUD_DATA_DIR, { recursive: true });
   }
 
-  // Run all derivations (18 + per-VM container manifests)
+  // Run all derivations (19 + per-VM container manifests)
   const derived: DerivedFile[] = [
     ...deriveVmContainerManifests(consolidated),
     deriveServiceConnections(consolidated),
@@ -1209,6 +1354,7 @@ function main() {
     deriveTopology(consolidated),
     deriveConfigs(consolidated),
     deriveDeps(consolidated),
+    deriveDatabases(consolidated),
   ];
 
   // Write all files (inject DO NOT EDIT header into each)
@@ -1258,10 +1404,8 @@ function main() {
       name: f.name.replace(/\.json$/, "").replace(/cloud-data-/, "cloud data ").replace(/-/g, " "),
     })),
   ];
-  writeFileSync(
-    join(CLOUD_DATA_DIR, "manifest.json"),
-    JSON.stringify(manifestEntries, null, 2) + "\n",
-  );
+  const manifestJson = JSON.stringify(manifestEntries, null, 2) + "\n";
+  writeFileSync(join(CLOUD_DATA_DIR, "manifest.json"), manifestJson);
 
   console.log(`derive-cloud-data: wrote ${derived.length} files + manifest.json:\n`);
   for (const line of summary) {
