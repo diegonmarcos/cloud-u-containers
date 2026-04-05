@@ -14,9 +14,9 @@ import {
   getVmSshAlias,
   getServicesForVm,
   resolveVmId,
-} from "../../shared/config.js";
-import { SOLUTIONS_DIR, REPOS, DEPS_PATH, FRONT_DIR } from "../../shared/paths.js";
-import { exec } from "../../shared/exec.js";
+} from "../../shared/libs/config.js";
+import { SOLUTIONS_DIR, REPOS, DEPS_PATH, FRONT_DIR } from "../../shared/libs/paths.js";
+import { exec } from "../../shared/libs/exec.js";
 import {
   listServices as listServiceApis,
   getService,
@@ -25,10 +25,10 @@ import {
   serviceVersion,
   allServiceVersions,
   SERVICE_BASE_PATHS,
-} from "../../shared/discovery.js";
-import { rawHttpRequest, getBearerToken } from "../../shared/http.js";
-import { getConfigPath } from "../../shared/paths.js";
-import { getConfigFile } from "../../shared/files.js";
+} from "../../shared/libs/discovery.js";
+import { rawHttpRequest, getBearerToken } from "../../shared/libs/http.js";
+import { getConfigPath } from "../../shared/libs/paths.js";
+import { getConfigFile } from "../../shared/libs/files.js";
 
 // ── Helpers ──
 

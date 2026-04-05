@@ -4,11 +4,11 @@
 import { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
-import { sshExec } from "../../shared/ssh.js";
-import { getConfig, getVmSshAlias, resolveVmId } from "../../shared/config.js";
-import { getSecretsStatus } from "../../shared/files.js";
-import { getConfigPath } from "../../shared/paths.js";
+import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/libs/security.js";
+import { sshExec } from "../../shared/libs/ssh.js";
+import { getConfig, getVmSshAlias, resolveVmId } from "../../shared/libs/config.js";
+import { getSecretsStatus } from "../../shared/libs/files.js";
+import { getConfigPath } from "../../shared/libs/paths.js";
 import { readFileSync } from "fs";
 
 const securityScanSchema = z.object({

@@ -4,10 +4,10 @@
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import type { FastifyInstance } from "fastify";
-import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/discovery.js";
-import { getDriftReport, getConfig, getServiceFolder } from "../../shared/config.js";
-import { getConfigFile } from "../../shared/files.js";
-import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH, SOLUTIONS_DIR } from "../../shared/paths.js";
+import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/libs/discovery.js";
+import { getDriftReport, getConfig, getServiceFolder } from "../../shared/libs/config.js";
+import { getConfigFile } from "../../shared/libs/files.js";
+import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
 
 // ── Cloud-data output validator ──
 // Ensures API never returns empty/broken data that would overwrite good files.

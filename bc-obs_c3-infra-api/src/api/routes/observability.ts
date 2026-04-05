@@ -16,23 +16,23 @@ import {
   checkUp,
   checkHealth,
   checkReach,
-} from "../../shared/health.js";
+} from "../../shared/libs/health.js";
 import {
   up, upAll, upAllContainers,
   health, healthAll,
   profile, profileAllServices, profileAllContainers,
-} from "../../shared/obs.js";
-import { cacheRead, cachePrune, startCacheCleanup } from "../../shared/cache.js";
-import { profileContainer, profileVm } from "../../shared/diagnostics.js";
-import { runTestSuite } from "../../shared/tests.js";
-import { getContainerLog, getVmStatus, getReport } from "../../shared/files.js";
+} from "../../shared/libs/obs.js";
+import { cacheRead, cachePrune, startCacheCleanup } from "../../shared/libs/cache.js";
+import { profileContainer, profileVm } from "../../shared/libs/diagnostics.js";
+import { runTestSuite } from "../../shared/libs/tests.js";
+import { getContainerLog, getVmStatus, getReport } from "../../shared/libs/files.js";
 import {
   sendNotification,
   alertHealthDown,
   alertHealthRecovered,
   alertCertExpiring,
   alertDiskFull,
-} from "../../shared/notify.js";
+} from "../../shared/libs/notify.js";
 import {
   getHealthHistory,
   getUptimeReport,
@@ -41,9 +41,9 @@ import {
   getAlertState,
   updateAlertState,
   pruneOldRecords,
-} from "../../shared/db.js";
-import { resolveVmId } from "../../shared/config.js";
-import { DAGU_API, daguHeaders } from "../../shared/ops.js";
+} from "../../shared/libs/db.js";
+import { resolveVmId } from "../../shared/libs/config.js";
+import { DAGU_API, daguHeaders } from "../../shared/libs/ops.js";
 
 // ── Zod schemas for validated endpoints ──
 

@@ -3,7 +3,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execAsync } from "../../shared/exec.js";
+import { execAsync } from "../../shared/libs/exec.js";
 
 const log = (msg: string) => process.stderr.write(`[vps-ops] ${msg}\n`);
 

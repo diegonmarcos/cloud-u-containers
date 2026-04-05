@@ -15,7 +15,7 @@ import {
   checkTier3All,
   healthEndpoints,
   metricsSnapshot,
-} from "../../shared/health.js";
+} from "../../shared/libs/health.js";
 import {
   profileContainer,
   profileVm,
@@ -24,16 +24,16 @@ import {
   vmTop,
   vmDiskUsage,
   vmJournal,
-} from "../../shared/diagnostics.js";
-import { runTestSuite } from "../../shared/tests.js";
-import { getVmStatus, getReport } from "../../shared/files.js";
+} from "../../shared/libs/diagnostics.js";
+import { runTestSuite } from "../../shared/libs/tests.js";
+import { getVmStatus, getReport } from "../../shared/libs/files.js";
 import {
   getHealthHistory,
   getUptimeReport,
   getAuditLog,
   getDeployHistory,
-} from "../../shared/db.js";
-import { resolveVmId } from "../../shared/config.js";
+} from "../../shared/libs/db.js";
+import { resolveVmId } from "../../shared/libs/config.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);

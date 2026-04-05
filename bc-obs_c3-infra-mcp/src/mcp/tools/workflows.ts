@@ -3,14 +3,14 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execAsync } from "../../shared/exec.js";
-import { DAGU_API, daguHeaders } from "../../shared/ops.js";
+import { execAsync } from "../../shared/libs/exec.js";
+import { DAGU_API, daguHeaders } from "../../shared/libs/ops.js";
 
 const log = (msg: string) => process.stderr.write(`[workflows] ${msg}\n`);
 // Resolve GitHub repo from cloud-data topology owner
 function resolveGhRepo(): string {
   try {
-    const { getConfig } = require("../../shared/config.js");
+    const { getConfig } = require("../../shared/libs/config.js");
     const config = getConfig();
     return `${config.owner?.github ?? "diegonmarcos"}/cloud`;
   } catch {}
