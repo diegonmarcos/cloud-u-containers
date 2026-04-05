@@ -111,7 +111,7 @@
           env_file:
             - .secrets
           environment:
-            WEB_PORT: "${toString config.port}"
+            PORT: "${toString config.port}"
             TZ: "${config.timezone}"
             # ── Connection registry ──
             CONNECTIONS: "${connectionsStr}"

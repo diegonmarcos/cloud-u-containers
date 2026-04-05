@@ -36,7 +36,7 @@
       "container_name": "dbgate",
       "image": "dbgate/dbgate:latest",
       "port": 8086,
-      "port_env": "WEB_PORT",
+      "port_env": "PORT",
       "dns": "dbgate.app",
       "public": true,
       "proxy": {
