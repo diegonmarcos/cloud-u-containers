@@ -283,9 +283,9 @@ function deriveCaddyRoutes(c: any): DerivedFile {
   // ── L4 routes: derive from gcp-proxy public_ports for mail passthrough ──
   const l4Routes: any[] = [];
   const l4Map: Record<number, string> = {
-    993: "IMAPS -- TLS passthrough to stalwart",
-    465: "SMTPS -- TLS passthrough to stalwart",
-    587: "SMTP Submission -- TLS passthrough to stalwart",
+    993: "IMAPS -- TLS passthrough to maddy",
+    465: "SMTPS -- TLS passthrough to maddy",
+    587: "SMTP Submission -- TLS passthrough to maddy",
   };
   // Find oci-mail's WG IP for upstream (Caddy L4 runs inside WG mesh)
   let ociMailIp = "";

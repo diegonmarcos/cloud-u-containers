@@ -1,0 +1,77 @@
+{
+  "name": "dbgate",
+  "description": "DBGate - Universal database manager for all cloud databases",
+  "dns": "dbgate.app",
+  "ports": {
+    "app": 8086
+  },
+  "category": "tools",
+  "domain": "db.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/dbgate"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "db.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "dbgate_data"
+    ]
+  },
+  "containers": {
+    "app": {
+      "container_name": "dbgate",
+      "image": "dbgate/dbgate:latest",
+      "port": 8086,
+      "port_env": "WEB_PORT",
+      "dns": "dbgate.app",
+      "public": true,
+      "proxy": {
+        "domain": "db.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "dbgate_data:/root/.dbgate"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "limits": {
+          "memory": "256M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      },
+      "read_only": false
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "dbgate",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "secrets": {
+    "escape_dollars": true
+  }
+}
