@@ -51,9 +51,9 @@
 
     # Generate YAML rules with exact indentation for the output YAML
     # Rules appear under `rules:` at 6-space indent in the final config
-    ind = "      ";  # 6 spaces for list items
-    ind2 = "        ";  # 8 spaces for properties
-    ind3 = "          ";  # 10 spaces for nested lists
+    ind = "    ";  # 4 spaces for list items under access_control.rules
+    ind2 = "      ";  # 6 spaces for properties
+    ind3 = "        ";  # 8 spaces for nested lists
 
     mkResourceLines = resources:
       lib.concatMapStringsSep "\n" (r: "${ind3}- \"${r}\"") resources;
