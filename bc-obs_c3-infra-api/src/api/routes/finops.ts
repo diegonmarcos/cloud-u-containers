@@ -2,8 +2,8 @@
 // Cloud provider operations and cost tracking
 
 import type { FastifyInstance } from "fastify";
-import * as oci from "../../shared/cloud/oci.js";
-import * as gcp from "../../shared/cloud/gcp.js";
+import * as oci from "../../shared/libs/cloud/oci.js";
+import * as gcp from "../../shared/libs/cloud/gcp.js";
 
 export async function registerFinOpsRoutes(app: FastifyInstance) {
   app.get("/cloud/oci/instances", { schema: { tags: ["FinOps"] } }, async () => {

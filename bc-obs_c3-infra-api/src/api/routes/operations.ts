@@ -6,8 +6,8 @@ import {
   vmStart, vmStop, vmReset,
   containerStart, containerStop, containerRestart,
   serviceStart, serviceStop,
-} from "../../shared/control.js";
-import { handlePushEvent } from "../../shared/ops.js";
+} from "../../shared/libs/control.js";
+import { handlePushEvent } from "../../shared/libs/ops.js";
 
 const vmIdParams = { type: "object" as const, properties: { vmId: { type: "string" as const } }, required: ["vmId"] };
 const vmContainerParams = { type: "object" as const, properties: { vmId: { type: "string" as const }, name: { type: "string" as const } }, required: ["vmId", "name"] };

@@ -5,11 +5,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { exec } from "../../shared/exec.js";
-import { sshExec } from "../../shared/ssh.js";
-import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../../shared/config.js";
-import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../../shared/paths.js";
-import { audit } from "../../shared/audit.js";
+import { exec } from "../../shared/libs/exec.js";
+import { sshExec } from "../../shared/libs/ssh.js";
+import { getConfig, getServiceDir, getServiceFolder, resolveVmId, getVmSshAlias } from "../../shared/libs/config.js";
+import { BUILD_SCRIPT, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
+import { audit } from "../../shared/libs/audit.js";
 
 const SAFE_NAME_RE = /^[a-zA-Z0-9_.-]+$/;
 

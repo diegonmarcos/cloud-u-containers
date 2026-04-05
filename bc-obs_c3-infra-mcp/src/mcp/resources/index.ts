@@ -8,14 +8,14 @@ import {
   getVmSshAlias,
   getServicesForVm,
   resolveVmId,
-} from "../../shared/config.js";
+} from "../../shared/libs/config.js";
 import {
   getConfigPath,
   SSH_CONFIG_PATH,
   SOLUTIONS_DIR,
   FRONT_DIR,
-} from "../../shared/paths.js";
-import { listServices } from "../../shared/discovery.js";
+} from "../../shared/libs/paths.js";
+import { listServices } from "../../shared/libs/discovery.js";
 
 export function registerResources(server: McpServer) {
   server.resource("config", "cloud://config", async (uri) => {

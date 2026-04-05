@@ -19,11 +19,11 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execAsync } from "../../shared/exec.js";
-import { sshExecAsync } from "../../shared/ssh.js";
-import { getVmSshAlias } from "../../shared/config.js";
-import { getBearerToken } from "../../shared/http.js";
-import { CLOUD_DATA_DIR, C3_API_MESH, C3_API_PUBLIC, SOLUTIONS_DIR } from "../../shared/paths.js";
+import { execAsync } from "../../shared/libs/exec.js";
+import { sshExecAsync } from "../../shared/libs/ssh.js";
+import { getVmSshAlias } from "../../shared/libs/config.js";
+import { getBearerToken } from "../../shared/libs/http.js";
+import { CLOUD_DATA_DIR, C3_API_MESH, C3_API_PUBLIC, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { performance } from "node:perf_hooks";

@@ -9,12 +9,12 @@ import {
   alertHealthRecovered,
   alertCertExpiring,
   alertDiskFull,
-} from "../../shared/notify.js";
+} from "../../shared/libs/notify.js";
 import {
   getAlertState,
   updateAlertState,
   pruneOldRecords,
-} from "../../shared/db.js";
+} from "../../shared/libs/db.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);

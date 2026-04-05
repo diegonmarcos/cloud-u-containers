@@ -3,10 +3,10 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { execAsync } from "../../shared/exec.js";
-import { sshExecAsync } from "../../shared/ssh.js";
-import { getVmSshAlias } from "../../shared/config.js";
-import { CLOUD_DATA_DIR, SOLUTIONS_DIR } from "../../shared/paths.js";
+import { execAsync } from "../../shared/libs/exec.js";
+import { sshExecAsync } from "../../shared/libs/ssh.js";
+import { getVmSshAlias } from "../../shared/libs/config.js";
+import { CLOUD_DATA_DIR, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 

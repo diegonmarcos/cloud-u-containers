@@ -2,9 +2,9 @@
 // Cloud provider operations and cost tracking
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import * as oci from "../../shared/cloud/oci.js";
-import * as gcp from "../../shared/cloud/gcp.js";
-import * as aws from "../../shared/cloud/aws.js";
+import * as oci from "../../shared/libs/cloud/oci.js";
+import * as gcp from "../../shared/libs/cloud/gcp.js";
+import * as aws from "../../shared/libs/cloud/aws.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);

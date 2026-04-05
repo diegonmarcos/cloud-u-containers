@@ -4,10 +4,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { readFileSync } from "fs";
-import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/security.js";
-import { resolveVmId, getConfig } from "../../shared/config.js";
-import { getConfigPath } from "../../shared/paths.js";
-import { getSecretsStatus } from "../../shared/files.js";
+import { securityScan, securityDocker, securitySshKeys, securityTokens } from "../../shared/libs/security.js";
+import { resolveVmId, getConfig } from "../../shared/libs/config.js";
+import { getConfigPath } from "../../shared/libs/paths.js";
+import { getSecretsStatus } from "../../shared/libs/files.js";
 
 function jsonText(label: string, data: unknown): { content: { type: "text"; text: string }[] } {
   const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);

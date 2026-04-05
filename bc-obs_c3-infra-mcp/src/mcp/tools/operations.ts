@@ -3,9 +3,9 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { sshExec, checkVmReachable } from "../../shared/ssh.js";
-import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/config.js";
-import { audit } from "../../shared/audit.js";
+import { sshExec, checkVmReachable } from "../../shared/libs/ssh.js";
+import { getConfig, resolveVmId, getVmSshAlias, getServiceDir } from "../../shared/libs/config.js";
+import { audit } from "../../shared/libs/audit.js";
 import {
   containerTop,
   containerDiff,
@@ -18,7 +18,7 @@ import {
   logsMulti,
   dockerSystemDf,
   composeUpAll,
-} from "../../shared/docker.js";
+} from "../../shared/libs/docker.js";
 import {
   vmStart,
   vmStop,
@@ -30,7 +30,7 @@ import {
   serviceStart,
   serviceStop,
   serviceRestart,
-} from "../../shared/control.js";
+} from "../../shared/libs/control.js";
 
 // ── Validation helpers ──
 

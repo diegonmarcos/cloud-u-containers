@@ -13,11 +13,11 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { exec, execAsync } from "../../shared/exec.js";
-import { sshExec, sshExecAsync } from "../../shared/ssh.js";
-import { listContainers } from "../../shared/docker.js";
-import { profileContainer } from "../../shared/diagnostics.js";
-import { getBearerToken } from "../../shared/http.js";
+import { exec, execAsync } from "../../shared/libs/exec.js";
+import { sshExec, sshExecAsync } from "../../shared/libs/ssh.js";
+import { listContainers } from "../../shared/libs/docker.js";
+import { profileContainer } from "../../shared/libs/diagnostics.js";
+import { getBearerToken } from "../../shared/libs/http.js";
 import { performance } from "node:perf_hooks";
 
 // ── Constants ────────────────────────────────────────────────────────────

@@ -515,7 +515,8 @@ function main() {
     if (!vm.ssh_alias || !vm.gha) continue;
     ghaVms[vm.ssh_alias] = {
       ssh_secret: vm.gha.ssh_secret,
-      ...(vm.gha.host_literal ? { host: vm.ip, user: vm.user } : {}),
+      user: vm.user,
+      ...(vm.gha.host_literal ? { host: vm.ip } : {}),
       ...(vm.gha.host_secret ? { host_secret: vm.gha.host_secret, user_secret: vm.gha.user_secret } : {}),
     };
   }

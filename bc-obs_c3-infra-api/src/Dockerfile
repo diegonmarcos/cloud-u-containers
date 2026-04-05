@@ -26,7 +26,6 @@ RUN npm install --omit=dev && npm install tsx
 COPY tsconfig.json ./
 COPY shared/ ./src/shared/
 COPY api/ ./src/api/
-COPY engines/ ./src/engines/
 COPY dash/dist/ ./src/dash/dist/
 
 # Entrypoint: fix SSH keys, start API
