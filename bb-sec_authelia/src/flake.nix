@@ -94,6 +94,7 @@
           build = ghcr.build;
           container_name = config.container_name;
           entrypoint = ["sh" "/config/init.sh"];
+          env_file = [".secrets"];
           environment = { TZ = config.timezone; };
           volumes = [
             "authelia_data:/data"
@@ -603,12 +604,12 @@
     export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
     export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLI_SECRET"
 
-    # JWKS key from mounted file (Authelia reads PEM content via _FILE suffix)
+    # JWKS key from mounted PEM file
     export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
 
     # AUTHELIA_SESSION_SECRET, AUTHELIA_STORAGE_ENCRYPTION_KEY already match native names
 
-    # Generate users database from sops-delivered env var (heredoc is single-pass, safe for $)
+    # Generate users database from sops-delivered env var
     cat > /config/users_database.yml <<USERDB
     ---
     users:
