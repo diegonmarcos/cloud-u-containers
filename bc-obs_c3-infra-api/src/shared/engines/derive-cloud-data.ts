@@ -632,7 +632,7 @@ function deriveGhaConfig(c: any): DerivedFile {
     const mainVm = Object.values(c.vms ?? {}).find((v: any) => v.ssh_alias === vmAlias) as any;
     // Hub (gcp-proxy) uses public IP for GHA SSH (Docker can't route to WG hub IP)
     const isHub = mainVm?.wg_role === "hub";
-    const enriched = { ...ghaVm, wg_ip: mainVm?.wg_ip ?? null };
+    const enriched = { ...ghaVm, wg_ip: mainVm?.wg_ip ?? null, user: ghaVm.user ?? mainVm?.user ?? null };
     if (isHub && mainVm?.ip) {
       enriched.host = mainVm.ip;
       delete enriched.wg_ip;
