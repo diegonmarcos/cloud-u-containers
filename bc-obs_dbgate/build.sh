@@ -1,0 +1,1 @@
+/home/diego/git/cloud/a_solutions/bb-sec_authelia/build.sh
