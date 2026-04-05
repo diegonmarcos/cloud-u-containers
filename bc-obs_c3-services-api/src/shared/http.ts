@@ -1,4 +1,11 @@
-import { exec } from "./exec.js";
+import { spawnSync } from "child_process";
+
+interface ExecResult { ok: boolean; stdout: string; stderr: string }
+
+function exec(cmd: string, args: string[], opts?: { timeout?: number }): ExecResult {
+  const r = spawnSync(cmd, args, { encoding: "utf-8", timeout: opts?.timeout ?? 30_000, maxBuffer: 10 * 1024 * 1024 });
+  return { ok: r.status === 0, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
+}
 
 export interface HttpResult {
   ok: boolean;
