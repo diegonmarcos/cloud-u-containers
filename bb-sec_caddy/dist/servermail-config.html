@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maddy Configuration</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0e17; color: #e0e0e0; min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #00d9ff; }
+        .subtitle { color: #888; margin-bottom: 2rem; }
+        .card { background: #151b2b; border: 1px solid #1e2a3a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+        .card h2 { color: #7b9fff; font-size: 1.1rem; margin-bottom: 0.75rem; }
+        pre { background: #0d1117; border: 1px solid #1e2a3a; border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; color: #c9d1d9; }
+        .comment { color: #6a737d; }
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .variable { color: #ffa657; }
+        .section { color: #7ee787; }
+        a { color: #7b9fff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .nav { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .nav a { padding: 0.5rem 1rem; border-radius: 8px; background: #151b2b; border: 1px solid #1e2a3a; }
+        .nav a.active { border-color: #00d9ff; color: #00d9ff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        td { padding: 0.4rem 0.8rem; border-bottom: 1px solid #1e2a3a; }
+        td:first-child { color: #888; width: 200px; }
+        td:last-child { font-family: monospace; color: #c9d1d9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/servermail/">Server Info</a>
+            <a href="/servermail/config" class="active">Configuration</a>
+            <a href="/">Landing Page</a>
+            <a href="/webmail/">Webmail</a>
+        </div>
+
+        <h1>Maddy Configuration</h1>
+        <p class="subtitle">Parsed from maddy.conf &mdash; deployed via Nix flake</p>
+
+        <div class="card">
+            <h2>Endpoints</h2>
+            <table>
+                <tr><td>SMTP Inbound</td><td>tcp://0.0.0.0:25 &mdash; rate: 20/s, concurrency: 10</td></tr>
+                <tr><td>Submission</td><td>tls://0.0.0.0:465 + tcp://0.0.0.0:587 &mdash; rate: 50/s</td></tr>
+                <tr><td>IMAP</td><td>tls://0.0.0.0:993 + tcp://0.0.0.0:143</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Authentication &amp; Storage</h2>
+            <table>
+                <tr><td>Auth backend</td><td>auth.pass_table &rarr; SQLite (credentials.db)</td></tr>
+                <tr><td>Mail storage</td><td>storage.imapsql &rarr; SQLite (imapsql.db)</td></tr>
+                <tr><td>Queue backend</td><td>target.queue &rarr; target.smtp (OCI relay)</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Outbound Relay</h2>
+            <table>
+                <tr><td>Relay host</td><td>OCI SMTP (STARTTLS, PLAIN auth)</td></tr>
+                <tr><td>DKIM signing</td><td>On submission for $(local_domains), selector: default</td></tr>
+                <tr><td>Bounce handling</td><td>Local delivery for local domains, reject for external</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Inbound Pipeline</h2>
+            <table>
+                <tr><td>Source filter</td><td>Local domains rejected on port 25 (use Submission)</td></tr>
+                <tr><td>Checks</td><td>DKIM + SPF (informational, real check at Cloudflare)</td></tr>
+                <tr><td>DMARC</td><td>Disabled (CF Worker handles pre-validation)</td></tr>
+                <tr><td>Address rewriting</td><td>Strip +tag suffixes, postmaster alias</td></tr>
+                <tr><td>Delivery</td><td>local_routing &rarr; local_mailboxes (IMAPSQL)</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>TLS</h2>
+            <table>
+                <tr><td>Certificate</td><td>Let's Encrypt wildcard (*.diegonmarcos.com)</td></tr>
+                <tr><td>Source</td><td>Caddy cert synced to /data/tls/</td></tr>
+                <tr><td>Renewal</td><td>Periodic sync from gcp-proxy Caddy data</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Full Config (maddy.conf)</h2>
+            <pre><span class="comment">## Maddy Mail Server — declarative config (nix-generated)</span>
+<span class="comment">## Source: ~/git/cloud/a_solutions/aa-sui_tools-maddy/src/</span>
+
+<span class="comment"># ── Base variables</span>
+<span class="variable">$(hostname)</span> = <span class="string">mail.diegonmarcos.com</span>
+<span class="variable">$(primary_domain)</span> = <span class="string">diegonmarcos.com</span>
+<span class="variable">$(local_domains)</span> = <span class="variable">$(primary_domain)</span>
+
+<span class="keyword">tls</span> file /data/tls/fullchain.pem /data/tls/privkey.pem
+
+<span class="comment"># ── Local storage &amp; authentication</span>
+<span class="section">auth.pass_table</span> local_authdb {
+    table sql_table {
+        driver sqlite3
+        dsn credentials.db
+        table_name passwords
+    }
+}
+
+<span class="section">storage.imapsql</span> local_mailboxes {
+    driver sqlite3
+    dsn imapsql.db
+}
+
+<span class="keyword">hostname</span> <span class="variable">$(hostname)</span>
+
+<span class="comment"># ── SMTP (port 25) — inbound from smtp-proxy / CF Worker</span>
+<span class="section">smtp</span> tcp://0.0.0.0:25 {
+    limits { all rate 20 1s; all concurrency 10 }
+    dmarc no
+    check { dkim; spf }
+    <span class="comment"># Local domains must use Submission</span>
+    source <span class="variable">$(local_domains)</span> { reject 501 5.1.8 }
+    default_source {
+        destination postmaster <span class="variable">$(local_domains)</span> { deliver_to &amp;local_routing }
+        default_destination { reject 550 5.1.1 }
+    }
+}
+
+<span class="comment"># ── Submission (ports 465/587) — authenticated outbound</span>
+<span class="section">submission</span> tls://0.0.0.0:465 tcp://0.0.0.0:587 {
+    limits { all rate 50 1s }
+    auth &amp;local_authdb
+    source <span class="variable">$(local_domains)</span> {
+        check { authorize_sender { ... } }
+        destination postmaster <span class="variable">$(local_domains)</span> { deliver_to &amp;local_routing }
+        default_destination { modify { dkim ... }; deliver_to &amp;remote_queue }
+    }
+}
+
+<span class="comment"># ── Outbound relay (OCI SMTP)</span>
+<span class="section">target.smtp</span> outbound_delivery {
+    targets tcp://[OCI_RELAY]:587
+    auth plain [CREDENTIALS]
+    starttls yes
+}
+
+<span class="comment"># ── IMAP access</span>
+<span class="section">imap</span> tls://0.0.0.0:993 tcp://0.0.0.0:143 {
+    auth &amp;local_authdb
+    storage &amp;local_mailboxes
+}</pre>
+        </div>
+    </div>
+</body>
+</html>

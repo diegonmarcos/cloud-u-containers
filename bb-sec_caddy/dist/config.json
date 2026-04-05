@@ -16,6 +16,7 @@
       "ip": "130.110.251.193",
       "wg_ip": "10.0.0.3",
       "wg_port": 51820,
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -86,6 +87,7 @@
       "ip": "129.151.228.66",
       "wg_ip": "10.0.0.4",
       "wg_port": 51820,
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -110,6 +112,7 @@
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
       "wg_port": 51820,
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -175,6 +178,7 @@
       "ip": "34.173.227.250",
       "wg_ip": "10.0.0.8",
       "wg_port": 51820,
+      "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
       "wg_role": "spoke",
       "user": "diego",
       "home": "/home/diego",
@@ -213,6 +217,7 @@
       "ip": "35.226.147.64",
       "wg_ip": "10.0.0.1",
       "wg_port": 51820,
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_role": "hub",
       "user": "diego",
       "home": "/home/diego",
@@ -343,7 +348,7 @@
       "provider": "Oracle Cloud",
       "tier": "Free + Paid",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_oci",
+      "folder": "c_vps/vps_oci",
       "instances": [
         "oci-E2-f_0",
         "oci-E2-f_1",
@@ -355,7 +360,7 @@
       "provider": "Google Cloud",
       "tier": "Free + Paid (Spot)",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_gcloud",
+      "folder": "c_vps/vps_gcloud",
       "instances": [
         "gcp-E2-f_0",
         "gcp-T4-p_0"
@@ -366,7 +371,7 @@
       "provider": "Amazon Web Services",
       "tier": "Exploration",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_aws",
+      "folder": "c_vps/vps_aws",
       "instances": [],
       "description": "AWS infrastructure code (not currently active)"
     },
@@ -374,7 +379,7 @@
       "provider": "Vast.ai",
       "tier": "On-demand rental",
       "infrastructure_type": "Manual rental",
-      "folder": "b_infra/vps_vast-ai",
+      "folder": "c_vps/vps_vast-ai",
       "instances": [
         "vast-RTX-p_0"
       ],
@@ -397,6 +402,11 @@
         "nix": "openssh",
         "apt": "openssh-client",
         "desc": "SSH for VM deploy"
+      },
+      "sudo": {
+        "nix": "sudo",
+        "apt": "sudo",
+        "desc": "Privilege escalation for build steps"
       },
       "jq": {
         "nix": "jq",
@@ -422,6 +432,11 @@
         "nix": "curl",
         "apt": "curl",
         "desc": "HTTP client (health checks)"
+      },
+      "dig": {
+        "nix": "dig",
+        "apt": "dnsutils",
+        "desc": "DNS lookup (health checks — dig, nslookup)"
       }
     },
     "build": {

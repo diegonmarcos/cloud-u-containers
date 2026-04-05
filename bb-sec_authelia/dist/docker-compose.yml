@@ -12,8 +12,7 @@ services:
       context: .
       dockerfile_inline: |
         FROM authelia/authelia:4.39.15
-        COPY config/configuration.yml.tpl /config/configuration.yml.tpl
-        COPY config/users_database.yml.tpl /config/users_database.yml.tpl
+        COPY config/configuration.yml /config/configuration.yml
         COPY config/init.sh /config/init.sh
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"

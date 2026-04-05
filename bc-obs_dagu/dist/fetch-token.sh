@@ -17,4 +17,7 @@ else
   echo "[fetch-token] Response: $RESPONSE"
 fi
 
+# Start ntfy→dagu WebSocket bridge in background
+ntfy-bridge.sh &
+
 exec dagu start-all

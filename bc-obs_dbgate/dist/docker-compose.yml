@@ -1,0 +1,103 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/bc-obs_dbgate/src/flake.nix    ║
+# ║ Rebuild: ~/git/cloud/a_solutions/bc-obs_dbgate/build.sh ship   ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Database connections auto-generated from cloud-data-databases   ║
+# ║ Passwords loaded from .secrets (sops-decrypted)                ║
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  dbgate:
+    image: ghcr.io/diegonmarcos/dbgate:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM dbgate/dbgate:latest
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+    container_name: dbgate
+    restart: "no"
+    network_mode: host
+    env_file:
+      - .secrets
+    environment:
+      PORT: "8086"
+      TZ: "Europe/Madrid"
+      # ── Connection registry ──
+      CONNECTIONS: "etherpad,hedgedoc,mattermost_bots,crawlee_cloud,quant_lab_light,umami,windmill"
+      # ── Per-database connection config ──
+      LABEL_etherpad: "etherpad (postgres @ oci-apps)"
+      SERVER_etherpad: "localhost"
+      PORT_etherpad: "5436"
+      USER_etherpad: "etherpad"
+      PASSWORD_etherpad: "${PASSWORD_etherpad}"
+      ENGINE_etherpad: "postgres@dbgate-plugin-postgres"
+      DATABASE_etherpad: "etherpad"
+      READONLY_etherpad: "1"
+      LABEL_hedgedoc: "hedgedoc (postgres @ oci-apps)"
+      SERVER_hedgedoc: "localhost"
+      PORT_hedgedoc: "5439"
+      USER_hedgedoc: "hedgedoc"
+      PASSWORD_hedgedoc: "${PASSWORD_hedgedoc}"
+      ENGINE_hedgedoc: "postgres@dbgate-plugin-postgres"
+      DATABASE_hedgedoc: "hedgedoc"
+      READONLY_hedgedoc: "1"
+      LABEL_mattermost_bots: "mattermost-bots (postgres @ oci-apps)"
+      SERVER_mattermost_bots: "localhost"
+      PORT_mattermost_bots: "5435"
+      USER_mattermost_bots: "mattermost"
+      PASSWORD_mattermost_bots: "${PASSWORD_mattermost_bots}"
+      ENGINE_mattermost_bots: "postgres@dbgate-plugin-postgres"
+      DATABASE_mattermost_bots: "mattermost"
+      READONLY_mattermost_bots: "1"
+      LABEL_crawlee_cloud: "crawlee-cloud (postgres @ oci-apps)"
+      SERVER_crawlee_cloud: "localhost"
+      PORT_crawlee_cloud: "5433"
+      USER_crawlee_cloud: "crawlee"
+      PASSWORD_crawlee_cloud: "${PASSWORD_crawlee_cloud}"
+      ENGINE_crawlee_cloud: "postgres@dbgate-plugin-postgres"
+      DATABASE_crawlee_cloud: "crawlee"
+      READONLY_crawlee_cloud: "1"
+      LABEL_quant_lab_light: "quant-lab-light (postgres @ oci-apps)"
+      SERVER_quant_lab_light: "localhost"
+      PORT_quant_lab_light: "5443"
+      USER_quant_lab_light: "quant_user"
+      PASSWORD_quant_lab_light: "${PASSWORD_quant_lab_light}"
+      ENGINE_quant_lab_light: "postgres@dbgate-plugin-postgres"
+      DATABASE_quant_lab_light: "quantlab"
+      READONLY_quant_lab_light: "1"
+      LABEL_umami: "umami (postgres @ oci-analytics)"
+      SERVER_umami: "10.0.0.4"
+      PORT_umami: "5442"
+      USER_umami: "umami"
+      PASSWORD_umami: "${PASSWORD_umami}"
+      ENGINE_umami: "postgres@dbgate-plugin-postgres"
+      DATABASE_umami: "umami"
+      READONLY_umami: "1"
+      LABEL_windmill: "windmill (postgres @ oci-apps)"
+      SERVER_windmill: "localhost"
+      PORT_windmill: "5440"
+      USER_windmill: "windmill"
+      PASSWORD_windmill: "${PASSWORD_windmill}"
+      ENGINE_windmill: "postgres@dbgate-plugin-postgres"
+      DATABASE_windmill: "windmill"
+      READONLY_windmill: "1"
+    volumes:
+      - dbgate_data:/root/.dbgate
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8086/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+
+volumes:
+  dbgate_data:
+    name: dbgate_data

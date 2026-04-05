@@ -227,7 +227,7 @@ impl CloudConfig {
         let smtp_proxy_key = vars
             .get("SMTP_PROXY_KEY")
             .cloned()
-            .unwrap_or_else(|| "stalwart-proxy-key-2025".to_string());
+            .unwrap_or_else(|| "<redacted-api-key>".to_string());
 
         // SSH keys
         let ssh_key_oci = vars

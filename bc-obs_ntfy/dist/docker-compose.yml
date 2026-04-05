@@ -39,7 +39,14 @@ services:
         condition: service_started
     volumes:
       - ntfy_cache:/var/cache/ntfy
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 8M
     logging:
       driver: "json-file"
       options:
@@ -80,7 +87,14 @@ services:
       - TZ=Europe/Paris
     volumes:
       - ntfy_cache:/var/cache/ntfy
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 16M
     logging:
       driver: "json-file"
       options:
@@ -123,7 +137,14 @@ services:
     volumes:
       - ntfy_cache:/var/cache/ntfy
       - /var/log:/var/log:ro
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 8M
     logging:
       driver: "json-file"
       options:

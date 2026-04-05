@@ -16,6 +16,7 @@
       "ip": "130.110.251.193",
       "wg_ip": "10.0.0.3",
       "wg_port": 51820,
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -86,6 +87,7 @@
       "ip": "129.151.228.66",
       "wg_ip": "10.0.0.4",
       "wg_port": 51820,
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -110,6 +112,7 @@
       "ip": "82.70.229.129",
       "wg_ip": "10.0.0.6",
       "wg_port": 51820,
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_role": "spoke",
       "user": "ubuntu",
       "home": "/home/ubuntu",
@@ -175,6 +178,7 @@
       "ip": "34.173.227.250",
       "wg_ip": "10.0.0.8",
       "wg_port": 51820,
+      "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
       "wg_role": "spoke",
       "user": "diego",
       "home": "/home/diego",
@@ -213,6 +217,7 @@
       "ip": "35.226.147.64",
       "wg_ip": "10.0.0.1",
       "wg_port": 51820,
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_role": "hub",
       "user": "diego",
       "home": "/home/diego",
@@ -397,6 +402,11 @@
         "nix": "openssh",
         "apt": "openssh-client",
         "desc": "SSH for VM deploy"
+      },
+      "sudo": {
+        "nix": "sudo",
+        "apt": "sudo",
+        "desc": "Privilege escalation for build steps"
       },
       "jq": {
         "nix": "jq",

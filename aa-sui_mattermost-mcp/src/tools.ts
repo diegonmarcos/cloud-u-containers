@@ -150,6 +150,40 @@ export function registerTools(server: McpServer): void {
     }
   );
 
+  // ── mm_channels_grouped ────────────────────────────────────────
+  server.tool(
+    "mm_channels_grouped",
+    "List Mattermost channels grouped by category prefix (vcs_, infra_, ops_, etc.)",
+    {},
+    async () => {
+      const uid = await getUserId();
+      const channels = (await api(
+        "GET",
+        `/api/v4/users/${uid}/teams/${MM_TEAM_ID}/channels`
+      )) as Channel[];
+
+      const groups: Record<string, string[]> = {};
+      for (const ch of channels) {
+        if (ch.type === "D" || ch.type === "G") continue;
+        const cat = ch.name.includes("_") ? ch.name.split("_")[0] : "general";
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(ch.display_name || ch.name);
+      }
+
+      const lines: string[] = [];
+      for (const [cat, chs] of Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))) {
+        lines.push(`## ${cat} (${chs.length})`);
+        for (const name of chs.sort()) lines.push(`  - ${name}`);
+        lines.push("");
+      }
+
+      const total = Object.values(groups).reduce((s, g) => s + g.length, 0);
+      lines.push(`Total: ${total} channels, ${Object.keys(groups).length} groups`);
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    }
+  );
+
   // ── mm_react ─────────────────────────────────────────────────
   server.tool(
     "mm_react",
@@ -225,6 +259,44 @@ export function registerTools(server: McpServer): void {
       return {
         content: [{ type: "text", text: `Added user ${member.user_id} to channel ${member.channel_id}` }],
       };
+    }
+  );
+
+  // ── mm_categories ──────────────────────────────────────────────
+  server.tool(
+    "mm_categories",
+    "List Mattermost sidebar channel categories with their channels",
+    {
+      user: z.string().optional().describe("Username to list categories for (default: bot's own)"),
+    },
+    async ({ user }) => {
+      let targetUid: string;
+      if (user) {
+        const results = (await api("POST", "/api/v4/users/search", { term: user })) as Array<{ id: string; username: string }>;
+        if (!results.length) return { content: [{ type: "text", text: `User not found: ${user}` }] };
+        targetUid = results[0].id;
+      } else {
+        targetUid = await getUserId();
+      }
+
+      const data = (await api("GET", `/api/v4/users/${targetUid}/teams/${MM_TEAM_ID}/channels/categories`)) as {
+        categories: Array<{ display_name: string; type: string; channel_ids: string[] }>;
+      };
+
+      // Resolve channel IDs to names
+      const channelMap = new Map<string, string>();
+      const allChannels = (await api("GET", `/api/v4/users/${targetUid}/teams/${MM_TEAM_ID}/channels`)) as Channel[];
+      for (const ch of allChannels) channelMap.set(ch.id, ch.display_name || ch.name);
+
+      const lines: string[] = [];
+      for (const cat of data.categories) {
+        const names = cat.channel_ids.map((id) => channelMap.get(id) || id);
+        lines.push(`## ${cat.display_name} (${cat.type}) — ${names.length} channels`);
+        for (const name of names.sort()) lines.push(`  - ${name}`);
+        lines.push("");
+      }
+
+      return { content: [{ type: "text", text: lines.join("\n") || "(no categories)" }] };
     }
   );
 }

@@ -23,8 +23,8 @@
       },
       "containers": [
         "snappymail",
+        "maddy",
         "smtp-proxy",
-        "stalwart",
         "dagu",
         "syslog-forwarder"
       ],
@@ -772,16 +772,16 @@
         "service": "snappymail"
       },
       {
+        "name": "maddy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "maddy"
+      },
+      {
         "name": "smtp-proxy.app",
         "type": "A",
         "value": "10.0.0.3",
         "service": "smtp-proxy"
-      },
-      {
-        "name": "stalwart.app",
-        "type": "A",
-        "value": "10.0.0.3",
-        "service": "stalwart"
       },
       {
         "name": "vaultwarden.app",
@@ -2197,6 +2197,89 @@
         "path": "/"
       }
     },
+    "maddy": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-maddy",
+      "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+      "domain": "mail.diegonmarcos.com",
+      "port": 443,
+      "dns": "maddy.app",
+      "upstream": "10.0.0.3:443",
+      "containers": {
+        "app": {
+          "container_name": "maddy",
+          "image": "foxcpp/maddy:0.9",
+          "port": 443,
+          "dns": "maddy.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail.diegonmarcos.com",
+            "auth": "two_factor",
+            "tls_skip_verify": true
+          },
+          "healthcheck": null,
+          "volumes": [
+            "maddy_data:/data",
+            "./dkim:/data/dkim:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "maddy"
+      ],
+      "all_ports": [
+        "443"
+      ],
+      "all_dns": [
+        "maddy.app"
+      ],
+      "compose": {
+        "containers": [
+          "maddy"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail.diegonmarcos.com",
+          "auth": "two_factor",
+          "tls_skip_verify": true
+        }
+      },
+      "declared_ports": {
+        "app": 443,
+        "smtp": 465,
+        "imap": 993
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "maddy_data"
+        ]
+      },
+      "flake": "tools-maddy"
+    },
     "smtp-proxy": {
       "category": "app",
       "vm": "oci-E2-f_0",
@@ -2244,93 +2327,6 @@
         "app": 8080
       },
       "flake": "tools-smtp-proxy"
-    },
-    "stalwart": {
-      "category": "app",
-      "vm": "oci-E2-f_0",
-      "folder": "aa-sui_tools-stalwart",
-      "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
-      "domain": "mail.diegonmarcos.com",
-      "port": 443,
-      "dns": "stalwart.app",
-      "upstream": "10.0.0.3:443",
-      "containers": {
-        "app": {
-          "container_name": "stalwart",
-          "image": "stalwartlabs/mail-server:v0.11",
-          "port": 443,
-          "port_env": null,
-          "dns": "stalwart.app",
-          "public": true,
-          "proxy": {
-            "domain": "mail.diegonmarcos.com",
-            "auth": "two_factor",
-            "tls_skip_verify": true
-          },
-          "healthcheck": "/",
-          "monitoring": {
-            "tls_check": true
-          },
-          "volumes": [
-            "./data:/opt/stalwart-mail/data",
-            "./config.toml:/opt/stalwart-mail/etc/config.toml:ro",
-            "./dkim:/opt/stalwart-mail/dkim:ro"
-          ],
-          "env_file": false,
-          "depends_on": [],
-          "resources": {
-            "limits": {
-              "memory": "512M"
-            },
-            "reservations": {
-              "memory": "64M"
-            }
-          },
-          "read_only": false,
-          "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
-        }
-      },
-      "container_names": [
-        "stalwart"
-      ],
-      "all_ports": [
-        "443"
-      ],
-      "all_dns": [
-        "stalwart.app"
-      ],
-      "compose": {
-        "containers": [
-          "stalwart"
-        ],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "domain": "mail.diegonmarcos.com",
-          "auth": "two_factor",
-          "tls_skip_verify": true
-        }
-      },
-      "declared_ports": {
-        "app": 443,
-        "smtp": 465,
-        "imap": 993
-      },
-      "health": {
-        "path": "/"
-      },
-      "monitoring": {
-        "tls_check": true
-      },
-      "backup": {
-        "enabled": true,
-        "volumes": [
-          "stalwart_data"
-        ]
-      },
-      "flake": "tools-stalwart"
     },
     "vaultwarden": {
       "category": "mic",

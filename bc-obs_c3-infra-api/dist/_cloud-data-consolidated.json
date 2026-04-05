@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-02T16:31:08.228Z",
+    "generated_at": "2026-04-02T18:04:15.794Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -6308,11 +6308,25 @@
         "port": 22
       },
       {
+        "host": "oci-mail-dropbear",
+        "hostname": "10.0.0.3",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "oci-analytics",
         "hostname": "10.0.0.4",
         "user": "ubuntu",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "oci-analytics-dropbear",
+        "hostname": "10.0.0.4",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       },
       {
         "host": "oci-apps",
@@ -6322,11 +6336,25 @@
         "port": 22
       },
       {
+        "host": "oci-apps-dropbear",
+        "hostname": "10.0.0.6",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "gcp-t4",
         "hostname": "10.0.0.8",
         "user": "diego",
         "identity_file": "~/.ssh/google_compute_engine",
         "port": 22
+      },
+      {
+        "host": "gcp-t4-dropbear",
+        "hostname": "10.0.0.8",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
       },
       {
         "host": "gcp-proxy",
@@ -6336,11 +6364,25 @@
         "port": 22
       },
       {
+        "host": "gcp-proxy-dropbear",
+        "hostname": "10.0.0.1",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
+      },
+      {
         "host": "vast-ollama",
         "hostname": "TBD",
         "user": "root",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "vast-ollama-dropbear",
+        "hostname": "TBD",
+        "user": "root",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       }
     ]
   },

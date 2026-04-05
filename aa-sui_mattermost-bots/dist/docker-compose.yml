@@ -36,7 +36,6 @@ services:
       - TZ=America/Chicago
       - MM_SQLSETTINGS_DRIVERNAME=postgres
       - MM_SERVICESETTINGS_SITEURL=https://chat.diegonmarcos.com
-      - MM_SERVICESETTINGS_LISTENADDRESS=:8065
       - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
       - MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS=true
       - MM_SERVICESETTINGS_ENABLECOMMANDS=true
@@ -46,6 +45,7 @@ services:
       - MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE=en
       - MM_DISPLAYSETTINGS_CLOCKFORMAT=24h
       - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=localhost
+      - MM_SERVICESETTINGS_LISTENADDRESS=:8065
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,7 +101,7 @@ services:
       - .secrets
     environment:
       - NTFY_URL=http://10.0.0.1:8090
-      - TOPICS=vcs_commits,vcs_pull-requests,vcs_issues-releases,cicd_deploy-digest,infra_mesh-health,infra_endpoints,infra_dns,infra_resources,infra_containers,ops_summary,ops_backups,ops_cron,security_audit,security_tls,security_connections,security_yara
+      - TOPICS=dev_commits,dev_pull-requests,dev_releases,deploy_ship,deploy_containers,health_mesh,health_endpoints,health_dns,health_resources,health_containers,ops_backups,ops_reports,sec_audit,sec_tls,sec_connections,sec_yara
       - MM_URL=http://localhost:8065
       - C3_API_URL=http://c3-infra-mcp-api:8080
       - OLLAMA_URL=http://10.0.0.8:11434

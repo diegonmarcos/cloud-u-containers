@@ -9,11 +9,11 @@ REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pw
 cd "$REPO_ROOT"
 
 declare -A TF_DIRS=(
-  [cloudflare]="a_solutions/ba-clo_cloudflare/src"
-  [gcloud]="b_infra/vps_gcloud/src"
-  [oci]="b_infra/vps_oci/src"
-  [aws]="b_infra/vps_aws/src"
-  [hetzner]="b_infra/vps_hetzner/src"
+  [cloudflare]="c_vps/ba-clo_cloudflare/src"
+  [gcloud]="c_vps/vps_gcloud/src"
+  [oci]="c_vps/vps_oci/src"
+  [aws]="c_vps/vps_aws/src"
+  [hetzner]="c_vps/vps_hetzner/src"
 )
 
 OK=0; FAIL=0; SKIP=0

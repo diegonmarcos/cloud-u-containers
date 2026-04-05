@@ -28,4 +28,4 @@ LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 LABEL org.opencontainers.image.dockerfile-path="a_solutions/bc-obs_c3-services-mcp/src/Dockerfile"
 
 ENTRYPOINT ["./entrypoint.sh"]
-# rebuild 1774363117
+# rebuild 1775368117

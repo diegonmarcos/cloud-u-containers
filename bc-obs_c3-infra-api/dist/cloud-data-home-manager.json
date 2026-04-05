@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-04-02T16:40:14.140Z",
+  "_generated": "2026-04-02T18:05:14.419Z",
   "_source": "config.json via /cloud-data/home-manager",
   "owner": {
     "name": "Diego Marcos",
@@ -262,7 +262,53 @@
     "subnet": "10.0.0.0/24",
     "port": 51820,
     "hub": null,
-    "peers": [],
+    "peers": [
+      {
+        "name": "oci-mail",
+        "wg_ip": "10.0.0.3",
+        "public_ip": "130.110.251.193",
+        "wg_public_key": null,
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "130.110.251.193"
+      },
+      {
+        "name": "oci-analytics",
+        "wg_ip": "10.0.0.4",
+        "public_ip": "129.151.228.66",
+        "wg_public_key": null,
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "129.151.228.66"
+      },
+      {
+        "name": "oci-apps",
+        "wg_ip": "10.0.0.6",
+        "public_ip": "82.70.229.129",
+        "wg_public_key": null,
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "82.70.229.129"
+      },
+      {
+        "name": "gcp-t4",
+        "wg_ip": "10.0.0.8",
+        "public_ip": "34.173.227.250",
+        "wg_public_key": null,
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "34.173.227.250"
+      },
+      {
+        "name": "gcp-proxy",
+        "wg_ip": "10.0.0.1",
+        "public_ip": "35.226.147.64",
+        "wg_public_key": null,
+        "wg_port": 51820,
+        "role": "spoke",
+        "endpoint": "35.226.147.64"
+      }
+    ],
     "clients": {
       "surface": {
         "wg_ip": "10.0.0.5",

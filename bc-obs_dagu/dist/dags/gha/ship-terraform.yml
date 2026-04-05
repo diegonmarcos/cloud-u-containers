@@ -3,11 +3,11 @@ name: "Ship → terraform"
 on:
   push:
     paths:
-      - "a_solutions/ba-clo_cloudflare/src/**"
-      - "b_infra/vps_gcloud/src/**"
-      - "b_infra/vps_oci/src/**"
-      - "b_infra/vps_aws/src/**"
-      - "b_infra/vps_hetzner/src/**"
+      - "c_vps/ba-clo_cloudflare/src/**"
+      - "c_vps/vps_gcloud/src/**"
+      - "c_vps/vps_oci/src/**"
+      - "c_vps/vps_aws/src/**"
+      - "c_vps/vps_hetzner/src/**"
       - ".github/workflows/ship-terraform.yml"
     branches: [main]
   workflow_dispatch:
@@ -43,15 +43,15 @@ jobs:
         with:
           filters: |
             cloudflare:
-              - 'a_solutions/ba-clo_cloudflare/src/**'
+              - 'c_vps/ba-clo_cloudflare/src/**'
             gcloud:
-              - 'b_infra/vps_gcloud/src/**'
+              - 'c_vps/vps_gcloud/src/**'
             oci:
-              - 'b_infra/vps_oci/src/**'
+              - 'c_vps/vps_oci/src/**'
             aws:
-              - 'b_infra/vps_aws/src/**'
+              - 'c_vps/vps_aws/src/**'
             hetzner:
-              - 'b_infra/vps_hetzner/src/**'
+              - 'c_vps/vps_hetzner/src/**'
 
       - name: Force project override
         id: force
@@ -88,7 +88,7 @@ jobs:
 
       - name: Terraform — Cloudflare
         if: steps.changes.outputs.cloudflare == 'true' || steps.force.outputs.cloudflare == 'true'
-        working-directory: a_solutions/ba-clo_cloudflare/src
+        working-directory: c_vps/ba-clo_cloudflare/src
         env:
           TF_VAR_cloudflare_api_key: ${{ secrets.CLOUDFLARE_API_KEY }}
         run: |
@@ -116,7 +116,7 @@ jobs:
 
       - name: Terraform — GCP
         if: steps.changes.outputs.gcloud == 'true' || steps.force.outputs.gcloud == 'true'
-        working-directory: b_infra/vps_gcloud/src
+        working-directory: c_vps/vps_gcloud/src
         env:
           TF_VAR_ssh_public_key: ${{ secrets.GCP_SSH_PUBLIC_KEY }}
         run: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Terraform — OCI
         if: steps.changes.outputs.oci == 'true' || steps.force.outputs.oci == 'true'
-        working-directory: b_infra/vps_oci/src
+        working-directory: c_vps/vps_oci/src
         env:
           TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
           TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
@@ -154,7 +154,7 @@ jobs:
 
       - name: Terraform — AWS
         if: steps.changes.outputs.aws == 'true' || steps.force.outputs.aws == 'true'
-        working-directory: b_infra/vps_aws/src
+        working-directory: c_vps/vps_aws/src
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -170,7 +170,7 @@ jobs:
 
       - name: Terraform — Hetzner
         if: steps.changes.outputs.hetzner == 'true' || steps.force.outputs.hetzner == 'true'
-        working-directory: b_infra/vps_hetzner/src
+        working-directory: c_vps/vps_hetzner/src
         env:
           TF_VAR_hcloud_token: ${{ secrets.HETZNER_API_TOKEN }}
         run: |

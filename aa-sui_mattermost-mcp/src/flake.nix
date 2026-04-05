@@ -35,10 +35,6 @@
             - .secrets
           environment:
             MCP_HTTP_PORT: "${toString config.port}"
-            MM_URL: https://chat.diegonmarcos.com
-            MM_TEAM_ID: x89hszqz97g6dxytbtx3p5mmkc
-            MM_ADMIN_USERNAME: me@diegonmarcos.com
-            CLAUDE_MODEL: opus
 
     '';
 

@@ -6,8 +6,8 @@ on:
     paths:
       - "a_solutions/*/build.json"
       - "config.json"
-      - "a_solutions/ba-clo_cloudflare/src/main.tf"
-      - "b_infra/vps_*/src/main.tf"
+      - "c_vps/ba-clo_cloudflare/src/main.tf"
+      - "c_vps/vps_*/src/main.tf"
       - "b_infra/home-manager/**/src/*.nix"
       - "a_solutions/bb-sec_caddy/src/**"
       - "a_solutions/bb-sec_authelia/src/**"

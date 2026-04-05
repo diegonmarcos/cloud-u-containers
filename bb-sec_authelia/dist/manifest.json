@@ -1,5 +1,9 @@
 [
   {
+    "file": "_cloud-data-consolidated.json",
+    "name": "_cloud data consolidated"
+  },
+  {
     "file": "cloud-data-authelia-acl.json",
     "name": "cloud data authelia acl"
   },
@@ -24,6 +28,26 @@
     "name": "cloud data container resources"
   },
   {
+    "file": "cloud-data-containers-gcp-proxy.json",
+    "name": "cloud data containers gcp proxy"
+  },
+  {
+    "file": "cloud-data-containers-gcp-t4.json",
+    "name": "cloud data containers gcp t4"
+  },
+  {
+    "file": "cloud-data-containers-oci-analytics.json",
+    "name": "cloud data containers oci analytics"
+  },
+  {
+    "file": "cloud-data-containers-oci-apps.json",
+    "name": "cloud data containers oci apps"
+  },
+  {
+    "file": "cloud-data-containers-oci-mail.json",
+    "name": "cloud data containers oci mail"
+  },
+  {
     "file": "cloud-data-deps.json",
     "name": "cloud data deps"
   },
@@ -34,6 +58,10 @@
   {
     "file": "cloud-data-firewall-rules.json",
     "name": "cloud data firewall rules"
+  },
+  {
+    "file": "cloud-data-gha-config.json",
+    "name": "cloud data gha config"
   },
   {
     "file": "cloud-data-home-manager.json",
@@ -54,6 +82,10 @@
   {
     "file": "cloud-data-ntfy-acl.json",
     "name": "cloud data ntfy acl"
+  },
+  {
+    "file": "cloud-data-service-connections.json",
+    "name": "cloud data service connections"
   },
   {
     "file": "cloud-data-topology.json",

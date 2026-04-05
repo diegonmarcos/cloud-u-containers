@@ -1,24 +1,151 @@
 {
-  "_generated": "2026-03-31T22:41:13.733Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/authelia-acl",
+  "_generated": "2026-04-03T03:50:06.521Z",
+  "_source": "cloud-data-topology.json via /cloud-data/authelia-acl",
   "rules": [
     {
-      "domain": "auth.diegonmarcos.com",
-      "policy": "bypass",
-      "service": "_default"
+      "domain": "ide.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "code-server"
     },
     {
-      "domain": "db.diegonmarcos.com",
-      "policy": "bypass",
-      "resources": [
-        "^/api/.*"
-      ],
-      "service": "_default"
+      "domain": "pad.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "etherpad"
+    },
+    {
+      "domain": "files.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "filebrowser"
+    },
+    {
+      "domain": "sheets.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "grist"
+    },
+    {
+      "domain": "doc.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "hedgedoc"
+    },
+    {
+      "domain": "chat.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "mattermost-bots"
+    },
+    {
+      "domain": "photos.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "photoprism"
+    },
+    {
+      "domain": "cal.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "radicale"
+    },
+    {
+      "domain": "slides.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "revealmd"
+    },
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "snappymail"
+    },
+    {
+      "domain": "smtp.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "smtp-proxy"
+    },
+    {
+      "domain": "mail.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "stalwart"
+    },
+    {
+      "domain": "vault.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "vaultwarden"
+    },
+    {
+      "domain": "api.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "crawlee-cloud"
+    },
+    {
+      "domain": "auth.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "authelia"
+    },
+    {
+      "domain": "proxy.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "caddy"
+    },
+    {
+      "domain": "api.diegonmarcos.com/c3-api",
+      "policy": "two_factor",
+      "service": "c3-infra-api"
+    },
+    {
+      "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
+      "policy": "two_factor",
+      "service": "c3-infra-mcp"
+    },
+    {
+      "domain": "api.diegonmarcos.com/services",
+      "policy": "two_factor",
+      "service": "c3-services-api"
+    },
+    {
+      "domain": "workflows.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "dagu"
+    },
+    {
+      "domain": "logs.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "dozzle"
+    },
+    {
+      "domain": "grafana.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "lgtm"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "matomo"
     },
     {
       "domain": "db.diegonmarcos.com",
       "policy": "two_factor",
-      "service": "_default"
+      "service": "nocodb"
+    },
+    {
+      "domain": "rss.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "ntfy"
+    },
+    {
+      "domain": "analytics.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "umami"
+    },
+    {
+      "domain": "windmill.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "windmill"
+    },
+    {
+      "domain": "git.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "backup-gitea"
+    },
+    {
+      "domain": "git.diegonmarcos.com",
+      "policy": "two_factor",
+      "service": "gitea"
     },
     {
       "domain": "*.diegonmarcos.com",

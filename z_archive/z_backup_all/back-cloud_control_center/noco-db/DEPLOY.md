@@ -229,7 +229,7 @@ open "https://auth.diegonmarcos.com/api/oidc/authorization?client_id=cli&respons
 
 # 3. Exchange for token
 curl -X POST https://auth.diegonmarcos.com/api/oidc/token \
-  -u REDACTED \
+  -u "cli:<redacted-secret>" \
   -d "grant_type=authorization_code&code=<YOUR_CODE>&redirect_uri=http://localhost:8085/callback"
 ```
 

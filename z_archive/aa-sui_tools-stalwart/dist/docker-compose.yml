@@ -1,0 +1,58 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  stalwart:
+    image: ghcr.io/diegonmarcos/stalwart:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM stalwartlabs/mail-server:v0.11
+        COPY config.toml.tpl /opt/stalwart-mail/etc/config.toml.tpl
+        COPY init.sh /opt/stalwart-mail/init.sh
+        RUN apt-get update && apt-get install -y --no-install-recommends gettext-base curl && rm -rf /var/lib/apt/lists/*
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="stalwart"
+        LABEL org.opencontainers.image.title="stalwart"
+        LABEL cloud.diegonmarcos.from-image="stalwartlabs/mail-server:v0.11"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
+    container_name: stalwart
+    network_mode: host
+    entrypoint: ["sh", "/opt/stalwart-mail/init.sh"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
+    environment:
+      - TZ=Europe/Madrid
+    volumes:
+      - stalwart_data:/opt/stalwart-mail/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  stalwart_data:

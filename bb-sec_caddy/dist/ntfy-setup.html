@@ -122,6 +122,8 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <div class="log" id="log"></div>
   <div class="actions">
     <button class="btn primary" id="subscribe-btn" disabled>Subscribe All</button>
+    <button class="btn secondary" id="clear-btn">Clear All</button>
+    <button class="btn secondary" id="list-btn">List Channels</button>
     <button class="btn secondary" id="android-btn" disabled>Download for Android</button>
     <button class="btn secondary" id="go-btn" onclick="location.href='/'">Open ntfy</button>
   </div>
@@ -143,6 +145,8 @@ a:hover{color:#845ef7;border-color:#845ef7}
 
   var logEl=document.getElementById('log');
   var btn=document.getElementById('subscribe-btn');
+  var clearBtn=document.getElementById('clear-btn');
+  var listBtn=document.getElementById('list-btn');
   var androidBtn=document.getElementById('android-btn');
   var baseUrl=location.origin;
   var topics=[];
@@ -159,26 +163,15 @@ a:hover{color:#845ef7;border-color:#845ef7}
     logEl.scrollTop=logEl.scrollHeight;
   }
 
-  // Step 1: Fetch topics from ntfy API (auth injected by Caddy)
-  log('info','Fetching active topics...');
-  fetch('/v1/topics')
-    .then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.json();
-    })
-    .then(function(data){
-      topics=(Array.isArray(data)?data:[]).map(function(t){return t.topic||t});
-      if(topics.length===0){
-        log('warn','No topics found in cache — publish a message first');
-        return;
-      }
-      log('ok','Found '+topics.length+' topic(s): '+topics.join(', '));
-      btn.disabled=false;
-      androidBtn.disabled=false;
-    })
-    .catch(function(e){
-      log('err','Failed to fetch topics: '+e.message);
-    });
+  // Source of truth: topic-scanner.py CONFIGURED_TOPICS
+  topics=["all","dev_commits","dev_pull-requests","dev_releases","deploy_ship","deploy_containers","health_mesh","health_endpoints","health_dns","health_resources","health_containers","ops_backups","ops_reports","sec_audit","sec_tls","sec_connections","sec_yara"];
+  log('ok',topics.length+' channels: '+topics.join(', '));
+  btn.disabled=false; androidBtn.disabled=false;
+
+  // List all channels comma-separated (copyable)
+  listBtn.addEventListener('click',function(){
+    log('ok',topics.join(','));
+  });
 
   // Android export — generate ntfy Android backup JSON
   androidBtn.addEventListener('click',function(){
@@ -216,6 +209,31 @@ a:hover{color:#845ef7;border-color:#845ef7}
     a.download='ntfy-backup.json';
     a.click();
     log('ok','Downloaded ntfy-backup.json — import via ntfy app → Settings → Backup & Restore');
+  });
+
+  // Clear all subscriptions from ntfy IndexedDB
+  clearBtn.addEventListener('click',function(){
+    log('info','Clearing all subscriptions...');
+    var req=indexedDB.open('ntfy');
+    req.onsuccess=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains('subscriptions')){
+        log('warn','No subscriptions store found');
+        db.close();
+        return;
+      }
+      var tx=db.transaction('subscriptions','readwrite');
+      var store=tx.objectStore('subscriptions');
+      var countReq=store.count();
+      countReq.onsuccess=function(){
+        var count=countReq.result;
+        store.clear();
+        log('ok','Cleared '+count+' subscription(s)');
+        log('info','Refresh ntfy UI to see changes');
+      };
+      tx.onerror=function(e){ log('err','Clear failed: '+e.target.error); };
+    };
+    req.onerror=function(e){ log('err','Failed to open DB: '+e.target.error); };
   });
 
   // Step 2: Subscribe — write into ntfy IndexedDB

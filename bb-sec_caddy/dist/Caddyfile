@@ -6,7 +6,7 @@
     auto_https disable_redirects
 
     layer4 {
-# IMAPS -- TLS passthrough to stalwart
+# IMAPS — TLS passthrough to Maddy
 :993 {
   route {
     proxy {
@@ -14,7 +14,7 @@
     }
   }
 }
-# SMTPS -- TLS passthrough to stalwart
+# SMTPS — TLS passthrough to Maddy
 :465 {
   route {
     proxy {
@@ -22,7 +22,7 @@
     }
   }
 }
-# SMTP Submission -- TLS passthrough to stalwart
+# SMTP Submission — TCP passthrough to Maddy
 :587 {
   route {
     proxy {
@@ -45,6 +45,9 @@
     X-Frame-Options "SAMEORIGIN"
     Referrer-Policy "strict-origin-when-cross-origin"
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Access-Control-Allow-Origin "*"
+    Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers "Authorization, Content-Type"
     -Server
   }
 }
@@ -104,8 +107,25 @@
   # SUBDOMAIN ROUTES (from routes[])
   # ════════════════════════════════════════════════════════════
 
-  # VS Code IDE (ide.diegonmarcos.com)
-  ide.diegonmarcos.com {
+  # Authelia itself — no forward_auth loop
+  auth.diegonmarcos.com {
+import security
+import request_limits
+
+
+        reverse_proxy 10.0.0.1:9091
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Radicale CalDAV/CardDAV
+  cal.diegonmarcos.com {
 import security
 import request_limits
 
@@ -117,14 +137,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:8443
+    reverse_proxy 10.0.0.6:5232
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:8443
+    reverse_proxy 10.0.0.6:5232
   }
 
     handle_errors {
@@ -137,45 +157,14 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Grist spreadsheet/database (sheets.diegonmarcos.com)
-  sheets.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3011
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3011
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Mattermost team chat with ntfy bridge and C3 command bot
+  # Mattermost team chat
   chat.diegonmarcos.com {
 import security
 import request_limits
 
-
+handle /api/v4/* {
+  reverse_proxy 10.0.0.6:8065
+}
       @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth 10.0.0.1:4182 {
@@ -203,7 +192,7 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # PhotoPrism AI-powered photo management (oci-flex-1)
+  # PhotoPrism
   photos.diegonmarcos.com {
 import security
 import request_limits
@@ -246,83 +235,7 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)
-  cal.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:5232
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:5232
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # SnappyMail webmail client (mail.diegonmarcos.com/webmail)
-  webmail.diegonmarcos.com {
-import security
-import request_limits
-
-# Root path → landing page (proxied, keeps our domain)
-@root path /
-handle @root {
-  rewrite * /mymail{uri}
-reverse_proxy https://diegonmarcos.github.io {
-  header_up Host diegonmarcos.github.io
-}
-
-}
-
-# All other paths → auth + upstream
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.3:8888
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.3:8888
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)
+  # HTTP-to-SMTP bridge for CF Email Routing
   smtp.diegonmarcos.com {
 import security
 import request_limits
@@ -339,98 +252,7 @@ import request_limits
 }
   }
 
-  # Stalwart Mail Server (mail.diegonmarcos.com)
-  mail.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy https://10.0.0.3:443 {
-      transport http {
-  tls_insecure_skip_verify
-}
-    }
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy https://10.0.0.3:443 {
-      transport http {
-  tls_insecure_skip_verify
-}
-    }
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Bitwarden password manager
-  vault.diegonmarcos.com {
-import security
-import request_limits
-
-
-        reverse_proxy 10.0.0.1:8880
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # SSO and 2FA authentication portal
-  auth.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.1:9091
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.1:9091
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Dagu - Lightweight DAG-based workflow scheduler
+  # Dagu workflow scheduler
   workflows.diegonmarcos.com {
 import security
 import request_limits
@@ -463,8 +285,8 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)
-  grafana.diegonmarcos.com {
+  # Code Server IDE
+  ide.diegonmarcos.com {
 import security
 import request_limits
 
@@ -476,14 +298,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3200
+    reverse_proxy 10.0.0.6:8443
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3200
+    reverse_proxy 10.0.0.6:8443
   }
 
     handle_errors {
@@ -496,7 +318,7 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # NocoDB database spreadsheet (nocodb.diegonmarcos.com)
+  # NocoDB
   db.diegonmarcos.com {
 import security
 import request_limits
@@ -529,8 +351,8 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Windmill workflow orchestration (windmill.diegonmarcos.com)
-  windmill.diegonmarcos.com {
+  # Grist Sheets
+  sheets.diegonmarcos.com {
 import security
 import request_limits
 
@@ -542,14 +364,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:8000
+    reverse_proxy 10.0.0.6:3011
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:8000
+    reverse_proxy 10.0.0.6:3011
   }
 
     handle_errors {
@@ -562,29 +384,13 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Self-hosted Gitea for git backups and mirroring
-  git.diegonmarcos.com {
+  # Vaultwarden password manager — own auth, Caddy → private backend
+  vault.diegonmarcos.com {
 import security
 import request_limits
 
 
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3002
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3002
-  }
-
+        reverse_proxy 10.0.0.1:8880
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -707,10 +513,139 @@ reverse_proxy https://diegonmarcos.github.io {
   # PATH-BASED ROUTES (from path_routes[])
   # ════════════════════════════════════════════════════════════
 
-  # App hub -- path-based routing
+  # API hub — path-based routing to backend APIs
+  api.diegonmarcos.com {
+import security
+import request_limits
+@root path /
+handle @root {
+  rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+@dash_bare path /dash
+handle @dash_bare {
+  redir {path}/ permanent
+}
+
+handle_path /dash/* {
+  rewrite * /mcp-api-swagger/{path}
+  reverse_proxy https://diegonmarcos.github.io {
+    header_up Host diegonmarcos.github.io
+  }
+}
+handle /c3-api/docs/json {
+  uri strip_prefix /c3-api
+  reverse_proxy 10.0.0.6:8081
+}
+handle_path /c3-api/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8081
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8081
+  }
+
+}
+handle /services/docs/json {
+  uri strip_prefix /services
+  reverse_proxy 10.0.0.6:8082
+}
+handle_path /services/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8082
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8082
+  }
+
+}
+handle /crawlee/openapi.json {
+  uri strip_prefix /crawlee
+  reverse_proxy 10.0.0.6:3000
+}
+handle_path /crawlee/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:3000
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:3000
+  }
+
+}
+handle {
+  rewrite * /api{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+}
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # App hub — path-based routing
   app.diegonmarcos.com {
 import security
 import request_limits
+
+handle_path /windmill/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8000
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8000
+  }
+
+}
 
 handle_path /etherpad/* {
     @bearer header Authorization Bearer*
@@ -812,26 +747,6 @@ forward_auth 10.0.0.1:9091 {
 
 }
 
-handle_path /windmill/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8000
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8000
-  }
-
-}
-
 handle_path /grafana/* {
     @bearer header Authorization Bearer*
   handle @bearer {
@@ -904,106 +819,6 @@ handle {
 }
   }
 
-  # API hub -- path-based routing to backend APIs
-  api.diegonmarcos.com {
-import security
-import request_limits
-@root path /
-handle @root {
-  rewrite * /api{uri}
-reverse_proxy https://diegonmarcos.github.io {
-  header_up Host diegonmarcos.github.io
-}
-
-}
-
-handle_path /crawlee/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3000
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3000
-  }
-
-}
-
-handle_path /c3-api/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8081
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8081
-  }
-
-}
-
-handle_path /services/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8082
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8082
-  }
-
-}
-@dash_bare path /dash
-handle @dash_bare {
-  redir {path}/ permanent
-}
-
-handle_path /dash/* {
-  rewrite * /dash/{path}
-  reverse_proxy https://diegonmarcos.github.io {
-    header_up Host diegonmarcos.github.io
-  }
-}
-handle {
-  rewrite * /api{uri}
-reverse_proxy https://diegonmarcos.github.io {
-  header_up Host diegonmarcos.github.io
-}
-
-}
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
   # Cloud dashboard + spec viewer
   cloud.diegonmarcos.com {
 import security
@@ -1015,6 +830,10 @@ reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
 }
 
+}
+@spec_bare path /spec
+handle @spec_bare {
+  redir {path}/ permanent
 }
 
 handle_path /spec/* {
@@ -1058,25 +877,10 @@ reverse_proxy https://diegonmarcos.github.io {
   # MCP ROUTES (from mcp_routes[])
   # ════════════════════════════════════════════════════════════
 
-  # MCP -- Streamable HTTP endpoints for Claude Code MCP clients
+  # MCP — Streamable HTTP endpoints for Claude Code MCP clients
   mcp.diegonmarcos.com {
 import security
 import request_limits
-handle_path /g-workspace/* {
-  reverse_proxy 10.0.0.6:3104 {
-    flush_interval -1
-  }
-}
-handle_path /mail-mcp/* {
-  reverse_proxy 10.0.0.6:3103 {
-    flush_interval -1
-  }
-}
-handle_path /mattermost-mcp/* {
-  reverse_proxy 10.0.0.6:3102 {
-    flush_interval -1
-  }
-}
 handle_path /c3-infra-mcp/* {
   reverse_proxy 10.0.0.6:3100 {
     flush_interval -1
@@ -1087,14 +891,44 @@ handle_path /c3-services-mcp/* {
     flush_interval -1
   }
 }
-handle_path /cloud-cgc-mcp/* {
-  reverse_proxy 10.0.0.6:3105 {
+handle_path /mattermost-mcp/* {
+  reverse_proxy 10.0.0.6:3102 {
+    flush_interval -1
+  }
+}
+handle_path /mail-mcp/* {
+  reverse_proxy 10.0.0.6:3103 {
+    flush_interval -1
+  }
+}
+handle_path /g-workspace/* {
+  reverse_proxy 10.0.0.6:3104 {
     flush_interval -1
   }
 }
     handle {
-      respond "MCP Hub -- use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp" 200
+      respond "MCP Hub — use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp" 200
     }
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
+  # ════════════════════════════════════════════════════════════
+  # REDIRECTS (from redirects[])
+  # ════════════════════════════════════════════════════════════
+
+  # Legacy webmail subdomain → mail hub
+  webmail.diegonmarcos.com {
+import security
+import request_limits
+    redir https://mail.diegonmarcos.com/ permanent
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -1110,6 +944,113 @@ handle_path /cloud-cgc-mcp/* {
   # SPECIAL ROUTES (from special{})
   # ════════════════════════════════════════════════════════════
 
+  # Mail hub — landing page + /webmail → SnappyMail + /servermail → static info
+  mail.diegonmarcos.com {
+import security
+import request_limits
+    # / → landing page (PUBLIC — no auth)
+    @root path /
+    handle @root {
+      rewrite * /mymail{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    }
+
+    # /servermail → Maddy info (PUBLIC — static HTML baked in image)
+    handle /servermail/config {
+      root * /srv/mail
+      rewrite * /servermail-config.html
+      file_server
+    }
+    handle /servermail* {
+      root * /srv/mail
+      rewrite * /servermail.html
+      file_server
+    }
+
+    # /webmail → SnappyMail (AUTH, strip prefix so SnappyMail sees /)
+    handle_path /webmail/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+
+    }
+    handle_path /webmail {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+
+    }
+
+    # /snappymail/... → SnappyMail assets (AUTH, no strip — direct proxy)
+    handle /snappymail/* {
+        @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8888
+  }
+
+    }
+
+    # Catch-all → landing page
+    handle {
+      rewrite * /mymail{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+
   # Matomo (public tracking + protected admin) + Umami (path-based)
   analytics.diegonmarcos.com {
 import security
@@ -1119,7 +1060,7 @@ import request_limits
       path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
     }
     handle @tracking {
-      reverse_proxy 10.0.0.4:8084
+      reverse_proxy 10.0.0.4:8080
     }
 
     # Umami Analytics (path-based, strip /umami prefix before proxying)
@@ -1128,7 +1069,7 @@ import request_limits
     }
     handle @umami_public {
       uri strip_prefix /umami
-      reverse_proxy 10.0.0.4:3006
+      reverse_proxy 10.0.0.4:3000
     }
     handle_path /umami/* {
       @umami_bearer header Authorization Bearer*
@@ -1138,14 +1079,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-        reverse_proxy 10.0.0.4:3006
+        reverse_proxy 10.0.0.4:3000
       }
       handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-        reverse_proxy 10.0.0.4:3006
+        reverse_proxy 10.0.0.4:3000
       }
     }
     @umami_root path /umami
@@ -1161,14 +1102,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.4:8084
+    reverse_proxy 10.0.0.4:8080
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.4:8084
+    reverse_proxy 10.0.0.4:8080
   }
 
 
@@ -1183,7 +1124,7 @@ forward_auth 10.0.0.1:9091 {
   }
 
 
-  # ntfy notifications -- 3-tier auth: JWT bearer, tk_ bearer, cookie
+  # ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia
   rss.diegonmarcos.com {
 import security
 import request_limits
@@ -1267,299 +1208,6 @@ forward_auth 10.0.0.1:9091 {
   # No auth, no TLS — WireGuard mesh is the trust boundary
   # ════════════════════════════════════════════════════════════
 
-code-server.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8443
-}
-
-etherpad.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3012
-}
-
-filebrowser.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3015
-}
-
-g-workspace-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3104
-}
-
-grist.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3011
-}
-
-hedgedoc.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3018
-}
-
-mail-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3103
-}
-
-mattermost.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8065
-}
-
-mattermost-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3102
-}
-
-photoprism.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3013
-}
-
-photos-webhook.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:5002
-}
-
-radicale.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:5232
-}
-
-revealmd.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3014
-}
-
-snappymail.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:8888
-}
-
-smtp-proxy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:8080
-}
-
-stalwart.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:443
-}
-
-vaultwarden.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:8880
-}
-
-crawlee.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3000
-}
-
-ollama.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.8:11434
-}
-
-ollama-hai.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:11435
-}
-
-rig-agentic-sonn-14bq8.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8091
-}
-
-hickory-dns.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:53
-}
-
-authelia.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:9091
-}
-
-caddy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:443
-}
-
-introspect-proxy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:4182
-}
-
-alerts-api.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:5050
-}
-
-c3-infra-api.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8081
-}
-
-c3-infra-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3100
-}
-
-c3-services-api.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8082
-}
-
-c3-services-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3101
-}
-
-cloud-cgc-mcp.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3105
-}
-
-c3-spec.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3080
-}
-
-dagu.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:8070
-}
-
-dozzle.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:9999
-}
-
-fluent-bit.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:2020
-}
-
-grafana.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3200
-}
-
-matomo.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:8084
-}
-
-nocodb.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8085
-}
-
-ntfy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:8090
-}
-
-umami.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:3006
-}
-
-windmill-app.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8000
-}
-
-backup-gitea.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3002
-}
-
-gitea.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3002
-}
-
-redis.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:6379
-}
-
-oci-mail.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:7681
-}
-
-oci-analytics.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:7681
-}
-
-oci-apps.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:7681
-}
-
-gcp-t4.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.8:7681
-}
-
-gcp-proxy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:7681
-}
 
 
   # ════════════════════════════════════════════════════════════

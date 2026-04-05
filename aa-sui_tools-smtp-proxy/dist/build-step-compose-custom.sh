@@ -22,5 +22,5 @@ echo "  all pulls done"
 
 # --- smtp-proxy ---
 docker rm -f smtp-proxy 2>/dev/null || true
-docker run -d --name smtp-proxy --label com.docker.compose.project=smtp-proxy --label com.docker.compose.service=smtp-proxy --network host -e "API_KEY=stalwart-proxy-key-2025" -e "LISTEN_PORT=8080" -e "SMTP_HOST=localhost" -e "SMTP_PORT=25" ghcr.io/diegonmarcos/smtp-proxy:latest
+docker run -d --name smtp-proxy --label com.docker.compose.project=smtp-proxy --label com.docker.compose.service=smtp-proxy --network host --env-file .secrets -e "LISTEN_PORT=8080" -e "SMTP_HOST=localhost" -e "SMTP_PORT=25" ghcr.io/diegonmarcos/smtp-proxy:latest
 echo "  started: smtp-proxy"
