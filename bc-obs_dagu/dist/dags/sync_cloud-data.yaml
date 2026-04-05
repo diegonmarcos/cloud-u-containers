@@ -1,4 +1,4 @@
-schedule: "*/5 * * * *"
+# No schedule — triggered by ntfy-dagu-bridge sidecar on GitHub push webhook
 env:
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - C3_API: http://10.0.0.6:8081
@@ -114,7 +114,7 @@ steps:
       fetch_consolidated
 
       # ── Fetch all per-consumer endpoints ────────────────────────
-      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config home-manager"
+      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config containers-gcp-proxy containers-oci-mail containers-oci-analytics containers-oci-apps containers-gcp-t4"
 
       OK=0
       SKIP=0

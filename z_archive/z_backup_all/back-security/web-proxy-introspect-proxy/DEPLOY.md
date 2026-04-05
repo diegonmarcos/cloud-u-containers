@@ -53,7 +53,7 @@ Ensure the `cli` client is configured in Authelia with introspection enabled:
 
 - client_id: 'cli'
   client_name: 'CLI Client'
-  client_secret: '$pbkdf2-sha512$...'  # Hash of: cli-secret-2026-secure-token-for-automation
+  client_secret: '$pbkdf2-sha512$...'  # Hash of: <redacted-secret>
   public: false
   authorization_policy: 'two_factor'
   scopes:
@@ -103,7 +103,7 @@ gcloud compute ssh arch-1 --zone us-central1-a
 
 # To redeploy:
 cd /opt/introspect-proxy
-echo 'AUTHELIA_CLI_SECRET=cli-secret-2026-secure-token-for-automation
+echo 'AUTHELIA_CLI_SECRET=<redacted-secret>
 DEBUG=true' > .env
 docker-compose down && docker-compose up -d
 
@@ -173,7 +173,7 @@ curl -sk --resolve 'analytics.diegonmarcos.com:443:127.0.0.1' \
 TOKEN=$(jq -r .access_token ~/authelia_tokens.json)
 
 curl -s -X POST https://auth.diegonmarcos.com/api/oidc/introspection \
-  -u "cli:cli-secret-2026-secure-token-for-automation" \
+  -u "cli:<redacted-secret>" \
   -d "token=$TOKEN"
 
 # Returns: {"active": true, "username": "me@diegonmarcos.com", ...}
@@ -191,7 +191,7 @@ open "https://auth.diegonmarcos.com/api/oidc/authorization?client_id=cli&respons
 
 # 3. Exchange code for tokens
 curl -X POST https://auth.diegonmarcos.com/api/oidc/token \
-  -u "cli:cli-secret-2026-secure-token-for-automation" \
+  -u "cli:<redacted-secret>" \
   -d "grant_type=authorization_code&code=<CODE>&redirect_uri=http://localhost:8085/callback"
 
 # 4. Save and use access_token from response

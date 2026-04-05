@@ -1,36 +1,31 @@
 {
-  "_generated": "2026-03-31T22:41:13.734Z",
-  "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/gha-config",
+  "_generated": "2026-04-03T03:50:11.372Z",
+  "_source": "config.json + build.json via /cloud-data/gha-config",
   "vms": {
     "oci-mail": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "130.110.251.193",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.3"
+      "user": "ubuntu"
     },
     "oci-analytics": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "129.151.228.66",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.4"
+      "user": "ubuntu"
     },
     "oci-apps": {
       "ssh_secret": "OCI_SSH_KEY",
       "host": "82.70.229.129",
-      "user": "ubuntu",
-      "wg_ip": "10.0.0.6"
+      "user": "ubuntu"
     },
     "gcp-t4": {
       "ssh_secret": "GCP_T4_SSH_KEY",
       "host_secret": "GCP_T4_HOST",
-      "user_secret": "GCP_T4_USER",
-      "wg_ip": "10.0.0.8"
+      "user_secret": "GCP_T4_USER"
     },
     "gcp-proxy": {
       "ssh_secret": "GCP_PROXY_SSH_KEY",
       "host_secret": "GCP_PROXY_HOST",
-      "user_secret": "GCP_PROXY_USER",
-      "host": "35.226.147.64"
+      "user_secret": "GCP_PROXY_USER"
     }
   },
   "services": {
@@ -102,7 +97,7 @@
     "snappymail": {
       "dir": "aa-sui_snappymail",
       "vm": "oci-mail",
-      "has_docker": false
+      "has_docker": true
     },
     "smtp-proxy": {
       "dir": "aa-sui_tools-smtp-proxy",
@@ -112,7 +107,7 @@
     "stalwart": {
       "dir": "aa-sui_tools-stalwart",
       "vm": "oci-mail",
-      "has_docker": false
+      "has_docker": true
     },
     "vaultwarden": {
       "dir": "ab-mic_vaultwarden",
@@ -217,12 +212,12 @@
     "dozzle": {
       "dir": "bc-obs_dozzle",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "fluent-bit": {
       "dir": "bc-obs_fluent-bit",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "lgtm": {
       "dir": "bc-obs_lgtm",
@@ -247,17 +242,17 @@
     "sauron-forwarder": {
       "dir": "bc-obs_sauron-forwarder",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "syslog-forwarder": {
       "dir": "bc-obs_syslog-forwarder",
       "vm": "oci-mail",
-      "has_docker": false
+      "has_docker": true
     },
     "umami": {
       "dir": "bc-obs_umami",
       "vm": "oci-analytics",
-      "has_docker": false
+      "has_docker": true
     },
     "windmill": {
       "dir": "bc-obs_windmill",

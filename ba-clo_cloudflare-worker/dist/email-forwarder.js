@@ -1,9 +1,7 @@
-// Cloudflare Email Worker - Dual-copy inbound email
-// Copy 1: ALWAYS fire to Mailu via smtp-proxy (fire-and-forget, zero delay)
-// Copy 2: In parallel, check /reach/smtp-proxy — if route is broken, forward to backup
-//
-// Three tiers: /up (alive) → /health (healthy) → /reach (route works)
-// We use /reach because it tests the actual path: Cloudflare → Caddy → smtp-proxy
+// Cloudflare Email Worker - Triple-delivery inbound email
+// Copy 1: ALWAYS → Stalwart via smtp-proxy (self-hosted primary)
+// Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
+// Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
 
 export default {
   async email(message, env, ctx) {
@@ -13,41 +11,36 @@ export default {
 
     const rawEmail = await new Response(message.raw).text();
 
-    // Fire both in parallel: deliver to Mailu + check route reachability
-    const [delivered, reachable] = await Promise.all([
-      deliverToMailu(rawEmail, env),
-      checkReach(env),
+    // Fire all three in parallel: Stalwart + Google + health check
+    const [stalwartOk, googleOk, healthy] = await Promise.all([
+      deliverToStalwart(rawEmail, env),
+      deliverToGoogle(rawEmail, env),
+      checkMailHealth(env),
     ]);
 
-    if (delivered) {
-      console.log(`Email delivered to Mailu via SMTP proxy`);
-      if (!reachable) {
-        // Delivered but route is flaky — send insurance copy
-        ctx.waitUntil(forwardBackup(message, env, 'route unreachable but delivery succeeded'));
-      }
+    console.log(`Results: stalwart=${stalwartOk}, google=${googleOk}, healthy=${healthy}`);
+
+    // If health check says unhealthy, send disaster backup to live.com
+    if (!healthy) {
+      ctx.waitUntil(forwardToBackup(message, env, `mail health: unhealthy, stalwart=${stalwartOk}`));
+    }
+
+    // Accept the email if at least one delivery succeeded
+    if (stalwartOk || googleOk) {
       return;
     }
 
-    // Delivery failed — forward to backup
-    console.warn(`Mailu delivery failed (reachable=${reachable}) — forwarding to backup`);
-    if (env.BACKUP_EMAIL) {
-      try {
-        await message.forward(env.BACKUP_EMAIL);
-        console.log(`Email forwarded to backup: ${env.BACKUP_EMAIL}`);
-      } catch (e) {
-        console.error(`Backup forward failed: ${e.message}`);
-        message.setReject(`Delivery failed: ${e.message}`);
-      }
-    } else {
-      message.setReject(`Primary delivery failed and no backup configured`);
-    }
+    // Both failed — reject with error
+    console.error(`All deliveries failed — rejecting`);
+    message.setReject(`Primary (Stalwart) and secondary (Google) delivery both failed`);
   }
 };
 
-async function deliverToMailu(rawEmail, env) {
+// ── Stalwart delivery via smtp-proxy ────────────────────────────────
+async function deliverToStalwart(rawEmail, env) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(env.SMTP_PROXY_URL, {
       method: 'POST',
       headers: {
@@ -59,43 +52,155 @@ async function deliverToMailu(rawEmail, env) {
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      console.error(`SMTP proxy error: ${response.status} ${await response.text()}`);
+      console.error(`Stalwart smtp-proxy error: ${response.status} ${await response.text()}`);
       return false;
     }
+    console.log(`Stalwart: delivered via smtp-proxy`);
     return true;
   } catch (e) {
-    console.error(`SMTP proxy failed: ${e.message}`);
+    console.error(`Stalwart smtp-proxy failed: ${e.message}`);
     return false;
   }
 }
 
-async function checkReach(env) {
+// ── Google Workspace delivery via Gmail API + Service Account JWT ────
+async function deliverToGoogle(rawEmail, env) {
+  try {
+    const accessToken = await getGoogleAccessToken(env);
+    if (!accessToken) {
+      console.error('Google: failed to get access token');
+      return false;
+    }
+
+    // base64url-encode the raw email for Gmail API
+    const rawB64 = base64urlEncode(new TextEncoder().encode(rawEmail));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const resp = await fetch(
+      `https://gmail.googleapis.com/upload/gmail/v1/users/${env.GOOGLE_EMAIL}/messages/import?uploadType=media`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'message/rfc822',
+        },
+        body: rawEmail,
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error(`Google Gmail API error: ${resp.status} ${err}`);
+      return false;
+    }
+    const result = await resp.json();
+    console.log(`Google: injected via Gmail API, id=${result.id}`);
+    return true;
+  } catch (e) {
+    console.error(`Google Gmail API failed: ${e.message}`);
+    return false;
+  }
+}
+
+// Sign a JWT with RS256 and exchange for a Google access token
+async function getGoogleAccessToken(env) {
+  const now = Math.floor(Date.now() / 1000);
+  const claims = {
+    iss: env.GOOGLE_SA_EMAIL,
+    sub: env.GOOGLE_EMAIL,
+    scope: 'https://www.googleapis.com/auth/gmail.modify',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const headerB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(header)));
+  const claimsB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(claims)));
+  const unsignedToken = `${headerB64}.${claimsB64}`;
+
+  // Import the PEM private key
+  const key = await importPrivateKey(env.GOOGLE_SA_KEY);
+  const signature = await crypto.subtle.sign(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    new TextEncoder().encode(unsignedToken)
+  );
+  const signatureB64 = base64urlEncode(new Uint8Array(signature));
+  const jwt = `${unsignedToken}.${signatureB64}`;
+
+  // Exchange JWT for access token
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error(`Google token exchange failed: ${resp.status} ${err}`);
+    return null;
+  }
+  const data = await resp.json();
+  return data.access_token;
+}
+
+// Import a PEM RSA private key for Web Crypto API
+async function importPrivateKey(pem) {
+  const pemBody = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s/g, '');
+  const binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
+  return crypto.subtle.importKey(
+    'pkcs8',
+    binaryDer.buffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+}
+
+// base64url encoding (no padding)
+function base64urlEncode(data) {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ── Health check ────────────────────────────────────────────────────
+async function checkMailHealth(env) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const resp = await fetch(env.C3_REACH_URL, {
+    const resp = await fetch(env.C3_HEALTH_URL, {
       headers: { 'Authorization': `Bearer ${env.C3_BEARER_TOKEN}` },
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
     if (!resp.ok) {
-      console.warn(`Reach check returned ${resp.status}`);
+      console.warn(`Health check returned ${resp.status}`);
       return false;
     }
     const data = await resp.json();
-    console.log(`Reach: reachable=${data.reachable}, https=${data.https?.ok}, latency=${data.latencyMs}ms`);
-    return data.reachable;
+    console.log(`Health: status=${data.status}, reachable=${data.reachable}`);
+    return data.status === 'healthy' || data.reachable === true;
   } catch (e) {
-    console.warn(`Reach check failed: ${e.message}`);
+    console.warn(`Health check failed: ${e.message}`);
     return false;
   }
 }
 
-async function forwardBackup(message, env, reason) {
+// ── Disaster backup to live.com ─────────────────────────────────────
+async function forwardToBackup(message, env, reason) {
   try {
     await message.forward(env.BACKUP_EMAIL);
-    console.log(`Insurance copy sent to ${env.BACKUP_EMAIL} (reason: ${reason})`);
+    console.log(`Backup: forwarded to ${env.BACKUP_EMAIL} (reason: ${reason})`);
   } catch (e) {
-    console.warn(`Insurance copy failed: ${e.message}`);
+    console.warn(`Backup forward failed: ${e.message}`);
   }
 }

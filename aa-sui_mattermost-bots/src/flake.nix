@@ -1124,8 +1124,8 @@
           {"username": "claude-haiku-ai", "display_name": "Claude Haiku", "email": "claude-haiku@diegonmarcos.com"},
       ]
 
-      def create_claude_users(admin_headers, team_id, all_channel_ids):
-          """Create Claude AI user accounts (regular users) and add to team + channels."""
+      def create_claude_users(admin_headers, team_id, all_channel_ids, ntfy_channel_ids=None):
+          """Create Claude AI user accounts (regular users) and add to team + channels + sidebar categories."""
           password = os.environ.get("MM_CLAUDE_PASSWORD")
           if not password:
               log.warning("MM_CLAUDE_PASSWORD not set — skipping Claude user creation")
@@ -1158,6 +1158,9 @@
               for ch_id in all_channel_ids:
                   mm_api("POST", f"/channels/{ch_id}/members", admin_headers, json={"user_id": uid})
               log.info("Added %s to team + %d channels", info["username"], len(all_channel_ids))
+              # Set up ntfy sidebar category for this Claude user
+              if ntfy_channel_ids:
+                  sync_sidebar_category(admin_headers, uid, team_id, ntfy_channel_ids)
 
 
       # ── Ollama AI ─────────────────────────────────────────────
@@ -1629,8 +1632,8 @@
                   if ch.get("type") == "G" and ch["id"] not in all_channel_ids:
                       all_channel_ids.append(ch["id"])
 
-          # Create Claude user accounts
-          create_claude_users(headers, team_id, all_channel_ids)
+          # Create Claude user accounts (with ntfy sidebar categories)
+          create_claude_users(headers, team_id, all_channel_ids, ntfy_channel_ids)
 
           # Create c3-bot account and start WebSocket DM listener
           bot_user_id, bot_token = create_bot(headers, team_id)

@@ -14,7 +14,7 @@ REPORT_JSON="$REPORT_DIR/health-report-${TIMESTAMP}.json"
 TO_EMAIL="me@diegonmarcos.com"
 FROM_EMAIL="no-reply@diegonmarcos.com"
 SMTP_PROXY_URL="${SMTP_PROXY_URL:-http://smtp.diegonmarcos.com:8080/}"
-SMTP_PROXY_KEY="${SMTP_PROXY_KEY:-stalwart-proxy-key-2025}"
+SMTP_PROXY_KEY="${SMTP_PROXY_KEY:-<redacted-api-key>}"
 
 # Source configuration
 source /app/config/endpoints.conf 2>/dev/null || true

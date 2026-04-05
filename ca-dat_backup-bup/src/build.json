@@ -1,9 +1,1 @@
-{
-  "name": "backup-bup",
-  "description": "Database Backups SSH Server (bup)",
-  "category": "data",
-  "deploy": {
-    "host": "oci-apps",
-    "remote_path": "/opt/containers/backup-bup"
-  }
-}
+../build.json

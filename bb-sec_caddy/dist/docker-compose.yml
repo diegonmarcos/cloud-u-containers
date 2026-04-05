@@ -16,6 +16,8 @@ services:
         COPY error.html /srv/error.html
         COPY dashboard.html /srv/dashboard.html
         COPY ntfy-setup.html /srv/ntfy-setup.html
+        COPY servermail.html /srv/mail/servermail.html
+        COPY servermail-config.html /srv/mail/servermail-config.html
         COPY wkd /srv/wkd
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"

@@ -27,7 +27,6 @@ services:
       - .secrets
     environment:
       - DAGU_HOST=0.0.0.0
-      - DAGU_PORT=8070
       - DAGU_DAGS_DIR=/var/lib/dagu/dags
       - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
       - DAGU_AUTH_MODE=basic
@@ -39,6 +38,7 @@ services:
       - AUTHELIA_OIDC_CLIENT_ID=dagu-cc
       - AUTHELIA_OIDC_CLIENT_SECRET=${AUTHELIA_OIDC_DAGU_SECRET}
       - AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token
+      - DAGU_PORT=8070
     volumes:
       - dagu_data:/var/lib/dagu/data
       - /opt/ssh-keys/dagu:/root/.ssh:ro
@@ -46,7 +46,10 @@ services:
       resources:
         limits:
           memory: 256m
+          cpus: "1.0"
           pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

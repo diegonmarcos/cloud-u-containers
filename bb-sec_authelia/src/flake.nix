@@ -24,14 +24,13 @@
     title = "Authelia 2FA Authentication";
     docker = import ../../_shared/docker.nix;
 
-    # GHCR image: bake config templates + init script into image
-    # init.sh substitutes secrets at container start
+    # GHCR image: bake config + init script into image
+    # init.sh maps env var names to Authelia-native names, then exec authelia
     ghcr = docker.mkGhcrBuild {
       name = "authelia";
       fromImage = "authelia/authelia:4.39.15";
       configFiles = [
-        { src = "config/configuration.yml.tpl"; dst = "/config/configuration.yml.tpl"; }
-        { src = "config/users_database.yml.tpl"; dst = "/config/users_database.yml.tpl"; }
+        { src = "config/configuration.yml"; dst = "/config/configuration.yml"; }
         { src = "config/init.sh"; dst = "/config/init.sh"; }
       ];
     };
@@ -50,38 +49,34 @@
     # A plain rule (no resources_*) produces a single rule with domain+policy
     lib = nixpkgs.lib;
 
-    # Generate YAML rules — indentation relative to the rules: key in the template
-    # The template has `rules:\n${accessControlYaml}` at 6-space indent
+    # Generate YAML rules with exact indentation for the output YAML
+    # Rules appear under `rules:` at 6-space indent in the final config
+    ind = "      ";  # 6 spaces for list items
+    ind2 = "        ";  # 8 spaces for properties
+    ind3 = "          ";  # 10 spaces for nested lists
+
     mkResourceLines = resources:
-      lib.concatMapStringsSep "\n" (r: "          - \"${r}\"") resources;
+      lib.concatMapStringsSep "\n" (r: "${ind3}- \"${r}\"") resources;
 
     mkRuleYaml = rule:
       let
         hasBypass = rule ? resources_bypass && rule.resources_bypass != [];
         hasTwoFactor = rule ? resources_two_factor && rule.resources_two_factor != [];
         plainRule =
-          if !hasBypass && !hasTwoFactor then ''
-          - domain: '${rule.domain}'
-            policy: ${rule.policy}''
+          if !hasBypass && !hasTwoFactor
+          then "${ind}- domain: '${rule.domain}'\n${ind2}policy: ${rule.policy}"
           else "";
         bypassRule =
-          if hasBypass then ''
-          - domain: '${rule.domain}'
-            resources:
-${mkResourceLines rule.resources_bypass}
-            policy: bypass''
+          if hasBypass
+          then "${ind}- domain: '${rule.domain}'\n${ind2}resources:\n${mkResourceLines rule.resources_bypass}\n${ind2}policy: bypass"
           else "";
         twoFactorRule =
-          if hasTwoFactor then ''
-          - domain: '${rule.domain}'
-            resources:
-${mkResourceLines rule.resources_two_factor}
-            policy: two_factor''
+          if hasTwoFactor
+          then "${ind}- domain: '${rule.domain}'\n${ind2}resources:\n${mkResourceLines rule.resources_two_factor}\n${ind2}policy: two_factor"
           else "";
         baseRule =
-          if hasBypass && rule ? policy && rule.policy != "" then ''
-          - domain: '${rule.domain}'
-            policy: ${rule.policy}''
+          if hasBypass && rule ? policy && rule.policy != ""
+          then "${ind}- domain: '${rule.domain}'\n${ind2}policy: ${rule.policy}"
           else "";
         parts = builtins.filter (s: s != "") [ bypassRule twoFactorRule baseRule plainRule ];
       in lib.concatStringsSep "\n" parts;
@@ -135,9 +130,9 @@ ${mkResourceLines rule.resources_two_factor}
       };
     };
 
-    # Generate authelia configuration.yml template
-    # Secrets use ''${VAR} placeholders, substituted by init.sh via envsubst
-    mkAutheliaConfig = pkgs: pkgs.writeText "configuration.yml.tpl" ''
+    # Generate authelia configuration.yml (final config — no secret placeholders)
+    # All secrets are provided via Authelia-native env vars (mapped by init.sh)
+    mkAutheliaConfig = pkgs: pkgs.writeText "configuration.yml" ''
       ---
       theme: dark
 
@@ -163,10 +158,6 @@ ${mkResourceLines rule.resources_two_factor}
       log:
         level: info
 
-      identity_validation:
-        reset_password:
-          jwt_secret: ''\${AUTHELIA_JWT_SECRET}
-
       authentication_backend:
         file:
           path: /config/users_database.yml
@@ -177,18 +168,12 @@ ${mkResourceLines rule.resources_two_factor}
         rules:
           - domain: ${config.domain}
             policy: bypass
-          - domain: db.${config.base_domain}
-            resources:
-              - "^/api/.*"
-            policy: bypass
-          - domain: db.${config.base_domain}
-            policy: two_factor
+    ${accessControlYaml}
           - domain: "*.${config.base_domain}"
             policy: two_factor
 
       session:
         name: authelia_session
-        secret: ''\${AUTHELIA_SESSION_SECRET}
         cookies:
           - name: authelia_session
             domain: ${config.base_domain}
@@ -198,7 +183,6 @@ ${mkResourceLines rule.resources_two_factor}
             remember_me: 30d
         redis:
           host: localhost
-          password: ''\${AUTHELIA_REDIS_PASSWORD}
           port: ${config.redis_port}
 
       regulation:
@@ -207,7 +191,6 @@ ${mkResourceLines rule.resources_two_factor}
         ban_time: 15m
 
       storage:
-        encryption_key: ''\${AUTHELIA_STORAGE_ENCRYPTION_KEY}
         local:
           path: /data/db.sqlite3
 
@@ -216,7 +199,6 @@ ${mkResourceLines rule.resources_two_factor}
         smtp:
           address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
           username: no-reply@diegonmarcos.com
-          password: ''\${AUTHELIA_SMTP_PASSWORD}
           sender: "Authelia <no-reply@diegonmarcos.com>"
           tls:
             server_name: mail.diegonmarcos.com
@@ -234,7 +216,6 @@ ${mkResourceLines rule.resources_two_factor}
 
       identity_providers:
         oidc:
-          hmac_secret: ''\${AUTHELIA_OIDC_HMAC_SECRET}
           lifespans:
             access_token: 87600h
             refresh_token: 87600h
@@ -242,7 +223,6 @@ ${mkResourceLines rule.resources_two_factor}
             - key_id: main
               algorithm: RS256
               use: sig
-              key: __JWKS_KEY__
           cors:
             endpoints:
               - authorization
@@ -255,7 +235,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: oauth2-proxy-npm
               consent_mode: explicit
               client_name: NPM Proxy Manager
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_NPM_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -274,7 +253,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: nocodb
               consent_mode: explicit
               client_name: NocoDB Database
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_NOCODB_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -293,7 +271,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: cloudflare-health-c3-api
               consent_mode: explicit
               client_name: Cloudflare Worker Health Check
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -319,7 +296,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: claude-admin
               consent_mode: explicit
               client_name: Claude AI Agent
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -346,7 +322,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: cloud-admin
               consent_mode: explicit
               client_name: Cloud Admin
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -374,7 +349,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: claude-opus
               consent_mode: explicit
               client_name: Claude Opus Agent
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -402,7 +376,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: claude-sonnet
               consent_mode: explicit
               client_name: Claude Sonnet Agent
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -430,7 +403,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: claude-haiku
               consent_mode: explicit
               client_name: Claude Haiku Agent
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -458,7 +430,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: dagu-ops
               consent_mode: explicit
               client_name: Dagu Workflow Engine
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_DAGU_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -483,7 +454,6 @@ ${mkResourceLines rule.resources_two_factor}
 
             - client_id: dagu-cc
               client_name: Dagu Service Account
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET}
               public: false
               authorization_policy: one_factor
               grant_types:
@@ -498,7 +468,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: monitoring-read
               consent_mode: explicit
               client_name: Monitoring Read-Only
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MONITORING_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -524,7 +493,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: mattermost-ops
               consent_mode: explicit
               client_name: Mattermost Bot
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -550,7 +518,6 @@ ${mkResourceLines rule.resources_two_factor}
 
             - client_id: mattermost-cc
               client_name: Mattermost Service Account
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET}
               public: false
               authorization_policy: one_factor
               grant_types:
@@ -565,7 +532,6 @@ ${mkResourceLines rule.resources_two_factor}
 
             - client_id: c3-infra-mcp-api
               client_name: C3 Infra MCP API
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET}
               public: false
               grant_types:
                 - client_credentials
@@ -579,7 +545,6 @@ ${mkResourceLines rule.resources_two_factor}
             - client_id: cli
               consent_mode: explicit
               client_name: CLI Access
-              client_secret: ''\${AUTHELIA_OIDC_CLIENT_CLI_SECRET}
               public: false
               authorization_policy: two_factor
               redirect_uris:
@@ -604,24 +569,16 @@ ${mkResourceLines rule.resources_two_factor}
                 - https://diegonmarcos.com/
     '';
 
-    # Users database template (hash comes from .env via envsubst)
-    mkUsersDatabase = pkgs: pkgs.writeText "users_database.yml.tpl" ''
-      ---
-      users:
-        me@diegonmarcos.com:
-          displayname: "Diego"
-          password: "''\${AUTHELIA_USER_DIEGO_HASH}"
-          email: me@diegonmarcos.com
-          groups:
-            - admins
-            - users
-    '';
+    # Users database generated at runtime by init.sh from AUTHELIA_USER_DIEGO_HASH env var
+    # (hash stays in sops-encrypted secrets.yaml, never in source)
 
-    # Init script: envsubst templates → final configs, then start authelia
+    # Init script: map custom env var names → Authelia-native env var names, then exec
+    # No awk/grep/sed — secrets flow via env file + native env var support
     mkInitScript = pkgs: pkgs.writeText "init.sh" ''
       #!/bin/sh
       set -e
 
+<<<<<<< Updated upstream
       # Replace ''${VAR} placeholders with env values using awk (literal string, no regex)
       # Usage: subst <file> VAR1 VAR2 ...
       subst() {
@@ -637,57 +594,66 @@ ${mkResourceLines rule.resources_two_factor}
           mv "$_file.tmp" "$_file"
         done
       }
+||||||| Stash base
+      # Replace ''${VAR} placeholders with env values using awk (literal string, no regex)
+      # Usage: subst <file> VAR1 VAR2 ...
+      subst() {
+        _file="$1"; shift
+        for _var in "$@"; do
+          eval _val="\$$_var"
+          awk -v pat="\''${''${_var}}" -v rep="$_val" '{
+            while (i = index($0, pat)) {
+              $0 = substr($0, 1, i-1) rep substr($0, i+length(pat))
+            }
+            print
+          }' "$_file" > "$_file.tmp"
+          mv "$_file.tmp" "$_file"
+        done
+      }
+=======
+      echo "[init] Mapping env vars to Authelia-native names..."
+>>>>>>> Stashed changes
 
-      echo "[init] Substituting secrets into configuration..."
-      cp /config/configuration.yml.tpl /config/configuration.yml
-      subst /config/configuration.yml \
-        AUTHELIA_JWT_SECRET \
-        AUTHELIA_SESSION_SECRET \
-        AUTHELIA_STORAGE_ENCRYPTION_KEY \
-        AUTHELIA_REDIS_PASSWORD \
-        AUTHELIA_OIDC_HMAC_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLI_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET \
-        AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET \
-        AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
-        AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
-        AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
-        AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET \
-        AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET \
-        AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET \
-        AUTHELIA_OIDC_CLIENT_NPM_SECRET \
-        AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
-        AUTHELIA_SMTP_PASSWORD
+      # Standard secrets (custom name → Authelia native path)
+      export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$AUTHELIA_JWT_SECRET"
+      export AUTHELIA_SESSION_REDIS_PASSWORD="$AUTHELIA_REDIS_PASSWORD"
+      export AUTHELIA_NOTIFIER_SMTP_PASSWORD="$AUTHELIA_SMTP_PASSWORD"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET="$AUTHELIA_OIDC_HMAC_SECRET"
 
-      cp /config/users_database.yml.tpl /config/users_database.yml
-      subst /config/users_database.yml AUTHELIA_USER_DIEGO_HASH
+      # OIDC client secrets (index matches client order in configuration.yml)
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_0_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NPM_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_1_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_2_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_3_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_4_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_5_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_6_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_7_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_8_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_9_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_10_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MONITORING_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_11_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_12_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLI_SECRET"
 
-      # Inject JWKS private key into configuration (POSIX shell — works on BusyBox Alpine)
-      if [ -f /config/oidc_jwks.pem ]; then
-        echo "[init] Injecting OIDC JWKS key into configuration..."
-        LINE=$(grep -n '__JWKS_KEY__' /config/configuration.yml | head -1 | cut -d: -f1)
-        if [ -n "$LINE" ]; then
-          IND=$(sed -n "''${LINE}p" /config/configuration.yml | sed 's/key:.*//')
-          {
-            head -n $((LINE - 1)) /config/configuration.yml
-            printf '%skey: |\n' "$IND"
-            while IFS= read -r pem_line; do
-              printf '%s  %s\n' "$IND" "$pem_line"
-            done < /config/oidc_jwks.pem
-            tail -n +$((LINE + 1)) /config/configuration.yml
-          } > /config/configuration.yml.tmp
-          mv /config/configuration.yml.tmp /config/configuration.yml
-          echo "[init] JWKS key injected successfully"
-        else
-          echo "[init] WARNING: __JWKS_KEY__ placeholder not found"
-        fi
-      else
-        echo "[init] WARNING: /config/oidc_jwks.pem not found — OIDC will not work"
-      fi
+      # JWKS key from mounted file (Authelia reads PEM content via _FILE suffix)
+      export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
+
+      # AUTHELIA_SESSION_SECRET, AUTHELIA_STORAGE_ENCRYPTION_KEY already match native names
+
+      # Generate users database from sops-delivered env var (heredoc is single-pass, safe for $)
+      cat > /config/users_database.yml <<USERDB
+      ---
+      users:
+        me@diegonmarcos.com:
+          displayname: "Diego"
+          password: "$AUTHELIA_USER_DIEGO_HASH"
+          email: me@diegonmarcos.com
+          groups:
+            - admins
+            - users
+      USERDB
 
       echo "[init] Starting Authelia..."
       exec authelia --config /config/configuration.yml
@@ -699,8 +665,7 @@ ${mkResourceLines rule.resources_two_factor}
       defaultPkg = pkgs.runCommand "authelia-configs" {} ''
         mkdir -p $out/config
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
-        cp ${mkAutheliaConfig pkgs} $out/config/configuration.yml.tpl
-        cp ${mkUsersDatabase pkgs} $out/config/users_database.yml.tpl
+        cp ${mkAutheliaConfig pkgs} $out/config/configuration.yml
         cp ${mkInitScript pkgs} $out/config/init.sh
         chmod +x $out/config/init.sh
       '';

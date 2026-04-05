@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-03-31T19:55:58.553Z",
+    "generated_at": "2026-04-02T21:34:28.579Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -31,7 +31,7 @@
       },
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
-      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
+      "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -114,7 +114,7 @@
       },
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
-      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
+      "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -152,7 +152,7 @@
       },
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
+      "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -308,7 +308,7 @@
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
-      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
+      "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "hub",
       "user": "diego",
@@ -461,21 +461,21 @@
         {
           "name": "oci-mail",
           "wg_ip": "10.0.0.3",
-          "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
+          "wg_public_key": null,
           "endpoint": "130.110.251.193:51820",
           "role": "spoke"
         },
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
-          "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
+          "wg_public_key": null,
           "endpoint": "129.151.228.66:51820",
           "role": "spoke"
         },
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
-          "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
+          "wg_public_key": null,
           "endpoint": "82.70.229.129:51820",
           "role": "spoke"
         },
@@ -489,7 +489,7 @@
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
-          "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
+          "wg_public_key": null,
           "endpoint": "35.226.147.64:51820",
           "role": "hub"
         }
@@ -543,6 +543,11 @@
         "nix": "openssh",
         "apt": "openssh-client",
         "desc": "SSH for VM deploy"
+      },
+      "sudo": {
+        "nix": "sudo",
+        "apt": "sudo",
+        "desc": "Privilege escalation for build steps"
       },
       "jq": {
         "nix": "jq",
@@ -3290,7 +3295,7 @@
           "volumes": [
             "/opt/ssh-keys/c3-infra-api:/root/.ssh:ro",
             "/nix/store:/nix/store:ro",
-            "~/.nix-profile/bin:/usr/local/nix-bin:ro",
+            "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro",
             "~/.config/gcloud:/root/.config/gcloud",
             "c3_git_repos:/root/git"
           ],
@@ -3366,7 +3371,7 @@
           "volumes": [
             "/opt/ssh-keys/c3-infra-mcp:/root/.ssh:ro",
             "/nix/store:/nix/store:ro",
-            "~/.nix-profile/bin:/usr/local/nix-bin:ro",
+            "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro",
             "~/.config/gcloud:/root/.config/gcloud",
             "c3_git_repos:/root/git"
           ],
@@ -5919,7 +5924,7 @@
         "vm_id": "oci-E2-f_0",
         "ip": "130.110.251.193",
         "wg_ip": "10.0.0.3",
-        "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
+        "wg_public_key": null,
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -6004,7 +6009,7 @@
         "vm_id": "oci-E2-f_1",
         "ip": "129.151.228.66",
         "wg_ip": "10.0.0.4",
-        "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
+        "wg_public_key": null,
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -6044,7 +6049,7 @@
         "vm_id": "oci-A1-f_0",
         "ip": "82.70.229.129",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
+        "wg_public_key": null,
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -6198,7 +6203,7 @@
         "vm_id": "gcp-E2-f_0",
         "ip": "35.226.147.64",
         "wg_ip": "10.0.0.1",
-        "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
+        "wg_public_key": null,
         "wg_port": 51820,
         "wg_role": "hub",
         "user": "diego",
@@ -6303,11 +6308,25 @@
         "port": 22
       },
       {
+        "host": "oci-mail-dropbear",
+        "hostname": "10.0.0.3",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "oci-analytics",
         "hostname": "10.0.0.4",
         "user": "ubuntu",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "oci-analytics-dropbear",
+        "hostname": "10.0.0.4",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       },
       {
         "host": "oci-apps",
@@ -6317,11 +6336,25 @@
         "port": 22
       },
       {
+        "host": "oci-apps-dropbear",
+        "hostname": "10.0.0.6",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "gcp-t4",
         "hostname": "10.0.0.8",
         "user": "diego",
         "identity_file": "~/.ssh/google_compute_engine",
         "port": 22
+      },
+      {
+        "host": "gcp-t4-dropbear",
+        "hostname": "10.0.0.8",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
       },
       {
         "host": "gcp-proxy",
@@ -6331,11 +6364,25 @@
         "port": 22
       },
       {
+        "host": "gcp-proxy-dropbear",
+        "hostname": "10.0.0.1",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
+      },
+      {
         "host": "vast-ollama",
         "hostname": "TBD",
         "user": "root",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "vast-ollama-dropbear",
+        "hostname": "TBD",
+        "user": "root",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       }
     ]
   },
@@ -6436,7 +6483,7 @@
       "snappymail": {
         "dir": "aa-sui_snappymail",
         "vm": "oci-mail",
-        "has_docker": false
+        "has_docker": true
       },
       "smtp-proxy": {
         "dir": "aa-sui_tools-smtp-proxy",
@@ -6446,7 +6493,7 @@
       "stalwart": {
         "dir": "aa-sui_tools-stalwart",
         "vm": "oci-mail",
-        "has_docker": false
+        "has_docker": true
       },
       "vaultwarden": {
         "dir": "ab-mic_vaultwarden",
@@ -6551,12 +6598,12 @@
       "dozzle": {
         "dir": "bc-obs_dozzle",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "fluent-bit": {
         "dir": "bc-obs_fluent-bit",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "lgtm": {
         "dir": "bc-obs_lgtm",
@@ -6581,17 +6628,17 @@
       "sauron-forwarder": {
         "dir": "bc-obs_sauron-forwarder",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "syslog-forwarder": {
         "dir": "bc-obs_syslog-forwarder",
         "vm": "oci-mail",
-        "has_docker": false
+        "has_docker": true
       },
       "umami": {
         "dir": "bc-obs_umami",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "windmill": {
         "dir": "bc-obs_windmill",

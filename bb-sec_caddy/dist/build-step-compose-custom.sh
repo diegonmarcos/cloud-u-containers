@@ -8,4 +8,5 @@ if ! docker info >/dev/null 2>&1; then
 fi
 ENV_FILE_FLAG=""
 [ -f .secrets ] && ENV_FILE_FLAG="--env-file .secrets"
+docker compose $ENV_FILE_FLAG pull --quiet 2>/dev/null || true
 docker compose $ENV_FILE_FLAG up -d --force-recreate

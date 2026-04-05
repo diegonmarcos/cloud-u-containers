@@ -19,7 +19,7 @@ export function registerDaguTools(server: McpServer) {
     "List available Dagu DAG workflows",
     {},
     async () => {
-      const result = rawHttpRequest("GET", `${DAGU_BASE}/api/v1/dags`, undefined, 10000, daguHeaders());
+      const result = rawHttpRequest("GET", `${DAGU_BASE}/api/v2/dags`, undefined, 10000, daguHeaders());
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result.ok ? result.data : { error: result.error }, null, 2) }],
       };
@@ -35,7 +35,7 @@ export function registerDaguTools(server: McpServer) {
     },
     async ({ dag_id, params }) => {
       const body = params ? JSON.stringify({ params }) : undefined;
-      const result = rawHttpRequest("POST", `${DAGU_BASE}/api/v1/dags/${dag_id}`, body, 15000, daguHeaders());
+      const result = rawHttpRequest("POST", `${DAGU_BASE}/api/v2/dags/${dag_id}`, body, 15000, daguHeaders());
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result.ok ? result.data : { error: result.error }, null, 2) }],
       };

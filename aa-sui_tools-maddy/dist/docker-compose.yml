@@ -1,0 +1,46 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/aa-sui_tools-maddy/src/flake.nix
+# ║ Rebuild: build.sh ship
+# ╚══════════════════════════════════════════════════════════════════╝
+services:
+  maddy:
+    image: foxcpp/maddy:0.9
+    container_name: maddy
+    network_mode: host
+    entrypoint: ["sh", "/etc/maddy/init.sh"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
+    volumes:
+      - maddy_data:/data
+      - ./maddy.conf.tpl:/etc/maddy/maddy.conf.tpl:ro
+      - ./init.sh:/etc/maddy/init.sh:ro
+      - ./tls:/data/tls:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  maddy_data:

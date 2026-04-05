@@ -335,7 +335,7 @@ Cloudflare Email Routing receives all inbound mail on port 25 via MX records.
 |---------|-------|--------|
 | Worker Name | `email-forwarder` | WORKING |
 | SMTP_PROXY_URL | `http://smtp.diegonmarcos.com:8080/` | WORKING |
-| SMTP_PROXY_KEY | `stalwart-proxy-key-2025` | - |
+| SMTP_PROXY_KEY | `<redacted-api-key>` | - |
 | BACKUP_EMAIL | `diegonmarcos@live.com` | Fallback configured |
 | Route | `me@diegonmarcos.com` → Worker → Mailu | WORKING |
 
@@ -373,7 +373,7 @@ Cloudflare Email Routing receives all inbound mail on port 25 via MX records.
 | Field | Value |
 |-------|-------|
 | Email | me@diegonmarcos.com |
-| Password | ogeid1A! |
+| Password | <redacted-password> |
 
 ### OCI SMTP Relay
 
@@ -398,7 +398,7 @@ Cloudflare Email Routing receives all inbound mail on port 25 via MX records.
 | **SMTP Port** | 465 |
 | **SMTP Security** | SSL/TLS (SMTPS) |
 | **Username** | me@diegonmarcos.com |
-| **Password** | ogeid1A! |
+| **Password** | <redacted-password> |
 
 ### Mobile (K-9 Mail / FairEmail)
 
@@ -582,7 +582,7 @@ ssh -i ~/.ssh/id_rsa ubuntu@130.110.251.193
 https://mail.diegonmarcos.com/admin (admin@diegonmarcos.com / 8HkSfq6mCW)
 
 # Roundcube Webmail
-https://mail.diegonmarcos.com/webmail (me@diegonmarcos.com / ogeid1A!)
+https://mail.diegonmarcos.com/webmail (me@diegonmarcos.com / <redacted-password>)
 
 # Check services
 cd /opt/mailu && sudo docker-compose ps

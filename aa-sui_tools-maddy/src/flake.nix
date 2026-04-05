@@ -37,9 +37,9 @@
           skipReadOnly = true;
           volumes = [
             "maddy_data:/data"
-            "./dkim:/data/dkim:ro"
             "./maddy.conf.tpl:/etc/maddy/maddy.conf.tpl:ro"
             "./init.sh:/etc/maddy/init.sh:ro"
+            "./tls:/data/tls:ro"
           ];
           memLimit = "256M";
           memReservation = "32M";
@@ -89,7 +89,7 @@
 
   in {
     packages = forAllSystems (system: let
-      pkgs = nixpkgs.legacyPackages.''${system};
+      pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "maddy-configs" {} ''
         mkdir -p $out

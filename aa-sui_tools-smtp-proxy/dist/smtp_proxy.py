@@ -9,8 +9,8 @@ from email.utils import parseaddr
 SMTP_HOST = os.getenv('SMTP_HOST', '127.0.0.1')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '25'))
 SMTP_USER = os.getenv('SMTP_USER', 'me@diegonmarcos.com')
-SMTP_PASS = os.getenv('SMTP_PASS', 'ogeid1A!')
-API_KEY = os.getenv('API_KEY', 'stalwart-proxy-key-2025')
+SMTP_PASS = os.getenv('SMTP_PASS', '')
+API_KEY = os.getenv('API_KEY', '')
 LISTEN_PORT = int(os.getenv('LISTEN_PORT', '8080'))
 HELO_DOMAIN = 'smtp-proxy.diegonmarcos.com'
 

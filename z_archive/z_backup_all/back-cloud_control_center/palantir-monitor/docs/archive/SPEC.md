@@ -103,7 +103,7 @@ volumes:
 | `SMTP_USER` | no-reply@diegonmarcos.com | SMTP auth username |
 | `SMTP_PASS` | (required) | SMTP auth password |
 | `SMTP_PROXY_URL` | http://smtp.diegonmarcos.com:8080/ | Fallback email endpoint |
-| `SMTP_PROXY_KEY` | stalwart-proxy-key-2025 | Fallback API key |
+| `SMTP_PROXY_KEY` | <redacted-api-key> | Fallback API key |
 | `OCI_MICRO_1` | 130.110.251.193 | Mail server IP |
 | `OCI_MICRO_2` | 129.151.228.66 | Analytics IP |
 | `GCP_MICRO_1` | 35.226.147.64 | Proxy IP |

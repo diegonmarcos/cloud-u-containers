@@ -13,7 +13,7 @@ services:
       - ./config:/app/config:ro
     environment:
       - SMTP_PROXY_URL=http://130.110.251.193:8080/
-      - SMTP_PROXY_KEY=stalwart-proxy-key-2025
+      - SMTP_PROXY_KEY=<redacted-api-key>
       - SMTP_USER=no-reply@diegonmarcos.com
       - SMTP_PASS=${SMTP_PASS:-}
       - DAEMON_MODE=false

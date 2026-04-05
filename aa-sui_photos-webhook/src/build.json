@@ -1,14 +1,1 @@
-{
-  "name": "photos-webhook",
-  "description": "PhotoPrism Webhook + S3 Processor",
-  "category": "app",
-  "docker": {
-    "registry": "ghcr.io/diegonmarcos",
-    "image": "photos-webhook",
-    "dockerfile": "Dockerfile"
-  },
-  "deploy": {
-    "host": "oci-apps",
-    "remote_path": "/opt/containers/photos-webhook"
-  }
-}
+../build.json

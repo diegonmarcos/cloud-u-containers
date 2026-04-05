@@ -1,8 +1,6 @@
 schedule: "0 9 * * 1"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
 mailOn:
   failure: false
   success: false
@@ -11,12 +9,7 @@ steps:
     command: |
       SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       REPORT=""
-      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
-  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
-else
-  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
-fi
-)
+      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
       for vm_data in $VM_LIST; do
         ip=${vm_data%%:*}
         temp=${vm_data#*:}
@@ -28,7 +21,7 @@ fi
         REPORT="${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
       done
       MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
-      curl -s -X POST "$NTFY_URL/ops_summary" \
+      curl -s -X POST "$NTFY_URL/ops_reports" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Weekly Capacity Review" \
         -H "Priority: 2" \

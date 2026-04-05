@@ -1,8 +1,6 @@
 schedule: "0 3 * * 0"
 env:
   - NTFY_URL: http://10.0.0.1:8090
-  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
 mailOn:
   failure: false
   success: false
@@ -13,12 +11,7 @@ steps:
       RUNNING=0
       TOTAL=0
       MISSING=""
-      VM_LIST=$(if [ -f "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" ]; then
-  jq -r '.vms[] | "\(.ip):\(.name):\(.user)"' "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json" | tr '\n' ' '
-else
-  echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
-fi
-)
+      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
       for vm_data in $VM_LIST; do
         ip=${vm_data%%:*}
         temp=${vm_data#*:}
@@ -33,7 +26,7 @@ fi
       done
       if [ $RUNNING -lt $TOTAL ]; then
         MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
-        curl -s -X POST "$NTFY_URL/security_yara" \
+        curl -s -X POST "$NTFY_URL/sec_yara" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Sauron Scanner(s) Down" \
           -H "Priority: 4" \

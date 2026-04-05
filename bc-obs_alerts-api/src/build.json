@@ -1,14 +1,1 @@
-{
-  "name": "alerts-api",
-  "description": "Security Alert Aggregation API",
-  "category": "tools",
-  "docker": {
-    "registry": "ghcr.io/diegonmarcos",
-    "image": "alerts-api",
-    "dockerfile": "Dockerfile"
-  },
-  "deploy": {
-    "host": "oci-analytics",
-    "remote_path": "/opt/containers/alerts-api"
-  }
-}
+../build.json

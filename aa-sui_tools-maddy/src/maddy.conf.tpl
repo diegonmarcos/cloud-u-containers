@@ -7,8 +7,8 @@ $(hostname) = @@MAIL_DOMAIN@@
 $(primary_domain) = @@DOMAIN@@
 $(local_domains) = $(primary_domain)
 
-# TLS: Caddy handles external TLS, Maddy uses self-signed for internal
-tls self_signed
+# TLS: wildcard cert from Caddy (*.diegonmarcos.com)
+tls file /data/tls/fullchain.pem /data/tls/privkey.pem
 
 # ── Local storage & authentication ────────────────────────────────
 auth.pass_table local_authdb {
@@ -46,16 +46,17 @@ msgpipeline local_routing {
     }
 }
 
-# ── Inbound SMTP (port 25) — from smtp-proxy ─────────────────────
+# ── Inbound SMTP (port 25) — from smtp-proxy / CF Worker ──────────
 smtp tcp://0.0.0.0:25 {
     limits {
         all rate 20 1s
         all concurrency 10
     }
 
-    dmarc yes
+    # DMARC/DKIM/SPF informational only — smtp-proxy delivers from localhost
+    # Real DKIM/SPF verification happens at Cloudflare before the Worker
+    dmarc no
     check {
-        require_mx_record
         dkim
         spf
     }
@@ -104,31 +105,11 @@ submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
     }
 }
 
-# ── Outbound relay (OCI primary) ──────────────────────────────────
-target.remote outbound_delivery {
-    limits {
-        destination rate 20 1s
-        destination concurrency 10
-    }
-
-    # Use OCI SMTP relay for all outbound
-    smart_host {
-        targets tcp://@@OCI_RELAY_HOST@@:@@OCI_RELAY_PORT@@
-        auth plain ${OCI_RELAYUSER} ${OCI_RELAYPASSWORD}
-        require_tls yes
-    }
-
-    mx_auth {
-        dane
-        mtasts {
-            cache fs
-            fs_dir mtasts_cache/
-        }
-        local_policy {
-            min_tls_level encrypted
-            min_mx_level none
-        }
-    }
+# ── Outbound relay (OCI SMTP) ─────────────────────────────────────
+target.smtp outbound_delivery {
+    targets tcp://@@OCI_RELAY_HOST@@:@@OCI_RELAY_PORT@@
+    auth plain ${OCI_RELAYUSER} ${OCI_RELAYPASSWORD}
+    starttls yes
 }
 
 target.queue remote_queue {
