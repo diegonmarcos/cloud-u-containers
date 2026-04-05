@@ -472,17 +472,41 @@
       # ${mail.comment or "mail"}
       ${mail.domain} {
     ${sec}
-        # /webmail → SnappyMail root
-        redir /webmail / permanent
-        redir /webmail/* / permanent
-
-        # /servermail → landing page (GitHub Pages)
-        handle /servermail* {
+        # / → landing page (PUBLIC — no auth)
+        @root path /
+        handle @root {
           ${mkGithubProxy mail.landing_page}
         }
 
-        # Everything else (/, /snappymail/... assets) → SnappyMail with auth
-        ${mkProtected mail.webmail_upstream}
+        # /servermail → Maddy info (PUBLIC — static HTML baked in image)
+        handle /servermail/config {
+          root * /srv/mail
+          rewrite * /servermail-config.html
+          file_server
+        }
+        handle /servermail* {
+          root * /srv/mail
+          rewrite * /servermail.html
+          file_server
+        }
+
+        # /webmail → SnappyMail (AUTH, strip prefix so SnappyMail sees /)
+        handle_path /webmail/* {
+          ${mkProtected mail.webmail_upstream}
+        }
+        handle_path /webmail {
+          ${mkProtected mail.webmail_upstream}
+        }
+
+        # /snappymail/... → SnappyMail assets (AUTH, no strip — direct proxy)
+        handle /snappymail/* {
+          ${mkProtected mail.webmail_upstream}
+        }
+
+        # Catch-all → landing page
+        handle {
+          ${mkGithubProxy mail.landing_page}
+        }
 
         ${handleErrors}
       }
@@ -704,6 +728,8 @@
         { src = "error.html"; dst = "/srv/error.html"; }
         { src = "dashboard.html"; dst = "/srv/dashboard.html"; }
         { src = "ntfy-setup.html"; dst = "/srv/ntfy-setup.html"; }
+        { src = "servermail.html"; dst = "/srv/mail/servermail.html"; }
+        { src = "servermail-config.html"; dst = "/srv/mail/servermail-config.html"; }
         { src = "wkd"; dst = "/srv/wkd"; }
       ];
     };
@@ -769,6 +795,9 @@
         cp ${./error.html} $out/error.html
         cp ${./dashboard.html} $out/dashboard.html
         cp ${./ntfy-setup.html} $out/ntfy-setup.html
+        mkdir -p $out/mail
+        cp ${./servermail.html} $out/servermail.html
+        cp ${./servermail-config.html} $out/servermail-config.html
         mkdir -p $out/wkd/hu
         touch $out/wkd/policy
         cp ${./pgp-wkd-key.bin} $out/wkd/hu/s8y7oh5xrdpu9psba3i5ntk64ohouhga
