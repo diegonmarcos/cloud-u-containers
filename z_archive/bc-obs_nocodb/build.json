@@ -7,18 +7,14 @@
     "db": 5441
   },
   "category": "tools",
-  "domain": "db.diegonmarcos.com",
+  "domain": "",
+  "archived": true,
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/nocodb",
     "compose_flags": "--build"
   },
-  "proxy": {
-    "primary": {
-      "domain": "db.diegonmarcos.com",
-      "auth": "two_factor"
-    }
-  },
+  "proxy": {},
   "health": {
     "path": "/api/v1/health"
   },
