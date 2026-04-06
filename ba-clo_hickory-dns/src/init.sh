@@ -72,7 +72,6 @@ zone_type = "External"
 
 [zones.stores]
 type = "forward"
-trust_negative_responses = true
 name_servers = [
   { socket_addr = "1.1.1.1:53", protocol = "udp" },
   { socket_addr = "8.8.8.8:53", protocol = "udp" },
