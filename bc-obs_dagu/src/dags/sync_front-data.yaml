@@ -3,7 +3,7 @@ env:
   - C3_API: http://10.0.0.6:8081
   - REPO_DIR: /var/lib/dagu/data/front-data
   - REPO_URL: git@github.com:diegonmarcos/front-data.git
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
 mailOn:
   failure: true
   success: false

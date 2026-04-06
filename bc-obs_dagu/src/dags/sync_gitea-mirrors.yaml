@@ -3,7 +3,7 @@
 # this DAG forces a daily sync and alerts if any mirror is stale (>24h behind).
 schedule: "0 6 * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - SSH_OPTS: "-i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
   - GITEA_HOST: 10.0.0.6

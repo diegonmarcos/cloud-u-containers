@@ -62,7 +62,7 @@
     },
     {
       "domain": "vault.diegonmarcos.com",
-      "upstream": "10.0.0.1:8880",
+      "upstream": "10.0.0.6:8880",
       "auth": "none",
       "comment": "Vaultwarden password manager — own auth, Caddy → private backend"
     }
@@ -177,7 +177,7 @@
     },
     "ntfy": {
       "domain": "rss.diegonmarcos.com",
-      "upstream": "10.0.0.1:8090",
+      "upstream": "10.0.0.6:8090",
       "comment": "ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia"
     },
     "analytics": {
