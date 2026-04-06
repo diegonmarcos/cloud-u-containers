@@ -58,6 +58,51 @@ function buildVmIdToAlias(vms: Record<string, any>): Record<string, string> {
 // Derivation functions
 // ═══════════════════════════════════════════════════════════════════════════
 
+function deriveSecretsEnvVarNames(c: any): DerivedFile {
+  const services = c.services as Record<string, any>;
+  const vms = c.vms as Record<string, any>;
+  const vmIdToAlias = buildVmIdToAlias(vms);
+
+  const perService: any[] = [];
+  const byVm: Record<string, any[]> = {};
+  let totalVars = 0;
+
+  for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
+    const envVars: string[] = svc.secret_env_vars ?? [];
+    if (envVars.length === 0) continue;
+
+    const vmAlias = vmIdToAlias[svc.vm] ?? svc.vm;
+    const hasEnvFile = Object.values(svc.containers ?? {}).some((ct: any) => ct.env_file);
+
+    const entry = {
+      service: svcName,
+      folder: svc.folder,
+      vm: vmAlias,
+      env_file: hasEnvFile,
+      env_vars: envVars,
+      count: envVars.length,
+    };
+
+    perService.push(entry);
+    totalVars += envVars.length;
+
+    if (!byVm[vmAlias]) byVm[vmAlias] = [];
+    byVm[vmAlias].push(entry);
+  }
+
+  return {
+    name: "cloud-data-secrets-env-var-names.json",
+    data: {
+      _generated: now(),
+      _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/secrets-env-var-names",
+      total_services: perService.length,
+      total_env_vars: totalVars,
+      services: perService,
+      by_vm: byVm,
+    },
+  };
+}
+
 function deriveDatabases(c: any): DerivedFile {
   const services = c.services as Record<string, any>;
   const vms = c.vms as Record<string, any>;
@@ -1355,6 +1400,7 @@ function main() {
     deriveConfigs(consolidated),
     deriveDeps(consolidated),
     deriveDatabases(consolidated),
+    deriveSecretsEnvVarNames(consolidated),
   ];
 
   // Write all files (inject DO NOT EDIT header into each)
