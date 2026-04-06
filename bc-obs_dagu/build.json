@@ -14,7 +14,7 @@
     "arch": "amd64"
   },
   "deploy": {
-    "host": "oci-mail",
+    "host": "oci-analytics",
     "remote_path": "/opt/containers/dagu",
     "excludes": [
       "data"
