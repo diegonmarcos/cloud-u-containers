@@ -4,7 +4,7 @@ env:
   - C3_API: http://10.0.0.6:8081
   - REPO_DIR: /var/lib/dagu/data/cloud-data
   - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - MIN_SIZE: 50
 mailOn:
   failure: true

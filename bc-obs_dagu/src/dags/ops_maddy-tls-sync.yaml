@@ -1,6 +1,6 @@
 schedule: "0 3 * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - RSYNC_SSH: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10
 mailOn:

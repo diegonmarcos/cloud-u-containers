@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { rawHttpRequest } from "../../shared/http.js";
 import { registry } from "../../registry/index.js";
 
-const NTFY_BASE = registry.getBaseUrl("ntfy") ?? "http://10.0.0.1:8090";
+const NTFY_BASE = registry.getBaseUrl("ntfy") ?? "http://10.0.0.6:8090";
 
 export async function registerNtfyRoutes(app: FastifyInstance) {
   app.get("/ntfy/health", {

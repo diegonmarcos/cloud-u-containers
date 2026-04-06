@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { rawHttpRequest } from "../../shared/http.js";
 
-const VW_BASE = "http://10.0.0.1:8880";
+const VW_BASE = "http://10.0.0.6:8880";
 
 function vwApi(path: string): string {
   const token = process.env.VAULTWARDEN_ADMIN_TOKEN ?? "";

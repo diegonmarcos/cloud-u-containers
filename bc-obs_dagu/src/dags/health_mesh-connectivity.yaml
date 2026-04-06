@@ -1,6 +1,6 @@
 schedule: "*/5 * * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
 mailOn:

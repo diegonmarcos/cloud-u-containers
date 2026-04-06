@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { rawHttpRequest } from "../../shared/http.js";
 
-const NTFY_BASE = "http://10.0.0.1:8090";
+const NTFY_BASE = "http://10.0.0.6:8090";
 const ntfyToken = () => process.env.NTFY_TOKEN ?? "";
 
 function ntfyHeaders(): Record<string, string> | undefined {
