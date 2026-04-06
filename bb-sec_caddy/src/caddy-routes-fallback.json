@@ -42,8 +42,8 @@
     },
     {
       "domain": "workflows.diegonmarcos.com",
-      "upstream": "10.0.0.3:8070",
-      "comment": "Dagu workflow scheduler"
+      "upstream": "10.0.0.4:8070",
+      "comment": "Dagu workflow scheduler (oci-analytics)"
     },
     {
       "domain": "ide.diegonmarcos.com",
