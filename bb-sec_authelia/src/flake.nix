@@ -164,7 +164,7 @@
 
     authentication_backend:
       file:
-        path: /config/users_database.yml
+        path: /tmp/users_database.yml
         watch: true
 
     access_control:
@@ -178,10 +178,10 @@
 
     identity_validation:
       reset_password:
-        jwt_secret: '{{ env "AUTHELIA_JWT_SECRET" }}'
+        jwt_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_JWT_SECRET" }}'
 
     session:
-      secret: '{{ env "AUTHELIA_SESSION_SECRET" }}'
+      secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_SESSION_SECRET" }}'
       name: authelia_session
       cookies:
         - name: authelia_session
@@ -193,7 +193,7 @@
       redis:
         host: localhost
         port: ${config.redis_port}
-        password: '{{ env "AUTHELIA_REDIS_PASSWORD" }}'
+        password: '{{ secret "/tmp/.secrets.d/AUTHELIA_REDIS_PASSWORD" }}'
 
     regulation:
       max_retries: 3
@@ -201,7 +201,7 @@
       ban_time: 15m
 
     storage:
-      encryption_key: '{{ env "AUTHELIA_STORAGE_ENCRYPTION_KEY" }}'
+      encryption_key: '{{ secret "/tmp/.secrets.d/AUTHELIA_STORAGE_ENCRYPTION_KEY" }}'
       local:
         path: /data/db.sqlite3
 
@@ -210,7 +210,7 @@
       smtp:
         address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
         username: no-reply@diegonmarcos.com
-        password: '{{ env "AUTHELIA_SMTP_PASSWORD" }}'
+        password: '{{ secret "/tmp/.secrets.d/AUTHELIA_SMTP_PASSWORD" }}'
         sender: "Authelia <no-reply@diegonmarcos.com>"
         tls:
           server_name: mail.diegonmarcos.com
@@ -228,15 +228,10 @@
 
     identity_providers:
       oidc:
-        hmac_secret: '{{ env "AUTHELIA_OIDC_HMAC_SECRET" }}'
+        hmac_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_HMAC_SECRET" }}'
         lifespans:
           access_token: 87600h
           refresh_token: 87600h
-        jwks:
-          - key_id: main
-            algorithm: RS256
-            use: sig
-            key: {{ secret "/config/oidc_jwks.pem" }}
         cors:
           endpoints:
             - authorization
@@ -247,7 +242,7 @@
           allowed_origins_from_client_redirect_uris: true
         clients:
           - client_id: oauth2-proxy-npm
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_NPM_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_NPM_SECRET" }}'
             consent_mode: explicit
             client_name: NPM Proxy Manager
             public: false
@@ -266,7 +261,7 @@
             pkce_challenge_method: S256
 
           - client_id: nocodb
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_NOCODB_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_NOCODB_SECRET" }}'
             consent_mode: explicit
             client_name: NocoDB Database
             public: false
@@ -285,7 +280,7 @@
             pkce_challenge_method: S256
 
           - client_id: cloudflare-health-c3-api
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET" }}'
             consent_mode: explicit
             client_name: Cloudflare Worker Health Check
             public: false
@@ -311,7 +306,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-admin
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET" }}'
             consent_mode: explicit
             client_name: Claude AI Agent
             public: false
@@ -338,7 +333,7 @@
               - https://diegonmarcos.com/
 
           - client_id: cloud-admin
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET" }}'
             consent_mode: explicit
             client_name: Cloud Admin
             public: false
@@ -366,7 +361,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-opus
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Opus Agent
             public: false
@@ -394,7 +389,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-sonnet
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Sonnet Agent
             public: false
@@ -422,7 +417,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: claude-haiku
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET" }}'
             consent_mode: explicit
             client_name: Claude Haiku Agent
             public: false
@@ -450,7 +445,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: dagu-ops
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_DAGU_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_DAGU_SECRET" }}'
             consent_mode: explicit
             client_name: Dagu Workflow Engine
             public: false
@@ -476,7 +471,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: dagu-cc
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET" }}'
             client_name: Dagu Service Account
             public: false
             authorization_policy: one_factor
@@ -490,7 +485,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: monitoring-read
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MONITORING_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MONITORING_SECRET" }}'
             consent_mode: explicit
             client_name: Monitoring Read-Only
             public: false
@@ -516,7 +511,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: mattermost-ops
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET" }}'
             consent_mode: explicit
             client_name: Mattermost Bot
             public: false
@@ -543,7 +538,7 @@
               - https://rss.diegonmarcos.com/
 
           - client_id: mattermost-cc
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET" }}'
             client_name: Mattermost Service Account
             public: false
             authorization_policy: one_factor
@@ -558,7 +553,7 @@
               - https://rss.diegonmarcos.com/
 
           - client_id: c3-infra-mcp-api
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET" }}'
             client_name: C3 Infra MCP API
             public: false
             grant_types:
@@ -571,7 +566,7 @@
               - https://api.diegonmarcos.com/
 
           - client_id: cli
-            client_secret: '{{ env "AUTHELIA_OIDC_CLIENT_CLI_SECRET" }}'
+            client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLI_SECRET" }}'
             consent_mode: explicit
             client_name: CLI Access
             public: false
@@ -607,10 +602,40 @@
     #!/bin/sh
     set -e
 
+    echo "[init] Writing secrets to files for {{ secret }} template..."
+
+    # Write each env var to a file — {{ secret "/path" }} reads raw bytes (safe for $)
+    mkdir -p /tmp/.secrets.d
+    for var in \
+      AUTHELIA_JWT_SECRET \
+      AUTHELIA_SESSION_SECRET \
+      AUTHELIA_STORAGE_ENCRYPTION_KEY \
+      AUTHELIA_REDIS_PASSWORD \
+      AUTHELIA_SMTP_PASSWORD \
+      AUTHELIA_OIDC_HMAC_SECRET \
+      AUTHELIA_OIDC_CLIENT_NPM_SECRET \
+      AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET \
+      AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
+      AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET \
+      AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
+      AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
+      AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET \
+      AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET \
+      AUTHELIA_OIDC_CLIENT_CLI_SECRET; do
+      eval "val=\$$var"
+      printf '%s' "$val" > "/tmp/.secrets.d/$var"
+    done
+
     echo "[init] Generating users database..."
 
-    # Users database from sops-delivered env var (heredoc safe for $ in Argon2 hashes)
-    cat > /config/users_database.yml <<USERDB
+    # Users database (heredoc safe for $ in Argon2 hashes)
+    cat > /tmp/users_database.yml <<USERDB
     ---
     users:
       me@diegonmarcos.com:
@@ -622,10 +647,25 @@
           - users
     USERDB
 
-    echo "[init] Starting Authelia with template filters..."
-    # Template filters enable {{ env "VAR" }} and {{ secret "/path" }} in configuration.yml
-    # All secrets flow via .secrets env_file → env vars → {{ env }} template resolution
-    exec authelia --config /config/configuration.yml --config.experimental.filters template
+    # JWKS key: generate a YAML overlay with the PEM properly indented
+    # Authelia merges multiple --config files; this avoids template multiline issues
+    echo "[init] Generating JWKS overlay..."
+    cat > /tmp/jwks-overlay.yml <<'JWKSEOF'
+    identity_providers:
+      oidc:
+        jwks:
+          - key_id: main
+            algorithm: RS256
+            use: sig
+            key: |
+    JWKSEOF
+    sed 's/^/              /' /config/oidc_jwks.pem >> /tmp/jwks-overlay.yml
+
+    echo "[init] Starting Authelia..."
+    exec authelia \
+      --config /config/configuration.yml \
+      --config /tmp/jwks-overlay.yml \
+      --config.experimental.filters template
     '';
 
   in {
