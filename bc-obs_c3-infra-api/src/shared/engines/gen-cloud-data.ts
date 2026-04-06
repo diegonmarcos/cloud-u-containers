@@ -287,6 +287,17 @@ function main() {
       ...(entry.extra ?? {}),
     };
 
+    // Extract secret env var names from src/secrets.yaml (keys are plaintext in sops)
+    const secretsPath = join(SOLUTIONS_DIR, entry.folder, "src", "secrets.yaml");
+    if (existsSync(secretsPath)) {
+      const lines = readFileSync(secretsPath, "utf-8").split("\n");
+      const envVars = lines
+        .map(l => l.match(/^([A-Z][A-Z0-9_]+):\s/))
+        .filter(Boolean)
+        .map(m => m![1]);
+      if (envVars.length > 0) svc.secret_env_vars = envVars;
+    }
+
     services[entry.name] = svc;
   }
 

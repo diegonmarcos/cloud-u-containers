@@ -236,6 +236,7 @@
           - key_id: main
             algorithm: RS256
             use: sig
+            key: {{ secret "/config/oidc_jwks.pem" }}
         cors:
           endpoints:
             - authorization
@@ -606,35 +607,9 @@
     #!/bin/sh
     set -e
 
-    echo "[init] Mapping env vars to Authelia-native names..."
+    echo "[init] Generating users database..."
 
-    # Standard secrets (custom name → Authelia native path)
-    export AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET="$AUTHELIA_JWT_SECRET"
-    export AUTHELIA_SESSION_REDIS_PASSWORD="$AUTHELIA_REDIS_PASSWORD"
-    export AUTHELIA_NOTIFIER_SMTP_PASSWORD="$AUTHELIA_SMTP_PASSWORD"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET="$AUTHELIA_OIDC_HMAC_SECRET"
-
-    # OIDC client secrets (index matches client order in configuration.yml)
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_0_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NPM_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_1_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_NOCODB_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_2_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_3_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_4_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_5_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_6_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_7_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_8_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_9_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_10_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MONITORING_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_11_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_12_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_13_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET"
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_CLIENTS_14_CLIENT_SECRET="$AUTHELIA_OIDC_CLIENT_CLI_SECRET"
-
-    # JWKS key from mounted file
-    export AUTHELIA_IDENTITY_PROVIDERS_OIDC_JWKS_0_KEY_FILE="/config/oidc_jwks.pem"
-
-    # Generate users database from sops-delivered env var
+    # Users database from sops-delivered env var (heredoc safe for $ in Argon2 hashes)
     cat > /config/users_database.yml <<USERDB
     ---
     users:
@@ -647,8 +622,10 @@
           - users
     USERDB
 
-    echo "[init] Starting Authelia..."
-    exec authelia --config /config/configuration.yml
+    echo "[init] Starting Authelia with template filters..."
+    # Template filters enable {{ env "VAR" }} and {{ secret "/path" }} in configuration.yml
+    # All secrets flow via .secrets env_file → env vars → {{ env }} template resolution
+    exec authelia --config /config/configuration.yml --config.experimental.filters template
     '';
 
   in {
