@@ -123,9 +123,6 @@
               "PHOTOPRISM_UPLOAD_NSFW=true"
               "PHOTOPRISM_DATABASE_DRIVER=mysql"
               "PHOTOPRISM_DATABASE_SERVER=localhost:3306"
-              "PHOTOPRISM_DATABASE_NAME=\${MARIADB_DATABASE:-photoprism}"
-              "PHOTOPRISM_DATABASE_USER=\${MARIADB_USER:-photoprism}"
-              "PHOTOPRISM_DATABASE_PASSWORD=\${MARIADB_PASSWORD:-changeme}"
             ];
             depends_on = {
               mariadb = { condition = "service_healthy"; };
