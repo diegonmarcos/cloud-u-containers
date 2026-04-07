@@ -520,15 +520,20 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       upstream: svc.upstream,
     });
   }
-  // VM dashboards: from HM build.json dashboard field → <alias>.app internal routes
-  const hmVms = c._home_manager?.vms ?? {};
-  for (const [, vm] of Object.entries(hmVms) as [string, any][]) {
-    if (vm.dashboard?.dns && vm.wg_ip) {
-      internalRoutes.push({
-        service: vm.dashboard.dns,
-        upstream: `${vm.wg_ip}:${vm.dashboard.port ?? 7681}`,
-      });
-    }
+  // VM dashboards: read directly from per-VM build.json (source of truth)
+  const hmDir = join(ENGINE_DIR, "..", "..", "..", "..", "..", "b_infra", "home-manager");
+  for (const [, vm] of Object.entries(c.vms ?? {}) as [string, any][]) {
+    if (!vm.ssh_alias || !vm.wg_ip) continue;
+    try {
+      const bjPath = join(hmDir, `nixhm-sudo-${vm.ssh_alias}`, "build.json");
+      const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
+      if (bj.dashboard?.dns) {
+        internalRoutes.push({
+          service: bj.dashboard.dns,
+          upstream: `${vm.wg_ip}:${bj.dashboard.port ?? 7680}`,
+        });
+      }
+    } catch { /* skip VMs without HM build.json */ }
   }
 
   // ── Auth upstreams: Caddy forward_auth targets (from cloud-data, not hardcoded) ──
