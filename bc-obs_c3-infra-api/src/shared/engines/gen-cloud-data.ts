@@ -471,10 +471,10 @@ function main() {
   }
 
   // Enrich homeManagerVms with dashboard config from HM build.json files
-  const HM_DIR = join(INFRA_DIR, "home-manager");
+  const HM_DIR = join(CLOUD_ROOT, "b_infra", "home-manager");
   for (const alias of Object.keys(homeManagerVms)) {
     try {
-      const bjPath = join(HM_DIR, alias, "build.json");
+      const bjPath = join(HM_DIR, `nixhm-sudo-${alias}`, "build.json");
       if (existsSync(bjPath)) {
         const bj = JSON.parse(readFileSync(bjPath, "utf-8"));
         if (bj.dashboard) {
