@@ -261,30 +261,35 @@ function monthLabel(d: Date): string {
   return `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`;
 }
 
-export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } {
-  const tenantId = getCompartmentId();
-  if (!tenantId) {
-    return { ok: false, costs: [], error: "No OCI tenancy ID found. Set OCI_COMPARTMENT_ID or configure ~/.oci/config" };
-  }
+/**
+ * Query OCI costs for a single month period.
+ * Returns parsed cost items grouped by service.
+ */
+function queryMonthCosts(
+  tenantId: string,
+  start: Date,
+  end: Date,
+  period: string,
+): { ok: boolean; costs: CloudCost[]; error?: string } {
+  // Try the OCI Usage API (group by service + SKU for detailed breakdown)
+  for (const module of ["usage-api", "metering-computation"] as const) {
+    const subCmd = module === "usage-api"
+      ? ["usage-summary", "request-summarized-usages"]
+      : ["usage", "request-summarized-usages"];
 
-  const now = new Date();
-  const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  const endOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
-  const period = monthLabel(now);
+    const result = ociCli([
+      module, ...subCmd,
+      "--tenant-id", tenantId,
+      "--time-usage-started", start.toISOString(),
+      "--time-usage-ended", end.toISOString(),
+      "--granularity", "MONTHLY",
+      "--query-type", "COST",
+      "--group-by", JSON.stringify(["service", "skuName"]),
+      "--output", "json",
+    ], 60_000);
 
-  // Try the OCI Usage API for real cost data (group by service for breakdown)
-  const result = ociCli([
-    "usage-api", "usage-summary", "request-summarized-usages",
-    "--tenant-id", tenantId,
-    "--time-usage-started", startOfMonth.toISOString(),
-    "--time-usage-ended", endOfMonth.toISOString(),
-    "--granularity", "MONTHLY",
-    "--query-type", "COST",
-    "--group-by", JSON.stringify(["service"]),
-    "--output", "json",
-  ], 60_000);
+    if (!result.ok) continue;
 
-  if (result.ok) {
     const raw = result.data as { data?: { items?: Array<Record<string, unknown>> } };
     const items = raw.data?.items ?? [];
 
@@ -292,24 +297,37 @@ export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } 
       return { ok: true, costs: [{ service: "OCI (no usage charges)", amount: 0, currency: "USD", period }] };
     }
 
-    // Aggregate costs by service
+    // Aggregate costs by service, keep SKU detail for non-zero items
     const serviceMap = new Map<string, number>();
+    const skuDetails: CloudCost[] = [];
     let currency = "USD";
+
     for (const item of items) {
-      const svc = String(item.service ?? item["sku-name"] ?? "Unknown");
+      const svc = String(item.service ?? "Unknown");
+      const sku = String(item["sku-name"] ?? "");
       const amt = Number(item["computed-amount"] ?? 0);
-      currency = String(item.currency ?? "USD");
+      currency = String(item.currency ?? "USD").trim() || "USD";
       serviceMap.set(svc, (serviceMap.get(svc) ?? 0) + amt);
+      if (amt > 0 && sku) {
+        skuDetails.push({ service: `${svc} — ${sku}`, amount: Math.round(amt * 100) / 100, currency, period });
+      }
     }
 
     const costs: CloudCost[] = [];
     let total = 0;
+
+    // Add service-level totals
     for (const [svc, amt] of serviceMap) {
       const rounded = Math.round(amt * 100) / 100;
       total += rounded;
       if (rounded !== 0) {
         costs.push({ service: svc, amount: rounded, currency, period });
       }
+    }
+
+    // Add SKU breakdown after service totals
+    if (skuDetails.length > 1) {
+      costs.push(...skuDetails.sort((a, b) => b.amount - a.amount));
     }
 
     if (costs.length === 0) {
@@ -320,47 +338,51 @@ export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } 
     return { ok: true, costs };
   }
 
-  // Fallback: try older CLI module name
-  const fallback = ociCli([
-    "metering-computation", "usage", "request-summarized-usages",
-    "--tenant-id", tenantId,
-    "--time-usage-started", startOfMonth.toISOString(),
-    "--time-usage-ended", endOfMonth.toISOString(),
-    "--granularity", "MONTHLY",
-    "--query-type", "COST",
-    "--group-by", JSON.stringify(["service"]),
-    "--output", "json",
-  ], 60_000);
+  return { ok: false, costs: [], error: "OCI Usage API unavailable" };
+}
 
-  if (fallback.ok) {
-    const raw = fallback.data as { data?: { items?: Array<Record<string, unknown>> } };
-    const items = raw.data?.items ?? [];
-    const serviceMap = new Map<string, number>();
-    let currency = "USD";
-    for (const item of items) {
-      const svc = String(item.service ?? item["sku-name"] ?? "Unknown");
-      const amt = Number(item["computed-amount"] ?? 0);
-      currency = String(item.currency ?? "USD");
-      serviceMap.set(svc, (serviceMap.get(svc) ?? 0) + amt);
-    }
-    const costs: CloudCost[] = [];
-    let total = 0;
-    for (const [svc, amt] of serviceMap) {
-      const rounded = Math.round(amt * 100) / 100;
-      total += rounded;
-      if (rounded !== 0) {
-        costs.push({ service: svc, amount: rounded, currency, period });
-      }
-    }
-    if (costs.length === 0) {
-      costs.push({ service: "OCI (all services within free tier)", amount: 0, currency, period });
-    }
-    costs.push({ service: "OCI TOTAL", amount: Math.round(total * 100) / 100, currency, period });
-    return { ok: true, costs };
+export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } {
+  const tenantId = getCompartmentId();
+  if (!tenantId) {
+    return { ok: false, costs: [], error: "No OCI tenancy ID found. Set OCI_COMPARTMENT_ID or configure ~/.oci/config" };
   }
+
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+  const result = queryMonthCosts(tenantId, start, end, monthLabel(now));
+  if (result.ok) return result;
 
   // Last resort: instance-based estimation
-  return getInstanceBasedCosts(tenantId, period);
+  return getInstanceBasedCosts(tenantId, monthLabel(now));
+}
+
+/**
+ * Get OCI costs across multiple months (current + N previous).
+ * Returns per-month breakdown with service + SKU detail.
+ */
+export function getCostsHistory(months: number = 3): { ok: boolean; costs: CloudCost[]; error?: string } {
+  const tenantId = getCompartmentId();
+  if (!tenantId) {
+    return { ok: false, costs: [], error: "No OCI tenancy ID found. Set OCI_COMPARTMENT_ID or configure ~/.oci/config" };
+  }
+
+  const now = new Date();
+  const allCosts: CloudCost[] = [];
+
+  for (let i = months - 1; i >= 0; i--) {
+    const start = new Date(Date.UTC(now.getFullYear(), now.getMonth() - i, 1));
+    const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() - i + 1, 1));
+    const period = monthLabel(start);
+    const result = queryMonthCosts(tenantId, start, end, period);
+    if (result.ok) {
+      allCosts.push(...result.costs);
+    } else {
+      allCosts.push({ service: `OCI (query failed)`, amount: 0, currency: "USD", period });
+    }
+  }
+
+  return { ok: true, costs: allCosts };
 }
 
 function getInstanceBasedCosts(compartmentId: string, period: string): { ok: boolean; costs: CloudCost[]; error?: string } {

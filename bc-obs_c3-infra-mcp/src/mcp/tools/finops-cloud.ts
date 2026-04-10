@@ -1,4 +1,4 @@
-// ── FinOps Pillar — "What it costs" (7 tools) ──
+// ── FinOps Pillar — "What it costs" (8 tools) ──
 // Cloud provider operations and cost tracking
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -42,9 +42,19 @@ export function registerFinOpsCloudTools(server: McpServer) {
 
   server.tool(
     "obs.finops.oci_costs",
-    "Get OCI usage costs for the last 30 days",
+    "Get OCI usage costs for the current month (service + SKU breakdown)",
     {},
     async () => jsonText("OCI costs", oci.getCosts()),
+  );
+
+  server.tool(
+    "obs.finops.oci_costs_history",
+    "Get OCI usage costs across multiple months (default 3) with per-service and per-SKU breakdown — use for billing investigations",
+    { months: { type: "number", description: "Number of months to query (current + previous). Default 3, max 12.", default: 3 } },
+    async ({ months }: { months?: number }) => {
+      const m = Math.min(Math.max(months ?? 3, 1), 12);
+      return jsonText("OCI cost history", oci.getCostsHistory(m));
+    },
   );
 
   server.tool(
