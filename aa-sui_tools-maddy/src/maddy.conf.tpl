@@ -90,9 +90,7 @@ submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
             }
         }
 
-        destination postmaster $(local_domains) {
-            deliver_to &local_routing
-        }
+        # ALL outbound goes through external relay — no local shortcut
         default_destination {
             modify {
                 dkim $(primary_domain) $(local_domains) default
