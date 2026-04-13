@@ -51,9 +51,9 @@
           SHOW_PASSWORD_HINT = config.show_password_hint;
           WEBSOCKET_ENABLED = "\"true\"";
           LOG_LEVEL = "warn";
-          SMTP_HOST = svc.stalwart.ip;
+          SMTP_HOST = svc.maddy.ip;
           SMTP_FROM = "noreply@diegonmarcos.com";
-          SMTP_PORT = "\"${toString svc.stalwart.ports.smtp}\"";
+          SMTP_PORT = "\"${toString svc.maddy.ports.smtp}\"";
           SMTP_SECURITY = "force_tls";
           SMTP_USERNAME = "noreply@diegonmarcos.com";
           SMTP_PASSWORD = "\${SMTP_PASSWORD}";

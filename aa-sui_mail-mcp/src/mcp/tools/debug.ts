@@ -6,9 +6,6 @@ import { withImap } from "../shared/imap.js";
 
 const execAsync = promisify(execCb);
 
-const STALWART_API = process.env.STALWART_ADMIN_URL || "https://mail.diegonmarcos.com";
-const STALWART_USER = process.env.STALWART_ADMIN_USER || "admin";
-const STALWART_PASS = process.env.STALWART_ADMIN_PASSWORD || "";
 const DOMAIN = "diegonmarcos.com";
 const CF_ACCOUNT_ID = "e5cb0a0c6f448e54f217de484259f0ae";
 
@@ -35,21 +32,9 @@ async function digExec(query: string): Promise<string> {
   }
 }
 
-async function stalwartQueue(): Promise<string> {
-  try {
-    const headers: Record<string, string> = {
-      Authorization: `Basic ${Buffer.from(`${STALWART_USER}:${STALWART_PASS}`).toString("base64")}`,
-      "Content-Type": "application/json",
-    };
-    const resp = await fetch(`${STALWART_API}/api/queue/messages`, { headers });
-    if (!resp.ok) return `API_ERROR: ${resp.status} ${await resp.text()}`;
-    const data = await resp.json();
-    const items = Array.isArray(data) ? data : (data as any).items ?? data;
-    if (Array.isArray(items) && items.length === 0) return "Queue empty";
-    return JSON.stringify(items, null, 2);
-  } catch (e: any) {
-    return `QUEUE_FAIL: ${e.message?.split("\n")[0] ?? e}`;
-  }
+async function maddyQueue(): Promise<string> {
+  // Maddy uses CLI-based queue management, not a REST API
+  return sshExec("oci-mail", "docker exec maddy maddy queue list 2>&1 || echo 'Queue empty'", 15000);
 }
 
 function status(ok: boolean): string {
@@ -82,13 +67,13 @@ export function registerDebugTools(server: McpServer): void {
         sshBatchResult,
         dnsResults,
       ] = await Promise.all([
-        // 1. Stalwart queue
-        stalwartQueue(),
+        // 1. Maddy queue
+        maddyQueue(),
 
-        // 2+3+4+5. SSH batch: stalwart logs, smtp-proxy logs, OCI relay, AWS relay
+        // 2+3+4+5. SSH batch: maddy logs, smtp-proxy logs, OCI relay, AWS relay
         sshExec("oci-mail", [
-          `echo "===STALWART_LOGS==="`,
-          `docker logs stalwart --since ${m}m 2>&1 | grep -iE "queue|relay|delivery|bounce|reject|error|fail|next-hop|remote|connect" | tail -30`,
+          `echo "===MADDY_LOGS==="`,
+          `docker logs maddy --since ${m}m 2>&1 | grep -iE "queue|relay|delivery|bounce|reject|error|fail|next-hop|remote|connect" | tail -30`,
           `echo "===SMTP_PROXY_LOGS==="`,
           `docker logs smtp-proxy --since ${m}m 2>&1 | tail -20`,
           `echo "===OCI_RELAY==="`,
@@ -115,20 +100,20 @@ export function registerDebugTools(server: McpServer): void {
         }
       }
 
-      // -- Section 1: Stalwart Queue
-      const queueOk = !isFail(queueResult) && !queueResult.includes("API_ERROR");
-      const queueEmpty = queueResult === "Queue empty";
+      // -- Section 1: Maddy Queue
+      const queueOk = !isFail(queueResult) && !queueResult.includes("QUEUE_FAIL");
+      const queueEmpty = queueResult === "Queue empty" || queueResult.trim() === "";
       sections.push([
-        `== 1. Stalwart Queue ${status(queueOk)} ==`,
+        `== 1. Maddy Queue ${status(queueOk)} ==`,
         queueEmpty ? "  Queue is empty (no stuck messages)" : queueResult,
       ].join("\n"));
 
-      // -- Section 2: Stalwart Logs
-      const stalwartLogs = isFail(sshBatchResult) ? sshBatchResult : (sshSections["STALWART_LOGS"] || "(no matching log lines)");
-      const logsHaveErrors = /error|fail|reject|bounce/i.test(stalwartLogs) && stalwartLogs !== "(no matching log lines)";
+      // -- Section 2: Maddy Logs
+      const maddyLogs = isFail(sshBatchResult) ? sshBatchResult : (sshSections["MADDY_LOGS"] || "(no matching log lines)");
+      const logsHaveErrors = /error|fail|reject|bounce/i.test(maddyLogs) && maddyLogs !== "(no matching log lines)";
       sections.push([
-        `== 2. Stalwart Outbound Logs (${m}m) ${status(!logsHaveErrors && !isFail(sshBatchResult))} ==`,
-        stalwartLogs || "(no matching log lines)",
+        `== 2. Maddy Outbound Logs (${m}m) ${status(!logsHaveErrors && !isFail(sshBatchResult))} ==`,
+        maddyLogs || "(no matching log lines)",
       ].join("\n"));
 
       // -- Section 3: SMTP-Proxy Logs
@@ -235,13 +220,13 @@ export function registerDebugTools(server: McpServer): void {
           `echo "===SMTP_BANNER==="`,
           `echo QUIT | timeout 3 nc -w3 localhost 25 2>&1 | head -1`,
           `echo "===INBOUND_LOGS==="`,
-          `docker logs stalwart --since ${m}m 2>&1 | grep -iE "ingest|received|accept|reject|spam|junk|from=|to=|message|deliver|rcpt|envelope" | tail -20`,
+          `docker logs maddy --since ${m}m 2>&1 | grep -iE "ingest|received|accept|reject|spam|junk|from=|to=|message|deliver|rcpt|envelope" | tail -20`,
           `echo "===ACCOUNT_CHECK==="`,
-          `docker exec stalwart cat /opt/stalwart-mail/etc/config.toml 2>/dev/null | grep -i "me@diegonmarcos" || echo "account not found in config"`,
+          `docker exec maddy maddy creds list 2>/dev/null | grep -i "me@diegonmarcos" || echo "account not found"`,
         ].join(" ; "), 20000),
 
-        // 6. Stalwart queue
-        stalwartQueue(),
+        // 6. Maddy queue
+        maddyQueue(),
 
         // 7. IMAP inbox count
         (async (): Promise<string> => {
@@ -296,7 +281,7 @@ export function registerDebugTools(server: McpServer): void {
       const smtpBanner = isFail(ociSshResult) ? ociSshResult : (ociSections["SMTP_BANNER"] || "(no output)");
       const smtpOk = /220/.test(smtpBanner);
       sections.push([
-        `== 4. Stalwart SMTP :25 Banner ${status(smtpOk)} ==`,
+        `== 4. Maddy SMTP :25 Banner ${status(smtpOk)} ==`,
         `  ${smtpBanner}`,
       ].join("\n"));
 
@@ -304,7 +289,7 @@ export function registerDebugTools(server: McpServer): void {
       const inboundLogs = isFail(ociSshResult) ? ociSshResult : (ociSections["INBOUND_LOGS"] || "(no matching log lines)");
       const inboundErrors = /reject|spam|junk|error|fail/i.test(inboundLogs) && inboundLogs !== "(no matching log lines)";
       sections.push([
-        `== 5. Stalwart Inbound Logs (${m}m) ${status(!inboundErrors && !isFail(ociSshResult))} ==`,
+        `== 5. Maddy Inbound Logs (${m}m) ${status(!inboundErrors && !isFail(ociSshResult))} ==`,
         inboundLogs || "(no matching log lines)",
       ].join("\n"));
 
@@ -312,7 +297,7 @@ export function registerDebugTools(server: McpServer): void {
       const queueOk = !isFail(queueResult) && !queueResult.includes("API_ERROR");
       const queueEmpty = queueResult === "Queue empty";
       sections.push([
-        `== 6. Stalwart Queue ${status(queueOk)} ==`,
+        `== 6. Maddy Queue ${status(queueOk)} ==`,
         queueEmpty ? "  Queue is empty" : queueResult,
       ].join("\n"));
 
@@ -327,7 +312,7 @@ export function registerDebugTools(server: McpServer): void {
       const accountOut = isFail(ociSshResult) ? ociSshResult : (ociSections["ACCOUNT_CHECK"] || "(no output)");
       const accountOk = /me@diegonmarcos/.test(accountOut) && !/not found/.test(accountOut);
       sections.push([
-        `== 8. Stalwart Account (me@diegonmarcos.com) ${status(accountOk)} ==`,
+        `== 8. Maddy Account (me@diegonmarcos.com) ${status(accountOk)} ==`,
         `  ${accountOut}`,
       ].join("\n"));
 

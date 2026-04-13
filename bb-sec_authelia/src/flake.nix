@@ -208,7 +208,7 @@
     notifier:
       disable_startup_check: true
       smtp:
-        address: submissions://${svc.stalwart.ip}:${toString svc.stalwart.ports.smtp}
+        address: submissions://${svc.maddy.ip}:${toString svc.maddy.ports.smtp}
         username: no-reply@diegonmarcos.com
         password: '{{ secret "/tmp/.secrets.d/AUTHELIA_SMTP_PASSWORD" }}'
         sender: "Authelia <no-reply@diegonmarcos.com>"
