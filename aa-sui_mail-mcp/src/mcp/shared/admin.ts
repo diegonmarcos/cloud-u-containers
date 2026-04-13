@@ -1,50 +1,28 @@
 /**
- * Stalwart Mail Server admin API client.
- * Replaces Mailu's `docker exec flask mailu` with REST API calls.
+ * Maddy Mail Server admin interface.
+ * Maddy uses CLI-based management (maddy creds, maddy imap-acct),
+ * not a REST API. Admin operations run via SSH + docker exec.
  */
 
-const STALWART_API = process.env.STALWART_ADMIN_URL || "https://mail.diegonmarcos.com";
-const STALWART_USER = process.env.STALWART_ADMIN_USER || "admin";
-const STALWART_PASS = process.env.STALWART_ADMIN_PASSWORD || "";
+import { exec as execCb } from "child_process";
+import { promisify } from "util";
 
-async function stalwartApi(path: string, method = "GET", body?: unknown): Promise<unknown> {
-  const headers: Record<string, string> = {
-    "Authorization": `Basic ${Buffer.from(`${STALWART_USER}:${STALWART_PASS}`).toString("base64")}`,
-    "Content-Type": "application/json",
-  };
-  const resp = await fetch(`${STALWART_API}/api${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Stalwart API ${method} ${path}: ${resp.status} ${text}`);
-  }
-  const text = await resp.text();
-  return text ? JSON.parse(text) : null;
+const execAsync = promisify(execCb);
+
+async function maddyExec(cmd: string): Promise<string> {
+  const { stdout } = await execAsync(
+    `ssh -o ConnectTimeout=10 -o BatchMode=yes oci-mail 'docker exec maddy ${cmd}'`,
+    { timeout: 15000 },
+  );
+  return stdout.trim();
 }
 
 export async function listAccounts(): Promise<string[]> {
-  const data = await stalwartApi("/account") as { items?: string[] };
-  return data?.items || [];
-}
-
-export async function createAccount(email: string, password: string, name?: string): Promise<void> {
-  await stalwartApi("/account", "POST", {
-    name: email,
-    secret: password,
-    description: name || email,
-    type: "individual",
-    emails: [email],
-  });
-}
-
-export async function deleteAccount(email: string): Promise<void> {
-  await stalwartApi(`/account/${encodeURIComponent(email)}`, "DELETE");
+  const out = await maddyExec("maddy creds list");
+  return out.split("\n").filter(Boolean);
 }
 
 export async function listDomains(): Promise<string[]> {
-  const data = await stalwartApi("/domain") as { items?: string[] };
-  return data?.items || [];
+  // Maddy domains are configured in maddy.conf, not a database
+  return ["diegonmarcos.com"];
 }

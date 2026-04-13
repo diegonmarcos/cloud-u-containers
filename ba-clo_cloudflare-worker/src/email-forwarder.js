@@ -1,5 +1,5 @@
 // Cloudflare Email Worker - Triple-delivery inbound email
-// Copy 1: ALWAYS → Stalwart via smtp-proxy (self-hosted primary)
+// Copy 1: ALWAYS → Maddy via smtp-proxy (self-hosted primary)
 // Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
 // Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
 
@@ -11,33 +11,33 @@ export default {
 
     const rawEmail = await new Response(message.raw).text();
 
-    // Fire all three in parallel: Stalwart + Google + health check
-    const [stalwartOk, googleOk, healthy] = await Promise.all([
-      deliverToStalwart(rawEmail, env),
+    // Fire all three in parallel: Maddy + Google + health check
+    const [maddyOk, googleOk, healthy] = await Promise.all([
+      deliverToMaddy(rawEmail, env),
       deliverToGoogle(rawEmail, env),
       checkMailHealth(env),
     ]);
 
-    console.log(`Results: stalwart=${stalwartOk}, google=${googleOk}, healthy=${healthy}`);
+    console.log(`Results: maddy=${maddyOk}, google=${googleOk}, healthy=${healthy}`);
 
     // If health check says unhealthy, send disaster backup to live.com
     if (!healthy) {
-      ctx.waitUntil(forwardToBackup(message, env, `mail health: unhealthy, stalwart=${stalwartOk}`));
+      ctx.waitUntil(forwardToBackup(message, env, `mail health: unhealthy, maddy=${maddyOk}`));
     }
 
     // Accept the email if at least one delivery succeeded
-    if (stalwartOk || googleOk) {
+    if (maddyOk || googleOk) {
       return;
     }
 
     // Both failed — reject with error
     console.error(`All deliveries failed — rejecting`);
-    message.setReject(`Primary (Stalwart) and secondary (Google) delivery both failed`);
+    message.setReject(`Primary (Maddy) and secondary (Google) delivery both failed`);
   }
 };
 
-// ── Stalwart delivery via smtp-proxy ────────────────────────────────
-async function deliverToStalwart(rawEmail, env) {
+// ── Maddy delivery via smtp-proxy ────────────────────────────────
+async function deliverToMaddy(rawEmail, env) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -52,13 +52,13 @@ async function deliverToStalwart(rawEmail, env) {
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      console.error(`Stalwart smtp-proxy error: ${response.status} ${await response.text()}`);
+      console.error(`Maddy smtp-proxy error: ${response.status} ${await response.text()}`);
       return false;
     }
-    console.log(`Stalwart: delivered via smtp-proxy`);
+    console.log(`Maddy: delivered via smtp-proxy`);
     return true;
   } catch (e) {
-    console.error(`Stalwart smtp-proxy failed: ${e.message}`);
+    console.error(`Maddy smtp-proxy failed: ${e.message}`);
     return false;
   }
 }

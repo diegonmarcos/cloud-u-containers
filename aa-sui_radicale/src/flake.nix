@@ -35,7 +35,7 @@
 
       [auth]
       type = imap
-      imap_host = ${svc.stalwart.ip}:${toString svc.stalwart.ports.imap}
+      imap_host = ${svc.maddy.ip}:${toString svc.maddy.ports.imap}
       imap_security = tls
 
       [storage]
