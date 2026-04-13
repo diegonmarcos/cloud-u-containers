@@ -872,16 +872,19 @@ step_wrangler() {
         return 1
     fi
 
-    # Source Cloudflare credentials from vault (same auto-detect as SOPS_AGE_KEY_FILE)
+    # Source Cloudflare credentials: env (GHA) > vault (local)
     # Wrangler auth priority: CLOUDFLARE_API_TOKEN > CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL
+    _gha_key="${CLOUDFLARE_API_KEY:-}"
+    _gha_email="${CLOUDFLARE_EMAIL:-}"
+
     # Clear ALL legacy/conflicting vars first so wrangler sees exactly what we set.
     unset CF_API_TOKEN CF_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL 2>/dev/null || true
 
+    # Try vault first (local dev)
     for cf_env in \
         "$HOME/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env" \
         "/home/diego/git/vault/A0_keys/providers/cloudflare/api-key_opaque/cloudflare.env"; do
         if [ -f "$cf_env" ]; then
-            # Use Global API Key (CF_API_KEY) — has all permissions including Workers
             _key=$(grep '^CF_API_KEY=' "$cf_env" | cut -d= -f2)
             _email=$(grep '^CF_API_EMAIL=' "$cf_env" | cut -d= -f2)
             if [ -n "$_key" ] && [ -n "$_email" ]; then
@@ -894,8 +897,16 @@ step_wrangler() {
         fi
     done
 
+    # Fallback to GHA env vars if vault not available (CI runner)
+    if [ -z "${CLOUDFLARE_API_KEY:-}" ] && [ -n "$_gha_key" ] && [ -n "$_gha_email" ]; then
+        CLOUDFLARE_API_KEY="$_gha_key"
+        CLOUDFLARE_EMAIL="$_gha_email"
+        export CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL
+        log "Using Cloudflare credentials from environment (CI)"
+    fi
+
     if [ -z "${CLOUDFLARE_API_KEY:-}" ]; then
-        log_error "CLOUDFLARE_API_KEY not found in vault"
+        log_error "CLOUDFLARE_API_KEY not found (checked vault + environment)"
         return 1
     fi
 
