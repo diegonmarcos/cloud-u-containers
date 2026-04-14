@@ -53,14 +53,12 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
+    # Inbound arrives via CF Worker → smtp-proxy (localhost/WG)
+    # SPF/DNSBL/rDNS check smtp-proxy's IP, not the original sender — useless
+    # DKIM signature survives relay — verifies original sender
+    # DMARC checks DKIM alignment — catches spoofed From: headers
     check {
         dkim
-        spf
-        dnsbl {
-            dnsbl.zone zen.spamhaus.org
-            dnsbl.zone bl.spamcop.net
-        }
-        require_matching_rdns
     }
 
     source $(local_domains) {
