@@ -237,19 +237,34 @@ async fn check_spf(
 
 async fn run_checks(resolver: &TokioAsyncResolver, ip: IpAddr, domain: &str) -> SecurityResults {
     let (rdns, dnsbl, spf) = tokio::join!(
-        check_rdns(resolver, ip),
+        async {
+            let r = check_rdns(resolver, ip).await;
+            info!(ip = %ip, rdns = ?r.0, pass = r.1, "check.rdns");
+            r
+        },
         async {
             let mut listed = Vec::new();
             for bl in DNSBL_LISTS {
-                if check_dnsbl(resolver, ip, bl).await {
-                    listed.push(bl.to_string());
-                }
+                let hit = check_dnsbl(resolver, ip, bl).await;
+                info!(ip = %ip, blocklist = bl, listed = hit, "check.dnsbl");
+                if hit { listed.push(bl.to_string()); }
             }
             listed
         },
-        check_spf(resolver, ip, domain, 0),
+        async {
+            let r = check_spf(resolver, ip, domain, 0).await;
+            info!(ip = %ip, domain = domain, result = %r, "check.spf");
+            r
+        },
     );
     SecurityResults { rdns: rdns.0, rdns_pass: rdns.1, dnsbl_listed: dnsbl, spf }
+}
+
+fn rand_id() -> u32 {
+    use std::time::SystemTime;
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| (d.as_nanos() & 0xFFFF_FFFF) as u32)
+        .unwrap_or(0)
 }
 
 // ── App state ───────────────────────────────────────────────────────
@@ -266,21 +281,28 @@ async fn handle_post(
     headers: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {
-    let client_ip = headers.get("cf-connecting-ip")
-        .and_then(|v| v.to_str().ok())
-        .or_else(|| headers.get("x-forwarded-for")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(',').next())
-            .map(str::trim))
-        .unwrap_or("unknown")
-        .to_string();
+    // Request ID for log correlation
+    let req_id: u32 = rand_id();
 
-    info!(client_ip = %client_ip, "POST received");
+    let cf_ip = headers.get("cf-connecting-ip").and_then(|v| v.to_str().ok()).map(String::from);
+    let xff = headers.get("x-forwarded-for").and_then(|v| v.to_str().ok()).map(String::from);
+    let client_ip = cf_ip.clone()
+        .or_else(|| xff.as_ref().and_then(|v| v.split(',').next()).map(|v| v.trim().to_string()))
+        .unwrap_or_else(|| "unknown".into());
+
+    info!(
+        req = req_id,
+        client_ip = %client_ip,
+        cf_ip = ?cf_ip,
+        xff = ?xff,
+        bytes = body.len(),
+        "request.start"
+    );
 
     // ── Auth ──
     let auth = headers.get("x-api-key").and_then(|v| v.to_str().ok()).unwrap_or("");
     if auth != state.config.api_key {
-        warn!(client_ip = %client_ip, "AUTH FAILED");
+        warn!(req = req_id, client_ip = %client_ip, "request.auth_failed");
         return (StatusCode::UNAUTHORIZED, Json(json!({"status":"error","error":"Unauthorized"}))).into_response();
     }
 
@@ -290,37 +312,38 @@ async fn handle_post(
     let msg_id = extract_header(&body, "Message-ID").unwrap_or_else(|| "?".into());
     let sender_domain = mail_from.rsplit_once('@').map(|(_, d)| d.to_string()).unwrap_or_default();
 
-    info!(from = %mail_from, to = %mail_to, msg_id = %msg_id, client_ip = %client_ip, "Processing");
+    info!(req = req_id, from = %mail_from, to = %mail_to, msg_id = %msg_id, client_ip = %client_ip, "request.parsed");
 
     // ── IP security checks (rDNS, DNSBL, SPF) ──
     if let Ok(ip) = IpAddr::from_str(&client_ip) {
         let checks = run_checks(&state.resolver, ip, &sender_domain).await;
 
         info!(
+            req = req_id,
             client_ip = %client_ip,
             rdns = ?checks.rdns,
             rdns_pass = checks.rdns_pass,
             dnsbl = ?checks.dnsbl_listed,
             spf = %checks.spf,
-            "Security checks"
+            "security.complete"
         );
 
         if !checks.dnsbl_listed.is_empty() {
-            warn!(client_ip = %client_ip, lists = ?checks.dnsbl_listed, "REJECTED: DNSBL");
+            warn!(req = req_id, client_ip = %client_ip, lists = ?checks.dnsbl_listed, "security.reject.dnsbl");
             return (StatusCode::FORBIDDEN, Json(json!({
                 "status": "rejected", "reason": "DNSBL", "blocklists": checks.dnsbl_listed,
             }))).into_response();
         }
 
         if checks.spf == SpfResult::Fail {
-            warn!(client_ip = %client_ip, domain = %sender_domain, "REJECTED: SPF fail");
+            warn!(req = req_id, client_ip = %client_ip, domain = %sender_domain, "security.reject.spf");
             return (StatusCode::FORBIDDEN, Json(json!({
                 "status": "rejected", "reason": "SPF fail",
             }))).into_response();
         }
 
         if !checks.rdns_pass {
-            warn!(client_ip = %client_ip, "rDNS failed (warning)");
+            warn!(req = req_id, client_ip = %client_ip, "security.warn.rdns");
         }
     }
 
@@ -330,7 +353,7 @@ async fn handle_post(
     let envelope = match Envelope::new(Some(from_addr), vec![to_addr]) {
         Ok(e) => e,
         Err(e) => {
-            error!(error = %e, "Bad envelope");
+            error!(req = req_id, error = %e, "smtp.envelope_error");
             return (StatusCode::BAD_REQUEST, Json(json!({"status":"error","error":e.to_string()}))).into_response();
         }
     };
@@ -344,7 +367,7 @@ async fn handle_post(
                 .build()
                 .send_raw(&envelope, &body).await,
             Err(e) => {
-                error!(error = %e, "SMTP TLS error");
+                error!(req = req_id, error = %e, "smtp.tls_error");
                 return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"status":"error","error":e.to_string()}))).into_response();
             }
         }
@@ -358,11 +381,11 @@ async fn handle_post(
 
     match result {
         Ok(_) => {
-            info!(msg_id = %msg_id, from = %mail_from, to = %mail_to, "Delivered OK");
+            info!(req = req_id, msg_id = %msg_id, from = %mail_from, to = %mail_to, "smtp.delivered");
             (StatusCode::OK, Json(json!({"status":"delivered","from":mail_from,"to":mail_to}))).into_response()
         }
         Err(e) => {
-            error!(error = %e, msg_id = %msg_id, "Delivery failed");
+            error!(req = req_id, error = %e, msg_id = %msg_id, "smtp.delivery_failed");
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"status":"error","error":e.to_string()}))).into_response()
         }
     }
