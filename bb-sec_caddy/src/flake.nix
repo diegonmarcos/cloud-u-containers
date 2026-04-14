@@ -702,6 +702,28 @@
     ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
 
       # ════════════════════════════════════════════════════════════
+      # MTA-STS — enforce TLS for inbound email delivery
+      # ════════════════════════════════════════════════════════════
+
+      mta-sts.diegonmarcos.com {
+    ${secNoLimit}
+        tls {
+          dns cloudflare {env.CF_API_TOKEN}
+        }
+        handle /.well-known/mta-sts.txt {
+          header Content-Type "text/plain"
+          respond "version: STSv1
+mode: enforce
+mx: route1.mx.cloudflare.net
+mx: route2.mx.cloudflare.net
+mx: route3.mx.cloudflare.net
+max_age: 604800
+" 200
+        }
+        respond 404
+      }
+
+      # ════════════════════════════════════════════════════════════
       # CATCH-ALL — Custom error page for unknown/unconfigured domains
       # ════════════════════════════════════════════════════════════
 

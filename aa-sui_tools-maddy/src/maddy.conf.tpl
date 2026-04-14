@@ -10,6 +10,9 @@ $(local_domains) = $(primary_domain)
 # TLS: wildcard cert from Caddy (*.diegonmarcos.com)
 tls file /data/tls/fullchain.pem /data/tls/privkey.pem
 
+# DNSSEC-validating resolvers (Cloudflare + Google)
+dns tcp://1.1.1.1 tcp://8.8.8.8
+
 # ── Local storage & authentication ────────────────────────────────
 auth.pass_table local_authdb {
     table sql_table {
@@ -53,12 +56,18 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
-    # DMARC/DKIM/SPF informational only — smtp-proxy delivers from localhost
-    # Real DKIM/SPF verification happens at Cloudflare before the Worker
-    dmarc no
     check {
         dkim
         spf
+        dnsbl {
+            dnsbl.zone zen.spamhaus.org
+            dnsbl.zone bl.spamcop.net
+        }
+        require_matching_rdns
+    }
+
+    modify {
+        arc
     }
 
     source $(local_domains) {
@@ -90,8 +99,11 @@ submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
             }
         }
 
-        # ALL outbound goes through OCI relay — OCI signs DKIM (selector: oci-mrs-202604)
+        # Maddy signs DKIM (selector: default), OCI relay adds second signature (oci-mrs-202604)
         default_destination {
+            modify {
+                dkim $(primary_domain) $(local_domains) default
+            }
             deliver_to &remote_queue
         }
     }
