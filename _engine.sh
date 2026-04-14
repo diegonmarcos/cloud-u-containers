@@ -199,9 +199,12 @@ NEOF
                 log_error "native_build.binary required for type=binary"
                 return 1
             fi
+            # Check CARGO_TARGET_DIR first (if set), then src/ relative
             BINARY_PATH="$SRC_DIR/$NATIVE_BINARY"
+            [ -n "${CARGO_TARGET_DIR:-}" ] && [ -f "$CARGO_TARGET_DIR/release/$(basename "$NATIVE_BINARY")" ] && \
+                BINARY_PATH="$CARGO_TARGET_DIR/release/$(basename "$NATIVE_BINARY")"
             if [ ! -f "$BINARY_PATH" ]; then
-                log_error "Native build produced no binary at $NATIVE_BINARY"
+                log_error "Native build produced no binary at $NATIVE_BINARY (also checked $CARGO_TARGET_DIR)"
                 return 1
             fi
             cp "$BINARY_PATH" "$DIST_DIR/"
