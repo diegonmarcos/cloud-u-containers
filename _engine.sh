@@ -1178,7 +1178,7 @@ case "${1:-all}" in
 
         # Wait for all 4
         FAIL=0
-        wait $PID_DOCKER   || { log_warn "docker build failed"; FAIL=$((FAIL+1)); }
+        wait $PID_DOCKER   || { log_error "docker build failed"; exit 1; }
         wait $PID_CONFIGS  || { log_warn "configs-push failed"; FAIL=$((FAIL+1)); }
         wait $PID_IMAGE    || { log_warn "compose-build failed"; FAIL=$((FAIL+1)); }
         wait $PID_SECRETS  || { log_error "secrets failed"; FAIL=$((FAIL+1)); }
