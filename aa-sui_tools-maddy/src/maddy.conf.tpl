@@ -53,13 +53,25 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
-    # smtp-proxy connects from localhost — IP-based checks (rDNS, DNSBL, SPF)
-    # cannot see the real sender. Signature-based checks (DKIM, DMARC) work.
-    # Upstream layers (CF, OCI) provide IP-level filtering as defense-in-depth.
+    # ── Security: two-tier architecture ────────────────────────────────
+    # Tier 1 (IP-based) — handled by smtp-proxy (has real sender IP via CF-Connecting-IP):
+    #   require_matching_rdns   — PTR record must exist for sender IP
+    #   dnsbl {                 — reject IPs listed in spam blocklists
+    #       zen.spamhaus.org
+    #       bl.spamcop.net
+    #   }
+    #   spf (IP check)          — verify sender IP is authorized by domain's SPF record
+    #
+    # These checks CANNOT run in Maddy because smtp-proxy connects from localhost
+    # (127.0.0.1). Maddy doesn't support XCLIENT or Proxy Protocol to receive
+    # the real sender IP. smtp-proxy does all IP checks before forwarding.
+    #
+    # Tier 2 (signature-based) — handled by Maddy (no IP needed):
     check {
         dkim
         spf
     }
+    # DMARC is enabled by default — aligns DKIM/SPF with From header (p=reject)
 
     default_source {
         destination postmaster $(local_domains) {
