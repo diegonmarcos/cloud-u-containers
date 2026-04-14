@@ -11,7 +11,7 @@ const log = (msg: string) => process.stderr.write(`[mail-mcp-http] ${msg}\n`);
 const SESSION_ID = "mail-mcp-session";
 
 function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "mail-mcp", version: "1.2.0" });
+  const server = new McpServer({ name: "mail-mcp", version: "1.3.0" });
   registerInboxTools(server);
   registerComposeTools(server);
   registerAdminTools(server);

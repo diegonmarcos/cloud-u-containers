@@ -330,4 +330,191 @@ export function registerDebugTools(server: McpServer): void {
       };
     },
   );
+
+  // ══════════════════════════════════════════════════════════════════
+  // Tool 3: debug_trace — Consolidated mail flow trace
+  // ══════════════════════════════════════════════════════════════════
+  server.tool(
+    "debug_trace",
+    "Trace a message across the full mail pipeline — correlates logs from Cloudflare Worker, Caddy L4, smtp-proxy, Maddy, and OCI relay. Use message_id for a specific message or minutes for a time window.",
+    {
+      message_id: z.string().optional().describe("Message-ID header value to trace (without angle brackets)"),
+      sender: z.string().optional().describe("Sender email to filter by"),
+      minutes: z.number().default(15).describe("Time window in minutes (default 15)"),
+      direction: z.enum(["inbound", "outbound", "both"]).default("both").describe("Filter by mail direction"),
+    },
+    async ({ message_id, sender, minutes, direction }) => {
+      const m = Math.max(1, Math.min(120, minutes));
+
+      // Build grep pattern for filtering
+      const grepParts: string[] = [];
+      if (message_id) grepParts.push(message_id.replace(/[<>]/g, ""));
+      if (sender) grepParts.push(sender);
+      const grepFilter = grepParts.length > 0
+        ? ` | grep -iE '${grepParts.join("|")}'`
+        : "";
+
+      // All log sources fetched in parallel
+      const [caddyLogs, smtpProxyLogs, maddyInbound, maddyOutbound, maddyQueue, ociRelay, imapCheck] = await Promise.all([
+        // 1. Caddy L4 on gcp-proxy (SMTP passthrough)
+        (direction === "outbound" ? Promise.resolve("") :
+          sshExec("gcp-proxy",
+            `docker logs caddy --since ${m}m 2>&1 | grep -iE 'smtp|:25|:465|:587|layer4|l4|mail'${grepFilter} | tail -25`,
+            20000)),
+
+        // 2. smtp-proxy on oci-mail (HTTP→SMTP bridge, inbound path)
+        (direction === "outbound" ? Promise.resolve("") :
+          sshExec("oci-mail",
+            `docker logs smtp-proxy --since ${m}m 2>&1${grepFilter || " | tail -30"}`,
+            15000)),
+
+        // 3. Maddy inbound logs
+        (direction === "outbound" ? Promise.resolve("") :
+          sshExec("oci-mail",
+            `docker logs maddy --since ${m}m 2>&1 | grep -iE 'ingest|received|accept|reject|spam|deliver|rcpt|envelope|from=|to=|check|spf|dkim|dmarc|dnsbl|xclient'${grepFilter} | tail -40`,
+            20000)),
+
+        // 4. Maddy outbound logs
+        (direction === "inbound" ? Promise.resolve("") :
+          sshExec("oci-mail",
+            `docker logs maddy --since ${m}m 2>&1 | grep -iE 'queue|relay|remote|next-hop|delivery|bounce|submit|outbound|target\\.smtp'${grepFilter} | tail -40`,
+            20000)),
+
+        // 5. Maddy queue status
+        maddyQueue(),
+
+        // 6. OCI relay connectivity
+        (direction === "inbound" ? Promise.resolve("") :
+          sshExec("oci-mail",
+            `echo QUIT | timeout 5 openssl s_client -starttls smtp -connect smtp.email.eu-marseille-1.oci.oraclecloud.com:587 -quiet 2>&1 | head -3`,
+            15000)),
+
+        // 7. IMAP delivery verification (if tracing specific message)
+        (message_id ? (async () => {
+          try {
+            const result = await withImap(async (client) => {
+              const lock = await client.getMailboxLock("INBOX");
+              try {
+                const msgs = await client.search({ header: { "message-id": message_id } });
+                return msgs.length > 0 ? `FOUND in INBOX (${msgs.length} match)` : "NOT in INBOX";
+              } finally {
+                lock.release();
+              }
+            });
+            return result;
+          } catch (e: any) {
+            return `IMAP_FAIL: ${e.message?.split("\n")[0] ?? e}`;
+          }
+        })() : Promise.resolve("")),
+      ]);
+
+      // ── Format output ──
+      const sections: string[] = [];
+      const trace = message_id ? `Message-ID: ${message_id}` : `Time window: last ${m} minutes`;
+      const filter = sender ? ` | Sender: ${sender}` : "";
+
+      sections.push(`=== MAIL TRACE: ${direction.toUpperCase()} ===\n${trace}${filter}`);
+
+      // Flow diagram
+      if (direction !== "outbound") {
+        sections.push([
+          "── Inbound Flow ──────────────────────────────────────",
+          "  Internet → CF Email Routing → CF Worker (email-forwarder)",
+          "    → smtp-proxy.diegonmarcos.com (CF Tunnel → HTTP:8080)",
+          "      → Maddy :25 (XCLIENT + SPF/DKIM/DMARC/DNSBL)",
+          "        → IMAP store (imapsql)",
+        ].join("\n"));
+      }
+      if (direction !== "inbound") {
+        sections.push([
+          "── Outbound Flow ─────────────────────────────────────",
+          "  Maddy submission :465/:587 (auth + DKIM sign)",
+          "    → OCI relay (smtp.email.eu-marseille-1.oci.oraclecloud.com:587)",
+          "      → OCI DKIM sign (oci-mrs-202604) → recipient MX",
+        ].join("\n"));
+      }
+
+      // Caddy L4
+      if (direction !== "outbound") {
+        const hasData = caddyLogs && !isFail(caddyLogs) && caddyLogs.trim().length > 0;
+        sections.push([
+          `── 1. Caddy L4 (gcp-proxy) ${status(!isFail(caddyLogs))} ──`,
+          hasData ? caddyLogs : "  (no SMTP passthrough logs in window)",
+        ].join("\n"));
+      }
+
+      // smtp-proxy
+      if (direction !== "outbound") {
+        const hasData = smtpProxyLogs && !isFail(smtpProxyLogs) && smtpProxyLogs.trim().length > 0;
+        const authFail = /401|Unauthorized|AUTH FAILED/i.test(smtpProxyLogs);
+        const deliverOk = /Delivered OK|200|delivered/i.test(smtpProxyLogs);
+        const badge = isFail(smtpProxyLogs) ? "[FAIL]"
+          : authFail ? "[AUTH_FAIL]"
+          : deliverOk ? "[PASS]"
+          : "[INFO]";
+        sections.push([
+          `── 2. smtp-proxy (oci-mail:8080) ${badge} ──`,
+          hasData ? smtpProxyLogs : "  (no logs in window)",
+        ].join("\n"));
+      }
+
+      // Maddy inbound
+      if (direction !== "outbound") {
+        const hasData = maddyInbound && !isFail(maddyInbound) && maddyInbound.trim().length > 0;
+        const rejected = /reject|spam|junk/i.test(maddyInbound);
+        const badge = isFail(maddyInbound) ? "[FAIL]"
+          : rejected ? "[REJECTED]"
+          : "[PASS]";
+        sections.push([
+          `── 3. Maddy Inbound (oci-mail:25) ${badge} ──`,
+          hasData ? maddyInbound : "  (no inbound activity in window)",
+        ].join("\n"));
+      }
+
+      // Maddy outbound
+      if (direction !== "inbound") {
+        const hasData = maddyOutbound && !isFail(maddyOutbound) && maddyOutbound.trim().length > 0;
+        const bounced = /bounce|fail|error/i.test(maddyOutbound);
+        const badge = isFail(maddyOutbound) ? "[FAIL]"
+          : bounced ? "[BOUNCE]"
+          : "[PASS]";
+        sections.push([
+          `── 4. Maddy Outbound (queue → OCI relay) ${badge} ──`,
+          hasData ? maddyOutbound : "  (no outbound activity in window)",
+        ].join("\n"));
+      }
+
+      // Queue
+      const queueEmpty = /Queue empty/i.test(maddyQueue) || maddyQueue.trim() === "";
+      sections.push([
+        `── 5. Maddy Queue ${status(!isFail(maddyQueue))} ──`,
+        queueEmpty ? "  Queue empty (no stuck messages)" : maddyQueue,
+      ].join("\n"));
+
+      // OCI relay
+      if (direction !== "inbound") {
+        const ociOk = /250|220|SMTP/i.test(ociRelay);
+        sections.push([
+          `── 6. OCI Relay ${status(ociOk)} ──`,
+          ociRelay || "  (skipped)",
+        ].join("\n"));
+      }
+
+      // IMAP verification
+      if (message_id && imapCheck) {
+        const found = imapCheck.includes("FOUND");
+        sections.push([
+          `── 7. IMAP Delivery ${status(found)} ──`,
+          `  ${imapCheck}`,
+        ].join("\n"));
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: sections.join("\n\n"),
+        }],
+      };
+    },
+  );
 }
