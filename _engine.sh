@@ -170,21 +170,16 @@ step_docker() {
     # Dispatch based on runner
     case "${RUNNER:-auto}" in
         auto|local)
-            # Ensure buildx builder exists
-            docker buildx inspect multiarch >/dev/null 2>&1 || \
-                docker buildx create --name multiarch --use >/dev/null 2>&1
-            docker buildx use multiarch 2>/dev/null
-
-            log "Building $FULL_IMAGE (platform: $PLATFORM) — local buildx"
-            BUILDKIT_PROGRESS=plain docker buildx build \
-                --progress=plain \
-                --push \
+            log "Building $FULL_IMAGE — docker build + push"
+            DOCKER_BUILDKIT=1 docker build \
                 --no-cache \
-                --platform "$PLATFORM" \
+                --progress=plain \
                 --tag "$FULL_IMAGE:latest" \
                 --tag "$FULL_IMAGE:$SHA_TAG" \
                 --file "$DOCKERFILE_PATH" \
                 "$BUILD_CONTEXT/" 2>&1 | while IFS= read -r line; do printf "[docker] %s\n" "$line"; done
+            docker push "$FULL_IMAGE:latest" 2>&1 | while IFS= read -r line; do printf "[docker] %s\n" "$line"; done
+            docker push "$FULL_IMAGE:$SHA_TAG" 2>&1 | while IFS= read -r line; do printf "[docker] %s\n" "$line"; done
             ;;
 
         oci-apps|oci-apps-1|oci-apps-2)
