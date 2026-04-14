@@ -10,9 +10,6 @@ $(local_domains) = $(primary_domain)
 # TLS: wildcard cert from Caddy (*.diegonmarcos.com)
 tls file /data/tls/fullchain.pem /data/tls/privkey.pem
 
-# DNSSEC-validating resolvers (Cloudflare + Google)
-dns tcp://1.1.1.1 tcp://8.8.8.8
-
 # ── Local storage & authentication ────────────────────────────────
 auth.pass_table local_authdb {
     table sql_table {
@@ -64,10 +61,6 @@ smtp tcp://0.0.0.0:25 {
             dnsbl.zone bl.spamcop.net
         }
         require_matching_rdns
-    }
-
-    modify {
-        arc
     }
 
     source $(local_domains) {
