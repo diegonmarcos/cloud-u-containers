@@ -507,20 +507,14 @@ step_secrets() {
     log "Decrypting secrets -> dist/.secrets"
     mkdir -p "$DIST_DIR"
 
-    # sops decrypt → dotenv, then single-quote values containing $ so
-    # docker-compose env_file doesn't interpolate them as variables
-    sops -d --output-type dotenv "$secrets_file" | node -e "
-const lines = require('fs').readFileSync(0,'utf8').split('\n');
-for (const line of lines) {
-  if (!line || line.startsWith('#')) { console.log(line); continue; }
-  const eq = line.indexOf('=');
-  if (eq < 0) { console.log(line); continue; }
-  const k = line.slice(0, eq);
-  const v = line.slice(eq + 1);
-  // Single-quote values with \$ — compose treats single-quoted as literal
-  console.log(v.includes('\$') ? k + \"='\" + v + \"'\" : line);
-}
-" > "$DIST_DIR/.secrets"
+    # sops decrypt → JSON (handles all types: str, int, bool) → dotenv
+    # Single-quote values containing $ so compose doesn't interpolate them
+    sops -d --output-type json "$secrets_file" \
+      | jq -r 'to_entries[] | if (.value | tostring | test("[$]"))
+          then "\(.key)='"'"'\(.value | tostring)'"'"'"
+          else "\(.key)=\(.value | tostring)"
+          end' \
+      > "$DIST_DIR/.secrets"
 
     # Split .secrets into per-file .secrets.d/ (one file per KEY, content = VALUE)
     # Enables Docker/Authelia _FILE suffix pattern: SECRET_FILE=/config/.secrets.d/KEY
