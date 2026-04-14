@@ -711,6 +711,7 @@ fi
 ENV_FILE_FLAG=""
 [ -f .secrets ] && ENV_FILE_FLAG="--env-file .secrets"
 docker compose $ENV_FILE_FLAG pull --quiet 2>/dev/null || true
+docker compose $ENV_FILE_FLAG down --remove-orphans 2>/dev/null || true
 docker compose $ENV_FILE_FLAG up -d --no-build --force-recreate
 COMPOSE_SCRIPT
         chmod +x "$DIST_DIR/$SCRIPT_NAME"
@@ -722,7 +723,7 @@ COMPOSE_SCRIPT
         # ── Standard: direct docker compose up ──
         ENV_FILE_FLAG="\$([ -f .secrets ] && echo '--env-file .secrets')"
         log "Running docker compose up on $DEPLOY_HOST:$DEPLOY_PATH"
-        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$ENV_FILE_FLAG pull --quiet && docker compose \$ENV_FILE_FLAG up -d --no-build --force-recreate"
+        ssh $SSH_OPTS "$DEPLOY_HOST" "cd $DEPLOY_PATH && docker compose \$ENV_FILE_FLAG pull --quiet && docker compose \$ENV_FILE_FLAG down --remove-orphans 2>/dev/null; docker compose \$ENV_FILE_FLAG up -d --no-build --force-recreate"
     fi
 
     # Post-hook
