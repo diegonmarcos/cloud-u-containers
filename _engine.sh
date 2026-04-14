@@ -1081,18 +1081,12 @@ step_compose_build() {
     ARCH="${DOCKER_ARCH:-amd64}"
     PLATFORM="linux/$ARCH"
     log "compose-build platform: $PLATFORM (from docker.arch)"
-    docker buildx inspect multiarch >/dev/null 2>&1 || \
-        docker buildx create --name multiarch --use >/dev/null 2>&1
-    docker buildx use multiarch 2>/dev/null
-
     # Build + push all services with build: sections (verbose output)
     log "── dockerfile_inline content ──"
     grep -A20 'dockerfile_inline:' "$DIST_DIR/docker-compose.yml" || true
-    log "── docker compose build --push (verbose) ──"
+    log "── docker compose build --push ──"
     COMPOSE_BUILD_OK=""
-    if BUILDKIT_PROGRESS=plain docker buildx bake --no-cache --push --progress=plain \
-        --set "*.platform=$PLATFORM" \
-        -f "$DIST_DIR/docker-compose.yml" 2>&1 | while IFS= read -r line; do
+    if DOCKER_BUILDKIT=1 docker compose -f "$DIST_DIR/docker-compose.yml" build --no-cache --push 2>&1 | while IFS= read -r line; do
         printf "[compose-build] %s\n" "$line"
     done; then
         COMPOSE_BUILD_OK=true
