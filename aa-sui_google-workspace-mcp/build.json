@@ -10,7 +10,14 @@
     "image": "google-workspace-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "cmd": "uv sync --frozen --no-dev --extra disk",
+      "entrypoint": "uv run main.py --transport streamable-http --tool-tier complete",
+      "base_image": "python:3.11-slim",
+      "apt": "curl"
+    }
   },
   "deploy": {
     "host": "oci-apps",

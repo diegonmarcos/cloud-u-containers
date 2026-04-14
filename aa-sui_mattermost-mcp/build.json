@@ -7,7 +7,13 @@
     "image": "mattermost-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "cmd": "npm ci --omit=dev",
+      "entrypoint": "npx tsx src/index.ts --http",
+      "base_image": "node:22-slim"
+    }
   },
   "deploy": {
     "host": "oci-apps",

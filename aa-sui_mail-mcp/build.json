@@ -7,7 +7,14 @@
     "image": "mail-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "cmd": "npm ci --omit=dev",
+      "entrypoint": "npx tsx mcp/index.ts --http",
+      "base_image": "node:22-slim",
+      "apt": "dnsutils openssh-client"
+    }
   },
   "deploy": {
     "host": "oci-apps",
