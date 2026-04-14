@@ -335,11 +335,11 @@ async fn handle_post(
             }))).into_response();
         }
 
+        // SPF + rDNS: warn only — connecting IP is CF/proxy, not original sender.
+        // DNSBL is the only hard reject (blocklisted proxy IP = something very wrong).
+        // Maddy handles real SPF/DKIM alignment via DMARC on the signature layer.
         if checks.spf == SpfResult::Fail {
-            warn!(req = req_id, client_ip = %client_ip, domain = %sender_domain, "security.reject.spf");
-            return (StatusCode::FORBIDDEN, Json(json!({
-                "status": "rejected", "reason": "SPF fail",
-            }))).into_response();
+            warn!(req = req_id, client_ip = %client_ip, domain = %sender_domain, "security.warn.spf");
         }
 
         if !checks.rdns_pass {
