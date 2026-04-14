@@ -22,7 +22,7 @@ async function main() {
   } else {
     const server = new McpServer({
       name: "mail-mcp",
-      version: "1.2.0",
+      version: "1.3.0",
     });
     registerInboxTools(server);
     registerComposeTools(server);
@@ -30,7 +30,7 @@ async function main() {
     registerResendTools(server);
     registerDebugTools(server);
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.2.0 (24 tools: 10 inbox, 3 compose, 2 admin, 7 resend, 2 debug)...");
+    log("Starting mail-mcp v1.3.0 (25 tools: 10 inbox, 3 compose, 2 admin, 7 resend, 3 debug)...");
     await server.connect(transport);
     log("Connected via stdio transport");
   }
