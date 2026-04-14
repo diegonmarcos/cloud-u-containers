@@ -166,6 +166,8 @@ step_docker() {
 
     if [ -n "$NATIVE_CMD" ]; then
         log "Native build ($NATIVE_TYPE): $NATIVE_CMD"
+        # CARGO_TARGET_DIR: prevent rust builds from polluting src/
+        export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-/tmp/cargo-target}"
         (cd "$SRC_DIR" && eval "$NATIVE_CMD") 2>&1 | while IFS= read -r line; do printf "[native] %s\n" "$line"; done
 
         mkdir -p "$DIST_DIR"
@@ -174,12 +176,13 @@ step_docker() {
         ENV_LINE=""
         [ -n "$NATIVE_ENV" ] && ENV_LINE="ENV $NATIVE_ENV"
 
+        # Convert entrypoint string to JSON array: "npx tsx index.ts" → ["npx","tsx","index.ts"]
+        _entrypoint_json() {
+            echo "$1" | node -e "const a=require('fs').readFileSync(0,'utf8').trim().split(/\s+/);console.log(JSON.stringify(a))" 2>/dev/null
+        }
+
         if [ "$NATIVE_TYPE" = "app" ]; then
-            # App mode: copy entire app directory (node/python with deps installed)
-            APP_SRC="${NATIVE_APP_DIR:-.}"
-            # Convert entrypoint to JSON array for CMD
-            CMD_LINE="CMD [\"$(echo "$NATIVE_ENTRYPOINT" | awk '{for(i=1;i<=NF;i++){if(i>1)printf ",";printf "\"%s\"",$i}}')\""
-            CMD_LINE="CMD $(echo "$NATIVE_ENTRYPOINT" | node -e "const a=require('fs').readFileSync(0,'utf8').trim().split(/\s+/);console.log(JSON.stringify(a))" 2>/dev/null || echo "[\"$NATIVE_ENTRYPOINT\"]")"
+            CMD_LINE="CMD $(_entrypoint_json "$NATIVE_ENTRYPOINT")"
             cat > "$DIST_DIR/Dockerfile.native" <<NEOF
 FROM ${NATIVE_BASE:-node:22-slim}
 ${APT_LINE}
@@ -192,7 +195,6 @@ NEOF
             DOCKERFILE="Dockerfile.native"
             log "Native app packaged (type=app)"
         else
-            # Binary mode: copy single compiled binary
             if [ -z "$NATIVE_BINARY" ]; then
                 log_error "native_build.binary required for type=binary"
                 return 1
