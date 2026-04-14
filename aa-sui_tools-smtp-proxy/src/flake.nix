@@ -147,6 +147,7 @@
         cp ${./Dockerfile} $out/Dockerfile
         cp ${./nginx.conf} $out/nginx.conf
         cp ${./Cargo.toml} $out/Cargo.toml
+        cp ${./Cargo.lock} $out/Cargo.lock
         cp ${./main.rs} $out/main.rs
       '';
     in {

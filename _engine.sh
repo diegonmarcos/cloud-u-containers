@@ -153,36 +153,67 @@ step_docker() {
         [ -n "$REMOTE_HASH" ] && log "Docker src changed ($REMOTE_HASH -> $LOCAL_HASH)"
     fi
 
-    # ── Native build: compile inside cloud-builder, package binary only ──
+    # ── Native build: build inside cloud-builder, package into minimal image ──
     NATIVE_CMD="$(get_config docker.native_build.cmd)"
+    NATIVE_TYPE="$(get_config docker.native_build.type)"  # binary (default) or app
     NATIVE_BINARY="$(get_config docker.native_build.binary)"
     NATIVE_BASE="$(get_config docker.native_build.base_image)"
+    NATIVE_APT="$(get_config docker.native_build.apt)"
+    NATIVE_ENTRYPOINT="$(get_config docker.native_build.entrypoint)"
+    NATIVE_APP_DIR="$(get_config docker.native_build.app_dir)"
+    NATIVE_ENV="$(get_config docker.native_build.env)"
+    [ -z "$NATIVE_TYPE" ] && NATIVE_TYPE="binary"
 
-    if [ -n "$NATIVE_CMD" ] && [ -n "$NATIVE_BINARY" ]; then
-        log "Native build: $NATIVE_CMD"
+    if [ -n "$NATIVE_CMD" ]; then
+        log "Native build ($NATIVE_TYPE): $NATIVE_CMD"
         (cd "$SRC_DIR" && eval "$NATIVE_CMD") 2>&1 | while IFS= read -r line; do printf "[native] %s\n" "$line"; done
-        BINARY_PATH="$SRC_DIR/$NATIVE_BINARY"
-        if [ ! -f "$BINARY_PATH" ]; then
-            log_error "Native build produced no binary at $NATIVE_BINARY"
-            return 1
-        fi
-        # Copy binary to dist/ for Docker packaging
+
         mkdir -p "$DIST_DIR"
-        cp "$BINARY_PATH" "$DIST_DIR/"
-        BINARY_NAME=$(basename "$NATIVE_BINARY")
-        # Generate minimal Dockerfile (no compilation, just binary)
-        NATIVE_APT="$(get_config docker.native_build.apt)"
         APT_LINE=""
         [ -n "$NATIVE_APT" ] && APT_LINE="RUN apt-get update && apt-get install -y --no-install-recommends $NATIVE_APT && rm -rf /var/lib/apt/lists/*"
-        cat > "$DIST_DIR/Dockerfile.native" <<NEOF
+        ENV_LINE=""
+        [ -n "$NATIVE_ENV" ] && ENV_LINE="ENV $NATIVE_ENV"
+
+        if [ "$NATIVE_TYPE" = "app" ]; then
+            # App mode: copy entire app directory (node/python with deps installed)
+            APP_SRC="${NATIVE_APP_DIR:-.}"
+            # Convert entrypoint to JSON array for CMD
+            CMD_LINE="CMD [\"$(echo "$NATIVE_ENTRYPOINT" | awk '{for(i=1;i<=NF;i++){if(i>1)printf ",";printf "\"%s\"",$i}}')\""
+            CMD_LINE="CMD $(echo "$NATIVE_ENTRYPOINT" | node -e "const a=require('fs').readFileSync(0,'utf8').trim().split(/\s+/);console.log(JSON.stringify(a))" 2>/dev/null || echo "[\"$NATIVE_ENTRYPOINT\"]")"
+            cat > "$DIST_DIR/Dockerfile.native" <<NEOF
+FROM ${NATIVE_BASE:-node:22-slim}
+${APT_LINE}
+${ENV_LINE}
+WORKDIR /app
+COPY . /app
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+${CMD_LINE}
+NEOF
+            DOCKERFILE="Dockerfile.native"
+            log "Native app packaged (type=app)"
+        else
+            # Binary mode: copy single compiled binary
+            if [ -z "$NATIVE_BINARY" ]; then
+                log_error "native_build.binary required for type=binary"
+                return 1
+            fi
+            BINARY_PATH="$SRC_DIR/$NATIVE_BINARY"
+            if [ ! -f "$BINARY_PATH" ]; then
+                log_error "Native build produced no binary at $NATIVE_BINARY"
+                return 1
+            fi
+            cp "$BINARY_PATH" "$DIST_DIR/"
+            BINARY_NAME=$(basename "$NATIVE_BINARY")
+            cat > "$DIST_DIR/Dockerfile.native" <<NEOF
 FROM ${NATIVE_BASE:-debian:bookworm-slim}
 ${APT_LINE}
 COPY ${BINARY_NAME} /usr/local/bin/${BINARY_NAME}
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 CMD ["${BINARY_NAME}"]
 NEOF
-        DOCKERFILE="Dockerfile.native"
-        log "Native binary packaged: $BINARY_NAME ($(du -sh "$DIST_DIR/$BINARY_NAME" | cut -f1))"
+            DOCKERFILE="Dockerfile.native"
+            log "Native binary packaged: $BINARY_NAME ($(du -sh "$DIST_DIR/$BINARY_NAME" | cut -f1))"
+        fi
     fi
 
     # Build context: prefer dist/ if Dockerfile exists there, else src/
