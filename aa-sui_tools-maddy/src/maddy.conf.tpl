@@ -53,12 +53,16 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
-    # Inbound arrives via CF Worker → smtp-proxy (localhost/WG)
-    # SPF/DNSBL/rDNS check smtp-proxy's IP, not the original sender — useless
-    # DKIM signature survives relay — verifies original sender
-    # DMARC checks DKIM alignment — catches spoofed From: headers
+    # smtp-proxy sends XCLIENT with original sender IP — all checks use real source
+    # Maddy is self-contained: CF/OCI are extra layers, not dependencies
     check {
+        require_matching_rdns
         dkim
+        spf
+        dnsbl {
+            zen.spamhaus.org
+            bl.spamcop.net
+        }
     }
 
     source $(local_domains) {
