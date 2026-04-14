@@ -1,5 +1,5 @@
 {
-  description = "SMTP Proxy/Relay - CF Worker email-forwarder → Mailu front:25";
+  description = "SMTP Proxy — HTTP→SMTP bridge with IP security checks (SPF, DNSBL, rDNS)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
@@ -25,7 +25,6 @@
       # ╚══════════════════════════════════════════════════════════════════╝
       services:
         smtp-proxy:
-          image: ghcr.io/diegonmarcos/smtp-proxy:latest
           build: .
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
@@ -146,7 +145,8 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${./Dockerfile} $out/Dockerfile
         cp ${./nginx.conf} $out/nginx.conf
-        cp ${./smtp_proxy.py} $out/smtp_proxy.py
+        cp ${./Cargo.toml} $out/Cargo.toml
+        cp ${./main.rs} $out/main.rs
       '';
     in {
       default = defaultPkg;
