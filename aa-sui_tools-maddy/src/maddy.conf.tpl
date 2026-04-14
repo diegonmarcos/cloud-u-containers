@@ -90,11 +90,8 @@ submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
             }
         }
 
-        # ALL outbound goes through external relay — no local shortcut
+        # ALL outbound goes through OCI relay — OCI signs DKIM (selector: oci-mrs-202604)
         default_destination {
-            modify {
-                dkim $(primary_domain) $(local_domains) default
-            }
             deliver_to &remote_queue
         }
     }
