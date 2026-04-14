@@ -53,21 +53,14 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
-    # smtp-proxy sends XCLIENT with original sender IP — all checks use real source
-    # Maddy is self-contained: CF/OCI are extra layers, not dependencies
+    # smtp-proxy connects from localhost — IP-based checks (rDNS, DNSBL, SPF)
+    # cannot see the real sender. Signature-based checks (DKIM, DMARC) work.
+    # Upstream layers (CF, OCI) provide IP-level filtering as defense-in-depth.
     check {
-        require_matching_rdns
         dkim
         spf
-        dnsbl {
-            zen.spamhaus.org
-            bl.spamcop.net
-        }
     }
 
-    source $(local_domains) {
-        reject 501 5.1.8 "Use Submission for outgoing SMTP"
-    }
     default_source {
         destination postmaster $(local_domains) {
             deliver_to &local_routing
