@@ -53,17 +53,14 @@ smtp tcp://0.0.0.0:25 {
         all concurrency 10
     }
 
-    # DMARC/DKIM/SPF informational only — smtp-proxy delivers from localhost
-    # Real DKIM/SPF verification happens at Cloudflare before the Worker
-    dmarc no
+    # smtp-proxy connects from localhost — IP-based checks (rDNS, DNSBL, SPF)
+    # cannot see the real sender. Signature-based checks (DKIM, DMARC) work.
+    # Upstream layers (CF, OCI) provide IP-level filtering as defense-in-depth.
     check {
         dkim
         spf
     }
 
-    source $(local_domains) {
-        reject 501 5.1.8 "Use Submission for outgoing SMTP"
-    }
     default_source {
         destination postmaster $(local_domains) {
             deliver_to &local_routing
@@ -90,9 +87,7 @@ submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
             }
         }
 
-        destination postmaster $(local_domains) {
-            deliver_to &local_routing
-        }
+        # Maddy signs DKIM (selector: default), OCI relay adds second signature (oci-mrs-202604)
         default_destination {
             modify {
                 dkim $(primary_domain) $(local_domains) default

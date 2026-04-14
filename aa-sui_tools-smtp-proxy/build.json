@@ -8,7 +8,13 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "smtp-proxy",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "amd64",
+    "native_build": {
+      "cmd": "cargo build --release",
+      "binary": "target/release/smtp-proxy",
+      "base_image": "debian:bookworm-slim",
+      "apt": "ca-certificates"
+    }
   },
   "deploy": {
     "host": "oci-mail",
