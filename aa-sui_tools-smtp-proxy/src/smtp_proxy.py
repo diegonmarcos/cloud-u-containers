@@ -22,18 +22,24 @@ class SMTPProxyHandler(BaseHTTPRequestHandler):
             return
         content_length = int(self.headers.get('Content-Length', 0))
         raw_email = self.rfile.read(content_length)
+        # Extract original sender IP from CF Worker headers
+        original_ip = (self.headers.get('CF-Connecting-IP')
+                       or self.headers.get('X-Forwarded-For', '').split(',')[0].strip()
+                       or self.client_address[0])
         try:
             msg = message_from_bytes(raw_email)
             mail_from = parseaddr(msg.get('From', ''))[1] or 'cloudflare@localhost'
             mail_to = parseaddr(msg.get('To', ''))[1] or SMTP_USER
-            print(f'[SMTP] Delivering from {mail_from} to {mail_to} via {SMTP_HOST}:{SMTP_PORT}')
-            
+            print(f'[SMTP] Delivering from {mail_from} to {mail_to} via {SMTP_HOST}:{SMTP_PORT} (client: {original_ip})')
+
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30, local_hostname=HELO_DOMAIN) as smtp:
                 if SMTP_PORT == 587:
                     smtp.starttls()
                     smtp.login(SMTP_USER, SMTP_PASS)
+                # XCLIENT: pass original sender IP so Maddy can do SPF/DNSBL/rDNS checks
+                smtp.docmd('XCLIENT', f'ADDR={original_ip}')
                 smtp.sendmail(mail_from, [mail_to], raw_email)
-            
+
             print(f'[SMTP] Delivered successfully')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
