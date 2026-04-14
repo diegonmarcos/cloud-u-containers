@@ -17,7 +17,14 @@
     "image": "introspect-proxy",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "arch": "amd64"
+    "arch": "amd64",
+    "native_build": {
+      "type": "app",
+      "cmd": "pip install --target=.deps -r requirements.txt",
+      "entrypoint": "gunicorn --bind 0.0.0.0:4182 --workers 1 --threads 1 --timeout 120 main:app",
+      "base_image": "python:3.11-slim",
+      "env": "PYTHONPATH=/app/.deps"
+    }
   },
   "proxy": {
     "app_hub": false

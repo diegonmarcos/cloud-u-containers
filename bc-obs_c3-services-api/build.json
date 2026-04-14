@@ -12,7 +12,14 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "c3-services-api",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "cmd": "npm ci --omit=dev",
+      "entrypoint": "./entrypoint.sh",
+      "base_image": "node:22-bookworm-slim",
+      "apt": "ca-certificates curl"
+    }
   },
   "deploy": {
     "host": "oci-apps",

@@ -11,7 +11,14 @@
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
     "platform": "linux/arm64",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "cmd": "npm ci --omit=dev",
+      "entrypoint": "npx tsx index.ts",
+      "base_image": "node:22-slim",
+      "apt": "curl ca-certificates python3 build-essential git libssl3"
+    }
   },
   "deploy": {
     "host": "oci-apps",
