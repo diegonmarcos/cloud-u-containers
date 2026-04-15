@@ -1,14 +1,26 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
+# ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
+# ╠══════════════════════════════════════════════════════════════════╣
+# ║ Source: ~/git/cloud/a_solutions/ad-agi_ollama/src/flake.nix     ║
+# ║ Rebuild: ~/git/cloud/a_solutions/ad-agi_ollama/build.sh ship    ║
+# ╚══════════════════════════════════════════════════════════════════╝
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ghcr.io/diegonmarcos/ollama:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM ghcr.io/diegonmarcos/ollama:latest
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
     container_name: ollama
-    restart: unless-stopped
-    ports:
-      - "10.0.0.8:11434:11434"
+    restart: "no"  # container-init handles startup
+    network_mode: host
     volumes:
       - ollama_data:/root/.ollama
     environment:
       - TZ=America/Chicago
+      - OLLAMA_HOST=0.0.0.0:11434
       - OLLAMA_KEEP_ALIVE=5m
       - OLLAMA_KV_CACHE_TYPE=q4_0
       - NVIDIA_VISIBLE_DEVICES=all

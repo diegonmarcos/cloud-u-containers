@@ -7,7 +7,17 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 services:
   maddy:
-    image: foxcpp/maddy:0.9
+    image: ghcr.io/diegonmarcos/maddy:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM foxcpp/maddy:0.9
+        COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
+        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+        LABEL org.opencontainers.image.description="maddy"
+        LABEL org.opencontainers.image.title="maddy"
+        LABEL cloud.diegonmarcos.from-image="foxcpp/maddy:0.9"
+        LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: maddy
     network_mode: host
     entrypoint: ["sh", "/etc/maddy/init.sh"]

@@ -15,6 +15,8 @@ done
 echo "Pulling Q8 models..."
 echo "  Pulling deepseek-r1:14b-qwen-distill-q8_0..."
 docker exec ollama ollama pull deepseek-r1:14b-qwen-distill-q8_0
+      echo "  Pulling MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0..."
+docker exec ollama ollama pull MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0
       echo "  Pulling qwen2.5:14b-instruct-q8_0..."
 docker exec ollama ollama pull qwen2.5:14b-instruct-q8_0
 

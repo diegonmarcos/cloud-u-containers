@@ -12,7 +12,7 @@ services:
     build:
       context: ./repo
       dockerfile: docker/Dockerfile.api
-    image: crawlee-cloud-api:local
+    image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
     container_name: crawlee_api
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -21,18 +21,21 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}
       REDIS_URL: redis://localhost:6381
       S3_ENDPOINT: http://localhost:9000
-      S3_ACCESS_KEY: ${MINIO_USER}
-      S3_SECRET_KEY: ${MINIO_PASSWORD}
       S3_BUCKET: crawlee-cloud
       S3_FORCE_PATH_STYLE: "true"
-      JWT_SECRET: ${JWT_SECRET}
       RATE_LIMIT_MAX: "1000"
       LOG_LEVEL: info
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DB_HOST: localhost
+      DB_PORT: "5433"
+    command: >
+      sh -c '
+        export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+        export S3_ACCESS_KEY="$$MINIO_USER"
+        export S3_SECRET_KEY="$$MINIO_PASSWORD"
+        exec node packages/api/dist/index.js
+      '
     depends_on:
       crawlee_db:
         condition: service_healthy
@@ -51,7 +54,7 @@ services:
     build:
       context: ./repo
       dockerfile: docker/Dockerfile.runner
-    image: crawlee-cloud-runner:local
+    image: ghcr.io/diegonmarcos/crawlee-cloud-runner:latest
     container_name: crawlee_runner
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -60,8 +63,6 @@ services:
     environment:
       NODE_ENV: production
       API_BASE_URL: http://localhost:3000
-      API_TOKEN: ${RUNNER_TOKEN}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}
       REDIS_URL: redis://localhost:6381
       DOCKER_SOCKET: /var/run/docker.sock
       DOCKER_NETWORK: host
@@ -69,6 +70,14 @@ services:
       ACTOR_MAX_MEMORY_MB: "2048"
       ACTOR_DEFAULT_MEMORY_MB: "512"
       ACTOR_TIMEOUT_SECS: "3600"
+      DB_HOST: localhost
+      DB_PORT: "5433"
+    command: >
+      sh -c '
+        export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+        export API_TOKEN="$$RUNNER_TOKEN"
+        exec node dist/index.js
+      '
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -79,7 +88,7 @@ services:
     build:
       context: ./repo
       dockerfile: docker/Dockerfile.dashboard
-    image: crawlee-cloud-dashboard:local
+    image: ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest
     container_name: crawlee_dashboard
     restart: "no"  # container-init handles startup
     network_mode: host
@@ -95,17 +104,22 @@ services:
     build:
       context: ./repo
       dockerfile: docker/Dockerfile.api
-    image: crawlee-cloud-api:local
+    image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
     container_name: crawlee_scheduler
     restart: "no"  # container-init handles startup
     network_mode: host
     env_file:
       - .secrets
-    command: ["sleep", "infinity"]
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5433/${POSTGRES_DB}
       REDIS_URL: redis://localhost:6381
+      DB_HOST: localhost
+      DB_PORT: "5433"
+    command: >
+      sh -c '
+        export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+        exec sleep infinity
+      '
 
   # ═══ DATA STORES (standard images) ═══
 
@@ -126,7 +140,7 @@ services:
     volumes:
       - crawlee_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -160,12 +174,11 @@ services:
     container_name: crawlee_minio
     restart: "no"  # container-init handles startup
     network_mode: host
-    command: server /data --address ":9000" --console-address ":9001"
     env_file:
       - .secrets
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    entrypoint: ["sh", "-c"]
+    command:
+      - 'export MINIO_ROOT_USER="$$MINIO_USER" && export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD" && exec minio server /data --address ":9000" --console-address ":9001"'
     volumes:
       - crawlee_minio:/data
     healthcheck:
@@ -190,7 +203,7 @@ services:
       - .secrets
     entrypoint: >
       /bin/sh -c "
-      mc alias set myminio http://localhost:9000 ${MINIO_USER} ${MINIO_PASSWORD};
+      mc alias set myminio http://localhost:9000 $$MINIO_USER $$MINIO_PASSWORD;
       mc mb myminio/crawlee-cloud --ignore-existing;
       exit 0;
       "

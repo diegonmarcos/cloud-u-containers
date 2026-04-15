@@ -21,6 +21,11 @@
     title = "Maddy Mail Server";
     docker = import ../../_shared/docker.nix;
 
+    ghcr-maddy = docker.mkGhcrBuild {
+      name = "maddy";
+      fromImage = "foxcpp/maddy:0.9";
+    };
+
     # ── Docker Compose ─────────────────────────────────────────────────
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
       banner = docker.banner "~/git/cloud/a_solutions/aa-sui_tools-maddy/src/flake.nix";
@@ -30,7 +35,8 @@
       services = {
         maddy = docker.mkService {
           name = "maddy";
-          image = "foxcpp/maddy:0.9";
+          image = ghcr-maddy.image;
+          build = ghcr-maddy.build;
           container_name = "maddy";
           entrypoint = ["sh" "/etc/maddy/init.sh"];
           env_file = [".secrets"];

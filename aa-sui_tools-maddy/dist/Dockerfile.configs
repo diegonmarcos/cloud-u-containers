@@ -1,3 +1,0 @@
-FROM busybox:latest
-COPY . /configs/
-CMD ["sh", "-c", "cp -r /configs/. /out/ && echo '[configs] extracted to /out'"]

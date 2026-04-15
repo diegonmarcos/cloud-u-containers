@@ -11,12 +11,12 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
-      research_image = "ghcr.io/diegonmarcos/quant-light-research:latest";
-      analytics_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
-      ml_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
-      risk_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
-      engine_image = "ghcr.io/diegonmarcos/quant-light-engine:latest";
-      db_image = "ghcr.io/diegonmarcos/quant-light-db:latest";
+      research_image = "ghcr.io/diegonmarcos/quant-full-research:latest";
+      analytics_image = "ghcr.io/diegonmarcos/quant-full-analytics:latest";
+      ml_image = "ghcr.io/diegonmarcos/quant-full-ml:latest";
+      risk_image = "ghcr.io/diegonmarcos/quant-full-risk:latest";
+      engine_image = "ghcr.io/diegonmarcos/quant-full-engine:latest";
+      db_image = "ghcr.io/diegonmarcos/quant-full-db:latest";
       jupyter_port = ports.valueOf "research";
       dash_port = 8050;
       engine_port = 5000;
