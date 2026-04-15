@@ -1,6 +1,6 @@
 #!/bin/sh
 # Health check for a single VM — container status + port checks (async)
-# Usage: health-check-vm.sh <ssh-alias> <ports> [known-flaky]
+# Usage: cloud-health-check-vm.sh <ssh-alias> <ports> [known-flaky]
 #   ssh-alias:   SSH config alias (e.g. oci-apps, gcp-proxy)
 #   ports:       comma-separated port list (e.g. 80,443,8080)
 #   known-flaky: comma-separated container names that warn instead of fail

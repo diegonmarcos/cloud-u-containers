@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Generate cloud-data configs from build.json + topology ──
-# Usage: ship-gen-configs.sh
+# Usage: cloud-ship-orchestrate-gen-configs.sh
 set -euo pipefail
 
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"

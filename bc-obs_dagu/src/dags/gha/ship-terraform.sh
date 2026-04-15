@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Run terraform plan+apply for cloud providers ──
-# Usage: ship-terraform.sh [project]
+# Usage: cloud-ship-terraform-deploy-apply.sh [project]
 #   project: cloudflare, gcloud, oci, aws, hetzner (omit for all)
 set -euo pipefail
 

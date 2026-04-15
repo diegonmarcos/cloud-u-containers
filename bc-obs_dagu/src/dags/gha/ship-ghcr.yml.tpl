@@ -31,4 +31,4 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push images
-        run: bash .github/workflows/scripts/ship-ghcr.sh
+        run: bash .github/workflows/scripts/cloud-ship-orchestrate-ghcr.sh
