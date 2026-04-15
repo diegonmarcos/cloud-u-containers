@@ -1,4 +1,4 @@
-FROM ghcr.io/dagu-org/dagu:1.30.3
+FROM ghcr.io/dagucloud/dagu:2.5.0
 
 USER root
 
@@ -25,5 +25,8 @@ COPY fetch-token.sh /var/lib/dagu/fetch-token.sh
 COPY triggers.json /etc/dagu/triggers.json
 COPY ntfy-bridge.sh /usr/local/bin/ntfy-bridge.sh
 RUN chmod +x /usr/local/bin/ntfy-bridge.sh
+
+# Ensure dagu user can access SSH keys mounted from host
+RUN mkdir -p /home/dagu/.ssh && chown -R dagu:dagu /home/dagu/.ssh
 
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"

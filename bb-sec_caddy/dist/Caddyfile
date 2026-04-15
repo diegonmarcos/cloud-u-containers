@@ -252,7 +252,7 @@ import request_limits
 }
   }
 
-  # Dagu workflow scheduler
+  # Dagu workflow scheduler (oci-analytics)
   workflows.diegonmarcos.com {
 import security
 import request_limits
@@ -265,14 +265,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.3:8070
+    reverse_proxy 10.0.0.4:8070
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.3:8070
+    reverse_proxy 10.0.0.4:8070
   }
 
     handle_errors {
@@ -390,7 +390,7 @@ import security
 import request_limits
 
 
-        reverse_proxy 10.0.0.1:8880
+        reverse_proxy 10.0.0.6:8880
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -508,6 +508,25 @@ reverse_proxy https://diegonmarcos.github.io {
 }
   }
 
+  # news.diegonmarcos.com
+  news.diegonmarcos.com {
+import security
+import request_limits
+    rewrite * /news{uri}
+reverse_proxy https://diegonmarcos.github.io {
+  header_up Host diegonmarcos.github.io
+}
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
 
   # ════════════════════════════════════════════════════════════
   # PATH-BASED ROUTES (from path_routes[])
@@ -604,6 +623,10 @@ forward_auth 10.0.0.1:9091 {
     reverse_proxy 10.0.0.6:3000
   }
 
+}
+
+handle_path /news/* {
+  reverse_proxy 10.0.0.6:3019
 }
 handle {
   rewrite * /api{uri}
@@ -1144,18 +1167,18 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-      reverse_proxy 10.0.0.1:8090
+      reverse_proxy 10.0.0.6:8090
     }
     @ntfy_token header_regexp Authorization "^Bearer tk_"
     handle @ntfy_token {
-      reverse_proxy 10.0.0.1:8090
+      reverse_proxy 10.0.0.6:8090
     }
     handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-      reverse_proxy 10.0.0.1:8090
+      reverse_proxy 10.0.0.6:8090
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`

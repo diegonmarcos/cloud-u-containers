@@ -10,7 +10,7 @@
   },
   "ssh_key": "/home/diego/git/vault/A0_keys/ssh/id_rsa",
   "remote_base": "/opt/containers",
-  "engine_folder": "bc-obs_c3-infra-mcp",
+  "engine_folder": "bc-obs_c3-infra-api",
   "vms": {
     "oci-E2-f_0": {
       "ip": "130.110.251.193",

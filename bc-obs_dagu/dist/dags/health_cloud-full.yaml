@@ -1,6 +1,6 @@
 schedule: "0 6 * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mailOn:
   failure: true
@@ -8,9 +8,9 @@ mailOn:
 steps:
   - name: run-cloud-health
     command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       # Run health_cloud.ts inside the C3 API container (has all deps + SSH keys)
-      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_cloud.ts 2>&1") || true
+      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp npx tsx mcp/tools/health_cloud.ts 2>&1") || true
 
       if [ -z "$RESULT" ]; then
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \

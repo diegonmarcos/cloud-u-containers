@@ -10,7 +10,7 @@
   },
   "ssh_key": "/home/diego/git/vault/A0_keys/ssh/id_rsa",
   "remote_base": "/opt/containers",
-  "engine_folder": "bc-obs_c3-infra-mcp",
+  "engine_folder": "bc-obs_c3-infra-api",
   "vms": {
     "oci-E2-f_0": {
       "ip": "130.110.251.193",
@@ -35,27 +35,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -65,7 +65,7 @@
         {
           "port": 8443,
           "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
+          "desc": "Maddy web admin HTTPS"
         },
         {
           "port": 22000,
@@ -348,7 +348,7 @@
       "provider": "Oracle Cloud",
       "tier": "Free + Paid",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_oci",
+      "folder": "c_vps/vps_oci",
       "instances": [
         "oci-E2-f_0",
         "oci-E2-f_1",
@@ -360,7 +360,7 @@
       "provider": "Google Cloud",
       "tier": "Free + Paid (Spot)",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_gcloud",
+      "folder": "c_vps/vps_gcloud",
       "instances": [
         "gcp-E2-f_0",
         "gcp-T4-p_0"
@@ -371,7 +371,7 @@
       "provider": "Amazon Web Services",
       "tier": "Exploration",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_aws",
+      "folder": "c_vps/vps_aws",
       "instances": [],
       "description": "AWS infrastructure code (not currently active)"
     },
@@ -379,7 +379,7 @@
       "provider": "Vast.ai",
       "tier": "On-demand rental",
       "infrastructure_type": "Manual rental",
-      "folder": "b_infra/vps_vast-ai",
+      "folder": "c_vps/vps_vast-ai",
       "instances": [
         "vast-RTX-p_0"
       ],
@@ -432,6 +432,16 @@
         "nix": "curl",
         "apt": "curl",
         "desc": "HTTP client (health checks)"
+      },
+      "dig": {
+        "nix": "dig",
+        "apt": "dnsutils",
+        "desc": "DNS lookup (health checks — dig, nslookup)"
+      },
+      "ip": {
+        "nix": "iproute2",
+        "apt": "iproute2",
+        "desc": "Network tools (ip command — required by wg-quick)"
       }
     },
     "build": {
@@ -446,6 +456,18 @@
       "typescript": {
         "nix": "nodePackages.typescript",
         "desc": "TypeScript compiler (nix build only)"
+      },
+      "rust": {
+        "nix": null,
+        "desc": "Rust compiler — installed via rustup in Dockerfile (nixos-24.11 ships 1.82, too old for current crate ecosystem)"
+      },
+      "cargo": {
+        "nix": null,
+        "desc": "Rust package manager — installed via rustup in Dockerfile"
+      },
+      "terraform": {
+        "nix": null,
+        "desc": "Infrastructure as Code — direct binary in Dockerfile (nix go-modules breaks sandbox=false in Docker, see NixOS/nix#11295)"
       }
     },
     "optional": {
@@ -470,6 +492,11 @@
         "apt": "wireguard-tools",
         "desc": "WireGuard mesh status"
       }
+    },
+    "docker_apt": ["build-essential", "pkg-config", "libssl-dev", "unzip", "wireguard-tools", "locales"],
+    "docker_binary": {
+      "terraform": "1.9.8",
+      "rust": "1.86.0"
     },
     "node": {
       "required": [

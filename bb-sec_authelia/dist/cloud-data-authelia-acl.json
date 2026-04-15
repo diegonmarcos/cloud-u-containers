@@ -1,5 +1,5 @@
 {
-  "_generated": "2026-04-03T03:50:06.521Z",
+  "_generated": "2026-04-03T13:45:08.990Z",
   "_source": "cloud-data-topology.json via /cloud-data/authelia-acl",
   "rules": [
     {
@@ -60,7 +60,7 @@
     {
       "domain": "mail.diegonmarcos.com",
       "policy": "two_factor",
-      "service": "stalwart"
+      "service": "maddy"
     },
     {
       "domain": "vault.diegonmarcos.com",

@@ -1,1 +1,1 @@
-/home/diego/git/cloud/a_solutions/bb-sec_authelia/build.sh
+../../1_workflows/src/scripts/cloud-ship-container-engine.sh

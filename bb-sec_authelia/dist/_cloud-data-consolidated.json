@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-02T21:34:28.579Z",
+    "generated_at": "2026-04-04T10:27:02.320Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -93,12 +93,13 @@
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
       "services": [
         "snappymail",
+        "maddy",
         "smtp-proxy",
         "stalwart",
         "dagu",
         "syslog-forwarder"
       ],
-      "container_count": 5
+      "container_count": 6
     },
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
@@ -243,7 +244,7 @@
         "gitea",
         "kg-graph"
       ],
-      "container_count": 47
+      "container_count": 48
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
@@ -402,7 +403,7 @@
       "provider": "Oracle Cloud",
       "tier": "Free + Paid",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_oci",
+      "folder": "c_vps/vps_oci",
       "instances": [
         "oci-E2-f_0",
         "oci-E2-f_1",
@@ -415,7 +416,7 @@
       "provider": "Google Cloud",
       "tier": "Free + Paid (Spot)",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_gcloud",
+      "folder": "c_vps/vps_gcloud",
       "instances": [
         "gcp-E2-f_0",
         "gcp-T4-p_0"
@@ -427,7 +428,7 @@
       "provider": "Amazon Web Services",
       "tier": "Exploration",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_aws",
+      "folder": "c_vps/vps_aws",
       "instances": [],
       "description": "AWS infrastructure code (not currently active)",
       "has_terraform": true
@@ -436,7 +437,7 @@
       "provider": "Vast.ai",
       "tier": "On-demand rental",
       "infrastructure_type": "Manual rental",
-      "folder": "b_infra/vps_vast-ai",
+      "folder": "c_vps/vps_vast-ai",
       "instances": [
         "vast-RTX-p_0"
       ],
@@ -445,11 +446,11 @@
     },
     "hetzner": {
       "has_terraform": true,
-      "folder": "b_infra/vps_hetzner"
+      "folder": "c_vps/vps_hetzner"
     },
     "resend": {
       "has_terraform": true,
-      "folder": "b_infra/vps_resend"
+      "folder": "c_vps/vps_resend"
     }
   },
   "native": {
@@ -1704,24 +1705,13 @@
       "port": 5002,
       "dns": "photos-webhook.app",
       "upstream": "10.0.0.6:5002",
-      "containers": {
-        "app": {
-          "container_name": "photos-webhook",
-          "image": "",
-          "public": false,
-          "port": 5002,
-          "dns": "photos-webhook.app"
-        }
-      },
+      "containers": {},
       "container_names": [
+        "photos-db",
         "photos-webhook"
       ],
-      "all_ports": [
-        "5002"
-      ],
-      "all_dns": [
-        "photos-webhook.app"
-      ],
+      "all_ports": [],
+      "all_dns": [],
       "compose": {
         "containers": [
           "photos-db",
@@ -1729,6 +1719,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "radicale": {
@@ -1945,6 +1938,88 @@
       },
       "health": {
         "path": "/"
+      }
+    },
+    "maddy": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-maddy",
+      "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+      "enabled": true,
+      "domain": "mail.diegonmarcos.com",
+      "flake": "tools-maddy",
+      "port": 443,
+      "dns": "maddy.app",
+      "upstream": "10.0.0.3:443",
+      "containers": {
+        "app": {
+          "container_name": "maddy",
+          "image": "foxcpp/maddy:0.9",
+          "port": 443,
+          "dns": "maddy.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail.diegonmarcos.com",
+            "auth": "two_factor",
+            "tls_skip_verify": true
+          },
+          "healthcheck": null,
+          "volumes": [
+            "maddy_data:/data",
+            "./dkim:/data/dkim:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "maddy"
+      ],
+      "all_ports": [
+        "443"
+      ],
+      "all_dns": [
+        "maddy.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail.diegonmarcos.com",
+          "auth": "two_factor",
+          "tls_skip_verify": true
+        }
+      },
+      "declared_ports": {
+        "app": 443,
+        "smtp": 465,
+        "imap": 993
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "maddy_data"
+        ]
       }
     },
     "smtp-proxy": {
@@ -4662,6 +4737,9 @@
       },
       "monitoring": {
         "tls_check": true
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "backup-borg": {
@@ -4942,15 +5020,9 @@
       "folder": "ca-dat_kg-graph",
       "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
       "enabled": false,
-      "containers": {
-        "app": {
-          "container_name": "kg-graph",
-          "image": "",
-          "public": false
-        }
-      },
+      "containers": {},
       "container_names": [
-        "kg-graph"
+        "surrealdb"
       ],
       "all_ports": [],
       "all_dns": [],
@@ -4960,6 +5032,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "postlite": {
@@ -5305,12 +5380,6 @@
         "service": "photoprism"
       },
       {
-        "name": "photos-webhook.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "photos-webhook"
-      },
-      {
         "name": "radicale.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -5327,6 +5396,12 @@
         "type": "A",
         "value": "10.0.0.3",
         "service": "snappymail"
+      },
+      {
+        "name": "maddy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "maddy"
       },
       {
         "name": "smtp-proxy.app",
@@ -5990,6 +6065,7 @@
         "idle_shutdown": null,
         "containers": [
           "snappymail",
+          "maddy",
           "smtp-proxy",
           "stalwart",
           "dagu",
@@ -6418,17 +6494,17 @@
       "code-server": {
         "dir": "aa-sui_code-server",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "etherpad": {
         "dir": "aa-sui_etherpad",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "filebrowser": {
         "dir": "aa-sui_filebrowser",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "google-workspace-mcp": {
         "dir": "aa-sui_google-workspace-mcp",
@@ -6438,12 +6514,12 @@
       "grist": {
         "dir": "aa-sui_grist",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "hedgedoc": {
         "dir": "aa-sui_hedgedoc",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "mail-mcp": {
         "dir": "aa-sui_mail-mcp",
@@ -6453,7 +6529,7 @@
       "mattermost-bots": {
         "dir": "aa-sui_mattermost-bots",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "mattermost-mcp": {
         "dir": "aa-sui_mattermost-mcp",
@@ -6463,7 +6539,7 @@
       "photoprism": {
         "dir": "aa-sui_photoprism",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "photos-webhook": {
         "dir": "aa-sui_photos-webhook",
@@ -6473,15 +6549,20 @@
       "radicale": {
         "dir": "aa-sui_radicale",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "revealmd": {
         "dir": "aa-sui_revealmd",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "snappymail": {
         "dir": "aa-sui_snappymail",
+        "vm": "oci-mail",
+        "has_docker": true
+      },
+      "maddy": {
+        "dir": "aa-sui_tools-maddy",
         "vm": "oci-mail",
         "has_docker": true
       },
@@ -6498,27 +6579,27 @@
       "vaultwarden": {
         "dir": "ab-mic_vaultwarden",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "crawlee-cloud": {
         "dir": "ac-fin_crawlee-cloud",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "quant-lab-light": {
         "dir": "ac-fin_quant-lab-light",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "ollama": {
         "dir": "ad-agi_ollama",
         "vm": "gcp-t4",
-        "has_docker": false
+        "has_docker": true
       },
       "ollama-hai": {
         "dir": "ad-agi_ollama-hai",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "rig-agentic-hai-1.5bq4": {
         "dir": "ad-agi_rig-agentic-hai-1.5bq4",
@@ -6533,17 +6614,17 @@
       "hickory-dns": {
         "dir": "ba-clo_hickory-dns",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "authelia": {
         "dir": "bb-sec_authelia",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "caddy": {
         "dir": "bb-sec_caddy",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "introspect-proxy": {
         "dir": "bb-sec_introspect-proxy",
@@ -6553,7 +6634,7 @@
       "sauron-central": {
         "dir": "bb-sec_sauron-central",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "alerts-api": {
         "dir": "bc-obs_alerts-api",
@@ -6588,7 +6669,7 @@
       "cloud-spec": {
         "dir": "bc-obs_cloud-spec",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "dagu": {
         "dir": "bc-obs_dagu",
@@ -6608,7 +6689,7 @@
       "lgtm": {
         "dir": "bc-obs_lgtm",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "matomo": {
         "dir": "bc-obs_matomo",
@@ -6618,12 +6699,12 @@
       "nocodb": {
         "dir": "bc-obs_nocodb",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "ntfy": {
         "dir": "bc-obs_ntfy",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "sauron-forwarder": {
         "dir": "bc-obs_sauron-forwarder",
@@ -6643,32 +6724,32 @@
       "windmill": {
         "dir": "bc-obs_windmill",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-borg": {
         "dir": "ca-dat_backup-borg",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-bup": {
         "dir": "ca-dat_backup-bup",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-gitea": {
         "dir": "ca-dat_backup-gitea",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "gitea": {
         "dir": "ca-dat_gitea",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "kg-graph": {
         "dir": "ca-dat_kg-graph",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "postlite": {
         "dir": "ca-dat_postlite",
@@ -6678,7 +6759,7 @@
       "redis": {
         "dir": "ca-dat_redis",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       }
     }
   }

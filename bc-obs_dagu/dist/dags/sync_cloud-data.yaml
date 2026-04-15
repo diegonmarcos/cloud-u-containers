@@ -4,15 +4,16 @@ env:
   - C3_API: http://10.0.0.6:8081
   - REPO_DIR: /var/lib/dagu/data/cloud-data
   - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - MIN_SIZE: 50
 mailOn:
   failure: true
   success: false
+type: graph
 steps:
   - name: ensure-clone
     command: |
-      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       if [ ! -d "$REPO_DIR/.git" ]; then
         git clone "$REPO_URL" "$REPO_DIR"
         cd "$REPO_DIR"
@@ -23,7 +24,7 @@ steps:
     depends:
       - ensure-clone
     command: |
-      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       cd "$REPO_DIR"
       # Clean stale git locks from crashed processes
       rm -f .git/index.lock .git/shallow.lock .git/refs/heads/*.lock 2>/dev/null
@@ -139,7 +140,7 @@ steps:
     depends:
       - fetch-all
     command: |
-      export GIT_SSH_COMMAND="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       cd "$REPO_DIR"
       # Regenerate manifest
       ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \

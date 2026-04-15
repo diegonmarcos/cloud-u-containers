@@ -1,5 +1,5 @@
 #!/bin/bash
-SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 DATE=$(date '+%Y-%m-%d')
 TIME=$(date '+%H:%M %Z')
 
@@ -236,6 +236,238 @@ cat >> "$F" <<'EODASH2'
 </table></td></tr>
 EODASH2
 
+# ── Container Details per VM ──
+for ((j=0; j<VM_COUNT; j++)); do
+  n=${VM_NAMES[$j]}
+  containers=${VM_CONTAINERS[$j]}
+  unhealthy=${VM_UNHEALTHY[$j]}
+  exited=${VM_EXITED[$j]}
+  stats=${VM_CONTAINER_STATS[$j]}
+
+  cat >> "$F" <<EOCTR_HEAD
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="4" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">Containers — $n</td></tr>
+EOCTR_HEAD
+
+  if [ -n "$unhealthy" ]; then
+    while IFS= read -r c; do
+      [ -z "$c" ] && continue
+      cat >> "$F" <<EOCTR_U
+<tr><td colspan="4" style="padding:4px 8px;color:$C_CRIT;font-size:12px;font-family:'Courier New',monospace;">⚠ UNHEALTHY: $c</td></tr>
+EOCTR_U
+    done <<< "$unhealthy"
+  fi
+
+  if [ -n "$exited" ]; then
+    while IFS= read -r c; do
+      [ -z "$c" ] && continue
+      cat >> "$F" <<EOCTR_E
+<tr><td colspan="4" style="padding:4px 8px;color:$C_WARN;font-size:12px;font-family:'Courier New',monospace;">✗ EXITED: $c</td></tr>
+EOCTR_E
+    done <<< "$exited"
+  fi
+
+  # Top containers by CPU/mem
+  if [ -n "$stats" ]; then
+    cat >> "$F" <<'EOCTR_STAT_H'
+<tr>
+<th style="text-align:left;color:#8899aa;font-size:10px;padding:6px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Container</th>
+<th style="text-align:right;color:#8899aa;font-size:10px;padding:6px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">CPU</th>
+<th style="text-align:right;color:#8899aa;font-size:10px;padding:6px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Mem Usage</th>
+<th style="text-align:right;color:#8899aa;font-size:10px;padding:6px 8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">Mem %</th>
+</tr>
+EOCTR_STAT_H
+    while IFS='|' read -r cname ccpu cmem cmemp; do
+      [ -z "$cname" ] && continue
+      cat >> "$F" <<EOCTR_STAT_R
+<tr>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:11px;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$cname</td>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:11px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$ccpu</td>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:11px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$cmem</td>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:11px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.3);font-family:'Courier New',monospace;">$cmemp</td>
+</tr>
+EOCTR_STAT_R
+    done <<< "$stats"
+  fi
+
+  echo '</table></td></tr>' >> "$F"
+done
+
+# ── Security Events ──
+cat >> "$F" <<'EOSEC_HEAD'
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="4" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">Security Events (24h)</td></tr>
+<tr>
+<th style="text-align:left;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">VM</th>
+<th style="text-align:right;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">SSH OK</th>
+<th style="text-align:right;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">SSH Fail</th>
+<th style="text-align:right;color:#8899aa;font-size:11px;padding:8px;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">sudo</th>
+</tr>
+EOSEC_HEAD
+
+for ((j=0; j<VM_COUNT; j++)); do
+  n=${VM_NAMES[$j]}
+  sa=${VM_SSH_ACCEPTS[$j]}; sf=${VM_SSH_FAILS[$j]}; su=${VM_SUDOS[$j]}
+  sf_color=$C_OK; [ "$sf" -gt 10 ] 2>/dev/null && sf_color=$C_WARN; [ "$sf" -gt 50 ] 2>/dev/null && sf_color=$C_CRIT
+  cat >> "$F" <<EOSEC_ROW
+<tr>
+<td style="padding:4px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;">$n</td>
+<td style="padding:4px 8px;color:$C_OK;font-size:12px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;">$sa</td>
+<td style="padding:4px 8px;color:$sf_color;font-size:12px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;">$sf</td>
+<td style="padding:4px 8px;color:#e0e0e0;font-size:12px;text-align:right;border-bottom:1px solid rgba(15,52,96,0.5);font-family:'Courier New',monospace;">$su</td>
+</tr>
+EOSEC_ROW
+done
+
+# Top failed IPs across all VMs
+HAS_FAILS=false
+for ((j=0; j<VM_COUNT; j++)); do
+  [ -n "${VM_TOP_FAILS[$j]}" ] && HAS_FAILS=true
+done
+if $HAS_FAILS; then
+  cat >> "$F" <<'EOFAIL_H'
+<tr><td colspan="4" style="padding:8px 8px 4px;color:#8899aa;font-size:11px;font-family:'Courier New',monospace;">Top failed IPs:</td></tr>
+EOFAIL_H
+  for ((j=0; j<VM_COUNT; j++)); do
+    n=${VM_NAMES[$j]}; fails=${VM_TOP_FAILS[$j]}
+    [ -z "$fails" ] && continue
+    while IFS='|' read -r fip fcount; do
+      [ -z "$fip" ] && continue
+      cat >> "$F" <<EOFAIL_R
+<tr><td colspan="4" style="padding:2px 16px;color:$C_WARN;font-size:11px;font-family:'Courier New',monospace;">$n: $fip ($fcount attempts)</td></tr>
+EOFAIL_R
+    done <<< "$fails"
+  done
+fi
+
+echo '</table></td></tr>' >> "$F"
+
+# ── Docker Disk Usage ──
+cat >> "$F" <<'EODF_HEAD'
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="4" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">Docker Disk Usage</td></tr>
+EODF_HEAD
+
+for ((j=0; j<VM_COUNT; j++)); do
+  n=${VM_NAMES[$j]}; ddf=${VM_DOCKER_DFS[$j]}
+  [ -z "$ddf" ] && continue
+  cat >> "$F" <<EODF_VM
+<tr><td colspan="4" style="padding:6px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">$n</td></tr>
+EODF_VM
+  while IFS='|' read -r dtype dcount dsize dreclaimable; do
+    [ -z "$dtype" ] && continue
+    cat >> "$F" <<EODF_ROW
+<tr>
+<td style="padding:2px 16px;color:#8899aa;font-size:11px;font-family:'Courier New',monospace;">$dtype</td>
+<td style="padding:2px 8px;color:#e0e0e0;font-size:11px;text-align:right;font-family:'Courier New',monospace;">$dcount</td>
+<td style="padding:2px 8px;color:#e0e0e0;font-size:11px;text-align:right;font-family:'Courier New',monospace;">$dsize</td>
+<td style="padding:2px 8px;color:$C_DIM;font-size:11px;text-align:right;font-family:'Courier New',monospace;">reclaimable: $dreclaimable</td>
+</tr>
+EODF_ROW
+  done <<< "$ddf"
+done
+
+echo '</table></td></tr>' >> "$F"
+
+# ── WireGuard Peers ──
+HAS_WG=false
+for ((j=0; j<VM_COUNT; j++)); do
+  [ -n "${VM_WG_PEERS[$j]}" ] && HAS_WG=true
+done
+if $HAS_WG; then
+  cat >> "$F" <<'EOWG_HEAD'
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="3" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">WireGuard Peers</td></tr>
+EOWG_HEAD
+  for ((j=0; j<VM_COUNT; j++)); do
+    n=${VM_NAMES[$j]}; wg=${VM_WG_PEERS[$j]}
+    [ -z "$wg" ] && continue
+    cat >> "$F" <<EOWG_VM
+<tr><td colspan="3" style="padding:6px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;border-bottom:1px solid #0f3460;font-family:'Courier New',monospace;">$n</td></tr>
+EOWG_VM
+    while read -r peer ts; do
+      [ -z "$peer" ] && continue
+      age="never"
+      if [ "$ts" -gt 0 ] 2>/dev/null; then
+        diff=$(( $(date +%s) - ts ))
+        if [ $diff -lt 120 ]; then age="${diff}s ago"
+        elif [ $diff -lt 7200 ]; then age="$((diff/60))m ago"
+        else age="$((diff/3600))h ago"; fi
+      fi
+      short_peer="${peer:0:8}..."
+      color=$C_OK; [ "$ts" = "0" ] && color=$C_CRIT
+      [ "$diff" -gt 300 ] 2>/dev/null && color=$C_WARN
+      cat >> "$F" <<EOWG_ROW
+<tr>
+<td style="padding:2px 16px;color:$C_DIM;font-size:11px;font-family:'Courier New',monospace;">$short_peer</td>
+<td style="padding:2px 8px;color:$color;font-size:11px;font-family:'Courier New',monospace;">$age</td>
+</tr>
+EOWG_ROW
+    done <<< "$wg"
+  done
+  echo '</table></td></tr>' >> "$F"
+fi
+
+# ── Failed Systemd Units ──
+HAS_FAILED=false
+for ((j=0; j<VM_COUNT; j++)); do
+  [ -n "${VM_FAILED_UNITS[$j]}" ] && HAS_FAILED=true
+done
+if $HAS_FAILED; then
+  cat >> "$F" <<'EOFU_HEAD'
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="2" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">Failed Systemd Units</td></tr>
+EOFU_HEAD
+  for ((j=0; j<VM_COUNT; j++)); do
+    n=${VM_NAMES[$j]}; fu=${VM_FAILED_UNITS[$j]}
+    [ -z "$fu" ] && continue
+    while IFS= read -r unit; do
+      [ -z "$unit" ] && continue
+      cat >> "$F" <<EOFU_ROW
+<tr>
+<td style="padding:3px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;font-family:'Courier New',monospace;">$n</td>
+<td style="padding:3px 8px;color:$C_CRIT;font-size:12px;font-family:'Courier New',monospace;">$unit</td>
+</tr>
+EOFU_ROW
+    done <<< "$fu"
+  done
+  echo '</table></td></tr>' >> "$F"
+fi
+
+# ── Container Restarts (24h) ──
+HAS_RESTARTS=false
+for ((j=0; j<VM_COUNT; j++)); do
+  [ -n "${VM_RESTARTS[$j]}" ] && HAS_RESTARTS=true
+done
+if $HAS_RESTARTS; then
+  cat >> "$F" <<'EORS_HEAD'
+<tr><td style="padding:8px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#16213e;border-radius:6px;">
+<tr><td colspan="3" style="padding:12px 16px;background:#0f3460;border-radius:6px 6px 0 0;font-size:14px;font-weight:bold;color:#e0e0e0;font-family:'Courier New',monospace;">Container Restarts (24h)</td></tr>
+EORS_HEAD
+  for ((j=0; j<VM_COUNT; j++)); do
+    n=${VM_NAMES[$j]}; rs=${VM_RESTARTS[$j]}
+    [ -z "$rs" ] && continue
+    while IFS='|' read -r rname rcount; do
+      [ -z "$rname" ] && continue
+      rc_color=$C_OK; [ "$rcount" -gt 3 ] 2>/dev/null && rc_color=$C_WARN; [ "$rcount" -gt 10 ] 2>/dev/null && rc_color=$C_CRIT
+      cat >> "$F" <<EORS_ROW
+<tr>
+<td style="padding:2px 8px;color:#e0e0e0;font-size:12px;font-weight:bold;font-family:'Courier New',monospace;">$n</td>
+<td style="padding:2px 8px;color:#e0e0e0;font-size:11px;font-family:'Courier New',monospace;">$rname</td>
+<td style="padding:2px 8px;color:$rc_color;font-size:11px;text-align:right;font-family:'Courier New',monospace;">$rcount</td>
+</tr>
+EORS_ROW
+    done <<< "$rs"
+  done
+  echo '</table></td></tr>' >> "$F"
+fi
+
 # ── FOOTER ──
 cat >> "$F" <<EOFOOT
 <tr><td style="text-align:center;padding:16px;color:#8899aa;font-size:11px;font-family:'Courier New',monospace;">
@@ -249,10 +481,18 @@ C3 Daily Ops Report &mdash; $DATE $TIME<br>
 </html>
 EOFOOT
 
-# ── Send email via SMTP ──
-curl -s --url "smtp://mailu-smtp-1:25" \
+# ── Send email via Maddy SMTP :587 (external route, authenticated) ──
+curl -s --url "smtp://10.0.0.3:587" \
+  --ssl-reqd -k \
+  --user "no-reply@diegonmarcos.com:${NOREPLY_PASSWORD}" \
   --mail-from "no-reply@diegonmarcos.com" \
   --mail-rcpt "me@diegonmarcos.com" \
   -T "$F"
+SEND_RC=$?
 rm -f "$F"
-echo "C3 Daily Ops Report sent for $DATE"
+if [ $SEND_RC -eq 0 ]; then
+  echo "C3 Daily Ops Report sent for $DATE via Maddy SMTP :587"
+else
+  echo "FAILED to send report (curl exit $SEND_RC)"
+  exit 1
+fi

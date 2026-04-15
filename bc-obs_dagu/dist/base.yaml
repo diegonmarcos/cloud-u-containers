@@ -1,10 +1,10 @@
 shell: /bin/bash
 
 smtp:
-  host: mailu.app
-  port: "25"
-  username: ""
-  password: ""
+  host: 10.0.0.3
+  port: "587"
+  username: "no-reply@diegonmarcos.com"
+  password: "$NOREPLY_PASSWORD"
 
 mailOn:
   failure: false

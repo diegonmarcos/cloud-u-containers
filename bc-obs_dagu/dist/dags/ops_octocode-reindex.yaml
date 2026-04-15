@@ -1,8 +1,8 @@
 schedule: "0 3 * * *"
 env:
-  - SSH: ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
   - OCI_APPS: ubuntu@10.0.0.6
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - OCTOCODE_IMAGE: octocode-fastembed:aarch64
   - GIT_IMAGE: alpine/git:latest
   # local_dir:github_repo pairs — local dir is what octocode indexes, github_repo is the clone source
@@ -11,6 +11,7 @@ env:
 mailOn:
   failure: true
   success: false
+type: graph
 steps:
   - name: pull-repos
     command: |
@@ -20,10 +21,10 @@ steps:
         echo "=== Pulling $DIR (from $REMOTE) ==="
         $SSH "$OCI_APPS" "docker run --rm \
           -v octocode_repos:/repos \
-          -v /opt/ssh-keys/dagu:/root/.ssh:ro \
+          -v /opt/ssh-keys/dagu:/home/dagu/.ssh:ro \
           --entrypoint sh \
           $GIT_IMAGE -c '
-            export GIT_SSH_COMMAND=\"ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null\"
+            export GIT_SSH_COMMAND=\"ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null\"
             if [ ! -d /repos/$DIR/.git ]; then
               git clone --depth 1 git@github.com:diegonmarcos/$REMOTE.git /repos/$DIR
             else

@@ -4,7 +4,7 @@
 # Config: /etc/dagu/triggers.json — maps ntfy topics to DAG names.
 set -u
 
-NTFY_URL="${NTFY_WS_URL:-ws://10.0.0.1:8090}"
+NTFY_URL="${NTFY_WS_URL:-ws://10.0.0.6:8090}"
 DAGU_API="${DAGU_API_URL:-http://localhost:${DAGU_PORT:-8070}}"
 TRIGGERS="${TRIGGERS_FILE:-/etc/dagu/triggers.json}"
 
