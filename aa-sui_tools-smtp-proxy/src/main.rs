@@ -308,7 +308,12 @@ async fn handle_post(
 
     // ── Parse email ──
     let mail_from = extract_address(&body, "From").unwrap_or_else(|| "cloudflare@localhost".into());
-    let mail_to = extract_address(&body, "To").unwrap_or_else(|| state.config.smtp_user.clone());
+    // Prefer envelope recipient from CF Worker (X-Original-To) over email To: header
+    let original_to = headers.get("x-original-to")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+    let mail_to = original_to
+        .unwrap_or_else(|| extract_address(&body, "To").unwrap_or_else(|| state.config.smtp_user.clone()));
     let msg_id = extract_header(&body, "Message-ID").unwrap_or_else(|| "?".into());
     let sender_domain = mail_from.rsplit_once('@').map(|(_, d)| d.to_string()).unwrap_or_default();
 

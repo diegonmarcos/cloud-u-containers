@@ -13,7 +13,7 @@ export default {
 
     // Fire all three in parallel: Maddy + Google + health check
     const [maddyOk, googleOk, healthy] = await Promise.all([
-      deliverToMaddy(rawEmail, env),
+      deliverToMaddy(rawEmail, to, env),
       deliverToGoogle(rawEmail, env),
       checkMailHealth(env),
     ]);
@@ -37,7 +37,7 @@ export default {
 };
 
 // ── Maddy delivery via smtp-proxy ────────────────────────────────
-async function deliverToMaddy(rawEmail, env) {
+async function deliverToMaddy(rawEmail, to, env) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -46,6 +46,7 @@ async function deliverToMaddy(rawEmail, env) {
       headers: {
         'Content-Type': 'text/plain',
         'X-API-Key': env.SMTP_PROXY_KEY,
+        'X-Original-To': to,
       },
       body: rawEmail,
       signal: controller.signal,
