@@ -4,7 +4,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 2
   },
-  "_generated": "2026-04-07T11:42:14.480Z",
+  "_generated": "2026-04-08T08:51:54.895Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
     {
@@ -461,6 +461,26 @@
     {
       "service": "redis.app",
       "upstream": "10.0.0.1:6379"
+    },
+    {
+      "service": "oci-mail.app",
+      "upstream": "10.0.0.3:7680"
+    },
+    {
+      "service": "oci-analytics.app",
+      "upstream": "10.0.0.4:7680"
+    },
+    {
+      "service": "oci-apps.app",
+      "upstream": "10.0.0.6:7680"
+    },
+    {
+      "service": "gcp-t4.app",
+      "upstream": "10.0.0.8:7680"
+    },
+    {
+      "service": "gcp-proxy.app",
+      "upstream": "10.0.0.1:7680"
     }
   ],
   "auth_upstreams": {

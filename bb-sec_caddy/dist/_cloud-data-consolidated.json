@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-07T11:42:13.667Z",
+    "generated_at": "2026-04-08T08:51:54.217Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -1738,6 +1738,9 @@
         "MARIADB_USER",
         "MARIADB_PASSWORD",
         "MARIADB_ROOT_PASSWORD",
+        "PHOTOPRISM_DATABASE_NAME",
+        "PHOTOPRISM_DATABASE_USER",
+        "PHOTOPRISM_DATABASE_PASSWORD",
         "OCI_S3_ACCESS_KEY",
         "OCI_S3_SECRET_KEY"
       ]
@@ -6150,6 +6153,10 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-mail.app",
+          "port": 7680
         }
       },
       "oci-analytics": {
@@ -6186,6 +6193,10 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-analytics.app",
+          "port": 7680
         }
       },
       "oci-apps": {
@@ -6293,6 +6304,10 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-apps.app",
+          "port": 7680
         }
       },
       "gcp-t4": {
@@ -6334,6 +6349,10 @@
           "ssh_secret": "GCP_T4_SSH_KEY",
           "host_secret": "GCP_T4_HOST",
           "user_secret": "GCP_T4_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-t4.app",
+          "port": 7680
         }
       },
       "gcp-proxy": {
@@ -6402,6 +6421,10 @@
           "ssh_secret": "GCP_PROXY_SSH_KEY",
           "host_secret": "GCP_PROXY_HOST",
           "user_secret": "GCP_PROXY_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-proxy.app",
+          "port": 7680
         }
       },
       "vast-ollama": {

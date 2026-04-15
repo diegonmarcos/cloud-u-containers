@@ -1,10 +1,10 @@
-  {
-    # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
-    debug
-    admin localhost:2019
-    order respond before handle
-    auto_https disable_redirects
-
+      {
+        # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
+        debug
+        admin localhost:2019
+        order respond before handle
+        auto_https disable_redirects
+    
     layer4 {
 # IMAPS — TLS passthrough to Maddy
 :993 {
@@ -32,13 +32,13 @@
 }
     }
 
-  }
+      }
 
-  # ════════════════════════════════════════════════════════════
-  # SECURITY SNIPPETS
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # SECURITY SNIPPETS
+      # ════════════════════════════════════════════════════════════
 
-  (security_headers) {
+      (security_headers) {
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     X-Content-Type-Options "nosniff"
@@ -52,7 +52,7 @@
   }
 }
 
-  (rate_limiting) {
+      (rate_limiting) {
   rate_limit {
     zone global {
       key    {remote_host}
@@ -62,28 +62,28 @@
   }
 }
 
-  (block_bots) {
+      (block_bots) {
   @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
   respond @bad_bots 403
 }
 
-  (block_scanners) {
+      (block_scanners) {
   @blocked_paths path /wp-admin* /wp-login* /xmlrpc.php /.env /.git* /phpmyadmin* /actuator* /solr* /console* /.aws* /cgi-bin/*
   respond @blocked_paths 404
 }
 
-  (request_limits) {
+      (request_limits) {
   request_body {
     max_size 10MB
   }
 }
 
-  (ip_block) {
+      (ip_block) {
   # @blocked_ips remote_ip 192.0.2.0/24
   # respond @blocked_ips 403
 }
 
-  (access_log) {
+      (access_log) {
   log {
     output file /var/log/caddy/access.log {
       roll_size 10mb
@@ -93,7 +93,7 @@
   }
 }
 
-  (security) {
+      (security) {
   import security_headers
   import block_bots
   import block_scanners
@@ -103,11 +103,11 @@
 }
 
 
-  # ════════════════════════════════════════════════════════════
-  # SUBDOMAIN ROUTES (from routes[])
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # SUBDOMAIN ROUTES (from routes[])
+      # ════════════════════════════════════════════════════════════
 
-  # Authelia itself — no forward_auth loop
+      # Authelia itself — no forward_auth loop
   auth.diegonmarcos.com {
 import security
 import request_limits
@@ -402,11 +402,11 @@ import request_limits
   }
 
 
-  # ════════════════════════════════════════════════════════════
-  # GITHUB PAGES PROXIES (from github_pages_proxies[])
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # GITHUB PAGES PROXIES (from github_pages_proxies[])
+      # ════════════════════════════════════════════════════════════
 
-  # Landing page + WKD (Web Key Directory for PGP)
+      # Landing page + WKD (Web Key Directory for PGP)
   diegonmarcos.com, www.diegonmarcos.com {
 import security
 import request_limits
@@ -508,31 +508,12 @@ reverse_proxy https://diegonmarcos.github.io {
 }
   }
 
-  # news.diegonmarcos.com
-  news.diegonmarcos.com {
-import security
-import request_limits
-    rewrite * /news{uri}
-reverse_proxy https://diegonmarcos.github.io {
-  header_up Host diegonmarcos.github.io
-}
 
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
+      # ════════════════════════════════════════════════════════════
+      # PATH-BASED ROUTES (from path_routes[])
+      # ════════════════════════════════════════════════════════════
 
-
-  # ════════════════════════════════════════════════════════════
-  # PATH-BASED ROUTES (from path_routes[])
-  # ════════════════════════════════════════════════════════════
-
-  # API hub — path-based routing to backend APIs
+      # API hub — path-based routing to backend APIs
   api.diegonmarcos.com {
 import security
 import request_limits
@@ -623,10 +604,6 @@ forward_auth 10.0.0.1:9091 {
     reverse_proxy 10.0.0.6:3000
   }
 
-}
-
-handle_path /news/* {
-  reverse_proxy 10.0.0.6:3019
 }
 handle {
   rewrite * /api{uri}
@@ -896,11 +873,11 @@ reverse_proxy https://diegonmarcos.github.io {
   }
 
 
-  # ════════════════════════════════════════════════════════════
-  # MCP ROUTES (from mcp_routes[])
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # MCP ROUTES (from mcp_routes[])
+      # ════════════════════════════════════════════════════════════
 
-  # MCP — Streamable HTTP endpoints for Claude Code MCP clients
+      # MCP — Streamable HTTP endpoints for Claude Code MCP clients
   mcp.diegonmarcos.com {
 import security
 import request_limits
@@ -943,11 +920,11 @@ handle_path /g-workspace/* {
   }
 
 
-  # ════════════════════════════════════════════════════════════
-  # REDIRECTS (from redirects[])
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # REDIRECTS (from redirects[])
+      # ════════════════════════════════════════════════════════════
 
-  # Legacy webmail subdomain → mail hub
+      # Legacy webmail subdomain → mail hub
   webmail.diegonmarcos.com {
 import security
 import request_limits
@@ -963,11 +940,11 @@ import request_limits
   }
 
 
-  # ════════════════════════════════════════════════════════════
-  # SPECIAL ROUTES (from special{})
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # SPECIAL ROUTES (from special{})
+      # ════════════════════════════════════════════════════════════
 
-  # Mail hub — landing page + /webmail → SnappyMail + /servermail → static info
+      # Mail hub — landing page + /webmail → SnappyMail + /servermail → static info
   mail.diegonmarcos.com {
 import security
 import request_limits
@@ -1074,7 +1051,7 @@ reverse_proxy https://diegonmarcos.github.io {
   }
 
 
-  # Matomo (public tracking + protected admin) + Umami (path-based)
+      # Matomo (public tracking + protected admin) + Umami (path-based)
   analytics.diegonmarcos.com {
 import security
 import request_limits
@@ -1147,7 +1124,7 @@ forward_auth 10.0.0.1:9091 {
   }
 
 
-  # ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia
+      # ntfy notifications — 3-tier auth: JWT bearer → introspect, tk_ bearer → direct, cookie → authelia
   rss.diegonmarcos.com {
 import security
 import request_limits
@@ -1191,7 +1168,7 @@ forward_auth 10.0.0.1:9091 {
   }
 
 
-  # Infrastructure dashboard (static HTML)
+      # Infrastructure dashboard (static HTML)
   proxy.diegonmarcos.com {
 import security
 import request_limits
@@ -1226,24 +1203,46 @@ forward_auth 10.0.0.1:9091 {
   }
 
 
-  # ════════════════════════════════════════════════════════════
-  # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
-  # No auth, no TLS — WireGuard mesh is the trust boundary
-  # ════════════════════════════════════════════════════════════
+      # ════════════════════════════════════════════════════════════
+      # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
+      # No auth, no TLS — WireGuard mesh is the trust boundary
+      # ════════════════════════════════════════════════════════════
 
+    
 
+      # ════════════════════════════════════════════════════════════
+      # MTA-STS — enforce TLS for inbound email delivery
+      # ════════════════════════════════════════════════════════════
 
-  # ════════════════════════════════════════════════════════════
-  # CATCH-ALL — Custom error page for unknown/unconfigured domains
-  # ════════════════════════════════════════════════════════════
+      mta-sts.diegonmarcos.com {
+    import security
+        tls {
+          dns cloudflare {env.CF_API_TOKEN}
+        }
+        handle /.well-known/mta-sts.txt {
+          header Content-Type "text/plain"
+          respond "version: STSv1
+mode: enforce
+mx: route1.mx.cloudflare.net
+mx: route2.mx.cloudflare.net
+mx: route3.mx.cloudflare.net
+max_age: 604800
+" 200
+        }
+        respond 404
+      }
 
-  *.diegonmarcos.com {
-import security
-    tls {
-      dns cloudflare {env.CF_API_TOKEN}
-    }
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
+      # ════════════════════════════════════════════════════════════
+      # CATCH-ALL — Custom error page for unknown/unconfigured domains
+      # ════════════════════════════════════════════════════════════
+
+      *.diegonmarcos.com {
+    import security
+        tls {
+          dns cloudflare {env.CF_API_TOKEN}
+        }
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
 
