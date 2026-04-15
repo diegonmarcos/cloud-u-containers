@@ -1,4 +1,5 @@
 {
+  # Engine consolidation test 2026-04-15
   description = "Maddy Mail Server - declarative all-in-one SMTP/IMAP (Go)";
 
   inputs = {

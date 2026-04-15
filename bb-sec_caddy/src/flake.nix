@@ -1,4 +1,5 @@
 {
+  # Engine consolidation test 2026-04-15
   description = "Caddy - Declarative reverse proxy with automatic HTTPS (replaces NPM on gcp-proxy + oci-mail)";
 
   inputs = {
