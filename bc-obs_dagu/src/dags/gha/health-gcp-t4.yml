@@ -31,4 +31,4 @@ jobs:
           sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
 
       - name: Health check
-        run: .github/workflows/scripts/health-check-vm.sh gcp-t4 3000
+        run: .github/workflows/scripts/cloud-health-check-vm.sh gcp-t4 3000
