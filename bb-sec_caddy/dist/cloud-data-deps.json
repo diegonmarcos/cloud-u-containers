@@ -3,7 +3,7 @@
   "_meta": {
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/deps",
-    "generated_at": "2026-04-07T11:42:14.502Z",
+    "generated_at": "2026-04-08T08:51:54.905Z",
     "total_services": 8,
     "total_packages": 23
   },
