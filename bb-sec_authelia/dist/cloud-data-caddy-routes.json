@@ -3,23 +3,23 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 1
   },
-  "_generated": "2026-04-03T03:50:06.059Z",
+  "_generated": "2026-04-03T13:45:08.391Z",
   "_source": "build.json proxy fields via /cloud-data/caddy-routes",
   "l4_routes": [
     {
       "port": 993,
       "upstream": "130.110.251.193:993",
-      "comment": "IMAPS -- TLS passthrough to stalwart"
+      "comment": "IMAPS -- TLS passthrough to maddy"
     },
     {
       "port": 465,
       "upstream": "130.110.251.193:465",
-      "comment": "SMTPS -- TLS passthrough to stalwart"
+      "comment": "SMTPS -- TLS passthrough to maddy"
     },
     {
       "port": 587,
       "upstream": "130.110.251.193:587",
-      "comment": "SMTP Submission -- TLS passthrough to stalwart"
+      "comment": "SMTP Submission -- TLS passthrough to maddy"
     }
   ],
   "routes": [
@@ -50,23 +50,10 @@
       "comment": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)"
     },
     {
-      "domain": "webmail.diegonmarcos.com",
-      "upstream": "snappymail.app:8888",
-      "landing_page": "mymail",
-      "comment": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
-    },
-    {
       "domain": "smtp.diegonmarcos.com",
       "upstream": "smtp-proxy.app:8080",
       "auth": "none",
       "comment": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)"
-    },
-    {
-      "domain": "mail.diegonmarcos.com",
-      "upstream": "stalwart.app:443",
-      "landing_page": "mymail",
-      "tls_skip_verify": true,
-      "comment": "Stalwart Mail Server (mail.diegonmarcos.com)"
     },
     {
       "domain": "vault.diegonmarcos.com",
@@ -185,6 +172,18 @@
       "landing_page": "api"
     },
     {
+      "parent_domain": "mail.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/webmail",
+          "upstream": "snappymail.app:8888",
+          "comment": "SnappyMail webmail client"
+        }
+      ],
+      "landing_page": "mymail",
+      "comment": "Mail hub -- landing page + webmail"
+    },
+    {
       "parent_domain": "cloud.diegonmarcos.com",
       "paths": [
         {
@@ -252,6 +251,13 @@
       ],
       "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients",
       "fallback_message": "MCP Hub -- use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp"
+    }
+  ],
+  "redirects": [
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "target": "https://mail.diegonmarcos.com/webmail/",
+      "comment": "Legacy webmail subdomain → mail hub /webmail/"
     }
   ],
   "special": {

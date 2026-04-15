@@ -10,7 +10,7 @@ cd "$REPO_ROOT"
 SSH="ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 
 # Try running inside the MCP container on oci-apps (has all deps + SSH keys)
-RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp-api npx tsx mcp/tools/health_cloud.ts 2>&1" 2>/dev/null) || true
+RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp npx tsx mcp/tools/health_cloud.ts 2>&1" 2>/dev/null) || true
 
 # Fallback: run locally if tsx is available
 if [ -z "$RESULT" ] && command -v tsx >/dev/null 2>&1; then

@@ -1,13 +1,13 @@
 schedule: "0 3 * * 0"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
 mailOn:
   failure: false
   success: false
 steps:
   - name: verify-scanners-and-notify
     command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       RUNNING=0
       TOTAL=0
       MISSING=""

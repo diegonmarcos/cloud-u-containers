@@ -1,13 +1,13 @@
 schedule: "0 7 * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
 mailOn:
   failure: false
   success: false
 steps:
   - name: check-timers-and-notify
     command: |
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       ALERTS=""
       VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
       for vm_data in $VM_LIST; do

@@ -1,6 +1,7 @@
 {
-  "_generated": "2026-04-03T03:50:05.560Z",
+  "_generated": "2026-04-03T13:45:07.714Z",
   "_source": "cloud-data-topology.json via /cloud-data/dns-services",
+  "_note": "HICKORY DNS IS WILDCARD ONLY (*.app -> Caddy 10.0.0.1). Per-service IPs below are used by Caddy route config, NOT by DNS resolution.",
   "suffix": "app",
   "services": {
     "code-server": {
@@ -33,7 +34,7 @@
     },
     "mail-mcp": {
       "ip": "10.0.0.6",
-      "desc": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API"
+      "desc": "Mail MCP server — IMAP/SMTP via Maddy"
     },
     "mattermost-bots": {
       "ip": "10.0.0.6",
@@ -71,9 +72,9 @@
       "ip": "10.0.0.3",
       "desc": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)"
     },
-    "stalwart": {
+    "maddy": {
       "ip": "10.0.0.3",
-      "desc": "Stalwart Mail Server (mail.diegonmarcos.com)"
+      "desc": "Maddy Mail Server (mail.diegonmarcos.com)"
     },
     "vaultwarden": {
       "ip": "10.0.0.1",

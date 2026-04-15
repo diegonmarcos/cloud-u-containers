@@ -5,7 +5,7 @@
 // Phase 3: NETWORK + AUTH — TLS ports, certs, HTTP, OIDC chain, Caddy routes, SnappyMail
 // Phase 4: DNS AUTH — MX, DKIM, SPF, DMARC
 // Phase 5: MAIL INTERNALS — IMAP, queue, sieve, accounts (Maddy CLI)
-// Phase 6: E2E DELIVERY — Resend → IMAP arrival → smtp-proxy → CF Worker
+// Phase 6: E2E DELIVERY — no-reply@ via Maddy SMTP :587 → me@ IMAP arrival
 //
 // All I/O is async (non-blocking). Independent checks run in parallel via Promise.all.
 // SSH multiplexing: one ControlMaster per VM, commands fan out concurrently.
@@ -29,7 +29,7 @@ const MAIL_WG_IP = "10.0.0.3";
 const APPS_WG_IP = "10.0.0.6";
 const PROXY_WG_IP = "10.0.0.1";
 const MAIL_CONTAINERS = ["maddy"];
-const TEST_FROM = "health@mails.diegonmarcos.com";
+const TEST_FROM = "no-reply@diegonmarcos.com";
 const TEST_TO = "me@diegonmarcos.com";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ function sshProxy(cmd: string, timeout = 8_000) { return sshExecAsync(PROXY_VM, 
 function runA(cmd: string, args: string[], timeout = 8_000) { return execAsync(cmd, args, { timeout }); }
 
 const log = (msg: string) => process.stderr.write(`[mail-health] ${msg}\n`);
-function getResendApiKey(): string | null { return process.env.RESEND_API_KEY || null; }
+function getNoreplyPassword(): string | null { return process.env.NOREPLY_PASSWORD || null; }
 
 async function dnsLookupAsync(type: string, name: string): Promise<string> {
   const dig = await runA("bash", ["-c", `command -v dig >/dev/null 2>&1 && dig +short +time=3 +tries=1 ${type} ${name} 2>&1`], 5_000);
@@ -682,64 +682,75 @@ async function mailInternals(): Promise<Check[]> {
 
 async function e2eDelivery(): Promise<Check[]> {
   const checks: Check[] = [];
-  const apiKey = getResendApiKey();
-  if (!apiKey) { checks.push({ name: "Resend API key", passed: false, details: "not set", durationMs: 0 }); return checks; }
-  checks.push({ name: "Resend API key", passed: true, details: "found", durationMs: 0 });
+  const sshOk = _remoteCache !== null;
+  if (!sshOk) { checks.push({ name: "SSH to mail VM", passed: false, details: "SSH down — cannot run E2E", durationMs: 0 }); return checks; }
 
   const tag = `health-${Date.now()}`;
-  let emailId = "";
+  const noreplyPass = process.env.NOREPLY_PASSWORD || "";
+  if (!noreplyPass) { checks.push({ name: "NOREPLY_PASSWORD", passed: false, details: "not set — cannot send via Maddy SMTP", durationMs: 0 }); return checks; }
+  checks.push({ name: "NOREPLY_PASSWORD", passed: true, details: "found", durationMs: 0 });
 
-  checks.push(await timedAsync("Send via Resend", async () => {
-    const body = JSON.stringify({ from: `Health <${TEST_FROM}>`, to: [TEST_TO], subject: `[health-check] ${tag}`, text: `Health ${tag}` });
-    const r = await runA("curl", ["-s", "-X", "POST", "-H", "Content-Type: application/json", "-H", `Authorization: Bearer ${apiKey}`, "-d", body, "https://api.resend.com/emails"], 10_000);
-    const p = JSON.parse(r.stdout || "{}");
-    if (p.id) { emailId = p.id; return { passed: true, details: `id=${p.id}` }; }
-    return { passed: false, details: p.message || "failed" };
+  // ── OUTBOUND: Send via Maddy SMTP :587 (no-reply@ → me@) ──────────
+  // Uses swaks inside oci-mail to send through Maddy's submission port
+  // This tests the real outbound SMTP path: auth → Maddy → external MX
+  let sendOk = false;
+  checks.push(await timedAsync("SMTP send via Maddy :587", async () => {
+    // swaks: Swiss Army Knife SMTP — sends a real email via authenticated SMTP
+    const swaksCmd = [
+      `swaks --to ${TEST_TO} --from "${TEST_FROM}"`,
+      `--server localhost --port 587 --tls`,
+      `--auth-user "${TEST_FROM}" --auth-password "${noreplyPass}"`,
+      `--header "Subject: [health-check] ${tag}"`,
+      `--body "E2E health check ${tag}"`,
+      `--timeout 10 2>&1`,
+    ].join(" ");
+    // Try swaks first, fall back to openssl raw SMTP if swaks not installed
+    const r = await sshMail(`command -v swaks >/dev/null 2>&1 && ${swaksCmd} || {
+      # Fallback: raw SMTP via openssl (EHLO → STARTTLS → AUTH → MAIL → DATA)
+      python3 -c "
+import smtplib, email.message
+msg = email.message.EmailMessage()
+msg['From'] = '${TEST_FROM}'
+msg['To'] = '${TEST_TO}'
+msg['Subject'] = '[health-check] ${tag}'
+msg.set_content('E2E health check ${tag}')
+with smtplib.SMTP('localhost', 587) as s:
+    s.starttls()
+    s.login('${TEST_FROM}', '${noreplyPass}')
+    s.send_message(msg)
+    print('OK')
+" 2>&1; }`, 15_000);
+    const out = r.stdout + r.stderr;
+    if (out.includes("250 OK") || out.includes("250 2.0.0") || out.includes("=== Connected") || out.trim() === "OK") {
+      sendOk = true;
+      return { passed: true, details: "sent via Maddy SMTP :587" };
+    }
+    return { passed: false, details: out.trim().split("\n").slice(-2).join(" | ") || "send failed" };
   }));
 
-  if (!emailId) return checks;
+  if (!sendOk) return checks;
 
-  const sshOk = _remoteCache !== null;
-  const [resendCheck, imapCheck, proxyCheck, cfCheck] = await Promise.all([
-    timedAsync("Resend status", async () => {
-      for (let i = 0; i < 3; i++) {
-        if (i > 0) await new Promise(r => setTimeout(r, 1500));
-        const r = await runA("curl", ["-s", "-H", `Authorization: Bearer ${apiKey}`, `https://api.resend.com/emails/${emailId}`], 8_000);
-        const ev = JSON.parse(r.stdout || "{}").last_event || "?";
-        if (ev === "delivered") return { passed: true, details: `delivered (poll ${i + 1})` };
-        if (ev === "bounced") return { passed: false, details: "BOUNCED" };
-      }
-      return { passed: true, details: "sent (IMAP is truth)" };
-    }),
+  // ── INBOUND: Poll Maddy logs for delivery of our test message ──────
+  const [imapCheck, queueCheck] = await Promise.all([
     timedAsync("IMAP arrival", async () => {
-      if (!sshOk) return { passed: false, details: "SSH down" };
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         await new Promise(r => setTimeout(r, 2000));
-        const r = await sshMail(`docker logs maddy --since 30s 2>&1 | grep -c "accepted\\|delivered" || echo 0`, 5_000);
+        const r = await sshMail(`docker logs maddy --since 30s 2>&1 | grep -c "${tag}" || echo 0`, 5_000);
         const count = parseInt(r.stdout.trim()) || 0;
         if (count > 0) return { passed: true, details: `delivered (poll ${i + 1}, ${(i + 1) * 2}s)` };
       }
-      return { passed: false, details: "NOT FOUND after 6s" };
+      return { passed: false, details: "NOT FOUND after 10s" };
     }),
-    timedAsync("smtp-proxy logs", async () => {
-      if (!sshOk) return { passed: false, details: "SSH down" };
-      const r = await sshMail(`docker logs smtp-proxy --since 5m 2>&1 | tail -3 || true`, 5_000);
-      const all = r.stdout + r.stderr;
-      if (all.includes("502") || all.includes("refused")) return { passed: false, details: `errors: ${all.trim().split("\n").slice(-2).join(" | ")}` };
-      if (all.includes("POST") || all.includes("200")) return { passed: true, details: "activity confirmed" };
-      return { passed: true, details: "no logs (IMAP is truth)" };
-    }),
-    timedAsync("CF Worker", async () => {
-      const k = process.env.CF_API_KEY, e = process.env.CF_API_EMAIL;
-      if (!k || !e) return { passed: true, details: "info: no CF creds" };
-      const r = await runA("curl", ["-s", "-H", `X-Auth-Email: ${e}`, "-H", `X-Auth-Key: ${k}`,
-        "https://api.cloudflare.com/client/v4/accounts/e5cb0a0c6f448e54f217de484259f0ae/workers/scripts/email-forwarder"], 8_000);
-      try { const d = JSON.parse(r.stdout); return { passed: true, details: `active (${d?.result?.modified_on?.slice(0, 10) || "?"})` }; }
-      catch { return { passed: true, details: "info: CF API unparseable" }; }
+    timedAsync("Maddy queue empty", async () => {
+      await new Promise(r => setTimeout(r, 3000));
+      const r = await sshMail(`docker exec maddy maddy queue list 2>&1 | head -5`, 5_000);
+      const out = r.stdout.trim();
+      if (!out || out === "empty" || out.includes("no messages")) return { passed: true, details: "queue clear" };
+      return { passed: false, details: `stuck: ${out.split("\n")[0]}` };
     }),
   ]);
 
-  checks.push(resendCheck, imapCheck, proxyCheck, cfCheck);
+  checks.push(imapCheck, queueCheck);
   return checks;
 }
 
@@ -783,7 +794,7 @@ export function registerHealthMailTools(server: McpServer): void {
     }),
   );
 
-  server.tool("obs.health.mail_inbound", "E2E delivery: Resend → CF → smtp-proxy → Maddy → IMAP", {},
+  server.tool("obs.health.mail_inbound", "E2E delivery: no-reply@ via Maddy SMTP :587 → me@ IMAP arrival", {},
     () => safeToolAsync(async () => formatChecks("E2E DELIVERY", await e2eDelivery())),
   );
 

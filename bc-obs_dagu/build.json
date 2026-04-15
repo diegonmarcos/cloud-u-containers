@@ -63,7 +63,7 @@
         "./dags:/var/lib/dagu/dags",
         "./base.yaml:/var/lib/dagu/base.yaml:ro",
         "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro",
-        "/opt/ssh-keys/dagu:/root/.ssh:ro"
+        "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
       ],
       "env_file": true,
       "depends_on": [],

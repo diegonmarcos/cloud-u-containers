@@ -7,6 +7,7 @@ env:
 mailOn:
   failure: true
   success: false
+type: graph
 steps:
   - name: check-ntfy-alive
     command: |
@@ -63,7 +64,7 @@ steps:
     command: |
       echo "── ntfy bridge check ──"
       # Verify mattermost-bots container is running and connected to ntfy
-      SSH="ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       STATUS=$($SSH ubuntu@10.0.0.6 "docker ps --filter name=mattermost-bots --format '{{.Status}}'" 2>/dev/null)
       if echo "$STATUS" | grep -q "Up"; then
         echo "OK: mattermost-bots running ($STATUS)"

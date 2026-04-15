@@ -23,6 +23,7 @@
       },
       "containers": [
         "snappymail",
+        "maddy",
         "smtp-proxy",
         "stalwart",
         "dagu",
@@ -97,6 +98,7 @@
         "photoprism_app",
         "photoprism_mariadb",
         "photoprism_rclone",
+        "photos-db",
         "photos-webhook",
         "radicale",
         "revealmd_app",
@@ -139,7 +141,7 @@
         "backup-bup",
         "gitea",
         "gitea",
-        "kg-graph"
+        "surrealdb"
       ],
       "ports": [
         "10.0.0.6:3015:8080"
@@ -260,7 +262,7 @@
       "provider": "Oracle Cloud",
       "tier": "Free + Paid",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_oci",
+      "folder": "c_vps/vps_oci",
       "instances": [
         "oci-E2-f_0",
         "oci-E2-f_1",
@@ -273,7 +275,7 @@
       "provider": "Google Cloud",
       "tier": "Free + Paid (Spot)",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_gcloud",
+      "folder": "c_vps/vps_gcloud",
       "instances": [
         "gcp-E2-f_0",
         "gcp-T4-p_0"
@@ -285,7 +287,7 @@
       "provider": "Amazon Web Services",
       "tier": "Exploration",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_aws",
+      "folder": "c_vps/vps_aws",
       "instances": [],
       "description": "AWS infrastructure code (not currently active)",
       "has_terraform": true
@@ -294,7 +296,7 @@
       "provider": "Vast.ai",
       "tier": "On-demand rental",
       "infrastructure_type": "Manual rental",
-      "folder": "b_infra/vps_vast-ai",
+      "folder": "c_vps/vps_vast-ai",
       "instances": [
         "vast-RTX-p_0"
       ],
@@ -303,11 +305,11 @@
     },
     "hetzner": {
       "has_terraform": true,
-      "folder": "b_infra/vps_hetzner"
+      "folder": "c_vps/vps_hetzner"
     },
     "resend": {
       "has_terraform": true,
-      "folder": "b_infra/vps_resend"
+      "folder": "c_vps/vps_resend"
     }
   },
   "storage": [
@@ -748,12 +750,6 @@
         "service": "photoprism"
       },
       {
-        "name": "photos-webhook.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "photos-webhook"
-      },
-      {
         "name": "radicale.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -770,6 +766,12 @@
         "type": "A",
         "value": "10.0.0.3",
         "service": "snappymail"
+      },
+      {
+        "name": "maddy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "maddy"
       },
       {
         "name": "smtp-proxy.app",
@@ -1957,24 +1959,13 @@
       "port": 5002,
       "dns": "photos-webhook.app",
       "upstream": "10.0.0.6:5002",
-      "containers": {
-        "app": {
-          "container_name": "photos-webhook",
-          "image": "",
-          "public": false,
-          "port": 5002,
-          "dns": "photos-webhook.app"
-        }
-      },
+      "containers": {},
       "container_names": [
+        "photos-db",
         "photos-webhook"
       ],
-      "all_ports": [
-        "5002"
-      ],
-      "all_dns": [
-        "photos-webhook.app"
-      ],
+      "all_ports": [],
+      "all_dns": [],
       "compose": {
         "containers": [
           "photos-db",
@@ -1982,6 +1973,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "radicale": {
@@ -2196,6 +2190,87 @@
       "health": {
         "path": "/"
       }
+    },
+    "maddy": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-maddy",
+      "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+      "domain": "mail.diegonmarcos.com",
+      "port": 443,
+      "dns": "maddy.app",
+      "upstream": "10.0.0.3:443",
+      "containers": {
+        "app": {
+          "container_name": "maddy",
+          "image": "foxcpp/maddy:0.9",
+          "port": 443,
+          "dns": "maddy.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail.diegonmarcos.com",
+            "auth": "two_factor",
+            "tls_skip_verify": true
+          },
+          "healthcheck": null,
+          "volumes": [
+            "maddy_data:/data",
+            "./dkim:/data/dkim:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "maddy"
+      ],
+      "all_ports": [
+        "443"
+      ],
+      "all_dns": [
+        "maddy.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail.diegonmarcos.com",
+          "auth": "two_factor",
+          "tls_skip_verify": true
+        }
+      },
+      "declared_ports": {
+        "app": 443,
+        "smtp": 465,
+        "imap": 993
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "maddy_data"
+        ]
+      },
+      "flake": "tools-maddy"
     },
     "smtp-proxy": {
       "category": "app",
@@ -4868,6 +4943,9 @@
       },
       "monitoring": {
         "tls_check": true
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "backup-borg": {
@@ -5112,15 +5190,9 @@
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_kg-graph",
       "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
-      "containers": {
-        "app": {
-          "container_name": "kg-graph",
-          "image": "",
-          "public": false
-        }
-      },
+      "containers": {},
       "container_names": [
-        "kg-graph"
+        "surrealdb"
       ],
       "all_ports": [],
       "all_dns": [],
@@ -5130,6 +5202,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "postlite": {

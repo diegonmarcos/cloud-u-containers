@@ -36,12 +36,14 @@ services:
       - .secrets
     environment:
       TZ: Europe/Madrid
+      X_AUTHELIA_CONFIG_FILTERS: template
     depends_on:
       redis:
         condition: service_started
     volumes:
       - authelia_data:/data
       - ./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro
+      - ./.secrets.d:/config/.secrets.d:ro
     deploy:
       resources:
         limits:

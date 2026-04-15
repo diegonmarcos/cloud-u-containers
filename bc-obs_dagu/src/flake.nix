@@ -34,16 +34,15 @@
           portEnv = ports.envFor "app";
           entrypoint = ["dagu" "start-all"];
           skipReadOnly = true;
+          allowWritableBindMounts = true;
           environment = [
             "DAGU_HOST=0.0.0.0"
             "DAGU_DAGS_DIR=/var/lib/dagu/dags"
             "DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml"
-            "DAGU_AUTH_MODE=basic"
-            "DAGU_AUTH_BASIC_USERNAME=\${DAGU_USERNAME}"
-            "DAGU_AUTH_BASIC_PASSWORD=\${DAGU_PASSWORD}"
+            "DAGU_AUTH_MODE=none"
             "DAGU_TZ=Europe/Berlin"
-            "DAGU_UI_NAVBAR_COLOR=#1a1a2e"
-            "DAGU_UI_LOGO_TITLE=C3 Workflows"
+            "DAGU_NAVBAR_COLOR=#1a1a2e"
+            "DAGU_NAVBAR_TITLE=C3 Workflows"
             "AUTHELIA_OIDC_CLIENT_ID=dagu-cc"
             "AUTHELIA_OIDC_CLIENT_SECRET=\${AUTHELIA_OIDC_DAGU_SECRET}"
             "AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token"
@@ -51,7 +50,10 @@
           env_file = [".secrets"];
           volumes = [
             "dagu_data:/var/lib/dagu/data"
-            "/opt/ssh-keys/dagu:/root/.ssh:ro"
+            "./dags:/var/lib/dagu/dags"
+            "./base.yaml:/var/lib/dagu/base.yaml:ro"
+            "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro"
+            "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
           ];
           memLimit = "256m";
         };
@@ -63,10 +65,10 @@
       shell: /bin/bash
 
       smtp:
-        host: mailu.app
-        port: "25"
-        username: ""
-        password: ""
+        host: 10.0.0.3
+        port: "587"
+        username: "no-reply@diegonmarcos.com"
+        password: "$NOREPLY_PASSWORD"
 
       mailOn:
         failure: false
@@ -114,7 +116,7 @@
     '';
 
     # ── SSH shorthand used across all workflows ──────────────────────────
-    sshCmd = "ssh -i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
+    sshCmd = "ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR";
     # VM list derived from monitoring-targets.json at runtime
     monTargets = "/var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json";
     vmListCmd = ''

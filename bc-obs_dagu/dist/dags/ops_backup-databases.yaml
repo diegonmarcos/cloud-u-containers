@@ -3,17 +3,18 @@
 # then regenerate cloud-data. This DAG picks it up automatically via sync_cloud-data.yaml (every 5 min).
 schedule: "0 3 * * *"
 env:
-  - NTFY_URL: http://10.0.0.1:8090
+  - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - AWS_ACCESS_KEY_ID: "<REDACTED-LEAK-2026-04-21>"
   - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
   - RESTIC_REPOSITORY: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-db"
   - RESTIC_PASSWORD: ${RESTIC_PASSWORD}
   - BACKUP_JSON: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
-  - SSH_OPTS: "-i /root/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+  - SSH_OPTS: "-i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 mailOn:
   failure: true
   success: false
+type: graph
 steps:
   # ── Phase 1: Dump databases on each VM (parallel) ──────────────────
   - name: dump-oci-apps

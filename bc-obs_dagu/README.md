@@ -9,7 +9,7 @@ All workflows send alerts to [ntfy](https://rss.diegonmarcos.com) channels via H
 |-----|-------|
 | **VM** | oci-mail (10.0.0.3) |
 | **Port** | 8070 |
-| **Image** | `ghcr.io/dagu-org/dagu:1.30.3` |
+| **Image** | `ghcr.io/dagucloud/dagu:2.5.0` |
 | **UI** | https://workflows.diegonmarcos.com |
 | **DAGs dir** | `/var/lib/dagu/dags` (read-only mount from `./dags/`) |
 | **CI/CD** | `ship-oci-mail.yml` on push to `a_solutions/bc-obs_dagu/src/**` |
