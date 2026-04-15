@@ -1044,7 +1044,7 @@ async function layer8External(_ctx: DiagContext): Promise<Check[]> {
     }),
 
     timedCheck("DKIM DNS", async () => {
-      const r = await runShell("dig +short TXT dkim._domainkey.diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
+      const r = await runShell("dig +short TXT default._domainkey.diegonmarcos.com @1.1.1.1 2>&1 | head -1", 5_000);
       const txt = r.stdout.trim();
       return { passed: txt.includes("v=DKIM1") || txt.length > 20, details: txt ? "DKIM present" : "missing", severity: "warning" as Severity };
     }),

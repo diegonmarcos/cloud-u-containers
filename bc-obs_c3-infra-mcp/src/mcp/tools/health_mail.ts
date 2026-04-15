@@ -632,7 +632,7 @@ async function networkChecks(): Promise<Check[]> {
 async function dnsAuth(): Promise<Check[]> {
   return Promise.all([
     timedAsync("MX", async () => { const o = await dnsLookupAsync("MX", "diegonmarcos.com"); return { passed: o.includes("mx") || o.includes("cloudflare"), details: o.split("\n")[0] || "no MX" }; }),
-    timedAsync("DKIM", async () => { const o = await dnsLookupAsync("TXT", "dkim._domainkey.diegonmarcos.com"); return { passed: o.includes("v=DKIM1"), details: o.includes("v=DKIM1") ? "present" : "missing" }; }),
+    timedAsync("DKIM", async () => { const o = await dnsLookupAsync("TXT", "default._domainkey.diegonmarcos.com"); return { passed: o.includes("v=DKIM1"), details: o.includes("v=DKIM1") ? "present" : "missing" }; }),
     timedAsync("SPF", async () => { const o = await dnsLookupAsync("TXT", "diegonmarcos.com"); return { passed: o.includes("v=spf1"), details: o.split("\n").find((l) => l.includes("spf1"))?.trim() || "missing" }; }),
     timedAsync("DMARC", async () => { const o = await dnsLookupAsync("TXT", "_dmarc.diegonmarcos.com"); return { passed: o.includes("v=DMARC1"), details: o.trim().split("\n")[0] || "missing" }; }),
   ]);
@@ -854,7 +854,7 @@ export function registerHealthMailTools(server: McpServer): void {
             return { passed: r.stdout.includes("cloudflare"), details: r.stdout.trim().split("\n")[0] || "NONE" };
           }),
           timedAsync("DKIM record", async () => {
-            const r = await runA("dig", ["+short", "TXT", "dkim._domainkey.diegonmarcos.com"], 3_000);
+            const r = await runA("dig", ["+short", "TXT", "default._domainkey.diegonmarcos.com"], 3_000);
             return { passed: r.stdout.includes("DKIM1"), details: r.stdout.trim() ? "present" : "MISSING" };
           }),
           // GHA status

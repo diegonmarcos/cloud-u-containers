@@ -86,7 +86,7 @@ export function registerDebugTools(server: McpServer): void {
         Promise.all([
           digExec(`MX ${DOMAIN}`),
           digExec(`TXT ${DOMAIN}`),
-          digExec(`TXT dkim._domainkey.${DOMAIN}`),
+          digExec(`TXT default._domainkey.${DOMAIN}`),
           digExec(`TXT _dmarc.${DOMAIN}`),
         ]),
       ]);
