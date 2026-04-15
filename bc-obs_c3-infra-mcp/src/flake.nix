@@ -1,4 +1,5 @@
 {
+  # Engine consolidation test 2026-04-15
   description = "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)";
 
   inputs = {

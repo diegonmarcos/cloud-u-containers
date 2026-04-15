@@ -1,4 +1,5 @@
 {
+  # Engine consolidation test 2026-04-15
   description = "Dagu - Lightweight DAG-based workflow scheduler";
 
   inputs = {
