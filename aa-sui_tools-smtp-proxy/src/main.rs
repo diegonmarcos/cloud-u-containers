@@ -27,6 +27,7 @@ struct Config {
     smtp_user: String,
     smtp_pass: String,
     api_key: String,
+    listen_host: String,
     listen_port: u16,
     helo_domain: String,
 }
@@ -39,6 +40,7 @@ impl Config {
             smtp_user: env::var("SMTP_USER").unwrap_or_else(|_| "me@diegonmarcos.com".into()),
             smtp_pass: env::var("SMTP_PASS").unwrap_or_default(),
             api_key: env::var("API_KEY").unwrap_or_default(),
+            listen_host: env::var("LISTEN_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
             listen_port: env::var("LISTEN_PORT").unwrap_or_else(|_| "8080".into()).parse().unwrap_or(8080),
             helo_domain: "smtp-proxy.diegonmarcos.com".into(),
         }
@@ -424,7 +426,8 @@ async fn main() {
         .route("/health", get(handle_health))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await
+    let host = &config.listen_host;
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await
         .expect("Failed to bind");
     info!(port = port, "Listening");
     axum::serve(listener, app).await.expect("Server error");
