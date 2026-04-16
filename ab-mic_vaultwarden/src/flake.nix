@@ -45,6 +45,7 @@
 
         env_file = [ ".secrets" ];
         environment = {
+          ROCKET_ADDRESS = svc.vaultwarden.ip;  # bind to WG IP only
           DOMAIN = "https://${config.domain}";
           SIGNUPS_ALLOWED = config.signups_allowed;
           INVITATIONS_ALLOWED = config.invitations_allowed;

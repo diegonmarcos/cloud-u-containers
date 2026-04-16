@@ -1617,7 +1617,7 @@
 
           # Register /c3 slash command and start HTTP server
           register_slash_command(headers, team_id)
-          server = HTTPServer(("0.0.0.0", ${toString config.c3_port}), C3CommandHandler)
+          server = HTTPServer(("${config.wg_ip}", ${toString config.c3_port}), C3CommandHandler)
           threading.Thread(target=server.serve_forever, daemon=True).start()
           log.info("C3 command server listening on :${toString config.c3_port}")
 

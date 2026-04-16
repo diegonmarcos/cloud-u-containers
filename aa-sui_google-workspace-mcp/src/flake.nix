@@ -10,6 +10,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "google-workspace-mcp";
@@ -33,7 +34,7 @@
           restart: "no"  # container-init handles startup
           network_mode: host
           environment:
-            WORKSPACE_MCP_HOST: "0.0.0.0"
+            WORKSPACE_MCP_HOST: "${svc."google-workspace-mcp".ip}"
             WORKSPACE_MCP_PORT: "${toString config.port}"
             PORT: "${toString config.port}"
             USER_GOOGLE_EMAIL: "me@diegonmarcos.com"

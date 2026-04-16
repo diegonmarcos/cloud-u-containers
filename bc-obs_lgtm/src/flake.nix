@@ -92,7 +92,7 @@
           volumes:
             - loki_data:/loki
             - /home/ubuntu/bin/busybox-static:/usr/local/bin/busybox:ro
-          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=0.0.0.0 -server.http-listen-port=${toString config.loki_port} -server.grpc-listen-port=9111
+          command: -config.file=/etc/loki/local-config.yaml -server.http-listen-address=${svc.lgtm.ip} -server.http-listen-port=${toString config.loki_port} -server.grpc-listen-port=9111
           healthcheck:
             test: ['CMD', '/usr/local/bin/busybox', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:${toString config.loki_port}/ready']
             interval: 30s

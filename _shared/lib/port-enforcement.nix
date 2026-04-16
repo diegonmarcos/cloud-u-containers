@@ -4,6 +4,7 @@
 # ║ Import:                                                          ║
 # ║   ports = import ../../_shared/lib/port-enforcement.nix {        ║
 # ║     buildJsonPath = ../build.json;                               ║
+# ║     cloudDataPath = ./cloud-data-service-connections.json;       ║
 # ║   };                                                             ║
 # ║                                                                  ║
 # ║ Usage with docker.mkService:                                     ║
@@ -15,16 +16,25 @@
 # ║   # → 8880 (integer) or null                                    ║
 # ║                                                                  ║
 # ║ Port formats (build.json "port_format" field):                   ║
-# ║   "plain"  → 8880        (default, most apps)                   ║
-# ║   "colon"  → :8880       (Dozzle, Mattermost)                   ║
-# ║   "host"   → 0.0.0.0:8880 (Ollama)                             ║
+# ║   "plain"  → 8880             (default, most apps)              ║
+# ║   "colon"  → :8880            (Dozzle, Mattermost)              ║
+# ║   "host"   → WG_IP:8880       (Ollama — requires cloudDataPath) ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
-{ buildJsonPath }:
+{ buildJsonPath, cloudDataPath ? null }:
 
 let
   buildJson = builtins.fromJSON (builtins.readFile buildJsonPath);
   containers = buildJson.containers or {};
+
+  # Resolve WG IP from cloud-data for "host" format
+  svcName = buildJson.name or null;
+  cloudServices = if cloudDataPath != null
+    then (builtins.fromJSON (builtins.readFile cloudDataPath)).services or {}
+    else {};
+  wgIp = if svcName != null && cloudServices ? ${svcName}
+    then cloudServices.${svcName}.ip
+    else "127.0.0.1";  # safe fallback — never 0.0.0.0
 
   # Format a port value according to the container's port_format
   formatPort = c:
@@ -33,7 +43,7 @@ let
       fmt = c.port_format or "plain";
     in
       if fmt == "colon" then ":${toString port}"
-      else if fmt == "host" then "0.0.0.0:${toString port}"
+      else if fmt == "host" then "${wgIp}:${toString port}"
       else port;  # "plain" — raw integer
 
 in {

@@ -41,6 +41,7 @@
           env_file:
             - .secrets
           environment:
+            - RIG_HOST=${svc."rig-agentic-sonn-14bq8".ip}
             - RIG_PORT=${toString config.port}
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_API_BASE_URL=${config.ollama_url}

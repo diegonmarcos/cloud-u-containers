@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "rig-agentic-hai";
@@ -59,6 +60,7 @@
           env_file:
             - .secrets
           environment:
+            - RIG_HOST=${svc."rig-agentic-hai-1.5bq4".ip}
             - RIG_PORT=${toString config.port}
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_API_BASE_URL=${config.ollama_url}

@@ -6,6 +6,9 @@
     "app": 3104
   },
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "docker": {
     "image": "google-workspace-mcp",
     "dockerfile": "Dockerfile",
