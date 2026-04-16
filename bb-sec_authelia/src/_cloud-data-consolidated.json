@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-05T10:55:04.745Z",
+    "generated_at": "2026-04-15T17:36:15.684Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -15,7 +15,7 @@
   },
   "ssh_key": "/home/diego/git/vault/A0_keys/ssh/id_rsa",
   "remote_base": "/opt/containers",
-  "engine_folder": "bc-obs_c3-infra-mcp",
+  "engine_folder": "bc-obs_c3-infra-api",
   "vms": {
     "oci-E2-f_0": {
       "ip": "130.110.251.193",
@@ -43,27 +43,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -73,7 +73,7 @@
         {
           "port": 8443,
           "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
+          "desc": "Maddy web admin HTTPS"
         },
         {
           "port": 22000,
@@ -95,10 +95,9 @@
         "snappymail",
         "maddy",
         "smtp-proxy",
-        "dagu",
         "syslog-forwarder"
       ],
-      "container_count": 5
+      "container_count": 4
     },
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
@@ -129,7 +128,7 @@
       },
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
       "services": [
-        "alerts-api",
+        "dagu",
         "dozzle",
         "fluent-bit",
         "matomo",
@@ -221,6 +220,7 @@
         "photos-webhook",
         "radicale",
         "revealmd",
+        "vaultwarden",
         "crawlee-cloud",
         "quant-lab-full",
         "quant-lab-light",
@@ -236,6 +236,7 @@
         "cloud-spec",
         "dbgate",
         "lgtm",
+        "ntfy",
         "windmill",
         "backup-borg",
         "backup-bup",
@@ -243,7 +244,7 @@
         "gitea",
         "kg-graph"
       ],
-      "container_count": 46
+      "container_count": 50
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
@@ -357,16 +358,13 @@
       "gcloud_zone": "us-central1-a",
       "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1",
       "services": [
-        "vaultwarden",
         "hickory-dns",
         "authelia",
         "caddy",
         "introspect-proxy",
-        "ntfy",
-        "postlite",
         "redis"
       ],
-      "container_count": 11
+      "container_count": 7
     },
     "vast-RTX-p_0": {
       "ip": "TBD",
@@ -582,6 +580,11 @@
         "nix": "dig",
         "apt": "dnsutils",
         "desc": "DNS lookup (health checks — dig, nslookup)"
+      },
+      "ip": {
+        "nix": "iproute2",
+        "apt": "iproute2",
+        "desc": "Network tools (ip command — required by wg-quick)"
       }
     },
     "build": {
@@ -596,6 +599,18 @@
       "typescript": {
         "nix": "nodePackages.typescript",
         "desc": "TypeScript compiler (nix build only)"
+      },
+      "rust": {
+        "nix": null,
+        "desc": "Rust compiler — installed via rustup in Dockerfile (nixos-24.11 ships 1.82, too old for current crate ecosystem)"
+      },
+      "cargo": {
+        "nix": null,
+        "desc": "Rust package manager — installed via rustup in Dockerfile"
+      },
+      "terraform": {
+        "nix": null,
+        "desc": "Infrastructure as Code — direct binary in Dockerfile (nix go-modules breaks sandbox=false in Docker, see NixOS/nix#11295)"
       }
     },
     "optional": {
@@ -896,7 +911,10 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "CODE_SERVER_PASSWORD"
+      ]
     },
     "etherpad": {
       "category": "app",
@@ -1148,7 +1166,10 @@
       },
       "health": {
         "path": "/health"
-      }
+      },
+      "secret_env_vars": [
+        "GOOGLE_SERVICE_ACCOUNT_KEY"
+      ]
     },
     "grist": {
       "category": "app",
@@ -1391,7 +1412,15 @@
       },
       "declared_ports": {
         "app": 3103
-      }
+      },
+      "secret_env_vars": [
+        "MAIL_USER",
+        "MAIL_PASSWORD",
+        "STALWART_ADMIN_URL",
+        "STALWART_ADMIN_USER",
+        "STALWART_ADMIN_PASSWORD",
+        "RESEND_API_KEY"
+      ]
     },
     "mattermost-bots": {
       "category": "app",
@@ -1516,7 +1545,17 @@
           "mattermost_data",
           "mattermost_postgres"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_PASSWORD",
+        "MM_SQLSETTINGS_DATASOURCE",
+        "MM_ADMIN_EMAIL",
+        "MM_ADMIN_USERNAME",
+        "MM_ADMIN_PASSWORD",
+        "BEARER_TOKEN",
+        "MM_CLAUDE_PASSWORD",
+        "AUTHELIA_OIDC_MATTERMOST_SECRET"
+      ]
     },
     "mattermost-mcp": {
       "category": "app",
@@ -1576,7 +1615,14 @@
       },
       "declared_ports": {
         "app": 3102
-      }
+      },
+      "secret_env_vars": [
+        "MM_CLAUDE_PASSWORD",
+        "MM_URL",
+        "MM_TEAM_ID",
+        "MM_ADMIN_USERNAME",
+        "CLAUDE_MODEL"
+      ]
     },
     "photoprism": {
       "category": "app",
@@ -1702,7 +1748,19 @@
           "photoprism_originals",
           "photoprism_storage"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "PHOTOPRISM_ADMIN_PASSWORD",
+        "MARIADB_DATABASE",
+        "MARIADB_USER",
+        "MARIADB_PASSWORD",
+        "MARIADB_ROOT_PASSWORD",
+        "PHOTOPRISM_DATABASE_NAME",
+        "PHOTOPRISM_DATABASE_USER",
+        "PHOTOPRISM_DATABASE_PASSWORD",
+        "OCI_S3_ACCESS_KEY",
+        "OCI_S3_SECRET_KEY"
+      ]
     },
     "photos-webhook": {
       "category": "app",
@@ -1804,7 +1862,10 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "RADICALE_USERS"
+      ]
     },
     "revealmd": {
       "category": "app",
@@ -1920,7 +1981,10 @@
       },
       "health": {
         "path": "/"
-      }
+      },
+      "secret_env_vars": [
+        "SNAPPYMAIL_ADMIN_PASSWORD"
+      ]
     },
     "maddy": {
       "category": "app",
@@ -1987,7 +2051,7 @@
         }
       },
       "declared_ports": {
-        "app": 443,
+        "app": 993,
         "smtp": 465,
         "imap": 993
       },
@@ -2004,7 +2068,16 @@
         "volumes": [
           "maddy_data"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "ME_PASSWORD",
+        "NOREPLY_PASSWORD",
+        "OCI_RELAYUSER",
+        "OCI_RELAYPASSWORD",
+        "AWS_RELAYUSER",
+        "AWS_RELAYPASSWORD",
+        "DKIM_PRIVATE_KEY_B64"
+      ]
     },
     "smtp-proxy": {
       "category": "app",
@@ -2053,18 +2126,24 @@
       },
       "declared_ports": {
         "app": 8080
-      }
+      },
+      "secret_env_vars": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "API_KEY",
+        "LISTEN_PORT"
+      ]
     },
     "vaultwarden": {
       "category": "mic",
-      "vm": "gcp-E2-f_0",
+      "vm": "oci-A1-f_0",
       "folder": "ab-mic_vaultwarden",
       "description": "Bitwarden password manager",
       "enabled": true,
       "domain": "vault.diegonmarcos.com",
       "port": 8880,
       "dns": "vaultwarden.app",
-      "upstream": "10.0.0.1:8880",
+      "upstream": "10.0.0.6:8880",
       "containers": {
         "app": {
           "container_name": "vaultwarden",
@@ -2131,7 +2210,16 @@
         "volumes": [
           "vaultwarden_data"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "ADMIN_TOKEN",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_SECURITY",
+        "SMTP_FROM",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD"
+      ]
     },
     "crawlee-cloud": {
       "category": "fin",
@@ -2330,7 +2418,18 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "MINIO_USER",
+        "MINIO_PASSWORD",
+        "JWT_SECRET",
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "RUNNER_TOKEN"
+      ]
     },
     "quant-lab-full": {
       "category": "fin",
@@ -2478,7 +2577,12 @@
       "declared_ports": {
         "app": 8890,
         "db": 5437
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB"
+      ]
     },
     "quant-lab-light": {
       "category": "fin",
@@ -2576,7 +2680,12 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB"
+      ]
     },
     "ollama": {
       "category": "agi",
@@ -2746,7 +2855,10 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "MM_BOT_TOKEN"
+      ]
     },
     "rig-agentic-sonn-14bq8": {
       "category": "agi",
@@ -2781,7 +2893,12 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "SURREAL_ROOT_PASSWORD",
+        "SURREAL_URL",
+        "MM_BOT_TOKEN"
+      ]
     },
     "cloudflare-worker": {
       "category": "cloud",
@@ -2977,7 +3094,32 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_JWT_SECRET",
+        "AUTHELIA_SESSION_SECRET",
+        "AUTHELIA_STORAGE_ENCRYPTION_KEY",
+        "AUTHELIA_REDIS_PASSWORD",
+        "AUTHELIA_OIDC_HMAC_SECRET",
+        "AUTHELIA_USER_DIEGO_HASH",
+        "AUTHELIA_OIDC_CLIENT_NPM_SECRET",
+        "AUTHELIA_OIDC_CLIENT_NOCODB_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLI_SECRET",
+        "AUTHELIA_SMTP_PASSWORD",
+        "AUTHELIA_OIDC_JWKS_KEY",
+        "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET",
+        "AUTHELIA_OIDC_CLIENT_DAGU_SECRET",
+        "AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MONITORING_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET",
+        "AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
+      ]
     },
     "caddy": {
       "category": "sec",
@@ -3067,7 +3209,12 @@
       },
       "declared_ports": {
         "app": 443
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_CLI_SECRET",
+        "CF_API_TOKEN",
+        "NTFY_ADMIN_AUTH"
+      ]
     },
     "caddy-l4-image": {
       "category": "sec",
@@ -3173,41 +3320,6 @@
         "networks": []
       }
     },
-    "alerts-api": {
-      "category": "tools",
-      "vm": "oci-E2-f_1",
-      "folder": "bc-obs_alerts-api",
-      "description": "Security Alert Aggregation API",
-      "enabled": true,
-      "port": 5050,
-      "dns": "alerts-api.app",
-      "upstream": "10.0.0.4:5050",
-      "containers": {
-        "app": {
-          "container_name": "alerts-api",
-          "image": "",
-          "public": false,
-          "port": 5050,
-          "dns": "alerts-api.app"
-        }
-      },
-      "container_names": [
-        "alerts-api"
-      ],
-      "all_ports": [
-        "5050"
-      ],
-      "all_dns": [
-        "alerts-api.app"
-      ],
-      "compose": {
-        "containers": [
-          "alerts-api"
-        ],
-        "ports": [],
-        "networks": []
-      }
-    },
     "c3-infra-api": {
       "category": "sec",
       "vm": "oci-A1-f_0",
@@ -3286,7 +3398,17 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_OIDC_C3_MCP_SECRET",
+        "MM_BOT_TOKEN",
+        "C3_API_KEY",
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "RESEND_API_KEY",
+        "CF_API_KEY",
+        "CF_API_EMAIL"
+      ]
     },
     "c3-infra-mcp": {
       "category": "sec",
@@ -3357,7 +3479,18 @@
       },
       "health": {
         "path": "/mcp"
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_OIDC_C3_MCP_SECRET",
+        "MM_BOT_TOKEN",
+        "C3_API_KEY",
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "RESEND_API_KEY",
+        "CF_API_KEY",
+        "CF_API_EMAIL",
+        "NOREPLY_PASSWORD"
+      ]
     },
     "c3-services-api": {
       "category": "obs",
@@ -3495,7 +3628,11 @@
       },
       "health": {
         "path": "/mcp"
-      }
+      },
+      "secret_env_vars": [
+        "GITHUB_TOKEN",
+        "DAGU_BASIC_AUTH"
+      ]
     },
     "cloud-cgc-mcp": {
       "category": "obs",
@@ -3626,14 +3763,14 @@
     },
     "dagu": {
       "category": "tools",
-      "vm": "oci-E2-f_0",
+      "vm": "oci-E2-f_1",
       "folder": "bc-obs_dagu",
       "description": "Dagu - Lightweight DAG-based workflow scheduler",
       "enabled": true,
       "domain": "workflows.diegonmarcos.com",
       "port": 8070,
       "dns": "dagu.app",
-      "upstream": "10.0.0.3:8070",
+      "upstream": "10.0.0.4:8070",
       "containers": {
         "app": {
           "container_name": "dagu",
@@ -3657,7 +3794,7 @@
             "./dags:/var/lib/dagu/dags",
             "./base.yaml:/var/lib/dagu/base.yaml:ro",
             "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro",
-            "/opt/ssh-keys/dagu:/root/.ssh:ro"
+            "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
           ],
           "env_file": true,
           "depends_on": [],
@@ -3699,7 +3836,17 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "AUTHELIA_OIDC_DAGU_SECRET",
+        "OCI_S3_SECRET_KEY",
+        "RESTIC_PASSWORD",
+        "BORG_PASSPHRASE",
+        "NOREPLY_PASSWORD",
+        "GITHUB_TOKEN"
+      ]
     },
     "dbgate": {
       "category": "tools",
@@ -3716,7 +3863,7 @@
           "container_name": "dbgate",
           "image": "dbgate/dbgate:latest",
           "port": 8086,
-          "port_env": "WEB_PORT",
+          "port_env": "PORT",
           "dns": "dbgate.app",
           "public": true,
           "proxy": {
@@ -4027,7 +4174,11 @@
       },
       "monitoring": {
         "tls_check": true
-      }
+      },
+      "secret_env_vars": [
+        "GF_SECURITY_ADMIN_USER",
+        "GF_SECURITY_ADMIN_PASSWORD"
+      ]
     },
     "matomo": {
       "category": "tools",
@@ -4110,18 +4261,24 @@
         "volumes": [
           "matomo_data"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "MYSQL_ROOT_PASSWORD",
+        "MATOMO_DB_NAME",
+        "MATOMO_DB_USER",
+        "MATOMO_DB_PASSWORD"
+      ]
     },
     "ntfy": {
       "category": "tools",
-      "vm": "gcp-E2-f_0",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_ntfy",
       "description": "Push notification server",
       "enabled": true,
       "domain": "rss.diegonmarcos.com",
       "port": 8090,
       "dns": "ntfy.app",
-      "upstream": "10.0.0.1:8090",
+      "upstream": "10.0.0.6:8090",
       "containers": {
         "app": {
           "container_name": "ntfy",
@@ -4233,7 +4390,11 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "NTFY_ADMIN_PASSWORD",
+        "NTFY_USER_PASSWORD"
+      ]
     },
     "sauron-forwarder": {
       "category": "tools",
@@ -4450,7 +4611,13 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "DB_PASSWORD",
+        "APP_SECRET",
+        "ADMIN_USERNAME",
+        "ADMIN_PASSWORD"
+      ]
     },
     "windmill": {
       "category": "tools",
@@ -4591,7 +4758,17 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "DB_PASSWORD",
+        "OAUTH_CLIENT_ID",
+        "OAUTH_CLIENT_SECRET",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_FROM",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD"
+      ]
     },
     "backup-borg": {
       "category": "data",
@@ -4617,7 +4794,12 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "BORG_PASSPHRASE",
+        "SOURCE_DIRS",
+        "ARCHIVE_NAME"
+      ]
     },
     "backup-bup": {
       "category": "data",
@@ -4643,7 +4825,18 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "MYSQL_HOST",
+        "MYSQL_USER",
+        "MYSQL_PASSWORD",
+        "MYSQL_DBS",
+        "PGHOST",
+        "PGUSER",
+        "PGPASSWORD",
+        "POSTGRES_DBS",
+        "SQLITE_DBS"
+      ]
     },
     "backup-gitea": {
       "category": "data",
@@ -4759,7 +4952,13 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "VM_NAME",
+        "NTFY_URL",
+        "NTFY_TOPIC",
+        "BUP_REMOTE"
+      ]
     },
     "gitea": {
       "category": "data",
@@ -4863,7 +5062,12 @@
           }
         },
         "mirror_interval": "1h"
-      }
+      },
+      "secret_env_vars": [
+        "GITEA_ADMIN_USER",
+        "GITEA_ADMIN_PASSWORD",
+        "GITEA_ADMIN_EMAIL"
+      ]
     },
     "kg-graph": {
       "category": "data",
@@ -4886,50 +5090,10 @@
       },
       "backup": {
         "enabled": true
-      }
-    },
-    "postlite": {
-      "category": "data",
-      "vm": "gcp-E2-f_0",
-      "folder": "ca-dat_postlite",
-      "description": "SQLite REST API (WireGuard only)",
-      "enabled": false,
-      "containers": {
-        "app": {
-          "container_name": "postlite",
-          "image": "",
-          "public": false
-        }
       },
-      "container_names": [
-        "postlite"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [
-          "postlite-authelia",
-          "postlite-npm",
-          "postlite-ntfy",
-          "postlite-vaultwarden",
-          "sqlite-authelia",
-          "sqlite-npm",
-          "sqlite-ntfy",
-          "sqlite-vaultwarden"
-        ],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "npm_rest": 8890,
-        "vaultwarden_rest": 8891,
-        "ntfy_rest": 8892,
-        "authelia_rest": 8893,
-        "npm_pg": 5433,
-        "vaultwarden_pg": 5434,
-        "ntfy_pg": 5435,
-        "authelia_pg": 5436
-      }
+      "secret_env_vars": [
+        "SURREAL_ROOT_PASSWORD"
+      ]
     },
     "redis": {
       "category": "data",
@@ -4980,7 +5144,10 @@
       },
       "health": {
         "path": "redis-cli ping"
-      }
+      },
+      "secret_env_vars": [
+        "REDIS_PASSWORD"
+      ]
     }
   },
   "firewalls": {
@@ -5004,27 +5171,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -5034,7 +5201,7 @@
         {
           "port": 8443,
           "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
+          "desc": "Maddy web admin HTTPS"
         },
         {
           "port": 22000,
@@ -5263,7 +5430,7 @@
       {
         "name": "vaultwarden.app",
         "type": "A",
-        "value": "10.0.0.1",
+        "value": "10.0.0.6",
         "service": "vaultwarden"
       },
       {
@@ -5387,12 +5554,6 @@
         "service": "introspect-proxy"
       },
       {
-        "name": "alerts-api.app",
-        "type": "A",
-        "value": "10.0.0.4",
-        "service": "alerts-api"
-      },
-      {
         "name": "c3-infra-api.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -5431,7 +5592,7 @@
       {
         "name": "dagu.app",
         "type": "A",
-        "value": "10.0.0.3",
+        "value": "10.0.0.4",
         "service": "dagu"
       },
       {
@@ -5479,7 +5640,7 @@
       {
         "name": "ntfy.app",
         "type": "A",
-        "value": "10.0.0.1",
+        "value": "10.0.0.6",
         "service": "ntfy"
       },
       {
@@ -5591,7 +5752,7 @@
         },
         {
           "domain": "workflows.diegonmarcos.com",
-          "upstream": "10.0.0.3:8070",
+          "upstream": "10.0.0.4:8070",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -5619,7 +5780,7 @@
         },
         {
           "domain": "vault.diegonmarcos.com",
-          "upstream": "10.0.0.1:8880",
+          "upstream": "10.0.0.6:8880",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -5771,13 +5932,20 @@
         },
         {
           "domain": "rss.diegonmarcos.com",
-          "upstream": "10.0.0.1:8090",
+          "upstream": "10.0.0.6:8090",
           "auth": "3-tier",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "proxy.diegonmarcos.com",
+          "upstream": "static",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "mta-sts.diegonmarcos.com",
           "upstream": "static",
           "auth": "none",
           "tls_skip": false,
@@ -5958,27 +6126,27 @@
           {
             "port": 25,
             "proto": "tcp",
-            "desc": "SMTP (Stalwart)"
+            "desc": "SMTP (Maddy)"
           },
           {
             "port": 465,
             "proto": "tcp",
-            "desc": "SMTPS (Stalwart via Caddy L4)"
+            "desc": "SMTPS (Maddy via Caddy L4)"
           },
           {
             "port": 587,
             "proto": "tcp",
-            "desc": "SMTP submission (Stalwart via Caddy L4)"
+            "desc": "SMTP submission (Maddy via Caddy L4)"
           },
           {
             "port": 993,
             "proto": "tcp",
-            "desc": "IMAPS (Stalwart via Caddy L4)"
+            "desc": "IMAPS (Maddy via Caddy L4)"
           },
           {
             "port": 4190,
             "proto": "tcp",
-            "desc": "ManageSieve (Stalwart)"
+            "desc": "ManageSieve (Maddy)"
           },
           {
             "port": 8080,
@@ -5988,7 +6156,7 @@
           {
             "port": 8443,
             "proto": "tcp",
-            "desc": "Stalwart web admin HTTPS"
+            "desc": "Maddy web admin HTTPS"
           },
           {
             "port": 22000,
@@ -6006,13 +6174,16 @@
           "snappymail",
           "maddy",
           "smtp-proxy",
-          "dagu",
           "syslog-forwarder"
         ],
         "method": "key",
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-mail.app",
+          "port": 7680
         }
       },
       "oci-analytics": {
@@ -6038,7 +6209,7 @@
         "public_ports": [],
         "idle_shutdown": null,
         "containers": [
-          "alerts-api",
+          "dagu",
           "dozzle",
           "fluent-bit",
           "matomo",
@@ -6049,6 +6220,10 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-analytics.app",
+          "port": 7680
         }
       },
       "oci-apps": {
@@ -6128,6 +6303,7 @@
           "photos-webhook",
           "radicale",
           "revealmd",
+          "vaultwarden",
           "crawlee-cloud",
           "quant-lab-full",
           "quant-lab-light",
@@ -6143,6 +6319,7 @@
           "cloud-spec",
           "dbgate",
           "lgtm",
+          "ntfy",
           "windmill",
           "backup-borg",
           "backup-bup",
@@ -6154,6 +6331,10 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-apps.app",
+          "port": 7680
         }
       },
       "gcp-t4": {
@@ -6195,6 +6376,10 @@
           "ssh_secret": "GCP_T4_SSH_KEY",
           "host_secret": "GCP_T4_HOST",
           "user_secret": "GCP_T4_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-t4.app",
+          "port": 7680
         }
       },
       "gcp-proxy": {
@@ -6252,13 +6437,10 @@
         ],
         "idle_shutdown": null,
         "containers": [
-          "vaultwarden",
           "hickory-dns",
           "authelia",
           "caddy",
           "introspect-proxy",
-          "ntfy",
-          "postlite",
           "redis"
         ],
         "method": "gcloud",
@@ -6266,6 +6448,10 @@
           "ssh_secret": "GCP_PROXY_SSH_KEY",
           "host_secret": "GCP_PROXY_HOST",
           "user_secret": "GCP_PROXY_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-proxy.app",
+          "port": 7680
         }
       },
       "vast-ollama": {
@@ -6493,7 +6679,7 @@
       },
       "vaultwarden": {
         "dir": "ab-mic_vaultwarden",
-        "vm": "gcp-proxy",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "crawlee-cloud": {
@@ -6551,11 +6737,6 @@
         "vm": "oci-apps",
         "has_docker": true
       },
-      "alerts-api": {
-        "dir": "bc-obs_alerts-api",
-        "vm": "oci-analytics",
-        "has_docker": true
-      },
       "c3-infra-api": {
         "dir": "bc-obs_c3-infra-api",
         "vm": "oci-apps",
@@ -6588,7 +6769,7 @@
       },
       "dagu": {
         "dir": "bc-obs_dagu",
-        "vm": "oci-mail",
+        "vm": "oci-analytics",
         "has_docker": true
       },
       "dbgate": {
@@ -6618,7 +6799,7 @@
       },
       "ntfy": {
         "dir": "bc-obs_ntfy",
-        "vm": "gcp-proxy",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "sauron-forwarder": {
@@ -6664,11 +6845,6 @@
       "kg-graph": {
         "dir": "ca-dat_kg-graph",
         "vm": "oci-apps",
-        "has_docker": true
-      },
-      "postlite": {
-        "dir": "ca-dat_postlite",
-        "vm": "gcp-proxy",
         "has_docker": true
       },
       "redis": {
