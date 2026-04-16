@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-03-29T03:04:10.819Z",
+    "generated_at": "2026-04-15T17:36:15.684Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -15,18 +15,19 @@
   },
   "ssh_key": "/home/diego/git/vault/A0_keys/ssh/id_rsa",
   "remote_base": "/opt/containers",
-  "engine_folder": "bc-obs_c3-infra-mcp",
+  "engine_folder": "bc-obs_c3-infra-api",
   "vms": {
     "oci-E2-f_0": {
       "ip": "130.110.251.193",
       "specs": {
         "cpu": 1,
-        "ram_gb": 0,
+        "ram_gb": 1,
         "disk_gb": 0,
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
       },
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
@@ -42,27 +43,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -72,7 +73,7 @@
         {
           "port": 8443,
           "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
+          "desc": "Maddy web admin HTTPS"
         },
         {
           "port": 22000,
@@ -89,25 +90,26 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
       "services": [
         "snappymail",
+        "maddy",
         "smtp-proxy",
-        "stalwart",
-        "dagu",
         "syslog-forwarder"
       ],
-      "container_count": 5
+      "container_count": 4
     },
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
       "specs": {
         "cpu": 1,
-        "ram_gb": 0,
+        "ram_gb": 1,
         "disk_gb": 0,
         "arch": "x86_64",
         "shape": "VM.Standard.E2.1.Micro",
         "cloud_name": "oci-E2-f_1",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
       },
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
@@ -124,8 +126,9 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
       "services": [
-        "alerts-api",
+        "dagu",
         "dozzle",
         "fluent-bit",
         "matomo",
@@ -143,11 +146,12 @@
         "arch": "aarch64",
         "shape": "VM.Standard.A1.Flex",
         "cloud_name": "oci-A1-f_0",
-        "cloud_zone": "eu-marseille-1"
+        "cloud_zone": "eu-marseille-1",
+        "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
       },
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
-      "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -201,6 +205,7 @@
         "ssh_secret": "OCI_SSH_KEY",
         "host_literal": true
       },
+      "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva",
       "services": [
         "code-server",
         "etherpad",
@@ -215,6 +220,7 @@
         "photos-webhook",
         "radicale",
         "revealmd",
+        "vaultwarden",
         "crawlee-cloud",
         "quant-lab-full",
         "quant-lab-light",
@@ -228,8 +234,9 @@
         "c3-services-mcp",
         "cloud-cgc-mcp",
         "cloud-spec",
+        "dbgate",
         "lgtm",
-        "nocodb",
+        "ntfy",
         "windmill",
         "backup-borg",
         "backup-bup",
@@ -237,25 +244,26 @@
         "gitea",
         "kg-graph"
       ],
-      "container_count": 59
+      "container_count": 50
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
       "specs": {
-        "cpu": 0,
-        "ram_gb": 0,
-        "disk_gb": 0,
+        "cpu": 4,
+        "ram_gb": 15,
+        "disk_gb": 50,
         "arch": "x86_64",
         "shape": "n1-standard-4",
         "gpu": "NVIDIA T4",
         "vram_gb": 16,
         "machine_type": "n1-standard-4",
         "cloud_name": "ollama-spot-gpu",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
       },
       "description": "GCloud Paid - N1 Std 4 + T4 GPU (Spot) - Ollama LLM",
       "wg_ip": "10.0.0.8",
-      "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
+      "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "diego",
@@ -280,6 +288,7 @@
         "network_threshold": 51200,
         "min_uptime_seconds": 600
       },
+      "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu",
       "services": [
         "ollama"
       ],
@@ -288,14 +297,15 @@
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
       "specs": {
-        "cpu": 0,
-        "ram_gb": 0,
-        "disk_gb": 0,
+        "cpu": 2,
+        "ram_gb": 2,
+        "disk_gb": 32,
         "arch": "x86_64",
         "shape": "e2-small",
         "machine_type": "e2-small",
         "cloud_name": "arch-1",
-        "cloud_zone": "us-central1-a"
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
@@ -346,17 +356,15 @@
       },
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
+      "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1",
       "services": [
-        "vaultwarden",
         "hickory-dns",
         "authelia",
         "caddy",
         "introspect-proxy",
-        "ntfy",
-        "postlite",
         "redis"
       ],
-      "container_count": 12
+      "container_count": 7
     },
     "vast-RTX-p_0": {
       "ip": "TBD",
@@ -392,7 +400,7 @@
       "provider": "Oracle Cloud",
       "tier": "Free + Paid",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_oci",
+      "folder": "c_vps/vps_oci",
       "instances": [
         "oci-E2-f_0",
         "oci-E2-f_1",
@@ -405,7 +413,7 @@
       "provider": "Google Cloud",
       "tier": "Free + Paid (Spot)",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_gcloud",
+      "folder": "c_vps/vps_gcloud",
       "instances": [
         "gcp-E2-f_0",
         "gcp-T4-p_0"
@@ -417,7 +425,7 @@
       "provider": "Amazon Web Services",
       "tier": "Exploration",
       "infrastructure_type": "Terraform",
-      "folder": "b_infra/vps_aws",
+      "folder": "c_vps/vps_aws",
       "instances": [],
       "description": "AWS infrastructure code (not currently active)",
       "has_terraform": true
@@ -426,7 +434,7 @@
       "provider": "Vast.ai",
       "tier": "On-demand rental",
       "infrastructure_type": "Manual rental",
-      "folder": "b_infra/vps_vast-ai",
+      "folder": "c_vps/vps_vast-ai",
       "instances": [
         "vast-RTX-p_0"
       ],
@@ -435,11 +443,15 @@
     },
     "hetzner": {
       "has_terraform": true,
-      "folder": "b_infra/vps_hetzner"
+      "folder": "c_vps/vps_hetzner"
+    },
+    "nvidia-llm-api": {
+      "has_terraform": false,
+      "folder": "c_vps/vps_nvidia-llm-api"
     },
     "resend": {
       "has_terraform": true,
-      "folder": "b_infra/vps_resend"
+      "folder": "c_vps/vps_resend"
     }
   },
   "native": {
@@ -451,30 +463,35 @@
         {
           "name": "oci-mail",
           "wg_ip": "10.0.0.3",
+          "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
           "endpoint": "130.110.251.193:51820",
           "role": "spoke"
         },
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
+          "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
           "endpoint": "129.151.228.66:51820",
           "role": "spoke"
         },
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
+          "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
           "endpoint": "82.70.229.129:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-t4",
           "wg_ip": "10.0.0.8",
+          "wg_public_key": null,
           "endpoint": "34.173.227.250:51820",
           "role": "spoke"
         },
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
+          "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
           "endpoint": "35.226.147.64:51820",
           "role": "hub"
         }
@@ -482,13 +499,18 @@
       "clients": {
         "surface": {
           "wg_ip": "10.0.0.5",
-          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
         },
         "termux": {
           "wg_ip": "10.0.0.9",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA=",
-          "role": "client"
+          "role": "client",
+          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
+        },
+        "gha-runner": {
+          "wg_ip": "10.0.0.200",
+          "role": "client",
+          "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
         }
       }
     },
@@ -524,6 +546,11 @@
         "apt": "openssh-client",
         "desc": "SSH for VM deploy"
       },
+      "sudo": {
+        "nix": "sudo",
+        "apt": "sudo",
+        "desc": "Privilege escalation for build steps"
+      },
       "jq": {
         "nix": "jq",
         "apt": "jq",
@@ -548,6 +575,16 @@
         "nix": "curl",
         "apt": "curl",
         "desc": "HTTP client (health checks)"
+      },
+      "dig": {
+        "nix": "dig",
+        "apt": "dnsutils",
+        "desc": "DNS lookup (health checks — dig, nslookup)"
+      },
+      "ip": {
+        "nix": "iproute2",
+        "apt": "iproute2",
+        "desc": "Network tools (ip command — required by wg-quick)"
       }
     },
     "build": {
@@ -562,6 +599,18 @@
       "typescript": {
         "nix": "nodePackages.typescript",
         "desc": "TypeScript compiler (nix build only)"
+      },
+      "rust": {
+        "nix": null,
+        "desc": "Rust compiler — installed via rustup in Dockerfile (nixos-24.11 ships 1.82, too old for current crate ecosystem)"
+      },
+      "cargo": {
+        "nix": null,
+        "desc": "Rust package manager — installed via rustup in Dockerfile"
+      },
+      "terraform": {
+        "nix": null,
+        "desc": "Infrastructure as Code — direct binary in Dockerfile (nix go-modules breaks sandbox=false in Docker, see NixOS/nix#11295)"
       }
     },
     "optional": {
@@ -797,10 +846,11 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_code-server",
       "description": "VS Code IDE (ide.diegonmarcos.com)",
+      "enabled": true,
       "domain": "ide.diegonmarcos.com",
       "port": 8443,
       "dns": "code-server.app",
-      "upstream": "code-server.app:8443",
+      "upstream": "10.0.0.6:8443",
       "containers": {
         "app": {
           "container_name": "code-server",
@@ -861,17 +911,21 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "CODE_SERVER_PASSWORD"
+      ]
     },
     "etherpad": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_etherpad",
       "description": "Etherpad collaborative editor",
+      "enabled": true,
       "domain": "pad.diegonmarcos.com",
       "port": 3012,
       "dns": "etherpad.app",
-      "upstream": "etherpad.app:3012",
+      "upstream": "10.0.0.6:3012",
       "containers": {
         "app": {
           "container_name": "etherpad_app",
@@ -974,10 +1028,11 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_filebrowser",
       "description": "FileBrowser web file manager (NEW - not deployed yet)",
+      "enabled": true,
       "domain": "files.diegonmarcos.com",
       "port": 3015,
       "dns": "filebrowser.app",
-      "upstream": "filebrowser.app:3015",
+      "upstream": "10.0.0.6:3015",
       "containers": {
         "app": {
           "container_name": "filebrowser_app",
@@ -1053,9 +1108,10 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_google-workspace-mcp",
       "description": "Google Workspace MCP server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport",
+      "enabled": true,
       "port": 3104,
       "dns": "g-workspace-mcp.app",
-      "upstream": "g-workspace-mcp.app:3104",
+      "upstream": "10.0.0.6:3104",
       "containers": {
         "app": {
           "container_name": "google-workspace-mcp",
@@ -1110,17 +1166,21 @@
       },
       "health": {
         "path": "/health"
-      }
+      },
+      "secret_env_vars": [
+        "GOOGLE_SERVICE_ACCOUNT_KEY"
+      ]
     },
     "grist": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_grist",
       "description": "Grist spreadsheet/database (sheets.diegonmarcos.com)",
+      "enabled": true,
       "domain": "sheets.diegonmarcos.com",
       "port": 3011,
       "dns": "grist.app",
-      "upstream": "grist.app:3011",
+      "upstream": "10.0.0.6:3011",
       "containers": {
         "app": {
           "container_name": "grist_app",
@@ -1194,10 +1254,11 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_hedgedoc",
       "description": "Collaborative markdown editor",
+      "enabled": true,
       "domain": "doc.diegonmarcos.com",
       "port": 3018,
       "dns": "hedgedoc.app",
-      "upstream": "hedgedoc.app:3018",
+      "upstream": "10.0.0.6:3018",
       "containers": {
         "app": {
           "container_name": "hedgedoc_app",
@@ -1298,9 +1359,10 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_mail-mcp",
       "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
+      "enabled": true,
       "port": 3103,
       "dns": "mail-mcp.app",
-      "upstream": "mail-mcp.app:3103",
+      "upstream": "10.0.0.6:3103",
       "containers": {
         "app": {
           "container_name": "mail-mcp",
@@ -1350,17 +1412,26 @@
       },
       "declared_ports": {
         "app": 3103
-      }
+      },
+      "secret_env_vars": [
+        "MAIL_USER",
+        "MAIL_PASSWORD",
+        "STALWART_ADMIN_URL",
+        "STALWART_ADMIN_USER",
+        "STALWART_ADMIN_PASSWORD",
+        "RESEND_API_KEY"
+      ]
     },
     "mattermost-bots": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_mattermost-bots",
       "description": "Mattermost team chat with ntfy bridge and C3 command bot",
+      "enabled": true,
       "domain": "chat.diegonmarcos.com",
       "port": 8065,
       "dns": "mattermost.app",
-      "upstream": "mattermost.app:8065",
+      "upstream": "10.0.0.6:8065",
       "containers": {
         "app": {
           "container_name": "mattermost",
@@ -1474,16 +1545,27 @@
           "mattermost_data",
           "mattermost_postgres"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_PASSWORD",
+        "MM_SQLSETTINGS_DATASOURCE",
+        "MM_ADMIN_EMAIL",
+        "MM_ADMIN_USERNAME",
+        "MM_ADMIN_PASSWORD",
+        "BEARER_TOKEN",
+        "MM_CLAUDE_PASSWORD",
+        "AUTHELIA_OIDC_MATTERMOST_SECRET"
+      ]
     },
     "mattermost-mcp": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_mattermost-mcp",
       "description": "Mattermost MCP server — chat tools via HTTP transport",
+      "enabled": true,
       "port": 3102,
       "dns": "mattermost-mcp.app",
-      "upstream": "mattermost-mcp.app:3102",
+      "upstream": "10.0.0.6:3102",
       "containers": {
         "app": {
           "container_name": "mattermost-mcp",
@@ -1533,17 +1615,25 @@
       },
       "declared_ports": {
         "app": 3102
-      }
+      },
+      "secret_env_vars": [
+        "MM_CLAUDE_PASSWORD",
+        "MM_URL",
+        "MM_TEAM_ID",
+        "MM_ADMIN_USERNAME",
+        "CLAUDE_MODEL"
+      ]
     },
     "photoprism": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_photoprism",
       "description": "PhotoPrism AI-powered photo management (oci-flex-1)",
+      "enabled": true,
       "domain": "photos.diegonmarcos.com",
       "port": 3013,
       "dns": "photoprism.app",
-      "upstream": "photoprism.app:3013",
+      "upstream": "10.0.0.6:3013",
       "containers": {
         "app": {
           "container_name": "photoprism_app",
@@ -1658,21 +1748,32 @@
           "photoprism_originals",
           "photoprism_storage"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "PHOTOPRISM_ADMIN_PASSWORD",
+        "MARIADB_DATABASE",
+        "MARIADB_USER",
+        "MARIADB_PASSWORD",
+        "MARIADB_ROOT_PASSWORD",
+        "PHOTOPRISM_DATABASE_NAME",
+        "PHOTOPRISM_DATABASE_USER",
+        "PHOTOPRISM_DATABASE_PASSWORD",
+        "OCI_S3_ACCESS_KEY",
+        "OCI_S3_SECRET_KEY"
+      ]
     },
     "photos-webhook": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_photos-webhook",
       "description": "PhotoPrism Webhook + S3 Processor",
-      "containers": {
-        "app": {
-          "container_name": "photos-webhook",
-          "image": "",
-          "public": false
-        }
-      },
+      "enabled": true,
+      "port": 5002,
+      "dns": "photos-webhook.app",
+      "upstream": "10.0.0.6:5002",
+      "containers": {},
       "container_names": [
+        "photos-db",
         "photos-webhook"
       ],
       "all_ports": [],
@@ -1684,6 +1785,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "backup": {
+        "enabled": true
       }
     },
     "radicale": {
@@ -1691,10 +1795,11 @@
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_radicale",
       "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
+      "enabled": true,
       "domain": "cal.diegonmarcos.com",
       "port": 5232,
       "dns": "radicale.app",
-      "upstream": "radicale.app:5232",
+      "upstream": "10.0.0.6:5232",
       "containers": {
         "app": {
           "container_name": "radicale",
@@ -1757,17 +1862,20 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "RADICALE_USERS"
+      ]
     },
     "revealmd": {
       "category": "app",
       "vm": "oci-A1-f_0",
       "folder": "aa-sui_revealmd",
-      "description": "Reveal.js markdown presentations (NEW - not deployed yet)",
-      "domain": "slides.diegonmarcos.com",
+      "description": "Reveal.js markdown presentations (not deployed)",
+      "enabled": false,
       "port": 3014,
       "dns": "revealmd.app",
-      "upstream": "revealmd.app:3014",
+      "upstream": "10.0.0.6:3014",
       "containers": {
         "app": {
           "container_name": "revealmd_app",
@@ -1776,18 +1884,9 @@
           "port_env": null,
           "dns": "revealmd.app",
           "public": true,
-          "proxy": {
-            "type": "path",
-            "parent_domain": "app.diegonmarcos.com",
-            "base_path": "/revealmd",
-            "auth": "two_factor"
-          },
-          "healthcheck": "/",
-          "monitoring": {
-            "tls_check": true,
-            "dns_check": true,
-            "endpoint_check": true
-          },
+          "proxy": null,
+          "healthcheck": null,
+          "monitoring": null,
           "volumes": [
             "slides_data:/slides"
           ],
@@ -1813,24 +1912,8 @@
         "ports": [],
         "networks": []
       },
-      "proxy": {
-        "primary": {
-          "type": "path",
-          "parent_domain": "app.diegonmarcos.com",
-          "base_path": "/revealmd",
-          "auth": "two_factor"
-        }
-      },
       "declared_ports": {
         "app": 3014
-      },
-      "health": {
-        "path": "/"
-      },
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
       }
     },
     "snappymail": {
@@ -1838,10 +1921,11 @@
       "vm": "oci-E2-f_0",
       "folder": "aa-sui_snappymail",
       "description": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
+      "enabled": true,
       "domain": "webmail.diegonmarcos.com",
       "port": 8888,
       "dns": "snappymail.app",
-      "upstream": "snappymail.app:8888",
+      "upstream": "10.0.0.3:8888",
       "containers": {
         "app": {
           "container_name": "snappymail",
@@ -1897,18 +1981,115 @@
       },
       "health": {
         "path": "/"
-      }
+      },
+      "secret_env_vars": [
+        "SNAPPYMAIL_ADMIN_PASSWORD"
+      ]
+    },
+    "maddy": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-maddy",
+      "description": "Maddy Mail Server (mail.diegonmarcos.com)",
+      "enabled": true,
+      "domain": "mail.diegonmarcos.com",
+      "flake": "tools-maddy",
+      "port": 443,
+      "dns": "maddy.app",
+      "upstream": "10.0.0.3:443",
+      "containers": {
+        "app": {
+          "container_name": "maddy",
+          "image": "foxcpp/maddy:0.9",
+          "port": 443,
+          "dns": "maddy.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail.diegonmarcos.com",
+            "auth": "two_factor",
+            "tls_skip_verify": true
+          },
+          "healthcheck": null,
+          "volumes": [
+            "maddy_data:/data",
+            "./dkim:/data/dkim:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "maddy"
+      ],
+      "all_ports": [
+        "443"
+      ],
+      "all_dns": [
+        "maddy.app"
+      ],
+      "compose": {
+        "containers": [
+          "maddy"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail.diegonmarcos.com",
+          "auth": "two_factor",
+          "tls_skip_verify": true
+        }
+      },
+      "declared_ports": {
+        "app": 993,
+        "smtp": 465,
+        "imap": 993
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "maddy_data"
+        ]
+      },
+      "secret_env_vars": [
+        "ME_PASSWORD",
+        "NOREPLY_PASSWORD",
+        "OCI_RELAYUSER",
+        "OCI_RELAYPASSWORD",
+        "AWS_RELAYUSER",
+        "AWS_RELAYPASSWORD",
+        "DKIM_PRIVATE_KEY_B64"
+      ]
     },
     "smtp-proxy": {
       "category": "app",
       "vm": "oci-E2-f_0",
       "folder": "aa-sui_tools-smtp-proxy",
       "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
+      "enabled": true,
       "domain": "smtp.diegonmarcos.com",
       "flake": "tools-smtp-proxy",
       "port": 8080,
       "dns": "smtp-proxy.app",
-      "upstream": "smtp-proxy.app:8080",
+      "upstream": "10.0.0.3:8080",
       "containers": {
         "app": {
           "container_name": "smtp-proxy",
@@ -1945,104 +2126,24 @@
       },
       "declared_ports": {
         "app": 8080
-      }
-    },
-    "stalwart": {
-      "category": "app",
-      "vm": "oci-E2-f_0",
-      "folder": "aa-sui_tools-stalwart",
-      "description": "Stalwart Mail Server (mail.diegonmarcos.com)",
-      "domain": "mail.diegonmarcos.com",
-      "flake": "tools-stalwart",
-      "port": 443,
-      "dns": "stalwart.app",
-      "upstream": "stalwart.app:443",
-      "containers": {
-        "app": {
-          "container_name": "stalwart",
-          "image": "stalwartlabs/mail-server:v0.11",
-          "port": 443,
-          "port_env": null,
-          "dns": "stalwart.app",
-          "public": true,
-          "proxy": {
-            "domain": "mail.diegonmarcos.com",
-            "auth": "two_factor",
-            "tls_skip_verify": true
-          },
-          "healthcheck": "/",
-          "monitoring": {
-            "tls_check": true
-          },
-          "volumes": [
-            "./data:/opt/stalwart-mail/data",
-            "./config.toml:/opt/stalwart-mail/etc/config.toml:ro",
-            "./dkim:/opt/stalwart-mail/dkim:ro"
-          ],
-          "env_file": false,
-          "depends_on": [],
-          "resources": {
-            "limits": {
-              "memory": "512M"
-            },
-            "reservations": {
-              "memory": "64M"
-            }
-          },
-          "read_only": false,
-          "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
-        }
       },
-      "container_names": [
-        "stalwart"
-      ],
-      "all_ports": [
-        "443"
-      ],
-      "all_dns": [
-        "stalwart.app"
-      ],
-      "compose": {
-        "containers": [
-          "stalwart"
-        ],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "domain": "mail.diegonmarcos.com",
-          "auth": "two_factor",
-          "tls_skip_verify": true
-        }
-      },
-      "declared_ports": {
-        "app": 443,
-        "smtp": 465,
-        "imap": 993
-      },
-      "health": {
-        "path": "/"
-      },
-      "monitoring": {
-        "tls_check": true
-      },
-      "backup": {
-        "enabled": true,
-        "volumes": [
-          "stalwart_data"
-        ]
-      }
+      "secret_env_vars": [
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "API_KEY",
+        "LISTEN_PORT"
+      ]
     },
     "vaultwarden": {
       "category": "mic",
-      "vm": "gcp-E2-f_0",
+      "vm": "oci-A1-f_0",
       "folder": "ab-mic_vaultwarden",
       "description": "Bitwarden password manager",
+      "enabled": true,
       "domain": "vault.diegonmarcos.com",
       "port": 8880,
       "dns": "vaultwarden.app",
-      "upstream": "vaultwarden.app:8880",
+      "upstream": "10.0.0.6:8880",
       "containers": {
         "app": {
           "container_name": "vaultwarden",
@@ -2109,17 +2210,27 @@
         "volumes": [
           "vaultwarden_data"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "ADMIN_TOKEN",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_SECURITY",
+        "SMTP_FROM",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD"
+      ]
     },
     "crawlee-cloud": {
       "category": "fin",
       "vm": "oci-A1-f_0",
       "folder": "ac-fin_crawlee-cloud",
       "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+      "enabled": true,
       "domain": "api.diegonmarcos.com",
       "port": 3000,
       "dns": "crawlee.app",
-      "upstream": "crawlee.app:3000",
+      "upstream": "10.0.0.6:3000",
       "containers": {
         "app": {
           "container_name": "crawlee_api",
@@ -2307,13 +2418,25 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "MINIO_USER",
+        "MINIO_PASSWORD",
+        "JWT_SECRET",
+        "ADMIN_EMAIL",
+        "ADMIN_PASSWORD",
+        "RUNNER_TOKEN"
+      ]
     },
     "quant-lab-full": {
       "category": "fin",
       "vm": "oci-A1-f_0",
       "folder": "ac-fin_quant-lab-full",
       "description": "Full quant stack: Jupyter + Analytics + ML + Risk + NautilusTrader + Postgres",
+      "enabled": false,
       "containers": {
         "research": {
           "container_name": "quant_full_research",
@@ -2454,13 +2577,19 @@
       "declared_ports": {
         "app": 8890,
         "db": 5437
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB"
+      ]
     },
     "quant-lab-light": {
       "category": "fin",
       "vm": "oci-A1-f_0",
       "folder": "ac-fin_quant-lab-light",
       "description": "Lightweight quant research: Jupyter + NautilusTrader + Postgres",
+      "enabled": true,
       "containers": {
         "research": {
           "container_name": "quant_light_research",
@@ -2503,7 +2632,7 @@
         "db": {
           "container_name": "quant_light_db",
           "image": "postgres:16-alpine",
-          "port": 5434,
+          "port": 5443,
           "port_env": "PGPORT",
           "dns": "quant-light-db.app",
           "public": false,
@@ -2528,7 +2657,7 @@
       "all_ports": [
         "8889",
         "5001",
-        "5434"
+        "5443"
       ],
       "all_dns": [
         "quant-light-research.app",
@@ -2547,20 +2676,26 @@
       "declared_ports": {
         "app": 8889,
         "engine": 5001,
-        "db": 5434
+        "db": 5443
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB"
+      ]
     },
     "ollama": {
       "category": "agi",
       "vm": "gcp-T4-p_0",
       "folder": "ad-agi_ollama",
       "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
+      "enabled": true,
       "port": 11434,
       "dns": "ollama.app",
-      "upstream": "ollama.app:11434",
+      "upstream": "10.0.0.8:11434",
       "containers": {
         "app": {
           "container_name": "ollama",
@@ -2624,6 +2759,7 @@
       "vm": "oci-apps-2",
       "folder": "ad-agi_ollama-arm",
       "description": "Ollama LLM server (ARM CPU, 7b models)",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "ollama-arm",
@@ -2647,9 +2783,10 @@
       "vm": "oci-A1-f_0",
       "folder": "ad-agi_ollama-hai",
       "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
+      "enabled": true,
       "port": 11435,
       "dns": "ollama-hai.app",
-      "upstream": "ollama-hai.app:11435",
+      "upstream": "10.0.0.6:11435",
       "containers": {
         "app": {
           "container_name": "ollama-hai",
@@ -2699,6 +2836,7 @@
       "vm": "oci-A1-f_0",
       "folder": "ad-agi_rig-agentic-hai-1.5bq4",
       "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
+      "enabled": false,
       "containers": {
         "app": {
           "container_name": "rig-agentic-hai-1.5bq4",
@@ -2717,61 +2855,57 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "MM_BOT_TOKEN"
+      ]
     },
     "rig-agentic-sonn-14bq8": {
       "category": "agi",
       "vm": "oci-A1-f_0",
       "folder": "ad-agi_rig-agentic-sonn-14bq8",
       "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
+      "enabled": true,
+      "port": 8091,
+      "dns": "rig-agentic-sonn-14bq8.app",
+      "upstream": "10.0.0.6:8091",
       "containers": {
         "app": {
           "container_name": "rig-agentic-sonn-14bq8",
           "image": "",
-          "public": false
+          "public": false,
+          "port": 8091,
+          "dns": "rig-agentic-sonn-14bq8.app"
         }
       },
       "container_names": [
         "rig-agentic-sonn-14bq8"
       ],
-      "all_ports": [],
-      "all_dns": [],
+      "all_ports": [
+        "8091"
+      ],
+      "all_dns": [
+        "rig-agentic-sonn-14bq8.app"
+      ],
       "compose": {
         "containers": [
           "rig-agentic-sonn-14bq8"
         ],
         "ports": [],
         "networks": []
-      }
-    },
-    "cloudflare": {
-      "category": "cloud",
-      "vm": "local",
-      "folder": "ba-clo_cloudflare",
-      "description": "Cloudflare DNS, Email Routing, Tunnel config (Terraform)",
-      "containers": {
-        "app": {
-          "container_name": "cloudflare",
-          "image": "",
-          "public": false
-        }
       },
-      "container_names": [
-        "cloudflare"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      }
+      "secret_env_vars": [
+        "SURREAL_ROOT_PASSWORD",
+        "SURREAL_URL",
+        "MM_BOT_TOKEN"
+      ]
     },
     "cloudflare-worker": {
       "category": "cloud",
       "vm": "local",
       "folder": "ba-clo_cloudflare-worker",
       "description": "Cloudflare Email Worker - routes inbound email (me@diegonmarcos.com) to Mailu via SMTP proxy",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "cloudflare-worker",
@@ -2795,6 +2929,7 @@
       "vm": "local",
       "folder": "ba-clo_gcloud",
       "description": "Google Cloud SDK and tools (local CLI only)",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "gcloud",
@@ -2818,10 +2953,11 @@
       "vm": "gcp-E2-f_0",
       "folder": "ba-clo_hickory-dns",
       "description": "Internal DNS server for WireGuard mesh (per-service .app zones)",
+      "enabled": true,
       "domain": "dns.internal",
       "port": 53,
       "dns": "hickory-dns.app",
-      "upstream": "hickory-dns.app:53",
+      "upstream": "10.0.0.1:53",
       "containers": {
         "app": {
           "container_name": "hickory-dns",
@@ -2870,10 +3006,11 @@
       "vm": "gcp-E2-f_0",
       "folder": "bb-sec_authelia",
       "description": "SSO and 2FA authentication portal",
+      "enabled": true,
       "domain": "auth.diegonmarcos.com",
       "port": 9091,
       "dns": "authelia.app",
-      "upstream": "authelia.app:9091",
+      "upstream": "10.0.0.1:9091",
       "containers": {
         "app": {
           "container_name": "authelia",
@@ -2957,17 +3094,43 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_JWT_SECRET",
+        "AUTHELIA_SESSION_SECRET",
+        "AUTHELIA_STORAGE_ENCRYPTION_KEY",
+        "AUTHELIA_REDIS_PASSWORD",
+        "AUTHELIA_OIDC_HMAC_SECRET",
+        "AUTHELIA_USER_DIEGO_HASH",
+        "AUTHELIA_OIDC_CLIENT_NPM_SECRET",
+        "AUTHELIA_OIDC_CLIENT_NOCODB_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLI_SECRET",
+        "AUTHELIA_SMTP_PASSWORD",
+        "AUTHELIA_OIDC_JWKS_KEY",
+        "AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET",
+        "AUTHELIA_OIDC_CLIENT_DAGU_SECRET",
+        "AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MONITORING_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET",
+        "AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET",
+        "AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET",
+        "AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET"
+      ]
     },
     "caddy": {
       "category": "sec",
       "vm": "gcp-E2-f_0",
       "folder": "bb-sec_caddy",
       "description": "Caddy reverse proxy + security dashboard (gcp-proxy)",
+      "enabled": true,
       "domain": "proxy.diegonmarcos.com",
       "port": 443,
       "dns": "caddy.app",
-      "upstream": "caddy.app:443",
+      "upstream": "10.0.0.1:443",
       "containers": {
         "app": {
           "container_name": "caddy",
@@ -3046,13 +3209,19 @@
       },
       "declared_ports": {
         "app": 443
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_CLI_SECRET",
+        "CF_API_TOKEN",
+        "NTFY_ADMIN_AUTH"
+      ]
     },
     "caddy-l4-image": {
       "category": "sec",
       "vm": "local",
       "folder": "bb-sec_caddy-l4-image",
       "description": "Custom Caddy with L4 TCP proxy, ratelimit, Cloudflare DNS plugins",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "caddy-l4-image",
@@ -3076,9 +3245,10 @@
       "vm": "gcp-E2-f_0",
       "folder": "bb-sec_introspect-proxy",
       "description": "OIDC token introspection sidecar for Caddy Bearer auth",
+      "enabled": true,
       "port": 4182,
       "dns": "introspect-proxy.app",
-      "upstream": "introspect-proxy.app:4182",
+      "upstream": "10.0.0.1:4182",
       "containers": {
         "app": {
           "container_name": "introspect-proxy",
@@ -3128,6 +3298,7 @@
       "vm": "oci-A1-f_0",
       "folder": "bb-sec_sauron-central",
       "description": "Central Syslog Collector + SIEM API",
+      "enabled": false,
       "containers": {
         "app": {
           "container_name": "sauron-central",
@@ -3149,41 +3320,17 @@
         "networks": []
       }
     },
-    "alerts-api": {
-      "category": "tools",
-      "vm": "oci-E2-f_1",
-      "folder": "bc-obs_alerts-api",
-      "description": "Security Alert Aggregation API",
-      "containers": {
-        "app": {
-          "container_name": "alerts-api",
-          "image": "",
-          "public": false
-        }
-      },
-      "container_names": [
-        "alerts-api"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [
-          "alerts-api"
-        ],
-        "ports": [],
-        "networks": []
-      }
-    },
     "c3-infra-api": {
       "category": "sec",
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-infra-api",
       "description": "C3 REST API — Cloud Control Center Fastify API",
+      "enabled": true,
       "domain": "api.diegonmarcos.com/c3-api",
       "flake": "c3-infra-api",
       "port": 8081,
       "dns": "c3-infra-api.app",
-      "upstream": "c3-infra-api.app:8081",
+      "upstream": "10.0.0.6:8081",
       "containers": {
         "app": {
           "container_name": "c3-infra-api",
@@ -3207,7 +3354,7 @@
           "volumes": [
             "/opt/ssh-keys/c3-infra-api:/root/.ssh:ro",
             "/nix/store:/nix/store:ro",
-            "~/.nix-profile/bin:/usr/local/nix-bin:ro",
+            "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro",
             "~/.config/gcloud:/root/.config/gcloud",
             "c3_git_repos:/root/git"
           ],
@@ -3251,18 +3398,29 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_OIDC_C3_MCP_SECRET",
+        "MM_BOT_TOKEN",
+        "C3_API_KEY",
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "RESEND_API_KEY",
+        "CF_API_KEY",
+        "CF_API_EMAIL"
+      ]
     },
     "c3-infra-mcp": {
       "category": "sec",
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-infra-mcp",
       "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
+      "enabled": true,
       "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
       "flake": "c3-infra-mcp",
       "port": 3100,
       "dns": "c3-infra-mcp.app",
-      "upstream": "c3-infra-mcp.app:3100",
+      "upstream": "10.0.0.6:3100",
       "containers": {
         "app": {
           "container_name": "c3-infra-mcp",
@@ -3282,7 +3440,7 @@
           "volumes": [
             "/opt/ssh-keys/c3-infra-mcp:/root/.ssh:ro",
             "/nix/store:/nix/store:ro",
-            "~/.nix-profile/bin:/usr/local/nix-bin:ro",
+            "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro",
             "~/.config/gcloud:/root/.config/gcloud",
             "c3_git_repos:/root/git"
           ],
@@ -3321,18 +3479,30 @@
       },
       "health": {
         "path": "/mcp"
-      }
+      },
+      "secret_env_vars": [
+        "AUTHELIA_OIDC_C3_MCP_SECRET",
+        "MM_BOT_TOKEN",
+        "C3_API_KEY",
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "RESEND_API_KEY",
+        "CF_API_KEY",
+        "CF_API_EMAIL",
+        "NOREPLY_PASSWORD"
+      ]
     },
     "c3-services-api": {
       "category": "obs",
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-services-api",
       "description": "C3 Services REST API — service API gateway Fastify API",
+      "enabled": false,
       "domain": "api.diegonmarcos.com/services",
       "flake": "c3-services-api",
       "port": 8082,
       "dns": "c3-services-api.app",
-      "upstream": "c3-services-api.app:8082",
+      "upstream": "10.0.0.6:8082",
       "containers": {
         "app": {
           "container_name": "c3-services-api",
@@ -3401,10 +3571,11 @@
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-services-mcp",
       "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
+      "enabled": true,
       "flake": "c3-services-mcp",
       "port": 3101,
       "dns": "c3-services-mcp.app",
-      "upstream": "c3-services-mcp.app:3101",
+      "upstream": "10.0.0.6:3101",
       "containers": {
         "app": {
           "container_name": "c3-services-mcp",
@@ -3457,17 +3628,22 @@
       },
       "health": {
         "path": "/mcp"
-      }
+      },
+      "secret_env_vars": [
+        "GITHUB_TOKEN",
+        "DAGU_BASIC_AUTH"
+      ]
     },
     "cloud-cgc-mcp": {
       "category": "obs",
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_cloud-cgc-mcp",
       "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
+      "enabled": true,
       "flake": "cloud-cgc-mcp",
       "port": 3105,
       "dns": "cloud-cgc-mcp.app",
-      "upstream": "cloud-cgc-mcp.app:3105",
+      "upstream": "10.0.0.6:3105",
       "containers": {
         "app": {
           "container_name": "cloud-cgc-mcp",
@@ -3529,9 +3705,10 @@
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_cloud-spec",
       "description": "Unified Cloud Documentation Portal",
+      "enabled": true,
       "port": 3080,
       "dns": "c3-spec.app",
-      "upstream": "c3-spec.app:3080",
+      "upstream": "10.0.0.6:3080",
       "containers": {
         "app": {
           "container_name": "cloud-spec",
@@ -3586,13 +3763,14 @@
     },
     "dagu": {
       "category": "tools",
-      "vm": "oci-E2-f_0",
+      "vm": "oci-E2-f_1",
       "folder": "bc-obs_dagu",
       "description": "Dagu - Lightweight DAG-based workflow scheduler",
+      "enabled": true,
       "domain": "workflows.diegonmarcos.com",
       "port": 8070,
       "dns": "dagu.app",
-      "upstream": "dagu.app:8070",
+      "upstream": "10.0.0.4:8070",
       "containers": {
         "app": {
           "container_name": "dagu",
@@ -3616,7 +3794,7 @@
             "./dags:/var/lib/dagu/dags",
             "./base.yaml:/var/lib/dagu/base.yaml:ro",
             "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro",
-            "/opt/ssh-keys/dagu:/root/.ssh:ro"
+            "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
           ],
           "env_file": true,
           "depends_on": [],
@@ -3658,6 +3836,100 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "secret_env_vars": [
+        "DAGU_USERNAME",
+        "DAGU_PASSWORD",
+        "AUTHELIA_OIDC_DAGU_SECRET",
+        "OCI_S3_SECRET_KEY",
+        "RESTIC_PASSWORD",
+        "BORG_PASSPHRASE",
+        "NOREPLY_PASSWORD",
+        "GITHUB_TOKEN"
+      ]
+    },
+    "dbgate": {
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "folder": "bc-obs_dbgate",
+      "description": "DBGate - Universal database manager for all cloud databases",
+      "enabled": true,
+      "domain": "db.diegonmarcos.com",
+      "port": 8086,
+      "dns": "dbgate.app",
+      "upstream": "10.0.0.6:8086",
+      "containers": {
+        "app": {
+          "container_name": "dbgate",
+          "image": "dbgate/dbgate:latest",
+          "port": 8086,
+          "port_env": "PORT",
+          "dns": "dbgate.app",
+          "public": true,
+          "proxy": {
+            "domain": "db.diegonmarcos.com",
+            "auth": "two_factor"
+          },
+          "healthcheck": "/",
+          "monitoring": {
+            "tls_check": true,
+            "dns_check": true,
+            "endpoint_check": true
+          },
+          "volumes": [
+            "dbgate_data:/root/.dbgate"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "64M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "dbgate"
+      ],
+      "all_ports": [
+        "8086"
+      ],
+      "all_dns": [
+        "dbgate.app"
+      ],
+      "compose": {
+        "containers": [
+          "dbgate"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "db.diegonmarcos.com",
+          "auth": "two_factor"
+        }
+      },
+      "declared_ports": {
+        "app": 8086
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "dbgate_data"
+        ]
       }
     },
     "dozzle": {
@@ -3665,10 +3937,11 @@
       "vm": "oci-E2-f_1",
       "folder": "bc-obs_dozzle",
       "description": "Dozzle - Real-time Docker log viewer",
+      "enabled": true,
       "domain": "logs.diegonmarcos.com",
       "port": 9999,
       "dns": "dozzle.app",
-      "upstream": "dozzle.app:9999",
+      "upstream": "10.0.0.4:9999",
       "containers": {
         "app": {
           "container_name": "dozzle",
@@ -3730,6 +4003,10 @@
       "vm": "oci-E2-f_1",
       "folder": "bc-obs_fluent-bit",
       "description": "Log processor and forwarder",
+      "enabled": true,
+      "port": 2020,
+      "dns": "fluent-bit.app",
+      "upstream": "10.0.0.4:2020",
       "containers": {
         "app": {
           "container_name": "fluent-bit",
@@ -3772,10 +4049,11 @@
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_lgtm",
       "description": "LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)",
+      "enabled": true,
       "domain": "grafana.diegonmarcos.com",
       "port": 3200,
       "dns": "grafana.app",
-      "upstream": "grafana.app:3200",
+      "upstream": "10.0.0.6:3200",
       "containers": {
         "grafana": {
           "container_name": "lgtm_grafana",
@@ -3896,22 +4174,27 @@
       },
       "monitoring": {
         "tls_check": true
-      }
+      },
+      "secret_env_vars": [
+        "GF_SECURITY_ADMIN_USER",
+        "GF_SECURITY_ADMIN_PASSWORD"
+      ]
     },
     "matomo": {
       "category": "tools",
       "vm": "oci-E2-f_1",
       "folder": "bc-obs_matomo",
       "description": "Matomo hybrid analytics (oci-analytics)",
+      "enabled": true,
       "domain": "analytics.diegonmarcos.com",
-      "port": 8080,
+      "port": 8084,
       "dns": "matomo.app",
-      "upstream": "matomo.app:8080",
+      "upstream": "10.0.0.4:8084",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
           "image": null,
-          "port": 8080,
+          "port": 8084,
           "port_env": null,
           "dns": "matomo.app",
           "public": true,
@@ -3945,7 +4228,7 @@
         "matomo-hybrid"
       ],
       "all_ports": [
-        "8080"
+        "8084"
       ],
       "all_dns": [
         "matomo.app"
@@ -3964,7 +4247,7 @@
         }
       },
       "declared_ports": {
-        "app": 8080,
+        "app": 8084,
         "db": 3306
       },
       "health": {
@@ -3978,121 +4261,24 @@
         "volumes": [
           "matomo_data"
         ]
-      }
-    },
-    "nocodb": {
-      "category": "tools",
-      "vm": "oci-A1-f_0",
-      "folder": "bc-obs_nocodb",
-      "description": "NocoDB database spreadsheet (nocodb.diegonmarcos.com)",
-      "domain": "db.diegonmarcos.com",
-      "port": 8085,
-      "dns": "nocodb.app",
-      "upstream": "nocodb.app:8085",
-      "containers": {
-        "app": {
-          "container_name": "nocodb",
-          "image": "nocodb/nocodb:latest",
-          "port": 8085,
-          "port_env": "PORT",
-          "dns": "nocodb.app",
-          "public": true,
-          "proxy": {
-            "domain": "db.diegonmarcos.com",
-            "auth": "two_factor"
-          },
-          "healthcheck": "/api/v1/health",
-          "monitoring": {
-            "tls_check": true,
-            "dns_check": true,
-            "endpoint_check": true
-          },
-          "volumes": [
-            "nocodb_data:/usr/app/data",
-            "/mnt/gcloud-sqlite:/sqlite:ro"
-          ],
-          "env_file": true,
-          "depends_on": [
-            "db"
-          ],
-          "resources": null,
-          "read_only": false
-        },
-        "db": {
-          "container_name": "nocodb-db",
-          "image": "postgres:16-bookworm",
-          "port": 5441,
-          "port_env": "PGPORT",
-          "dns": "nocodb-db.app",
-          "public": false,
-          "proxy": null,
-          "healthcheck": "cmd",
-          "monitoring": null,
-          "volumes": [
-            "nocodb_postgres:/var/lib/postgresql/data"
-          ],
-          "env_file": false,
-          "depends_on": [],
-          "resources": null,
-          "read_only": false,
-          "db_user": "nocodb",
-          "db_name": "nocodb"
-        }
       },
-      "container_names": [
-        "nocodb",
-        "nocodb-db"
-      ],
-      "all_ports": [
-        "8085",
-        "5441"
-      ],
-      "all_dns": [
-        "nocodb.app",
-        "nocodb-db.app"
-      ],
-      "compose": {
-        "containers": [
-          "nocodb",
-          "nocodb-db"
-        ],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "domain": "db.diegonmarcos.com",
-          "auth": "two_factor"
-        }
-      },
-      "declared_ports": {
-        "app": 8085,
-        "db": 5441
-      },
-      "health": {
-        "path": "/api/v1/health"
-      },
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
-      },
-      "backup": {
-        "enabled": true,
-        "volumes": [
-          "nocodb_data"
-        ]
-      }
+      "secret_env_vars": [
+        "MYSQL_ROOT_PASSWORD",
+        "MATOMO_DB_NAME",
+        "MATOMO_DB_USER",
+        "MATOMO_DB_PASSWORD"
+      ]
     },
     "ntfy": {
       "category": "tools",
-      "vm": "gcp-E2-f_0",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_ntfy",
       "description": "Push notification server",
+      "enabled": true,
       "domain": "rss.diegonmarcos.com",
       "port": 8090,
       "dns": "ntfy.app",
-      "upstream": "ntfy.app:8090",
+      "upstream": "10.0.0.6:8090",
       "containers": {
         "app": {
           "container_name": "ntfy",
@@ -4204,25 +4390,34 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "NTFY_ADMIN_PASSWORD",
+        "NTFY_USER_PASSWORD"
+      ]
     },
     "sauron-forwarder": {
       "category": "tools",
       "vm": "oci-E2-f_1",
       "folder": "bc-obs_sauron-forwarder",
       "description": "Alert forwarding to central sauron",
+      "enabled": true,
+      "dns": "sauron-forwarder.app",
       "containers": {
         "app": {
           "container_name": "sauron-forwarder",
           "image": "",
-          "public": false
+          "public": false,
+          "dns": "sauron-forwarder.app"
         }
       },
       "container_names": [
         "sauron-forwarder"
       ],
       "all_ports": [],
-      "all_dns": [],
+      "all_dns": [
+        "sauron-forwarder.app"
+      ],
       "compose": {
         "containers": [
           "sauron-forwarder"
@@ -4236,6 +4431,7 @@
       "vm": "all",
       "folder": "bc-obs_sauron-lite",
       "description": "File Integrity Scanner (deployed on all VMs)",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "sauron-lite",
@@ -4262,18 +4458,23 @@
       "vm": "oci-E2-f_0",
       "folder": "bc-obs_syslog-forwarder",
       "description": "",
+      "enabled": true,
+      "dns": "syslog-forwarder.app",
       "containers": {
         "app": {
           "container_name": "syslog-forwarder",
           "image": "",
-          "public": false
+          "public": false,
+          "dns": "syslog-forwarder.app"
         }
       },
       "container_names": [
         "syslog-forwarder"
       ],
       "all_ports": [],
-      "all_dns": [],
+      "all_dns": [
+        "syslog-forwarder.app"
+      ],
       "compose": {
         "containers": [
           "syslog-forwarder"
@@ -4287,10 +4488,11 @@
       "vm": "oci-E2-f_1",
       "folder": "bc-obs_umami",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
+      "enabled": true,
       "domain": "analytics.diegonmarcos.com",
       "port": 3006,
       "dns": "umami.app",
-      "upstream": "umami.app:3006",
+      "upstream": "10.0.0.4:3006",
       "containers": {
         "app": {
           "container_name": "umami",
@@ -4409,17 +4611,24 @@
       },
       "backup": {
         "enabled": true
-      }
+      },
+      "secret_env_vars": [
+        "DB_PASSWORD",
+        "APP_SECRET",
+        "ADMIN_USERNAME",
+        "ADMIN_PASSWORD"
+      ]
     },
     "windmill": {
       "category": "tools",
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_windmill",
       "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+      "enabled": true,
       "domain": "windmill.diegonmarcos.com",
       "port": 8000,
       "dns": "windmill-app.app",
-      "upstream": "windmill-app.app:8000",
+      "upstream": "10.0.0.6:8000",
       "containers": {
         "app": {
           "container_name": "windmill-server",
@@ -4546,13 +4755,27 @@
       },
       "monitoring": {
         "tls_check": true
-      }
+      },
+      "backup": {
+        "enabled": true
+      },
+      "secret_env_vars": [
+        "DB_PASSWORD",
+        "OAUTH_CLIENT_ID",
+        "OAUTH_CLIENT_SECRET",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_FROM",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD"
+      ]
     },
     "backup-borg": {
       "category": "data",
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_backup-borg",
       "description": "Media Backups SSH Server (Borg deduplication)",
+      "enabled": false,
       "containers": {
         "app": {
           "container_name": "backup-borg",
@@ -4571,13 +4794,19 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "BORG_PASSPHRASE",
+        "SOURCE_DIRS",
+        "ARCHIVE_NAME"
+      ]
     },
     "backup-bup": {
       "category": "data",
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_backup-bup",
       "description": "Database Backups SSH Server (bup)",
+      "enabled": false,
       "containers": {
         "app": {
           "container_name": "backup-bup",
@@ -4596,17 +4825,29 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "MYSQL_HOST",
+        "MYSQL_USER",
+        "MYSQL_PASSWORD",
+        "MYSQL_DBS",
+        "PGHOST",
+        "PGUSER",
+        "PGPASSWORD",
+        "POSTGRES_DBS",
+        "SQLITE_DBS"
+      ]
     },
     "backup-gitea": {
       "category": "data",
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_backup-gitea",
       "description": "Self-hosted Gitea for git backups and mirroring",
+      "enabled": true,
       "domain": "git.diegonmarcos.com",
       "port": 3002,
       "dns": "backup-gitea.app",
-      "upstream": "backup-gitea.app:3002",
+      "upstream": "10.0.0.6:3002",
       "containers": {
         "app": {
           "container_name": "gitea",
@@ -4668,6 +4909,7 @@
       "vm": "local",
       "folder": "ca-dat_c3-diego-personal-data-mcp",
       "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "c3-diego-personal-data-mcp",
@@ -4691,6 +4933,7 @@
       "vm": "all",
       "folder": "ca-dat_db-agent",
       "description": "Central DB Backup Agent (deployed on all VMs)",
+      "enabled": true,
       "containers": {
         "app": {
           "container_name": "db-agent",
@@ -4709,22 +4952,29 @@
         ],
         "ports": [],
         "networks": []
-      }
+      },
+      "secret_env_vars": [
+        "VM_NAME",
+        "NTFY_URL",
+        "NTFY_TOPIC",
+        "BUP_REMOTE"
+      ]
     },
     "gitea": {
       "category": "data",
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_gitea",
       "description": "Self-hosted Git service",
+      "enabled": true,
       "domain": "git.diegonmarcos.com",
-      "port": 3017,
+      "port": 3002,
       "dns": "gitea.app",
-      "upstream": "gitea.app:3017",
+      "upstream": "10.0.0.6:3002",
       "containers": {
         "app": {
           "container_name": "gitea",
           "image": "gitea/gitea:latest",
-          "port": 3017,
+          "port": 3002,
           "port_env": "GITEA__server__HTTP_PORT",
           "dns": "gitea.app",
           "public": true,
@@ -4732,7 +4982,7 @@
             "domain": "git.diegonmarcos.com",
             "auth": "two_factor"
           },
-          "healthcheck": "curl -f http://localhost:3017/",
+          "healthcheck": "curl -f http://localhost:3002/",
           "monitoring": {
             "tls_check": true
           },
@@ -4751,7 +5001,7 @@
         "gitea"
       ],
       "all_ports": [
-        "3017"
+        "3002"
       ],
       "all_dns": [
         "gitea.app"
@@ -4770,10 +5020,10 @@
         }
       },
       "declared_ports": {
-        "app": 3017
+        "app": 3002
       },
       "health": {
-        "path": "curl -f http://localhost:3017/"
+        "path": "curl -f http://localhost:3002/"
       },
       "monitoring": {
         "tls_check": true
@@ -4812,22 +5062,22 @@
           }
         },
         "mirror_interval": "1h"
-      }
+      },
+      "secret_env_vars": [
+        "GITEA_ADMIN_USER",
+        "GITEA_ADMIN_PASSWORD",
+        "GITEA_ADMIN_EMAIL"
+      ]
     },
     "kg-graph": {
       "category": "data",
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_kg-graph",
       "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
-      "containers": {
-        "app": {
-          "container_name": "kg-graph",
-          "image": "",
-          "public": false
-        }
-      },
+      "enabled": false,
+      "containers": {},
       "container_names": [
-        "kg-graph"
+        "surrealdb"
       ],
       "all_ports": [],
       "all_dns": [],
@@ -4837,58 +5087,23 @@
         ],
         "ports": [],
         "networks": []
-      }
-    },
-    "postlite": {
-      "category": "data",
-      "vm": "gcp-E2-f_0",
-      "folder": "ca-dat_postlite",
-      "description": "SQLite REST API (WireGuard only)",
-      "containers": {
-        "app": {
-          "container_name": "postlite",
-          "image": "",
-          "public": false
-        }
       },
-      "container_names": [
-        "postlite"
-      ],
-      "all_ports": [],
-      "all_dns": [],
-      "compose": {
-        "containers": [
-          "postlite-authelia",
-          "postlite-npm",
-          "postlite-ntfy",
-          "postlite-vaultwarden",
-          "sqlite-authelia",
-          "sqlite-npm",
-          "sqlite-ntfy",
-          "sqlite-vaultwarden"
-        ],
-        "ports": [],
-        "networks": []
+      "backup": {
+        "enabled": true
       },
-      "declared_ports": {
-        "npm_rest": 8890,
-        "vaultwarden_rest": 8891,
-        "ntfy_rest": 8892,
-        "authelia_rest": 8893,
-        "npm_pg": 5433,
-        "vaultwarden_pg": 5434,
-        "ntfy_pg": 5435,
-        "authelia_pg": 5436
-      }
+      "secret_env_vars": [
+        "SURREAL_ROOT_PASSWORD"
+      ]
     },
     "redis": {
       "category": "data",
       "vm": "gcp-E2-f_0",
       "folder": "ca-dat_redis",
       "description": "In-memory data store",
+      "enabled": true,
       "port": 6379,
       "dns": "redis.app",
-      "upstream": "redis.app:6379",
+      "upstream": "10.0.0.1:6379",
       "containers": {
         "app": {
           "container_name": "redis",
@@ -4929,7 +5144,10 @@
       },
       "health": {
         "path": "redis-cli ping"
-      }
+      },
+      "secret_env_vars": [
+        "REDIS_PASSWORD"
+      ]
     }
   },
   "firewalls": {
@@ -4953,27 +5171,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -4983,7 +5201,7 @@
         {
           "port": 8443,
           "proto": "tcp",
-          "desc": "Stalwart web admin HTTPS"
+          "desc": "Maddy web admin HTTPS"
         },
         {
           "port": 22000,
@@ -5198,21 +5416,21 @@
         "service": "snappymail"
       },
       {
+        "name": "maddy.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "maddy"
+      },
+      {
         "name": "smtp-proxy.app",
         "type": "A",
         "value": "10.0.0.3",
         "service": "smtp-proxy"
       },
       {
-        "name": "stalwart.app",
-        "type": "A",
-        "value": "10.0.0.3",
-        "service": "stalwart"
-      },
-      {
         "name": "vaultwarden.app",
         "type": "A",
-        "value": "10.0.0.1",
+        "value": "10.0.0.6",
         "service": "vaultwarden"
       },
       {
@@ -5300,6 +5518,12 @@
         "service": "ollama-hai"
       },
       {
+        "name": "rig-agentic-sonn-14bq8.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "rig-agentic-sonn-14bq8"
+      },
+      {
         "name": "hickory-dns.app",
         "type": "A",
         "value": "10.0.0.1",
@@ -5368,8 +5592,14 @@
       {
         "name": "dagu.app",
         "type": "A",
-        "value": "10.0.0.3",
+        "value": "10.0.0.4",
         "service": "dagu"
+      },
+      {
+        "name": "dbgate.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "dbgate"
       },
       {
         "name": "dozzle.app",
@@ -5408,22 +5638,22 @@
         "service": "matomo"
       },
       {
-        "name": "nocodb.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "nocodb"
-      },
-      {
-        "name": "nocodb-db.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "nocodb"
-      },
-      {
         "name": "ntfy.app",
         "type": "A",
-        "value": "10.0.0.1",
+        "value": "10.0.0.6",
         "service": "ntfy"
+      },
+      {
+        "name": "sauron-forwarder.app",
+        "type": "A",
+        "value": "10.0.0.4",
+        "service": "sauron-forwarder"
+      },
+      {
+        "name": "syslog-forwarder.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "syslog-forwarder"
       },
       {
         "name": "umami.app",
@@ -5487,77 +5717,70 @@
       "routes": [
         {
           "domain": "auth.diegonmarcos.com",
-          "upstream": "authelia.app:9091",
+          "upstream": "10.0.0.1:9091",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "cal.diegonmarcos.com",
-          "upstream": "radicale.app:5232",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:5232",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "chat.diegonmarcos.com",
-          "upstream": "mattermost.app:8065",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:8065",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "photos.diegonmarcos.com",
-          "upstream": "photoprism.app:3013",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:3013",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "mail.diegonmarcos.com",
-          "upstream": "stalwart.app:8443",
-          "auth": "authelia+bearer",
-          "tls_skip": true,
-          "public_paths": []
-        },
-        {
-          "domain": "webmail.diegonmarcos.com",
-          "upstream": "snappymail.app:8888",
-          "auth": "authelia+bearer",
+          "domain": "smtp.diegonmarcos.com",
+          "upstream": "10.0.0.3:8080",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "workflows.diegonmarcos.com",
-          "upstream": "dagu.app:8070",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.4:8070",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "ide.diegonmarcos.com",
-          "upstream": "code-server.app:8443",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:8443",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "db.diegonmarcos.com",
-          "upstream": "nocodb.app:8085",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:8085",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "sheets.diegonmarcos.com",
-          "upstream": "grist.app:3011",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:3011",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "vault.diegonmarcos.com",
-          "upstream": "vaultwarden.app:8880",
+          "upstream": "10.0.0.6:8880",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -5571,92 +5794,92 @@
         },
         {
           "domain": "api.diegonmarcos.com/c3-api",
-          "upstream": "c3-infra-api.app:8081",
+          "upstream": "10.0.0.6:8081",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "api.diegonmarcos.com/services",
-          "upstream": "c3-services-api.app:8082",
+          "upstream": "10.0.0.6:8082",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "api.diegonmarcos.com/crawlee",
-          "upstream": "crawlee.app:3000",
+          "upstream": "10.0.0.6:3000",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/windmill",
-          "upstream": "windmill-app.app:8000",
+          "upstream": "10.0.0.6:8000",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/etherpad",
-          "upstream": "etherpad.app:3012",
+          "upstream": "10.0.0.6:3012",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/filebrowser",
-          "upstream": "filebrowser.app:3015",
+          "upstream": "10.0.0.6:3015",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/hedgedoc",
-          "upstream": "hedgedoc.app:3018",
+          "upstream": "10.0.0.6:3018",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/revealmd",
-          "upstream": "revealmd.app:3014",
+          "upstream": "10.0.0.6:3014",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/dozzle",
-          "upstream": "dozzle.app:9999",
+          "upstream": "10.0.0.4:9999",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/grafana",
-          "upstream": "grafana.app:3016",
+          "upstream": "10.0.0.6:3016",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/gitea",
-          "upstream": "gitea.app:3017",
+          "upstream": "10.0.0.6:3017",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "app.diegonmarcos.com/crawlee",
-          "upstream": "crawlee.app:3001",
+          "upstream": "10.0.0.6:3001",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "cloud.diegonmarcos.com",
-          "upstream": "c3-spec.app:3080",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.6:3080",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": [
             "/spec",
@@ -5665,15 +5888,32 @@
         },
         {
           "domain": "mcp.diegonmarcos.com",
-          "upstream": "c3-infra-mcp.app:3100",
+          "upstream": "10.0.0.6:3100",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
+          "domain": "webmail.diegonmarcos.com",
+          "upstream": "static",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "mail.diegonmarcos.com",
+          "upstream": "10.0.0.3:8888",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": [
+            "/webmail/*",
+            "/webmail"
+          ]
+        },
+        {
           "domain": "analytics.diegonmarcos.com",
-          "upstream": "matomo.app:8080",
-          "auth": "authelia+bearer",
+          "upstream": "10.0.0.4:8080",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": [
             "/matomo.js",
@@ -5692,7 +5932,7 @@
         },
         {
           "domain": "rss.diegonmarcos.com",
-          "upstream": "ntfy.app:8090",
+          "upstream": "10.0.0.6:8090",
           "auth": "3-tier",
           "tls_skip": false,
           "public_paths": []
@@ -5700,37 +5940,161 @@
         {
           "domain": "proxy.diegonmarcos.com",
           "upstream": "static",
-          "auth": "authelia+bearer",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "mta-sts.diegonmarcos.com",
+          "upstream": "static",
+          "auth": "none",
           "tls_skip": false,
           "public_paths": []
         }
       ]
     },
     "authelia": {
-      "acl": [
+      "acl": []
+    },
+    "ntfy": {
+      "topics": [
         {
-          "domain": "auth.diegonmarcos.com",
-          "policy": "bypass"
-        },
-        {
-          "domain": "db.diegonmarcos.com",
-          "policy": "bypass",
-          "resources": [
-            "^/api/.*"
+          "name": "all",
+          "category": "all",
+          "desc": "Every message from every channel",
+          "publishers": [
+            "system"
           ]
         },
         {
-          "domain": "db.diegonmarcos.com",
-          "policy": "two_factor"
+          "name": "dev_commits",
+          "category": "dev",
+          "desc": "Push/commit events",
+          "publishers": [
+            "github-rss"
+          ]
         },
         {
-          "domain": "*.diegonmarcos.com",
-          "policy": "two_factor"
+          "name": "dev_pull-requests",
+          "category": "dev",
+          "desc": "PR open/close/merge events",
+          "publishers": [
+            "github-rss"
+          ]
+        },
+        {
+          "name": "dev_releases",
+          "category": "dev",
+          "desc": "Issues, releases, tags, forks",
+          "publishers": [
+            "github-rss"
+          ]
+        },
+        {
+          "name": "deploy_ship",
+          "category": "deploy",
+          "desc": "build.sh ship / GHA deploys",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "deploy_containers",
+          "category": "deploy",
+          "desc": "Container restarts, image pulls",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "health_mesh",
+          "category": "health",
+          "desc": "WireGuard mesh connectivity",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "health_endpoints",
+          "category": "health",
+          "desc": "HTTP service endpoint checks",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "health_dns",
+          "category": "health",
+          "desc": "DNS resolution checks",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "health_resources",
+          "category": "health",
+          "desc": "VM disk/memory/CPU usage",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "health_containers",
+          "category": "health",
+          "desc": "Docker container health",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "ops_backups",
+          "category": "ops",
+          "desc": "Backup freshness status",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "ops_reports",
+          "category": "ops",
+          "desc": "Daily/weekly summaries",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "sec_audit",
+          "category": "sec",
+          "desc": "Auth log analysis & brute-force detection",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "sec_tls",
+          "category": "sec",
+          "desc": "TLS certificate expiry warnings",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "sec_connections",
+          "category": "sec",
+          "desc": "SSH/sudo/connection events across VMs",
+          "publishers": [
+            "system"
+          ]
+        },
+        {
+          "name": "sec_yara",
+          "category": "sec",
+          "desc": "YARA malware scanner alerts & status",
+          "publishers": [
+            "system"
+          ]
         }
-      ]
-    },
-    "ntfy": {
-      "topics": [],
+      ],
       "users": [],
       "enable_login": true,
       "auth_default_access": "read-write"
@@ -5750,38 +6114,39 @@
         "rescue_port": 2200,
         "specs": {
           "cpu": 1,
-          "ram_gb": 0,
+          "ram_gb": 1,
           "disk_gb": 0,
           "arch": "x86_64",
           "shape": "VM.Standard.E2.1.Micro",
           "cloud_name": "oci-E2-f_0",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq"
         },
         "public_ports": [
           {
             "port": 25,
             "proto": "tcp",
-            "desc": "SMTP (Stalwart)"
+            "desc": "SMTP (Maddy)"
           },
           {
             "port": 465,
             "proto": "tcp",
-            "desc": "SMTPS (Stalwart via Caddy L4)"
+            "desc": "SMTPS (Maddy via Caddy L4)"
           },
           {
             "port": 587,
             "proto": "tcp",
-            "desc": "SMTP submission (Stalwart via Caddy L4)"
+            "desc": "SMTP submission (Maddy via Caddy L4)"
           },
           {
             "port": 993,
             "proto": "tcp",
-            "desc": "IMAPS (Stalwart via Caddy L4)"
+            "desc": "IMAPS (Maddy via Caddy L4)"
           },
           {
             "port": 4190,
             "proto": "tcp",
-            "desc": "ManageSieve (Stalwart)"
+            "desc": "ManageSieve (Maddy)"
           },
           {
             "port": 8080,
@@ -5791,7 +6156,7 @@
           {
             "port": 8443,
             "proto": "tcp",
-            "desc": "Stalwart web admin HTTPS"
+            "desc": "Maddy web admin HTTPS"
           },
           {
             "port": 22000,
@@ -5807,15 +6172,18 @@
         "idle_shutdown": null,
         "containers": [
           "snappymail",
+          "maddy",
           "smtp-proxy",
-          "stalwart",
-          "dagu",
           "syslog-forwarder"
         ],
         "method": "key",
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-mail.app",
+          "port": 7680
         }
       },
       "oci-analytics": {
@@ -5830,17 +6198,18 @@
         "rescue_port": 2200,
         "specs": {
           "cpu": 1,
-          "ram_gb": 0,
+          "ram_gb": 1,
           "disk_gb": 0,
           "arch": "x86_64",
           "shape": "VM.Standard.E2.1.Micro",
           "cloud_name": "oci-E2-f_1",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq"
         },
         "public_ports": [],
         "idle_shutdown": null,
         "containers": [
-          "alerts-api",
+          "dagu",
           "dozzle",
           "fluent-bit",
           "matomo",
@@ -5851,13 +6220,17 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-analytics.app",
+          "port": 7680
         }
       },
       "oci-apps": {
         "vm_id": "oci-A1-f_0",
         "ip": "82.70.229.129",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": "g5IcE29p8ysZkIDYwqJqmGPhtfahIfXn8/QuBwoHXH0=",
+        "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -5870,7 +6243,8 @@
           "arch": "aarch64",
           "shape": "VM.Standard.A1.Flex",
           "cloud_name": "oci-A1-f_0",
-          "cloud_zone": "eu-marseille-1"
+          "cloud_zone": "eu-marseille-1",
+          "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva"
         },
         "public_ports": [
           {
@@ -5929,6 +6303,7 @@
           "photos-webhook",
           "radicale",
           "revealmd",
+          "vaultwarden",
           "crawlee-cloud",
           "quant-lab-full",
           "quant-lab-light",
@@ -5942,8 +6317,9 @@
           "c3-services-mcp",
           "cloud-cgc-mcp",
           "cloud-spec",
+          "dbgate",
           "lgtm",
-          "nocodb",
+          "ntfy",
           "windmill",
           "backup-borg",
           "backup-bup",
@@ -5955,29 +6331,34 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "dashboard": {
+          "dns": "oci-apps.app",
+          "port": 7680
         }
       },
       "gcp-t4": {
         "vm_id": "gcp-T4-p_0",
         "ip": "34.173.227.250",
         "wg_ip": "10.0.0.8",
-        "wg_public_key": "PN6ddzDiUyvPPec1Op9FQleM+BXadKd2rzhR5aTA6yg=",
+        "wg_public_key": null,
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "diego",
         "home": "/home/diego",
         "rescue_port": 2200,
         "specs": {
-          "cpu": 0,
-          "ram_gb": 0,
-          "disk_gb": 0,
+          "cpu": 4,
+          "ram_gb": 15,
+          "disk_gb": 50,
           "arch": "x86_64",
           "shape": "n1-standard-4",
           "gpu": "NVIDIA T4",
           "vram_gb": 16,
           "machine_type": "n1-standard-4",
           "cloud_name": "ollama-spot-gpu",
-          "cloud_zone": "us-central1-a"
+          "cloud_zone": "us-central1-a",
+          "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/ollama-spot-gpu"
         },
         "public_ports": [],
         "idle_shutdown": {
@@ -5995,6 +6376,10 @@
           "ssh_secret": "GCP_T4_SSH_KEY",
           "host_secret": "GCP_T4_HOST",
           "user_secret": "GCP_T4_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-t4.app",
+          "port": 7680
         }
       },
       "gcp-proxy": {
@@ -6008,14 +6393,15 @@
         "home": "/home/diego",
         "rescue_port": 2200,
         "specs": {
-          "cpu": 0,
-          "ram_gb": 0,
-          "disk_gb": 0,
+          "cpu": 2,
+          "ram_gb": 2,
+          "disk_gb": 32,
           "arch": "x86_64",
           "shape": "e2-small",
           "machine_type": "e2-small",
           "cloud_name": "arch-1",
-          "cloud_zone": "us-central1-a"
+          "cloud_zone": "us-central1-a",
+          "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/arch-1"
         },
         "public_ports": [
           {
@@ -6051,13 +6437,10 @@
         ],
         "idle_shutdown": null,
         "containers": [
-          "vaultwarden",
           "hickory-dns",
           "authelia",
           "caddy",
           "introspect-proxy",
-          "ntfy",
-          "postlite",
           "redis"
         ],
         "method": "gcloud",
@@ -6065,6 +6448,10 @@
           "ssh_secret": "GCP_PROXY_SSH_KEY",
           "host_secret": "GCP_PROXY_HOST",
           "user_secret": "GCP_PROXY_USER"
+        },
+        "dashboard": {
+          "dns": "gcp-proxy.app",
+          "port": 7680
         }
       },
       "vast-ollama": {
@@ -6101,11 +6488,25 @@
         "port": 22
       },
       {
+        "host": "oci-mail-dropbear",
+        "hostname": "10.0.0.3",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "oci-analytics",
         "hostname": "10.0.0.4",
         "user": "ubuntu",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "oci-analytics-dropbear",
+        "hostname": "10.0.0.4",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       },
       {
         "host": "oci-apps",
@@ -6115,11 +6516,25 @@
         "port": 22
       },
       {
+        "host": "oci-apps-dropbear",
+        "hostname": "10.0.0.6",
+        "user": "ubuntu",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
+      },
+      {
         "host": "gcp-t4",
         "hostname": "10.0.0.8",
         "user": "diego",
         "identity_file": "~/.ssh/google_compute_engine",
         "port": 22
+      },
+      {
+        "host": "gcp-t4-dropbear",
+        "hostname": "10.0.0.8",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
       },
       {
         "host": "gcp-proxy",
@@ -6129,11 +6544,25 @@
         "port": 22
       },
       {
+        "host": "gcp-proxy-dropbear",
+        "hostname": "10.0.0.1",
+        "user": "diego",
+        "identity_file": "~/.ssh/google_compute_engine",
+        "port": 2200
+      },
+      {
         "host": "vast-ollama",
         "hostname": "TBD",
         "user": "root",
         "identity_file": "~/.ssh/vault_id_rsa",
         "port": 22
+      },
+      {
+        "host": "vast-ollama-dropbear",
+        "hostname": "TBD",
+        "user": "root",
+        "identity_file": "~/.ssh/vault_id_rsa",
+        "port": 2200
       }
     ]
   },
@@ -6141,26 +6570,28 @@
     "vms": {
       "oci-mail": {
         "ssh_secret": "OCI_SSH_KEY",
-        "host": "130.110.251.193",
-        "user": "ubuntu"
+        "user": "ubuntu",
+        "host": "130.110.251.193"
       },
       "oci-analytics": {
         "ssh_secret": "OCI_SSH_KEY",
-        "host": "129.151.228.66",
-        "user": "ubuntu"
+        "user": "ubuntu",
+        "host": "129.151.228.66"
       },
       "oci-apps": {
         "ssh_secret": "OCI_SSH_KEY",
-        "host": "82.70.229.129",
-        "user": "ubuntu"
+        "user": "ubuntu",
+        "host": "82.70.229.129"
       },
       "gcp-t4": {
         "ssh_secret": "GCP_T4_SSH_KEY",
+        "user": "diego",
         "host_secret": "GCP_T4_HOST",
         "user_secret": "GCP_T4_USER"
       },
       "gcp-proxy": {
         "ssh_secret": "GCP_PROXY_SSH_KEY",
+        "user": "diego",
         "host_secret": "GCP_PROXY_HOST",
         "user_secret": "GCP_PROXY_USER"
       }
@@ -6169,17 +6600,17 @@
       "code-server": {
         "dir": "aa-sui_code-server",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "etherpad": {
         "dir": "aa-sui_etherpad",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "filebrowser": {
         "dir": "aa-sui_filebrowser",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "google-workspace-mcp": {
         "dir": "aa-sui_google-workspace-mcp",
@@ -6189,12 +6620,12 @@
       "grist": {
         "dir": "aa-sui_grist",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "hedgedoc": {
         "dir": "aa-sui_hedgedoc",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "mail-mcp": {
         "dir": "aa-sui_mail-mcp",
@@ -6204,7 +6635,7 @@
       "mattermost-bots": {
         "dir": "aa-sui_mattermost-bots",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "mattermost-mcp": {
         "dir": "aa-sui_mattermost-mcp",
@@ -6214,7 +6645,7 @@
       "photoprism": {
         "dir": "aa-sui_photoprism",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "photos-webhook": {
         "dir": "aa-sui_photos-webhook",
@@ -6224,52 +6655,52 @@
       "radicale": {
         "dir": "aa-sui_radicale",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "revealmd": {
         "dir": "aa-sui_revealmd",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "snappymail": {
         "dir": "aa-sui_snappymail",
         "vm": "oci-mail",
-        "has_docker": false
+        "has_docker": true
+      },
+      "maddy": {
+        "dir": "aa-sui_tools-maddy",
+        "vm": "oci-mail",
+        "has_docker": true
       },
       "smtp-proxy": {
         "dir": "aa-sui_tools-smtp-proxy",
         "vm": "oci-mail",
         "has_docker": true
       },
-      "stalwart": {
-        "dir": "aa-sui_tools-stalwart",
-        "vm": "oci-mail",
-        "has_docker": false
-      },
       "vaultwarden": {
         "dir": "ab-mic_vaultwarden",
-        "vm": "gcp-proxy",
-        "has_docker": false
+        "vm": "oci-apps",
+        "has_docker": true
       },
       "crawlee-cloud": {
         "dir": "ac-fin_crawlee-cloud",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "quant-lab-light": {
         "dir": "ac-fin_quant-lab-light",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "ollama": {
         "dir": "ad-agi_ollama",
         "vm": "gcp-t4",
-        "has_docker": false
+        "has_docker": true
       },
       "ollama-hai": {
         "dir": "ad-agi_ollama-hai",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "rig-agentic-hai-1.5bq4": {
         "dir": "ad-agi_rig-agentic-hai-1.5bq4",
@@ -6284,17 +6715,17 @@
       "hickory-dns": {
         "dir": "ba-clo_hickory-dns",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "authelia": {
         "dir": "bb-sec_authelia",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "caddy": {
         "dir": "bb-sec_caddy",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       },
       "introspect-proxy": {
         "dir": "bb-sec_introspect-proxy",
@@ -6304,11 +6735,6 @@
       "sauron-central": {
         "dir": "bb-sec_sauron-central",
         "vm": "oci-apps",
-        "has_docker": false
-      },
-      "alerts-api": {
-        "dir": "bc-obs_alerts-api",
-        "vm": "oci-analytics",
         "has_docker": true
       },
       "c3-infra-api": {
@@ -6339,97 +6765,92 @@
       "cloud-spec": {
         "dir": "bc-obs_cloud-spec",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "dagu": {
         "dir": "bc-obs_dagu",
-        "vm": "oci-mail",
+        "vm": "oci-analytics",
+        "has_docker": true
+      },
+      "dbgate": {
+        "dir": "bc-obs_dbgate",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "dozzle": {
         "dir": "bc-obs_dozzle",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "fluent-bit": {
         "dir": "bc-obs_fluent-bit",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "lgtm": {
         "dir": "bc-obs_lgtm",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "matomo": {
         "dir": "bc-obs_matomo",
         "vm": "oci-analytics",
         "has_docker": true
       },
-      "nocodb": {
-        "dir": "bc-obs_nocodb",
-        "vm": "oci-apps",
-        "has_docker": false
-      },
       "ntfy": {
         "dir": "bc-obs_ntfy",
-        "vm": "gcp-proxy",
-        "has_docker": false
+        "vm": "oci-apps",
+        "has_docker": true
       },
       "sauron-forwarder": {
         "dir": "bc-obs_sauron-forwarder",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "syslog-forwarder": {
         "dir": "bc-obs_syslog-forwarder",
         "vm": "oci-mail",
-        "has_docker": false
+        "has_docker": true
       },
       "umami": {
         "dir": "bc-obs_umami",
         "vm": "oci-analytics",
-        "has_docker": false
+        "has_docker": true
       },
       "windmill": {
         "dir": "bc-obs_windmill",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-borg": {
         "dir": "ca-dat_backup-borg",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-bup": {
         "dir": "ca-dat_backup-bup",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-gitea": {
         "dir": "ca-dat_backup-gitea",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "gitea": {
         "dir": "ca-dat_gitea",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "kg-graph": {
         "dir": "ca-dat_kg-graph",
         "vm": "oci-apps",
-        "has_docker": false
-      },
-      "postlite": {
-        "dir": "ca-dat_postlite",
-        "vm": "gcp-proxy",
         "has_docker": true
       },
       "redis": {
         "dir": "ca-dat_redis",
         "vm": "gcp-proxy",
-        "has_docker": false
+        "has_docker": true
       }
     }
   }

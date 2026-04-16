@@ -21,7 +21,6 @@ services:
         LABEL cloud.diegonmarcos.from-image="authelia/authelia:4.39.15"
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: authelia
-    network_mode: host
     entrypoint: ["sh", "/config/init.sh"]
     restart: no
     stop_grace_period: 30s
@@ -37,6 +36,8 @@ services:
     environment:
       TZ: Europe/Madrid
       X_AUTHELIA_CONFIG_FILTERS: template
+    ports:
+      - "10.0.0.1:9091:9091"
     depends_on:
       redis:
         condition: service_started
@@ -44,6 +45,8 @@ services:
       - authelia_data:/data
       - ./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro
       - ./.secrets.d:/config/.secrets.d:ro
+    networks:
+      - auth-net
     deploy:
       resources:
         limits:
@@ -65,7 +68,6 @@ services:
   redis:
     image: ghcr.io/diegonmarcos/redis:latest
     container_name: authelia-redis
-    network_mode: host
     command: sh -c 'redis-server --port 6380 --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'
     restart: no
     stop_grace_period: 30s
@@ -80,6 +82,8 @@ services:
       - .secrets
     volumes:
       - authelia_redis_data:/data
+    networks:
+      - auth-net
     deploy:
       resources:
         limits:

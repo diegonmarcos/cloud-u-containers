@@ -22,6 +22,7 @@ services:
     env_file:
       - .secrets
     environment:
+      - HOST=10.0.0.6
       - NODE_ENV=production
       - GIT_BASE=/root/git
       - AUTHELIA_OIDC_CLIENT_ID=c3-infra-api

@@ -6,8 +6,7 @@
   "domain": "mail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/containers/maddy",
-    "compose_flags": "--build"
+    "remote_path": "/opt/containers/maddy"
   },
   "compose": {
     "custom": true,
@@ -61,7 +60,7 @@
   "containers": {
     "app": {
       "container_name": "maddy",
-      "image": "foxcpp/maddy:0.9",
+      "image": "ghcr.io/diegonmarcos/maddy:latest",
       "port": 443,
       "dns": "maddy.app",
       "public": true,

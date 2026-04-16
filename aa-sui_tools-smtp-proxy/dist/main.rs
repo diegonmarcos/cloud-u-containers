@@ -27,6 +27,7 @@ struct Config {
     smtp_user: String,
     smtp_pass: String,
     api_key: String,
+    listen_host: String,
     listen_port: u16,
     helo_domain: String,
 }
@@ -39,6 +40,7 @@ impl Config {
             smtp_user: env::var("SMTP_USER").unwrap_or_else(|_| "me@diegonmarcos.com".into()),
             smtp_pass: env::var("SMTP_PASS").unwrap_or_default(),
             api_key: env::var("API_KEY").unwrap_or_default(),
+            listen_host: env::var("LISTEN_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
             listen_port: env::var("LISTEN_PORT").unwrap_or_else(|_| "8080".into()).parse().unwrap_or(8080),
             helo_domain: "smtp-proxy.diegonmarcos.com".into(),
         }
@@ -308,7 +310,12 @@ async fn handle_post(
 
     // ── Parse email ──
     let mail_from = extract_address(&body, "From").unwrap_or_else(|| "cloudflare@localhost".into());
-    let mail_to = extract_address(&body, "To").unwrap_or_else(|| state.config.smtp_user.clone());
+    // Prefer envelope recipient from CF Worker (X-Original-To) over email To: header
+    let original_to = headers.get("x-original-to")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+    let mail_to = original_to
+        .unwrap_or_else(|| extract_address(&body, "To").unwrap_or_else(|| state.config.smtp_user.clone()));
     let msg_id = extract_header(&body, "Message-ID").unwrap_or_else(|| "?".into());
     let sender_domain = mail_from.rsplit_once('@').map(|(_, d)| d.to_string()).unwrap_or_default();
 
@@ -335,11 +342,11 @@ async fn handle_post(
             }))).into_response();
         }
 
+        // SPF + rDNS: warn only — connecting IP is CF/proxy, not original sender.
+        // DNSBL is the only hard reject (blocklisted proxy IP = something very wrong).
+        // Maddy handles real SPF/DKIM alignment via DMARC on the signature layer.
         if checks.spf == SpfResult::Fail {
-            warn!(req = req_id, client_ip = %client_ip, domain = %sender_domain, "security.reject.spf");
-            return (StatusCode::FORBIDDEN, Json(json!({
-                "status": "rejected", "reason": "SPF fail",
-            }))).into_response();
+            warn!(req = req_id, client_ip = %client_ip, domain = %sender_domain, "security.warn.spf");
         }
 
         if !checks.rdns_pass {
@@ -419,7 +426,8 @@ async fn main() {
         .route("/health", get(handle_health))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await
+    let host = &config.listen_host;
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await
         .expect("Failed to bind");
     info!(port = port, "Listening");
     axum::serve(listener, app).await.expect("Server error");
