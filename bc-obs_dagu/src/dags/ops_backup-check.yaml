@@ -10,7 +10,8 @@ steps:
     command: |
       SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       ALERTS=""
-      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+      # Data-driven VM list from cloud-data-backup-targets.json
+      VM_LIST=$(jq -r '.by_vm | to_entries[] | "\(.value.wg_ip):\(.key):\(.value.user)"' "$BACKUP_TARGETS" 2>/dev/null || echo "10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu")
       for vm_data in $VM_LIST; do
         ip=${vm_data%%:*}
         temp=${vm_data#*:}

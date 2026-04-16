@@ -36,6 +36,16 @@
       "read_only": false
     }
   },
+  "backup": {
+    "databases": [
+      {
+        "type": "custom",
+        "container": "redis",
+        "dump_cmd": "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb"
+      }
+    ],
+    "volumes": []
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "redis",
