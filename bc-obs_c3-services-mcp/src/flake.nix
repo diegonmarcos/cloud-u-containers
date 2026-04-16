@@ -10,6 +10,7 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = buildJson.name;
@@ -26,7 +27,8 @@
         name = config.container_name;
         image = config.image;
         container_name = config.container_name;
-        networkMode = "host";
+        networkMode = null;  # bridge mode — port mapping binds to WG IP only
+        ports = ["${svc."c3-services-mcp".ip}:${toString config.port}:${toString config.port}"];
         skipReadOnly = true;
         portEnv = ports.envFor "app";
 

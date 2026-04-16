@@ -10,6 +10,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "mattermost-mcp";
@@ -30,7 +31,8 @@
           image: ${config.image}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
-          network_mode: host
+          ports:
+            - "${svc."mattermost-mcp".ip}:${toString config.port}:${toString config.port}"
           env_file:
             - .secrets
           environment:

@@ -7,6 +7,9 @@
     "db": 3306
   },
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "analytics.diegonmarcos.com",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

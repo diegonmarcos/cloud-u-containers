@@ -10,6 +10,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       domain = buildJson.domain;
@@ -46,7 +47,8 @@
           image: ghcr.io/diegonmarcos/matomo-hybrid:latest
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
-          network_mode: host
+          ports:
+            - "${svc.matomo.ip}:${toString config.port}:${toString config.port}"
           volumes:
             - matomo_matomo_data:/var/www/html
             - matomo_matomo_db:/var/lib/mysql

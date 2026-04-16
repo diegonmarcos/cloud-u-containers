@@ -6,6 +6,9 @@
     "app": 3101
   },
   "category": "obs",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "c3-services-mcp",

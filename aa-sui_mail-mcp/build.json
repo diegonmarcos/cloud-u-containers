@@ -3,6 +3,9 @@
   "description": "Mail MCP server \u2014 IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "docker": {
     "image": "mail-mcp",
     "dockerfile": "Dockerfile",
