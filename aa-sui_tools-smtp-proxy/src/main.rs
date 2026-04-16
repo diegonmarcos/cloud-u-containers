@@ -409,6 +409,7 @@ async fn main() {
     tracing_subscriber::fmt().json().with_target(false).init();
 
     let config = Config::from_env();
+    let host = config.listen_host.clone();
     let port = config.listen_port;
 
     info!(
@@ -426,7 +427,6 @@ async fn main() {
         .route("/health", get(handle_health))
         .with_state(state);
 
-    let host = &config.listen_host;
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await
         .expect("Failed to bind");
     info!(port = port, "Listening");
