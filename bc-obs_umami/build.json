@@ -3,6 +3,9 @@
   "description": "Umami Analytics - lightweight privacy-focused web analytics",
   "dns": "umami.app",
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
     "host": "oci-analytics",

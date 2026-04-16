@@ -3,6 +3,9 @@
   "description": "Mattermost MCP server \u2014 chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "docker": {
     "image": "mattermost-mcp",
     "dockerfile": "Dockerfile",

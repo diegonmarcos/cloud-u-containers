@@ -11,6 +11,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     # GHCR images: wrap public images with OCI label for GHCR
     ghcrUmami = docker.mkGhcrBuild {
@@ -58,11 +59,12 @@
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmami.build.dockerfile_inline}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
-          network_mode: host
+          ports:
+            - "${svc.umami.ip}:${toString config.port}:${toString config.port}"
           env_file:
             - .secrets
           environment:
-            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@localhost:${toString config.db_port}/umami
+            DATABASE_URL: postgresql://umami:''${DB_PASSWORD}@umami-db:${toString config.db_port}/umami
             DATABASE_TYPE: postgresql
             APP_SECRET: ''${APP_SECRET}
             PORT: "${toString config.port}"
@@ -92,7 +94,8 @@
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmamiDb.build.dockerfile_inline}
           container_name: ${config.db_container}
           restart: "no"  # container-init handles startup
-          network_mode: host
+          expose:
+            - "${toString config.db_port}"
           environment:
             POSTGRES_DB: umami
             POSTGRES_USER: umami
@@ -121,7 +124,6 @@
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmamiSetup.build.dockerfile_inline}
           container_name: umami-setup
           restart: "no"
-          network_mode: host
           env_file:
             - .secrets
           depends_on:

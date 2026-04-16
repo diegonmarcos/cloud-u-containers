@@ -10,6 +10,7 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = buildJson.name;
@@ -32,6 +33,7 @@
 
         env_file = [ ".secrets" ];
         environment = [
+          "HOST=${svc."c3-services-api".ip}"
           "NODE_ENV=production"
         ];
         healthcheck = {
