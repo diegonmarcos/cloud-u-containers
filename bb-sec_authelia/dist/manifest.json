@@ -98,5 +98,9 @@
   {
     "file": "cloud-data-databases.json",
     "name": "cloud data databases"
+  },
+  {
+    "file": "cloud-data-secrets-env-var-names.json",
+    "name": "cloud data secrets env var names"
   }
 ]

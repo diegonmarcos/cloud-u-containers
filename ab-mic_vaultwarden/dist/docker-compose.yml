@@ -39,6 +39,7 @@ services:
       DOMAIN: https://vault.diegonmarcos.com
       INVITATIONS_ALLOWED: true
       LOG_LEVEL: warn
+      ROCKET_ADDRESS: 10.0.0.6
       ROCKET_PORT: 8880
       SHOW_PASSWORD_HINT: false
       SIGNUPS_ALLOWED: true

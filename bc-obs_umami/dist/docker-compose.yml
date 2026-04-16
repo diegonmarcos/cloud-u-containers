@@ -24,11 +24,12 @@ services:
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami
     restart: "no"  # container-init handles startup
-    network_mode: host
+    ports:
+      - "10.0.0.4:3006:3006"
     env_file:
       - .secrets
     environment:
-      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@localhost:5442/umami
+      DATABASE_URL: postgresql://umami:${DB_PASSWORD}@umami-db:5442/umami
       DATABASE_TYPE: postgresql
       APP_SECRET: ${APP_SECRET}
       PORT: "3006"
@@ -64,7 +65,8 @@ services:
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami-db
     restart: "no"  # container-init handles startup
-    network_mode: host
+    expose:
+      - "5442"
     environment:
       POSTGRES_DB: umami
       POSTGRES_USER: umami
@@ -100,7 +102,6 @@ services:
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: umami-setup
     restart: "no"
-    network_mode: host
     env_file:
       - .secrets
     depends_on:

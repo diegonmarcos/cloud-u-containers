@@ -10,7 +10,8 @@ services:
     image: ghcr.io/diegonmarcos/mattermost-mcp:latest
     container_name: mattermost-mcp
     restart: "no"  # container-init handles startup
-    network_mode: host
+    ports:
+      - "10.0.0.6:3102:3102"
     env_file:
       - .secrets
     environment:

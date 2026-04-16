@@ -23,11 +23,17 @@ services:
     network_mode: host
     env_file:
       - .secrets
-    command: ["sh", "-c", "redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass \"$$REDIS_PASSWORD\""]
+    command: ["sh", "-c", "redis-server --appendonly yes --port 6379 --bind 10.0.0.1 127.0.0.1 --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - /data/redis:/data
+    deploy:
+      resources:
+        limits:
+          memory: 48M
+        reservations:
+          memory: 16M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6379", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3

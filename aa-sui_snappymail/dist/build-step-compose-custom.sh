@@ -9,4 +9,5 @@ fi
 ENV_FILE_FLAG=""
 [ -f .secrets ] && ENV_FILE_FLAG="--env-file .secrets"
 docker compose $ENV_FILE_FLAG pull --quiet 2>/dev/null || true
-docker compose $ENV_FILE_FLAG up -d --force-recreate
+docker compose $ENV_FILE_FLAG down --remove-orphans 2>/dev/null || true
+docker compose $ENV_FILE_FLAG up -d --no-build --force-recreate
