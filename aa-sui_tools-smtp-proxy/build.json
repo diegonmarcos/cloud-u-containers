@@ -3,6 +3,9 @@
   "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
   "dns": "smtp-proxy.app",
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "smtp.diegonmarcos.com",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

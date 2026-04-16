@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       port = toString buildJson.ports.app;
@@ -100,6 +101,8 @@
           image = ghcr.image;
           build = ghcr.build;
           container_name = "snappymail";
+          networkMode = null;  # bridge mode — port mapping binds to WG IP only
+          ports = ["${svc.snappymail.ip}:${config.port}:${config.port}"];
           skipReadOnly = true;
           volumes = [
             "snappymail_data:/var/lib/snappymail"

@@ -64,8 +64,8 @@ $TTL 60
       zone_file_path = "/etc/zones/${name}.${suffix}.zone"
 '') names);
       in pkgs.writeText "named.toml" ''
-      # 0.0.0.0 = safe default; init.sh regenerates with cloud-data IP if WG is up
-      listen_addrs_ipv4 = ["0.0.0.0"]
+      # 127.0.0.1 = safe fallback; init.sh regenerates with cloud-data WG IP if WG is up
+      listen_addrs_ipv4 = ["127.0.0.1"]
       listen_port = ${toString config.dns_port}
 
       # ── Per-service zones (<name>.app → WG IP) ──

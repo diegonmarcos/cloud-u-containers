@@ -19,11 +19,11 @@
     "registry": "ghcr.io/diegonmarcos",
     "arch": "amd64",
     "native_build": {
-      "type": "app",
-      "cmd": "pip install --target=.deps -r requirements.txt",
-      "entrypoint": "gunicorn --bind 0.0.0.0:4182 --workers 1 --threads 1 --timeout 120 main:app",
+      "type": "image-wrapper",
+      "cmd": "pip install --no-cache-dir -r requirements.txt",
+      "entrypoint": "gunicorn --bind 127.0.0.1:4182 --workers 1 --threads 1 --timeout 120 main:app",
       "base_image": "python:3.11-slim",
-      "env": "PYTHONPATH=/app/.deps"
+      "app_dir": "app"
     }
   },
   "proxy": {
@@ -41,7 +41,7 @@
       "healthcheck": "/health",
       "monitoring": null,
       "volumes": [],
-      "env_file": true,
+      "env_file": false,
       "depends_on": [],
       "resources": null,
       "read_only": false

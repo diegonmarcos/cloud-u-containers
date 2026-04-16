@@ -6,6 +6,9 @@
     "app": 6379
   },
   "category": "data",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/redis",

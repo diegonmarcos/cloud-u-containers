@@ -6,6 +6,9 @@
     "app": 8888
   },
   "category": "app",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "webmail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",

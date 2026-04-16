@@ -93,6 +93,7 @@
           image = ghcr.image;
           build = ghcr.build;
           container_name = config.container_name;
+          networkMode = null;  # bridge mode — port mapping binds to WG IP only
           entrypoint = ["sh" "/config/init.sh"];
           env_file = [".secrets"];
           environment = {
@@ -116,6 +117,7 @@
           name = "redis";
           image = "ghcr.io/diegonmarcos/redis:latest";
           container_name = "authelia-redis";
+          networkMode = null;  # bridge mode — isolated in auth-net
           env_file = [".secrets"];
           command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";
           volumes = ["authelia_redis_data:/data"];

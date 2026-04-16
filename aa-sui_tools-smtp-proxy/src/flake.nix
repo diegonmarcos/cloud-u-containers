@@ -8,9 +8,12 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+
     config = {
       container_name = "smtp-proxy";
       port = 8080;
+      wg_ip = svc."smtp-proxy".ip;
     };
 
     title = "SMTP Proxy/Relay";
@@ -34,6 +37,7 @@
           environment:
             - SMTP_HOST=localhost
             - SMTP_PORT=25
+            - LISTEN_HOST=${config.wg_ip}
             - LISTEN_PORT=${toString config.port}
 
     '';

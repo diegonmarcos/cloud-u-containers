@@ -8,7 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
-    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; cloudDataPath = ./cloud-data-service-connections.json; };
 
     config = {
       container_name = "ollama-hai";
@@ -55,7 +55,7 @@
           environment:
             - TZ=${config.timezone}
             - OLLAMA_KEEP_ALIVE=${config.keep_alive}
-            - OLLAMA_HOST=0.0.0.0:${toString config.api_port}
+            - OLLAMA_HOST=${config.wg_ip}:${toString config.api_port}
             - OLLAMA_NUM_PARALLEL=2
             - OLLAMA_MAX_LOADED_MODELS=2
             - OLLAMA_NUM_CTX=4096

@@ -54,7 +54,7 @@
           environment:
             - TZ=${config.timezone}
             - OLLAMA_KEEP_ALIVE=${config.keep_alive}
-            - OLLAMA_HOST=0.0.0.0
+            - OLLAMA_HOST=${config.wg_ip}:${toString config.api_port}
             - OLLAMA_NUM_PARALLEL=2
             - OLLAMA_MAX_LOADED_MODELS=1
           deploy:

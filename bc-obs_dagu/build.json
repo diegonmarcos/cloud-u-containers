@@ -6,6 +6,9 @@
     "app": 8070
   },
   "category": "tools",
+  "build": {
+    "include_cloud_data": "true"
+  },
   "domain": "workflows.diegonmarcos.com",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

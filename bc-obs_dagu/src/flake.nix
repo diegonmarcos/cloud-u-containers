@@ -9,6 +9,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "dagu";
@@ -37,7 +38,7 @@
           skipReadOnly = true;
           allowWritableBindMounts = true;
           environment = [
-            "DAGU_HOST=0.0.0.0"
+            "DAGU_HOST=${svc.dagu.ip}"
             "DAGU_DAGS_DIR=/var/lib/dagu/dags"
             "DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml"
             "DAGU_AUTH_MODE=none"

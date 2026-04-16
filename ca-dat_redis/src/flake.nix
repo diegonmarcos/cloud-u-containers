@@ -9,6 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
@@ -46,7 +47,7 @@
           network_mode: host
           env_file:
             - .secrets
-          command: ["sh", "-c", "redis-server --appendonly yes --port ${toString config.port} --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass \"$$REDIS_PASSWORD\""]
+          command: ["sh", "-c", "redis-server --appendonly yes --port ${toString config.port} --bind ${svc.redis.ip} 127.0.0.1 --maxmemory ${config.maxmemory} --maxmemory-policy ${config.maxmemory_policy} --requirepass \"$$REDIS_PASSWORD\""]
           volumes:
             - /data/redis:/data
           deploy:

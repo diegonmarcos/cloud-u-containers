@@ -63,6 +63,7 @@
             image = config.image;
             build = ghcr.build;
             container_name = config.container_name;
+            networkMode = null;  # bridge mode — port mapping binds to WG IP only
             ports = [ "${svc.radicale.ip}:${toString config.port}:5232" ];
             networks = [ "default" ];
             volumes = [
