@@ -33,7 +33,14 @@ services:
       - 1.1.1.1
     volumes:
       - borg_data:/backup/media
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

@@ -8,10 +8,11 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       container_name = "bup-server";
-      ssh_port = 2223;
+      ssh_port = ports.valueOf "app";
     };
 
     title = "Bup - Git-based backup server for database dumps (SSH receiver)";

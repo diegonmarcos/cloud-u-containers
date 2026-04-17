@@ -8,6 +8,15 @@
     "remote_path": "/opt/containers/backup-bup",
     "compose_flags": "--build"
   },
+  "ports": {
+    "app": 2223
+  },
+  "containers": {
+    "app": {
+      "container_name": "bup-server",
+      "port": 2223
+    }
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "backup-bup",

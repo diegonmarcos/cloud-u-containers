@@ -8,6 +8,15 @@
     "remote_path": "/opt/containers/backup-borg",
     "compose_flags": "--build"
   },
+  "ports": {
+    "app": 2224
+  },
+  "containers": {
+    "app": {
+      "container_name": "borg-server",
+      "port": 2224
+    }
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "backup-borg",

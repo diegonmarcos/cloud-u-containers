@@ -8,6 +8,7 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
@@ -18,7 +19,7 @@
     config = {
       container_name = "surrealdb";
       image = ghcr.image;
-      port = 8001;
+      port = ports.valueOf "app";
       data_path = "/opt/data/surrealdb";
     };
 

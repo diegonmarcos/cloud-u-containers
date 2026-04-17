@@ -8,10 +8,11 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       container_name = "borg-server";
-      ssh_port = 2224;
+      ssh_port = ports.valueOf "app";
     };
 
     title = "Borg - Binary backup server for media files (SSH receiver)";
