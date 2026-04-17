@@ -1,7 +1,7 @@
 schedule: "0 9 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
-mailOn:
+mail_on:
   failure: false
   success: false
 steps:

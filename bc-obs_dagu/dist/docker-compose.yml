@@ -43,6 +43,7 @@ services:
       - ./base.yaml:/var/lib/dagu/base.yaml:ro
       - ./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro
       - /opt/ssh-keys/dagu:/home/dagu/.ssh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     deploy:
       resources:
         limits:

@@ -4,7 +4,7 @@ env:
   - MM_URL: http://10.0.0.6:8065
   - MM_BOT_TOKEN: ${MM_BOT_TOKEN}
   - NTFY_TOPICS: dev_commits,dev_pull-requests,dev_releases,deploy_ship,deploy_containers,health_mesh,health_endpoints,health_dns,health_resources,health_containers,ops_backups,ops_reports,sec_audit,sec_tls,sec_connections,sec_yara
-mailOn:
+mail_on:
   failure: true
   success: false
 type: graph

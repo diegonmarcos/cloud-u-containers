@@ -8,7 +8,7 @@ env:
   # local_dir:github_repo pairs — local dir is what octocode indexes, github_repo is the clone source
   - REPO_MAP: cloud:cloud cloud-data:cloud-data front:diegonmarcos.github.io front-data:front-data unix:unix tools:tools
   - ALL_DIRS: cloud cloud-data front front-data unix tools
-mailOn:
+mail_on:
   failure: true
   success: false
 type: graph

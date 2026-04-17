@@ -2,7 +2,7 @@ schedule: "17 7 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-mailOn:
+mail_on:
   failure: true
   success: false
 steps:
