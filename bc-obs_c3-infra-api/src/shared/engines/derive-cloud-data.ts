@@ -351,6 +351,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     2993: "IMAPS -- TLS passthrough to stalwart",
     2465: "SMTPS -- TLS passthrough to stalwart",
     2587: "SMTP Submission -- TLS passthrough to stalwart",
+    2443: "HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)",
   };
   // Find oci-mail's WG IP for upstream (Caddy L4 runs inside WG mesh)
   let ociMailIp = "";
