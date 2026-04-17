@@ -124,11 +124,11 @@ canonicalization = "relaxed/relaxed"
 set-body-length = false
 report = true
 
-# ── Shadow mode: NO outbound relay ──────────────────────────────
-# smtp-proxy delivers copies; Stalwart should never relay externally
-# All outbound stays in queue (prevents duplicate sends)
+# ── Shadow mode: local delivery only, no external relay ─────────
+# "local" = deliver to local mailbox without MX lookup
+# Non-local domains get no relay → messages expire and are discarded
 [queue.outbound]
-next-hop = "false"
+next-hop = "'local'"
 
 # ── Spam filter (built-in) ──────────────────────────────────────
 [spam.header]

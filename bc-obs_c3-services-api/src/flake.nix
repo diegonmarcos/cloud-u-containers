@@ -37,7 +37,7 @@
           "NODE_ENV=production"
         ];
         healthcheck = {
-          test = ''["CMD", "curl", "-f", "http://localhost:${toString config.port}/health"]'';
+          test = ''["CMD", "curl", "-f", "http://${svc."c3-services-api".ip}:${toString config.port}/health"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;
