@@ -20,7 +20,7 @@
     # GHCR image: wrap upstream with config
     ghcr = docker.mkGhcrBuild {
       name = "stalwart";
-      fromImage = "stalwartlabs/stalwart:v0.13";
+      fromImage = "stalwartlabs/stalwart:latest";
       configFiles = [
         { src = "config.toml"; dst = "/opt/stalwart-mail/etc/config.toml"; }
       ];

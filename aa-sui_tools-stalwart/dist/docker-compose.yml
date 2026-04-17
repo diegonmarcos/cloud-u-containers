@@ -11,13 +11,13 @@ services:
     build:
       context: .
       dockerfile_inline: |
-        FROM stalwartlabs/stalwart:v0.13
+        FROM stalwartlabs/stalwart:latest
         COPY config.toml /opt/stalwart-mail/etc/config.toml
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
         LABEL org.opencontainers.image.description="stalwart"
         LABEL org.opencontainers.image.title="stalwart"
-        LABEL cloud.diegonmarcos.from-image="stalwartlabs/stalwart:v0.13"
+        LABEL cloud.diegonmarcos.from-image="stalwartlabs/stalwart:latest"
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: stalwart
     network_mode: host
