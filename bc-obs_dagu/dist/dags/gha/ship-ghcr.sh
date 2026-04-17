@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ── Build + push all Docker images to GHCR ──
 # Portable: works in GHA, Dagu, CLI
-# Usage: ship-ghcr.sh [service-filter]
+# Usage: cloud-ship-orchestrate-ghcr.sh [service-filter]
 set -euo pipefail
 
 FILTER="${1:-}"

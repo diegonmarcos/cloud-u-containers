@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Check all public HTTP endpoints ──
-# Usage: health-http-public.sh
+# Usage: cloud-health-http-public.sh
 # Reads caddy-routes.json, curls every public domain
 set -euo pipefail
 

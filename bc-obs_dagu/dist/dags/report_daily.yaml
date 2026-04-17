@@ -4,9 +4,14 @@ env:
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - NOREPLY_PASSWORD: ${NOREPLY_PASSWORD}
   - GITHUB_TOKEN: ${GITHUB_TOKEN}
+  - REPORT_DIR: /var/lib/dagu/data/cloud-data/reports/cloud-health-daily-mail
 mailOn:
   failure: true
   success: false
 steps:
-  - name: collect-and-email
-    command: bash /var/lib/dagu/dags/report_daily.sh
+  - name: generate-html
+    command: sh $REPORT_DIR/build.sh html
+  - name: send-email
+    command: sh $REPORT_DIR/build.sh send
+    depends:
+      - generate-html

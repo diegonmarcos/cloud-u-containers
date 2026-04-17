@@ -31,4 +31,4 @@ jobs:
           sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
 
       - name: Health check
-        run: .github/workflows/scripts/health-check-vm.sh gcp-proxy 53,80,443,8090,9091
+        run: .github/workflows/scripts/cloud-health-check-vm.sh gcp-proxy 53,80,443,8090,9091

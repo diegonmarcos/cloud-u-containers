@@ -26,7 +26,7 @@ services:
     env_file:
       - .secrets
     environment:
-      - DAGU_HOST=0.0.0.0
+      - DAGU_HOST=10.0.0.4
       - DAGU_DAGS_DIR=/var/lib/dagu/dags
       - DAGU_BASE_CONFIG=/var/lib/dagu/base.yaml
       - DAGU_AUTH_MODE=none
