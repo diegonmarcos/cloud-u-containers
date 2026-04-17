@@ -26,7 +26,7 @@
   "proxy": {
     "primary": {
       "domain": "mail-stalwart.diegonmarcos.com",
-      "auth": "two_factor",
+      "auth": "none",
       "tls_skip_verify": true,
       "landing_page": "mymail",
       "l4_ports": [
@@ -74,14 +74,14 @@
   "containers": {
     "app": {
       "container_name": "stalwart",
-      "image": "stalwartlabs/mail-server:v0.11",
+      "image": "stalwartlabs/stalwart:v0.13",
       "port": 2443,
       "port_env": null,
       "dns": "stalwart.app",
       "public": true,
       "proxy": {
         "domain": "mail-stalwart.diegonmarcos.com",
-        "auth": "two_factor",
+        "auth": "none",
         "tls_skip_verify": true
       },
       "healthcheck": "/",
