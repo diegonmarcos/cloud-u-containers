@@ -1,6 +1,6 @@
 {
   "name": "c3-services-api",
-  "enabled": false,
+  "enabled": true,
   "build": {
     "include_cloud_data": "true"
   },

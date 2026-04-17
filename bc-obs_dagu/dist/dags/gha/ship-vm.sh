@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ── Ship all services for a VM ──
 # Portable: works in GHA, Dagu, CLI
-# Usage: ship-vm.sh <vm-alias> [service-filter]
+# Usage: cloud-ship-orchestrate-vm.sh <vm-alias> [service-filter]
 #   vm-alias: gcp-proxy, oci-apps, oci-mail, oci-analytics, gcp-t4
 #   service-filter: optional, only ship this service dir (e.g. bc-obs_dagu)
 set -euo pipefail
 
-VM="${1:?Usage: ship-vm.sh <vm-alias> [service-filter]}"
+VM="${1:?Usage: cloud-ship-orchestrate-vm.sh <vm-alias> [service-filter]}"
 FILTER="${2:-}"
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"

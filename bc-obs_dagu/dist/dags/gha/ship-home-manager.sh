@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Deploy home-manager to a VM ──
-# Usage: ship-home-manager.sh <vm-alias>
+# Usage: cloud-ship-orchestrate-homemanager.sh <vm-alias>
 #   Omit vm to deploy to all VMs
 set -euo pipefail
 

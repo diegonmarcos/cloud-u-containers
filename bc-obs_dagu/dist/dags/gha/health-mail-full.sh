@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Full mail health diagnostic ──
-# Usage: health-mail-full.sh
+# Usage: cloud-health-mail-full.sh
 set -euo pipefail
 
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"

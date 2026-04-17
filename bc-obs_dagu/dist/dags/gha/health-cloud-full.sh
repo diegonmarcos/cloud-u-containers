@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Full cloud health diagnostic ──
-# Usage: health-cloud-full.sh
+# Usage: cloud-health-full.sh
 # Runs health_cloud.ts inside c3-infra-mcp container (or locally with tsx)
 set -euo pipefail
 

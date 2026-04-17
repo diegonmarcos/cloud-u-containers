@@ -302,6 +302,10 @@ function main() {
 
     // Known API conventions (when healthcheck doesn't reveal the path)
     const KNOWN_API_PATHS: Record<string, string> = {
+      // Our APIs
+      "c3-infra-api": "/docs",
+      "c3-services-api": "/docs",
+      // Third-party services with REST APIs
       "gitea": "/api/v1",
       "vaultwarden": "/api",
       "ntfy": "/v1",
@@ -315,11 +319,15 @@ function main() {
       "dagu": "/api/v2",
       "crawlee-cloud": "/api",
       "radicale": "/.well-known/caldav",
+      "ollama": "/api",
+      "ollama-arm": "/api",
+      "ollama-hai": "/api",
     };
 
     // build.json can override with explicit api_path
     const apiPath = entry.api_path ?? derivedApiPath ?? KNOWN_API_PATHS[entry.name] ?? null;
-    const hasApi = !!(apiPath || entry.name.includes("api") || healthchecks.some((h: string) =>
+    const isMcp = entry.name.includes("mcp");
+    const hasApi = !isMcp && !!(apiPath || entry.name.includes("api") || healthchecks.some((h: string) =>
       h.includes("/api") || h.includes("/health") || h.includes("/docs")
     ));
 

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-17T12:14:17.279Z",
+    "generated_at": "2026-04-17T14:23:52.435Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -277,7 +277,7 @@
         "gitea",
         "kg-graph"
       ],
-      "container_count": 52
+      "container_count": 53
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
@@ -965,6 +965,15 @@
         "dns_check": true,
         "endpoint_check": true
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
       "secret_env_vars": [
         "CODE_SERVER_PASSWORD"
       ]
@@ -1074,6 +1083,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/1",
+        "api_url": "https://pad.diegonmarcos.com/api/1",
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "filebrowser": {
@@ -1154,6 +1172,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://files.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "google-workspace-mcp": {
@@ -1219,6 +1246,15 @@
       },
       "health": {
         "path": "/health"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
       },
       "secret_env_vars": [
         "GOOGLE_SERVICE_ACCOUNT_KEY"
@@ -1299,6 +1335,15 @@
         "enabled": true,
         "volumes": [
           "grist_data"
+        ]
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://sheets.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/"
         ]
       }
     },
@@ -1405,6 +1450,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://doc.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "mail-mcp": {
@@ -1468,6 +1522,13 @@
       },
       "declared_ports": {
         "app": 3103
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MAIL_USER",
@@ -1602,6 +1663,15 @@
           "mattermost_postgres"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v4/system/ping",
+        "api_url": "https://chat.diegonmarcos.com/api/v4/system/ping",
+        "healthcheck_paths": [
+          "/api/v4/system/ping"
+        ]
+      },
       "secret_env_vars": [
         "POSTGRES_PASSWORD",
         "MM_SQLSETTINGS_DATASOURCE",
@@ -1674,6 +1744,13 @@
       },
       "declared_ports": {
         "app": 3102
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MM_CLAUDE_PASSWORD",
@@ -1808,6 +1885,15 @@
           "photoprism_storage"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v1/status",
+        "api_url": "https://photos.diegonmarcos.com/api/v1/status",
+        "healthcheck_paths": [
+          "/api/v1/status"
+        ]
+      },
       "secret_env_vars": [
         "PHOTOPRISM_ADMIN_PASSWORD",
         "MARIADB_DATABASE",
@@ -1847,6 +1933,13 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "radicale": {
@@ -1925,6 +2018,15 @@
         "dns_check": true,
         "endpoint_check": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/.well-known/caldav",
+        "api_url": "https://cal.diegonmarcos.com/.well-known/caldav",
+        "healthcheck_paths": [
+          "/.web/"
+        ]
+      },
       "secret_env_vars": [
         "RADICALE_USERS"
       ]
@@ -1976,6 +2078,13 @@
       },
       "declared_ports": {
         "app": 3014
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "snappymail": {
@@ -2046,6 +2155,15 @@
       },
       "health": {
         "path": "/"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
       },
       "secret_env_vars": [
         "SNAPPYMAIL_ADMIN_PASSWORD"
@@ -2134,6 +2252,13 @@
           "maddy_data"
         ]
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "ME_PASSWORD",
         "NOREPLY_PASSWORD",
@@ -2192,6 +2317,13 @@
       "declared_ports": {
         "app": 8080
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "SMTP_HOST",
         "SMTP_PORT",
@@ -2213,14 +2345,14 @@
       "containers": {
         "app": {
           "container_name": "stalwart",
-          "image": "stalwartlabs/mail-server:v0.11",
+          "image": "stalwartlabs/stalwart:v0.13",
           "port": 2443,
           "port_env": null,
           "dns": "stalwart.app",
           "public": true,
           "proxy": {
             "domain": "mail-stalwart.diegonmarcos.com",
-            "auth": "two_factor",
+            "auth": "none",
             "tls_skip_verify": true
           },
           "healthcheck": "/",
@@ -2264,7 +2396,7 @@
       "proxy": {
         "primary": {
           "domain": "mail-stalwart.diegonmarcos.com",
-          "auth": "two_factor",
+          "auth": "none",
           "tls_skip_verify": true
         }
       },
@@ -2286,6 +2418,15 @@
         "enabled": true,
         "volumes": [
           "stalwart_data"
+        ]
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
         ]
       },
       "secret_env_vars": [
@@ -2370,6 +2511,15 @@
         "enabled": true,
         "volumes": [
           "vaultwarden_data"
+        ]
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://vault.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/alive"
         ]
       },
       "secret_env_vars": [
@@ -2580,6 +2730,13 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://api.diegonmarcos.com/api",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "POSTGRES_USER",
         "POSTGRES_PASSWORD",
@@ -2739,6 +2896,13 @@
         "app": 8890,
         "db": 5437
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "POSTGRES_USER",
         "POSTGRES_PASSWORD",
@@ -2842,6 +3006,13 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "POSTGRES_USER",
         "POSTGRES_PASSWORD",
@@ -2910,7 +3081,14 @@
         "deepseek-r1:14b",
         "qwen2.5:14b"
       ],
-      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
+      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8).",
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "ollama-arm": {
       "category": "agi",
@@ -2934,6 +3112,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "ollama-hai": {
@@ -2987,6 +3172,13 @@
       },
       "declared_ports": {
         "app": 11435
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "rig-agentic-hai-1.5bq4": {
@@ -3013,6 +3205,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MM_BOT_TOKEN"
@@ -3052,6 +3251,13 @@
         "ports": [],
         "networks": []
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "SURREAL_ROOT_PASSWORD",
         "SURREAL_URL",
@@ -3080,6 +3286,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "gcloud": {
@@ -3104,6 +3317,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "hickory-dns": {
@@ -3157,6 +3377,13 @@
       },
       "declared_ports": {
         "dns": 53
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "authelia": {
@@ -3255,6 +3482,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/health",
+        "api_url": "https://auth.diegonmarcos.com/api/health",
+        "healthcheck_paths": [
+          "/api/health"
+        ]
       },
       "secret_env_vars": [
         "AUTHELIA_JWT_SECRET",
@@ -3371,6 +3607,15 @@
       "declared_ports": {
         "app": 443
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
+      },
       "secret_env_vars": [
         "AUTHELIA_CLI_SECRET",
         "CF_API_TOKEN",
@@ -3399,6 +3644,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "introspect-proxy": {
@@ -3452,6 +3704,15 @@
       },
       "health": {
         "path": "/health"
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "sauron-central": {
@@ -3479,6 +3740,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "c3-infra-api": {
@@ -3559,6 +3827,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/docs",
+        "api_url": "https://api.diegonmarcos.com/c3-api/docs",
+        "healthcheck_paths": [
+          "/health"
+        ]
       },
       "secret_env_vars": [
         "AUTHELIA_OIDC_C3_MCP_SECRET",
@@ -3641,6 +3918,15 @@
       "health": {
         "path": "/mcp"
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
+      },
       "secret_env_vars": [
         "AUTHELIA_OIDC_C3_MCP_SECRET",
         "MM_BOT_TOKEN",
@@ -3658,7 +3944,7 @@
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-services-api",
       "description": "C3 Services REST API — service API gateway Fastify API",
-      "enabled": false,
+      "enabled": true,
       "domain": "api.diegonmarcos.com/services",
       "flake": "c3-services-api",
       "port": 8082,
@@ -3725,6 +4011,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/docs",
+        "api_url": "https://api.diegonmarcos.com/services/docs",
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "c3-services-mcp": {
@@ -3792,6 +4087,15 @@
       },
       "health": {
         "path": "/mcp"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
       },
       "secret_env_vars": [
         "GITHUB_TOKEN",
@@ -3862,6 +4166,15 @@
       },
       "health": {
         "path": "/mcp"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
       }
     },
     "cloud-spec": {
@@ -3923,6 +4236,13 @@
       },
       "declared_ports": {
         "app": 3080
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "dagu": {
@@ -4000,6 +4320,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v2",
+        "api_url": "https://workflows.diegonmarcos.com/api/v2",
+        "healthcheck_paths": [
+          "/"
+        ]
       },
       "secret_env_vars": [
         "DAGU_USERNAME",
@@ -4094,6 +4423,15 @@
         "volumes": [
           "dbgate_data"
         ]
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "dozzle": {
@@ -4160,6 +4498,13 @@
       },
       "declared_ports": {
         "app": 9999
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "fluent-bit": {
@@ -4206,6 +4551,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "lgtm": {
@@ -4339,6 +4691,13 @@
       "monitoring": {
         "tls_check": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/health",
+        "api_url": "https://grafana.diegonmarcos.com/api/health",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "GF_SECURITY_ADMIN_USER",
         "GF_SECURITY_ADMIN_PASSWORD"
@@ -4429,6 +4788,15 @@
           "matomo_data"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/?module=API",
+        "api_url": "https://analytics.diegonmarcos.com/?module=API",
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
       "secret_env_vars": [
         "MYSQL_ROOT_PASSWORD",
         "MATOMO_DB_NAME",
@@ -4463,6 +4831,13 @@
       },
       "declared_ports": {
         "app": 3019
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "ntfy": {
@@ -4587,6 +4962,15 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/v1",
+        "api_url": "https://rss.diegonmarcos.com/v1",
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
       "secret_env_vars": [
         "NTFY_ADMIN_PASSWORD",
         "NTFY_USER_PASSWORD"
@@ -4620,6 +5004,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "sauron-lite": {
@@ -4647,6 +5038,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "syslog-forwarder": {
@@ -4677,6 +5075,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "umami": {
@@ -4810,6 +5215,13 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/heartbeat",
+        "api_url": "https://analytics.diegonmarcos.com/api/heartbeat",
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "DB_PASSWORD",
@@ -4958,6 +5370,13 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/version",
+        "api_url": "https://windmill.diegonmarcos.com/api/version",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "DB_PASSWORD",
         "OAUTH_CLIENT_ID",
@@ -5007,6 +5426,13 @@
           "platform": "linux/amd64,linux/arm64",
           "description": "Multi-arch builder Debian apt (no Nix, lighter)"
         }
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "backup-borg": {
@@ -5033,6 +5459,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "BORG_PASSPHRASE",
@@ -5064,6 +5497,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MYSQL_HOST",
@@ -5141,6 +5581,13 @@
       },
       "monitoring": {
         "tls_check": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "c3-diego-personal-data-mcp": {
@@ -5165,6 +5612,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "db-agent": {
@@ -5191,6 +5645,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "VM_NAME",
@@ -5302,6 +5763,13 @@
         },
         "mirror_interval": "1h"
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v1",
+        "api_url": "https://git.diegonmarcos.com/api/v1",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "GITEA_ADMIN_USER",
         "GITEA_ADMIN_PASSWORD",
@@ -5329,6 +5797,13 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "SURREAL_ROOT_PASSWORD"
@@ -5393,6 +5868,13 @@
           }
         ],
         "volumes": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "REDIS_PASSWORD"

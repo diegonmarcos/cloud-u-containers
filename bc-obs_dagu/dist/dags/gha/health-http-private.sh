@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ── Check all .app DNS resolution (private mesh) ──
-# Usage: health-http-private.sh
+# Usage: cloud-health-http-private.sh
 # Resolves all .app names via hickory-dns on gcp-proxy
 set -euo pipefail
 
