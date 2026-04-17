@@ -39,6 +39,8 @@
             - SMTP_PORT=25
             - LISTEN_HOST=${config.wg_ip}
             - LISTEN_PORT=${toString config.port}
+            - SMTP_SHADOW_HOST=localhost
+            - SMTP_SHADOW_PORT=2025
 
     '';
 
