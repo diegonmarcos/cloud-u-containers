@@ -4,7 +4,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 2
   },
-  "_generated": "2026-04-17T17:14:51.467Z",
+  "_generated": "2026-04-17T18:07:38.153Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
     {
@@ -36,6 +36,13 @@
       "port": 2587,
       "upstream": "10.0.0.3:2587",
       "comment": "SMTP Submission -- TLS passthrough to stalwart"
+    }
+  ],
+  "redirects": [
+    {
+      "domain": "mail.diegonmarcos.com",
+      "target": "https://webmail.diegonmarcos.com{uri}",
+      "comment": "mail → webmail redirect"
     }
   ],
   "routes": [
@@ -70,12 +77,6 @@
       "upstream": "10.0.0.3:8888",
       "landing_page": "mymail",
       "comment": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
-    },
-    {
-      "domain": "mail.diegonmarcos.com",
-      "upstream": "10.0.0.3:443",
-      "tls_skip_verify": true,
-      "comment": "Maddy Mail Server (mail.diegonmarcos.com)"
     },
     {
       "domain": "smtp.diegonmarcos.com",
@@ -369,10 +370,6 @@
       "upstream": "10.0.0.3:8888"
     },
     {
-      "service": "maddy.app",
-      "upstream": "10.0.0.3:443"
-    },
-    {
       "service": "smtp-proxy.app",
       "upstream": "10.0.0.3:8080"
     },
@@ -395,6 +392,10 @@
     {
       "service": "ollama-hai.app",
       "upstream": "10.0.0.6:11435"
+    },
+    {
+      "service": "rig-agentic-hai-1.5bq4.app",
+      "upstream": "10.0.0.6:8091"
     },
     {
       "service": "rig-agentic-sonn-14bq8.app",
@@ -477,12 +478,24 @@
       "upstream": "10.0.0.6:8000"
     },
     {
+      "service": "backup-borg.app",
+      "upstream": "10.0.0.6:2224"
+    },
+    {
+      "service": "backup-bup.app",
+      "upstream": "10.0.0.6:2223"
+    },
+    {
       "service": "backup-gitea.app",
       "upstream": "10.0.0.6:3002"
     },
     {
       "service": "gitea.app",
       "upstream": "10.0.0.6:3002"
+    },
+    {
+      "service": "kg-graph.app",
+      "upstream": "10.0.0.6:8001"
     },
     {
       "service": "redis.app",
