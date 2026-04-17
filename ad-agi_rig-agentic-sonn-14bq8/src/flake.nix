@@ -16,7 +16,7 @@
       ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
       c3_api_url = "http://c3-api.app";
       c3_mcp_url = "http://c3-mcp.app";
-      mattermost_url = "http://mattermost.app";
+      mattermost_url = "http://${svc."mattermost-bots".ip}:${toString svc."mattermost-bots".ports.app}";
     };
 
     title = "Rig Agentic AI";
@@ -58,7 +58,7 @@
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
           healthcheck:
-            test: ["CMD", "curl", "-sf", "http://localhost:${toString config.port}/health"]
+            test: ["CMD", "curl", "-sf", "http://${svc."rig-agentic-sonn-14bq8".ip}:${toString config.port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3

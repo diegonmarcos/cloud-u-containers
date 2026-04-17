@@ -49,12 +49,6 @@
           retries = 3;
           start_period = "15s";
         };
-        deploy = {
-          resources = {
-            limits = { memory = "128M"; cpus = "1.0"; pids = 256; };
-            reservations = { memory = "64M"; };
-          };
-        };
       };
 
       volumes.news_gdelt_cache = {};

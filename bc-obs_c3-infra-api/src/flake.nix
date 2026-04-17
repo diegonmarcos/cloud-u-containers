@@ -52,7 +52,7 @@
           "c3_git_repos:/root/git"
         ];
         healthcheck = {
-          test = ''["CMD", "curl", "-f", "http://localhost:${toString config.port}/health"]'';
+          test = ''["CMD", "curl", "-f", "http://${svc."c3-infra-api".ip}:${toString config.port}/health"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;
