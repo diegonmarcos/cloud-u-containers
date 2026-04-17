@@ -2,10 +2,6 @@
 # Matches auto-generated format. Admin panel manages everything else.
 # Source: ~/git/cloud/a_solutions/aa-sui_tools-stalwart/src/
 
-[server]
-hostname = "mail-stalwart.diegonmarcos.com"
-url = "https://mail-stalwart.diegonmarcos.com"
-
 [server.listener.smtp]
 bind = "[::]:2025"
 protocol = "smtp"
@@ -60,7 +56,7 @@ private-key = "%{file:/opt/stalwart-mail/tls/privkey.pem}%"
 
 [authentication.fallback-admin]
 user = "admin"
-secret = "@@ADMIN_HASH@@"
+secret = "/S6BcJV5UL8Gxf25mlA4eO2WI1G7jDYCwdMTfeSQUAUcR2H6mujyRMTjAWMHf3SyRNW/3.r7a/"
 
 [tracer.log]
 type = "stdout"

@@ -19,5 +19,9 @@
       "platform": "linux/amd64,linux/arm64",
       "description": "Multi-arch builder Debian apt (no Nix, lighter)"
     }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cloud-builder-x"
   }
 }
