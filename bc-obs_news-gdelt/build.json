@@ -1,0 +1,16 @@
+{
+  "name": "news-gdelt",
+  "description": "GDELT News Aggregator — Fastify API with SQLite cache",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/news-gdelt"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "news-gdelt"
+  },
+  "ports": {
+    "app": 3019
+  },
+  "category": "tools"
+}
