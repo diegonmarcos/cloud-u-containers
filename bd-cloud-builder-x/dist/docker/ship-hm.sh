@@ -27,11 +27,11 @@ mkdir -p ~/.ssh
 ssh-keyscan github.com >>~/.ssh/known_hosts 2>/dev/null
 git config --global --add safe.directory "*"
 if [ -d /workspace/.git ]; then
-  echo "[1/5] Using existing /workspace"
+  echo "[1/6] Using existing /workspace"
   cd /workspace
   git pull --ff-only 2>/dev/null || true
 else
-  echo "[1/5] Cloning $REPO"
+  echo "[1/6] Cloning $REPO"
   git clone --depth 2 --recurse-submodules "$REPO" /workspace
   cd /workspace
 fi
@@ -104,7 +104,7 @@ EOF
 chmod 600 ~/.ssh/config
 
 # ── 3. Setup SOPS ──────────────────────────────────────────────
-echo "[3/5] Setting up SOPS"
+echo "[3/6] Setting up SOPS"
 # SOPS key: file path (_FILE mount) or env var (GHA secrets)
 if [ -n "${SOPS_AGE_KEY_FILE:-}" ] && [ -f "$SOPS_AGE_KEY_FILE" ]; then
   export SOPS_AGE_KEY_FILE
@@ -117,7 +117,7 @@ else
 fi
 
 # ── 4. Update builder flake.lock (fresh config.json hash) ──────
-echo "[4/5] Updating builder flake inputs"
+echo "[4/6] Updating builder flake inputs"
 nix flake update config-json --flake /opt/cloud-builder-flake 2>&1 || echo "[builder] flake update skipped"
 
 # ── 5. Ship ─────────────────────────────────────────────────────
@@ -130,39 +130,6 @@ fi
 cd "$HM_DIR"
 bash build.sh ship 2>&1
 
-# ── 6. Activate on VM (docker delivery only) ──────────────────
-# All config from build.json — single source of truth
-DELIVERY=$(jq -r '.hm.delivery // ""' "$BUILD_JSON")
-REMOTE_BUILDER=$(jq -r '.hm.remote_builder // false' "$BUILD_JSON")
-HM_IMAGE=$(jq -r '.hm.image // ""' "$BUILD_JSON")
-
-if [ "$DELIVERY" = "docker" ] && [ "$REMOTE_BUILDER" != "true" ] && [ -n "$HM_IMAGE" ] && [ "$HM_IMAGE" != "null" ]; then
-  echo "[6/6] Activating on $VM: pull + copy nix store + activate natively"
-  # Step A: pull image + run container to copy nix store to host
-  ssh "$VM" bash <<ACTIVATE_SSH
-set -e
-echo "[activate] Pulling $HM_IMAGE:latest"
-docker pull $HM_IMAGE:latest 2>&1 | tail -3
-echo "[activate] Copying nix store to host"
-docker run --rm --privileged \
-  -v /:/host \
-  -v /nix:/host/nix \
-  -v /etc:/host/etc \
-  -v /home/$USER:/host/home/$USER \
-  $HM_IMAGE:latest 2>&1
-# Step B: activate natively on the host (nix is in PATH, no chroot needed)
-ACTIVATION_PATH=\$(cat /tmp/.hm-activation-path 2>/dev/null)
-if [ -z "\$ACTIVATION_PATH" ]; then
-  echo "[activate] FATAL: /tmp/.hm-activation-path not found"
-  exit 1
-fi
-echo "[activate] Running \$ACTIVATION_PATH/activate natively"
-# Source nix profile so nix-env/nix-build are in PATH before activate overwrites it
-export PATH="\$HOME/.local/bin:\$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin"
-. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null || true
-\$ACTIVATION_PATH/activate
-echo "[activate] Done — new generation active"
-ACTIVATE_SSH
-else
-  echo "[6/6] Skipped docker activate (delivery=$DELIVERY remote_builder=$REMOTE_BUILDER)"
-fi
+# Step 6 removed — activation is handled by the engine's step_compose
+# (called via build.sh ship above). No duplicate activation needed.
+echo "[6/6] Done — activation handled by engine step_compose"

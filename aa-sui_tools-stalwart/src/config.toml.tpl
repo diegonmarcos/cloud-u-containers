@@ -104,6 +104,10 @@ mechanisms = [{if = "is_tls", then = "[plain, login]"}, {else = false}]
 directory = "'internal'"
 require = [{if = "local_port != 2025", then = true}, {else = false}]
 
+# ── OAuth (v0.13 webadmin requires this) ────────────────────────
+[oauth]
+key = "${ADMIN_PASSWORD}"
+
 # ── Security DISABLED — handled at cloud level (Caddy + Authelia + firewalls) ──
 # Stalwart bug: allowed-ip-addresses + fail2ban block WG IPs despite being in trusted-networks
 # No server.security section = accept all connections (firewalls do the filtering)

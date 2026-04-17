@@ -185,6 +185,7 @@
         cp ${./Dockerfile.apt} $out/Dockerfile.apt
 
         # ── Docker runtime files (entrypoint, scripts, compose) ──
+        cp ${./docker/compose.yaml} $out/docker-compose.yml
         cp ${./docker/Dockerfile} $out/docker/Dockerfile
         cp ${./docker/compose.yaml} $out/docker/compose.yaml
         cp ${./docker/entrypoint.sh} $out/docker/entrypoint.sh
