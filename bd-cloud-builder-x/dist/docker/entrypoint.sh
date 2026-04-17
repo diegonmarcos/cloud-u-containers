@@ -59,26 +59,20 @@ case "${1:-}" in
 esac
 
 # ── 3. SSH setup (env vars OR mounted files) ──────────────────────
-mkdir -p ~/.ssh 2>/dev/null || true
-chmod 700 ~/.ssh 2>/dev/null || true
-ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+# NEVER write to mounted paths — use /tmp for CI-generated files.
+# If ~/.ssh is mounted :ro, it already has what we need.
+_ssh_writable() { touch ~/.ssh/.probe 2>/dev/null && rm -f ~/.ssh/.probe; }
 
-if [ -n "${SSH_KEY:-}" ]; then
-  # CI mode: SSH key from env var
-  echo "$SSH_KEY" > ~/.ssh/id_deploy
-  chmod 600 ~/.ssh/id_deploy
-  echo "[setup] SSH key from env var"
-elif [ -f ~/.ssh/id_rsa ] || [ -f ~/.ssh/vault_id_rsa ]; then
-  # Local mode: SSH keys mounted from host
-  echo "[setup] SSH keys from mounted ~/.ssh"
-else
-  echo "[setup] WARNING: no SSH keys found (env or mount)"
-fi
-
-# SSH config: if env vars set (CI), generate config per VM
-# If mounted (local), host ~/.ssh/config is already there
-if [ -n "${SSH_ALIAS:-}" ] && [ -n "${SSH_HOST:-}" ]; then
-  cat >> ~/.ssh/config <<EOF
+if _ssh_writable; then
+  # Writable ~/.ssh — CI mode or local dev without :ro mount
+  mkdir -p ~/.ssh && chmod 700 ~/.ssh
+  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+  if [ -n "${SSH_KEY:-}" ]; then
+    echo "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+    echo "[setup] SSH key from env var → ~/.ssh/id_deploy"
+  fi
+  if [ -n "${SSH_ALIAS:-}" ] && [ -n "${SSH_HOST:-}" ]; then
+    cat >> ~/.ssh/config <<EOF
 Host ${SSH_ALIAS}
   HostName ${SSH_HOST}
   User ${SSH_USER:-ubuntu}
@@ -87,21 +81,28 @@ Host ${SSH_ALIAS}
   ServerAliveInterval 30
   ServerAliveCountMax 10
 EOF
-  chmod 600 ~/.ssh/config
-  echo "[setup] SSH config generated for ${SSH_ALIAS}"
-elif [ -f ~/.ssh/config ]; then
-  echo "[setup] SSH config from mounted ~/.ssh/config"
+    chmod 600 ~/.ssh/config
+    echo "[setup] SSH config generated for ${SSH_ALIAS}"
+  fi
+elif [ -f ~/.ssh/id_rsa ] || [ -f ~/.ssh/vault_id_rsa ] || [ -f ~/.ssh/id_deploy ] || [ -f ~/.ssh/config ]; then
+  # Read-only mount with content already there — use as-is
+  echo "[setup] SSH from mounted ~/.ssh (read-only)"
+else
+  echo "[setup] WARNING: no SSH keys found (env or mount)"
 fi
 
 # ── 4. SOPS setup (env var OR mounted file) ───────────────────────
-if [ -n "${SOPS_AGE_KEY:-}" ]; then
-  mkdir -p ~/.config/sops/age
-  echo "$SOPS_AGE_KEY" > ~/.config/sops/age/keys.txt
-  export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
-  echo "[setup] SOPS age key from env var"
-elif [ -f ~/.config/sops/age/keys.txt ]; then
+# Same rule: never write to a read-only mount.
+if [ -f ~/.config/sops/age/keys.txt ]; then
+  # Already mounted — use directly
   export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
   echo "[setup] SOPS age key from mounted file"
+elif [ -n "${SOPS_AGE_KEY:-}" ]; then
+  # CI mode: write to /tmp (always writable)
+  mkdir -p /tmp/sops-age
+  echo "$SOPS_AGE_KEY" > /tmp/sops-age/keys.txt
+  export SOPS_AGE_KEY_FILE=/tmp/sops-age/keys.txt
+  echo "[setup] SOPS age key from env var → /tmp"
 else
   echo "[setup] WARNING: no SOPS age key found"
 fi
@@ -178,7 +179,7 @@ case "$CMD" in
     exec bash "$SCRIPTS/cloud-ship-orchestrate-gen-configs.sh" "$@"
     ;;
   ship-hm)
-    exec bash "$SCRIPTS/cloud-ship-ci-builder-dispatch.sh" "$@"
+    exec bash "$SCRIPTS/cloud-ship-ci-builder-dispatch.sh" ship-hm "$@"
     ;;
   ship-reports)
     CLOUD_DATA_SCRIPTS="$HOME/git/cloud-data/.github/workflows/scripts"
