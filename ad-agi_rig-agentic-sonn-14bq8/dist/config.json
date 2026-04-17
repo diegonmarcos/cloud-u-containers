@@ -68,6 +68,36 @@
           "desc": "Maddy web admin HTTPS"
         },
         {
+          "port": 2025,
+          "proto": "tcp",
+          "desc": "SMTP inbound (Stalwart shadow)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Stalwart)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 6190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
+        },
+        {
           "port": 22000,
           "proto": "tcp",
           "desc": "Syncthing transfer"
@@ -264,6 +294,21 @@
           "port": 587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 \u2192 oci-mail)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 \u2192 stalwart on oci-mail)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 \u2192 stalwart on oci-mail)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 \u2192 stalwart on oci-mail)"
         }
       ],
       "gha": {

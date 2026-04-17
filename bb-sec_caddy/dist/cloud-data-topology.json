@@ -25,9 +25,12 @@
         "snappymail",
         "maddy",
         "smtp-proxy",
+        "stalwart",
         "syslog-forwarder"
       ],
-      "ports": [],
+      "ports": [
+        "10.0.0.3:8888:8888"
+      ],
       "networks": [],
       "specs": {
         "cpu": 1,
@@ -58,7 +61,10 @@
         "umami-db",
         "umami-setup"
       ],
-      "ports": [],
+      "ports": [
+        "10.0.0.4:8084:8084",
+        "10.0.0.4:3006:3006"
+      ],
       "networks": [],
       "specs": {
         "cpu": 1,
@@ -132,12 +138,14 @@
         "lgtm_loki",
         "lgtm_tempo",
         "lgtm_mimir",
+        "news-gdelt",
         "ntfy",
         "syslog-bridge",
         "github-rss",
         "windmill-server",
         "windmill-db",
         "windmill-worker",
+        "cloud-builder-x",
         "backup-borg",
         "backup-bup",
         "gitea",
@@ -145,7 +153,11 @@
         "surrealdb"
       ],
       "ports": [
-        "10.0.0.6:3015:8080"
+        "10.0.0.6:3015:8080",
+        "10.0.0.6:3103:3103",
+        "10.0.0.6:3102:3102",
+        "10.0.0.6:5232:5232",
+        "10.0.0.6:3101:3101"
       ],
       "networks": [
         "etherpad_net",
@@ -185,9 +197,7 @@
       "containers": [
         "ollama"
       ],
-      "ports": [
-        "10.0.0.8:11434:11434"
-      ],
+      "ports": [],
       "networks": [],
       "specs": {
         "cpu": 4,
@@ -221,7 +231,9 @@
         "introspect-proxy",
         "redis"
       ],
-      "ports": [],
+      "ports": [
+        "10.0.0.1:9091:9091"
+      ],
       "networks": [
         "auth-net"
       ],
@@ -315,13 +327,48 @@
   "storage": [
     {
       "provider": "oci",
-      "name": "archlinux-images",
-      "tier": "Standard"
+      "name": "cloud-backups-binaries-medias",
+      "tier": "Standard",
+      "dns": "s3-backups-binaries.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-db",
+      "tier": "Standard",
+      "dns": "s3-backups-db.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-media",
+      "tier": "Archive",
+      "dns": "s3-backups-media.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-non-binaries",
+      "tier": "Standard",
+      "dns": "s3-backups-nonbin.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
     },
     {
       "provider": "oci",
       "name": "my-photos",
-      "tier": "Standard"
+      "tier": "Standard",
+      "dns": "s3-photos.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
     }
   ],
   "firewalls": {
@@ -345,27 +392,27 @@
         {
           "port": 25,
           "proto": "tcp",
-          "desc": "SMTP (Stalwart)"
+          "desc": "SMTP (Maddy)"
         },
         {
           "port": 465,
           "proto": "tcp",
-          "desc": "SMTPS (Stalwart via Caddy L4)"
+          "desc": "SMTPS (Maddy via Caddy L4)"
         },
         {
           "port": 587,
           "proto": "tcp",
-          "desc": "SMTP submission (Stalwart via Caddy L4)"
+          "desc": "SMTP submission (Maddy via Caddy L4)"
         },
         {
           "port": 993,
           "proto": "tcp",
-          "desc": "IMAPS (Stalwart via Caddy L4)"
+          "desc": "IMAPS (Maddy via Caddy L4)"
         },
         {
           "port": 4190,
           "proto": "tcp",
-          "desc": "ManageSieve (Stalwart)"
+          "desc": "ManageSieve (Maddy)"
         },
         {
           "port": 8080,
@@ -375,7 +422,37 @@
         {
           "port": 8443,
           "proto": "tcp",
+          "desc": "Maddy web admin HTTPS"
+        },
+        {
+          "port": 2025,
+          "proto": "tcp",
+          "desc": "SMTP inbound (Stalwart shadow)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Stalwart)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
           "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 6190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
         },
         {
           "port": 22000,
@@ -460,6 +537,21 @@
           "port": 587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
         }
       ]
     },
@@ -477,27 +569,27 @@
       {
         "port": 25,
         "proto": "tcp",
-        "desc": "SMTP (Stalwart)"
+        "desc": "SMTP (Maddy)"
       },
       {
         "port": 465,
         "proto": "tcp",
-        "desc": "SMTPS (Stalwart via Caddy L4)"
+        "desc": "SMTPS (Maddy via Caddy L4)"
       },
       {
         "port": 587,
         "proto": "tcp",
-        "desc": "SMTP submission (Stalwart via Caddy L4)"
+        "desc": "SMTP submission (Maddy via Caddy L4)"
       },
       {
         "port": 993,
         "proto": "tcp",
-        "desc": "IMAPS (Stalwart via Caddy L4)"
+        "desc": "IMAPS (Maddy via Caddy L4)"
       },
       {
         "port": 4190,
         "proto": "tcp",
-        "desc": "ManageSieve (Stalwart)"
+        "desc": "ManageSieve (Maddy)"
       },
       {
         "port": 8080,
@@ -507,7 +599,37 @@
       {
         "port": 8443,
         "proto": "tcp",
+        "desc": "Maddy web admin HTTPS"
+      },
+      {
+        "port": 2025,
+        "proto": "tcp",
+        "desc": "SMTP inbound (Stalwart shadow)"
+      },
+      {
+        "port": 2465,
+        "proto": "tcp",
+        "desc": "SMTPS (Stalwart)"
+      },
+      {
+        "port": 2587,
+        "proto": "tcp",
+        "desc": "SMTP Submission (Stalwart)"
+      },
+      {
+        "port": 2993,
+        "proto": "tcp",
+        "desc": "IMAPS (Stalwart)"
+      },
+      {
+        "port": 2443,
+        "proto": "tcp",
         "desc": "Stalwart web admin HTTPS"
+      },
+      {
+        "port": 6190,
+        "proto": "tcp",
+        "desc": "ManageSieve (Stalwart)"
       },
       {
         "port": 22000,
@@ -592,6 +714,21 @@
         "port": 587,
         "proto": "tcp",
         "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+      },
+      {
+        "port": 2993,
+        "proto": "tcp",
+        "desc": "IMAPS (Caddy L4 → stalwart on oci-mail)"
+      },
+      {
+        "port": 2465,
+        "proto": "tcp",
+        "desc": "SMTPS (Caddy L4 → stalwart on oci-mail)"
+      },
+      {
+        "port": 2587,
+        "proto": "tcp",
+        "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
       }
     ]
   },
@@ -778,6 +915,12 @@
         "type": "A",
         "value": "10.0.0.3",
         "service": "smtp-proxy"
+      },
+      {
+        "name": "stalwart.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "stalwart"
       },
       {
         "name": "vaultwarden.app",
@@ -1601,7 +1744,8 @@
         "mail-mcp"
       ],
       "all_ports": [
-        "3103"
+        "3103",
+        "10.0.0.6:3103:3103"
       ],
       "all_dns": [
         "mail-mcp.app"
@@ -1610,7 +1754,9 @@
         "containers": [
           "mail-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3103:3103"
+        ],
         "networks": []
       },
       "proxy": {
@@ -1784,7 +1930,8 @@
         "mattermost-mcp"
       ],
       "all_ports": [
-        "3102"
+        "3102",
+        "10.0.0.6:3102:3102"
       ],
       "all_dns": [
         "mattermost-mcp.app"
@@ -1793,7 +1940,9 @@
         "containers": [
           "mattermost-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3102:3102"
+        ],
         "networks": []
       },
       "proxy": {
@@ -2001,7 +2150,8 @@
         "radicale"
       ],
       "all_ports": [
-        "5232"
+        "5232",
+        "10.0.0.6:5232:5232"
       ],
       "all_dns": [
         "radicale.app"
@@ -2010,7 +2160,9 @@
         "containers": [
           "radicale"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:5232:5232"
+        ],
         "networks": [
           "default"
         ]
@@ -2121,7 +2273,8 @@
         "snappymail"
       ],
       "all_ports": [
-        "8888"
+        "8888",
+        "10.0.0.3:8888:8888"
       ],
       "all_dns": [
         "snappymail.app"
@@ -2130,7 +2283,9 @@
         "containers": [
           "snappymail"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.3:8888:8888"
+        ],
         "networks": []
       },
       "proxy": {
@@ -2159,7 +2314,7 @@
       "containers": {
         "app": {
           "container_name": "maddy",
-          "image": "foxcpp/maddy:0.9",
+          "image": "ghcr.io/diegonmarcos/maddy:latest",
           "port": 443,
           "dns": "maddy.app",
           "public": true,
@@ -2277,6 +2432,95 @@
         "app": 8080
       },
       "flake": "tools-smtp-proxy"
+    },
+    "stalwart": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-stalwart",
+      "description": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)",
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "port": 2443,
+      "dns": "stalwart.app",
+      "upstream": "10.0.0.3:2443",
+      "containers": {
+        "app": {
+          "container_name": "stalwart",
+          "image": "stalwartlabs/mail-server:v0.11",
+          "port": 2443,
+          "port_env": null,
+          "dns": "stalwart.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail-stalwart.diegonmarcos.com",
+            "auth": "two_factor",
+            "tls_skip_verify": true
+          },
+          "healthcheck": "/",
+          "monitoring": {
+            "tls_check": true
+          },
+          "volumes": [
+            "stalwart_data:/opt/stalwart-mail/data",
+            "./tls:/opt/stalwart-mail/tls:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false,
+          "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
+        }
+      },
+      "container_names": [
+        "stalwart"
+      ],
+      "all_ports": [
+        "2443"
+      ],
+      "all_dns": [
+        "stalwart.app"
+      ],
+      "compose": {
+        "containers": [
+          "stalwart"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail-stalwart.diegonmarcos.com",
+          "auth": "two_factor",
+          "tls_skip_verify": true
+        }
+      },
+      "declared_ports": {
+        "app": 2443,
+        "smtp_inbound": 2025,
+        "smtps": 2465,
+        "submission": 2587,
+        "imap": 2993,
+        "sieve": 6190
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "stalwart_data"
+        ]
+      },
+      "flake": "tools-stalwart"
     },
     "vaultwarden": {
       "category": "mic",
@@ -2838,8 +3082,7 @@
         "ollama"
       ],
       "all_ports": [
-        "11434",
-        "10.0.0.8:11434:11434"
+        "11434"
       ],
       "all_dns": [
         "ollama.app"
@@ -2848,9 +3091,7 @@
         "containers": [
           "ollama"
         ],
-        "ports": [
-          "10.0.0.8:11434:11434"
-        ],
+        "ports": [],
         "networks": []
       },
       "declared_ports": {
@@ -3148,7 +3389,8 @@
       ],
       "all_ports": [
         "9091",
-        "6380"
+        "6380",
+        "10.0.0.1:9091:9091"
       ],
       "all_dns": [
         "authelia.app",
@@ -3159,7 +3401,9 @@
           "authelia",
           "authelia-redis"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.1:9091:9091"
+        ],
         "networks": [
           "auth-net"
         ]
@@ -3316,7 +3560,7 @@
           "healthcheck": "/health",
           "monitoring": null,
           "volumes": [],
-          "env_file": true,
+          "env_file": false,
           "depends_on": [],
           "resources": null,
           "read_only": false
@@ -3631,7 +3875,8 @@
         "c3-services-mcp"
       ],
       "all_ports": [
-        "3101"
+        "3101",
+        "10.0.0.6:3101:3101"
       ],
       "all_dns": [
         "c3-services-mcp.app"
@@ -3640,7 +3885,9 @@
         "containers": [
           "c3-services-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3101:3101"
+        ],
         "networks": []
       },
       "proxy": {
@@ -3816,7 +4063,7 @@
             "./dags:/var/lib/dagu/dags",
             "./base.yaml:/var/lib/dagu/base.yaml:ro",
             "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro",
-            "/opt/ssh-keys/dagu:/root/.ssh:ro"
+            "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
           ],
           "env_file": true,
           "depends_on": [],
@@ -4231,7 +4478,8 @@
         "matomo-hybrid"
       ],
       "all_ports": [
-        "8084"
+        "8084",
+        "10.0.0.4:8084:8084"
       ],
       "all_dns": [
         "matomo.app"
@@ -4240,7 +4488,9 @@
         "containers": [
           "matomo-hybrid"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.4:8084:8084"
+        ],
         "networks": []
       },
       "proxy": {
@@ -4264,6 +4514,34 @@
         "volumes": [
           "matomo_data"
         ]
+      }
+    },
+    "news-gdelt": {
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "folder": "bc-obs_news-gdelt",
+      "description": "GDELT News Aggregator — Fastify API with SQLite cache",
+      "containers": {
+        "app": {
+          "container_name": "news-gdelt",
+          "image": "",
+          "public": false
+        }
+      },
+      "container_names": [
+        "news-gdelt"
+      ],
+      "all_ports": [],
+      "all_dns": [],
+      "compose": {
+        "containers": [
+          "news-gdelt"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "declared_ports": {
+        "app": 3019
       }
     },
     "ntfy": {
@@ -4564,7 +4842,8 @@
       ],
       "all_ports": [
         "3006",
-        "5442"
+        "5442",
+        "10.0.0.4:3006:3006"
       ],
       "all_dns": [
         "umami.app",
@@ -4577,7 +4856,9 @@
           "umami-db",
           "umami-setup"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.4:3006:3006"
+        ],
         "networks": []
       },
       "proxy": {
@@ -4740,6 +5021,30 @@
       "backup": {
         "enabled": true
       }
+    },
+    "cloud-builder-x": {
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "folder": "bd-cloud-builder-x",
+      "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
+      "containers": {
+        "app": {
+          "container_name": "cloud-builder-x",
+          "image": "",
+          "public": false
+        }
+      },
+      "container_names": [
+        "cloud-builder-x"
+      ],
+      "all_ports": [],
+      "all_dns": [],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "flake": "bd-cloud-builder-x"
     },
     "backup-borg": {
       "category": "data",
@@ -5048,6 +5353,16 @@
       },
       "health": {
         "path": "redis-cli ping"
+      },
+      "backup": {
+        "databases": [
+          {
+            "type": "custom",
+            "container": "redis",
+            "dump_cmd": "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb"
+          }
+        ],
+        "volumes": []
       }
     }
   },
@@ -5177,6 +5492,16 @@
         "nix": "dig",
         "apt": "dnsutils",
         "desc": "DNS lookup (health checks — dig, nslookup)"
+      },
+      "ip": {
+        "nix": "iproute2",
+        "apt": "iproute2",
+        "desc": "Network tools (ip command — required by wg-quick)"
+      },
+      "gh": {
+        "nix": "gh",
+        "apt": "gh",
+        "desc": "GitHub CLI (GHCR auth, API access)"
       }
     },
     "build": {
@@ -5191,6 +5516,18 @@
       "typescript": {
         "nix": "nodePackages.typescript",
         "desc": "TypeScript compiler (nix build only)"
+      },
+      "rust": {
+        "nix": null,
+        "desc": "Rust compiler — installed via rustup in Dockerfile (nixos-24.11 ships 1.82, too old for current crate ecosystem)"
+      },
+      "cargo": {
+        "nix": null,
+        "desc": "Rust package manager — installed via rustup in Dockerfile"
+      },
+      "terraform": {
+        "nix": null,
+        "desc": "Infrastructure as Code — direct binary in Dockerfile (nix go-modules breaks sandbox=false in Docker, see NixOS/nix#11295)"
       }
     },
     "optional": {

@@ -5,7 +5,8 @@
   "category": "tools",
   "deploy": {
     "host": "oci-analytics",
-    "remote_path": "/opt/containers/sauron-forwarder"
+    "remote_path": "/opt/containers/sauron-forwarder",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

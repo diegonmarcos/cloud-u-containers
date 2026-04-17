@@ -37,7 +37,14 @@ services:
     volumes:
       - code_server_config:/config
       - /home/ubuntu/workspace:/workspace
-    pids_limit: 256
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 64M
     logging:
       driver: "json-file"
       options:

@@ -30,6 +30,8 @@ struct Config {
     listen_host: String,
     listen_port: u16,
     helo_domain: String,
+    shadow_host: Option<String>,
+    shadow_port: u16,
 }
 
 impl Config {
@@ -43,6 +45,8 @@ impl Config {
             listen_host: env::var("LISTEN_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
             listen_port: env::var("LISTEN_PORT").unwrap_or_else(|_| "8080".into()).parse().unwrap_or(8080),
             helo_domain: "smtp-proxy.diegonmarcos.com".into(),
+            shadow_host: env::var("SMTP_SHADOW_HOST").ok().filter(|s| !s.is_empty()),
+            shadow_port: env::var("SMTP_SHADOW_PORT").unwrap_or_else(|_| "2025".into()).parse().unwrap_or(2025),
         }
     }
 }
@@ -389,6 +393,37 @@ async fn handle_post(
     match result {
         Ok(_) => {
             info!(req = req_id, msg_id = %msg_id, from = %mail_from, to = %mail_to, "smtp.delivered");
+
+            // ── Shadow delivery (fire-and-forget to Stalwart) ──
+            if let Some(ref shadow_host) = state.config.shadow_host {
+                let shadow_host = shadow_host.clone();
+                let shadow_port = state.config.shadow_port;
+                let body_clone = body.clone();
+                let helo = state.config.helo_domain.clone();
+                let from_shadow = mail_from.parse().unwrap_or_else(|_| "cloudflare@localhost".parse().unwrap());
+                let to_shadow = mail_to.parse().unwrap_or_else(|_| state.config.smtp_user.parse().unwrap());
+
+                tokio::spawn(async move {
+                    let env = match Envelope::new(Some(from_shadow), vec![to_shadow]) {
+                        Ok(e) => e,
+                        Err(e) => {
+                            warn!(req = req_id, error = %e, "shadow.envelope_error");
+                            return;
+                        }
+                    };
+                    let result = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&shadow_host)
+                        .port(shadow_port)
+                        .hello_name(ClientId::Domain(helo))
+                        .build()
+                        .send_raw(&env, &body_clone)
+                        .await;
+                    match result {
+                        Ok(_) => info!(req = req_id, shadow = %shadow_host, port = shadow_port, "shadow.delivered"),
+                        Err(e) => warn!(req = req_id, error = %e, shadow = %shadow_host, "shadow.delivery_failed"),
+                    }
+                });
+            }
+
             (StatusCode::OK, Json(json!({"status":"delivered","from":mail_from,"to":mail_to}))).into_response()
         }
         Err(e) => {
@@ -409,11 +444,13 @@ async fn main() {
     tracing_subscriber::fmt().json().with_target(false).init();
 
     let config = Config::from_env();
+    let host = config.listen_host.clone();
     let port = config.listen_port;
 
     info!(
         port = port,
         smtp = %format!("{}:{}", config.smtp_host, config.smtp_port),
+        shadow = %config.shadow_host.as_deref().map(|h| format!("{}:{}", h, config.shadow_port)).unwrap_or_else(|| "disabled".into()),
         helo = config.helo_domain,
         "SMTP Proxy starting"
     );
@@ -426,7 +463,6 @@ async fn main() {
         .route("/health", get(handle_health))
         .with_state(state);
 
-    let host = &config.listen_host;
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await
         .expect("Failed to bind");
     info!(port = port, "Listening");

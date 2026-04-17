@@ -6,7 +6,8 @@
   "category": "tools",
   "deploy": {
     "host": "oci-analytics",
-    "remote_path": "/opt/containers/fluent-bit"
+    "remote_path": "/opt/containers/fluent-bit",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

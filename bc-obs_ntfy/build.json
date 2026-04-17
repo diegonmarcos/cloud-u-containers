@@ -111,6 +111,6 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "ntfy",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   }
 }

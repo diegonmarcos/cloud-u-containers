@@ -14,14 +14,14 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
 
-NTFY_URL = 'http://10.0.0.1:8090'
+NTFY_URL = 'http://ntfy:8090'
 STATE_FILE = '/var/cache/ntfy/github-seen.json'
 CHECK_INTERVAL = 300  # 5 minutes
 
 # Topic routing based on event type
-TOPIC_COMMITS = 'vcs_commits'
-TOPIC_PRS = 'vcs_pull-requests'
-TOPIC_OTHER = 'vcs_issues-releases'
+TOPIC_COMMITS = 'dev_commits'
+TOPIC_PRS = 'dev_pull-requests'
+TOPIC_OTHER = 'dev_releases'
 
 # GitHub feeds to monitor
 GITHUB_FEEDS = [
@@ -79,7 +79,20 @@ def send_ntfy(topic, title, message, priority='default', tags=None, click=None):
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+            ok = resp.status == 200
+        # Also publish to universal inbox
+        if ok and topic != 'all':
+            all_req = urllib.request.Request(
+                f'{NTFY_URL}/all',
+                data=data,
+                headers={**headers, 'Tags': ','.join((tags or []) + [topic])},
+                method='POST'
+            )
+            try:
+                urllib.request.urlopen(all_req, timeout=5)
+            except Exception:
+                pass
+        return ok
     except Exception as e:
         print(f'ntfy error: {e}')
         return False

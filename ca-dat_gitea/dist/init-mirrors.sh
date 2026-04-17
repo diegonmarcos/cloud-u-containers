@@ -6,7 +6,7 @@
 # ║ Idempotent: safe to run multiple times                          ║
 # ╚══════════════════════════════════════════════════════════════════╝
 set -uo pipefail
-API="http://localhost:3017/api/v1"
+API="http://localhost:3002/api/v1"
 CONTAINER="gitea"
 
 # ── Step 1: Create admin user (idempotent) ────────────────────

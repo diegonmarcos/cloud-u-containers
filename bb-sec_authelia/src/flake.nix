@@ -193,7 +193,7 @@
           expiration: 1h
           remember_me: 30d
       redis:
-        host: localhost
+        host: redis
         port: ${config.redis_port}
         password: '{{ secret "/tmp/.secrets.d/AUTHELIA_REDIS_PASSWORD" }}'
 

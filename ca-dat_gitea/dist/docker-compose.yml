@@ -24,7 +24,7 @@ services:
     env_file:
       - .secrets
     environment:
-      GITEA__server__HTTP_PORT: "3017"
+      GITEA__server__HTTP_PORT: "3002"
       GITEA__server__SSH_PORT: "2222"
       GITEA__server__DISABLE_SSH: "false"
       GITEA__server__ROOT_URL: "https://git.diegonmarcos.com"
@@ -37,7 +37,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3017/']
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/']
       interval: 30s
       timeout: 10s
       retries: 3

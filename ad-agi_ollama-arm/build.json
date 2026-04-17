@@ -8,6 +8,7 @@
   "frozen": true,
   "deploy": {
     "host": "oci-apps-2",
-    "remote_path": "/opt/containers/ollama-arm"
+    "remote_path": "/opt/containers/ollama-arm",
+    "compose_flags": "--build"
   }
 }

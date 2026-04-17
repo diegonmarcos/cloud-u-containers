@@ -20,7 +20,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mattermost-mcp"
+    "remote_path": "/opt/containers/mattermost-mcp",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {

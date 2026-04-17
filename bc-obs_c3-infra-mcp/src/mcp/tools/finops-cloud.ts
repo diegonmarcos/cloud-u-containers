@@ -2,6 +2,7 @@
 // Cloud provider operations and cost tracking
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import * as oci from "../../shared/libs/cloud/oci.js";
 import * as gcp from "../../shared/libs/cloud/gcp.js";
 import * as aws from "../../shared/libs/cloud/aws.js";
@@ -50,8 +51,8 @@ export function registerFinOpsCloudTools(server: McpServer) {
   server.tool(
     "obs.finops.oci_costs_history",
     "Get OCI usage costs across multiple months (default 3) with per-service and per-SKU breakdown — use for billing investigations",
-    { months: { type: "number", description: "Number of months to query (current + previous). Default 3, max 12.", default: 3 } },
-    async ({ months }: { months?: number }) => {
+    { months: z.number().min(1).max(12).default(3).describe("Number of months to query (current + previous). Default 3, max 12.") },
+    async ({ months }: { months: number }) => {
       const m = Math.min(Math.max(months ?? 3, 1), 12);
       return jsonText("OCI cost history", oci.getCostsHistory(m));
     },

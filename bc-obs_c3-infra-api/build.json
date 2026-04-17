@@ -22,7 +22,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-infra-api"
+    "remote_path": "/opt/containers/c3-infra-api",
+    "compose_flags": "--build"
   },
   "build": {
     "include_cloud_data": "true"

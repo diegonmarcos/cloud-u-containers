@@ -9,7 +9,8 @@
   "domain": "db.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/dbgate"
+    "remote_path": "/opt/containers/dbgate",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {

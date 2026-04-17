@@ -52,7 +52,7 @@ session:
       expiration: 1h
       remember_me: 30d
   redis:
-    host: localhost
+    host: redis
     port: 6380
     password: '{{ secret "/tmp/.secrets.d/AUTHELIA_REDIS_PASSWORD" }}'
 

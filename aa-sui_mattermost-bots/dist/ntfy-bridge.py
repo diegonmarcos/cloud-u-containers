@@ -1462,7 +1462,7 @@ def main():
 
     # Register /c3 slash command and start HTTP server
     register_slash_command(headers, team_id)
-    server = HTTPServer(("0.0.0.0", 8887), C3CommandHandler)
+    server = HTTPServer(("10.0.0.6", 8887), C3CommandHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     log.info("C3 command server listening on :8887")
 

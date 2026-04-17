@@ -33,7 +33,7 @@
       let
         cloudDataPath = ./cloud-data-caddy-routes.json;
         fallbackPath = ./caddy-routes-fallback.json;
-        emptyRoutes = { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; internal_routes = []; auth_upstreams = {}; };
+        emptyRoutes = { routes = []; path_routes = []; github_pages_proxies = []; l4_routes = []; mcp_routes = []; special = {}; internal_routes = []; s3_routes = []; auth_upstreams = {}; };
         cloudData = if builtins.pathExists cloudDataPath
           then builtins.fromJSON (builtins.readFile cloudDataPath)
           else null;
@@ -628,6 +628,19 @@
       }
     '';
 
+    # ── S3 bucket routes: proxy OCI Object Storage via .app short names ──
+    # Prepends /<bucket> to the path, then proxies to OCI S3 endpoint
+    mkS3Route = route: ''
+      ${route.service} {
+        bind 10.0.0.1
+        tls internal
+        rewrite * /${route.bucket}{uri}
+        reverse_proxy ${route.s3_endpoint} {
+          header_up Host ${route.s3_host}
+        }
+      }
+    '';
+
     # ── Assemble the full Caddyfile ─────────────────────────────
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
@@ -701,6 +714,12 @@
       # ════════════════════════════════════════════════════════════
 
     ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
+
+      # ════════════════════════════════════════════════════════════
+      # S3 ROUTES — OCI Object Storage via .app short names
+      # ════════════════════════════════════════════════════════════
+
+    ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
 
       # ════════════════════════════════════════════════════════════
       # MTA-STS — enforce TLS for inbound email delivery

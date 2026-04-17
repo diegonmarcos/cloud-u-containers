@@ -4,7 +4,7 @@
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/configs",
     "source": "_cloud-data-consolidated.json",
-    "generated_at": "2026-04-08T08:51:54.905Z"
+    "generated_at": "2026-04-17T11:48:13.706Z"
   },
   "services": [
     {
@@ -13,7 +13,9 @@
       "vm": "gcp-E2-f_0",
       "description": "SSO and 2FA authentication portal",
       "domain": "auth.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.1:9091:9091"
+      ],
       "networks": [
         "auth-net"
       ],
@@ -112,7 +114,9 @@
       "vm": "oci-A1-f_0",
       "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
       "domain": "—",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:3101:3101"
+      ],
       "networks": [],
       "containers": [
         "c3-services-mcp"
@@ -141,6 +145,18 @@
       "networks": [],
       "containers": [
         "caddy-l4-image"
+      ]
+    },
+    {
+      "name": "cloud-builder-x",
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
+      "domain": "—",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "cloud-builder-x"
       ]
     },
     {
@@ -428,7 +444,9 @@
       "vm": "oci-A1-f_0",
       "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
       "domain": "—",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:3103:3103"
+      ],
       "networks": [],
       "containers": [
         "mail-mcp"
@@ -440,7 +458,9 @@
       "vm": "oci-E2-f_1",
       "description": "Matomo hybrid analytics (oci-analytics)",
       "domain": "analytics.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.4:8084:8084"
+      ],
       "networks": [],
       "containers": [
         "matomo-hybrid"
@@ -466,10 +486,24 @@
       "vm": "oci-A1-f_0",
       "description": "Mattermost MCP server — chat tools via HTTP transport",
       "domain": "—",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:3102:3102"
+      ],
       "networks": [],
       "containers": [
         "mattermost-mcp"
+      ]
+    },
+    {
+      "name": "news-gdelt",
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "description": "GDELT News Aggregator — Fastify API with SQLite cache",
+      "domain": "—",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "news-gdelt"
       ]
     },
     {
@@ -492,9 +526,7 @@
       "vm": "gcp-T4-p_0",
       "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
       "domain": "—",
-      "ports": [
-        "10.0.0.8:11434:11434"
-      ],
+      "ports": [],
       "networks": [],
       "containers": [
         "ollama"
@@ -588,7 +620,9 @@
       "vm": "oci-A1-f_0",
       "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
       "domain": "cal.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:5232:5232"
+      ],
       "networks": [
         "default"
       ],
@@ -698,10 +732,24 @@
       "vm": "oci-E2-f_0",
       "description": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
       "domain": "webmail.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.3:8888:8888"
+      ],
       "networks": [],
       "containers": [
         "snappymail"
+      ]
+    },
+    {
+      "name": "stalwart",
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "description": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)",
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "stalwart"
       ]
     },
     {
@@ -722,7 +770,9 @@
       "vm": "oci-E2-f_1",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "domain": "analytics.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.4:3006:3006"
+      ],
       "networks": [],
       "containers": [
         "umami",
@@ -764,7 +814,9 @@
       "vm": "gcp-E2-f_0",
       "description": "SSO and 2FA authentication portal",
       "domain": "auth.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.1:9091:9091"
+      ],
       "networks": [
         "auth-net"
       ],
@@ -868,6 +920,18 @@
       "networks": [],
       "containers": [
         "caddy-l4-image"
+      ]
+    },
+    {
+      "name": "cloud-builder-x",
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
+      "domain": "—",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "cloud-builder-x"
       ]
     },
     {
@@ -1035,10 +1099,24 @@
       "vm": "oci-E2-f_1",
       "description": "Matomo hybrid analytics (oci-analytics)",
       "domain": "analytics.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.4:8084:8084"
+      ],
       "networks": [],
       "containers": [
         "matomo-hybrid"
+      ]
+    },
+    {
+      "name": "news-gdelt",
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "description": "GDELT News Aggregator — Fastify API with SQLite cache",
+      "domain": "—",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "news-gdelt"
       ]
     },
     {
@@ -1121,7 +1199,9 @@
       "vm": "oci-E2-f_1",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "domain": "analytics.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.4:3006:3006"
+      ],
       "networks": [],
       "containers": [
         "umami",
@@ -1259,7 +1339,9 @@
       "vm": "oci-A1-f_0",
       "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
       "domain": "—",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:3103:3103"
+      ],
       "networks": [],
       "containers": [
         "mail-mcp"
@@ -1285,7 +1367,9 @@
       "vm": "oci-A1-f_0",
       "description": "Mattermost MCP server — chat tools via HTTP transport",
       "domain": "—",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:3102:3102"
+      ],
       "networks": [],
       "containers": [
         "mattermost-mcp"
@@ -1297,9 +1381,7 @@
       "vm": "gcp-T4-p_0",
       "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
       "domain": "—",
-      "ports": [
-        "10.0.0.8:11434:11434"
-      ],
+      "ports": [],
       "networks": [],
       "containers": [
         "ollama"
@@ -1393,7 +1475,9 @@
       "vm": "oci-A1-f_0",
       "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
       "domain": "cal.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.6:5232:5232"
+      ],
       "networks": [
         "default"
       ],
@@ -1455,10 +1539,24 @@
       "vm": "oci-E2-f_0",
       "description": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)",
       "domain": "webmail.diegonmarcos.com",
-      "ports": [],
+      "ports": [
+        "10.0.0.3:8888:8888"
+      ],
       "networks": [],
       "containers": [
         "snappymail"
+      ]
+    },
+    {
+      "name": "stalwart",
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "description": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)",
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "ports": [],
+      "networks": [],
+      "containers": [
+        "stalwart"
       ]
     },
     {

@@ -54,6 +54,7 @@ services:
     env_file:
       - .secrets
     environment:
+      - PORT=8000
       - DATABASE_URL=postgres://windmill:${DB_PASSWORD}@localhost:5440/windmill?sslmode=disable
       - MODE=server
       - BASE_URL=https://windmill.diegonmarcos.com

@@ -11,18 +11,12 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "c3-infra-mcp",
     "dockerfile": "Dockerfile",
-    "arch": "arm64",
-    "native_build": {
-      "type": "app",
-      "cmd": "npm ci --omit=dev",
-      "entrypoint": "./entrypoint.sh",
-      "base_image": "node:22-bookworm-slim",
-      "apt": "ca-certificates openssh-client iputils-ping curl git python3 build-essential dnsutils openssl netcat-openbsd"
-    }
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-infra-mcp"
+    "remote_path": "/opt/containers/c3-infra-mcp",
+    "compose_flags": "--build"
   },
   "build": {
     "include_cloud_data": "true"

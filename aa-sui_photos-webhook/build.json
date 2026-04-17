@@ -20,7 +20,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/photos-webhook"
+    "remote_path": "/opt/containers/photos-webhook",
+    "compose_flags": "--build"
   },
   "backup": {
     "enabled": true

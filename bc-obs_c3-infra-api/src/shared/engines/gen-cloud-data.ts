@@ -287,6 +287,54 @@ function main() {
       ...(entry.extra ?? {}),
     };
 
+    // ── Derive API + Web UI classification ──────────────────────────────────
+    // Priority: build.json api_path > healthcheck /api pattern > known conventions
+    const healthchecks: string[] = Object.values(containers)
+      .map((c: any) => c.healthcheck ?? "")
+      .filter(Boolean);
+
+    // Extract API path from healthcheck patterns
+    let derivedApiPath: string | null = null;
+    for (const h of healthchecks) {
+      const m = h.match(/(\/api[^\s"']*)/);
+      if (m) { derivedApiPath = m[1]; break; }
+    }
+
+    // Known API conventions (when healthcheck doesn't reveal the path)
+    const KNOWN_API_PATHS: Record<string, string> = {
+      "gitea": "/api/v1",
+      "vaultwarden": "/api",
+      "ntfy": "/v1",
+      "matomo": "/?module=API",
+      "umami": "/api",
+      "windmill": "/api",
+      "etherpad": "/api/1",
+      "hedgedoc": "/api",
+      "grist": "/api",
+      "filebrowser": "/api",
+      "dagu": "/api/v2",
+      "crawlee-cloud": "/api",
+      "radicale": "/.well-known/caldav",
+    };
+
+    // build.json can override with explicit api_path
+    const apiPath = entry.api_path ?? derivedApiPath ?? KNOWN_API_PATHS[entry.name] ?? null;
+    const hasApi = !!(apiPath || entry.name.includes("api") || healthchecks.some((h: string) =>
+      h.includes("/api") || h.includes("/health") || h.includes("/docs")
+    ));
+
+    // Web UI = has a domain AND not an MCP/proxy-only service
+    const WEB_UI_EXCLUSIONS = ["introspect-proxy", "smtp-proxy", "hickory-dns"];
+    const hasWebUi = !!(entry.domain && !entry.name.includes("mcp") && !WEB_UI_EXCLUSIONS.includes(entry.name));
+
+    svc.api = {
+      has_api: hasApi,
+      has_web_ui: hasWebUi,
+      api_path: apiPath,
+      api_url: apiPath && entry.domain ? `https://${entry.domain}${apiPath}` : null,
+      healthcheck_paths: healthchecks.filter((h: string) => h.startsWith("/")),
+    };
+
     // Extract secret env var names from src/secrets.yaml (keys are plaintext in sops)
     const secretsPath = join(SOLUTIONS_DIR, entry.folder, "src", "secrets.yaml");
     if (existsSync(secretsPath)) {

@@ -24,7 +24,7 @@ services:
       - OLLAMA_MODEL=MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0
       - C3_API_URL=http://c3-api.app
       - C3_MCP_URL=http://c3-mcp.app
-      - MATTERMOST_URL=http://mattermost.app
+      - MATTERMOST_URL=http://10.0.0.6:8065
       - GUARDRAIL_MAX_TURNS=20
       - GUARDRAIL_DENIED_TOOLS=
       - GUARDRAIL_ALLOWED_TOOLS=
@@ -34,7 +34,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8091/health"]
+      test: ["CMD", "curl", "-sf", "http://10.0.0.6:8091/health"]
       interval: 30s
       timeout: 10s
       retries: 3

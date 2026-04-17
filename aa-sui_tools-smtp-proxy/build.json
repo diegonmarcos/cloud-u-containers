@@ -21,7 +21,8 @@
   },
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/containers/smtp-proxy"
+    "remote_path": "/opt/containers/smtp-proxy",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

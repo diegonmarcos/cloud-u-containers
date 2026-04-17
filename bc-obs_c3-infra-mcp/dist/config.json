@@ -442,6 +442,11 @@
         "nix": "iproute2",
         "apt": "iproute2",
         "desc": "Network tools (ip command — required by wg-quick)"
+      },
+      "gh": {
+        "nix": "gh",
+        "apt": "gh",
+        "desc": "GitHub CLI (GHCR auth, API access)"
       }
     },
     "build": {

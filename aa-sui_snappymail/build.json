@@ -15,7 +15,8 @@
     "remote_path": "/opt/containers/snappymail",
     "excludes": [
       "data/**"
-    ]
+    ],
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true,
