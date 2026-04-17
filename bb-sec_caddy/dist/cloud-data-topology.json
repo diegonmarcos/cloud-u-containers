@@ -102,7 +102,6 @@
         "photoprism_app",
         "photoprism_mariadb",
         "photoprism_rclone",
-        "photos-db",
         "photos-webhook",
         "radicale",
         "revealmd_app",
@@ -124,7 +123,7 @@
         "quant_light_engine",
         "quant_light_db",
         "ollama-hai",
-        "rig-agentic-hai-1.5bq4",
+        "rig-agentic-hai",
         "rig-agentic-sonn-14bq8",
         "sauron-central",
         "c3-infra-api",
@@ -146,8 +145,8 @@
         "windmill-db",
         "windmill-worker",
         "cloud-builder-x",
-        "backup-borg",
-        "backup-bup",
+        "borg-server",
+        "bup-server",
         "gitea",
         "gitea",
         "surrealdb"
@@ -1011,12 +1010,6 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "ollama-hai"
-      },
-      {
-        "name": "rig-agentic-sonn-14bq8.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "rig-agentic-sonn-14bq8"
       },
       {
         "name": "hickory-dns.app",
@@ -2090,12 +2083,19 @@
       "port": 5002,
       "dns": "photos-webhook.app",
       "upstream": "10.0.0.6:5002",
-      "containers": {},
+      "containers": {
+        "app": {
+          "container_name": "photos-webhook",
+          "port": 5002,
+          "port_env": "WEBHOOK_PORT"
+        }
+      },
       "container_names": [
-        "photos-db",
         "photos-webhook"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "5002"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -2104,6 +2104,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 5002
       },
       "backup": {
         "enabled": true
@@ -2308,21 +2311,15 @@
       "folder": "aa-sui_tools-maddy",
       "description": "Maddy Mail Server (mail.diegonmarcos.com)",
       "domain": "mail.diegonmarcos.com",
-      "port": 443,
       "dns": "maddy.app",
-      "upstream": "10.0.0.3:443",
       "containers": {
         "app": {
           "container_name": "maddy",
           "image": "ghcr.io/diegonmarcos/maddy:latest",
-          "port": 443,
+          "port": null,
           "dns": "maddy.app",
-          "public": true,
-          "proxy": {
-            "domain": "mail.diegonmarcos.com",
-            "auth": "two_factor",
-            "tls_skip_verify": true
-          },
+          "public": false,
+          "proxy": null,
           "healthcheck": null,
           "volumes": [
             "maddy_data:/data",
@@ -2344,9 +2341,7 @@
       "container_names": [
         "maddy"
       ],
-      "all_ports": [
-        "443"
-      ],
+      "all_ports": [],
       "all_dns": [
         "maddy.app"
       ],
@@ -2361,8 +2356,27 @@
         "primary": {
           "domain": "mail.diegonmarcos.com",
           "auth": "two_factor",
-          "tls_skip_verify": true
-        }
+          "tls_skip_verify": true,
+          "landing_page": "mymail",
+          "l4_ports": [
+            {
+              "port": 993,
+              "upstream": "130.110.251.193:993",
+              "comment": "IMAPS"
+            },
+            {
+              "port": 465,
+              "upstream": "130.110.251.193:465",
+              "comment": "SMTPS"
+            },
+            {
+              "port": 587,
+              "upstream": "130.110.251.193:587",
+              "comment": "SMTP Submission"
+            }
+          ]
+        },
+        "app_hub": false
       },
       "declared_ports": {
         "app": 993,
@@ -2398,6 +2412,7 @@
         "app": {
           "container_name": "smtp-proxy",
           "port": 8080,
+          "port_env": "LISTEN_PORT",
           "dns": "smtp-proxy.app",
           "public": true,
           "proxy": {
@@ -2941,6 +2956,9 @@
       },
       "declared_ports": {
         "app": 8890,
+        "research": 8890,
+        "dash": 8050,
+        "engine": 5000,
         "db": 5437
       }
     },
@@ -3104,22 +3122,30 @@
       "vm": "oci-apps-2",
       "folder": "ad-agi_ollama-arm",
       "description": "Ollama LLM server (ARM CPU, 7b models)",
+      "port": 11434,
+      "dns": "ollama-arm.app",
       "containers": {
         "app": {
           "container_name": "ollama-arm",
-          "image": "",
-          "public": false
+          "port": 11434,
+          "port_env": "OLLAMA_HOST",
+          "port_format": "host"
         }
       },
       "container_names": [
         "ollama-arm"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "11434"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 11434
       }
     },
     "ollama-hai": {
@@ -3179,17 +3205,22 @@
       "vm": "oci-A1-f_0",
       "folder": "ad-agi_rig-agentic-hai-1.5bq4",
       "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
+      "port": 8091,
+      "dns": "rig-agentic-hai-1.5bq4.app",
+      "upstream": "10.0.0.6:8091",
       "containers": {
         "app": {
-          "container_name": "rig-agentic-hai-1.5bq4",
-          "image": "",
-          "public": false
+          "container_name": "rig-agentic-hai",
+          "port": 8091,
+          "port_env": "RIG_PORT"
         }
       },
       "container_names": [
-        "rig-agentic-hai-1.5bq4"
+        "rig-agentic-hai"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "8091"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -3197,6 +3228,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 8091
       }
     },
     "rig-agentic-sonn-14bq8": {
@@ -3210,10 +3244,8 @@
       "containers": {
         "app": {
           "container_name": "rig-agentic-sonn-14bq8",
-          "image": "",
-          "public": false,
           "port": 8091,
-          "dns": "rig-agentic-sonn-14bq8.app"
+          "port_env": "RIG_PORT"
         }
       },
       "container_names": [
@@ -3222,15 +3254,16 @@
       "all_ports": [
         "8091"
       ],
-      "all_dns": [
-        "rig-agentic-sonn-14bq8.app"
-      ],
+      "all_dns": [],
       "compose": {
         "containers": [
           "rig-agentic-sonn-14bq8"
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 8091
       }
     },
     "cloudflare-worker": {
@@ -3514,7 +3547,10 @@
         }
       },
       "declared_ports": {
-        "app": 443
+        "app": 443,
+        "http": 80,
+        "https": 443,
+        "admin": 2019
       }
     },
     "caddy-l4-image": {
@@ -4298,6 +4334,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 2020
       }
     },
     "lgtm": {
@@ -5053,17 +5092,21 @@
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_backup-borg",
       "description": "Media Backups SSH Server (Borg deduplication)",
+      "port": 2224,
+      "dns": "backup-borg.app",
+      "upstream": "10.0.0.6:2224",
       "containers": {
         "app": {
-          "container_name": "backup-borg",
-          "image": "",
-          "public": false
+          "container_name": "borg-server",
+          "port": 2224
         }
       },
       "container_names": [
-        "backup-borg"
+        "borg-server"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "2224"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -5071,6 +5114,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 2224
       }
     },
     "backup-bup": {
@@ -5078,17 +5124,21 @@
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_backup-bup",
       "description": "Database Backups SSH Server (bup)",
+      "port": 2223,
+      "dns": "backup-bup.app",
+      "upstream": "10.0.0.6:2223",
       "containers": {
         "app": {
-          "container_name": "backup-bup",
-          "image": "",
-          "public": false
+          "container_name": "bup-server",
+          "port": 2223
         }
       },
       "container_names": [
-        "backup-bup"
+        "bup-server"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "2223"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -5096,6 +5146,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 2223
       }
     },
     "backup-gitea": {
@@ -5290,11 +5343,21 @@
       "vm": "oci-A1-f_0",
       "folder": "ca-dat_kg-graph",
       "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
-      "containers": {},
+      "port": 8001,
+      "dns": "kg-graph.app",
+      "upstream": "10.0.0.6:8001",
+      "containers": {
+        "app": {
+          "container_name": "surrealdb",
+          "port": 8001
+        }
+      },
       "container_names": [
         "surrealdb"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "8001"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -5302,6 +5365,9 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 8001
       },
       "backup": {
         "enabled": true
