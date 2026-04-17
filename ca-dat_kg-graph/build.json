@@ -12,7 +12,15 @@
   "backup": {
     "enabled": true
   },
-  "containers": {},
+  "ports": {
+    "app": 8001
+  },
+  "containers": {
+    "app": {
+      "container_name": "surrealdb",
+      "port": 8001
+    }
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "kg-graph",
