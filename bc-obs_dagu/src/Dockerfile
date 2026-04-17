@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     jq \
     yq \
+    docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Install websocat (WebSocket CLI — ntfy bridge)

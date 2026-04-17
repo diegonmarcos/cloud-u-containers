@@ -6,7 +6,7 @@ env:
   - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
   - RUSTIC_REPO: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-binaries-medias"
   - RUSTIC_PASSWORD: ${RUSTIC_PASSWORD}
-mailOn:
+mail_on:
   failure: true
   success: false
 type: graph

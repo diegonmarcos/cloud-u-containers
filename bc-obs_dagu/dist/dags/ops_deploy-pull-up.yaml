@@ -4,7 +4,7 @@ env:
   - SSH_KEY: /home/dagu/.ssh/vault_id_rsa
   - SSH_OPTS: -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10
   - NTFY_URL: http://10.0.0.6:8090
-mailOn:
+mail_on:
   failure: true
   success: false
 steps:

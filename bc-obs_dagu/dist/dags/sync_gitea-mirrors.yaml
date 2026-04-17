@@ -9,7 +9,7 @@ env:
   - GITEA_HOST: 10.0.0.6
   - GITEA_PORT: 3017
   - GITEA_ORG: diego
-mailOn:
+mail_on:
   failure: true
   success: false
 type: graph

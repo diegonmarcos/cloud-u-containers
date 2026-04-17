@@ -56,6 +56,7 @@
             "./base.yaml:/var/lib/dagu/base.yaml:ro"
             "./fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro"
             "/opt/ssh-keys/dagu:/home/dagu/.ssh:ro"
+            "/var/run/docker.sock:/var/run/docker.sock"
           ];
           memLimit = "256m";
         };
@@ -72,18 +73,18 @@
         username: "no-reply@diegonmarcos.com"
         password: "$NOREPLY_PASSWORD"
 
-      mailOn:
+      mail_on:
         failure: false
         success: false
 
-      errorMail:
+      error_mail:
         from: no-reply@diegonmarcos.com
         to:
           - me@diegonmarcos.com
         prefix: "[Dagu FAIL]"
-        attachLogs: true
+        attach_logs: true
 
-      infoMail:
+      info_mail:
         from: no-reply@diegonmarcos.com
         to:
           - me@diegonmarcos.com

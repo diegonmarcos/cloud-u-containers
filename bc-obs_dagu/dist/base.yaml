@@ -6,18 +6,18 @@ smtp:
   username: "no-reply@diegonmarcos.com"
   password: "$NOREPLY_PASSWORD"
 
-mailOn:
+mail_on:
   failure: false
   success: false
 
-errorMail:
+error_mail:
   from: no-reply@diegonmarcos.com
   to:
     - me@diegonmarcos.com
   prefix: "[Dagu FAIL]"
-  attachLogs: true
+  attach_logs: true
 
-infoMail:
+info_mail:
   from: no-reply@diegonmarcos.com
   to:
     - me@diegonmarcos.com

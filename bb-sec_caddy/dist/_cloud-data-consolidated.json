@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-17T14:23:52.435Z",
+    "generated_at": "2026-04-17T17:11:19.424Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -702,7 +702,7 @@
           "@fastify/swagger": "^9.4.0",
           "@fastify/swagger-ui": "^5.2.0",
           "@modelcontextprotocol/sdk": "^1.12.0",
-          "better-sqlite3": "^11.0.0",
+          "better-sqlite3": "^11.7.0",
           "fast-xml-parser": "^4.5.0",
           "fastify": "^5.2.0",
           "fastify-plugin": "^5.0.0",
@@ -717,7 +717,7 @@
         },
         "devDependencies": {
           "@types/better-sqlite3": "^7.6.13",
-          "@types/node": "^22.0.0",
+          "@types/node": "^22.10.0",
           "@types/nodemailer": "^6.4.0",
           "@types/nunjucks": "^3.2.6",
           "tsx": "^4.19.0",
@@ -865,6 +865,21 @@
           "devDependencies": {
             "@types/better-sqlite3": "^7.6.13",
             "@types/node": "^22.0.0",
+            "tsx": "^4.19.0",
+            "typescript": "^5.7.0"
+          }
+        },
+        {
+          "service": "news-gdelt",
+          "folder": "bc-obs_news-gdelt",
+          "category": "tools",
+          "dependencies": {
+            "better-sqlite3": "^11.7.0",
+            "fastify": "^5.2.0"
+          },
+          "devDependencies": {
+            "@types/better-sqlite3": "^7.6.12",
+            "@types/node": "^22.10.0",
             "tsx": "^4.19.0",
             "typescript": "^5.7.0"
           }
@@ -4335,7 +4350,7 @@
         "DAGU_PASSWORD",
         "AUTHELIA_OIDC_DAGU_SECRET",
         "OCI_S3_SECRET_KEY",
-        "RESTIC_PASSWORD",
+        "RUSTIC_PASSWORD",
         "BORG_PASSPHRASE",
         "NOREPLY_PASSWORD",
         "GITHUB_TOKEN"
@@ -5408,7 +5423,9 @@
       "all_ports": [],
       "all_dns": [],
       "compose": {
-        "containers": [],
+        "containers": [
+          "cloud-builder-x-cloud-builder-1"
+        ],
         "ports": [],
         "networks": []
       },
@@ -7724,7 +7741,7 @@
       "cloud-builder-x": {
         "dir": "bd-cloud-builder-x",
         "vm": "oci-apps",
-        "has_docker": false
+        "has_docker": true
       },
       "backup-borg": {
         "dir": "ca-dat_backup-borg",

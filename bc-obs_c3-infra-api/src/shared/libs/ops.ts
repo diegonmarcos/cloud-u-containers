@@ -104,20 +104,52 @@ export function daguHeaders(): Record<string, string> {
 export { DAGU_API };
 
 async function triggerDag(name: string): Promise<{ ok: boolean; dagRunId?: string; error?: string }> {
+  // Try REST API first (Dagu <2.5)
   const url = `${DAGU_API}/api/v2/dags/${name}/start`;
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...daguHeaders() },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(10000),
+    });
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...daguHeaders() },
-    body: JSON.stringify({}),
-    signal: AbortSignal.timeout(15000),
-  });
+    if (resp.ok) {
+      const data = await resp.json().catch(() => ({})) as { dagRunId?: string };
+      return { ok: true, dagRunId: data.dagRunId };
+    }
 
-  if (!resp.ok) {
+    // If 405 Method Not Allowed — Dagu 2.5+ doesn't support POST trigger via REST
+    // Fall back to SSH + docker exec
+    if (resp.status === 405 || resp.status === 401) {
+      return triggerDagViaSsh(name);
+    }
+
     const body = await resp.text().catch(() => "");
-    return { ok: false, error: `Dagu API ${resp.status}: ${body}` };
+    return { ok: false, error: `HTTP ${resp.status}: ${body}` };
+  } catch (e) {
+    // Network error — try SSH fallback
+    return triggerDagViaSsh(name);
   }
+}
 
-  const data = await resp.json().catch(() => ({})) as { dagRunId?: string };
-  return { ok: true, dagRunId: data.dagRunId };
+async function triggerDagViaSsh(name: string): Promise<{ ok: boolean; dagRunId?: string; error?: string }> {
+  // Resolve Dagu VM from topology (default: oci-analytics)
+  let sshAlias = "oci-analytics";
+  try {
+    const { readFileSync } = require("fs");
+    const { getConfigPath } = require("./paths.js");
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
+    const svc = topo.services?.dagu;
+    if (svc?.vm) {
+      const vm = topo.vms?.[svc.vm];
+      if (vm?.ssh_alias) sshAlias = vm.ssh_alias;
+    }
+  } catch {}
+
+  const r = await execAsync(`ssh -o ConnectTimeout=5 -o BatchMode=yes ${sshAlias} 'docker exec dagu dagu start ${name}'`, 30000);
+  if (r.ok) {
+    return { ok: true };
+  }
+  return { ok: false, error: `SSH trigger failed: ${r.stderr || r.stdout}` };
 }
