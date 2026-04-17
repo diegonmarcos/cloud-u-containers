@@ -27,7 +27,7 @@
     # init.sh substitutes secrets and decodes DKIM key at container start
     ghcr = docker.mkGhcrBuild {
       name = "stalwart";
-      fromImage = "stalwartlabs/mail-server:v0.11";
+      fromImage = "stalwartlabs/stalwart:v0.13";
       configFiles = [
         { src = "config.toml.tpl"; dst = "/opt/stalwart-mail/etc/config.toml.tpl"; }
         { src = "init.sh"; dst = "/opt/stalwart-mail/init.sh"; }
@@ -97,22 +97,26 @@
         chmod 600 /opt/stalwart-mail/dkim/${config.domain}.dkim.key
       fi
 
-      # Auto-create domain + user principals in internal directory (RocksDB may be wiped)
+      # Auto-create domain + user principals in internal directory
       # Background task: wait for Stalwart to start, then ensure all principals exist
+      # Uses POST to create (idempotent — fieldAlreadyExists is fine)
+      # Then PATCH to set passwords (avoids shell quoting issues with POST secrets)
       (sleep 10 && AUTH="admin@${config.domain}:$ADMIN_PASSWORD" && \
-        curl -sk -X POST "https://localhost:${toString config.port}/api/principal" \
-          -u "$AUTH" -H "Content-Type: application/json" \
+        URL="https://localhost:${toString config.port}/api/principal" && \
+        curl -sk -X POST "$URL" -u "$AUTH" -H "Content-Type: application/json" \
           -d '{"type":"domain","name":"${config.domain}"}' 2>/dev/null && \
-        curl -sk -X POST "https://localhost:${toString config.port}/api/principal" \
-          -u "$AUTH" -H "Content-Type: application/json" \
-          -d '{"type":"individual","name":"me@${config.domain}","secrets":["'"$ME_PASSWORD"'"],"emails":["me@${config.domain}"],"roles":["user"]}' 2>/dev/null && \
-        curl -sk -X POST "https://localhost:${toString config.port}/api/principal" \
-          -u "$AUTH" -H "Content-Type: application/json" \
-          -d '{"type":"individual","name":"no-reply@${config.domain}","secrets":["'"$NOREPLY_PASSWORD"'"],"emails":["no-reply@${config.domain}","noreply@${config.domain}"],"roles":["user"]}' 2>/dev/null && \
+        curl -sk -X POST "$URL" -u "$AUTH" -H "Content-Type: application/json" \
+          -d '{"type":"individual","name":"me@${config.domain}","emails":["me@${config.domain}"],"roles":["user"]}' 2>/dev/null && \
+        curl -sk -X POST "$URL" -u "$AUTH" -H "Content-Type: application/json" \
+          -d '{"type":"individual","name":"no-reply@${config.domain}","emails":["no-reply@${config.domain}","noreply@${config.domain}"],"roles":["user"]}' 2>/dev/null && \
+        curl -sk -X PATCH "$URL/me@${config.domain}" -u "$AUTH" -H "Content-Type: application/json" \
+          -d "[{\"action\":\"addItem\",\"field\":\"secrets\",\"value\":\"$ME_PASSWORD\"}]" 2>/dev/null && \
+        curl -sk -X PATCH "$URL/no-reply@${config.domain}" -u "$AUTH" -H "Content-Type: application/json" \
+          -d "[{\"action\":\"addItem\",\"field\":\"secrets\",\"value\":\"$NOREPLY_PASSWORD\"}]" 2>/dev/null && \
         echo "[init] All principals ensured in internal directory" || true) &
 
       echo "[init] Starting Stalwart..."
-      exec /usr/local/bin/stalwart-mail --config /opt/stalwart-mail/etc/config.toml
+      exec /usr/local/bin/stalwart --config /opt/stalwart-mail/etc/config.toml
     '';
 
   in {
