@@ -2,6 +2,9 @@
   "name": "fluent-bit",
   "description": "Log processor and forwarder",
   "port": 2020,
+  "ports": {
+    "app": 2020
+  },
   "dns": "fluent-bit.app",
   "category": "tools",
   "deploy": {

@@ -6,6 +6,9 @@
   "category": "fin",
   "ports": {
     "app": 8890,
+    "research": 8890,
+    "dash": 8050,
+    "engine": 5000,
     "db": 5437
   },
   "deploy": {

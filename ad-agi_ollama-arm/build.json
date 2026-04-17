@@ -14,5 +14,16 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "ollama-arm"
+  },
+  "ports": {
+    "app": 11434
+  },
+  "containers": {
+    "app": {
+      "container_name": "ollama-arm",
+      "port": 11434,
+      "port_env": "OLLAMA_HOST",
+      "port_format": "host"
+    }
   }
 }

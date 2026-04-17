@@ -26,5 +26,14 @@
   "backup": {
     "enabled": true
   },
-  "containers": {}
+  "ports": {
+    "app": 5002
+  },
+  "containers": {
+    "app": {
+      "container_name": "photos-webhook",
+      "port": 5002,
+      "port_env": "WEBHOOK_PORT"
+    }
+  }
 }

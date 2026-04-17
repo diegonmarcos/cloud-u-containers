@@ -9,12 +9,13 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     lib = nixpkgs.lib;
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
       container_name = "caddy";
-      http_port = 80;
-      https_port = 443;
-      admin_port = 2019;
+      http_port = ports.valueOf "http";
+      https_port = ports.valueOf "https";
+      admin_port = ports.valueOf "admin";
     };
 
     title = "Caddy Reverse Proxy";
@@ -267,7 +268,13 @@
 
         # Build the main proxy block
         proxyBlock =
-          if isNoAuth then
+          if isNoAuth && hasTlsSkipVerify then
+            ''    reverse_proxy https://${route.upstream} {
+          transport http {
+        tls_insecure_skip_verify
+      }
+        }''
+          else if isNoAuth then
             "    reverse_proxy ${route.upstream}"
           else if hasTlsServerName && hasTimeout then
             mkProtectedCustom upstreamUrl ''

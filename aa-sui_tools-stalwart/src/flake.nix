@@ -7,6 +7,7 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     title = "Stalwart Mail Server (Shadow)";
     docker = import ../../_shared/docker.nix;
@@ -68,7 +69,7 @@
     mkActivate = pkgs: pkgs.writeText "activate.sh" ''
       #!/bin/sh
       set -e
-      URL="https://localhost:2443/api/principal"
+      URL="https://localhost:${toString (ports.valueOf "app")}/api/principal"
       PW=$(cat /opt/containers/stalwart/.secrets.d/ADMIN_PASSWORD 2>/dev/null)
       [ -z "$PW" ] && echo "[activate] No ADMIN_PASSWORD found, skipping" && exit 0
 
