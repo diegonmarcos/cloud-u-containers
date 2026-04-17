@@ -58,7 +58,7 @@
           ];
           volumes = [
             "stalwart_data:/opt/stalwart-mail/data"
-            "./tls:/opt/stalwart-mail/tls:ro"
+            "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
             "./config.toml.tpl:/opt/stalwart-mail/etc/config.toml.tpl:ro"
             "./init.sh:/opt/stalwart-mail/init.sh:ro"
           ];

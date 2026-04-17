@@ -43,7 +43,7 @@
           "news_gdelt_cache:/app/cache"
         ];
         healthcheck = {
-          test = ''["CMD", "curl", "-sf", "http://${vmIp}:${toString config.port}/health"]'';
+          test = ''["CMD-SHELL", "node -e \"require('http').get('http://${vmIp}:${toString config.port}/health', r => { process.exit(r.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))\""]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;
@@ -61,6 +61,7 @@
       defaultPkg = pkgs.runCommand "${config.container_name}-configs" {} ''
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
+        cp ${./Dockerfile} $out/Dockerfile
       '';
     in {
       default = defaultPkg;
