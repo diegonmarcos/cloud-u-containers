@@ -3,7 +3,8 @@
   "dns": "syslog-forwarder.app",
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/containers/syslog-forwarder"
+    "remote_path": "/opt/containers/syslog-forwarder",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

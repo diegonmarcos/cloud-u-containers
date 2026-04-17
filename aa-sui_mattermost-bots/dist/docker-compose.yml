@@ -100,8 +100,8 @@ services:
     env_file:
       - .secrets
     environment:
-      - NTFY_URL=http://10.0.0.1:8090
-      - TOPICS=dev_commits,dev_pull-requests,dev_releases,deploy_ship,deploy_containers,health_mesh,health_endpoints,health_dns,health_resources,health_containers,ops_backups,ops_reports,sec_audit,sec_tls,sec_connections,sec_yara
+      - NTFY_URL=http://10.0.0.6:8090
+      - TOPICS=all,dev_commits,dev_pull-requests,dev_releases,deploy_ship,deploy_containers,health_mesh,health_endpoints,health_dns,health_resources,health_containers,ops_backups,ops_reports,sec_audit,sec_tls,sec_connections,sec_yara
       - MM_URL=http://localhost:8065
       - C3_API_URL=http://c3-infra-mcp-api:8080
       - OLLAMA_URL=http://10.0.0.8:11434

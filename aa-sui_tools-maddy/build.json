@@ -6,7 +6,8 @@
   "domain": "mail.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
-    "remote_path": "/opt/containers/maddy"
+    "remote_path": "/opt/containers/maddy",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true,

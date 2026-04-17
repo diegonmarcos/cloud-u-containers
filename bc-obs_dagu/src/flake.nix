@@ -147,7 +147,7 @@
         cp ${./ntfy-bridge.sh} $out/ntfy-bridge.sh
         chmod +x $out/ntfy-bridge.sh
         cp -r ${./dags}/. $out/dags/
-        chmod +x $out/dags/report_daily.sh 2>/dev/null || true
+        # report_daily.sh moved to cloud-data/reports/cloud-health-daily-mail/src/
         chmod +x $out/dags/gha/*.sh 2>/dev/null || true
         # Prevent Dagu from overwriting our DAGs with example files on first start
         touch $out/dags/.examples-created

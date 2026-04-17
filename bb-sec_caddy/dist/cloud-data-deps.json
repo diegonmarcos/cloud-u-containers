@@ -3,7 +3,7 @@
   "_meta": {
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/deps",
-    "generated_at": "2026-04-08T08:51:54.905Z",
+    "generated_at": "2026-04-17T11:48:13.706Z",
     "total_services": 8,
     "total_packages": 23
   },
@@ -57,6 +57,16 @@
       "nix": "dig",
       "apt": "dnsutils",
       "desc": "DNS lookup (health checks — dig, nslookup)"
+    },
+    "ip": {
+      "nix": "iproute2",
+      "apt": "iproute2",
+      "desc": "Network tools (ip command — required by wg-quick)"
+    },
+    "gh": {
+      "nix": "gh",
+      "apt": "gh",
+      "desc": "GitHub CLI (GHCR auth, API access)"
     }
   },
   "build": {
@@ -71,6 +81,18 @@
     "typescript": {
       "nix": "nodePackages.typescript",
       "desc": "TypeScript compiler (nix build only)"
+    },
+    "rust": {
+      "nix": null,
+      "desc": "Rust compiler — installed via rustup in Dockerfile (nixos-24.11 ships 1.82, too old for current crate ecosystem)"
+    },
+    "cargo": {
+      "nix": null,
+      "desc": "Rust package manager — installed via rustup in Dockerfile"
+    },
+    "terraform": {
+      "nix": null,
+      "desc": "Infrastructure as Code — direct binary in Dockerfile (nix go-modules breaks sandbox=false in Docker, see NixOS/nix#11295)"
     }
   },
   "optional": {

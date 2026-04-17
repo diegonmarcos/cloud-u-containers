@@ -4,7 +4,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 2
   },
-  "_generated": "2026-04-08T08:51:54.895Z",
+  "_generated": "2026-04-17T11:48:13.695Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
     {
@@ -21,6 +21,21 @@
       "port": 587,
       "upstream": "10.0.0.3:587",
       "comment": "SMTP Submission -- TLS passthrough to maddy"
+    },
+    {
+      "port": 2993,
+      "upstream": "10.0.0.3:2993",
+      "comment": "IMAPS -- TLS passthrough to stalwart"
+    },
+    {
+      "port": 2465,
+      "upstream": "10.0.0.3:2465",
+      "comment": "SMTPS -- TLS passthrough to stalwart"
+    },
+    {
+      "port": 2587,
+      "upstream": "10.0.0.3:2587",
+      "comment": "SMTP Submission -- TLS passthrough to stalwart"
     }
   ],
   "routes": [
@@ -67,6 +82,12 @@
       "upstream": "10.0.0.3:8080",
       "auth": "none",
       "comment": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)"
+    },
+    {
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "upstream": "10.0.0.3:2443",
+      "tls_skip_verify": true,
+      "comment": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)"
     },
     {
       "domain": "vault.diegonmarcos.com",
@@ -355,6 +376,10 @@
       "upstream": "10.0.0.3:8080"
     },
     {
+      "service": "stalwart.app",
+      "upstream": "10.0.0.3:2443"
+    },
+    {
       "service": "vaultwarden.app",
       "upstream": "10.0.0.6:8880"
     },
@@ -481,6 +506,38 @@
     {
       "service": "gcp-proxy.app",
       "upstream": "10.0.0.1:7680"
+    }
+  ],
+  "s3_routes": [
+    {
+      "service": "s3-backups-binaries.app",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "bucket": "cloud-backups-binaries-medias"
+    },
+    {
+      "service": "s3-backups-db.app",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "bucket": "cloud-backups-db"
+    },
+    {
+      "service": "s3-backups-media.app",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "bucket": "cloud-backups-media"
+    },
+    {
+      "service": "s3-backups-nonbin.app",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "bucket": "cloud-backups-non-binaries"
+    },
+    {
+      "service": "s3-photos.app",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "s3_host": "axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+      "bucket": "my-photos"
     }
   ],
   "auth_upstreams": {

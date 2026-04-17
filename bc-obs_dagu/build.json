@@ -24,7 +24,8 @@
     ],
     "clean_dirs": [
       "dags"
-    ]
+    ],
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

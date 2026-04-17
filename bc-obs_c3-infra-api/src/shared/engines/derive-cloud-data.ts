@@ -108,13 +108,18 @@ function deriveDatabases(c: any): DerivedFile {
   const vms = c.vms as Record<string, any>;
   const vmIdToAlias = buildVmIdToAlias(vms);
 
-  // ── DB type detection ──────────────────────────────────────────────────
+  // ── Data store type detection ────────────────────────────────────────────
   const DB_IMAGE_RE: [RegExp, string][] = [
     [/^(postgres|ghcr\.io\/.*postgres)/i, "postgres"],
     [/^(mariadb|mysql)/i, "mariadb"],
     [/^(redis|valkey)/i, "redis"],
     [/^(surrealdb|ghcr\.io\/.*surrealdb)/i, "surrealdb"],
     [/^(mongo)/i, "mongo"],
+    [/^(minio|ghcr\.io\/.*minio)/i, "s3"],
+    [/grafana\/loki/i, "loki"],
+    [/grafana\/mimir/i, "mimir"],
+    [/grafana\/tempo/i, "tempo"],
+    [/grafana\/grafana/i, "grafana"],
   ];
 
   function inferDbType(ct: any): string | null {
@@ -127,7 +132,7 @@ function deriveDatabases(c: any): DerivedFile {
     return null;
   }
 
-  function isDbContainer(ct: any): boolean {
+  function isDataStore(ct: any): boolean {
     return !!(ct.db_user || ct.db_name || ct.db_path || ct.dump_cmd || inferDbType(ct));
   }
 
@@ -135,7 +140,10 @@ function deriveDatabases(c: any): DerivedFile {
   const databases: any[] = [];
   const byType: Record<string, any[]> = {};
   const byVm: Record<string, { wg_ip: string; user: string; databases: any[] }> = {};
-  const summary = { postgres: 0, mariadb: 0, redis: 0, sqlite: 0, surrealdb: 0, custom: 0, mongo: 0 };
+  const summary: Record<string, number> = {
+    postgres: 0, mariadb: 0, redis: 0, sqlite: 0, surrealdb: 0,
+    custom: 0, mongo: 0, s3: 0, loki: 0, mimir: 0, tempo: 0, grafana: 0,
+  };
 
   for (const [svcName, svc] of Object.entries(services) as [string, any][]) {
     const vmAlias = vmIdToAlias[svc.vm] ?? svc.vm;
@@ -145,7 +153,7 @@ function deriveDatabases(c: any): DerivedFile {
     if (!svc.containers) continue;
 
     for (const [ctKey, ct] of Object.entries(svc.containers) as [string, any][]) {
-      if (!isDbContainer(ct)) continue;
+      if (!isDataStore(ct)) continue;
 
       const type = inferDbType(ct) ?? "custom";
       const port = ct.port ?? svc.declared_ports?.[ctKey] ?? null;
@@ -180,6 +188,8 @@ function deriveDatabases(c: any): DerivedFile {
         entry.connection = `mysql://${ct.db_user}@${vm.wg_ip}:${port}/${ct.db_name}`;
       } else if (type === "redis" && vm?.wg_ip && port) {
         entry.connection = `redis://${vm.wg_ip}:${port}`;
+      } else if (type === "s3" && vm?.wg_ip && port) {
+        entry.connection = `http://${vm.wg_ip}:${port}`;
       }
 
       databases.push(entry);
@@ -189,7 +199,7 @@ function deriveDatabases(c: any): DerivedFile {
       byType[type].push(entry);
 
       // Count
-      if (type in summary) (summary as any)[type]++;
+      summary[type] = (summary[type] ?? 0) + 1;
 
       // Group by VM
       if (!byVm[vmAlias]) {
@@ -280,6 +290,13 @@ function deriveDnsServices(c: any): DerivedFile {
     }
   }
 
+  // S3 storage buckets with dns field → resolve via Caddy like any other .app name
+  for (const bucket of (c.storage ?? []) as any[]) {
+    if (!bucket.dns) continue;
+    const key = bucket.dns.endsWith(".app") ? bucket.dns.slice(0, -4) : bucket.dns;
+    svcEntries[key] = { ip: caddyIp, desc: `S3 bucket: ${bucket.name}` };
+  }
+
   // Build VMs map: last octet → ssh_alias
   const vmMap: Record<string, string> = {};
   for (const vm of Object.values(vms)) {
@@ -331,6 +348,9 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     993: "IMAPS -- TLS passthrough to maddy",
     465: "SMTPS -- TLS passthrough to maddy",
     587: "SMTP Submission -- TLS passthrough to maddy",
+    2993: "IMAPS -- TLS passthrough to stalwart",
+    2465: "SMTPS -- TLS passthrough to stalwart",
+    2587: "SMTP Submission -- TLS passthrough to stalwart",
   };
   // Find oci-mail's WG IP for upstream (Caddy L4 runs inside WG mesh)
   let ociMailIp = "";
@@ -536,6 +556,19 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     } catch { /* skip VMs without HM build.json */ }
   }
 
+  // ── S3 bucket routes: external HTTPS proxy via .app short names ──
+  const s3Routes: any[] = [];
+  for (const bucket of (c.storage ?? []) as any[]) {
+    if (!bucket.dns || !bucket.s3_endpoint) continue;
+    const s3Host = new URL(bucket.s3_endpoint).host;
+    s3Routes.push({
+      service: bucket.dns,
+      s3_endpoint: bucket.s3_endpoint,
+      s3_host: s3Host,
+      bucket: bucket.name,
+    });
+  }
+
   // ── Auth upstreams: Caddy forward_auth targets (from cloud-data, not hardcoded) ──
   const authUpstreams: Record<string, string> = {};
   const authSvc = services["authelia"];
@@ -559,6 +592,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       mcp_routes: mcpRoutes,
       special,
       internal_routes: internalRoutes,
+      s3_routes: s3Routes,
       auth_upstreams: authUpstreams,
     },
   };

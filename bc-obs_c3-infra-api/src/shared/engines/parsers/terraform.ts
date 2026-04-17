@@ -27,6 +27,10 @@ export interface StorageBucket {
   provider: string;
   name: string;
   tier: string;
+  dns?: string;
+  namespace?: string;
+  region?: string;
+  s3_endpoint?: string;
 }
 
 export interface VPSProvider {
@@ -419,8 +423,21 @@ export function parseTerraform(infraDir: string): TerraformData {
       }
     }
     if (tfJson.buckets) {
+      const ns = tfJson.os_namespace as string | undefined;
+      const region = tfJson.provider?.region as string | undefined;
+      const s3Base = ns && region
+        ? `https://${ns}.compat.objectstorage.${region}.oraclecloud.com`
+        : undefined;
       for (const b of tfJson.buckets as any[]) {
-        storage.push({ provider: providerName, name: b.name, tier: b.storage_tier || b.access_type || "Standard" });
+        storage.push({
+          provider: providerName,
+          name: b.name,
+          tier: b.storage_tier || b.access_type || "Standard",
+          dns: b.dns,
+          namespace: ns,
+          region,
+          s3_endpoint: s3Base,
+        });
       }
     }
 

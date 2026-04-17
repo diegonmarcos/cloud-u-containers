@@ -76,6 +76,6 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "vaultwarden",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   }
 }

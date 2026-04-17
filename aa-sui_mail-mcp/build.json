@@ -21,7 +21,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mail-mcp"
+    "remote_path": "/opt/containers/mail-mcp",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {

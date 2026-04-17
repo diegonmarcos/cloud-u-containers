@@ -8,7 +8,8 @@
   "category": "sec",
   "deploy": {
     "host": "gcp-proxy",
-    "remote_path": "/opt/containers/introspect-proxy"
+    "remote_path": "/opt/containers/introspect-proxy",
+    "compose_flags": "--build"
   },
   "compose": {
     "custom": true

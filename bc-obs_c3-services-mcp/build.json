@@ -24,7 +24,8 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/c3-services-mcp"
+    "remote_path": "/opt/containers/c3-services-mcp",
+    "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
