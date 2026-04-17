@@ -87,7 +87,10 @@
     }
   },
   "ports": {
-    "app": 443
+    "app": 443,
+    "http": 80,
+    "https": 443,
+    "admin": 2019
   },
   "containers": {
     "app": {

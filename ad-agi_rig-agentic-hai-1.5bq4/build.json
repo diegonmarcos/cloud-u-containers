@@ -4,6 +4,16 @@
   "description": "Rig Agentic AI (HAI) \u2014 Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
   "category": "agi",
   "version": "0.2.0",
+  "ports": {
+    "app": 8091
+  },
+  "containers": {
+    "app": {
+      "container_name": "rig-agentic-hai",
+      "port": 8091,
+      "port_env": "RIG_PORT"
+    }
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "rig-agentic-hai",

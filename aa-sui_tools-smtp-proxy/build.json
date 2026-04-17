@@ -41,6 +41,7 @@
     "app": {
       "container_name": "smtp-proxy",
       "port": 8080,
+      "port_env": "LISTEN_PORT",
       "dns": "smtp-proxy.app",
       "public": true,
       "proxy": {

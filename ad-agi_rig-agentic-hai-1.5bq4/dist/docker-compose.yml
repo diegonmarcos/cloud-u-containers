@@ -17,12 +17,13 @@ services:
     env_file:
       - .secrets
     environment:
+      - RIG_HOST=10.0.0.6
       - RIG_PORT=8091
       - OLLAMA_URL=http://localhost:11435
       - OLLAMA_API_BASE_URL=http://localhost:11435
       - OLLAMA_MODEL=qwen2.5:1.5b
-      - C3_MCP_URL=http://c3-services-mcp.app:3101
-      - MATTERMOST_URL=http://mattermost.app:8065
+      - C3_MCP_URL=http://c3-services-mcp.app
+      - MATTERMOST_URL=http://mattermost.app
       - GUARDRAIL_MAX_TURNS=5
       - GUARDRAIL_DENIED_TOOLS=
       - GUARDRAIL_ALLOWED_TOOLS=mm_post,mm_reply,mm_read,mm_channels,mail_send,mail_reply,ntfy_publish,services_list,services_info,c3_topology,c3_configs,c3_deps,c3_topology_md,c3_configs_md,c3_deps_front,cloud_context,knowledge_vm_info,knowledge_services_by_category,octocode_search,octocode_memory,dagu_trigger,dagu_list,gha_trigger,gha_list_runs

@@ -8,6 +8,8 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     config = {
       db_container = "photos-db";
       db_image = "postgres:16-alpine";
@@ -72,7 +74,7 @@
             S3_SECRET_KEY = "\${S3_SECRET_KEY}";
             S3_REGION = "eu-marseille-1";
             S3_BUCKET = "photos";
-            WEBHOOK_PORT = "\"5002\"";
+            WEBHOOK_PORT = "\"${toString (ports.valueOf "app")}\"";
           };
           depends_on = { photos-db = { condition = "service_healthy"; }; };
           volumes = [
@@ -81,7 +83,7 @@
           ];
           command = "python webhook.py flask";
           healthcheck = {
-            test = ''["CMD", "curl", "-f", "http://localhost:5002/health"]'';
+            test = ''["CMD", "curl", "-f", "http://localhost:${toString (ports.valueOf "app")}/health"]'';
             interval = "10s";
             timeout = "5s";
             retries = 5;

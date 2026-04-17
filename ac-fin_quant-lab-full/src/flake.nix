@@ -18,8 +18,8 @@
       engine_image = "ghcr.io/diegonmarcos/quant-full-engine:latest";
       db_image = "ghcr.io/diegonmarcos/quant-full-db:latest";
       jupyter_port = ports.valueOf "research";
-      dash_port = 8050;
-      engine_port = 5000;
+      dash_port = ports.valueOf "dash";
+      engine_port = ports.valueOf "engine";
       db_port = ports.valueOf "db";
     };
 

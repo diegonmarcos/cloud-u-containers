@@ -7,11 +7,12 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
 
     config = {
       container_name = "rig-agentic-hai";
-      port = 8091;
+      port = ports.valueOf "app";
       ollama_url = "http://localhost:11435";
       ollama_model = "qwen2.5:1.5b";
       c3_mcp_url = "http://c3-services-mcp.app";
