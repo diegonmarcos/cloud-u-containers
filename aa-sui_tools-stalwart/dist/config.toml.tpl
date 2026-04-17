@@ -7,7 +7,7 @@
 
 # ── Server ──────────────────────────────────────────────────────
 [server]
-hostname = "@@MAIL_DOMAIN@@"
+hostname = "mail-stalwart.diegonmarcos.com"
 max-connections = 512
 
 # ── Listeners (offset ports — parallel with Maddy) ─────────────
@@ -34,7 +34,7 @@ bind = ["0.0.0.0:6190"]
 protocol = "managesieve"
 
 [server.listener."https"]
-bind = ["0.0.0.0:@@PORT@@"]
+bind = ["0.0.0.0:2443"]
 protocol = "http"
 tls.implicit = true
 
@@ -74,29 +74,29 @@ store = "rocksdb"
 # ── Directory (static accounts — bootstraps users from config) ───────
 [directory."static"]
 type = "memory"
-domains = ["@@DOMAIN@@"]
+domains = ["diegonmarcos.com"]
 
 [[directory."static".principals]]
 class = "admin"
-name = "admin@@@DOMAIN@@"
+name = "admin@diegonmarcos.com"
 secret = "${ADMIN_PASSWORD}"
-email = ["admin@@@DOMAIN@@", "postmaster@@@DOMAIN@@"]
+email = ["admin@diegonmarcos.com", "postmaster@diegonmarcos.com"]
 
 [[directory."static".principals]]
 class = "individual"
-name = "me@@@DOMAIN@@"
+name = "me@diegonmarcos.com"
 secret = "${ME_PASSWORD}"
-email = ["me@@@DOMAIN@@"]
+email = ["me@diegonmarcos.com"]
 
 [[directory."static".principals]]
 class = "individual"
-name = "no-reply@@@DOMAIN@@"
+name = "no-reply@diegonmarcos.com"
 secret = "${NOREPLY_PASSWORD}"
-email = ["no-reply@@@DOMAIN@@", "noreply@@@DOMAIN@@"]
+email = ["no-reply@diegonmarcos.com", "noreply@diegonmarcos.com"]
 
 # ── Authentication ──────────────────────────────────────────────
 [authentication]
-fallback-admin.user = "admin@@@DOMAIN@@"
+fallback-admin.user = "admin@diegonmarcos.com"
 fallback-admin.secret = "${ADMIN_PASSWORD}"
 
 [session.auth]
@@ -110,8 +110,8 @@ require = [{if = "local_port != 2025", then = true}, {else = false}]
 
 # ── DKIM signing ────────────────────────────────────────────────
 [signature."dkim"]
-private-key = "%{file:/opt/stalwart-mail/dkim/@@DOMAIN@@.dkim.key}%"
-domain = "@@DOMAIN@@"
+private-key = "%{file:/opt/stalwart-mail/dkim/diegonmarcos.com.dkim.key}%"
+domain = "diegonmarcos.com"
 selector = "dkim"
 headers = ["From", "To", "Date", "Subject", "Message-ID"]
 algorithm = "rsa-sha256"
@@ -131,7 +131,7 @@ is-spam = "X-Spam-Status: Yes"
 
 # ── Message limits ──────────────────────────────────────────────
 [session.data.limits]
-size = @@MESSAGE_SIZE_LIMIT@@
+size = 52428800
 
 # ── Logging ─────────────────────────────────────────────────────
 [tracing."stdout"]
