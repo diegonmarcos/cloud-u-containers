@@ -15,7 +15,7 @@ curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
   -d '{"type":"domain","name":"diegonmarcos.com"}' 2>/dev/null || true
 
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$PW"'"],"emails":["me@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
+  -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$PW"'"],"emails":["me@diegonmarcos.com"],"roles":["admin"]}' 2>/dev/null || true
 
 NR_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "noreply")
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \

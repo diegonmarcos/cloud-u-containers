@@ -74,7 +74,7 @@
   "containers": {
     "app": {
       "container_name": "stalwart",
-      "image": "stalwartlabs/stalwart:v0.13",
+      "image": "stalwartlabs/stalwart:latest",
       "port": 2443,
       "port_env": null,
       "dns": "stalwart.app",
