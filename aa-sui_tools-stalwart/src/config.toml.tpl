@@ -62,6 +62,10 @@ private-key = "%{file:/opt/stalwart-mail/tls/privkey.pem}%"
 user = "admin"
 secret = "@@ADMIN_HASH@@"
 
+# ── Inbound SMTP (port 2025): no auth required (shadow delivery from smtp-proxy) ──
+[session.auth]
+require = [{if = "local_port != 2025", then = true}, {else = false}]
+
 [tracer.log]
 type = "stdout"
 level = "info"
