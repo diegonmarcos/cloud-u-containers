@@ -4,7 +4,7 @@
     "generated_by": "derive-cloud-data.ts",
     "api_route": "GET /c3-api/cloud-data/configs",
     "source": "_cloud-data-consolidated.json",
-    "generated_at": "2026-04-17T17:14:51.484Z"
+    "generated_at": "2026-04-17T18:07:38.162Z"
   },
   "services": [
     {
@@ -33,7 +33,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "backup-borg"
+        "borg-server"
       ]
     },
     {
@@ -45,7 +45,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "backup-bup"
+        "bup-server"
       ]
     },
     {
@@ -579,7 +579,6 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "photos-db",
         "photos-webhook"
       ]
     },
@@ -663,7 +662,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "rig-agentic-hai-1.5bq4"
+        "rig-agentic-hai"
       ]
     },
     {
@@ -834,7 +833,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "backup-borg"
+        "borg-server"
       ]
     },
     {
@@ -846,7 +845,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "backup-bup"
+        "bup-server"
       ]
     },
     {
@@ -1434,7 +1433,6 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "photos-db",
         "photos-webhook"
       ]
     },
@@ -1506,7 +1504,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "rig-agentic-hai-1.5bq4"
+        "rig-agentic-hai"
       ]
     },
     {
