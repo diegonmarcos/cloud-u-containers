@@ -15,7 +15,7 @@
   },
   "compose": {
     "custom": true,
-    "pre_hook": "init.sh"
+    "post_hook": "activate.sh"
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",

@@ -10,5 +10,9 @@
     "host": "oci-apps-2",
     "remote_path": "/opt/containers/ollama-arm",
     "compose_flags": "--build"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "ollama-arm"
   }
 }

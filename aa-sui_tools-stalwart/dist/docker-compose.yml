@@ -12,9 +12,7 @@ services:
       context: .
       dockerfile_inline: |
         FROM stalwartlabs/stalwart:v0.13
-        COPY config.toml.tpl /opt/stalwart-mail/etc/config.toml.tpl
-        COPY init.sh /opt/stalwart-mail/init.sh
-        RUN apt-get update && apt-get install -y --no-install-recommends gettext-base curl && rm -rf /var/lib/apt/lists/*
+        COPY config.toml /opt/stalwart-mail/etc/config.toml
         COPY docker-compose.yml /opt/cloud-docs/docker-compose.yml
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
         LABEL org.opencontainers.image.description="stalwart"
@@ -23,7 +21,7 @@ services:
         LABEL cloud.diegonmarcos.registry="ghcr.io/diegonmarcos"
     container_name: stalwart
     network_mode: host
-    entrypoint: ["sh", "/opt/stalwart-mail/init.sh"]
+    entrypoint: ["stalwart", "--config", "/opt/stalwart-mail/etc/config.toml"]
     restart: no
     stop_grace_period: 30s
     ulimits:
@@ -33,15 +31,12 @@ services:
     dns:
       - 10.0.0.1
       - 1.1.1.1
-    env_file:
-      - .secrets
     environment:
       - TZ=Europe/Madrid
     volumes:
       - stalwart_data:/opt/stalwart-mail/data
       - /opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro
-      - ./config.toml.tpl:/opt/stalwart-mail/etc/config.toml.tpl:ro
-      - ./init.sh:/opt/stalwart-mail/init.sh:ro
+      - ./config.toml:/opt/stalwart-mail/etc/config.toml:ro
     deploy:
       resources:
         limits:
