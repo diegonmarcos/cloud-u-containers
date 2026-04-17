@@ -375,6 +375,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
   for (const [, svc] of Object.entries(services)) {
     const proxy = svc.proxy?.primary;
     if (!proxy?.domain || proxy.type === "path" || proxy.type === "special" || proxy.streaming || proxy.base_path) continue;
+    if (!svc.upstream) continue; // Skip services with no HTTP upstream (e.g. Maddy — SMTP/IMAP only, no web UI)
     const route: any = {
       domain: proxy.domain,
       ...(svc.upstream ? { upstream: svc.upstream } : {}),
@@ -569,6 +570,11 @@ function deriveCaddyRoutes(c: any): DerivedFile {
     });
   }
 
+  // ── Redirects: domain → target (permanent redirect, no upstream needed) ──
+  const redirects: any[] = [
+    { domain: "mail.diegonmarcos.com", target: "https://webmail.diegonmarcos.com{uri}", comment: "mail → webmail redirect" },
+  ];
+
   // ── Auth upstreams: Caddy forward_auth targets (from cloud-data, not hardcoded) ──
   const authUpstreams: Record<string, string> = {};
   const authSvc = services["authelia"];
@@ -586,6 +592,7 @@ function deriveCaddyRoutes(c: any): DerivedFile {
       _generated: now(),
       _source: "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
       l4_routes: l4Routes,
+      redirects,
       routes: dedupedRoutes,
       path_routes: filteredPathRoutes,
       github_pages_proxies: githubPagesProxies,

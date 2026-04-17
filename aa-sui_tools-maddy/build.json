@@ -62,14 +62,10 @@
     "app": {
       "container_name": "maddy",
       "image": "ghcr.io/diegonmarcos/maddy:latest",
-      "port": 443,
+      "port": null,
       "dns": "maddy.app",
-      "public": true,
-      "proxy": {
-        "domain": "mail.diegonmarcos.com",
-        "auth": "two_factor",
-        "tls_skip_verify": true
-      },
+      "public": false,
+      "proxy": null,
       "healthcheck": null,
       "volumes": [
         "maddy_data:/data",
