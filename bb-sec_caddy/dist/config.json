@@ -309,6 +309,11 @@
           "port": 2587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 \u2192 stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 \u2192 stalwart on oci-mail)"
         }
       ],
       "gha": {

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-17T18:07:37.657Z",
+    "generated_at": "2026-04-17T19:09:52.952Z",
     "generated_by": "gen-cloud-data.ts"
   },
   "owner": {
@@ -395,6 +395,11 @@
           "port": 2587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
         }
       ],
       "gha": {
@@ -2382,7 +2387,7 @@
       "containers": {
         "app": {
           "container_name": "stalwart",
-          "image": "stalwartlabs/stalwart:v0.13",
+          "image": "stalwartlabs/stalwart:latest",
           "port": 2443,
           "port_env": null,
           "dns": "stalwart.app",
@@ -6152,6 +6157,11 @@
           "port": 2587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
         }
       ]
     },
@@ -6659,13 +6669,6 @@
           "public_paths": []
         },
         {
-          "domain": "mail.diegonmarcos.com",
-          "upstream": "10.0.0.3:443",
-          "auth": "none",
-          "tls_skip": true,
-          "public_paths": []
-        },
-        {
           "domain": "smtp.diegonmarcos.com",
           "upstream": "10.0.0.3:8080",
           "auth": "none",
@@ -6831,6 +6834,13 @@
         {
           "domain": "mcp.diegonmarcos.com",
           "upstream": "10.0.0.6:3104",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "mail.diegonmarcos.com",
+          "upstream": "static",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -7406,6 +7416,11 @@
             "port": 2587,
             "proto": "tcp",
             "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+          },
+          {
+            "port": 2443,
+            "proto": "tcp",
+            "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
           }
         ],
         "idle_shutdown": null,
