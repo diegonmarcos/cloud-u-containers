@@ -1,6 +1,6 @@
 {
   "name": "c3-infra-mcp",
-  "description": "C3 MCP Server \u2014 Cloud Control Center MCP transport (stdio + HTTP)",
+  "description": "C3 MCP Server — Cloud Control Center MCP transport (stdio + HTTP)",
   "dns": "c3-infra-mcp.app",
   "ports": {
     "app": 3100
@@ -63,7 +63,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

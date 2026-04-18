@@ -14,7 +14,8 @@
   "containers": {
     "app": {
       "container_name": "borg-server",
-      "port": 2224
+      "port": 2224,
+      "protocol": "http"
     }
   },
   "docker": {

@@ -33,7 +33,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "tcp"
     }
   },
   "backup": {

@@ -29,7 +29,8 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "engine": {
       "container_name": "quant_light_engine",
@@ -49,7 +50,8 @@
         "research"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "db": {
       "container_name": "quant_light_db",
@@ -68,7 +70,8 @@
       "resources": null,
       "read_only": false,
       "db_user": "quant_user",
-      "db_name": "quantlab"
+      "db_name": "quantlab",
+      "protocol": "tcp"
     }
   },
   "backup": {

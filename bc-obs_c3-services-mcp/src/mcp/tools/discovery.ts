@@ -42,7 +42,7 @@ const INFRA_NO_API: Set<string> = new Set([
   "cloudflare", "cloudflare-worker", "redis", "postlite",
   "fluent-bit", "sauron-central", "sauron-forwarder", "sauron-lite",
   "syslog-forwarder", "alerts-api", "cloud-spec",
-  "backup-borg", "backup-bup", "backup-gitea",
+  "backup-borg", "backup-bup",
   "photos-webhook", "orchestrator", "kg-graph",
   "code-server",       // no programmatic API
   "stalwart",          // stale — replaced by maddy

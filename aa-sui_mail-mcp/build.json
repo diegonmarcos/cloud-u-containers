@@ -1,6 +1,6 @@
 {
   "name": "mail-mcp",
-  "description": "Mail MCP server \u2014 IMAP/SMTP/Admin via Stalwart REST API",
+  "description": "Mail MCP server — IMAP/SMTP/Admin via Stalwart REST API",
   "dns": "mail-mcp.app",
   "category": "app",
   "build": {
@@ -56,7 +56,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

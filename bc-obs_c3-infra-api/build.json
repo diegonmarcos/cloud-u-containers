@@ -1,6 +1,6 @@
 {
   "name": "c3-infra-api",
-  "description": "C3 REST API \u2014 Cloud Control Center Fastify API",
+  "description": "C3 REST API — Cloud Control Center Fastify API",
   "dns": "c3-infra-api.app",
   "ports": {
     "app": 8081
@@ -82,7 +82,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

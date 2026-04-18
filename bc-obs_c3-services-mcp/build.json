@@ -1,6 +1,6 @@
 {
   "name": "c3-services-mcp",
-  "description": "C3 Services MCP Server \u2014 service API gateway MCP transport (stdio + HTTP)",
+  "description": "C3 Services MCP Server — service API gateway MCP transport (stdio + HTTP)",
   "dns": "c3-services-mcp.app",
   "ports": {
     "app": 3101
@@ -56,7 +56,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

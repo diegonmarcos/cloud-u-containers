@@ -23,7 +23,8 @@
       "container_name": "ollama-arm",
       "port": 11434,
       "port_env": "OLLAMA_HOST",
-      "port_format": "host"
+      "port_format": "host",
+      "protocol": "http"
     }
   }
 }

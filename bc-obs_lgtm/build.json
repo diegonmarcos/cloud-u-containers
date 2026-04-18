@@ -58,7 +58,8 @@
         "loki"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "loki": {
       "container_name": "lgtm_loki",
@@ -74,7 +75,8 @@
       ],
       "env_file": false,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "tempo": {
       "container_name": "lgtm_tempo",
@@ -90,7 +92,8 @@
       ],
       "env_file": false,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "mimir": {
       "container_name": "lgtm_mimir",
@@ -106,7 +109,8 @@
       ],
       "env_file": false,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   },
   "docker": {

@@ -86,17 +86,21 @@
       }
     }
   },
-  "ports": {
-    "app": 443,
-    "http": 80,
-    "https": 443,
-    "admin": 2019
-  },
   "containers": {
     "app": {
       "container_name": "caddy",
       "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
       "port": 443,
+      "extra_ports": [
+        {
+          "port": 80,
+          "protocol": "http"
+        },
+        {
+          "port": 2019,
+          "protocol": "http"
+        }
+      ],
       "port_env": null,
       "dns": "caddy.app",
       "public": true,
@@ -121,26 +125,8 @@
         "introspect-proxy"
       ],
       "resources": null,
-      "read_only": false
-    },
-    "introspect-proxy": {
-      "container_name": "introspect-proxy",
-      "image": "introspect-proxy:latest",
-      "port": 4182,
-      "port_env": null,
-      "dns": null,
-      "public": false,
-      "proxy": null,
-      "healthcheck": "/health",
-      "monitoring": null,
-      "volumes": [],
-      "env_file": false,
-      "depends_on": [],
-      "resources": {
-        "mem_limit": "96M",
-        "mem_reservation": "48M"
-      },
-      "read_only": false
+      "read_only": false,
+      "protocol": "https"
     }
   },
   "docker": {

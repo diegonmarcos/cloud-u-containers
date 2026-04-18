@@ -33,7 +33,8 @@
     "app": {
       "container_name": "photos-webhook",
       "port": 5002,
-      "port_env": "WEBHOOK_PORT"
+      "port_env": "WEBHOOK_PORT",
+      "protocol": "http"
     }
   }
 }

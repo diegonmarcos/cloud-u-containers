@@ -74,7 +74,8 @@
       "resources": {
         "mem_limit": "256m"
       },
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

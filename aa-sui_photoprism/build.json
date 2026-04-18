@@ -63,7 +63,8 @@
         "rclone"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "db": {
       "container_name": "photoprism_mariadb",

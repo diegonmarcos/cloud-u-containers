@@ -85,7 +85,8 @@
           "memory": "128M"
         }
       },
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "db": {
       "container_name": "umami-db",
@@ -109,7 +110,8 @@
       },
       "read_only": false,
       "db_user": "umami",
-      "db_name": "umami"
+      "db_name": "umami",
+      "protocol": "tcp"
     },
     "setup": {
       "container_name": "umami-setup",

@@ -23,17 +23,20 @@
         {
           "port": 993,
           "upstream": "130.110.251.193:993",
-          "comment": "IMAPS"
+          "comment": "IMAPS",
+          "protocol": "tls"
         },
         {
           "port": 465,
           "upstream": "130.110.251.193:465",
-          "comment": "SMTPS"
+          "comment": "SMTPS",
+          "protocol": "tls"
         },
         {
           "port": 587,
           "upstream": "130.110.251.193:587",
-          "comment": "SMTP Submission"
+          "comment": "SMTP Submission",
+          "protocol": "starttls"
         }
       ]
     },

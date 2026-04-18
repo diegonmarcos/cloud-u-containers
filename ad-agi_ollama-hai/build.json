@@ -34,7 +34,8 @@
         }
       },
       "read_only": false,
-      "port_format": "host"
+      "port_format": "host",
+      "protocol": "http"
     }
   },
   "docker": {
