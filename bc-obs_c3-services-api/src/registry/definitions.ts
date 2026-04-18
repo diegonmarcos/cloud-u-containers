@@ -34,13 +34,6 @@ const API_META: Record<string, ApiCapability & { displayName?: string }> = {
     endpointCount: 0,
     description: "Mattermost REST API v4 — channels, posts, users, teams",
   },
-  windmill: {
-    displayName: "Windmill",
-    type: "openapi",
-    specPath: "/api/openapi.json",
-    endpointCount: 0,
-    description: "Windmill REST API — scripts, flows, schedules, resources",
-  },
   vaultwarden: {
     displayName: "Vaultwarden",
     type: "openapi",

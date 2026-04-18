@@ -28,7 +28,6 @@
   { "domain": "nexus.diegonmarcos.com",               "name": "Nexus",            "vm": "GitHub Pages",         "port": "\u2014",              "auth": "Public",            "avail": "24/7" },
   { "domain": "suite.diegonmarcos.com",               "name": "Suite Apps",       "vm": "GitHub Pages",         "port": "\u2014",              "auth": "Public",            "avail": "24/7" },
   { "domain": "maps.diegonmarcos.com",                "name": "Maps",             "vm": "GitHub Pages",         "port": "\u2014",              "auth": "Public",            "avail": "24/7" },
-  { "domain": "app.diegonmarcos.com/windmill/",       "name": "Windmill",         "vm": "oci-analytics",        "port": "8000",            "auth": "Authelia + Bearer", "avail": "24/7" },
   { "domain": "app.diegonmarcos.com/etherpad/",       "name": "Etherpad",         "vm": "oci-apps",           "port": "3012",            "auth": "Authelia + Bearer", "avail": "Wake" },
   { "domain": "app.diegonmarcos.com/filebrowser/",    "name": "FileBrowser",      "vm": "oci-apps",           "port": "3015",            "auth": "Authelia + Bearer", "avail": "Wake" },
   { "domain": "app.diegonmarcos.com/hedgedoc/",       "name": "HedgeDoc",         "vm": "oci-apps",           "port": "3018",            "auth": "Authelia + Bearer", "avail": "Wake" },

@@ -459,7 +459,6 @@ const HEALTH_PATHS: Record<string, string> = {
   syncthing: "/rest/noauth/health",
   photoprism: "/api/v1/status",
   nocodb: "/api/v1/health",
-  windmill: "/api/version",
 };
 
 // Service domains — data-driven from cloud-data topology (same as discovery.ts)

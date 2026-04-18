@@ -25,7 +25,7 @@ services:
     container_name: umami
     restart: "no"  # container-init handles startup
     ports:
-      - "10.0.0.4:3006:3006"
+      - "10.0.0.6:3006:3006"
     env_file:
       - .secrets
     environment:

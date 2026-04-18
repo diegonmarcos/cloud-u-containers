@@ -31,4 +31,4 @@ jobs:
           sops_age_key: ${{ secrets.SOPS_AGE_KEY }}
 
       - name: Health check
-        run: .github/workflows/scripts/cloud-health-check-vm.sh oci-analytics 8080 windmill-worker,alerts-api
+        run: .github/workflows/scripts/cloud-health-check-vm.sh oci-analytics 8080 alerts-api

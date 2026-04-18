@@ -1,8 +1,8 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-17T19:09:52.952Z",
-    "generated_by": "gen-cloud-data.ts"
+    "generated_at": "2026-04-18T10:42:53.611Z",
+    "generated_by": "cloud-data-config-consolidated.ts"
   },
   "owner": {
     "name": "Diego Marcos",
@@ -162,11 +162,9 @@
         "dagu",
         "dozzle",
         "fluent-bit",
-        "matomo",
-        "sauron-forwarder",
-        "umami"
+        "sauron-forwarder"
       ],
-      "container_count": 8
+      "container_count": 4
     },
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
@@ -267,8 +265,10 @@
         "cloud-spec",
         "dbgate",
         "lgtm",
+        "matomo",
         "news-gdelt",
         "ntfy",
+        "umami",
         "windmill",
         "cloud-builder-x",
         "backup-borg",
@@ -277,7 +277,7 @@
         "gitea",
         "kg-graph"
       ],
-      "container_count": 52
+      "container_count": 56
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
@@ -722,11 +722,12 @@
         },
         "devDependencies": {
           "@types/better-sqlite3": "^7.6.13",
+          "@types/mailparser": "^3.4.6",
           "@types/node": "^22.10.0",
-          "@types/nodemailer": "^6.4.0",
+          "@types/nodemailer": "^6.4.23",
           "@types/nunjucks": "^3.2.6",
           "tsx": "^4.19.0",
-          "typescript": "^5.7.0"
+          "typescript": "^5.9.3"
         }
       },
       "per_service": [
@@ -743,9 +744,10 @@
             "zod": "^3.25.0"
           },
           "devDependencies": {
+            "@types/mailparser": "^3.4.6",
             "@types/node": "^22.0.0",
-            "@types/nodemailer": "^6.4.0",
-            "typescript": "^5.7.0"
+            "@types/nodemailer": "^6.4.23",
+            "typescript": "^5.9.3"
           }
         },
         {
@@ -1556,7 +1558,11 @@
         "STALWART_ADMIN_URL",
         "STALWART_ADMIN_USER",
         "STALWART_ADMIN_PASSWORD",
-        "RESEND_API_KEY"
+        "RESEND_API_KEY",
+        "MADDY_ME_USER",
+        "MADDY_ME_PASSWORD",
+        "STALWART_ME_USER",
+        "STALWART_ME_PASSWORD"
       ]
     },
     "mattermost-bots": {
@@ -2243,7 +2249,8 @@
       ],
       "compose": {
         "containers": [
-          "maddy"
+          "maddy",
+          "maddy-sorter"
         ],
         "ports": [],
         "networks": []
@@ -4392,17 +4399,7 @@
         "healthcheck_paths": [
           "/"
         ]
-      },
-      "secret_env_vars": [
-        "DAGU_USERNAME",
-        "DAGU_PASSWORD",
-        "AUTHELIA_OIDC_DAGU_SECRET",
-        "OCI_S3_SECRET_KEY",
-        "RUSTIC_PASSWORD",
-        "BORG_PASSPHRASE",
-        "NOREPLY_PASSWORD",
-        "GITHUB_TOKEN"
-      ]
+      }
     },
     "dbgate": {
       "category": "tools",
@@ -4771,14 +4768,14 @@
     },
     "matomo": {
       "category": "tools",
-      "vm": "oci-E2-f_1",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_matomo",
       "description": "Matomo hybrid analytics (oci-analytics)",
       "enabled": true,
       "domain": "analytics.diegonmarcos.com",
       "port": 8084,
       "dns": "matomo.app",
-      "upstream": "10.0.0.4:8084",
+      "upstream": "10.0.0.6:8084",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
@@ -5152,14 +5149,14 @@
     },
     "umami": {
       "category": "tools",
-      "vm": "oci-E2-f_1",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_umami",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "enabled": true,
       "domain": "analytics.diegonmarcos.com",
       "port": 3006,
       "dns": "umami.app",
-      "upstream": "10.0.0.4:3006",
+      "upstream": "10.0.0.6:3006",
       "containers": {
         "app": {
           "container_name": "umami",
@@ -5184,10 +5181,10 @@
           ],
           "resources": {
             "limits": {
-              "memory": "128M"
+              "memory": "512M"
             },
             "reservations": {
-              "memory": "32M"
+              "memory": "128M"
             }
           },
           "read_only": false
@@ -5206,10 +5203,10 @@
           "env_file": false,
           "resources": {
             "limits": {
-              "memory": "128M"
+              "memory": "256M"
             },
             "reservations": {
-              "memory": "32M"
+              "memory": "64M"
             }
           },
           "read_only": false,
@@ -5955,6 +5952,7 @@
         "path": "redis-cli ping"
       },
       "backup": {
+        "enabled": true,
         "databases": [
           {
             "type": "custom",
@@ -6545,7 +6543,7 @@
       {
         "name": "matomo.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "matomo"
       },
       {
@@ -6569,19 +6567,19 @@
       {
         "name": "umami.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
       },
       {
         "name": "umami-db.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
       },
       {
         "name": "umami-setup.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
       },
       {
@@ -7178,9 +7176,7 @@
           "dagu",
           "dozzle",
           "fluent-bit",
-          "matomo",
-          "sauron-forwarder",
-          "umami"
+          "sauron-forwarder"
         ],
         "method": "key",
         "gha": {
@@ -7285,8 +7281,10 @@
           "cloud-spec",
           "dbgate",
           "lgtm",
+          "matomo",
           "news-gdelt",
           "ntfy",
+          "umami",
           "windmill",
           "cloud-builder-x",
           "backup-borg",
@@ -7787,7 +7785,7 @@
       },
       "matomo": {
         "dir": "bc-obs_matomo",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "news-gdelt": {
@@ -7812,7 +7810,7 @@
       },
       "umami": {
         "dir": "bc-obs_umami",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "windmill": {

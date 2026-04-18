@@ -83,6 +83,10 @@
       "mcp.diegonmarcos.com": {
         "comment": "MCP -- Streamable HTTP endpoints for Claude Code MCP clients",
         "fallback_message": "MCP Hub -- use /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /mattermost-mcp/mcp, /mail-mcp/mcp, /g-workspace/mcp"
+      },
+      "mail.diegonmarcos.com": {
+        "landing_page": "mymail",
+        "comment": "Mail hub -- landing + /snappy + /maddy + /stalwart"
       }
     }
   },

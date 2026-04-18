@@ -80,7 +80,7 @@ const SYSTEM_PROMPT: &str = r#"You are an autonomous infrastructure agent managi
 ## VM aliases
 - gcp-proxy (35.226.147.64) — Caddy, Authelia, Vaultwarden, ntfy
 - oci-mail (130.110.251.193) — Mailu, Syncthing, Radicale
-- oci-analytics (129.151.228.66) — Matomo, Windmill
+- oci-analytics (129.151.228.66) — Matomo
 - oci-apps (82.70.229.129) — C3 API, Crawlee, this agent
 - oci-apps-1 (144.24.196.72) — PhotoPrism, NocoDB, Code Server, AFFiNE
 

@@ -148,8 +148,6 @@ run_backup() {
                 dump_postgres "$container" "etherpad" "etherpad" "etherpad" && ((ok++)) || ((fail++)) ;;
             hedgedoc_postgres)
                 dump_postgres "$container" "hedgedoc" "hedgedoc" "hedgedoc" && ((ok++)) || ((fail++)) ;;
-            windmill-db)
-                dump_postgres "$container" "windmill" "postgres" "windmill" && ((ok++)) || ((fail++)) ;;
 
             # MariaDB databases
             photoprism-db|photoprism_mariadb)

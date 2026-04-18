@@ -544,39 +544,6 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Windmill workflow orchestration (windmill.diegonmarcos.com)
-  windmill.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8000
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8000
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
   # Self-hosted Gitea for git backups and mirroring
   git.diegonmarcos.com {
 import security
@@ -803,26 +770,6 @@ forward_auth 10.0.0.1:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy 10.0.0.4:9999
-  }
-
-}
-
-handle_path /windmill/* {
-    @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8000
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8000
   }
 
 }
@@ -1156,7 +1103,7 @@ import request_limits
       path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
     }
     handle @tracking {
-      reverse_proxy 10.0.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
 
     # Umami Analytics (path-based, strip /umami prefix before proxying)
@@ -1165,7 +1112,7 @@ import request_limits
     }
     handle @umami_public {
       uri strip_prefix /umami
-      reverse_proxy 10.0.0.4:3006
+      reverse_proxy 10.0.0.6:3006
     }
     handle_path /umami/* {
       @umami_bearer header Authorization Bearer*
@@ -1175,14 +1122,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-        reverse_proxy 10.0.0.4:3006
+        reverse_proxy 10.0.0.6:3006
       }
       handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-        reverse_proxy 10.0.0.4:3006
+        reverse_proxy 10.0.0.6:3006
       }
     }
     @umami_root path /umami
@@ -1198,14 +1145,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.4:8084
+    reverse_proxy 10.0.0.6:8084
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.4:8084
+    reverse_proxy 10.0.0.6:8084
   }
 
 
@@ -1529,7 +1476,7 @@ grafana.app {
 matomo.app {
   bind 10.0.0.1
   tls internal
-  reverse_proxy 10.0.0.4:8084
+  reverse_proxy 10.0.0.6:8084
 }
 
 ntfy.app {
@@ -1541,13 +1488,7 @@ ntfy.app {
 umami.app {
   bind 10.0.0.1
   tls internal
-  reverse_proxy 10.0.0.4:3006
-}
-
-windmill-app.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8000
+  reverse_proxy 10.0.0.6:3006
 }
 
 backup-borg.app {
@@ -1584,36 +1525,6 @@ redis.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.1:6379
-}
-
-oci-mail.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:7680
-}
-
-oci-analytics.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:7680
-}
-
-oci-apps.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:7680
-}
-
-gcp-t4.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.8:7680
-}
-
-gcp-proxy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:7680
 }
 
 

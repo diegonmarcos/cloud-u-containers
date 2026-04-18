@@ -46,7 +46,6 @@
       { "name": "sync",     "ip": "10.0.0.3", "vm": "oci-mail",      "purpose": "Syncthing" },
       { "name": "cal",      "ip": "10.0.0.3", "vm": "oci-mail",      "purpose": "Radicale" },
       { "name": "matomo",   "ip": "10.0.0.4", "vm": "oci-analytics", "purpose": "Matomo Analytics" },
-      { "name": "windmill", "ip": "10.0.0.4", "vm": "oci-analytics", "purpose": "Windmill Workflows" },
       { "name": "*",        "ip": "10.0.0.1", "vm": "gcp-proxy",     "purpose": "Wildcard \u2192 Caddy" }
     ],
     "reverse": [

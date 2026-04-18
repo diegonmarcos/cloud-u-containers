@@ -389,7 +389,7 @@ Bearer?  Cookie?
 \u2502 ${wgMap['oci-apps']||''} \u2502 \u2502 ${wgMap['oci-mail']||''} \u2502 \u2502${wgMap['oci-analytics']||''}\u2502
 \u2502                   \u2502 \u2502         \u2502 \u2502            \u2502
 \u2502Rust API, Crawlee  \u2502 \u2502 Mailu   \u2502 \u2502  Matomo    \u2502
-\u2502PhotoPrism, NocoDB \u2502 \u2502Syncthing\u2502 \u2502  Windmill  \u2502
+\u2502PhotoPrism, NocoDB \u2502 \u2502Syncthing\u2502 \u2502            \u2502
 \u2502Code Srv, AFFiNE   \u2502 \u2502Radicale \u2502 \u2502            \u2502
 \u2502Grist, Gitea, LGTM \u2502 \u2502         \u2502 \u2502            \u2502
 \u2502Quant Lab, Etherpad\u2502 \u2502         \u2502 \u2502            \u2502

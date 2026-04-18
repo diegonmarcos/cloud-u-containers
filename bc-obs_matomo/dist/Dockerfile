@@ -74,12 +74,12 @@ COPY --from=matomo-source /entrypoint.sh /matomo-entrypoint.sh
 RUN chmod +x /matomo-entrypoint.sh
 
 # Copy configuration files
-COPY config/supervisord.conf /etc/supervisor/supervisord.conf
-COPY config/receiver-nginx.conf /etc/nginx/sites-available/receiver.conf
-COPY config/matomo-nginx.conf /etc/nginx/matomo-nginx.conf
-COPY config/receiver-fpm.conf /etc/php/8.2/fpm/receiver-fpm.conf
-COPY config/matomo-fpm.conf /etc/php/8.2/fpm/matomo-fpm.conf
-COPY config/mariadb.cnf /etc/mysql/mariadb.conf.d/99-matomo.cnf
+COPY matomo-hybrid/config/supervisord.conf /etc/supervisor/supervisord.conf
+COPY matomo-hybrid/config/receiver-nginx.conf /etc/nginx/sites-available/receiver.conf
+COPY matomo-hybrid/config/matomo-nginx.conf /etc/nginx/matomo-nginx.conf
+COPY matomo-hybrid/config/receiver-fpm.conf /etc/php/8.2/fpm/receiver-fpm.conf
+COPY matomo-hybrid/config/matomo-fpm.conf /etc/php/8.2/fpm/matomo-fpm.conf
+COPY matomo-hybrid/config/mariadb.cnf /etc/mysql/mariadb.conf.d/99-matomo.cnf
 
 # Remove default nginx/php-fpm configs, set up receiver as main nginx site
 RUN rm -f /etc/nginx/sites-enabled/default \
@@ -87,15 +87,15 @@ RUN rm -f /etc/nginx/sites-enabled/default \
     && ln -sf /etc/nginx/sites-available/receiver.conf /etc/nginx/sites-enabled/receiver.conf
 
 # Copy receiver PHP script
-COPY receiver/receive.php /var/www/receiver/receive.php
+COPY matomo-hybrid/receiver/receive.php /var/www/receiver/receive.php
 RUN chown -R www-data:www-data /var/www/receiver
 
 # Copy scripts
-COPY scripts/entrypoint.sh /scripts/entrypoint.sh
-COPY scripts/matomo-wake.sh /scripts/matomo-wake.sh
-COPY scripts/matomo-sleep.sh /scripts/matomo-sleep.sh
-COPY scripts/import-inbox.sh /scripts/import-inbox.sh
-COPY scripts/matomo-archiver.sh /scripts/matomo-archiver.sh
+COPY matomo-hybrid/scripts/entrypoint.sh /scripts/entrypoint.sh
+COPY matomo-hybrid/scripts/matomo-wake.sh /scripts/matomo-wake.sh
+COPY matomo-hybrid/scripts/matomo-sleep.sh /scripts/matomo-sleep.sh
+COPY matomo-hybrid/scripts/import-inbox.sh /scripts/import-inbox.sh
+COPY matomo-hybrid/scripts/matomo-archiver.sh /scripts/matomo-archiver.sh
 RUN chmod +x /scripts/*.sh
 
 EXPOSE 8080

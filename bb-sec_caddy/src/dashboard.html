@@ -267,7 +267,6 @@ tr:hover td{background:#0d0d15}
 <tr><td><code>sync.internal</code></td><td><code>10.0.0.3</code></td><td>oci-mail</td><td>Syncthing</td></tr>
 <tr><td><code>cal.internal</code></td><td><code>10.0.0.3</code></td><td>oci-mail</td><td>Radicale</td></tr>
 <tr><td><code>matomo.internal</code></td><td><code>10.0.0.4</code></td><td>oci-analytics</td><td>Matomo Analytics</td></tr>
-<tr><td><code>windmill.internal</code></td><td><code>10.0.0.4</code></td><td>oci-analytics</td><td>Windmill Workflows</td></tr>
 <tr><td><code>*.internal</code></td><td><code>10.0.0.1</code></td><td>gcp-proxy</td><td>Wildcard → Caddy</td></tr>
 </tbody></table>
 
@@ -330,7 +329,6 @@ tr:hover td{background:#0d0d15}
 <tr><td><code>nexus.diegonmarcos.com</code></td><td><strong>Nexus</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
 <tr><td><code>suite.diegonmarcos.com</code></td><td><strong>Suite Apps</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
 <tr><td><code>maps.diegonmarcos.com</code></td><td><strong>Maps</strong></td><td>GitHub Pages</td><td>—</td><td>Public</td><td>24/7</td></tr>
-<tr><td><code>app.diegonmarcos.com/windmill/</code></td><td><strong>Windmill</strong></td><td>oci-analytics</td><td>8000</td><td>Authelia + Bearer</td><td>24/7</td></tr>
 <tr><td><code>app.diegonmarcos.com/etherpad/</code></td><td><strong>Etherpad</strong></td><td>oci-apps-1</td><td>3012</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/filebrowser/</code></td><td><strong>FileBrowser</strong></td><td>oci-apps-1</td><td>3015</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/hedgedoc/</code></td><td><strong>HedgeDoc</strong></td><td>oci-apps-1</td><td>3010</td><td>Authelia + Bearer</td><td>Wake</td></tr>
@@ -401,7 +399,7 @@ Bearer?  Cookie?
 │ 10.0.0.6 │ │ 10.0.0.2  │ │ 10.0.0.3 │ │10.0.0.4│
 │          │ │          │ │         │ │            │
 │Rust API  │ │PhotoPrism│ │ Mailu   │ │  Matomo    │
-│Crawlee   │ │ NocoDB   │ │Syncthing│ │  Windmill  │
+│Crawlee   │ │ NocoDB   │ │Syncthing│ │            │
 │Quant Lab │ │Code Srv  │ │Radicale │ │            │
 │          │ │ AFFiNE   │ │         │ │            │
 │          │ │Grist,LGTM│ │         │ │            │
@@ -516,7 +514,6 @@ Bearer?  Cookie?
 <tr><td><strong>oci-mail</strong></td><td>syncthing</td><td>22000</td><td><code>0.0.0.0</code></td><td>22000</td><td>P2P sync</td></tr>
 <tr><td><strong>oci-mail</strong></td><td>radicale</td><td>5232</td><td><code>10.0.0.3</code></td><td>5232</td><td>WG only</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>matomo</td><td>8080</td><td><code>10.0.0.4</code></td><td>8080</td><td>WG only</td></tr>
-<tr><td><strong>oci-analytics</strong></td><td>windmill</td><td>8000</td><td><code>127.0.0.1</code></td><td>8000</td><td>localhost</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>rust-api</td><td>8080</td><td><code>10.0.0.6</code></td><td>8080</td><td>WG only</td></tr>
 <tr><td><strong>gcp-ollama</strong></td><td>ollama</td><td>11434</td><td><code>10.0.0.8</code></td><td>11434</td><td>WG only</td></tr>
 </tbody></table>
@@ -544,7 +541,7 @@ Bearer?  Cookie?
 <table><thead><tr><th>VM</th><th>Count</th><th>Containers</th></tr></thead><tbody>
 <tr><td><strong>gcp-ollama</strong></td><td>1</td><td>ollama</td></tr>
 <tr><td><strong>gcp-proxy</strong></td><td>8</td><td>authelia, caddy, dozzle, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden</td></tr>
-<tr><td><strong>oci-analytics</strong></td><td>2</td><td>matomo, windmill</td></tr>
+<tr><td><strong>oci-analytics</strong></td><td>1</td><td>matomo</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>10</td><td>crawlee_api, crawlee_dashboard, crawlee_db, crawlee_minio, crawlee_redis, nautilus_engine, quant_analytics, quant_db, quant_research, rust-api</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>14</td><td>code-server, etherpad, filebrowser, gitea, gitea-ssh, grafana, grist, hedgedoc, loki, mimir, nocodb, photoprism, revealmd, tempo</td></tr>
 <tr><td><strong>oci-mail</strong></td><td>3</td><td>mailu-front, radicale, syncthing</td></tr>
