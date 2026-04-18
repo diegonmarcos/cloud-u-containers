@@ -34,6 +34,7 @@ export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
 // Lazy getter — re-evaluated each time so it picks up cloned repos after syncRepos()
 function resolveConfigPath(): string {
   if (process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
+  if (process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const fromClone = join(CLOUD_DATA_DIR, "cloud-data-topology.json");
   if (existsSync(fromClone)) return fromClone;
   const fromDeployed = join(SOLUTIONS_DIR, "..", "cloud-data-topology.json");

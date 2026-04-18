@@ -15,12 +15,12 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "matomo-hybrid",
     "dockerfile": "matomo-hybrid/Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   },
   "deploy": {
-    "host": "oci-analytics",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/matomo",
-    "compose_flags": "--build"
+    "compose_flags": "--pull always --force-recreate"
   },
   "compose": {
     "custom": true
