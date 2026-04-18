@@ -173,10 +173,6 @@ const VERSION_PATHS: Record<string, { url: string; extract: (data: unknown) => s
     url: "/rest/system/version",
     extract: (d) => (d as Record<string, unknown>)?.version as string ?? "unknown",
   },
-  windmill: {
-    url: "/api/version",
-    extract: (d) => typeof d === "string" ? d : JSON.stringify(d),
-  },
   ntfy: {
     url: "/v1/health",
     extract: (d) => (d as Record<string, unknown>)?.healthy ? "healthy" : "unknown",

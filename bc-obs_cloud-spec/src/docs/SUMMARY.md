@@ -62,7 +62,6 @@
 - [Sauron Forwarder](../services/bc-obs_sauron-forwarder/index.html)
 - [Sauron Lite](../services/bc-obs_sauron-lite/index.html)
 - [Syslog Forwarder](../services/bc-obs_syslog-forwarder/index.html)
-- [Windmill](../services/bc-obs_windmill/index.html)
 
 # Data & Backups (ca-dat)
 

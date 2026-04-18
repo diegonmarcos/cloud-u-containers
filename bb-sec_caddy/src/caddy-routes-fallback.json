@@ -65,6 +65,18 @@
       "upstream": "10.0.0.6:8880",
       "auth": "none",
       "comment": "Vaultwarden password manager — own auth, Caddy → private backend"
+    },
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "upstream": "10.0.0.3:8888",
+      "comment": "SnappyMail webmail (direct access)"
+    },
+    {
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "upstream": "10.0.0.3:2443",
+      "auth": "none",
+      "tls_skip_verify": true,
+      "comment": "Stalwart admin + JMAP"
     }
   ],
 
@@ -106,7 +118,6 @@
       "comment": "App hub — path-based routing",
       "fallback": "respond \"Not Found\" 404",
       "paths": [
-        { "base_path": "/windmill", "upstream": "10.0.0.6:8000" },
         { "base_path": "/etherpad", "upstream": "10.0.0.6:3012" },
         { "base_path": "/filebrowser", "upstream": "10.0.0.6:3015" },
         { "base_path": "/hedgedoc", "upstream": "10.0.0.6:3018" },
@@ -160,20 +171,36 @@
     }
   ],
 
-  "redirects": [
-    {
-      "domain": "webmail.diegonmarcos.com",
-      "target": "https://mail.diegonmarcos.com/",
-      "comment": "Legacy webmail subdomain → mail hub"
-    }
-  ],
+  "redirects": [],
 
   "special": {
     "mail": {
       "domain": "mail.diegonmarcos.com",
-      "webmail_upstream": "10.0.0.3:8888",
       "landing_page": "mymail",
-      "comment": "Mail hub — landing page + /webmail → SnappyMail + /servermail → static info"
+      "comment": "Mail hub — landing + /snappy + /maddy + /stalwart",
+      "paths": [
+        {
+          "base_path": "/snappy",
+          "upstream": "10.0.0.3:8888",
+          "auth": "two_factor",
+          "error_redirect": "/",
+          "asset_paths": ["/snappymail"],
+          "comment": "SnappyMail webmail"
+        },
+        {
+          "base_path": "/maddy",
+          "type": "static",
+          "comment": "Maddy info page"
+        },
+        {
+          "base_path": "/stalwart",
+          "upstream": "10.0.0.3:2443",
+          "tls_skip_verify": true,
+          "auth": "none",
+          "error_redirect": "/",
+          "comment": "Stalwart admin"
+        }
+      ]
     },
     "ntfy": {
       "domain": "rss.diegonmarcos.com",

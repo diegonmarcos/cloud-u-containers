@@ -41,7 +41,6 @@
   { "vm": "oci-mail",      "container": "syncthing",        "port": "22000", "bind": "0.0.0.0",   "internal": "22000", "note": "P2P sync" },
   { "vm": "oci-mail",      "container": "radicale",         "port": "5232",  "bind": "10.0.0.3",  "internal": "5232",  "note": "WG only" },
   { "vm": "oci-analytics", "container": "matomo",           "port": "8080",  "bind": "10.0.0.4",  "internal": "8080",  "note": "WG only" },
-  { "vm": "oci-analytics", "container": "windmill",         "port": "8000",  "bind": "127.0.0.1", "internal": "8000",  "note": "localhost" },
   { "vm": "oci-apps",      "container": "rust-api",         "port": "8080",  "bind": "10.0.0.6",  "internal": "8080",  "note": "WG only" },
   { "vm": "gcp-ollama",    "container": "ollama",           "port": "11434", "bind": "10.0.0.8",  "internal": "11434", "note": "WG only" }
 ]

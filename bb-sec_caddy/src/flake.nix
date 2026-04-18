@@ -476,7 +476,61 @@
     mkMailBlock =
       let mail = caddyRoutes.special.mail or null;
       in if mail == null then ""
-      else ''
+      else let
+        # Generate handler block for each path in paths[]
+        mkMailPath = path:
+          let
+            isStatic = (path.type or null) == "static";
+            isNoAuth = (path.auth or null) == "none";
+            hasTlsSkipVerify = path.tls_skip_verify or false;
+            hasAssetPaths = (path.asset_paths or null) != null;
+
+            proxyBlock =
+              if isNoAuth && hasTlsSkipVerify then
+                ''reverse_proxy https://${path.upstream} {
+              transport http {
+                tls_insecure_skip_verify
+              }
+            }''
+              else if isNoAuth then
+                "reverse_proxy ${path.upstream}"
+              else
+                mkProtected path.upstream;
+
+            mainBlock =
+              if isStatic then ''
+        # ${path.comment or path.base_path} (static)
+        handle ${path.base_path}/config {
+          root * /srv/mail
+          rewrite * /servermail-config.html
+          file_server
+        }
+        handle ${path.base_path}* {
+          root * /srv/mail
+          rewrite * /servermail.html
+          file_server
+        }''
+              else ''
+        # ${path.comment or path.base_path}
+        handle_path ${path.base_path}/* {
+          ${proxyBlock}
+        }
+        handle_path ${path.base_path} {
+          ${proxyBlock}
+        }'';
+
+            # Additional asset path handlers (e.g., /snappymail/* for SnappyMail asset loading)
+            assetBlocks = if hasAssetPaths then
+              lib.concatMapStringsSep "\n" (ap: ''
+        handle ${ap}/* {
+          ${proxyBlock}
+        }'') path.asset_paths
+            else "";
+
+          in "${mainBlock}\n${assetBlocks}";
+
+        pathBlocks = lib.concatMapStringsSep "\n" mkMailPath (mail.paths or []);
+      in ''
       # ${mail.comment or "mail"}
       ${mail.domain} {
     ${sec}
@@ -486,32 +540,9 @@
           ${mkGithubProxy mail.landing_page}
         }
 
-        # /servermail → Maddy info (PUBLIC — static HTML baked in image)
-        handle /servermail/config {
-          root * /srv/mail
-          rewrite * /servermail-config.html
-          file_server
-        }
-        handle /servermail* {
-          root * /srv/mail
-          rewrite * /servermail.html
-          file_server
-        }
+    ${pathBlocks}
 
-        # /webmail → SnappyMail (AUTH, strip prefix so SnappyMail sees /)
-        handle_path /webmail/* {
-          ${mkProtected mail.webmail_upstream}
-        }
-        handle_path /webmail {
-          ${mkProtected mail.webmail_upstream}
-        }
-
-        # /snappymail/... → SnappyMail assets (AUTH, no strip — direct proxy)
-        handle /snappymail/* {
-          ${mkProtected mail.webmail_upstream}
-        }
-
-        # Catch-all → landing page
+        # Catch-all → landing page (serves CSS/JS assets from GitHub Pages)
         handle {
           ${mkGithubProxy mail.landing_page}
         }

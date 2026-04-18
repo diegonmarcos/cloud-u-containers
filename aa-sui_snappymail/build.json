@@ -31,8 +31,14 @@
   "proxy": {
     "primary": {
       "domain": "webmail.diegonmarcos.com",
+      "auth": "two_factor"
+    },
+    "mail_hub": {
+      "parent_domain": "mail.diegonmarcos.com",
+      "base_path": "/snappy",
       "auth": "two_factor",
-      "landing_page": "mymail"
+      "error_redirect": "/",
+      "asset_paths": ["/snappymail"]
     }
   },
   "containers": {
@@ -45,8 +51,7 @@
       "public": true,
       "proxy": {
         "domain": "webmail.diegonmarcos.com",
-        "auth": "two_factor",
-        "landing_page": "mymail"
+        "auth": "two_factor"
       },
       "healthcheck": "/",
       "monitoring": null,

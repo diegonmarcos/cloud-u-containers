@@ -18,7 +18,6 @@
       "domain": "mail.diegonmarcos.com",
       "auth": "two_factor",
       "tls_skip_verify": true,
-      "landing_page": "mymail",
       "l4_ports": [
         {
           "port": 993,
@@ -40,7 +39,12 @@
         }
       ]
     },
-    "app_hub": false
+    "app_hub": false,
+    "mail_hub": {
+      "parent_domain": "mail.diegonmarcos.com",
+      "base_path": "/maddy",
+      "type": "static"
+    }
   },
   "health": {
     "path": "/"

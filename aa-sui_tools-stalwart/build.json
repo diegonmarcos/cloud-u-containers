@@ -28,7 +28,6 @@
       "domain": "mail-stalwart.diegonmarcos.com",
       "auth": "none",
       "tls_skip_verify": true,
-      "landing_page": "mymail",
       "l4_ports": [
         {
           "port": 2993,
@@ -50,7 +49,14 @@
         }
       ]
     },
-    "app_hub": false
+    "app_hub": false,
+    "mail_hub": {
+      "parent_domain": "mail.diegonmarcos.com",
+      "base_path": "/stalwart",
+      "tls_skip_verify": true,
+      "auth": "none",
+      "error_redirect": "/"
+    }
   },
   "health": {
     "path": "/"
