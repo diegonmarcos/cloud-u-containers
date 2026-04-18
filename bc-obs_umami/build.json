@@ -8,9 +8,9 @@
   },
   "domain": "analytics.diegonmarcos.com/umami",
   "deploy": {
-    "host": "oci-analytics",
+    "host": "oci-apps",
     "remote_path": "/opt/containers/umami",
-    "compose_flags": "--build"
+    "compose_flags": "--pull always --force-recreate"
   },
   "compose": {
     "custom": true
@@ -19,7 +19,7 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "umami",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   },
   "lifecycle": {
     "site-id": [
@@ -79,10 +79,10 @@
       ],
       "resources": {
         "limits": {
-          "memory": "128M"
+          "memory": "512M"
         },
         "reservations": {
-          "memory": "32M"
+          "memory": "128M"
         }
       },
       "read_only": false
@@ -101,10 +101,10 @@
       "env_file": false,
       "resources": {
         "limits": {
-          "memory": "128M"
+          "memory": "256M"
         },
         "reservations": {
-          "memory": "32M"
+          "memory": "64M"
         }
       },
       "read_only": false,

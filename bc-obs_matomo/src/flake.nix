@@ -48,7 +48,10 @@
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           ports:
-            - "${svc.matomo.ip}:${toString config.port}:${toString config.port}"
+            # External ${toString config.port} → internal 8080 (receiver-nginx default_server)
+            # receiver-nginx handles /matomo.js, /matomo.php, /piwik.*, /collect.php and
+            # proxies admin traffic to matomo-nginx on 8081 internally.
+            - "${svc.matomo.ip}:${toString config.port}:8080"
           volumes:
             - matomo_matomo_data:/var/www/html
             - matomo_matomo_db:/var/lib/mysql

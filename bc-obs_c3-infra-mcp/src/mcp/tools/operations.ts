@@ -144,11 +144,14 @@ export function registerOperationsTools(server: McpServer) {
         : 'docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Image}}\\t{{.Ports}}"';
 
       const result = sshExec(vmId, cmd);
+      const body = result.ok
+        ? (result.stdout || "No containers found")
+        : `SSH FAILED (exit ${result.exitCode}): ${result.stderr.trim() || result.stdout.trim() || "no output"}`;
       return {
         content: [
           {
             type: "text",
-            text: `Containers on ${getVmSshAlias(vmId)} (${vmId}):\n\n${result.stdout || "No containers found"}`,
+            text: `Containers on ${getVmSshAlias(vmId)} (${vmId}):\n\n${body}`,
           },
         ],
         isError: !result.ok,
