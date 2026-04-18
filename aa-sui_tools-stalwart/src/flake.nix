@@ -11,11 +11,80 @@
 
     title = "Stalwart Mail Server (Shadow)";
     docker = import ../../_shared/docker.nix;
+    lib = nixpkgs.lib;
 
     # Admin password hash (SHA-512 crypt) — generated from secrets, baked into config
     # This is a HASH, not the plaintext password — safe to include in config
     # Note: '' escapes ${ in nix strings
     adminHash = "$6$StalwartShadow$TnGwCZsckFjb/S6BcJV5UL8Gxf25mlA4eO2WI1G7jDYCwdMTfeSQUAUcR2H6mujyRMTjAWMHf3SyRNW/3.r7a/";
+
+    # ── Mail rules: JSON → Sieve ──────────────────────────────────────
+    mailRules = builtins.fromJSON (builtins.readFile ./mail-rules.json);
+
+    # Sieve condition generator — dispatches on rule.type
+    mkCondition = rule:
+      if rule.type == "from_domain" then
+        let domains = lib.concatMapStringsSep ", " (d: ''"${d}"'') rule.values;
+        in ''address :domain "From" [${domains}]''
+      else if rule.type == "from_address" then
+        let addrs = lib.concatMapStringsSep ", " (a: ''"${a}"'') rule.values;
+        in ''address :is "From" [${addrs}]''
+      else if rule.type == "header_contains" then
+        let vals = lib.concatMapStringsSep ", " (v: ''"${v}"'') rule.values;
+        in ''header :contains "${rule.header}" [${vals}]''
+      else if rule.type == "header_exists" then
+        ''exists "${rule.header}"''
+      else if rule.type == "size_over" then
+        "size :over ${toString rule.bytes}"
+      else if rule.type == "self_sent" then
+        ''address :is "From" "${mailRules.account}"''
+      else if rule.type == "has_cc" then
+        ''exists "CC"''
+      else if rule.type == "list_header" then
+        ''exists "List-Unsubscribe"''
+      else if rule.type == "content_type" then
+        ''header :mime :anychild :contenttype "Content-Type" "${rule.value}"''
+      else
+        "false";
+
+    # Tag line: if <condition> { addflag "<flag>"; }
+    mkTagLine = rule:
+      ''if ${mkCondition rule} { addflag "${rule.flag}"; }'';
+
+    # Tag group: comment header + all rules
+    mkTagGroup = group:
+      "# -- ${group.id}: ${group.name} --\n"
+      + lib.concatStringsSep "\n" (map mkTagLine group.rules);
+
+    # Routing rule: if <condition> { fileinto :create "<folder>"; stop; }
+    mkRoutingRule = route:
+      "if ${mkCondition route.match} {\n  fileinto :create \"${route.folder}\";\n  stop;\n}";
+
+    # Full Sieve script assembly
+    mkSieveScript =
+      let
+        requires = lib.concatMapStringsSep ", " (e: ''"${e}"'') mailRules.sieve_require;
+        tagSection = lib.concatStringsSep "\n\n" (map mkTagGroup mailRules.tags);
+        routingSection = lib.concatStringsSep "\n" (map mkRoutingRule mailRules.routing);
+      in ''
+        require [${requires}];
+
+        # ══════════════════════════════════════════════════════════════════
+        # TAGS — all matching rules fire (additive IMAP keywords)
+        # Generated from mail-rules.json — DO NOT EDIT
+        # ══════════════════════════════════════════════════════════════════
+
+        ${tagSection}
+
+        # ══════════════════════════════════════════════════════════════════
+        # ROUTING — first match wins (fileinto + stop)
+        # ══════════════════════════════════════════════════════════════════
+
+        ${routingSection}
+        # Default: implicit keep -> INBOX
+      '';
+
+    mkSieve = pkgs: pkgs.writeText "default.sieve" mkSieveScript;
 
     # GHCR image: wrap upstream with config
     ghcr = docker.mkGhcrBuild {
@@ -63,13 +132,14 @@
       };
     };
 
-    # ── Activation script: ensure accounts exist after deploy ────────
+    # ── Activation script: ensure accounts + upload Sieve ─────────────
     # Runs after compose-up. Idempotent — fieldAlreadyExists is fine.
     # Reads ADMIN_PASSWORD from .secrets to authenticate.
     mkActivate = pkgs: pkgs.writeText "activate.sh" ''
       #!/bin/sh
       set -e
-      URL="https://localhost:${toString (ports.valueOf "app")}/api/principal"
+      BASE="https://localhost:${toString (ports.valueOf "app")}"
+      URL="$BASE/api/principal"
       PW=$(cat /opt/containers/stalwart/.secrets.d/ADMIN_PASSWORD 2>/dev/null)
       [ -z "$PW" ] && echo "[activate] No ADMIN_PASSWORD found, skipping" && exit 0
 
@@ -90,7 +160,106 @@
       curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
         -d '{"type":"individual","name":"no-reply@diegonmarcos.com","secrets":["'"$NR_PW"'"],"emails":["no-reply@diegonmarcos.com","noreply@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
 
-      echo "[activate] Done — accounts ensured"
+      # ── Upload Sieve script via JMAP ────────────────────────────────
+      SIEVE_FILE="/opt/containers/stalwart/default.sieve"
+      USER="me@diegonmarcos.com"
+      JMAP_URL="$BASE/jmap/"
+
+      if [ ! -f "$SIEVE_FILE" ]; then
+        echo "[activate] No default.sieve found, skipping sieve upload"
+        echo "[activate] Done — accounts ensured"
+        exit 0
+      fi
+
+      echo "[activate] Uploading Sieve script for $USER..."
+
+      # Step 0: Discover JMAP accountId from session (Stalwart uses short IDs, not emails)
+      SESSION=$(curl -sk -L -u "$USER:$PW" "$BASE/jmap/session" 2>/dev/null)
+      ACCOUNT_ID=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:sieve":"[^"]*"' | head -1 | cut -d'"' -f4)
+      if [ -z "$ACCOUNT_ID" ]; then
+        echo "[activate] WARNING: Could not discover JMAP accountId"
+        echo "[activate] Done — accounts ensured (sieve skipped)"
+        exit 0
+      fi
+      echo "[activate] JMAP accountId: $ACCOUNT_ID"
+
+      # Step 1: Upload .sieve as blob
+      UPLOAD_RESP=$(curl -sk -u "$USER:$PW" \
+        -X POST "$BASE/jmap/upload/$ACCOUNT_ID/" \
+        -H "Content-Type: application/sieve" \
+        --data-binary @"$SIEVE_FILE" 2>/dev/null)
+
+      BLOB_ID=$(printf '%s' "$UPLOAD_RESP" | grep -o '"blobId":"[^"]*"' | head -1 | cut -d'"' -f4)
+      if [ -z "$BLOB_ID" ]; then
+        echo "[activate] WARNING: Sieve blob upload failed: $UPLOAD_RESP"
+        echo "[activate] Done — accounts ensured (sieve skipped)"
+        exit 0
+      fi
+      echo "[activate] Blob uploaded: $BLOB_ID"
+
+      # Step 2: Create + activate SieveScript via JMAP
+      JMAP_RESP=$(curl -sk -u "$USER:$PW" \
+        -X POST "$JMAP_URL" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
+          "methodCalls": [
+            ["SieveScript/set", {
+              "accountId": "'"$ACCOUNT_ID"'",
+              "create": {
+                "inbox-rules": {
+                  "name": "inbox-rules",
+                  "blobId": "'"$BLOB_ID"'"
+                }
+              },
+              "onSuccessActivateScript": "#inbox-rules"
+            }, "0"]
+          ]
+        }' 2>/dev/null)
+
+      if printf '%s' "$JMAP_RESP" | grep -q '"created"'; then
+        echo "[activate] Sieve script created and activated for $USER"
+      else
+        # Script may already exist — update it
+        echo "[activate] Script exists, attempting update..."
+        LIST_RESP=$(curl -sk -u "$USER:$PW" \
+          -X POST "$JMAP_URL" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
+            "methodCalls": [
+              ["SieveScript/get", {
+                "accountId": "'"$ACCOUNT_ID"'"
+              }, "0"]
+            ]
+          }' 2>/dev/null)
+
+        SCRIPT_ID=$(printf '%s' "$LIST_RESP" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [ -n "$SCRIPT_ID" ]; then
+          curl -sk -u "$USER:$PW" \
+            -X POST "$JMAP_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
+              "methodCalls": [
+                ["SieveScript/set", {
+                  "accountId": "'"$ACCOUNT_ID"'",
+                  "update": {
+                    "'"$SCRIPT_ID"'": {
+                      "blobId": "'"$BLOB_ID"'"
+                    }
+                  },
+                  "onSuccessActivateScript": "'"$SCRIPT_ID"'"
+                }, "0"]
+              ]
+            }' 2>/dev/null
+          echo "[activate] Sieve script updated and activated"
+        else
+          echo "[activate] WARNING: Could not find existing script to update"
+        fi
+      fi
+
+      echo "[activate] Done — accounts + sieve ensured"
     '';
 
   in {
@@ -102,6 +271,7 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkConfig pkgs} $out/config.toml
         cp ${mkActivate pkgs} $out/activate.sh
+        cp ${mkSieve pkgs} $out/default.sieve
         chmod +x $out/activate.sh
       '';
     in {
