@@ -1,0 +1,211 @@
+{
+  "sieve_require": ["fileinto", "imap4flags", "mailbox", "envelope", "mime"],
+  "account": "me@diegonmarcos.com",
+
+  "tags": [
+    {
+      "id": "B1",
+      "name": "Development & Tools",
+      "rules": [
+        { "type": "from_domain", "values": ["github.com"], "flag": "Dev_platform:GitHub" },
+        { "type": "from_domain", "values": ["gitlab.com"], "flag": "Dev_platform:GitLab" },
+        { "type": "from_domain", "values": ["bitbucket.org"], "flag": "Dev_platform:Bitbucket" },
+        { "type": "from_domain", "values": ["42.fr", "intra.42.fr", "42berlin.de", "42heilbronn.de"], "flag": "Dev_context:42" },
+        { "type": "from_domain", "values": ["stackoverflow.com", "stackexchange.com"], "flag": "Dev_platform:StackOverflow" },
+        { "type": "from_domain", "values": ["npmjs.com", "crates.io", "pypi.org"], "flag": "Dev_type:PackageRegistry" },
+        { "type": "from_domain", "values": ["docker.com", "hub.docker.com"], "flag": "Dev_platform:Docker" },
+        { "type": "from_domain", "values": ["vercel.com", "netlify.com", "railway.app"], "flag": "SaaS_Productivity" },
+        { "type": "from_domain", "values": ["jetbrains.com"], "flag": "SaaS_Creative" },
+        { "type": "from_domain", "values": ["udemy.com", "coursera.org", "edx.org"], "flag": "Edu_General" },
+        { "type": "from_domain", "values": ["duolingo.com", "babbel.com"], "flag": "Edu_Languages" }
+      ]
+    },
+    {
+      "id": "B2",
+      "name": "Career & Networking",
+      "rules": [
+        { "type": "from_domain", "values": ["linkedin.com"], "flag": "Career_source:LinkedIn" },
+        { "type": "from_domain", "values": ["indeed.com", "indeed.de"], "flag": "Career_source:Indeed" },
+        { "type": "from_domain", "values": ["glassdoor.com", "xing.com", "stepstone.de", "hired.com"], "flag": "Career_JobAlerts" },
+        { "type": "header_contains", "header": "Subject", "values": ["interview", "entrevista", "Vorstellungsgespr"], "flag": "Career_type:Interview_Invite" },
+        { "type": "header_contains", "header": "Subject", "values": ["application", "candidatura", "Bewerbung"], "flag": "Career_type:Application_Update" }
+      ]
+    },
+    {
+      "id": "B3",
+      "name": "Lifestyle, Travel & Logistics",
+      "rules": [
+        { "type": "from_domain", "values": ["ryanair.com", "easyjet.com", "vueling.com", "flixbus.com", "renfe.com"], "flag": "Travel_type:Flight" },
+        { "type": "from_domain", "values": ["uber.com", "bolt.eu", "freenow.com", "blablacar.com"], "flag": "Travel_type:Rideshare" },
+        { "type": "from_domain", "values": ["airbnb.com", "booking.com", "hostelworld.com"], "flag": "Lodging_from:Accommodation" },
+        { "type": "from_domain", "values": ["dhl.com", "dhl.de", "ups.com", "fedex.com", "correos.es", "dpd.com", "gls-group.com"], "flag": "Logistics_Postal_Courier" },
+        { "type": "from_domain", "values": ["deliveroo.com", "ubereats.com", "glovo.com", "justeat.com", "lieferando.de"], "flag": "Lifestyle_FoodDelivery" },
+        { "type": "from_domain", "values": ["doctolib.de", "doctolib.com"], "flag": "Lifestyle_Wellness_Sports" },
+        { "type": "from_domain", "values": ["idealista.com", "immobilienscout24.de", "immowelt.de"], "flag": "Housing_RealEstate" }
+      ]
+    },
+    {
+      "id": "B4",
+      "name": "Admin, Finance & E-commerce",
+      "rules": [
+        { "type": "from_domain", "values": ["paypal.com", "stripe.com"], "flag": "Fin_type:Receipt" },
+        { "type": "from_domain", "values": ["n26.com", "revolut.com", "wise.com", "ing.es"], "flag": "Fin_entity:Bank" },
+        { "type": "from_domain", "values": ["amazon.com", "amazon.de", "amazon.es", "ebay.com", "ebay.de"], "flag": "Shopping_Online" },
+        { "type": "from_domain", "values": ["apple.com"], "flag": "Fin_type:Subscription" },
+        { "type": "from_domain", "values": ["bitwarden.com"], "flag": "Sec_type:Login_Alert" },
+        { "type": "header_contains", "header": "Subject", "values": ["invoice", "factura", "Rechnung"], "flag": "Fin_type:Invoice" },
+        { "type": "header_contains", "header": "Subject", "values": ["GDPR", "Datenschutz", "privacy policy", "data protection"], "flag": "Admin_Compliance:GDPR" }
+      ]
+    },
+    {
+      "id": "B5",
+      "name": "Information, Media & Feeds",
+      "rules": [
+        { "type": "from_domain", "values": ["substack.com", "medium.com", "beehiiv.com"], "flag": "Read_type:Newsletter" },
+        { "type": "from_domain", "values": ["dev.to", "hashnode.com", "hackernews.com"], "flag": "Read_topic:Tech" },
+        { "type": "from_domain", "values": ["spotify.com"], "flag": "Media_Music" },
+        { "type": "from_domain", "values": ["netflix.com", "youtube.com", "twitch.tv"], "flag": "Media_TV" },
+        { "type": "from_domain", "values": ["twitter.com", "x.com", "mastodon.social"], "flag": "Social_Notification" },
+        { "type": "from_domain", "values": ["facebook.com", "instagram.com", "whatsapp.com"], "flag": "Social_Notification" },
+        { "type": "from_domain", "values": ["reddit.com"], "flag": "Social_Notification" }
+      ]
+    },
+    {
+      "id": "B6",
+      "name": "Cloud (Homelab)",
+      "rules": [
+        { "type": "from_domain", "values": ["diegonmarcos.com"], "flag": "Cloud_Ops:Self" },
+        { "type": "from_domain", "values": ["oraclecloud.com", "oracle.com"], "flag": "Cloud_Cost:Oracle" },
+        { "type": "from_domain", "values": ["cloud.google.com", "google.cloud"], "flag": "Cloud_Cost:GCP" },
+        { "type": "from_domain", "values": ["cloudflare.com"], "flag": "Cloud_Sec:Cloudflare" },
+        { "type": "from_domain", "values": ["hetzner.com", "hetzner.de"], "flag": "Cloud_Cost:Hetzner" },
+        { "type": "from_domain", "values": ["letsencrypt.org"], "flag": "Cloud_Sec:Cert_Renewal" },
+        { "type": "from_domain", "values": ["resend.com"], "flag": "Cloud_Ops:Resend" },
+        { "type": "header_contains", "header": "Subject", "values": ["[alert]", "[warning]", "disk full", "certificate expir"], "flag": "Cloud_Ops:Uptime_Alert" }
+      ]
+    },
+    {
+      "id": "B7",
+      "name": "Meta Size & Attachments",
+      "rules": [
+        { "type": "size_over", "bytes": 10485760, "flag": "Meta_Size:Large_10MB+" },
+        { "type": "content_type", "value": "application/pdf", "flag": "Meta_Attach:PDF" },
+        { "type": "content_type", "value": "image/jpeg", "flag": "Meta_Attach:Image" },
+        { "type": "content_type", "value": "image/png", "flag": "Meta_Attach:Image" },
+        { "type": "content_type", "value": "image/heic", "flag": "Meta_Attach:Image" },
+        { "type": "content_type", "value": "application/msword", "flag": "Meta_Attach:Document" },
+        { "type": "content_type", "value": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "flag": "Meta_Attach:Document" },
+        { "type": "content_type", "value": "text/plain", "flag": "Meta_Attach:Document" },
+        { "type": "content_type", "value": "application/vnd.ms-excel", "flag": "Meta_Attach:Spreadsheet" },
+        { "type": "content_type", "value": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "flag": "Meta_Attach:Spreadsheet" },
+        { "type": "content_type", "value": "text/csv", "flag": "Meta_Attach:Spreadsheet" },
+        { "type": "content_type", "value": "application/zip", "flag": "Meta_Attach:Archive" },
+        { "type": "content_type", "value": "application/x-rar-compressed", "flag": "Meta_Attach:Archive" },
+        { "type": "content_type", "value": "application/gzip", "flag": "Meta_Attach:Archive" }
+      ]
+    },
+    {
+      "id": "B8",
+      "name": "Meta Routing & Sender",
+      "rules": [
+        { "type": "self_sent", "flag": "Meta_Route:SelfSent" },
+        { "type": "has_cc", "flag": "Meta_Route:CC" },
+        { "type": "list_header", "flag": "Meta_Route:BCC_MailingList" },
+        { "type": "header_exists", "header": "X-Auto-Response-Suppress", "flag": "Meta_Sender:Automated" },
+        { "type": "header_exists", "header": "Auto-Submitted", "flag": "Meta_Sender:Automated" },
+        { "type": "header_contains", "header": "Precedence", "values": ["bulk", "list", "junk"], "flag": "Meta_Sender:Automated" }
+      ]
+    }
+  ],
+
+  "routing": [
+    {
+      "folder": "Development",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "github.com", "gitlab.com", "bitbucket.org",
+          "42.fr", "intra.42.fr", "42berlin.de", "42heilbronn.de",
+          "stackoverflow.com", "stackexchange.com",
+          "npmjs.com", "crates.io", "pypi.org",
+          "docker.com", "hub.docker.com",
+          "nixos.org", "discourse.nixos.org",
+          "dev.to", "hashnode.com", "codeberg.org",
+          "vercel.com", "netlify.com", "railway.app",
+          "jetbrains.com"
+        ]
+      }
+    },
+    {
+      "folder": "Career",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "linkedin.com",
+          "indeed.com", "indeed.de",
+          "glassdoor.com", "xing.com", "stepstone.de", "hired.com"
+        ]
+      }
+    },
+    {
+      "folder": "Lifestyle",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "airbnb.com", "booking.com", "hostelworld.com",
+          "uber.com", "bolt.eu", "freenow.com", "blablacar.com",
+          "flixbus.com", "ryanair.com", "easyjet.com", "vueling.com", "renfe.com",
+          "dhl.com", "dhl.de", "ups.com", "fedex.com", "correos.es", "dpd.com", "gls-group.com",
+          "deliveroo.com", "ubereats.com", "glovo.com", "justeat.com", "lieferando.de",
+          "doctolib.de", "doctolib.com",
+          "idealista.com", "immobilienscout24.de", "immowelt.de"
+        ]
+      }
+    },
+    {
+      "folder": "Admin",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "paypal.com", "stripe.com",
+          "n26.com", "revolut.com", "wise.com", "ing.es",
+          "amazon.com", "amazon.de", "amazon.es",
+          "ebay.com", "ebay.de",
+          "apple.com",
+          "bitwarden.com",
+          "google.com"
+        ]
+      }
+    },
+    {
+      "folder": "Information",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "substack.com", "medium.com", "beehiiv.com",
+          "spotify.com", "netflix.com", "youtube.com", "twitch.tv",
+          "twitter.com", "x.com", "reddit.com",
+          "facebook.com", "instagram.com", "whatsapp.com",
+          "mastodon.social",
+          "udemy.com", "coursera.org", "edx.org",
+          "duolingo.com", "babbel.com"
+        ]
+      }
+    },
+    {
+      "folder": "Cloud",
+      "match": {
+        "type": "from_domain",
+        "values": [
+          "diegonmarcos.com",
+          "oraclecloud.com", "oracle.com",
+          "cloud.google.com", "google.cloud",
+          "cloudflare.com",
+          "hetzner.com", "hetzner.de",
+          "letsencrypt.org",
+          "resend.com", "ntfy.sh"
+        ]
+      }
+    }
+  ]
+}
