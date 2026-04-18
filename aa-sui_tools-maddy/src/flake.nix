@@ -45,6 +45,21 @@
           memLimit = "256M";
           memReservation = "32M";
         };
+        maddy-sorter = docker.mkService {
+          name = "maddy-sorter";
+          image = "python:3-alpine";
+          container_name = "maddy-sorter";
+          entrypoint = ["python3" "/app/imap-sorter.py"];
+          env_file = [".secrets"];
+          skipCapDrop = true;
+          skipReadOnly = true;
+          volumes = [
+            "./imap-sorter.py:/app/imap-sorter.py:ro"
+            "./mail-rules.json:/data/mail-rules.json:ro"
+          ];
+          memLimit = "64M";
+          memReservation = "16M";
+        };
       };
     };
 
@@ -97,6 +112,8 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkMaddyConf pkgs} $out/maddy.conf.tpl
         cp ${mkInitSh pkgs} $out/init.sh
+        cp ${./imap-sorter.py} $out/imap-sorter.py
+        cp ${./mail-rules.json} $out/mail-rules.json
         chmod +x $out/init.sh
       '';
     in {
