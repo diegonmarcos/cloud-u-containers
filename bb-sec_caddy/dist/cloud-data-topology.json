@@ -551,6 +551,11 @@
           "port": 2587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
         }
       ]
     },
@@ -728,6 +733,11 @@
         "port": 2587,
         "proto": "tcp",
         "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+      },
+      {
+        "port": 2443,
+        "proto": "tcp",
+        "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
       }
     ]
   },
@@ -2460,7 +2470,7 @@
       "containers": {
         "app": {
           "container_name": "stalwart",
-          "image": "stalwartlabs/stalwart:v0.13",
+          "image": "stalwartlabs/stalwart:latest",
           "port": 2443,
           "port_env": null,
           "dns": "stalwart.app",

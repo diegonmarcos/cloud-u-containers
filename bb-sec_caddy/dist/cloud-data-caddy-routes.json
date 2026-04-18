@@ -4,7 +4,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 2
   },
-  "_generated": "2026-04-17T18:07:38.153Z",
+  "_generated": "2026-04-17T19:09:53.958Z",
   "_source": "_cloud-data-consolidated.json via derive-cloud-data.ts/caddy-routes",
   "l4_routes": [
     {
@@ -36,6 +36,11 @@
       "port": 2587,
       "upstream": "10.0.0.3:2587",
       "comment": "SMTP Submission -- TLS passthrough to stalwart"
+    },
+    {
+      "port": 2443,
+      "upstream": "10.0.0.3:2443",
+      "comment": "HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)"
     }
   ],
   "redirects": [

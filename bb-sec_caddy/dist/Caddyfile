@@ -54,6 +54,14 @@
     }
   }
 }
+# HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)
+:2443 {
+  route {
+    proxy {
+      upstream 10.0.0.3:2443
+    }
+  }
+}
     }
 
       }
