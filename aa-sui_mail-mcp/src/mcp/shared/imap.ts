@@ -1,14 +1,19 @@
 import { ImapFlow } from "imapflow";
+import { getServer, getAccount } from "./config.js";
 
-export async function withImap<T>(fn: (client: ImapFlow) => Promise<T>): Promise<T> {
+export async function withImap<T>(
+  server: string,
+  account: string,
+  fn: (client: ImapFlow) => Promise<T>,
+): Promise<T> {
+  const srv = getServer(server);
+  const creds = getAccount(server, account);
+
   const client = new ImapFlow({
-    host: process.env.MAIL_HOST ?? "mail.diegonmarcos.com",
-    port: 993,
+    host: srv.host,
+    port: srv.imap,
     secure: true,
-    auth: {
-      user: process.env.MAIL_USER!,
-      pass: process.env.MAIL_PASSWORD!,
-    },
+    auth: { user: creds.user, pass: creds.password },
     logger: false,
   });
 

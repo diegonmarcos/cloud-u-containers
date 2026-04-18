@@ -6,12 +6,15 @@ import { registerComposeTools } from "./tools/compose.js";
 import { registerAdminTools } from "./tools/admin.js";
 import { registerResendTools } from "./tools/resend.js";
 import { registerDebugTools } from "./tools/debug.js";
+import { registerStalwartTools } from "./tools/stalwart.js";
 
 const log = (msg: string) => process.stderr.write(`[mail-mcp] ${msg}\n`);
 
 async function main() {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASSWORD) {
-    log("ERROR: MAIL_USER and MAIL_PASSWORD environment variables are required");
+  const hasMaddyCreds = process.env.MADDY_ME_USER && process.env.MADDY_ME_PASSWORD;
+  const hasLegacyCreds = process.env.MAIL_USER && process.env.MAIL_PASSWORD;
+  if (!hasMaddyCreds && !hasLegacyCreds) {
+    log("ERROR: Set MADDY_ME_USER/MADDY_ME_PASSWORD or MAIL_USER/MAIL_PASSWORD");
     process.exit(1);
   }
 
@@ -22,15 +25,16 @@ async function main() {
   } else {
     const server = new McpServer({
       name: "mail-mcp",
-      version: "1.3.0",
+      version: "1.4.0",
     });
     registerInboxTools(server);
     registerComposeTools(server);
     registerAdminTools(server);
     registerResendTools(server);
     registerDebugTools(server);
+    registerStalwartTools(server);
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.3.0 (25 tools: 10 inbox, 3 compose, 2 admin, 7 resend, 3 debug)...");
+    log("Starting mail-mcp v1.4.0 (28 tools: 10 inbox, 3 compose, 2 admin, 7 resend, 3 debug, 3 stalwart)...");
     await server.connect(transport);
     log("Connected via stdio transport");
   }
