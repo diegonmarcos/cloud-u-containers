@@ -4,7 +4,7 @@
   "build": {
     "include_cloud_data": "true"
   },
-  "description": "C3 Services REST API \u2014 service API gateway Fastify API",
+  "description": "C3 Services REST API — service API gateway Fastify API",
   "dns": "c3-services-api.app",
   "ports": {
     "app": 8082
@@ -73,7 +73,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

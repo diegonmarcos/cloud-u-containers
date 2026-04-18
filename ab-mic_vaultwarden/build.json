@@ -69,7 +69,8 @@
       "depends_on": [],
       "resources": null,
       "read_only": false,
-      "db_path": "/data/db.sqlite3"
+      "db_path": "/data/db.sqlite3",
+      "protocol": "http"
     }
   },
   "docker": {

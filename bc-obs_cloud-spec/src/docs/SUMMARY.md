@@ -68,7 +68,6 @@
 
 - [Backup Borg](../services/ca-dat_backup-borg/index.html)
 - [Backup Bup](../services/ca-dat_backup-bup/index.html)
-- [Backup Gitea](../services/ca-dat_backup-gitea/index.html)
 - [DB Agent](../services/ca-dat_db-agent/index.html)
 - [Gitea](../services/ca-dat_gitea/index.html)
 - [KG Graph](../services/ca-dat_kg-graph/index.html)

@@ -1,10 +1,6 @@
 {
   "name": "fluent-bit",
   "description": "Log processor and forwarder",
-  "port": 2020,
-  "ports": {
-    "app": 2020
-  },
   "dns": "fluent-bit.app",
   "category": "tools",
   "deploy": {
@@ -25,7 +21,7 @@
     "app": {
       "container_name": "fluent-bit",
       "image": "fluent/fluent-bit:latest",
-      "port": null,
+      "port": 2020,
       "port_env": null,
       "dns": null,
       "public": false,
@@ -42,7 +38,8 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

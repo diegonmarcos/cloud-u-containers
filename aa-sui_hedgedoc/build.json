@@ -57,7 +57,8 @@
         "db"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "db": {
       "container_name": "hedgedoc_postgres",
@@ -77,7 +78,8 @@
       "resources": null,
       "read_only": false,
       "db_user": "hedgedoc",
-      "db_name": "hedgedoc"
+      "db_name": "hedgedoc",
+      "protocol": "tcp"
     }
   },
   "backup": {

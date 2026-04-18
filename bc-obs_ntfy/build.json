@@ -61,7 +61,8 @@
       "depends_on": [],
       "resources": null,
       "read_only": false,
-      "db_path": "/var/cache/ntfy/cache.db"
+      "db_path": "/var/cache/ntfy/cache.db",
+      "protocol": "http"
     },
     "syslog-bridge": {
       "container_name": "syslog-bridge",

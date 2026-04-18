@@ -1,6 +1,6 @@
 {
   "name": "mattermost-mcp",
-  "description": "Mattermost MCP server \u2014 chat tools via HTTP transport",
+  "description": "Mattermost MCP server — chat tools via HTTP transport",
   "dns": "mattermost-mcp.app",
   "category": "app",
   "build": {
@@ -55,7 +55,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

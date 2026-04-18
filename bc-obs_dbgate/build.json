@@ -63,7 +63,8 @@
           "memory": "64M"
         }
       },
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   },
   "docker": {

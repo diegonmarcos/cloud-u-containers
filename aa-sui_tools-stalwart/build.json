@@ -33,17 +33,20 @@
         {
           "port": 2993,
           "upstream": "130.110.251.193:2993",
-          "comment": "IMAPS (Stalwart)"
+          "comment": "IMAPS (Stalwart)",
+          "protocol": "tls"
         },
         {
           "port": 2465,
           "upstream": "130.110.251.193:2465",
-          "comment": "SMTPS (Stalwart)"
+          "comment": "SMTPS (Stalwart)",
+          "protocol": "tls"
         },
         {
           "port": 2587,
           "upstream": "130.110.251.193:2587",
-          "comment": "SMTP Submission (Stalwart)"
+          "comment": "SMTP Submission (Stalwart)",
+          "protocol": "starttls"
         }
       ]
     },
@@ -63,19 +66,33 @@
       "stalwart_data"
     ]
   },
-  "ports": {
-    "app": 2443,
-    "smtp_inbound": 2025,
-    "smtps": 2465,
-    "submission": 2587,
-    "imap": 2993,
-    "sieve": 6190
-  },
   "containers": {
     "app": {
       "container_name": "stalwart",
       "image": "stalwartlabs/stalwart:latest",
       "port": 2443,
+      "extra_ports": [
+        {
+          "port": 2025,
+          "protocol": "starttls"
+        },
+        {
+          "port": 2465,
+          "protocol": "tls"
+        },
+        {
+          "port": 2587,
+          "protocol": "starttls"
+        },
+        {
+          "port": 2993,
+          "protocol": "tls"
+        },
+        {
+          "port": 6190,
+          "protocol": "tls"
+        }
+      ],
       "port_env": null,
       "dns": "stalwart.app",
       "public": true,
@@ -103,7 +120,8 @@
         }
       },
       "read_only": false,
-      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'"
+      "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'",
+      "protocol": "https"
     }
   }
 }

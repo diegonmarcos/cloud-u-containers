@@ -838,7 +838,7 @@ max_age: 604800
       pkgs = nixpkgs.legacyPackages.${system};
     in let
       defaultPkg = pkgs.runCommand "caddy-configs" {} ''
-        mkdir -p $out/introspect-proxy/app
+        mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkCaddyfile pkgs} $out/Caddyfile
         cp ${./error.html} $out/error.html
@@ -850,9 +850,6 @@ max_age: 604800
         mkdir -p $out/wkd/hu
         touch $out/wkd/policy
         cp ${./pgp-wkd-key.bin} $out/wkd/hu/s8y7oh5xrdpu9psba3i5ntk64ohouhga
-        cp ${./introspect-proxy/Dockerfile} $out/introspect-proxy/Dockerfile
-        cp ${./introspect-proxy/app/main.py} $out/introspect-proxy/app/main.py
-        cp ${./introspect-proxy/app/requirements.txt} $out/introspect-proxy/app/requirements.txt
       '';
     in {
       default = defaultPkg;

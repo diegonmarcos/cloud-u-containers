@@ -75,7 +75,8 @@
       ],
       "resources": null,
       "read_only": false,
-      "port_format": "colon"
+      "port_format": "colon",
+      "protocol": "http"
     },
     "db": {
       "container_name": "mattermost-postgres",
@@ -92,7 +93,8 @@
       "resources": null,
       "read_only": false,
       "db_user": "mattermost",
-      "db_name": "mattermost"
+      "db_name": "mattermost",
+      "protocol": "tcp"
     },
     "bots": {
       "container_name": "mattermost-bots",

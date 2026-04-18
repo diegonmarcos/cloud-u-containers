@@ -47,7 +47,8 @@
       "proxy": {
         "domain": "smtp.diegonmarcos.com",
         "auth": "none"
-      }
+      },
+      "protocol": "http"
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "cloud-cgc-mcp",
-  "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
@@ -66,7 +66,8 @@
       "env_file": false,
       "depends_on": [],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   }
 }

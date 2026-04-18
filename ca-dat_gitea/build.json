@@ -87,7 +87,8 @@
       "env_file": false,
       "resources": null,
       "read_only": false,
-      "db_path": "/data/gitea/gitea.db"
+      "db_path": "/data/gitea/gitea.db",
+      "protocol": "http"
     }
   },
   "docker": {

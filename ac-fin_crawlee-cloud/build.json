@@ -65,7 +65,8 @@
         "minio"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "runner": {
       "container_name": "crawlee_runner",
@@ -99,7 +100,8 @@
         "app"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     },
     "scheduler": {
       "container_name": "crawlee_scheduler",
@@ -133,7 +135,8 @@
       "resources": null,
       "read_only": false,
       "db_user": "crawlee",
-      "db_name": "crawlee"
+      "db_name": "crawlee",
+      "protocol": "tcp"
     },
     "redis": {
       "container_name": "crawlee_redis",
@@ -148,7 +151,8 @@
       ],
       "env_file": false,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "tcp"
     },
     "minio": {
       "container_name": "crawlee_minio",
@@ -163,7 +167,8 @@
       ],
       "env_file": true,
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "protocol": "http"
     }
   },
   "docker": {

@@ -42,7 +42,8 @@
       "resources": {
         "mem_limit": "64M"
       },
-      "read_only": false
+      "read_only": false,
+      "protocol": "udp"
     }
   },
   "docker": {

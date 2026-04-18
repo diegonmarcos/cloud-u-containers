@@ -57,7 +57,8 @@
       "depends_on": [],
       "resources": null,
       "read_only": false,
-      "db_path": "/persist/grist-sessions.db"
+      "db_path": "/persist/grist-sessions.db",
+      "protocol": "http"
     }
   },
   "docker": {

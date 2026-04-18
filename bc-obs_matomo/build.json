@@ -1,11 +1,7 @@
 {
   "name": "matomo",
-  "description": "Matomo hybrid analytics (oci-analytics)",
+  "description": "Matomo hybrid analytics (oci-apps)",
   "dns": "matomo.app",
-  "ports": {
-    "app": 8084,
-    "db": 3306
-  },
   "category": "tools",
   "build": {
     "include_cloud_data": "true"
@@ -77,6 +73,12 @@
       "container_name": "matomo-hybrid",
       "image": null,
       "port": 8084,
+      "extra_ports": [
+        {
+          "port": 3306,
+          "protocol": "tcp"
+        }
+      ],
       "port_env": null,
       "dns": "matomo.app",
       "public": true,
@@ -103,7 +105,8 @@
         }
       },
       "read_only": false,
-      "dump_cmd": "mysqldump -u matomo matomo"
+      "dump_cmd": "mysqldump -u matomo matomo",
+      "protocol": "http"
     }
   }
 }
