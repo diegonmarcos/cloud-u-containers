@@ -1,13 +1,14 @@
 import nodemailer from "nodemailer";
+import { getServer, getAccount } from "./config.js";
 
-export function getTransport(): nodemailer.Transporter {
+export function getTransport(server: string, account: string): nodemailer.Transporter {
+  const srv = getServer(server);
+  const creds = getAccount(server, account);
+
   return nodemailer.createTransport({
-    host: process.env.MAIL_HOST ?? "mail.diegonmarcos.com",
-    port: 465,
+    host: srv.host,
+    port: srv.smtp,
     secure: true,
-    auth: {
-      user: process.env.MAIL_USER!,
-      pass: process.env.MAIL_PASSWORD!,
-    },
+    auth: { user: creds.user, pass: creds.password },
   });
 }

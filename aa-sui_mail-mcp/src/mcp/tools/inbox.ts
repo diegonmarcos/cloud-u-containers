@@ -1,16 +1,26 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { withImap } from "../shared/imap.js";
-import { simpleParser } from "mailparser";
+import { serverSchema, accountSchema } from "../shared/config.js";
+import { simpleParser, type AddressObject } from "mailparser";
+
+function addrText(addr: AddressObject | AddressObject[] | undefined): string {
+  if (!addr) return "(unknown)";
+  if (Array.isArray(addr)) return addr.map((a) => a.text).join(", ");
+  return addr.text;
+}
 
 export function registerInboxTools(server: McpServer): void {
   // ── mail_list_folders ──────────────────────────────────────────
   server.tool(
     "mail_list_folders",
     "List all IMAP folders with message counts",
-    {},
-    async () => {
-      const result = await withImap(async (client) => {
+    {
+      server: serverSchema,
+      account: accountSchema,
+    },
+    async ({ server: srv, account }) => {
+      const result = await withImap(srv, account, async (client) => {
         const folderList = await client.list();
         const folders = folderList.map((f: any) => f.path);
         const details: string[] = [];
@@ -33,12 +43,14 @@ export function registerInboxTools(server: McpServer): void {
     "mail_list_messages",
     "List messages in a folder (subject, from, date, flags, uid)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("IMAP folder name"),
       limit: z.number().min(1).max(100).default(20).describe("Number of messages to return"),
       page: z.number().min(1).default(1).describe("Page number (1-based)"),
     },
-    async ({ folder, limit, page }) => {
-      const result = await withImap(async (client) => {
+    async ({ server: srv, account, folder, limit, page }) => {
+      const result = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const status = await client.status(folder, { messages: true });
@@ -80,21 +92,23 @@ export function registerInboxTools(server: McpServer): void {
     "mail_read",
     "Read a full message (body text/html, headers, attachment list)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("IMAP folder name"),
       uid: z.number().describe("Message UID"),
     },
-    async ({ folder, uid }) => {
-      const result = await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid }) => {
+      const result = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const msg = await client.fetchOne(`${uid}`, { source: true }, { uid: true });
           if (!msg) return `Message UID ${uid} not found in ${folder}`;
 
-          const parsed = await simpleParser(msg.source);
+          const parsed = await simpleParser(msg.source!);
           const lines: string[] = [];
-          lines.push(`From: ${parsed.from?.text ?? "(unknown)"}`);
-          lines.push(`To: ${parsed.to?.text ?? "(unknown)"}`);
-          if (parsed.cc) lines.push(`Cc: ${parsed.cc.text}`);
+          lines.push(`From: ${addrText(parsed.from)}`);
+          lines.push(`To: ${addrText(parsed.to)}`);
+          if (parsed.cc) lines.push(`Cc: ${addrText(parsed.cc)}`);
           lines.push(`Date: ${parsed.date?.toISOString() ?? "?"}`);
           lines.push(`Subject: ${parsed.subject ?? "(no subject)"}`);
           lines.push(`Message-ID: ${parsed.messageId ?? ""}`);
@@ -105,14 +119,13 @@ export function registerInboxTools(server: McpServer): void {
             lines.push(parsed.text.slice(0, 8000));
           } else if (parsed.html) {
             lines.push("=== Body (HTML — text unavailable) ===");
-            // Strip HTML tags for readability
             lines.push(parsed.html.replace(/<[^>]+>/g, "").slice(0, 8000));
           }
 
           if (parsed.attachments?.length) {
             lines.push("");
             lines.push("=== Attachments ===");
-            parsed.attachments.forEach((att, i) => {
+            parsed.attachments.forEach((att: any, i: number) => {
               lines.push(`  [${i}] ${att.filename ?? "unnamed"} (${att.contentType}, ${att.size ?? 0} bytes, part: ${att.partId ?? i})`);
             });
           }
@@ -131,6 +144,8 @@ export function registerInboxTools(server: McpServer): void {
     "mail_search",
     "Search messages by criteria (from, subject, date, unseen)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("IMAP folder name"),
       from: z.string().optional().describe("Filter by sender address"),
       subject: z.string().optional().describe("Filter by subject substring"),
@@ -138,8 +153,8 @@ export function registerInboxTools(server: McpServer): void {
       unseen: z.boolean().optional().describe("Only unseen messages"),
       limit: z.number().min(1).max(50).default(20).describe("Max results"),
     },
-    async ({ folder, from, subject, since, unseen, limit }) => {
-      const result = await withImap(async (client) => {
+    async ({ server: srv, account, folder, from, subject, since, unseen, limit }) => {
+      const result = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const criteria: Record<string, unknown> = {};
@@ -148,8 +163,9 @@ export function registerInboxTools(server: McpServer): void {
           if (since) criteria.since = new Date(since);
           if (unseen) criteria.seen = false;
 
-          const uids = await client.search(criteria, { uid: true });
-          if (!uids?.length) return "(no matches)";
+          const searchResult = await client.search(criteria, { uid: true });
+          const uids = Array.isArray(searchResult) ? searchResult : [];
+          if (!uids.length) return "(no matches)";
 
           const topUids = uids.slice(-limit);
           const lines: string[] = [`Found ${uids.length} messages (showing last ${topUids.length}):\n`];
@@ -182,13 +198,15 @@ export function registerInboxTools(server: McpServer): void {
     "mail_flag",
     "Set or unset a flag on a message (Seen, Flagged, Answered)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("IMAP folder name"),
       uid: z.number().describe("Message UID"),
       flag: z.enum(["Seen", "Flagged", "Answered", "Deleted"]).describe("Flag name"),
       set: z.boolean().default(true).describe("true to add, false to remove"),
     },
-    async ({ folder, uid, flag, set }) => {
-      await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid, flag, set }) => {
+      await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const imapFlag = `\\${flag}`;
@@ -210,12 +228,14 @@ export function registerInboxTools(server: McpServer): void {
     "mail_move",
     "Move a message to another folder",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("Source folder"),
       uid: z.number().describe("Message UID"),
       destination: z.string().describe("Destination folder name"),
     },
-    async ({ folder, uid, destination }) => {
-      await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid, destination }) => {
+      await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           await client.messageMove(`${uid}`, destination, { uid: true });
@@ -232,11 +252,13 @@ export function registerInboxTools(server: McpServer): void {
     "mail_delete",
     "Delete a message (moves to Trash folder)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("Source folder"),
       uid: z.number().describe("Message UID"),
     },
-    async ({ folder, uid }) => {
-      await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid }) => {
+      await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           await client.messageMove(`${uid}`, "Trash", { uid: true });
@@ -253,23 +275,25 @@ export function registerInboxTools(server: McpServer): void {
     "mail_download_attachment",
     "Get attachment content as base64",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("IMAP folder name"),
       uid: z.number().describe("Message UID"),
       filename: z.string().describe("Attachment filename to download"),
     },
-    async ({ folder, uid, filename }) => {
-      const result = await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid, filename }) => {
+      const result = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const msg = await client.fetchOne(`${uid}`, { source: true }, { uid: true });
           if (!msg) return `Message UID ${uid} not found`;
 
-          const parsed = await simpleParser(msg.source);
+          const parsed = await simpleParser(msg.source!);
           const att = parsed.attachments?.find(
-            (a) => a.filename === filename
+            (a: any) => a.filename === filename
           );
           if (!att) {
-            const names = parsed.attachments?.map((a) => a.filename).join(", ") ?? "none";
+            const names = parsed.attachments?.map((a: any) => a.filename).join(", ") ?? "none";
             return `Attachment "${filename}" not found. Available: ${names}`;
           }
 
@@ -287,10 +311,12 @@ export function registerInboxTools(server: McpServer): void {
     "mail_create_folder",
     "Create a new IMAP folder",
     {
+      server: serverSchema,
+      account: accountSchema,
       name: z.string().describe("Folder name to create"),
     },
-    async ({ name }) => {
-      await withImap(async (client) => {
+    async ({ server: srv, account, name }) => {
+      await withImap(srv, account, async (client) => {
         await client.mailboxCreate(name);
       });
       return { content: [{ type: "text", text: `Folder "${name}" created` }] };
@@ -302,10 +328,12 @@ export function registerInboxTools(server: McpServer): void {
     "mail_delete_folder",
     "Delete an IMAP folder",
     {
+      server: serverSchema,
+      account: accountSchema,
       name: z.string().describe("Folder name to delete"),
     },
-    async ({ name }) => {
-      await withImap(async (client) => {
+    async ({ server: srv, account, name }) => {
+      await withImap(srv, account, async (client) => {
         await client.mailboxDelete(name);
       });
       return { content: [{ type: "text", text: `Folder "${name}" deleted` }] };

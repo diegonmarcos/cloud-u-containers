@@ -2,7 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getTransport } from "../shared/smtp.js";
 import { withImap } from "../shared/imap.js";
-import { simpleParser } from "mailparser";
+import { getAccount, serverSchema, accountSchema } from "../shared/config.js";
+import { simpleParser, type AddressObject } from "mailparser";
+
+function addrText(addr: AddressObject | AddressObject[] | undefined): string {
+  if (!addr) return "(unknown)";
+  if (Array.isArray(addr)) return addr.map((a) => a.text).join(", ");
+  return addr.text;
+}
 
 export function registerComposeTools(server: McpServer): void {
   // ── mail_send ──────────────────────────────────────────────────
@@ -10,6 +17,8 @@ export function registerComposeTools(server: McpServer): void {
     "mail_send",
     "Send a new email",
     {
+      server: serverSchema,
+      account: accountSchema,
       to: z.string().describe("Recipient address(es), comma-separated"),
       subject: z.string().describe("Email subject"),
       body: z.string().describe("Email body (plain text)"),
@@ -17,10 +26,11 @@ export function registerComposeTools(server: McpServer): void {
       bcc: z.string().optional().describe("BCC address(es), comma-separated"),
       html: z.string().optional().describe("HTML body (overrides plain text body for HTML part)"),
     },
-    async ({ to, subject, body, cc, bcc, html }) => {
-      const transport = getTransport();
+    async ({ server: srv, account, to, subject, body, cc, bcc, html }) => {
+      const transport = getTransport(srv, account);
+      const creds = getAccount(srv, account);
       const info = await transport.sendMail({
-        from: process.env.MAIL_USER,
+        from: creds.user,
         to,
         subject,
         text: body,
@@ -37,42 +47,45 @@ export function registerComposeTools(server: McpServer): void {
     "mail_reply",
     "Reply to a message (quotes original, preserves thread headers)",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("Folder containing the original message"),
       uid: z.number().describe("UID of the message to reply to"),
       body: z.string().describe("Reply body text"),
       replyAll: z.boolean().default(false).describe("Reply to all recipients"),
     },
-    async ({ folder, uid, body, replyAll }) => {
-      const original = await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid, body, replyAll }) => {
+      const original = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const msg = await client.fetchOne(`${uid}`, { source: true }, { uid: true });
           if (!msg) throw new Error(`Message UID ${uid} not found`);
-          return await simpleParser(msg.source);
+          return await simpleParser(msg.source!);
         } finally {
           lock.release();
         }
       });
 
-      const replyTo = original.from?.text ?? "";
+      const replyTo = addrText(original.from);
       const ccAddresses = replyAll
         ? [
-            ...(original.to ? [original.to.text] : []),
-            ...(original.cc ? [original.cc.text] : []),
+            ...(original.to ? [addrText(original.to)] : []),
+            ...(original.cc ? [addrText(original.cc)] : []),
           ]
             .join(", ")
         : undefined;
 
       const quotedBody = (original.text ?? "")
         .split("\n")
-        .map((line) => `> ${line}`)
+        .map((line: string) => `> ${line}`)
         .join("\n");
 
       const subject = original.subject?.startsWith("Re:") ? original.subject : `Re: ${original.subject ?? ""}`;
 
-      const transport = getTransport();
+      const transport = getTransport(srv, account);
+      const creds = getAccount(srv, account);
       const info = await transport.sendMail({
-        from: process.env.MAIL_USER,
+        from: creds.user,
         to: replyTo,
         cc: ccAddresses ?? undefined,
         subject,
@@ -91,18 +104,20 @@ export function registerComposeTools(server: McpServer): void {
     "mail_forward",
     "Forward a message with its attachments",
     {
+      server: serverSchema,
+      account: accountSchema,
       folder: z.string().default("INBOX").describe("Folder containing the original message"),
       uid: z.number().describe("UID of the message to forward"),
       to: z.string().describe("Forward recipient(s), comma-separated"),
       body: z.string().default("").describe("Optional message to prepend before forwarded content"),
     },
-    async ({ folder, uid, to, body }) => {
-      const original = await withImap(async (client) => {
+    async ({ server: srv, account, folder, uid, to, body }) => {
+      const original = await withImap(srv, account, async (client) => {
         const lock = await client.getMailboxLock(folder);
         try {
           const msg = await client.fetchOne(`${uid}`, { source: true }, { uid: true });
           if (!msg) throw new Error(`Message UID ${uid} not found`);
-          return await simpleParser(msg.source);
+          return await simpleParser(msg.source!);
         } finally {
           lock.release();
         }
@@ -110,24 +125,25 @@ export function registerComposeTools(server: McpServer): void {
 
       const fwdHeader = [
         "---------- Forwarded message ----------",
-        `From: ${original.from?.text ?? "?"}`,
+        `From: ${addrText(original.from)}`,
         `Date: ${original.date?.toISOString() ?? "?"}`,
         `Subject: ${original.subject ?? "(no subject)"}`,
-        `To: ${original.to?.text ?? "?"}`,
+        `To: ${addrText(original.to)}`,
         "",
       ].join("\n");
 
       const subject = original.subject?.startsWith("Fwd:") ? original.subject : `Fwd: ${original.subject ?? ""}`;
 
-      const attachments = original.attachments?.map((att) => ({
+      const attachments = original.attachments?.map((att: any) => ({
         filename: att.filename ?? "attachment",
         content: att.content,
         contentType: att.contentType,
       }));
 
-      const transport = getTransport();
+      const transport = getTransport(srv, account);
+      const creds = getAccount(srv, account);
       const info = await transport.sendMail({
-        from: process.env.MAIL_USER,
+        from: creds.user,
         to,
         subject,
         text: `${body}\n\n${fwdHeader}${original.text ?? ""}`,

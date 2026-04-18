@@ -1,16 +1,16 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
 import { listAccounts, listDomains } from "../shared/admin.js";
+import { serverSchema } from "../shared/config.js";
 
 export function registerAdminTools(server: McpServer): void {
   server.tool(
     "mail_admin_users",
-    "Manage Maddy mailbox users (list/create/delete)",
+    "List mailbox users on a mail server",
     {
-      action: z.enum(["list"]).describe("Action to perform (list only — use SSH for create/delete)"),
+      server: serverSchema,
     },
-    async () => {
-      const accounts = await listAccounts();
+    async ({ server: srv }) => {
+      const accounts = await listAccounts(srv);
       const output = accounts.length ? accounts.join("\n") : "(no accounts)";
       return { content: [{ type: "text", text: output }] };
     }
@@ -18,10 +18,12 @@ export function registerAdminTools(server: McpServer): void {
 
   server.tool(
     "mail_admin_domains",
-    "List Maddy mail domains",
-    {},
-    async () => {
-      const domains = await listDomains();
+    "List mail domains on a server",
+    {
+      server: serverSchema,
+    },
+    async ({ server: srv }) => {
+      const domains = await listDomains(srv);
       return { content: [{ type: "text", text: domains.length ? domains.join("\n") : "(no domains)" }] };
     }
   );

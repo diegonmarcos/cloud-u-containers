@@ -39,6 +39,13 @@
           environment:
             PORT: "${toString config.port}"
             MAIL_HOST: ${config.mail_host}
+            MADDY_HOST: "mail.diegonmarcos.com"
+            MADDY_IMAP_PORT: "993"
+            MADDY_SMTP_PORT: "465"
+            STALWART_HOST: "mail-stalwart.diegonmarcos.com"
+            STALWART_IMAP_PORT: "2993"
+            STALWART_SMTP_PORT: "2465"
+            STALWART_JMAP_URL: "https://mail-stalwart.diegonmarcos.com:2443"
 
     '';
 
