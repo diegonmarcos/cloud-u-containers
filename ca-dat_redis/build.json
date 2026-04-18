@@ -37,6 +37,7 @@
     }
   },
   "backup": {
+    "enabled": true,
     "databases": [
       {
         "type": "custom",
