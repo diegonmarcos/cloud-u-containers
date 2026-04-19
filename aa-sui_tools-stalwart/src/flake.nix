@@ -47,14 +47,19 @@
       else
         "false";
 
-    # Tag line: if <condition> { addflag "<flag>"; }
-    mkTagLine = rule:
-      ''if ${mkCondition rule} { addflag "${rule.flag}"; }'';
+    # Tag line: if <condition> { addflag + fileinto numbered subfolder }
+    mkTagLine = group: rule:
+      let
+        idx = toString (lib.lists.findFirstIndex (r: r == rule) 0 group.rules);
+        groupNum = builtins.head (lib.strings.splitString "-" group.name);
+        subFolder = "${group.name}.${groupNum}-${idx} ${rule.flag}";
+      in
+      ''if ${mkCondition rule} { addflag "${rule.flag}"; fileinto :copy :create "${subFolder}"; }'';
 
     # Tag group: comment header + all rules
     mkTagGroup = group:
       "# -- ${group.id}: ${group.name} --\n"
-      + lib.concatStringsSep "\n" (map mkTagLine group.rules);
+      + lib.concatStringsSep "\n" (map (mkTagLine group) group.rules);
 
     # Routing rule: if <condition> { fileinto :create "<folder>"; stop; }
     mkRoutingRule = route:
