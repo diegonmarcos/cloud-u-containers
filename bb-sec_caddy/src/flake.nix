@@ -679,6 +679,49 @@
       }
     '';
 
+    # ── all_app_urls: canonical per-port names {container}-{protocol}-{port}.app ──
+    # Emitted alongside existing internal_routes[] so every declared port has a name.
+    # HTTP/HTTPS protocols → reverse_proxy; TLS/STARTTLS/TCP/UDP are skipped here
+    # (L4 passthrough handled by existing l4_routes, future pass may add SNI routing).
+    mkCanonicalAppRoute = entry: ''
+      ${entry.service} {
+        bind 10.0.0.1
+        tls internal
+        reverse_proxy ${entry.upstream}
+      }
+    '';
+
+    # Portless containers (workers/sidecars) → placeholder so the DNS name still resolves.
+    mkPortlessAppRoute = entry: ''
+      ${entry.service} {
+        bind 10.0.0.1
+        tls internal
+        respond "Portless worker/sidecar — no HTTP endpoint" 204
+      }
+    '';
+
+    # Filter all_app_urls[] for this pass: only HTTP/HTTPS canonical entries.
+    canonicalHttpEntries = lib.filter
+      (e: e.kind == "canonical" && (e.protocol == "http" || e.protocol == "https"))
+      (caddyRoutes.all_app_urls or []);
+
+    portlessEntries = lib.filter
+      (e: e.kind == "portless")
+      (caddyRoutes.all_app_urls or []);
+
+    # De-duplicate against internal_routes[] so we never emit two blocks for the same hostname.
+    internalRouteNames =
+      let names = map (r: r.service) (caddyRoutes.internal_routes or []);
+      in lib.genAttrs names (_: true);
+
+    dedupedCanonicals = lib.filter
+      (e: !(internalRouteNames.${e.service} or false))
+      canonicalHttpEntries;
+
+    dedupedPortless = lib.filter
+      (e: !(internalRouteNames.${e.service} or false))
+      portlessEntries;
+
     # ── Assemble the full Caddyfile ─────────────────────────────
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
@@ -752,6 +795,16 @@
       # ════════════════════════════════════════════════════════════
 
     ${lib.concatMapStringsSep "\n" mkInternalRoute (caddyRoutes.internal_routes or [])}
+
+      # ════════════════════════════════════════════════════════════
+      # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
+      # Data-driven from cloud-data-caddy-routes.json → all_app_urls[]
+      # HTTP/HTTPS only this pass — L4 protocols deferred to a future SNI-routed pass.
+      # ════════════════════════════════════════════════════════════
+
+    ${lib.concatMapStringsSep "\n" mkCanonicalAppRoute dedupedCanonicals}
+
+    ${lib.concatMapStringsSep "\n" mkPortlessAppRoute dedupedPortless}
 
       # ════════════════════════════════════════════════════════════
       # S3 ROUTES — OCI Object Storage via .app short names
