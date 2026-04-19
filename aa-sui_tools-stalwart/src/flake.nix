@@ -135,6 +135,26 @@
           memLimit = "256M";
           memReservation = "32M";
         };
+        stalwart-sorter = docker.mkService {
+          name = "stalwart-sorter";
+          image = "python:3-alpine";
+          container_name = "stalwart-sorter";
+          entrypoint = ["python3" "/app/imap-sorter.py"];
+          env_file = [".secrets"];
+          skipCapDrop = true;
+          skipReadOnly = true;
+          environment = [
+            "IMAP_PORT=2993"
+            "RULES_PATH=/data/mail-rules.json"
+            "STARTUP_DELAY=20"
+          ];
+          volumes = [
+            "./imap-sorter.py:/app/imap-sorter.py:ro"
+            "./mail-rules.json:/data/mail-rules.json:ro"
+          ];
+          memLimit = "64M";
+          memReservation = "16M";
+        };
       };
     };
 
@@ -278,6 +298,8 @@
         cp ${mkConfig pkgs} $out/config.toml
         cp ${mkActivate pkgs} $out/activate.sh
         cp ${mkSieve pkgs} $out/default.sieve
+        cp ${./imap-sorter.py} $out/imap-sorter.py
+        cp ${./mail-rules.json} $out/mail-rules.json
         chmod +x $out/activate.sh
       '';
     in {
