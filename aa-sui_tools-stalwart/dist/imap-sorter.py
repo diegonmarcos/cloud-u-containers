@@ -231,7 +231,7 @@ def main():
 
     rules = load_rules(RULES_PATH)
     user = rules["account"]
-    password = os.environ.get("ME_PASSWORD", "")
+    password = os.environ.get("ME_PASSWORD", "") or os.environ.get("ADMIN_PASSWORD", "")
 
     if not password:
         logging.error("ME_PASSWORD not set, exiting")

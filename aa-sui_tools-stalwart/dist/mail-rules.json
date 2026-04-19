@@ -1,5 +1,5 @@
 {
-  "sieve_require": ["fileinto", "imap4flags", "mailbox", "envelope", "mime"],
+  "sieve_require": ["fileinto", "imap4flags", "mailbox", "envelope", "mime", "copy"],
   "account": "me@diegonmarcos.com",
 
   "folders": {
