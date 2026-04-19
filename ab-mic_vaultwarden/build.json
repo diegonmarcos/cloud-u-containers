@@ -70,7 +70,13 @@
       "resources": null,
       "read_only": false,
       "db_path": "/data/db.sqlite3",
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/data/db.sqlite3"
+        }
+      ]
     }
   },
   "docker": {

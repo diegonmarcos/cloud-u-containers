@@ -127,7 +127,13 @@
       },
       "read_only": false,
       "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'",
-      "protocol": "https"
+      "protocol": "https",
+      "embedded_dbs": [
+        {
+          "engine": "rocksdb",
+          "path": "/opt/stalwart-mail/data"
+        }
+      ]
     }
   }
 }

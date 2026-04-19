@@ -75,7 +75,13 @@
         "mem_limit": "256m"
       },
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/var/lib/dagu/dagu.db"
+        }
+      ]
     }
   }
 }

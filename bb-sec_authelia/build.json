@@ -68,7 +68,13 @@
       "resources": null,
       "read_only": false,
       "db_path": "/config/db.sqlite3",
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/var/lib/authelia/db.sqlite3"
+        }
+      ]
     },
     "redis": {
       "container_name": "authelia-redis",

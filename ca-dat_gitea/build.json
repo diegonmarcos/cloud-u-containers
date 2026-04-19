@@ -88,7 +88,13 @@
       "resources": null,
       "read_only": false,
       "db_path": "/data/gitea/gitea.db",
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/data/gitea/gitea.db"
+        }
+      ]
     }
   },
   "docker": {

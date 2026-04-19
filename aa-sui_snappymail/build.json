@@ -38,7 +38,9 @@
       "base_path": "/snappy",
       "auth": "two_factor",
       "error_redirect": "/",
-      "asset_paths": ["/snappymail"]
+      "asset_paths": [
+        "/snappymail"
+      ]
     }
   },
   "containers": {
@@ -65,7 +67,13 @@
         "mem_reservation": "16M"
       },
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "files",
+          "path": "/var/lib/snappymail"
+        }
+      ]
     }
   }
 }

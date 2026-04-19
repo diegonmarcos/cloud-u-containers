@@ -60,7 +60,13 @@
       "depends_on": [],
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/data/filebrowser.db"
+        }
+      ]
     }
   },
   "docker": {
