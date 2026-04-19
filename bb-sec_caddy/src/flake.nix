@@ -728,6 +728,22 @@
       (e: !(internalRouteNames.${e.service} or false))
       portlessEntries;
 
+    # ── .db zone: HTTPS catalog endpoints only ──
+    # Every DB from all_db_urls[] becomes an HTTPS page describing where the actual
+    # DB lives. No L4 TCP forwarding — gcp-proxy ports collide with postlite +
+    # clients are better off connecting directly via WG (e.g. 10.0.0.6:5442).
+    dbCatalogEntries = caddyRoutes.all_db_urls or [];
+
+    mkDbPlaceholderRoute = e: ''
+      ${e.service} {
+        bind 10.0.0.1
+        tls internal {
+          on_demand
+        }
+        respond "DB catalog — container=${e.container or "?"} engine=${e.engine or "?"} port=${toString (e.port or 0)} upstream=${e.upstream or "(embedded)"} path=${e.path or "-"} vm=${e.vm or "-"}" 200
+      }
+    '';
+
     # ── Assemble the full Caddyfile ─────────────────────────────
 
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
@@ -822,6 +838,14 @@
     ${lib.concatMapStringsSep "\n" mkCanonicalAppRoute dedupedCanonicals}
 
     ${lib.concatMapStringsSep "\n" mkPortlessAppRoute dedupedPortless}
+
+      # ════════════════════════════════════════════════════════════
+      # DB ZONE — {container}-{engine}-{port}.db HTTPS catalog endpoints
+      # Data source: cloud-data-caddy-routes.json → all_db_urls[]
+      # Every entry returns a descriptor. TCP access goes direct (WG IPs).
+      # ════════════════════════════════════════════════════════════
+
+    ${lib.concatMapStringsSep "\n" mkDbPlaceholderRoute dbCatalogEntries}
 
       # ════════════════════════════════════════════════════════════
       # S3 ROUTES — OCI Object Storage via .app short names
