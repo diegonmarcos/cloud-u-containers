@@ -16,7 +16,7 @@
   "tags": [
     {
       "id": "B1",
-      "name": "1. Development, Education & Tools",
+      "name": "1- Development, Education & Tools",
       "rules": [
         { "type": "from_domain", "values": ["42berlin.de"], "flag": "Dev_context:42Berlin" },
         { "type": "header_contains", "header": "Subject", "values": ["evaluation", "evaluaci", "peer review", "correction"], "flag": "Dev_context:42Evaluations" },
@@ -31,7 +31,7 @@
     },
     {
       "id": "B2",
-      "name": "2. Career & Networking",
+      "name": "2- Career & Networking",
       "rules": [
         { "type": "from_domain", "values": ["glassdoor.com", "xing.com", "stepstone.de", "hired.com", "wellfound.com"], "flag": "Career_JobAlerts" },
         { "type": "from_domain", "values": ["linkedin.com"], "flag": "Career_source:LinkedIn" },
@@ -43,7 +43,7 @@
     },
     {
       "id": "B3",
-      "name": "3. Lifestyle, Travel & Logistics",
+      "name": "3- Lifestyle, Travel & Logistics",
       "rules": [
         { "type": "from_domain", "values": ["ryanair.com", "easyjet.com", "vueling.com", "flixbus.com", "renfe.com", "iberia.com", "lufthansa.com", "klm.com"], "flag": "Travel_type:Flight" },
         { "type": "from_domain", "values": ["uber.com", "bolt.eu", "freenow.com", "blablacar.com", "lyft.com"], "flag": "Travel_type:Rideshare" },
@@ -59,7 +59,7 @@
     },
     {
       "id": "B4",
-      "name": "4. Admin, Finance & E-commerce",
+      "name": "4- Admin, Finance & E-commerce",
       "rules": [
         { "type": "from_domain", "values": ["paypal.com", "stripe.com"], "flag": "Fin_type:Receipt" },
         { "type": "header_contains", "header": "Subject", "values": ["invoice", "factura", "Rechnung", "billing statement"], "flag": "Fin_type:Invoice" },
@@ -75,7 +75,7 @@
     },
     {
       "id": "B5",
-      "name": "5. Information, Media & Feeds",
+      "name": "5- Information, Media & Feeds",
       "rules": [
         { "type": "from_domain", "values": ["dev.to", "hashnode.com", "hackernews.com", "theregister.com", "arstechnica.com"], "flag": "Read_topic:Tech" },
         { "type": "from_domain", "values": ["bbc.com", "reuters.com", "elpais.com", "spiegel.de", "theguardian.com", "nytimes.com"], "flag": "Read_type:News" },
@@ -90,7 +90,7 @@
     },
     {
       "id": "B6",
-      "name": "6. Cloud (Homelab) Management",
+      "name": "6- Cloud (Homelab) Management",
       "rules": [
         { "type": "header_contains", "header": "Subject", "values": ["[alert]", "[warning]", "is down", "unreachable", "uptime"], "flag": "Cloud_Ops:Uptime_Alert" },
         { "type": "header_contains", "header": "Subject", "values": ["backup", "restic", "snapshot", "restore"], "flag": "Cloud_Ops:Backup_Status" },
@@ -105,7 +105,7 @@
     },
     {
       "id": "B7",
-      "name": "7. Meta Size & Attachment Types",
+      "name": "7- Meta Size & Attachment Types",
       "rules": [
         { "type": "size_over", "bytes": 10485760, "flag": "Meta_Size:Large_10MB+" },
         { "type": "content_type", "value": "application/pdf", "flag": "Meta_Attach:PDF" },
@@ -130,7 +130,7 @@
     },
     {
       "id": "B8",
-      "name": "8. Meta Routing & Sender Properties",
+      "name": "8- Meta Routing & Sender Properties",
       "rules": [
         { "type": "has_cc", "flag": "Meta_Route:CC" },
         { "type": "self_sent", "flag": "Meta_Route:SelfSent" },
