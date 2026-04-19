@@ -10,14 +10,10 @@
   "deploy": {
     "host": "gcp-proxy",
     "remote_path": "/opt/containers/hickory-dns",
-    "excludes": [
-      "config/**"
-    ],
     "compose_flags": "--build"
   },
   "compose": {
-    "custom": true,
-    "pre_hook": "init.sh"
+    "custom": true
   },
   "build": {
     "include_cloud_data": "true"
@@ -34,8 +30,8 @@
       "healthcheck": null,
       "monitoring": null,
       "volumes": [
-        "./config/named.toml:/etc/named.toml:ro",
-        "./config/zones:/etc/zones:ro"
+        "./named.toml:/etc/named.toml:ro",
+        "./zones:/etc/zones:ro"
       ],
       "env_file": false,
       "depends_on": [],
