@@ -95,7 +95,11 @@ def match_tags(headers, msg_size, content_types, rules):
                 matched = rule["value"] in content_types
 
             if matched:
-                matches.append((group_name, rule["flag"], is_meta))
+                # Sub-number within group for folder name (e.g. 1.0 Dev_context:42Berlin)
+                rule_idx = group["rules"].index(rule)
+                group_num = group["name"].split(".")[0] if "." in group["name"] else group["id"][-1]
+                sub_folder = f"{group_num}.{rule_idx} {rule['flag']}"
+                matches.append((group_name, sub_folder, rule["flag"], is_meta))
 
     return matches
 
@@ -194,8 +198,8 @@ def sort_inbox(imap, rules):
 
         # B) Tag folders (copies into B-group subfolders)
         tag_matches = match_tags(headers, msg_size, content_types, rules)
-        for group_name, flag, is_meta in tag_matches:
-            tag_folder = f"{group_name}/{flag}"
+        for group_name, sub_folder, flag, is_meta in tag_matches:
+            tag_folder = f"{group_name}/{sub_folder}"
             enc_tag = imap_utf7_encode(tag_folder)
             ensure_folder(imap, tag_folder)
             result = imap.uid("COPY", uid_str, f'"{enc_tag}"')
@@ -213,7 +217,7 @@ def sort_inbox(imap, rules):
         imap.uid("STORE", uid_str, "+FLAGS", "(\\Seen $Sorted)")
 
         if folder or tag_matches:
-            tags_str = ", ".join(f for _, f, _ in tag_matches[:3])
+            tags_str = ", ".join(f for _, _, f, _ in tag_matches[:3])
             extra = f" +{len(tag_matches)-3}more" if len(tag_matches) > 3 else ""
             logging.info("%s -> %s [%s%s]", from_addr, folder or "INBOX", tags_str, extra)
 
