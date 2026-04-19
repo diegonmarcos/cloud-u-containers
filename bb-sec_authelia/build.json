@@ -90,6 +90,30 @@
       "env_file": true,
       "resources": null,
       "read_only": false,
+      "protocol": "tcp",
+      "db_engine": "redis"
+    },
+    "postlite": {
+      "container_name": "postlite-authelia",
+      "image": "ghcr.io/diegonmarcos/postlite:latest",
+      "port": null,
+      "port_env": null,
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [
+        "app"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "64M"
+        },
+        "reservations": {
+          "memory": "16M"
+        }
+      },
+      "read_only": false,
       "protocol": "tcp"
     }
   },
