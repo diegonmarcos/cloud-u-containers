@@ -98,7 +98,7 @@ def match_tags(headers, msg_size, content_types, rules):
                 # Sub-number within group for folder name (e.g. 1.0 Dev_context:42Berlin)
                 rule_idx = group["rules"].index(rule)
                 group_num = group["name"].split(".")[0] if "." in group["name"] else group["id"][-1]
-                sub_folder = f"{group_num}.{rule_idx} {rule['flag']}"
+                sub_folder = f"{group_num}-{rule_idx} {rule['flag']}"
                 matches.append((group_name, sub_folder, rule["flag"], is_meta))
 
     return matches
@@ -197,9 +197,10 @@ def sort_inbox(imap, rules):
                 count += 1
 
         # B) Tag folders (copies into B-group subfolders)
+        # Maddy uses "." as IMAP hierarchy separator, not "/"
         tag_matches = match_tags(headers, msg_size, content_types, rules)
         for group_name, sub_folder, flag, is_meta in tag_matches:
-            tag_folder = f"{group_name}/{sub_folder}"
+            tag_folder = f"{group_name}.{sub_folder}"
             enc_tag = imap_utf7_encode(tag_folder)
             ensure_folder(imap, tag_folder)
             result = imap.uid("COPY", uid_str, f'"{enc_tag}"')
