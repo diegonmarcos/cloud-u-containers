@@ -53,80 +53,84 @@
          then cloudData
          else fallback;
 
-    # ── Security snippets ─────────────────────────────────────────
+    # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
+    # All values below are READ from cloud-data-caddy-routes.json —
+    # sourced from bb-sec_caddy/build.json caddy_config.security_snippets.
+    ss = caddyRoutes.security_snippets or {};
 
     # 1. Security headers (HSTS, anti-clickjacking, etc.)
-    securityHeaders = ''
+    securityHeaders = let h = ss.security_headers; in ''
       (security_headers) {
         header {
-          Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+          Strict-Transport-Security "max-age=${toString h.hsts_max_age}; includeSubDomains; preload"
           X-Content-Type-Options "nosniff"
-          X-Frame-Options "SAMEORIGIN"
-          Referrer-Policy "strict-origin-when-cross-origin"
-          Permissions-Policy "camera=(), microphone=(), geolocation=()"
-          Access-Control-Allow-Origin "*"
-          Access-Control-Allow-Methods "GET, POST, OPTIONS"
-          Access-Control-Allow-Headers "Authorization, Content-Type"
-          -Server
+          X-Frame-Options "${h.frame_options}"
+          Referrer-Policy "${h.referrer_policy}"
+          Permissions-Policy "${h.permissions_policy}"
+          Access-Control-Allow-Origin "${h.cors_origin}"
+          Access-Control-Allow-Methods "${h.cors_methods}"
+          Access-Control-Allow-Headers "${h.cors_headers}"
+          ${lib.concatMapStringsSep "\n          " (x: "-${x}") (h.hide_headers or [])}
         }
       }
     '';
 
-    # 2. Rate limiting (100 req/min per IP — requires caddy-ratelimit plugin)
-    rateLimiting = ''
+    # 2. Rate limiting (requires caddy-ratelimit plugin)
+    rateLimiting = let r = ss.rate_limit; in ''
       (rate_limiting) {
         rate_limit {
-          zone global {
-            key    {remote_host}
-            events 100
-            window 1m
+          zone ${r.zone} {
+            key    ${r.key}
+            events ${toString r.events}
+            window ${r.window}
           }
         }
       }
     '';
 
     # 3. Bot blocking (known malicious scanners only)
-    blockBots = ''
+    blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in ''
       (block_bots) {
-        @bad_bots header_regexp User-Agent "(?i)(sqlmap|nikto|masscan|nmap|zgrab|scrapy|dirbuster|gobuster|nuclei|wfuzz|havij|acunetix|nessus|openvas)"
+        @bad_bots header_regexp User-Agent "(?i)(${uas})"
         respond @bad_bots 403
       }
     '';
 
     # 4. Scanner path blocking (common exploit paths)
-    blockScanners = ''
+    blockScanners = let paths = lib.concatStringsSep " " ss.scanner_blocker.paths; in ''
       (block_scanners) {
-        @blocked_paths path /wp-admin* /wp-login* /xmlrpc.php /.env /.git* /phpmyadmin* /actuator* /solr* /console* /.aws* /cgi-bin/*
+        @blocked_paths path ${paths}
         respond @blocked_paths 404
       }
     '';
 
-    # 5. Request size limits (10MB default)
-    requestLimits = ''
+    # 5. Request size limits
+    requestLimits = let r = ss.request_limits; in ''
       (request_limits) {
         request_body {
-          max_size 10MB
+          max_size ${r.max_body}
         }
       }
     '';
 
-    # 6. IP blocking (placeholder — ready to activate)
-    ipBlock = ''
+    # 6. IP blocking (data-driven from ss.ip_block.cidrs[])
+    ipBlock = let cidrs = ss.ip_block.cidrs or []; in ''
       (ip_block) {
-        # @blocked_ips remote_ip 192.0.2.0/24
-        # respond @blocked_ips 403
+        ${if cidrs == [] then "# no blocked CIDRs" else ''
+        @blocked_ips remote_ip ${lib.concatStringsSep " " cidrs}
+        respond @blocked_ips 403''}
       }
     '';
 
     # 7. Access logging (JSON to mounted volume for fail2ban)
-    accessLog = ''
+    accessLog = let a = ss.access_log; in ''
       (access_log) {
         log {
-          output file /var/log/caddy/access.log {
-            roll_size 10mb
-            roll_keep 5
+          output file ${a.path} {
+            roll_size ${a.roll_size}
+            roll_keep ${toString a.roll_keep}
           }
-          format json
+          format ${a.format}
         }
       }
     '';
@@ -151,30 +155,33 @@
     secNoLimit = ''
         import security'';
 
-    # ── Auth snippets (upstreams from cloud-data, not hardcoded) ──
-    autheliaUpstream = caddyRoutes.auth_upstreams.authelia or "10.0.0.1:9091";
+    # ── Auth snippets (data-driven from caddyRoutes.auth + auth_upstreams) ──
+    auth = caddyRoutes.auth or {};
+    autheliaUpstream   = caddyRoutes.auth_upstreams.authelia or "10.0.0.1:9091";
     introspectUpstream = caddyRoutes.auth_upstreams.introspect_proxy or "10.0.0.1:4182";
 
     authelia = ''
         forward_auth ${autheliaUpstream} {
-          uri /api/authz/forward-auth
-          copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+          uri ${auth.authelia_uri}
+          copy_headers ${lib.concatStringsSep " " auth.authelia_copy}
         }'';
 
     bearer = ''
         forward_auth ${introspectUpstream} {
           method GET
-          uri /auth
-          copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+          uri ${auth.introspect_uri}
+          copy_headers ${lib.concatStringsSep " " auth.introspect_copy}
         }'';
 
     # Site-level error handler for connection failures AND HTTP errors
-    handleErrors = ''
+    handleErrors = let eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
+                       codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
+                       errPath = eh.error_html; in ''
       handle_errors {
-        @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+        @backend_error expression `${codesExpr}`
         handle @backend_error {
-          root * /srv
-          rewrite * /error.html
+          root * ${lib.removeSuffix "/error.html" errPath}
+          rewrite * /${baseNameOf errPath}
           file_server
         }
       }'';
@@ -564,12 +571,12 @@
           rewrite * /ntfy-setup.html
           file_server
         }
-        @authelia_jwt header_regexp Authorization "^Bearer eyJ"
+        @authelia_jwt header_regexp Authorization "${auth.ntfy_jwt_pattern}"
         handle @authelia_jwt {
     ${bearer}
           reverse_proxy ${ntfy.upstream}
         }
-        @ntfy_token header_regexp Authorization "^Bearer tk_"
+        @ntfy_token header_regexp Authorization "${auth.ntfy_token_pattern}"
         handle @ntfy_token {
           reverse_proxy ${ntfy.upstream}
         }
@@ -696,13 +703,14 @@
     '';
 
     # Portless containers (workers/sidecars) → placeholder so the DNS name still resolves.
+    msgs = caddyRoutes.messages or {};
     mkPortlessAppRoute = entry: ''
       ${entry.service} {
         bind 10.0.0.1
         tls internal {
           on_demand
         }
-        respond "Portless worker/sidecar — no HTTP endpoint" 204
+        respond "${msgs.portless_placeholder}" 204
       }
     '';
 
@@ -746,24 +754,26 @@
 
     # ── Assemble the full Caddyfile ─────────────────────────────
 
+    global = caddyRoutes.global or {};
+    odt    = caddyRoutes.on_demand_tls or {};
     mkCaddyfile = pkgs: pkgs.writeText "Caddyfile" ''
       {
         # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
-        debug
-        admin localhost:${toString config.admin_port}
-        order respond before handle
-        auto_https disable_redirects
-        # On-demand TLS for internal .app names (lazy cert issuance). Ask endpoint
-        # lives on :2020 below and approves anything (WG mesh is the trust boundary).
+        ${if (global.debug or false) then "debug" else ""}
+        admin ${global.admin_bind}
+        order ${global.order}
+        auto_https ${global.auto_https}
+        # On-demand TLS for internal .app/.db names (lazy cert issuance).
+        # Ask endpoint below approves anything (WG mesh is the trust boundary).
         on_demand_tls {
-          ask http://127.0.0.1:2020
+          ask ${odt.ask_url}
         }
     ${mkL4Section}
       }
 
-      # ── On-demand TLS ask endpoint (always approves — WG mesh is the trust boundary) ──
-      :2020 {
-        bind 127.0.0.1
+      # ── On-demand TLS ask endpoint ──
+      :${lib.elemAt (lib.splitString ":" odt.ask_bind) 1} {
+        bind ${lib.elemAt (lib.splitString ":" odt.ask_bind) 0}
         respond 200
       }
 
@@ -854,38 +864,36 @@
     ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
 
       # ════════════════════════════════════════════════════════════
-      # MTA-STS — enforce TLS for inbound email delivery
+      # MTA-STS — enforce TLS for inbound email delivery (data-driven)
       # ════════════════════════════════════════════════════════════
 
-      mta-sts.diegonmarcos.com {
+      ${(caddyRoutes.mta_sts or {}).domain} {
     ${secNoLimit}
         tls {
           dns cloudflare {env.CF_API_TOKEN}
         }
-        handle /.well-known/mta-sts.txt {
+        handle ${(caddyRoutes.mta_sts or {}).policy_path} {
           header Content-Type "text/plain"
           respond "version: STSv1
-mode: enforce
-mx: route1.mx.cloudflare.net
-mx: route2.mx.cloudflare.net
-mx: route3.mx.cloudflare.net
-max_age: 604800
+mode: ${(caddyRoutes.mta_sts or {}).mode}
+${lib.concatMapStringsSep "\n" (m: "mx: ${m}") ((caddyRoutes.mta_sts or {}).mx or [])}
+max_age: ${toString ((caddyRoutes.mta_sts or {}).max_age or 604800)}
 " 200
         }
         respond 404
       }
 
       # ════════════════════════════════════════════════════════════
-      # CATCH-ALL — Custom error page for unknown/unconfigured domains
+      # CATCH-ALL — data-driven from caddyRoutes.catch_all
       # ════════════════════════════════════════════════════════════
 
-      *.diegonmarcos.com {
+      ${(caddyRoutes.catch_all or {}).domain} {
     ${secNoLimit}
         tls {
           dns cloudflare {env.CF_API_TOKEN}
         }
-        root * /srv
-        rewrite * /error.html
+        root * ${lib.removeSuffix ("/" + baseNameOf ((caddyRoutes.catch_all or {}).page or "")) ((caddyRoutes.catch_all or {}).page or "/srv/error.html")}
+        rewrite * /${baseNameOf ((caddyRoutes.catch_all or {}).page or "error.html")}
         file_server
       }
 
