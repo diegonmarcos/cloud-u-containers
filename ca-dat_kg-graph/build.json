@@ -19,7 +19,9 @@
     "app": {
       "container_name": "surrealdb",
       "port": 8001,
-      "protocol": "http"
+      "protocol": "http",
+      "db_engine": "surrealdb",
+      "image": "ghcr.io/diegonmarcos/kg-graph:latest"
     }
   },
   "docker": {
