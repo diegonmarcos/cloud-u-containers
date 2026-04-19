@@ -183,6 +183,8 @@ def sort_inbox(imap, rules):
 
         # A) Route to category folder (unread copy)
         folder = match_routing(from_domain, rules)
+        if not folder:
+            folder = rules.get("routing_default", None)
         if folder:
             enc_folder = imap_utf7_encode(folder)
             ensure_folder(imap, folder)
