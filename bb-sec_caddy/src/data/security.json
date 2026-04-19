@@ -1,9 +1,0 @@
-[
-  { "n": "1", "name": "Network Edge",     "desc": "Cloudflare Proxy + Cloud Firewalls" },
-  { "n": "2", "name": "TLS Termination",  "desc": "Caddy auto-HTTPS + Let's Encrypt" },
-  { "n": "3", "name": "Traffic Filtering", "desc": "Rate limiting, bot blocking, scanner blocking" },
-  { "n": "4", "name": "Authentication",   "desc": "Authelia 2FA (TOTP/WebAuthn) + OIDC bearer tokens" },
-  { "n": "5", "name": "Token Validation", "desc": "introspect-proxy OIDC introspection sidecar" },
-  { "n": "6", "name": "Network Isolation", "desc": "WireGuard mesh VPN + Docker bridge networks" },
-  { "n": "7", "name": "Credential Mgmt",  "desc": "Vaultwarden (passwords) + Aegis (TOTP)" }
-]

@@ -15,9 +15,7 @@
   "compose": {
     "custom": true
   },
-  "build": {
-    "include_cloud_data": "true"
-  },
+  "build": {},
   "secrets": {
     "escape_dollars": "true"
   },
