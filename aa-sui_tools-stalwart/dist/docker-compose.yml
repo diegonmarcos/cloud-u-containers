@@ -52,5 +52,44 @@ services:
         max-file: "3"
     security_opt:
       - no-new-privileges:true
+
+  stalwart-sorter:
+    image: python:3-alpine
+    container_name: stalwart-sorter
+    network_mode: host
+    entrypoint: ["python3", "/app/imap-sorter.py"]
+    restart: no
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    dns:
+      - 10.0.0.1
+      - 1.1.1.1
+    env_file:
+      - .secrets
+    environment:
+      - IMAP_PORT=2993
+      - RULES_PATH=/data/mail-rules.json
+      - STARTUP_DELAY=20
+    volumes:
+      - ./imap-sorter.py:/app/imap-sorter.py:ro
+      - ./mail-rules.json:/data/mail-rules.json:ro
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "1.0"
+          pids: 256
+        reservations:
+          memory: 16M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
 volumes:
   stalwart_data:
