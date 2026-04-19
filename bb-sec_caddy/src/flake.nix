@@ -683,10 +683,14 @@
     # Emitted alongside existing internal_routes[] so every declared port has a name.
     # HTTP/HTTPS protocols → reverse_proxy; TLS/STARTTLS/TCP/UDP are skipped here
     # (L4 passthrough handled by existing l4_routes, future pass may add SNI routing).
+    # tls internal + on_demand → cert issued lazily on first request
+    # (eager startup issuance for 70+ sites occasionally drops certs)
     mkCanonicalAppRoute = entry: ''
       ${entry.service} {
         bind 10.0.0.1
-        tls internal
+        tls internal {
+          on_demand
+        }
         reverse_proxy ${entry.upstream}
       }
     '';
@@ -695,7 +699,9 @@
     mkPortlessAppRoute = entry: ''
       ${entry.service} {
         bind 10.0.0.1
-        tls internal
+        tls internal {
+          on_demand
+        }
         respond "Portless worker/sidecar — no HTTP endpoint" 204
       }
     '';
@@ -731,7 +737,18 @@
         admin localhost:${toString config.admin_port}
         order respond before handle
         auto_https disable_redirects
+        # On-demand TLS for internal .app names (lazy cert issuance). Ask endpoint
+        # lives on :2020 below and approves anything (WG mesh is the trust boundary).
+        on_demand_tls {
+          ask http://127.0.0.1:2020
+        }
     ${mkL4Section}
+      }
+
+      # ── On-demand TLS ask endpoint (always approves — WG mesh is the trust boundary) ──
+      :2020 {
+        bind 127.0.0.1
+        respond 200
       }
 
       # ════════════════════════════════════════════════════════════
