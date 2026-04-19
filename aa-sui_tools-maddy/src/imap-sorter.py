@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""IMAP inbox sorter for Maddy — copies messages to category folders.
+"""IMAP inbox sorter for Maddy — dual-vector email organization.
 
 Reads mail-rules.json (shared with Stalwart Sieve) and applies:
-  A) Routing: copy to category folder (unread), mark INBOX original as read
-  B) Meta: copy to _Meta/ folders (marked read) for size/attachment views
+  A) Routing: copy to one of 6 emoji category folders (unread)
+  B) Tags-as-folders: copy to B1-B8 subfolders (unread for B1-B6, read for B7-B8)
+  INBOX: all emails stay here, auto-marked as read
 
-Maddy has no Sieve support — this script bridges the gap via IMAP protocol.
+Maddy has no Sieve/tag support — this script bridges the gap via IMAP protocol.
 """
 import imaplib
 import json
@@ -16,6 +17,7 @@ import os
 import sys
 import logging
 import re
+import ssl
 
 logging.basicConfig(
     stream=sys.stdout, level=logging.INFO,
@@ -29,13 +31,23 @@ IMAP_SSL = os.getenv("IMAP_SSL", "true").lower() in ("true", "1", "yes")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 STARTUP_DELAY = int(os.getenv("STARTUP_DELAY", "15"))
 
-# Meta folders get copies marked as read (they're reference views, not primary)
+# B7 and B8 are meta folders — copies marked as read
 META_TAG_IDS = {"B7", "B8"}
 
 
 def load_rules(path):
     with open(path) as f:
         return json.load(f)
+
+
+def imap_connect():
+    """Connect to IMAP with SSL and skip cert verification (self-signed)."""
+    if IMAP_SSL:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx)
+    return imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
 
 
 def match_routing(from_domain, rules):
@@ -47,40 +59,75 @@ def match_routing(from_domain, rules):
     return None
 
 
-def match_header_routing(headers, rules):
-    """Check header_contains routing rules (Career subject matching etc.)."""
+def match_tags(headers, msg_size, content_types, rules):
+    """Return list of (group_name, flag, is_meta) for all matching tag rules."""
+    matches = []
+    from_addr = email.utils.parseaddr(headers.get("From", ""))[1].lower()
+    from_domain = from_addr.split("@")[-1] if "@" in from_addr else ""
+    account = rules.get("account", "")
+
     for group in rules.get("tags", []):
+        group_name = group["name"]
+        is_meta = group["id"] in META_TAG_IDS
+
         for rule in group.get("rules", []):
-            if rule["type"] == "header_contains":
+            matched = False
+            rtype = rule["type"]
+
+            if rtype == "from_domain":
+                matched = from_domain in rule["values"]
+            elif rtype == "from_address":
+                matched = from_addr in rule["values"]
+            elif rtype == "header_contains":
                 header_val = headers.get(rule["header"], "").lower()
-                for val in rule["values"]:
-                    if val.lower() in header_val:
-                        return None  # Tags only, no folder routing from header matches
-    return None
+                matched = any(v.lower() in header_val for v in rule["values"])
+            elif rtype == "header_exists":
+                matched = rule["header"] in headers
+            elif rtype == "size_over":
+                matched = msg_size >= rule["bytes"]
+            elif rtype == "self_sent":
+                matched = from_addr == account
+            elif rtype == "has_cc":
+                matched = "CC" in headers
+            elif rtype == "list_header":
+                matched = "List-Unsubscribe" in headers
+            elif rtype == "content_type":
+                matched = rule["value"] in content_types
+
+            if matched:
+                matches.append((group_name, rule["flag"], is_meta))
+
+    return matches
 
 
-def match_meta_folders(msg_size, content_types, rules):
-    """Return list of meta folder paths for size/attachment matches."""
-    folders = []
-    for group in rules.get("tags", []):
-        if group["id"] not in META_TAG_IDS:
-            continue
-        for rule in group.get("rules", []):
-            if rule["type"] == "size_over":
-                if msg_size >= rule["bytes"]:
-                    tag = rule["flag"].replace(":", "/").replace("+", "plus")
-                    folders.append("_Meta/" + tag)
-            elif rule["type"] == "content_type":
-                if rule["value"] in content_types:
-                    tag = rule["flag"].replace(":", "/")
-                    folders.append("_Meta/" + tag)
-    return folders
+def imap_utf7_encode(s):
+    """Encode a Unicode string to modified UTF-7 for IMAP folder names."""
+    result = []
+    buf = ""
+    for ch in s:
+        if 0x20 <= ord(ch) <= 0x7e:
+            if buf:
+                encoded = buf.encode("utf-16-be")
+                b64 = __import__("base64").b64encode(encoded).decode("ascii").rstrip("=")
+                result.append("&" + b64.replace("/", ",") + "-")
+                buf = ""
+            if ch == "&":
+                result.append("&-")
+            else:
+                result.append(ch)
+        else:
+            buf += ch
+    if buf:
+        encoded = buf.encode("utf-16-be")
+        b64 = __import__("base64").b64encode(encoded).decode("ascii").rstrip("=")
+        result.append("&" + b64.replace("/", ",") + "-")
+    return "".join(result)
 
 
 def ensure_folder(imap, folder):
     """Create IMAP folder if it doesn't exist (idempotent)."""
-    # IMAP folder separator is usually "."
-    imap.create(folder)  # silently fails if exists
+    encoded = imap_utf7_encode(folder)
+    imap.create(f'"{encoded}"')
 
 
 def get_content_types(imap, uid):
@@ -92,7 +139,6 @@ def get_content_types(imap, uid):
             body = data[0][0] if isinstance(data[0], tuple) else data[0]
             if isinstance(body, bytes):
                 body = body.decode("utf-8", errors="replace")
-            # Extract content types from BODYSTRUCTURE response
             for match in re.findall(r'"([a-z]+/[a-z0-9.+_-]+)"', body.lower()):
                 types.add(match)
     except Exception:
@@ -103,7 +149,6 @@ def get_content_types(imap, uid):
 def sort_inbox(imap, rules):
     """Process unsorted messages in INBOX. Returns count of sorted messages."""
     imap.select("INBOX")
-    # Search for messages without our custom flag $Sorted
     _, data = imap.uid("SEARCH", None, "UNKEYWORD $Sorted")
     if not data[0]:
         return 0
@@ -116,18 +161,14 @@ def sort_inbox(imap, rules):
 
         # Fetch headers + size
         _, msg_data = imap.uid("FETCH", uid_str, "(RFC822.SIZE BODY.PEEK[HEADER])")
-        if not msg_data or not msg_data[0]:
+        if not msg_data or not msg_data[0] or not isinstance(msg_data[0], tuple):
             continue
 
-        # Parse response — format: (b'UID FLAGS...', header_bytes)
         raw = msg_data[0]
-        if isinstance(raw, tuple):
-            meta_line = raw[0].decode("utf-8", errors="replace") if isinstance(raw[0], bytes) else raw[0]
-            header_bytes = raw[1] if len(raw) > 1 else b""
-        else:
-            continue
+        meta_line = raw[0].decode("utf-8", errors="replace") if isinstance(raw[0], bytes) else raw[0]
+        header_bytes = raw[1] if len(raw) > 1 else b""
 
-        # Extract size from response
+        # Extract size
         size_match = re.search(r"RFC822\.SIZE\s+(\d+)", meta_line)
         msg_size = int(size_match.group(1)) if size_match else 0
 
@@ -135,34 +176,44 @@ def sort_inbox(imap, rules):
         headers = email.message_from_bytes(header_bytes)
         from_addr = email.utils.parseaddr(headers.get("From", ""))[1].lower()
         from_domain = from_addr.split("@")[-1] if "@" in from_addr else ""
+        subject = headers.get("Subject", "")[:60]
 
-        # A) Route to category folder
+        # Get content types for attachment matching
+        content_types = get_content_types(imap, uid_str)
+
+        # A) Route to category folder (unread copy)
         folder = match_routing(from_domain, rules)
         if folder:
+            enc_folder = imap_utf7_encode(folder)
             ensure_folder(imap, folder)
-            result = imap.uid("COPY", uid_str, folder)
+            result = imap.uid("COPY", uid_str, f'"{enc_folder}"')
             if result[0] == "OK":
                 count += 1
-                logging.info("Copied to %s: %s (%s)", folder, from_addr, headers.get("Subject", "")[:50])
 
-        # B) Meta folders (size/attachments)
-        content_types = get_content_types(imap, uid_str)
-        meta_folders = match_meta_folders(msg_size, content_types, rules)
-        for mf in meta_folders:
-            ensure_folder(imap, mf)
-            result = imap.uid("COPY", uid_str, mf)
-            if result[0] == "OK":
-                # Mark meta copy as read — select meta folder, find last message, mark read
-                imap.select(mf)
+        # B) Tag folders (copies into B-group subfolders)
+        tag_matches = match_tags(headers, msg_size, content_types, rules)
+        for group_name, flag, is_meta in tag_matches:
+            tag_folder = f"{group_name}/{flag}"
+            enc_tag = imap_utf7_encode(tag_folder)
+            ensure_folder(imap, tag_folder)
+            result = imap.uid("COPY", uid_str, f'"{enc_tag}"')
+            if result[0] == "OK" and is_meta:
+                # Mark meta copies (B7/B8) as read
+                imap.select(f'"{enc_tag}"')
                 _, last_data = imap.uid("SEARCH", None, "ALL")
                 if last_data[0]:
                     last_uid = last_data[0].split()[-1]
-                    imap.uid("STORE", last_uid.decode() if isinstance(last_uid, bytes) else last_uid,
-                             "+FLAGS", "(\\Seen)")
+                    last_uid_s = last_uid.decode() if isinstance(last_uid, bytes) else last_uid
+                    imap.uid("STORE", last_uid_s, "+FLAGS", "(\\Seen)")
                 imap.select("INBOX")
 
-        # Mark INBOX original as read + flag as sorted
+        # Mark INBOX original as read + sorted
         imap.uid("STORE", uid_str, "+FLAGS", "(\\Seen $Sorted)")
+
+        if folder or tag_matches:
+            tags_str = ", ".join(f for _, f, _ in tag_matches[:3])
+            extra = f" +{len(tag_matches)-3}more" if len(tag_matches) > 3 else ""
+            logging.info("%s -> %s [%s%s]", from_addr, folder or "INBOX", tags_str, extra)
 
     return count
 
@@ -179,19 +230,12 @@ def main():
         logging.error("ME_PASSWORD not set, exiting")
         sys.exit(1)
 
-    logging.info("Connecting to %s:%d (SSL=%s) as %s", IMAP_HOST, IMAP_PORT, IMAP_SSL, user)
+    logging.info("Connecting to %s:%d as %s", IMAP_HOST, IMAP_PORT, user)
 
     reconnect_delay = 5
     while True:
         try:
-            if IMAP_SSL:
-                import ssl
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                imap = imaplib.IMAP4_SSL(IMAP_HOST, IMAP_PORT, ssl_context=ctx)
-            else:
-                imap = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
+            imap = imap_connect()
             imap.login(user, password)
             logging.info("Connected and authenticated")
             reconnect_delay = 5
