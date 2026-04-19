@@ -8,8 +8,10 @@
     "lifestyle": "\u2708\ufe0f Lifestyle & Logistics",
     "admin": "\ud83d\udee1\ufe0f Admin & Finance",
     "information": "\ud83d\udcf0 Information & Feeds",
-    "cloud": "\u2601\ufe0f Cloud (Homelab)"
+    "cloud": "\u2601\ufe0f Cloud (Homelab)",
+    "others": "\ud83d\udce6 Others"
   },
+  "routing_default": "\ud83d\udce6 Others",
 
   "tags": [
     {

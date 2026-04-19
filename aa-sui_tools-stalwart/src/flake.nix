@@ -81,7 +81,8 @@
         # ══════════════════════════════════════════════════════════════════
 
         ${routingSection}
-        # Default: implicit keep -> INBOX
+        # Default: unmatched emails go to Others
+        fileinto :create "${mailRules.routing_default}";
       '';
 
     mkSieve = pkgs: pkgs.writeText "default.sieve" mkSieveScript;
