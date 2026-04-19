@@ -82,9 +82,9 @@
           deploy:
             resources:
               limits:
-                memory: 128M
+                memory: 1G
               reservations:
-                memory: 32M
+                memory: 256M
 
         umami-db:
           image: ${ghcrUmamiDb.image}
@@ -112,9 +112,9 @@
           deploy:
             resources:
               limits:
-                memory: 128M
+                memory: 512M
               reservations:
-                memory: 32M
+                memory: 128M
 
         umami-setup:
           image: ${ghcrUmamiSetup.image}
@@ -355,6 +355,12 @@
         mkdir -p $out
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkSetupScript pkgs} $out/setup.sh
+        # Matomo -> Umami migration tool (data-driven, runs on VM via lifecycle.migrate-from-matomo)
+        mkdir -p $out/migrate-from-matomo
+        cp ${./migrate-from-matomo/config.json} $out/migrate-from-matomo/config.json
+        cp ${./migrate-from-matomo/migrate.sh}  $out/migrate-from-matomo/migrate.sh
+        cp ${./migrate-from-matomo/test.sh}     $out/migrate-from-matomo/test.sh
+        chmod +x $out/migrate-from-matomo/*.sh
       '';
     in {
       default = defaultPkg;
