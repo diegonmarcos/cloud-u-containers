@@ -52,7 +52,7 @@
       let
         idx = toString (lib.lists.findFirstIndex (r: r == rule) 0 group.rules);
         groupNum = builtins.head (lib.strings.splitString "-" group.name);
-        subFolder = "${group.name}.${groupNum}-${idx} ${rule.flag}";
+        subFolder = "${group.name}/${groupNum}-${idx} ${rule.flag}";
       in
       ''if ${mkCondition rule} { addflag "${rule.flag}"; fileinto :copy :create "${subFolder}"; }'';
 
@@ -139,17 +139,17 @@
           name = "stalwart-sorter";
           image = "python:3-alpine";
           container_name = "stalwart-sorter";
-          entrypoint = ["python3" "/app/imap-sorter.py"];
+          entrypoint = ["python3" "/app/jmap-sorter.py"];
           env_file = [".secrets"];
           skipCapDrop = true;
           skipReadOnly = true;
           environment = [
-            "IMAP_PORT=2993"
+            "JMAP_URL=https://localhost:${toString (ports.valueOf "app")}"
             "RULES_PATH=/data/mail-rules.json"
             "STARTUP_DELAY=20"
           ];
           volumes = [
-            "./imap-sorter.py:/app/imap-sorter.py:ro"
+            "./jmap-sorter.py:/app/jmap-sorter.py:ro"
             "./mail-rules.json:/data/mail-rules.json:ro"
           ];
           memLimit = "64M";
@@ -298,7 +298,7 @@
         cp ${mkConfig pkgs} $out/config.toml
         cp ${mkActivate pkgs} $out/activate.sh
         cp ${mkSieve pkgs} $out/default.sieve
-        cp ${./imap-sorter.py} $out/imap-sorter.py
+        cp ${./jmap-sorter.py} $out/jmap-sorter.py
         cp ${./mail-rules.json} $out/mail-rules.json
         chmod +x $out/activate.sh
       '';
