@@ -59,7 +59,13 @@
       ],
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/var/lib/grafana/grafana.db"
+        }
+      ]
     },
     "loki": {
       "container_name": "lgtm_loki",
@@ -76,7 +82,13 @@
       "env_file": false,
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "boltdb",
+          "path": "/loki/index"
+        }
+      ]
     },
     "tempo": {
       "container_name": "lgtm_tempo",
@@ -93,7 +105,13 @@
       "env_file": false,
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "wal",
+          "path": "/var/tempo"
+        }
+      ]
     },
     "mimir": {
       "container_name": "lgtm_mimir",
@@ -110,7 +128,13 @@
       "env_file": false,
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "tsdb",
+          "path": "/var/mimir"
+        }
+      ]
     }
   },
   "docker": {

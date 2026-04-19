@@ -62,7 +62,13 @@
       "resources": null,
       "read_only": false,
       "db_path": "/var/cache/ntfy/cache.db",
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "sqlite",
+          "path": "/var/cache/ntfy/cache.db"
+        }
+      ]
     },
     "syslog-bridge": {
       "container_name": "syslog-bridge",
