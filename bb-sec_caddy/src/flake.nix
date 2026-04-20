@@ -331,15 +331,43 @@
     '';
 
     # Generate GitHub Pages proxy blocks from github_pages_proxies[]
+    # Also injects well_known_routes[] that target matching domains.
+    wellKnownRoutes = caddyRoutes.well_known_routes or [];
+
+    mkWellKnownBlock = wk:
+      let
+        hasTlsSkipVerify = wk.tls_skip_verify or false;
+        proxyDirective = if hasTlsSkipVerify then ''
+            reverse_proxy https://${wk.upstream} {
+              transport http {
+                tls_insecure_skip_verify
+              }
+            }'' else "        reverse_proxy ${wk.upstream}";
+      in ''
+        # ${wk.comment or wk.path} (well-known — public per spec)
+        handle ${wk.path} {
+    ${proxyDirective}
+        }'';
+
     mkGithubPagesRoute = route:
       let
         hasWkd = route.wkd or false;
+        # Find well_known_routes targeting any domain in this route's domain list
+        routeDomains = lib.splitString ", " route.domain;
+        matchingWellKnown = builtins.filter (wk: builtins.elem wk.target_domain routeDomains) wellKnownRoutes;
+        wellKnownBlocks = lib.concatMapStringsSep "\n" mkWellKnownBlock matchingWellKnown;
+
         wkdBlock = if hasWkd then ''
         # WKD — PGP public key discovery (no auth — must be public per spec)
         handle_path /.well-known/openpgpkey/* {
           root * /srv/wkd
           file_server
         }
+    ${wellKnownBlocks}
+        handle {
+          ${mkGithubProxy route.github_path}
+        }'' else if wellKnownBlocks != "" then ''
+    ${wellKnownBlocks}
         handle {
           ${mkGithubProxy route.github_path}
         }'' else "    ${mkGithubProxy route.github_path}";

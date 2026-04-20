@@ -56,7 +56,15 @@
       "tls_skip_verify": true,
       "auth": "none",
       "error_redirect": "/"
-    }
+    },
+    "well_known": [
+      {
+        "path": "/.well-known/jmap",
+        "target_domain": "diegonmarcos.com",
+        "tls_skip_verify": true,
+        "comment": "JMAP auto-discovery (RFC 8620) — proxies to Stalwart"
+      }
+    ]
   },
   "health": {
     "path": "/"
