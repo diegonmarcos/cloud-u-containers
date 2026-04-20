@@ -15,7 +15,10 @@
       container_name = "mattermost";
       postgres_container = "mattermost-postgres";
       bridge_container = "mattermost-bots";
-      image = "ngrie/mattermost-team-edition-arm:10.11";
+      # Upstream official, multi-arch (linux/amd64 + linux/arm64). Replaces the
+      # ngrie/mattermost-team-edition-arm fork which only publishes amd64
+      # manifests despite its name, breaking oci-apps (aarch64) builds.
+      image = "mattermost/mattermost-team-edition:10.11";
       c3_api = "http://c3-infra-mcp-api:8080";
       c3_port = 8887;
       postgres_image = "postgres:16-alpine";
