@@ -22,8 +22,9 @@
     # Caddy terminates TLS + L7 routing per-hostname via its own config.
     caddy_wg_ip = buildContainer.services.caddy.ip;
 
-    # Declared suffixes — add a new one here to create a whole new TLD.
-    zones = [ "app" "db" ];
+    # Declared suffixes (from build.json) — add a new one to create a whole new TLD.
+    zones = buildJson.dns.zones;
+    forwarders = buildJson.dns.forwarders;
 
     title = "Hickory DNS";
     docker = import ../../_shared/docker.nix;
@@ -58,7 +59,7 @@
         # ── Wildcard zones (catch-all → Caddy WG IP) ──
         ${zoneBlocks}
 
-        # ── Root forwarder (everything else → Cloudflare/Google) ──
+        # ── Root forwarder (everything else → declared upstream DNS) ──
         [[zones]]
         zone = "."
         zone_type = "External"
@@ -66,19 +67,14 @@
         [zones.stores]
         type = "forward"
 
-        [[zones.stores.name_servers]]
-        ip = "1.1.1.1"
-        connections = [
-          { protocol = { type = "udp" } },
-          { protocol = { type = "tcp" } }
-        ]
-
-        [[zones.stores.name_servers]]
-        ip = "8.8.8.8"
-        connections = [
-          { protocol = { type = "udp" } },
-          { protocol = { type = "tcp" } }
-        ]
+        ${nixpkgs.lib.concatMapStringsSep "\n\n" (ns: ''
+          [[zones.stores.name_servers]]
+          ip = "${ns}"
+          connections = [
+            { protocol = { type = "udp" } },
+            { protocol = { type = "tcp" } }
+          ]
+        '') forwarders}
       '';
 
     # ── GHCR image wrapping ─────────────────────────────────────────

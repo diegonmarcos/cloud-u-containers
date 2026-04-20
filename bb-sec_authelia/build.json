@@ -122,5 +122,6 @@
     "image": "authelia",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
-  }
+  },
+  "timezone": "Europe/Madrid"
 }

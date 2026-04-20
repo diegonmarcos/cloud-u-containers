@@ -34,7 +34,8 @@
       "depends_on": [],
       "resources": null,
       "read_only": false,
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "redis"
     }
   },
   "backup": {
@@ -53,5 +54,9 @@
     "image": "redis",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
+  },
+  "redis": {
+    "maxmemory": "128mb",
+    "maxmemory_policy": "allkeys-lru"
   }
 }
