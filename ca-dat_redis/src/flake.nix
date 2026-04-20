@@ -9,7 +9,10 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-redis.json (symlink → I_cloud-data/
+    # build-redis.json). Engine resolves symlink before nix build.
+    buildRedis = builtins.fromJSON (builtins.readFile ./build-redis.json);
+    svc = buildRedis.services;
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {

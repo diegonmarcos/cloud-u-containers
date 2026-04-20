@@ -28,13 +28,13 @@
     # from the JSON data files in data/. Nix just copies it.
 
     # ── Route data from cloud-data pipeline ─────────────────────
-    # Single source of truth: build-proxy-caddy-routes.json (symlink →
-    # I_cloud-data/build-proxy-caddy-routes.json). Engine resolves symlink
+    # Single source of truth: build-caddy.json (symlink →
+    # I_cloud-data/build-caddy.json). Engine resolves symlink
     # before nix build.
-    caddyRoutes = builtins.fromJSON (builtins.readFile ./build-proxy-caddy-routes.json);
+    caddyRoutes = builtins.fromJSON (builtins.readFile ./build-caddy.json);
 
     # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
-    # All values below are READ from build-proxy-caddy-routes.json —
+    # All values below are READ from build-caddy.json —
     # sourced from bb-sec_caddy/build.json caddy_config.security_snippets.
     ss = caddyRoutes.security_snippets or {};
 
@@ -821,7 +821,7 @@
 
       # ════════════════════════════════════════════════════════════
       # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
-      # Data-driven from build-proxy-caddy-routes.json → all_app_urls[]
+      # Data-driven from build-caddy.json → all_app_urls[]
       # HTTP/HTTPS only this pass — L4 protocols deferred to a future SNI-routed pass.
       # ════════════════════════════════════════════════════════════
 
@@ -831,7 +831,7 @@
 
       # ════════════════════════════════════════════════════════════
       # DB ZONE — {container}-{engine}-{port}.db HTTPS catalog endpoints
-      # Data source: build-proxy-caddy-routes.json → all_db_urls[]
+      # Data source: build-caddy.json → all_db_urls[]
       # Every entry returns a descriptor. TCP access goes direct (WG IPs).
       # ════════════════════════════════════════════════════════════
 
