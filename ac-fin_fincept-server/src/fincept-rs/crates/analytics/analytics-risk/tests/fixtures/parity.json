@@ -1,0 +1,11 @@
+{
+  "note": "Values verified against the Rust implementation which uses sample stddev (N-1). Series for Sortino has ≥2 negative returns so downside stddev is defined.",
+  "cases": [
+    { "fn": "volatility",    "args": [[0.01, -0.01, 0.02, -0.02, 0.01], 252],       "expected": 0.26084478143,  "tolerance": 1e-6 },
+    { "fn": "sharpe",        "args": [[0.01, 0.02, -0.01, 0.005, 0.015], 0.0, 252], "expected": 11.03271293549, "tolerance": 1e-6 },
+    { "fn": "sortino",       "args": [[0.02, 0.03, -0.01, 0.01, -0.02, 0.025, -0.015], 0.0, 252],
+      "expected": 18.14229470, "tolerance": 1e-6 },
+    { "fn": "historical_var","args": [[-0.05, -0.04, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05], 0.9], "expected": 0.04, "tolerance": 1e-6 },
+    { "fn": "max_drawdown",  "args": [[0.10, -0.20, 0.05, -0.10]],                   "expected": -0.244,         "tolerance": 1e-3 }
+  ]
+}

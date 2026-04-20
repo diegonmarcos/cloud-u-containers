@@ -1,0 +1,106 @@
+{
+  "name": "quant-lab-light",
+  "description": "Lightweight quant research: Jupyter + NautilusTrader + Postgres",
+  "ports": {
+    "app": 8889,
+    "engine": 5001,
+    "db": 5443
+  },
+  "category": "fin",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/quant-lab-light",
+    "compose_flags": "--build"
+  },
+  "containers": {
+    "research": {
+      "container_name": "quant_light_research",
+      "image": "quay.io/jupyter/scipy-notebook:latest",
+      "port": 8889,
+      "port_env": null,
+      "dns": "quant-light-research.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": "curl -sf http://localhost:8889/api || exit 1",
+      "volumes": [
+        "./notebooks:/home/jovyan/work",
+        "./data:/home/jovyan/data"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "engine": {
+      "container_name": "quant_light_engine",
+      "image": "python:3.12-slim",
+      "port": 5001,
+      "port_env": null,
+      "dns": "quant-light-engine.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "volumes": [
+        "./strategies:/app/strategies",
+        "./data:/app/data"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "research"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "db": {
+      "container_name": "quant_light_db",
+      "image": "postgres:16-alpine",
+      "port": 5443,
+      "port_env": "PGPORT",
+      "dns": "quant-light-db.app",
+      "public": false,
+      "proxy": null,
+      "healthcheck": "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB",
+      "volumes": [
+        "quant_light_postgres_data:/var/lib/postgresql/data"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "db_user": "quant_user",
+      "db_name": "quantlab",
+      "protocol": "tcp",
+      "db_engine": "postgres"
+    }
+  },
+  "backup": {
+    "enabled": true
+  },
+  "lifecycle": {
+    "down": [
+      {
+        "action": "compose_down_v",
+        "vm": "oci-apps",
+        "path": "/opt/containers/quant-lab-light"
+      },
+      {
+        "action": "volume_remove",
+        "vm": "oci-apps",
+        "volume": "quant_light_postgres_data"
+      },
+      {
+        "action": "path_remove",
+        "vm": "oci-apps",
+        "path": "/opt/containers/quant-lab-light"
+      }
+    ]
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "quant-lab-light",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  }
+}

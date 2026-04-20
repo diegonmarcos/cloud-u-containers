@@ -1,0 +1,34 @@
+[package]
+name = "fincept-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "HTTP + WebSocket server shell around DataHub, connectors, personas, brokers. Dockerised for deployment to a VM; consumed by fincept-client."
+
+[lib]
+
+[[bin]]
+name = "fincept-server"
+path = "src/main.rs"
+
+[dependencies]
+fincept-core = { path = "../core" }
+fincept-datahub = { path = "../datahub" }
+fincept-agents-investors = { path = "../agents/agents-investors" }
+fincept-mcp = { path = "../mcp" }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+thiserror = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }
+reqwest = { workspace = true }

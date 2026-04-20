@@ -1,0 +1,73 @@
+{
+  "name": "fincept-server",
+  "description": "Fincept Terminal backend — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+  "dns": "fincept-api.app",
+  "ports": {
+    "app": 8340
+  },
+  "category": "fin",
+  "domain": "fincept-api.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/fincept-server",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": false
+  },
+  "proxy": {
+    "primary": {
+      "domain": "fincept-api.diegonmarcos.com",
+      "auth": "default"
+    },
+    "app_hub": true
+  },
+  "health": {
+    "path": "/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": false
+  },
+  "containers": {
+    "app": {
+      "container_name": "fincept-server",
+      "image": "ghcr.io/diegonmarcos/fincept-server:latest",
+      "port": 8340,
+      "port_env": "FINCEPT_PORT",
+      "dns": "fincept-api.app",
+      "public": true,
+      "proxy": {
+        "domain": "fincept-api.diegonmarcos.com",
+        "auth": "default"
+      },
+      "healthcheck": "/health",
+      "monitoring": {
+        "tls_check": true
+      },
+      "volumes": [],
+      "env_file": false,
+      "resources": {
+        "limits": {
+          "memory": "512M",
+          "cpus": "1"
+        },
+        "reservations": {
+          "memory": "128M"
+        }
+      },
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "fincept-server",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  }
+}

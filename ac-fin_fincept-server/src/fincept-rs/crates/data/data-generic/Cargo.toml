@@ -1,0 +1,21 @@
+[package]
+name = "fincept-data-generic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Spec-driven Connector: one crate that honours any connector-specs.json entry. Lets Phase 3 add vendors without writing new crates."
+
+[dependencies]
+fincept-data-core = { path = "../data-core" }
+fincept-http = { path = "../../http" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }
+wiremock = { workspace = true }

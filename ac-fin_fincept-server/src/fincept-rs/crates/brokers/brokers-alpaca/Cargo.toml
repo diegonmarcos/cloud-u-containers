@@ -1,0 +1,22 @@
+[package]
+name = "fincept-brokers-alpaca"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Alpaca Markets broker adapter (template for custom broker crates)"
+
+[dependencies]
+fincept-brokers-core = { path = "../brokers-core" }
+fincept-http = { path = "../../http" }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }
+wiremock = { workspace = true }

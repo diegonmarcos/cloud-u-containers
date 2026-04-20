@@ -1,0 +1,14 @@
+[package]
+name = "fincept-agents-economic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Macro-economic scoring agent. Deterministic rule-based regime classifier."
+
+[dependencies]
+fincept-agents-core = { path = "../agents-core" }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
