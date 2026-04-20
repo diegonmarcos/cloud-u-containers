@@ -11,6 +11,7 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     # Single source of truth: build-redis.json (symlink → I_cloud-data/
     # build-redis.json). Engine resolves symlink before nix build.
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     buildRedis = builtins.fromJSON (builtins.readFile ./build-redis.json);
     svc = buildRedis.services;
 
@@ -24,8 +25,8 @@
       container_name = buildRedis.container.container_name;
       image = ghcr.image;
       port = ports.valueOf "app";
-      maxmemory = "128mb";
-      maxmemory_policy = "allkeys-lru";
+      maxmemory = buildJson.redis.maxmemory;
+      maxmemory_policy = buildJson.redis.maxmemory_policy;
     };
 
     title = "Redis Cache - In-memory data store";

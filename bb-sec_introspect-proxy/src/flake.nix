@@ -27,8 +27,8 @@
           image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
           container_name = config.container_name;
           skipReadOnly = true;
-          memLimit = "64M";
-          memReservation = "16M";
+          memLimit = buildJson.resources.mem_limit;
+          memReservation = buildJson.resources.mem_reservation;
           healthcheck = {
             test = "['CMD', 'curl', '-sf', 'http://localhost:${config.port}/health']";
             interval = "30s";

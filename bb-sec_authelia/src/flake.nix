@@ -28,7 +28,7 @@
       image = ghcr.image;
       port = buildJson.ports.app;
       redis_port = toString buildJson.ports.redis;
-      timezone = buildJson.timezone or "Europe/Madrid";
+      timezone = buildJson.timezone;
     };
 
     title = "Authelia 2FA Authentication";
