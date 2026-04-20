@@ -57,7 +57,7 @@ services:
     image: python:3-alpine
     container_name: stalwart-sorter
     network_mode: host
-    entrypoint: ["python3", "/app/imap-sorter.py"]
+    entrypoint: ["python3", "/app/jmap-sorter.py"]
     restart: no
     stop_grace_period: 30s
     ulimits:
@@ -70,11 +70,11 @@ services:
     env_file:
       - .secrets
     environment:
-      - IMAP_PORT=2993
+      - JMAP_URL=https://localhost:2443
       - RULES_PATH=/data/mail-rules.json
       - STARTUP_DELAY=20
     volumes:
-      - ./imap-sorter.py:/app/imap-sorter.py:ro
+      - ./jmap-sorter.py:/app/jmap-sorter.py:ro
       - ./mail-rules.json:/data/mail-rules.json:ro
     deploy:
       resources:

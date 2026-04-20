@@ -9,21 +9,33 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-vaultwarden.json (symlink → I_cloud-data/
+    # build-vaultwarden.json). Engine resolves symlink before nix build.
+    buildVaultwarden = builtins.fromJSON (builtins.readFile ./build-vaultwarden.json);
+    svc = buildVaultwarden.services;
+
+    lib = nixpkgs.lib;
+
+    # base_domain derived from service domain: "vault.example.com" → "example.com"
+    base_domain =
+      let parts = lib.splitString "." buildJson.domain;
+      in lib.concatStringsSep "." (lib.drop 1 parts);
 
     # GHCR image: wraps public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
       name = "vaultwarden";
-      fromImage = "vaultwarden/server:latest";
+      fromImage = buildJson.upstream_image;
     };
 
     config = {
       domain = buildJson.domain;
-      container_name = "vaultwarden";
+      base_domain = base_domain;
+      container_name = buildVaultwarden.container.container_name;
       image = ghcr.image;
       port = buildJson.ports.app;
-      timezone = "Europe/Madrid";
+      timezone = buildJson.timezone;
 
       signups_allowed = "true";
       invitations_allowed = "true";
@@ -46,6 +58,7 @@
         env_file = [ ".secrets" ];
         environment = {
           ROCKET_ADDRESS = svc.vaultwarden.ip;  # bind to WG IP only
+          TZ = config.timezone;
           DOMAIN = "https://${config.domain}";
           SIGNUPS_ALLOWED = config.signups_allowed;
           INVITATIONS_ALLOWED = config.invitations_allowed;
@@ -53,16 +66,16 @@
           WEBSOCKET_ENABLED = "\"true\"";
           LOG_LEVEL = "warn";
           SMTP_HOST = svc.maddy.ip;
-          SMTP_FROM = "noreply@diegonmarcos.com";
+          SMTP_FROM = "noreply@${config.base_domain}";
           SMTP_PORT = "\"${toString svc.maddy.ports.smtp}\"";
           SMTP_SECURITY = "force_tls";
-          SMTP_USERNAME = "noreply@diegonmarcos.com";
+          SMTP_USERNAME = "noreply@${config.base_domain}";
           SMTP_PASSWORD = "\${SMTP_PASSWORD}";
           ADMIN_TOKEN = "\${ADMIN_TOKEN}";
         };
         volumes = [ "vaultwarden_data:/data" ];
-        memLimit = "128M";
-        memReservation = "32M";
+        memLimit = buildJson.resources.mem_limit;
+        memReservation = buildJson.resources.mem_reservation;
       };
 
       volumes = {

@@ -1,8 +1,8 @@
 {
   "_meta": {
     "version": 2,
-    "generated_at": "2026-04-15T17:36:15.684Z",
-    "generated_by": "gen-cloud-data.ts"
+    "generated_at": "2026-04-19T16:56:54.514Z",
+    "generated_by": "cloud-data-config-consolidated.ts"
   },
   "owner": {
     "name": "Diego Marcos",
@@ -76,6 +76,36 @@
           "desc": "Maddy web admin HTTPS"
         },
         {
+          "port": 2025,
+          "proto": "tcp",
+          "desc": "SMTP inbound (Stalwart shadow)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Stalwart)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 6190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
+        },
+        {
           "port": 22000,
           "proto": "tcp",
           "desc": "Syncthing transfer"
@@ -95,9 +125,10 @@
         "snappymail",
         "maddy",
         "smtp-proxy",
+        "stalwart",
         "syslog-forwarder"
       ],
-      "container_count": 4
+      "container_count": 5
     },
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
@@ -131,11 +162,9 @@
         "dagu",
         "dozzle",
         "fluent-bit",
-        "matomo",
-        "sauron-forwarder",
-        "umami"
+        "sauron-forwarder"
       ],
-      "container_count": 8
+      "container_count": 4
     },
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
@@ -236,15 +265,17 @@
         "cloud-spec",
         "dbgate",
         "lgtm",
+        "matomo",
+        "news-gdelt",
         "ntfy",
-        "windmill",
+        "umami",
+        "cloud-builder-x",
         "backup-borg",
         "backup-bup",
-        "backup-gitea",
         "gitea",
         "kg-graph"
       ],
-      "container_count": 50
+      "container_count": 52
     },
     "gcp-T4-p_0": {
       "ip": "34.173.227.250",
@@ -347,6 +378,26 @@
           "port": 587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
         }
       ],
       "gha": {
@@ -585,6 +636,11 @@
         "nix": "iproute2",
         "apt": "iproute2",
         "desc": "Network tools (ip command — required by wg-quick)"
+      },
+      "gh": {
+        "nix": "gh",
+        "apt": "gh",
+        "desc": "GitHub CLI (GHCR auth, API access)"
       }
     },
     "build": {
@@ -649,7 +705,7 @@
           "@fastify/swagger": "^9.4.0",
           "@fastify/swagger-ui": "^5.2.0",
           "@modelcontextprotocol/sdk": "^1.12.0",
-          "better-sqlite3": "^11.0.0",
+          "better-sqlite3": "^11.7.0",
           "fast-xml-parser": "^4.5.0",
           "fastify": "^5.2.0",
           "fastify-plugin": "^5.0.0",
@@ -664,11 +720,12 @@
         },
         "devDependencies": {
           "@types/better-sqlite3": "^7.6.13",
-          "@types/node": "^22.0.0",
-          "@types/nodemailer": "^6.4.0",
+          "@types/mailparser": "^3.4.6",
+          "@types/node": "^22.10.0",
+          "@types/nodemailer": "^6.4.23",
           "@types/nunjucks": "^3.2.6",
           "tsx": "^4.19.0",
-          "typescript": "^5.7.0"
+          "typescript": "^5.9.3"
         }
       },
       "per_service": [
@@ -685,9 +742,10 @@
             "zod": "^3.25.0"
           },
           "devDependencies": {
+            "@types/mailparser": "^3.4.6",
             "@types/node": "^22.0.0",
-            "@types/nodemailer": "^6.4.0",
-            "typescript": "^5.7.0"
+            "@types/nodemailer": "^6.4.23",
+            "typescript": "^5.9.3"
           }
         },
         {
@@ -817,6 +875,21 @@
           }
         },
         {
+          "service": "news-gdelt",
+          "folder": "bc-obs_news-gdelt",
+          "category": "tools",
+          "dependencies": {
+            "better-sqlite3": "^11.7.0",
+            "fastify": "^5.2.0"
+          },
+          "devDependencies": {
+            "@types/better-sqlite3": "^7.6.12",
+            "@types/node": "^22.10.0",
+            "tsx": "^4.19.0",
+            "typescript": "^5.7.0"
+          }
+        },
+        {
           "service": "c3-diego-personal-data-mcp",
           "folder": "ca-dat_c3-diego-personal-data-mcp",
           "category": "data",
@@ -876,7 +949,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "https"
         }
       },
       "container_names": [
@@ -911,6 +985,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
       },
       "secret_env_vars": [
         "CODE_SERVER_PASSWORD"
@@ -954,7 +1037,8 @@
             "db"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "db": {
           "container_name": "etherpad_postgres",
@@ -974,7 +1058,9 @@
           "resources": null,
           "read_only": false,
           "db_user": "etherpad",
-          "db_name": "etherpad"
+          "db_name": "etherpad",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         }
       },
       "container_names": [
@@ -1021,6 +1107,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/1",
+        "api_url": "https://pad.diegonmarcos.com/api/1",
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "filebrowser": {
@@ -1061,7 +1156,14 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/data/filebrowser.db"
+            }
+          ]
         }
       },
       "container_names": [
@@ -1101,6 +1203,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://files.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "google-workspace-mcp": {
@@ -1134,7 +1245,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -1166,6 +1278,15 @@
       },
       "health": {
         "path": "/health"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
       },
       "secret_env_vars": [
         "GOOGLE_SERVICE_ACCOUNT_KEY"
@@ -1206,7 +1327,8 @@
           "depends_on": [],
           "resources": null,
           "read_only": false,
-          "db_path": "/persist/grist-sessions.db"
+          "db_path": "/persist/grist-sessions.db",
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -1246,6 +1368,15 @@
         "enabled": true,
         "volumes": [
           "grist_data"
+        ]
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://sheets.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/"
         ]
       }
     },
@@ -1287,7 +1418,8 @@
             "db"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "db": {
           "container_name": "hedgedoc_postgres",
@@ -1307,7 +1439,9 @@
           "resources": null,
           "read_only": false,
           "db_user": "hedgedoc",
-          "db_name": "hedgedoc"
+          "db_name": "hedgedoc",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         }
       },
       "container_names": [
@@ -1352,6 +1486,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://doc.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "mail-mcp": {
@@ -1383,14 +1526,16 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
         "mail-mcp"
       ],
       "all_ports": [
-        "3103"
+        "3103",
+        "10.0.0.6:3103:3103"
       ],
       "all_dns": [
         "mail-mcp.app"
@@ -1399,7 +1544,9 @@
         "containers": [
           "mail-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3103:3103"
+        ],
         "networks": []
       },
       "proxy": {
@@ -1413,13 +1560,24 @@
       "declared_ports": {
         "app": 3103
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "MAIL_USER",
         "MAIL_PASSWORD",
         "STALWART_ADMIN_URL",
         "STALWART_ADMIN_USER",
         "STALWART_ADMIN_PASSWORD",
-        "RESEND_API_KEY"
+        "RESEND_API_KEY",
+        "MADDY_ME_USER",
+        "MADDY_ME_PASSWORD",
+        "STALWART_ME_USER",
+        "STALWART_ME_PASSWORD"
       ]
     },
     "mattermost-bots": {
@@ -1461,7 +1619,8 @@
           ],
           "resources": null,
           "read_only": false,
-          "port_format": "colon"
+          "port_format": "colon",
+          "protocol": "http"
         },
         "db": {
           "container_name": "mattermost-postgres",
@@ -1478,7 +1637,9 @@
           "resources": null,
           "read_only": false,
           "db_user": "mattermost",
-          "db_name": "mattermost"
+          "db_name": "mattermost",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         },
         "bots": {
           "container_name": "mattermost-bots",
@@ -1546,6 +1707,15 @@
           "mattermost_postgres"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v4/system/ping",
+        "api_url": "https://chat.diegonmarcos.com/api/v4/system/ping",
+        "healthcheck_paths": [
+          "/api/v4/system/ping"
+        ]
+      },
       "secret_env_vars": [
         "POSTGRES_PASSWORD",
         "MM_SQLSETTINGS_DATASOURCE",
@@ -1586,14 +1756,16 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
         "mattermost-mcp"
       ],
       "all_ports": [
-        "3102"
+        "3102",
+        "10.0.0.6:3102:3102"
       ],
       "all_dns": [
         "mattermost-mcp.app"
@@ -1602,7 +1774,9 @@
         "containers": [
           "mattermost-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3102:3102"
+        ],
         "networks": []
       },
       "proxy": {
@@ -1615,6 +1789,13 @@
       },
       "declared_ports": {
         "app": 3102
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MM_CLAUDE_PASSWORD",
@@ -1663,7 +1844,8 @@
             "rclone"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "db": {
           "container_name": "photoprism_mariadb",
@@ -1683,7 +1865,8 @@
           "resources": null,
           "read_only": false,
           "db_user": "root",
-          "db_name": "photoprism"
+          "db_name": "photoprism",
+          "db_engine": "mariadb"
         },
         "rclone": {
           "container_name": "photoprism_rclone",
@@ -1749,6 +1932,15 @@
           "photoprism_storage"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v1/status",
+        "api_url": "https://photos.diegonmarcos.com/api/v1/status",
+        "healthcheck_paths": [
+          "/api/v1/status"
+        ]
+      },
       "secret_env_vars": [
         "PHOTOPRISM_ADMIN_PASSWORD",
         "MARIADB_DATABASE",
@@ -1771,12 +1963,20 @@
       "port": 5002,
       "dns": "photos-webhook.app",
       "upstream": "10.0.0.6:5002",
-      "containers": {},
+      "containers": {
+        "app": {
+          "container_name": "photos-webhook",
+          "port": 5002,
+          "port_env": "WEBHOOK_PORT",
+          "protocol": "http"
+        }
+      },
       "container_names": [
-        "photos-db",
         "photos-webhook"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "5002"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -1786,8 +1986,18 @@
         "ports": [],
         "networks": []
       },
+      "declared_ports": {
+        "app": 5002
+      },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "radicale": {
@@ -1825,14 +2035,22 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "files",
+              "path": "/data/collections"
+            }
+          ]
         }
       },
       "container_names": [
         "radicale"
       ],
       "all_ports": [
-        "5232"
+        "5232",
+        "10.0.0.6:5232:5232"
       ],
       "all_dns": [
         "radicale.app"
@@ -1841,7 +2059,9 @@
         "containers": [
           "radicale"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:5232:5232"
+        ],
         "networks": [
           "default"
         ]
@@ -1862,6 +2082,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/.well-known/caldav",
+        "api_url": "https://cal.diegonmarcos.com/.well-known/caldav",
+        "healthcheck_paths": [
+          "/.web/"
+        ]
       },
       "secret_env_vars": [
         "RADICALE_USERS"
@@ -1893,7 +2122,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -1914,6 +2144,13 @@
       },
       "declared_ports": {
         "app": 3014
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "snappymail": {
@@ -1936,8 +2173,7 @@
           "public": true,
           "proxy": {
             "domain": "webmail.diegonmarcos.com",
-            "auth": "two_factor",
-            "landing_page": "mymail"
+            "auth": "two_factor"
           },
           "healthcheck": "/",
           "monitoring": null,
@@ -1950,14 +2186,22 @@
             "mem_limit": "64M",
             "mem_reservation": "16M"
           },
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "files",
+              "path": "/var/lib/snappymail"
+            }
+          ]
         }
       },
       "container_names": [
         "snappymail"
       ],
       "all_ports": [
-        "8888"
+        "8888",
+        "10.0.0.3:8888:8888"
       ],
       "all_dns": [
         "snappymail.app"
@@ -1966,14 +2210,15 @@
         "containers": [
           "snappymail"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.3:8888:8888"
+        ],
         "networks": []
       },
       "proxy": {
         "primary": {
           "domain": "webmail.diegonmarcos.com",
-          "auth": "two_factor",
-          "landing_page": "mymail"
+          "auth": "two_factor"
         }
       },
       "declared_ports": {
@@ -1981,6 +2226,15 @@
       },
       "health": {
         "path": "/"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
       },
       "secret_env_vars": [
         "SNAPPYMAIL_ADMIN_PASSWORD"
@@ -1994,21 +2248,15 @@
       "enabled": true,
       "domain": "mail.diegonmarcos.com",
       "flake": "tools-maddy",
-      "port": 443,
       "dns": "maddy.app",
-      "upstream": "10.0.0.3:443",
       "containers": {
         "app": {
           "container_name": "maddy",
-          "image": "foxcpp/maddy:0.9",
-          "port": 443,
+          "image": "ghcr.io/diegonmarcos/maddy:latest",
+          "port": null,
           "dns": "maddy.app",
-          "public": true,
-          "proxy": {
-            "domain": "mail.diegonmarcos.com",
-            "auth": "two_factor",
-            "tls_skip_verify": true
-          },
+          "public": false,
+          "proxy": null,
           "healthcheck": null,
           "volumes": [
             "maddy_data:/data",
@@ -2024,21 +2272,26 @@
               "memory": "32M"
             }
           },
-          "read_only": false
+          "read_only": false,
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/data/imapsql.db"
+            }
+          ]
         }
       },
       "container_names": [
         "maddy"
       ],
-      "all_ports": [
-        "443"
-      ],
+      "all_ports": [],
       "all_dns": [
         "maddy.app"
       ],
       "compose": {
         "containers": [
-          "maddy"
+          "maddy",
+          "maddy-sorter"
         ],
         "ports": [],
         "networks": []
@@ -2047,7 +2300,33 @@
         "primary": {
           "domain": "mail.diegonmarcos.com",
           "auth": "two_factor",
-          "tls_skip_verify": true
+          "tls_skip_verify": true,
+          "l4_ports": [
+            {
+              "port": 993,
+              "upstream": "130.110.251.193:993",
+              "comment": "IMAPS",
+              "protocol": "tls"
+            },
+            {
+              "port": 465,
+              "upstream": "130.110.251.193:465",
+              "comment": "SMTPS",
+              "protocol": "tls"
+            },
+            {
+              "port": 587,
+              "upstream": "130.110.251.193:587",
+              "comment": "SMTP Submission",
+              "protocol": "starttls"
+            }
+          ]
+        },
+        "app_hub": false,
+        "mail_hub": {
+          "parent_domain": "mail.diegonmarcos.com",
+          "base_path": "/maddy",
+          "type": "static"
         }
       },
       "declared_ports": {
@@ -2068,6 +2347,13 @@
         "volumes": [
           "maddy_data"
         ]
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "ME_PASSWORD",
@@ -2094,12 +2380,14 @@
         "app": {
           "container_name": "smtp-proxy",
           "port": 8080,
+          "port_env": "LISTEN_PORT",
           "dns": "smtp-proxy.app",
           "public": true,
           "proxy": {
             "domain": "smtp.diegonmarcos.com",
             "auth": "none"
-          }
+          },
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -2127,11 +2415,144 @@
       "declared_ports": {
         "app": 8080
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "SMTP_HOST",
         "SMTP_PORT",
         "API_KEY",
         "LISTEN_PORT"
+      ]
+    },
+    "stalwart": {
+      "category": "app",
+      "vm": "oci-E2-f_0",
+      "folder": "aa-sui_tools-stalwart",
+      "description": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)",
+      "enabled": true,
+      "domain": "mail-stalwart.diegonmarcos.com",
+      "flake": "tools-stalwart",
+      "port": 2443,
+      "dns": "stalwart.app",
+      "upstream": "10.0.0.3:2443",
+      "containers": {
+        "app": {
+          "container_name": "stalwart",
+          "image": "stalwartlabs/stalwart:latest",
+          "port": 2443,
+          "extra_ports": [
+            {
+              "port": 2025,
+              "protocol": "starttls"
+            },
+            {
+              "port": 2465,
+              "protocol": "tls"
+            },
+            {
+              "port": 2587,
+              "protocol": "starttls"
+            },
+            {
+              "port": 2993,
+              "protocol": "tls"
+            },
+            {
+              "port": 6190,
+              "protocol": "tls"
+            }
+          ],
+          "port_env": null,
+          "dns": "stalwart.app",
+          "public": true,
+          "proxy": {
+            "domain": "mail-stalwart.diegonmarcos.com",
+            "auth": "none",
+            "tls_skip_verify": true
+          },
+          "healthcheck": "/",
+          "monitoring": {
+            "tls_check": true
+          },
+          "volumes": [
+            "stalwart_data:/opt/stalwart-mail/data",
+            "./tls:/opt/stalwart-mail/tls:ro"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "32M"
+            }
+          },
+          "read_only": false,
+          "dump_cmd": "sh -c 'stalwart-mail --export /tmp/stalwart-export && tar cf - -C /tmp stalwart-export && rm -rf /tmp/stalwart-export'",
+          "protocol": "https",
+          "embedded_dbs": [
+            {
+              "engine": "rocksdb",
+              "path": "/opt/stalwart-mail/data"
+            }
+          ]
+        }
+      },
+      "container_names": [
+        "stalwart"
+      ],
+      "all_ports": [
+        "2443"
+      ],
+      "all_dns": [
+        "stalwart.app"
+      ],
+      "compose": {
+        "containers": [
+          "stalwart"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "mail-stalwart.diegonmarcos.com",
+          "auth": "none",
+          "tls_skip_verify": true
+        }
+      },
+      "health": {
+        "path": "/"
+      },
+      "monitoring": {
+        "tls_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "stalwart_data"
+        ]
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
+      "secret_env_vars": [
+        "ADMIN_PASSWORD",
+        "ME_PASSWORD",
+        "NOREPLY_PASSWORD",
+        "DKIM_PRIVATE_KEY_B64"
       ]
     },
     "vaultwarden": {
@@ -2169,7 +2590,14 @@
           "depends_on": [],
           "resources": null,
           "read_only": false,
-          "db_path": "/data/db.sqlite3"
+          "db_path": "/data/db.sqlite3",
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/data/db.sqlite3"
+            }
+          ]
         }
       },
       "container_names": [
@@ -2209,6 +2637,15 @@
         "enabled": true,
         "volumes": [
           "vaultwarden_data"
+        ]
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://vault.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/alive"
         ]
       },
       "secret_env_vars": [
@@ -2256,7 +2693,8 @@
             "minio"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "runner": {
           "container_name": "crawlee_runner",
@@ -2290,7 +2728,8 @@
             "app"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "scheduler": {
           "container_name": "crawlee_scheduler",
@@ -2324,7 +2763,9 @@
           "resources": null,
           "read_only": false,
           "db_user": "crawlee",
-          "db_name": "crawlee"
+          "db_name": "crawlee",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         },
         "redis": {
           "container_name": "crawlee_redis",
@@ -2339,7 +2780,9 @@
           ],
           "env_file": false,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "tcp",
+          "db_engine": "redis"
         },
         "minio": {
           "container_name": "crawlee_minio",
@@ -2354,7 +2797,9 @@
           ],
           "env_file": true,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "db_engine": "minio"
         }
       },
       "container_names": [
@@ -2419,6 +2864,13 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://api.diegonmarcos.com/api",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "POSTGRES_USER",
         "POSTGRES_PASSWORD",
@@ -2454,7 +2906,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "analytics": {
           "container_name": "quant_full_analytics",
@@ -2543,7 +2996,9 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "tcp",
+          "db_engine": "postgres"
         }
       },
       "container_names": [
@@ -2576,7 +3031,17 @@
       },
       "declared_ports": {
         "app": 8890,
+        "research": 8890,
+        "dash": 8050,
+        "engine": 5000,
         "db": 5437
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "POSTGRES_USER",
@@ -2607,7 +3072,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "engine": {
           "container_name": "quant_light_engine",
@@ -2627,7 +3093,8 @@
             "research"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "db": {
           "container_name": "quant_light_db",
@@ -2646,7 +3113,9 @@
           "resources": null,
           "read_only": false,
           "db_user": "quant_user",
-          "db_name": "quantlab"
+          "db_name": "quantlab",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         }
       },
       "container_names": [
@@ -2680,6 +3149,13 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "POSTGRES_USER",
@@ -2722,15 +3198,15 @@
             }
           },
           "read_only": false,
-          "port_format": "host"
+          "port_format": "host",
+          "protocol": "http"
         }
       },
       "container_names": [
         "ollama"
       ],
       "all_ports": [
-        "11434",
-        "10.0.0.8:11434:11434"
+        "11434"
       ],
       "all_dns": [
         "ollama.app"
@@ -2739,9 +3215,7 @@
         "containers": [
           "ollama"
         ],
-        "ports": [
-          "10.0.0.8:11434:11434"
-        ],
+        "ports": [],
         "networks": []
       },
       "declared_ports": {
@@ -2752,7 +3226,14 @@
         "deepseek-r1:14b",
         "qwen2.5:14b"
       ],
-      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8)."
+      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8).",
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "ollama-arm": {
       "category": "agi",
@@ -2760,22 +3241,38 @@
       "folder": "ad-agi_ollama-arm",
       "description": "Ollama LLM server (ARM CPU, 7b models)",
       "enabled": true,
+      "port": 11434,
+      "dns": "ollama-arm.app",
       "containers": {
         "app": {
           "container_name": "ollama-arm",
-          "image": "",
-          "public": false
+          "port": 11434,
+          "port_env": "OLLAMA_HOST",
+          "port_format": "host",
+          "protocol": "http"
         }
       },
       "container_names": [
         "ollama-arm"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "11434"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 11434
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "ollama-hai": {
@@ -2808,7 +3305,8 @@
             }
           },
           "read_only": false,
-          "port_format": "host"
+          "port_format": "host",
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -2829,6 +3327,13 @@
       },
       "declared_ports": {
         "app": 11435
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/api",
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "rig-agentic-hai-1.5bq4": {
@@ -2837,17 +3342,23 @@
       "folder": "ad-agi_rig-agentic-hai-1.5bq4",
       "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
       "enabled": false,
+      "port": 8091,
+      "dns": "rig-agentic-hai-1.5bq4.app",
+      "upstream": "10.0.0.6:8091",
       "containers": {
         "app": {
-          "container_name": "rig-agentic-hai-1.5bq4",
-          "image": "",
-          "public": false
+          "container_name": "rig-agentic-hai",
+          "port": 8091,
+          "port_env": "RIG_PORT",
+          "protocol": "http"
         }
       },
       "container_names": [
-        "rig-agentic-hai-1.5bq4"
+        "rig-agentic-hai"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "8091"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -2855,6 +3366,16 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 8091
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MM_BOT_TOKEN"
@@ -2872,10 +3393,9 @@
       "containers": {
         "app": {
           "container_name": "rig-agentic-sonn-14bq8",
-          "image": "",
-          "public": false,
           "port": 8091,
-          "dns": "rig-agentic-sonn-14bq8.app"
+          "port_env": "RIG_PORT",
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -2884,15 +3404,23 @@
       "all_ports": [
         "8091"
       ],
-      "all_dns": [
-        "rig-agentic-sonn-14bq8.app"
-      ],
+      "all_dns": [],
       "compose": {
         "containers": [
           "rig-agentic-sonn-14bq8"
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 8091
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "SURREAL_ROOT_PASSWORD",
@@ -2922,6 +3450,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "gcloud": {
@@ -2946,6 +3481,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "hickory-dns": {
@@ -2970,15 +3512,16 @@
           "healthcheck": null,
           "monitoring": null,
           "volumes": [
-            "./config/named.toml:/etc/named.toml:ro",
-            "./config/zones:/etc/zones:ro"
+            "./named.toml:/etc/named.toml:ro",
+            "./zones:/etc/zones:ro"
           ],
           "env_file": false,
           "depends_on": [],
           "resources": {
             "mem_limit": "64M"
           },
-          "read_only": false
+          "read_only": false,
+          "protocol": "udp"
         }
       },
       "container_names": [
@@ -2999,6 +3542,13 @@
       },
       "declared_ports": {
         "dns": 53
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "authelia": {
@@ -3036,7 +3586,14 @@
           ],
           "resources": null,
           "read_only": false,
-          "db_path": "/config/db.sqlite3"
+          "db_path": "/config/db.sqlite3",
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/var/lib/authelia/db.sqlite3"
+            }
+          ]
         },
         "redis": {
           "container_name": "authelia-redis",
@@ -3051,16 +3608,43 @@
           ],
           "env_file": true,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "tcp",
+          "db_engine": "redis"
+        },
+        "postlite": {
+          "container_name": "postlite-authelia",
+          "image": "ghcr.io/diegonmarcos/postlite:latest",
+          "port": null,
+          "port_env": null,
+          "public": false,
+          "healthcheck": null,
+          "volumes": [],
+          "env_file": false,
+          "depends_on": [
+            "app"
+          ],
+          "resources": {
+            "limits": {
+              "memory": "64M"
+            },
+            "reservations": {
+              "memory": "16M"
+            }
+          },
+          "read_only": false,
+          "protocol": "tcp"
         }
       },
       "container_names": [
         "authelia",
-        "authelia-redis"
+        "authelia-redis",
+        "postlite-authelia"
       ],
       "all_ports": [
         "9091",
-        "6380"
+        "6380",
+        "10.0.0.1:9091:9091"
       ],
       "all_dns": [
         "authelia.app",
@@ -3071,7 +3655,9 @@
           "authelia",
           "authelia-redis"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.1:9091:9091"
+        ],
         "networks": [
           "auth-net"
         ]
@@ -3094,6 +3680,15 @@
       },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/health",
+        "api_url": "https://auth.diegonmarcos.com/api/health",
+        "healthcheck_paths": [
+          "/api/health"
+        ]
       },
       "secret_env_vars": [
         "AUTHELIA_JWT_SECRET",
@@ -3136,6 +3731,16 @@
           "container_name": "caddy",
           "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
           "port": 443,
+          "extra_ports": [
+            {
+              "port": 80,
+              "protocol": "http"
+            },
+            {
+              "port": 2019,
+              "protocol": "http"
+            }
+          ],
           "port_env": null,
           "dns": "caddy.app",
           "public": true,
@@ -3160,35 +3765,15 @@
             "introspect-proxy"
           ],
           "resources": null,
-          "read_only": false
-        },
-        "introspect-proxy": {
-          "container_name": "introspect-proxy",
-          "image": "introspect-proxy:latest",
-          "port": 4182,
-          "port_env": null,
-          "dns": null,
-          "public": false,
-          "proxy": null,
-          "healthcheck": "/health",
-          "monitoring": null,
-          "volumes": [],
-          "env_file": false,
-          "depends_on": [],
-          "resources": {
-            "mem_limit": "96M",
-            "mem_reservation": "48M"
-          },
-          "read_only": false
+          "read_only": false,
+          "protocol": "https"
         }
       },
       "container_names": [
-        "caddy",
-        "introspect-proxy"
+        "caddy"
       ],
       "all_ports": [
-        "443",
-        "4182"
+        "443"
       ],
       "all_dns": [
         "caddy.app"
@@ -3207,8 +3792,172 @@
           "comment": "Caddy IS the reverse proxy — serves all domains"
         }
       },
-      "declared_ports": {
-        "app": 443
+      "caddy_config": {
+        "global": {
+          "debug": true,
+          "admin_bind": "localhost:2019",
+          "order": "respond before handle",
+          "auto_https": "disable_redirects"
+        },
+        "on_demand_tls": {
+          "ask_bind": "127.0.0.1:2020",
+          "ask_url": "http://127.0.0.1:2020"
+        },
+        "security_snippets": {
+          "security_headers": {
+            "hsts_max_age": 31536000,
+            "frame_options": "SAMEORIGIN",
+            "referrer_policy": "strict-origin-when-cross-origin",
+            "permissions_policy": "camera=(), microphone=(), geolocation=()",
+            "cors_origin": "*",
+            "cors_methods": "GET, POST, OPTIONS",
+            "cors_headers": "Authorization, Content-Type",
+            "hide_headers": [
+              "Server"
+            ]
+          },
+          "rate_limit": {
+            "events": 100,
+            "window": "1m",
+            "key": "{remote_host}",
+            "zone": "global"
+          },
+          "bot_blocker": {
+            "user_agents": [
+              "sqlmap",
+              "nikto",
+              "masscan",
+              "nmap",
+              "zgrab",
+              "scrapy",
+              "dirbuster",
+              "gobuster",
+              "nuclei",
+              "wfuzz",
+              "havij",
+              "acunetix",
+              "nessus",
+              "openvas"
+            ]
+          },
+          "scanner_blocker": {
+            "paths": [
+              "/wp-admin*",
+              "/wp-login*",
+              "/xmlrpc.php",
+              "/.env",
+              "/.git*",
+              "/phpmyadmin*",
+              "/actuator*",
+              "/solr*",
+              "/console*",
+              "/.aws*",
+              "/cgi-bin/*"
+            ]
+          },
+          "request_limits": {
+            "max_body": "10MB"
+          },
+          "ip_block": {
+            "cidrs": []
+          },
+          "access_log": {
+            "path": "/var/log/caddy/access.log",
+            "format": "json",
+            "roll_size": "10mb",
+            "roll_keep": 5
+          }
+        },
+        "auth": {
+          "authelia_uri": "/api/authz/forward-auth",
+          "authelia_copy": [
+            "Remote-User",
+            "Remote-Groups",
+            "Remote-Email",
+            "Remote-Name"
+          ],
+          "introspect_uri": "/auth",
+          "introspect_copy": [
+            "X-Auth-User",
+            "X-Auth-Subject",
+            "X-Auth-Email"
+          ],
+          "ntfy_jwt_pattern": "^Bearer eyJ",
+          "ntfy_token_pattern": "^Bearer tk_"
+        },
+        "error_handler": {
+          "status_codes": [
+            502,
+            503,
+            504
+          ],
+          "error_html": "/srv/error.html"
+        },
+        "static_files": [
+          {
+            "src": "error.html",
+            "dest": "error.html"
+          },
+          {
+            "src": "dashboard.html",
+            "dest": "dashboard.html"
+          },
+          {
+            "src": "ntfy-setup.html",
+            "dest": "ntfy-setup.html"
+          },
+          {
+            "src": "servermail.html",
+            "dest": "mail/servermail.html"
+          },
+          {
+            "src": "servermail-config.html",
+            "dest": "mail/servermail-config.html"
+          },
+          {
+            "src": "pgp-wkd-key.bin",
+            "dest": "wkd/hu/s8y7oh5xrdpu9psba3i5ntk64ohouhga"
+          }
+        ],
+        "wkd": {
+          "domains": [
+            "diegonmarcos.com, www.diegonmarcos.com",
+            "linktree.diegonmarcos.com",
+            "nexus.diegonmarcos.com",
+            "suite.diegonmarcos.com",
+            "maps.diegonmarcos.com"
+          ],
+          "hash": "s8y7oh5xrdpu9psba3i5ntk64ohouhga",
+          "path": "/.well-known/openpgpkey/*"
+        },
+        "mta_sts": {
+          "domain": "mta-sts.diegonmarcos.com",
+          "policy_path": "/.well-known/mta-sts.txt",
+          "mode": "enforce",
+          "mx": [
+            "route1.mx.cloudflare.net",
+            "route2.mx.cloudflare.net",
+            "route3.mx.cloudflare.net"
+          ],
+          "max_age": 604800
+        },
+        "catch_all": {
+          "domain": "*.diegonmarcos.com",
+          "page": "/srv/error.html"
+        },
+        "messages": {
+          "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
+          "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
+          "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp",
+          "app_hub_fallback": "Not Found"
+        }
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "AUTHELIA_CLI_SECRET",
@@ -3238,6 +3987,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "introspect-proxy": {
@@ -3261,10 +4017,11 @@
           "healthcheck": "/health",
           "monitoring": null,
           "volumes": [],
-          "env_file": true,
+          "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3291,6 +4048,15 @@
       },
       "health": {
         "path": "/health"
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "sauron-central": {
@@ -3318,6 +4084,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "c3-infra-api": {
@@ -3361,7 +4134,8 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3398,6 +4172,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/docs",
+        "api_url": "https://api.diegonmarcos.com/c3-api/docs",
+        "healthcheck_paths": [
+          "/health"
+        ]
       },
       "secret_env_vars": [
         "AUTHELIA_OIDC_C3_MCP_SECRET",
@@ -3447,7 +4230,8 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3480,6 +4264,15 @@
       "health": {
         "path": "/mcp"
       },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
+      },
       "secret_env_vars": [
         "AUTHELIA_OIDC_C3_MCP_SECRET",
         "MM_BOT_TOKEN",
@@ -3497,7 +4290,7 @@
       "vm": "oci-A1-f_0",
       "folder": "bc-obs_c3-services-api",
       "description": "C3 Services REST API — service API gateway Fastify API",
-      "enabled": false,
+      "enabled": true,
       "domain": "api.diegonmarcos.com/services",
       "flake": "c3-services-api",
       "port": 8082,
@@ -3527,7 +4320,8 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3564,6 +4358,15 @@
         "tls_check": true,
         "dns_check": true,
         "endpoint_check": true
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/docs",
+        "api_url": "https://api.diegonmarcos.com/services/docs",
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "c3-services-mcp": {
@@ -3596,14 +4399,16 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
         "c3-services-mcp"
       ],
       "all_ports": [
-        "3101"
+        "3101",
+        "10.0.0.6:3101:3101"
       ],
       "all_dns": [
         "c3-services-mcp.app"
@@ -3612,7 +4417,9 @@
         "containers": [
           "c3-services-mcp"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3101:3101"
+        ],
         "networks": []
       },
       "proxy": {
@@ -3628,6 +4435,15 @@
       },
       "health": {
         "path": "/mcp"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
       },
       "secret_env_vars": [
         "GITHUB_TOKEN",
@@ -3666,7 +4482,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3698,6 +4515,15 @@
       },
       "health": {
         "path": "/mcp"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/mcp"
+        ]
       }
     },
     "cloud-spec": {
@@ -3730,7 +4556,8 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3759,6 +4586,13 @@
       },
       "declared_ports": {
         "app": 3080
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "dagu": {
@@ -3801,7 +4635,14 @@
           "resources": {
             "mem_limit": "256m"
           },
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/var/lib/dagu/dagu.db"
+            }
+          ]
         }
       },
       "container_names": [
@@ -3837,16 +4678,15 @@
         "dns_check": true,
         "endpoint_check": true
       },
-      "secret_env_vars": [
-        "DAGU_USERNAME",
-        "DAGU_PASSWORD",
-        "AUTHELIA_OIDC_DAGU_SECRET",
-        "OCI_S3_SECRET_KEY",
-        "RESTIC_PASSWORD",
-        "BORG_PASSPHRASE",
-        "NOREPLY_PASSWORD",
-        "GITHUB_TOKEN"
-      ]
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v2",
+        "api_url": "https://workflows.diegonmarcos.com/api/v2",
+        "healthcheck_paths": [
+          "/"
+        ]
+      }
     },
     "dbgate": {
       "category": "tools",
@@ -3889,7 +4729,8 @@
               "memory": "64M"
             }
           },
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3930,6 +4771,15 @@
         "volumes": [
           "dbgate_data"
         ]
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/"
+        ]
       }
     },
     "dozzle": {
@@ -3967,7 +4817,8 @@
             "mem_limit": "64m"
           },
           "read_only": false,
-          "port_format": "colon"
+          "port_format": "colon",
+          "protocol": "http"
         }
       },
       "container_names": [
@@ -3996,6 +4847,13 @@
       },
       "declared_ports": {
         "app": 9999
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "fluent-bit": {
@@ -4011,7 +4869,7 @@
         "app": {
           "container_name": "fluent-bit",
           "image": "fluent/fluent-bit:latest",
-          "port": null,
+          "port": 2020,
           "port_env": null,
           "dns": null,
           "public": false,
@@ -4028,13 +4886,16 @@
           "env_file": false,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         }
       },
       "container_names": [
         "fluent-bit"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "2020"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -4042,6 +4903,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "lgtm": {
@@ -4078,7 +4946,14 @@
             "loki"
           ],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/var/lib/grafana/grafana.db"
+            }
+          ]
         },
         "loki": {
           "container_name": "lgtm_loki",
@@ -4094,7 +4969,14 @@
           ],
           "env_file": false,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "boltdb",
+              "path": "/loki/index"
+            }
+          ]
         },
         "tempo": {
           "container_name": "lgtm_tempo",
@@ -4110,7 +4992,14 @@
           ],
           "env_file": false,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "wal",
+              "path": "/var/tempo"
+            }
+          ]
         },
         "mimir": {
           "container_name": "lgtm_mimir",
@@ -4126,7 +5015,14 @@
           ],
           "env_file": false,
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "tsdb",
+              "path": "/var/mimir"
+            }
+          ]
         }
       },
       "container_names": [
@@ -4175,6 +5071,13 @@
       "monitoring": {
         "tls_check": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/health",
+        "api_url": "https://grafana.diegonmarcos.com/api/health",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "GF_SECURITY_ADMIN_USER",
         "GF_SECURITY_ADMIN_PASSWORD"
@@ -4182,19 +5085,20 @@
     },
     "matomo": {
       "category": "tools",
-      "vm": "oci-E2-f_1",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_matomo",
-      "description": "Matomo hybrid analytics (oci-analytics)",
+      "description": "Matomo hybrid analytics (oci-apps)",
       "enabled": true,
       "domain": "analytics.diegonmarcos.com",
       "port": 8084,
       "dns": "matomo.app",
-      "upstream": "10.0.0.4:8084",
+      "upstream": "10.0.0.6:8084",
       "containers": {
         "app": {
           "container_name": "matomo-hybrid",
           "image": null,
           "port": 8084,
+          "extra_ports": [],
           "port_env": null,
           "dns": "matomo.app",
           "public": true,
@@ -4221,14 +5125,23 @@
             }
           },
           "read_only": false,
-          "dump_cmd": "mysqldump -u matomo matomo"
+          "dump_cmd": "mysqldump -u matomo matomo",
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "mariadb",
+              "port": 3306,
+              "path": "/var/lib/mysql"
+            }
+          ]
         }
       },
       "container_names": [
         "matomo-hybrid"
       ],
       "all_ports": [
-        "8084"
+        "8084",
+        "10.0.0.6:8084:8080"
       ],
       "all_dns": [
         "matomo.app"
@@ -4237,7 +5150,9 @@
         "containers": [
           "matomo-hybrid"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:8084:8080"
+        ],
         "networks": []
       },
       "proxy": {
@@ -4245,10 +5160,6 @@
           "domain": "analytics.diegonmarcos.com",
           "auth": "two_factor"
         }
-      },
-      "declared_ports": {
-        "app": 8084,
-        "db": 3306
       },
       "health": {
         "path": "/"
@@ -4262,12 +5173,57 @@
           "matomo_data"
         ]
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/?module=API",
+        "api_url": "https://analytics.diegonmarcos.com/?module=API",
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
       "secret_env_vars": [
         "MYSQL_ROOT_PASSWORD",
         "MATOMO_DB_NAME",
         "MATOMO_DB_USER",
         "MATOMO_DB_PASSWORD"
       ]
+    },
+    "news-gdelt": {
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "folder": "bc-obs_news-gdelt",
+      "description": "GDELT News Aggregator — Fastify API with SQLite cache",
+      "enabled": true,
+      "containers": {
+        "app": {
+          "container_name": "news-gdelt",
+          "image": "",
+          "public": false
+        }
+      },
+      "container_names": [
+        "news-gdelt"
+      ],
+      "all_ports": [],
+      "all_dns": [],
+      "compose": {
+        "containers": [
+          "news-gdelt"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "declared_ports": {
+        "app": 3019
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "ntfy": {
       "category": "tools",
@@ -4305,7 +5261,14 @@
           "depends_on": [],
           "resources": null,
           "read_only": false,
-          "db_path": "/var/cache/ntfy/cache.db"
+          "db_path": "/var/cache/ntfy/cache.db",
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/var/cache/ntfy/cache.db"
+            }
+          ]
         },
         "syslog-bridge": {
           "container_name": "syslog-bridge",
@@ -4391,6 +5354,15 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/v1",
+        "api_url": "https://rss.diegonmarcos.com/v1",
+        "healthcheck_paths": [
+          "/"
+        ]
+      },
       "secret_env_vars": [
         "NTFY_ADMIN_PASSWORD",
         "NTFY_USER_PASSWORD"
@@ -4424,6 +5396,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "sauron-lite": {
@@ -4451,6 +5430,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "syslog-forwarder": {
@@ -4481,18 +5467,25 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "umami": {
       "category": "tools",
-      "vm": "oci-E2-f_1",
+      "vm": "oci-A1-f_0",
       "folder": "bc-obs_umami",
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "enabled": true,
       "domain": "analytics.diegonmarcos.com",
       "port": 3006,
       "dns": "umami.app",
-      "upstream": "10.0.0.4:3006",
+      "upstream": "10.0.0.6:3006",
       "containers": {
         "app": {
           "container_name": "umami",
@@ -4517,13 +5510,14 @@
           ],
           "resources": {
             "limits": {
-              "memory": "128M"
+              "memory": "1G"
             },
             "reservations": {
-              "memory": "32M"
+              "memory": "256M"
             }
           },
-          "read_only": false
+          "read_only": false,
+          "protocol": "http"
         },
         "db": {
           "container_name": "umami-db",
@@ -4539,15 +5533,17 @@
           "env_file": false,
           "resources": {
             "limits": {
-              "memory": "128M"
+              "memory": "512M"
             },
             "reservations": {
-              "memory": "32M"
+              "memory": "128M"
             }
           },
           "read_only": false,
           "db_user": "umami",
-          "db_name": "umami"
+          "db_name": "umami",
+          "protocol": "tcp",
+          "db_engine": "postgres"
         },
         "setup": {
           "container_name": "umami-setup",
@@ -4576,7 +5572,8 @@
       ],
       "all_ports": [
         "3006",
-        "5442"
+        "5442",
+        "10.0.0.6:3006:3006"
       ],
       "all_dns": [
         "umami.app",
@@ -4589,7 +5586,9 @@
           "umami-db",
           "umami-setup"
         ],
-        "ports": [],
+        "ports": [
+          "10.0.0.6:3006:3006"
+        ],
         "networks": []
       },
       "proxy": {
@@ -4612,6 +5611,13 @@
       "backup": {
         "enabled": true
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/heartbeat",
+        "api_url": "https://analytics.diegonmarcos.com/api/heartbeat",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "DB_PASSWORD",
         "APP_SECRET",
@@ -4619,156 +5625,54 @@
         "ADMIN_PASSWORD"
       ]
     },
-    "windmill": {
+    "cloud-builder-x": {
       "category": "tools",
       "vm": "oci-A1-f_0",
-      "folder": "bc-obs_windmill",
-      "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
+      "folder": "bd-cloud-builder-x",
+      "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
       "enabled": true,
-      "domain": "windmill.diegonmarcos.com",
-      "port": 8000,
-      "dns": "windmill-app.app",
-      "upstream": "10.0.0.6:8000",
+      "flake": "bd-cloud-builder-x",
       "containers": {
         "app": {
-          "container_name": "windmill-server",
-          "image": "ghcr.io/windmill-labs/windmill:main",
-          "port": 8000,
-          "port_env": "PORT",
-          "dns": "windmill-app.app",
-          "public": true,
-          "proxy": {
-            "domain": "windmill.diegonmarcos.com",
-            "auth": "two_factor"
-          },
-          "healthcheck": "curl -f http://localhost:8000/api/version",
-          "monitoring": {
-            "tls_check": true
-          },
-          "volumes": [
-            "windmill-server-data:/tmp/windmill",
-            "/var/run/docker.sock:/var/run/docker.sock"
-          ],
-          "env_file": true,
-          "depends_on": [
-            "db"
-          ],
-          "resources": {
-            "limits": {
-              "memory": "512M",
-              "cpus": "1.0"
-            },
-            "reservations": {
-              "memory": "256M"
-            }
-          },
-          "read_only": false
-        },
-        "db": {
-          "container_name": "windmill-db",
-          "image": "postgres:16-alpine",
-          "port": 5440,
-          "port_env": "PGPORT",
-          "dns": "windmill-db.app",
-          "public": false,
-          "healthcheck": "pg_isready -U windmill -d windmill -p 5440",
-          "volumes": [
-            "windmill-db-data:/var/lib/postgresql/data"
-          ],
-          "env_file": true,
-          "resources": {
-            "limits": {
-              "memory": "128M"
-            },
-            "reservations": {
-              "memory": "64M"
-            }
-          },
-          "read_only": false,
-          "db_user": "windmill",
-          "db_name": "windmill"
-        },
-        "worker": {
-          "container_name": "windmill-worker",
-          "image": "ghcr.io/windmill-labs/windmill:main",
-          "port": null,
-          "port_env": null,
-          "dns": "windmill-worker.app",
-          "public": false,
-          "healthcheck": null,
-          "volumes": [
-            "windmill-worker-data:/tmp/windmill",
-            "/var/run/docker.sock:/var/run/docker.sock",
-            "/opt/ssh-keys/windmill-worker:/home/windmill/.ssh:ro"
-          ],
-          "env_file": true,
-          "depends_on": [
-            "app"
-          ],
-          "resources": {
-            "limits": {
-              "memory": "256M",
-              "cpus": "0.5"
-            },
-            "reservations": {
-              "memory": "128M"
-            }
-          },
-          "read_only": false
+          "container_name": "cloud-builder-x",
+          "image": "",
+          "public": false
         }
       },
       "container_names": [
-        "windmill-server",
-        "windmill-db",
-        "windmill-worker"
+        "cloud-builder-x"
       ],
-      "all_ports": [
-        "8000",
-        "5440"
-      ],
-      "all_dns": [
-        "windmill-app.app",
-        "windmill-db.app",
-        "windmill-worker.app"
-      ],
+      "all_ports": [],
+      "all_dns": [],
       "compose": {
         "containers": [
-          "windmill-db",
-          "windmill-server",
-          "windmill-worker"
+          "cloud-builder-x-cloud-builder-1"
         ],
         "ports": [],
         "networks": []
       },
-      "proxy": {
-        "primary": {
-          "domain": "windmill.diegonmarcos.com",
-          "auth": "two_factor"
+      "registry": "ghcr.io/diegonmarcos",
+      "images": {
+        "cloud-builder-x-deb-nixhm": {
+          "ghcr": "ghcr.io/diegonmarcos/cloud-builder-x-deb-nixhm",
+          "dockerfile": "src/Dockerfile.x-deb-nixhm",
+          "platform": "linux/amd64,linux/arm64",
+          "description": "GHA CI/CD builder — Debian flat + nix + home-manager (multi-arch)"
+        },
+        "cloud-builder-x-deb-apt": {
+          "ghcr": "ghcr.io/diegonmarcos/cloud-builder-x-deb-apt",
+          "dockerfile": "src/Dockerfile.apt",
+          "platform": "linux/amd64,linux/arm64",
+          "description": "Multi-arch builder Debian apt (no Nix, lighter)"
         }
       },
-      "declared_ports": {
-        "app": 8000,
-        "db": 5440
-      },
-      "health": {
-        "path": "curl -f http://localhost:8000/api/version"
-      },
-      "monitoring": {
-        "tls_check": true
-      },
-      "backup": {
-        "enabled": true
-      },
-      "secret_env_vars": [
-        "DB_PASSWORD",
-        "OAUTH_CLIENT_ID",
-        "OAUTH_CLIENT_SECRET",
-        "SMTP_HOST",
-        "SMTP_PORT",
-        "SMTP_FROM",
-        "SMTP_USERNAME",
-        "SMTP_PASSWORD"
-      ]
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "backup-borg": {
       "category": "data",
@@ -4776,17 +5680,22 @@
       "folder": "ca-dat_backup-borg",
       "description": "Media Backups SSH Server (Borg deduplication)",
       "enabled": false,
+      "port": 2224,
+      "dns": "backup-borg.app",
+      "upstream": "10.0.0.6:2224",
       "containers": {
         "app": {
-          "container_name": "backup-borg",
-          "image": "",
-          "public": false
+          "container_name": "borg-server",
+          "port": 2224,
+          "protocol": "http"
         }
       },
       "container_names": [
-        "backup-borg"
+        "borg-server"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "2224"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -4794,6 +5703,16 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 2224
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "BORG_PASSPHRASE",
@@ -4807,17 +5726,22 @@
       "folder": "ca-dat_backup-bup",
       "description": "Database Backups SSH Server (bup)",
       "enabled": false,
+      "port": 2223,
+      "dns": "backup-bup.app",
+      "upstream": "10.0.0.6:2223",
       "containers": {
         "app": {
-          "container_name": "backup-bup",
-          "image": "",
-          "public": false
+          "container_name": "bup-server",
+          "port": 2223,
+          "protocol": "http"
         }
       },
       "container_names": [
-        "backup-bup"
+        "bup-server"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "2223"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -4825,6 +5749,16 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "declared_ports": {
+        "app": 2223
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "MYSQL_HOST",
@@ -4837,72 +5771,6 @@
         "POSTGRES_DBS",
         "SQLITE_DBS"
       ]
-    },
-    "backup-gitea": {
-      "category": "data",
-      "vm": "oci-A1-f_0",
-      "folder": "ca-dat_backup-gitea",
-      "description": "Self-hosted Gitea for git backups and mirroring",
-      "enabled": true,
-      "domain": "git.diegonmarcos.com",
-      "port": 3002,
-      "dns": "backup-gitea.app",
-      "upstream": "10.0.0.6:3002",
-      "containers": {
-        "app": {
-          "container_name": "gitea",
-          "image": "gitea/gitea:latest",
-          "port": 3002,
-          "port_env": "GITEA__server__HTTP_PORT",
-          "dns": "backup-gitea.app",
-          "public": true,
-          "proxy": {
-            "domain": "git.diegonmarcos.com",
-            "auth": "two_factor"
-          },
-          "healthcheck": null,
-          "monitoring": {
-            "tls_check": true
-          },
-          "volumes": [
-            "gitea_data:/data",
-            "/etc/timezone:/etc/timezone:ro",
-            "/etc/localtime:/etc/localtime:ro"
-          ],
-          "env_file": false,
-          "resources": null,
-          "read_only": false
-        }
-      },
-      "container_names": [
-        "gitea"
-      ],
-      "all_ports": [
-        "3002"
-      ],
-      "all_dns": [
-        "backup-gitea.app"
-      ],
-      "compose": {
-        "containers": [
-          "gitea"
-        ],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "domain": "git.diegonmarcos.com",
-          "auth": "two_factor"
-        }
-      },
-      "declared_ports": {
-        "app": 3002,
-        "ssh": 2222
-      },
-      "monitoring": {
-        "tls_check": true
-      }
     },
     "c3-diego-personal-data-mcp": {
       "category": "data",
@@ -4926,6 +5794,13 @@
         "containers": [],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "db-agent": {
@@ -4952,6 +5827,13 @@
         ],
         "ports": [],
         "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "VM_NAME",
@@ -4994,7 +5876,14 @@
           "env_file": false,
           "resources": null,
           "read_only": false,
-          "db_path": "/data/gitea/gitea.db"
+          "db_path": "/data/gitea/gitea.db",
+          "protocol": "http",
+          "embedded_dbs": [
+            {
+              "engine": "sqlite",
+              "path": "/data/gitea/gitea.db"
+            }
+          ]
         }
       },
       "container_names": [
@@ -5063,6 +5952,13 @@
         },
         "mirror_interval": "1h"
       },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api/v1",
+        "api_url": "https://git.diegonmarcos.com/api/v1",
+        "healthcheck_paths": []
+      },
       "secret_env_vars": [
         "GITEA_ADMIN_USER",
         "GITEA_ADMIN_PASSWORD",
@@ -5075,11 +5971,24 @@
       "folder": "ca-dat_kg-graph",
       "description": "SurrealDB Hybrid Knowledge Graph - Infrastructure topology + vector search",
       "enabled": false,
-      "containers": {},
+      "port": 8001,
+      "dns": "kg-graph.app",
+      "upstream": "10.0.0.6:8001",
+      "containers": {
+        "app": {
+          "container_name": "surrealdb",
+          "port": 8001,
+          "protocol": "http",
+          "db_engine": "surrealdb",
+          "image": "ghcr.io/diegonmarcos/kg-graph:latest"
+        }
+      },
       "container_names": [
         "surrealdb"
       ],
-      "all_ports": [],
+      "all_ports": [
+        "8001"
+      ],
       "all_dns": [],
       "compose": {
         "containers": [
@@ -5088,8 +5997,18 @@
         "ports": [],
         "networks": []
       },
+      "declared_ports": {
+        "app": 8001
+      },
       "backup": {
         "enabled": true
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "SURREAL_ROOT_PASSWORD"
@@ -5120,7 +6039,9 @@
           "env_file": true,
           "depends_on": [],
           "resources": null,
-          "read_only": false
+          "read_only": false,
+          "protocol": "tcp",
+          "db_engine": "redis"
         }
       },
       "container_names": [
@@ -5144,6 +6065,24 @@
       },
       "health": {
         "path": "redis-cli ping"
+      },
+      "backup": {
+        "enabled": true,
+        "databases": [
+          {
+            "type": "custom",
+            "container": "redis",
+            "dump_cmd": "redis-cli BGSAVE && sleep 2 && cat /data/dump.rdb"
+          }
+        ],
+        "volumes": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       },
       "secret_env_vars": [
         "REDIS_PASSWORD"
@@ -5202,6 +6141,36 @@
           "port": 8443,
           "proto": "tcp",
           "desc": "Maddy web admin HTTPS"
+        },
+        {
+          "port": 2025,
+          "proto": "tcp",
+          "desc": "SMTP inbound (Stalwart shadow)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Stalwart)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Stalwart)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Stalwart)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "Stalwart web admin HTTPS"
+        },
+        {
+          "port": 6190,
+          "proto": "tcp",
+          "desc": "ManageSieve (Stalwart)"
         },
         {
           "port": 22000,
@@ -5286,6 +6255,26 @@
           "port": 587,
           "proto": "tcp",
           "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+        },
+        {
+          "port": 2993,
+          "proto": "tcp",
+          "desc": "IMAPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2465,
+          "proto": "tcp",
+          "desc": "SMTPS (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2587,
+          "proto": "tcp",
+          "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+        },
+        {
+          "port": 2443,
+          "proto": "tcp",
+          "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
         }
       ]
     },
@@ -5301,17 +6290,73 @@
   "storage": [
     {
       "provider": "oci",
-      "name": "archlinux-images",
-      "tier": "Standard"
+      "name": "cloud-backups-binaries-medias",
+      "tier": "Standard",
+      "dns": "s3-backups-binaries.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-db",
+      "tier": "Standard",
+      "dns": "s3-backups-db.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-media",
+      "tier": "Archive",
+      "dns": "s3-backups-media.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
+    },
+    {
+      "provider": "oci",
+      "name": "cloud-backups-non-binaries",
+      "tier": "Standard",
+      "dns": "s3-backups-nonbin.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
     },
     {
       "provider": "oci",
       "name": "my-photos",
-      "tier": "Standard"
+      "tier": "Standard",
+      "dns": "s3-photos.app",
+      "namespace": "axpmn3qtq4ig",
+      "region": "eu-marseille-1",
+      "s3_endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com"
     }
   ],
   "dns": {
-    "internal_zones": [],
+    "internal_zones": [
+      {
+        "name": "app",
+        "records": [
+          {
+            "name": "*",
+            "type": "A",
+            "value": "10.0.0.1"
+          }
+        ]
+      },
+      {
+        "name": "db",
+        "records": [
+          {
+            "name": "*",
+            "type": "A",
+            "value": "10.0.0.1"
+          }
+        ]
+      }
+    ],
     "derived_entries": [
       {
         "name": "code-server.app",
@@ -5428,6 +6473,12 @@
         "service": "smtp-proxy"
       },
       {
+        "name": "stalwart.app",
+        "type": "A",
+        "value": "10.0.0.3",
+        "service": "stalwart"
+      },
+      {
         "name": "vaultwarden.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -5516,12 +6567,6 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "ollama-hai"
-      },
-      {
-        "name": "rig-agentic-sonn-14bq8.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "rig-agentic-sonn-14bq8"
       },
       {
         "name": "hickory-dns.app",
@@ -5634,7 +6679,7 @@
       {
         "name": "matomo.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "matomo"
       },
       {
@@ -5658,44 +6703,20 @@
       {
         "name": "umami.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
       },
       {
         "name": "umami-db.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
       },
       {
         "name": "umami-setup.app",
         "type": "A",
-        "value": "10.0.0.4",
+        "value": "10.0.0.6",
         "service": "umami"
-      },
-      {
-        "name": "windmill-app.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "windmill"
-      },
-      {
-        "name": "windmill-db.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "windmill"
-      },
-      {
-        "name": "windmill-worker.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "windmill"
-      },
-      {
-        "name": "backup-gitea.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "backup-gitea"
       },
       {
         "name": "gitea.app",
@@ -5716,15 +6737,15 @@
     "caddy": {
       "routes": [
         {
-          "domain": "auth.diegonmarcos.com",
-          "upstream": "10.0.0.1:9091",
+          "domain": "ide.diegonmarcos.com",
+          "upstream": "10.0.0.6:8443",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "cal.diegonmarcos.com",
-          "upstream": "10.0.0.6:5232",
+          "domain": "sheets.diegonmarcos.com",
+          "upstream": "10.0.0.6:3011",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -5744,8 +6765,43 @@
           "public_paths": []
         },
         {
+          "domain": "cal.diegonmarcos.com",
+          "upstream": "10.0.0.6:5232",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "webmail.diegonmarcos.com",
+          "upstream": "10.0.0.3:8888",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
           "domain": "smtp.diegonmarcos.com",
           "upstream": "10.0.0.3:8080",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "mail-stalwart.diegonmarcos.com",
+          "upstream": "10.0.0.3:2443",
+          "auth": "none",
+          "tls_skip": true,
+          "public_paths": []
+        },
+        {
+          "domain": "vault.diegonmarcos.com",
+          "upstream": "10.0.0.6:8880",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "auth.diegonmarcos.com",
+          "upstream": "10.0.0.1:9091",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
@@ -5758,65 +6814,23 @@
           "public_paths": []
         },
         {
-          "domain": "ide.diegonmarcos.com",
-          "upstream": "10.0.0.6:8443",
-          "auth": "none",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
           "domain": "db.diegonmarcos.com",
-          "upstream": "10.0.0.6:8085",
+          "upstream": "10.0.0.6:8086",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "sheets.diegonmarcos.com",
-          "upstream": "10.0.0.6:3011",
+          "domain": "grafana.diegonmarcos.com",
+          "upstream": "10.0.0.6:3200",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "vault.diegonmarcos.com",
-          "upstream": "10.0.0.6:8880",
+          "domain": "git.diegonmarcos.com",
+          "upstream": "10.0.0.6:3002",
           "auth": "none",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
-          "domain": "api.diegonmarcos.com/dash",
-          "upstream": "diegonmarcos.github.io",
-          "auth": "none",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
-          "domain": "api.diegonmarcos.com/c3-api",
-          "upstream": "10.0.0.6:8081",
-          "auth": "authelia+bearer",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
-          "domain": "api.diegonmarcos.com/services",
-          "upstream": "10.0.0.6:8082",
-          "auth": "authelia+bearer",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
-          "domain": "api.diegonmarcos.com/crawlee",
-          "upstream": "10.0.0.6:3000",
-          "auth": "authelia+bearer",
-          "tls_skip": false,
-          "public_paths": []
-        },
-        {
-          "domain": "app.diegonmarcos.com/windmill",
-          "upstream": "10.0.0.6:8000",
-          "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
@@ -5842,15 +6856,15 @@
           "public_paths": []
         },
         {
-          "domain": "app.diegonmarcos.com/revealmd",
-          "upstream": "10.0.0.6:3014",
+          "domain": "app.diegonmarcos.com/dozzle",
+          "upstream": "10.0.0.4:9999",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "app.diegonmarcos.com/dozzle",
-          "upstream": "10.0.0.4:9999",
+          "domain": "app.diegonmarcos.com/revealmd",
+          "upstream": "10.0.0.6:3014",
           "auth": "authelia+bearer",
           "tls_skip": false,
           "public_paths": []
@@ -5877,42 +6891,59 @@
           "public_paths": []
         },
         {
-          "domain": "cloud.diegonmarcos.com",
-          "upstream": "10.0.0.6:3080",
-          "auth": "none",
+          "domain": "api.diegonmarcos.com/crawlee",
+          "upstream": "10.0.0.6:3000",
+          "auth": "authelia+bearer",
           "tls_skip": false,
-          "public_paths": [
-            "/spec",
-            "/spec/*"
-          ]
+          "public_paths": []
         },
         {
-          "domain": "mcp.diegonmarcos.com",
-          "upstream": "10.0.0.6:3100",
+          "domain": "api.diegonmarcos.com/c3-api",
+          "upstream": "10.0.0.6:8081",
+          "auth": "authelia+bearer",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "api.diegonmarcos.com/services",
+          "upstream": "10.0.0.6:8082",
+          "auth": "authelia+bearer",
+          "tls_skip": false,
+          "public_paths": []
+        },
+        {
+          "domain": "api.diegonmarcos.com/dash",
+          "upstream": "diegonmarcos.github.io",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
-          "domain": "webmail.diegonmarcos.com",
-          "upstream": "static",
+          "domain": "cloud.diegonmarcos.com",
+          "upstream": "10.0.0.6:3080",
+          "auth": "none",
+          "tls_skip": false,
+          "public_paths": [
+            "/spec/*"
+          ]
+        },
+        {
+          "domain": "mcp.diegonmarcos.com",
+          "upstream": "10.0.0.6:3104",
           "auth": "none",
           "tls_skip": false,
           "public_paths": []
         },
         {
           "domain": "mail.diegonmarcos.com",
-          "upstream": "10.0.0.3:8888",
+          "upstream": "static",
           "auth": "none",
           "tls_skip": false,
-          "public_paths": [
-            "/webmail/*",
-            "/webmail"
-          ]
+          "public_paths": []
         },
         {
           "domain": "analytics.diegonmarcos.com",
-          "upstream": "10.0.0.4:8080",
+          "upstream": "10.0.0.6:8084",
           "auth": "none",
           "tls_skip": false,
           "public_paths": [
@@ -6159,6 +7190,36 @@
             "desc": "Maddy web admin HTTPS"
           },
           {
+            "port": 2025,
+            "proto": "tcp",
+            "desc": "SMTP inbound (Stalwart shadow)"
+          },
+          {
+            "port": 2465,
+            "proto": "tcp",
+            "desc": "SMTPS (Stalwart)"
+          },
+          {
+            "port": 2587,
+            "proto": "tcp",
+            "desc": "SMTP Submission (Stalwart)"
+          },
+          {
+            "port": 2993,
+            "proto": "tcp",
+            "desc": "IMAPS (Stalwart)"
+          },
+          {
+            "port": 2443,
+            "proto": "tcp",
+            "desc": "Stalwart web admin HTTPS"
+          },
+          {
+            "port": 6190,
+            "proto": "tcp",
+            "desc": "ManageSieve (Stalwart)"
+          },
+          {
             "port": 22000,
             "proto": "tcp",
             "desc": "Syncthing transfer"
@@ -6174,6 +7235,7 @@
           "snappymail",
           "maddy",
           "smtp-proxy",
+          "stalwart",
           "syslog-forwarder"
         ],
         "method": "key",
@@ -6212,9 +7274,7 @@
           "dagu",
           "dozzle",
           "fluent-bit",
-          "matomo",
-          "sauron-forwarder",
-          "umami"
+          "sauron-forwarder"
         ],
         "method": "key",
         "gha": {
@@ -6319,11 +7379,13 @@
           "cloud-spec",
           "dbgate",
           "lgtm",
+          "matomo",
+          "news-gdelt",
           "ntfy",
-          "windmill",
+          "umami",
+          "cloud-builder-x",
           "backup-borg",
           "backup-bup",
-          "backup-gitea",
           "gitea",
           "kg-graph"
         ],
@@ -6433,6 +7495,26 @@
             "port": 587,
             "proto": "tcp",
             "desc": "SMTP Submission (Caddy L4 → oci-mail)"
+          },
+          {
+            "port": 2993,
+            "proto": "tcp",
+            "desc": "IMAPS (Caddy L4 → stalwart on oci-mail)"
+          },
+          {
+            "port": 2465,
+            "proto": "tcp",
+            "desc": "SMTPS (Caddy L4 → stalwart on oci-mail)"
+          },
+          {
+            "port": 2587,
+            "proto": "tcp",
+            "desc": "SMTP Submission (Caddy L4 → stalwart on oci-mail)"
+          },
+          {
+            "port": 2443,
+            "proto": "tcp",
+            "desc": "HTTPS/JMAP (Caddy L4 → stalwart on oci-mail)"
           }
         ],
         "idle_shutdown": null,
@@ -6677,6 +7759,11 @@
         "vm": "oci-mail",
         "has_docker": true
       },
+      "stalwart": {
+        "dir": "aa-sui_tools-stalwart",
+        "vm": "oci-mail",
+        "has_docker": true
+      },
       "vaultwarden": {
         "dir": "ab-mic_vaultwarden",
         "vm": "oci-apps",
@@ -6794,7 +7881,12 @@
       },
       "matomo": {
         "dir": "bc-obs_matomo",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
+      "news-gdelt": {
+        "dir": "bc-obs_news-gdelt",
+        "vm": "oci-apps",
         "has_docker": true
       },
       "ntfy": {
@@ -6814,11 +7906,11 @@
       },
       "umami": {
         "dir": "bc-obs_umami",
-        "vm": "oci-analytics",
+        "vm": "oci-apps",
         "has_docker": true
       },
-      "windmill": {
-        "dir": "bc-obs_windmill",
+      "cloud-builder-x": {
+        "dir": "bd-cloud-builder-x",
         "vm": "oci-apps",
         "has_docker": true
       },
@@ -6829,11 +7921,6 @@
       },
       "backup-bup": {
         "dir": "ca-dat_backup-bup",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
-      "backup-gitea": {
-        "dir": "ca-dat_backup-gitea",
         "vm": "oci-apps",
         "has_docker": true
       },

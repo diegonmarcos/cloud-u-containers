@@ -197,10 +197,10 @@ def sort_inbox(imap, rules):
                 count += 1
 
         # B) Tag folders (copies into B-group subfolders)
-        # Maddy uses "." as IMAP hierarchy separator, not "/"
+        # Stalwart uses "/" as IMAP hierarchy separator
         tag_matches = match_tags(headers, msg_size, content_types, rules)
         for group_name, sub_folder, flag, is_meta in tag_matches:
-            tag_folder = f"{group_name}.{sub_folder}"
+            tag_folder = f"{group_name}/{sub_folder}"
             enc_tag = imap_utf7_encode(tag_folder)
             ensure_folder(imap, tag_folder)
             result = imap.uid("COPY", uid_str, f'"{enc_tag}"')

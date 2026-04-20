@@ -3,9 +3,9 @@
   "_meta": {
     "generated_by": "cloud-data-config-derive.ts",
     "api_route": "GET /c3-api/cloud-data/deps",
-    "generated_at": "2026-04-18T08:43:34.230Z",
+    "generated_at": "2026-04-19T14:18:54.659Z",
     "total_services": 9,
-    "total_packages": 23
+    "total_packages": 24
   },
   "system": {
     "node": {
@@ -141,11 +141,12 @@
       },
       "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
+        "@types/mailparser": "^3.4.6",
         "@types/node": "^22.10.0",
-        "@types/nodemailer": "^6.4.0",
+        "@types/nodemailer": "^6.4.23",
         "@types/nunjucks": "^3.2.6",
         "tsx": "^4.19.0",
-        "typescript": "^5.7.0"
+        "typescript": "^5.9.3"
       }
     },
     "per_service": [
@@ -162,9 +163,10 @@
           "zod": "^3.25.0"
         },
         "devDependencies": {
+          "@types/mailparser": "^3.4.6",
           "@types/node": "^22.0.0",
-          "@types/nodemailer": "^6.4.0",
-          "typescript": "^5.7.0"
+          "@types/nodemailer": "^6.4.23",
+          "typescript": "^5.9.3"
         }
       },
       {

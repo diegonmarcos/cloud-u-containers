@@ -30,13 +30,13 @@ services:
         soft: 65536
         hard: 65536
     dns:
+      - 10.0.0.1
       - 1.1.1.1
-      - 8.8.8.8
     environment:
       - RUST_LOG=hickory_dns=info,hickory_server=info
     volumes:
-      - ./config/named.toml:/etc/named.toml:ro
-      - ./config/zones:/etc/zones:ro
+      - ./named.toml:/etc/named.toml:ro
+      - ./zones:/etc/zones:ro
     deploy:
       resources:
         limits:
