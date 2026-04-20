@@ -37,6 +37,9 @@
   "health": {
     "path": "/mcp"
   },
+  "upstream": {
+    "mattermost_url": "http://mattermost.app"
+  },
   "containers": {
     "app": {
       "container_name": "c3-infra-mcp",

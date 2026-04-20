@@ -9,12 +9,13 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-mattermost-mcp.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    svc = buildContainer.services;
 
     config = {
-      container_name = "mattermost-mcp";
-      image = "ghcr.io/diegonmarcos/mattermost-mcp:latest";
+      container_name = buildContainer.container.container_name;
+      image = buildJson.upstream_image;
       port = ports.valueOf "app";
     };
 

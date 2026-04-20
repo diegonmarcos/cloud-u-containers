@@ -6,6 +6,8 @@
     "app": 3104
   },
   "category": "app",
+  "domain": "mcp.diegonmarcos.com",
+  "user_google_email": "me@diegonmarcos.com",
   "build": {
     "include_cloud_data": "true"
   },

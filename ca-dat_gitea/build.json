@@ -102,5 +102,6 @@
     "image": "gitea",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
-  }
+  },
+  "upstream_image": "gitea/gitea:latest"
 }

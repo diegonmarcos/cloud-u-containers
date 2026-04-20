@@ -7,6 +7,8 @@
   },
   "category": "app",
   "domain": "sheets.diegonmarcos.com",
+  "upstream_image": "gristlabs/grist:latest",
+  "grist_admin_email": "admin@diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/grist",

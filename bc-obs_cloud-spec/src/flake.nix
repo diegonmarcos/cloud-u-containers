@@ -8,23 +8,35 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    lib = nixpkgs.lib;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-cloud-spec.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-cloud-spec.json);
 
     config = {
-      port = buildJson.ports.app;
+      container_name = buildContainer.container.container_name;
+      port = buildContainer.container.port;
+      # Static-serve command template: %PORT% is substituted with the declared port
+      command =
+        lib.replaceStrings [ "%PORT%" ] [ (toString buildContainer.container.port) ]
+          buildJson.runtime.command;
     };
 
-    # GHCR image: wraps busybox for static file serving
+    title = buildJson.description;
+
+    # GHCR image: wraps base image for static file serving
+    # Base image declared in build.json (docker.from_image)
     ghcr = docker.mkGhcrBuild {
-      name = "cloud-spec";
-      fromImage = "busybox:latest";
+      name = buildJson.name;
+      fromImage = buildJson.docker.from_image;
     };
 
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      site = pkgs.runCommand "cloud-spec-site" {
+      site = pkgs.runCommand "${config.container_name}-site" {
         nativeBuildInputs = [ pkgs.mdbook ];
       } ''
         mkdir -p build/src
@@ -36,14 +48,14 @@
       compose = docker.mkCompose pkgs {
         banner = docker.banner "~/git/cloud/a_solutions/bc-obs_cloud-spec/src/flake.nix";
 
-        services.cloud-spec = docker.mkService {
-          name = "cloud-spec";
+        services.${config.container_name} = docker.mkService {
+          name = config.container_name;
           image = ghcr.image;
           build = ghcr.build;
-          container_name = "cloud-spec";
+          container_name = config.container_name;
           restart = "no";
           networkMode = "host";
-          command = "busybox httpd -f -p ${toString config.port} -h /srv";
+          command = config.command;
           volumes = [
             "./site:/srv:ro"
           ];
@@ -52,7 +64,7 @@
       };
 
     in {
-      default = pkgs.runCommand "cloud-spec" {} ''
+      default = pkgs.runCommand config.container_name {} ''
         mkdir -p $out
         cp -r ${site}/* $out/
         # Flatten: move html/ contents to site/ for compose mount

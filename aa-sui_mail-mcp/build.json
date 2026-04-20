@@ -36,6 +36,18 @@
   "ports": {
     "app": 3103
   },
+  "domain": "mcp.diegonmarcos.com",
+  "mail_hosts": {
+    "maddy": "mail.diegonmarcos.com",
+    "stalwart": "mail-stalwart.diegonmarcos.com"
+  },
+  "mail_ports": {
+    "maddy_imap": 993,
+    "maddy_smtp": 465,
+    "stalwart_imap": 2993,
+    "stalwart_smtp": 2465,
+    "stalwart_jmap_https": 2443
+  },
   "containers": {
     "app": {
       "container_name": "mail-mcp",

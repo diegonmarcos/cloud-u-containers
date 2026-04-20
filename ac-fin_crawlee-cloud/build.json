@@ -7,7 +7,19 @@
     "dashboard": 3001,
     "db": 5433,
     "redis": 6381,
-    "minio": 9000
+    "minio": 9000,
+    "minio_console": 9001
+  },
+  "runtime": {
+    "node_env": "production",
+    "log_level": "info",
+    "rate_limit_max": 1000,
+    "max_concurrent_runs": 5,
+    "actor_max_memory_mb": 2048,
+    "actor_default_memory_mb": 512,
+    "actor_timeout_secs": 3600,
+    "s3_bucket": "crawlee-cloud",
+    "s3_force_path_style": true
   },
   "category": "fin",
   "domain": "api.diegonmarcos.com/crawlee/",
@@ -136,7 +148,8 @@
       "read_only": false,
       "db_user": "crawlee",
       "db_name": "crawlee",
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "postgres"
     },
     "redis": {
       "container_name": "crawlee_redis",
@@ -152,7 +165,8 @@
       "env_file": false,
       "resources": null,
       "read_only": false,
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "redis"
     },
     "minio": {
       "container_name": "crawlee_minio",
@@ -168,7 +182,8 @@
       "env_file": true,
       "resources": null,
       "read_only": false,
-      "protocol": "http"
+      "protocol": "http",
+      "db_engine": "minio"
     }
   },
   "docker": {

@@ -9,12 +9,24 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Per-container data-driven sources of truth
+    cNtfy = (builtins.fromJSON (builtins.readFile ./build-ntfy.json)).container;
+    cSyslog = (builtins.fromJSON (builtins.readFile ./build-syslog-bridge.json)).container;
+    cGithubRss = (builtins.fromJSON (builtins.readFile ./build-github-rss.json)).container;
+    appC = buildJson.containers.app;
+    syslogC = buildJson.containers."syslog-bridge";
+    githubRssC = buildJson.containers."github-rss";
 
     config = {
       domain = buildJson.domain;
-      container_name = "ntfy";
-      image = "binwiederhier/ntfy";
+      container_name = cNtfy.container_name;
+      image = cNtfy.image;
       port = buildJson.ports.app;
+      timezone = buildJson.timezone;
+      syslog_container = cSyslog.container_name;
+      syslog_image = cSyslog.image;
+      github_rss_container = cGithubRss.container_name;
+      github_rss_image = cGithubRss.image;
     };
 
     title = "ntfy Push Notifications + syslog-bridge + github-rss";
@@ -31,14 +43,14 @@
     };
     ghcrSyslogBridge = docker.mkGhcrBuild {
       name = "ntfy-syslog-bridge";
-      fromImage = "python:3.11-slim";
+      fromImage = config.syslog_image;
       configFiles = [
         { src = "syslog-to-ntfy.py"; dst = "/app/syslog-to-ntfy.py"; }
       ];
     };
     ghcrGithubRss = docker.mkGhcrBuild {
       name = "ntfy-github-rss";
-      fromImage = "python:3.11-slim";
+      fromImage = config.github_rss_image;
       configFiles = [
         { src = "github-rss-to-ntfy.py"; dst = "/app/github-rss-to-ntfy.py"; }
       ];
@@ -98,18 +110,18 @@
           skipReadOnly = true;
           entrypoint = ["/init-ntfy.sh"];
           env_file = [".secrets"];
-          environment = ["TZ=Europe/Paris"];
+          environment = ["TZ=${config.timezone}"];
           volumes = [
             "ntfy_cache:/var/cache/ntfy"
           ];
-          memLimit = "64M";
-          memReservation = "16M";
+          memLimit = appC.resources.limits.memory;
+          memReservation = appC.resources.reservations.memory;
         };
         syslog-bridge = docker.mkService {
           name = "syslog-bridge";
           image = ghcrSyslogBridge.image;
           build = ghcrSyslogBridge.build;
-          container_name = "syslog-bridge";
+          container_name = config.syslog_container;
           restart = "no";
           skipReadOnly = true;
           command = "python -u /app/syslog-to-ntfy.py";
@@ -117,26 +129,26 @@
             "ntfy_cache:/var/cache/ntfy"
             "/var/log:/var/log:ro"
           ];
-          environment = ["TZ=Europe/Paris" "PYTHONUNBUFFERED=1"];
+          environment = ["TZ=${config.timezone}" "PYTHONUNBUFFERED=1"];
           depends_on = { ntfy = {}; };
-          memLimit = "32M";
-          memReservation = "8M";
+          memLimit = syslogC.resources.limits.memory;
+          memReservation = syslogC.resources.reservations.memory;
         };
         github-rss = docker.mkService {
           name = "github-rss";
           image = ghcrGithubRss.image;
           build = ghcrGithubRss.build;
-          container_name = "github-rss";
+          container_name = config.github_rss_container;
           restart = "no";
           skipReadOnly = true;
           command = "python -u /app/github-rss-to-ntfy.py";
           volumes = [
             "ntfy_cache:/var/cache/ntfy"
           ];
-          environment = ["TZ=Europe/Paris" "PYTHONUNBUFFERED=1"];
+          environment = ["TZ=${config.timezone}" "PYTHONUNBUFFERED=1"];
           depends_on = { ntfy = {}; };
-          memLimit = "32M";
-          memReservation = "8M";
+          memLimit = githubRssC.resources.limits.memory;
+          memReservation = githubRssC.resources.reservations.memory;
         };
       };
     };

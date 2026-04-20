@@ -106,8 +106,10 @@
           image = ghcr.image;
           build = ghcr.build;
           container_name = buildContainer.container.container_name;
-          networkMode = null;  # bridge mode — port mapping binds to WG IP only
-          ports = ["${svc.snappymail.ip}:${config.port}:${config.port}"];
+          # host network: shares lo with co-located maddy (also host-mode) so
+          # domain config can use imap_host=localhost. VM INPUT policy is DROP
+          # except 10.0.0.0/24+lo, so :8888 stays reachable only via WG.
+          networkMode = "host";
           skipReadOnly = true;
           volumes = [
             "snappymail_data:/var/lib/snappymail"

@@ -12,5 +12,14 @@
   "ports": {
     "app": 3019
   },
-  "category": "tools"
+  "timezone": "Europe/Paris",
+  "category": "tools",
+  "containers": {
+    "app": {
+      "container_name": "news-gdelt",
+      "image": "ghcr.io/diegonmarcos/news-gdelt:latest",
+      "port": 3019,
+      "port_env": "PORT"
+    }
+  }
 }

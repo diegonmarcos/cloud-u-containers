@@ -8,6 +8,7 @@
   },
   "category": "app",
   "domain": "pad.diegonmarcos.com",
+  "upstream_image": "etherpad/etherpad:latest",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/etherpad",
@@ -79,7 +80,8 @@
       "read_only": false,
       "db_user": "etherpad",
       "db_name": "etherpad",
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "postgres"
     }
   },
   "backup": {

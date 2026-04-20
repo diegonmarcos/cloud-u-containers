@@ -3,6 +3,7 @@
   "enabled": false,
   "description": "Reveal.js markdown presentations (not deployed)",
   "dns": "revealmd.app",
+  "upstream_image": "webpronl/reveal-md:latest",
   "ports": {
     "app": 3014
   },

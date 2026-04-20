@@ -10,17 +10,22 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-surrealdb.json (symlink → I_cloud-data/
+    # build-surrealdb.json). Engine resolves symlink before nix build.
+    buildSurrealdb = builtins.fromJSON (builtins.readFile ./build-surrealdb.json);
+
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
       name = "kg-graph";
-      fromImage = "surrealdb/surrealdb:v2";
+      fromImage = buildJson.upstream_image;
     };
 
     config = {
-      container_name = "surrealdb";
+      container_name = buildSurrealdb.container.container_name;
       image = ghcr.image;
       port = ports.valueOf "app";
-      data_path = "/opt/data/surrealdb";
+      data_path = buildJson.data_path;
     };
 
     title = "SurrealDB Hybrid Knowledge Graph";

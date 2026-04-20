@@ -9,30 +9,33 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-hedgedoc_{app,postgres}.json (symlinks → I_cloud-data/).
+    # Engine resolves symlinks before nix build.
+    buildApp = builtins.fromJSON (builtins.readFile ./build-hedgedoc_app.json);
+    buildDb = builtins.fromJSON (builtins.readFile ./build-hedgedoc_postgres.json);
 
     config = {
       domain = buildJson.domain;
-      container_name = "hedgedoc_app";
-      image = "quay.io/hedgedoc/hedgedoc:latest";
-      db_container = "hedgedoc_postgres";
-      db_image = "postgres:16-alpine";
+      container_name = buildApp.container.container_name;
+      db_container = buildDb.container.container_name;
       port = buildJson.ports.app;
       db_port = buildJson.ports.db;
-      db_user = "hedgedoc";
-      db_name = "hedgedoc";
+      db_user = buildDb.container.db_user;
+      db_name = buildDb.container.db_name;
     };
 
     title = "HedgeDoc - Real-time collaborative markdown editor";
 
     ghcr-hedgedoc = docker.mkGhcrBuild {
       name = "hedgedoc";
-      fromImage = config.image;
+      fromImage = buildJson.upstream_image;
     };
 
     ghcr-hedgedoc-db = docker.mkGhcrBuild {
       name = "hedgedoc-db";
-      fromImage = config.db_image;
+      fromImage = buildDb.container.image;
     };
 
   in {

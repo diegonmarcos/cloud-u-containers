@@ -12,24 +12,29 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Per-container build.*.json symlinks (source of truth for container_name + image)
+    cGrafana = (builtins.fromJSON (builtins.readFile ./build-lgtm_grafana.json)).container;
+    cLoki    = (builtins.fromJSON (builtins.readFile ./build-lgtm_loki.json)).container;
+    cTempo   = (builtins.fromJSON (builtins.readFile ./build-lgtm_tempo.json)).container;
+    cMimir   = (builtins.fromJSON (builtins.readFile ./build-lgtm_mimir.json)).container;
 
     # GHCR images: wrap public images with OCI label for GHCR
     ghcrGrafana = docker.mkGhcrBuild {
       name = "lgtm-grafana";
-      fromImage = "grafana/grafana:latest";
+      fromImage = cGrafana.image;
     };
     ghcrLoki = docker.mkGhcrBuild {
       name = "lgtm-loki";
-      fromImage = "grafana/loki:latest";
+      fromImage = cLoki.image;
     };
     ghcrTempo = docker.mkGhcrBuild {
       name = "lgtm-tempo";
-      fromImage = "grafana/tempo:2.7.2";
+      fromImage = cTempo.image;
       configFiles = [ { src = "config/tempo.yaml"; dst = "/etc/tempo/tempo.yaml"; } ];
     };
     ghcrMimir = docker.mkGhcrBuild {
       name = "lgtm-mimir";
-      fromImage = "grafana/mimir:latest";
+      fromImage = cMimir.image;
       configFiles = [ { src = "config/mimir.yaml"; dst = "/etc/mimir/mimir.yaml"; } ];
     };
 
@@ -39,6 +44,10 @@
       loki_port = ports.valueOf "loki";
       mimir_port = ports.valueOf "mimir";
       tempo_port = ports.valueOf "tempo";
+      grafana_container = cGrafana.container_name;
+      loki_container = cLoki.container_name;
+      tempo_container = cTempo.container_name;
+      mimir_container = cMimir.container_name;
     };
 
     title = "LGTM Stack - Grafana Labs Observability (Loki, Grafana, Tempo, Mimir)";
@@ -61,7 +70,7 @@
             context: ${ghcrGrafana.build.context}
             dockerfile_inline: |
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrGrafana.build.dockerfile_inline}
-          container_name: lgtm_grafana
+          container_name: ${config.grafana_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
@@ -86,7 +95,7 @@
             context: ${ghcrLoki.build.context}
             dockerfile_inline: |
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrLoki.build.dockerfile_inline}
-          container_name: lgtm_loki
+          container_name: ${config.loki_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
@@ -106,7 +115,7 @@
             context: ${ghcrTempo.build.context}
             dockerfile_inline: |
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrTempo.build.dockerfile_inline}
-          container_name: lgtm_tempo
+          container_name: ${config.tempo_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:
@@ -119,7 +128,7 @@
             context: ${ghcrMimir.build.context}
             dockerfile_inline: |
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrMimir.build.dockerfile_inline}
-          container_name: lgtm_mimir
+          container_name: ${config.mimir_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           volumes:

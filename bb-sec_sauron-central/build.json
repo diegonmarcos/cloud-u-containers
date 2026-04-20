@@ -13,5 +13,15 @@
     "image": "sauron-central",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "containers": {
+    "syslog": {
+      "container_name": "syslog-central",
+      "upstream_image": "ghcr.io/axoflow/axosyslog:4.8.1"
+    },
+    "api": {
+      "container_name": "siem-api",
+      "upstream_image": "python:3.11-slim"
+    }
   }
 }

@@ -10,13 +10,16 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-google-workspace-mcp.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-google-workspace-mcp.json);
+    svc = buildContainer.services;
 
     config = {
-      container_name = "google-workspace-mcp";
-      image = "ghcr.io/diegonmarcos/google-workspace-mcp:latest";
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
       port = ports.valueOf "app";
-      internal_port = 8004;
+      user_google_email = buildJson.user_google_email;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -37,7 +40,7 @@
             WORKSPACE_MCP_HOST: "${svc."google-workspace-mcp".ip}"
             WORKSPACE_MCP_PORT: "${toString config.port}"
             PORT: "${toString config.port}"
-            USER_GOOGLE_EMAIL: "me@diegonmarcos.com"
+            USER_GOOGLE_EMAIL: "${config.user_google_email}"
             GOOGLE_SERVICE_ACCOUNT_KEY_PATH: "/run/secrets/service-account-key.json"
           volumes:
             - ./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro

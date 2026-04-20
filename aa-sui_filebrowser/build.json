@@ -10,6 +10,7 @@
     "include_cloud_data": "true"
   },
   "domain": "files.diegonmarcos.com",
+  "upstream_image": "filebrowser/filebrowser:latest",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/filebrowser",

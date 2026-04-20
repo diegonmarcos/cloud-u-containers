@@ -2,6 +2,21 @@
   "name": "ollama-hai",
   "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
   "category": "agi",
+  "timezone": "America/Chicago",
+  "upstream_image": "ollama/ollama:latest",
+  "ollama": {
+    "keep_alive": "-1",
+    "num_parallel": 2,
+    "max_loaded_models": 2,
+    "num_ctx": 4096,
+    "models": [
+      "qwen2.5:1.5b",
+      "nomic-embed-text"
+    ]
+  },
+  "resources": {
+    "mem_limit": "6G"
+  },
   "build": {
     "include_cloud_data": "true"
   },

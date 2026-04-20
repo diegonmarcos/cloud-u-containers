@@ -10,11 +10,12 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-revealmd_app.json);
 
     config = {
       domain = buildJson.domain;
-      container_name = "revealmd_app";
-      image = "webpronl/reveal-md:latest";
+      container_name = buildContainer.container.container_name;
+      image = buildJson.upstream_image;
       port = buildJson.ports.app;
     };
 

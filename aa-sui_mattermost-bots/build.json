@@ -3,6 +3,14 @@
   "description": "Mattermost team chat with ntfy bridge and C3 command bot",
   "port": 8065,
   "dns": "mattermost.app",
+  "timezone": "America/Chicago",
+  "c3": {
+    "api_url": "http://c3-infra-mcp-api:8080",
+    "port": 8887
+  },
+  "ollama": {
+    "model": "deepseek-r1:14b-qwen-distill-q8_0"
+  },
   "ports": {
     "app": 8065,
     "db": 5435
@@ -49,7 +57,7 @@
   "containers": {
     "app": {
       "container_name": "mattermost",
-      "image": "ngrie/mattermost-team-edition-arm:10.11",
+      "image": "mattermost/mattermost-team-edition:10.11",
       "port": 8065,
       "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
       "dns": "mattermost.app",
@@ -94,7 +102,8 @@
       "read_only": false,
       "db_user": "mattermost",
       "db_name": "mattermost",
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "postgres"
     },
     "bots": {
       "container_name": "mattermost-bots",

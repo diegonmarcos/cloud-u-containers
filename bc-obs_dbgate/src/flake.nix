@@ -8,14 +8,19 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-dbgate.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
+    appC = buildJson.containers.app;
 
     config = {
       domain = buildJson.domain;
-      container_name = "dbgate";
-      image = "dbgate/dbgate:latest";
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
       port = ports.valueOf "app";
-      timezone = "Europe/Madrid";
+      timezone = buildJson.timezone;
+      mem_limit = appC.resources.limits.memory;
+      mem_reservation = appC.resources.reservations.memory;
     };
 
     title = "DBGate - Universal Database Manager";
@@ -49,8 +54,8 @@
       else if type == "mariadb" then "mysql@dbgate-plugin-mysql"
       else "unknown";
 
-    # Determine host: localhost if same VM as dbgate (oci-apps / oci-A1-f_0), else WG IP
-    dbgateVm = "oci-A1-f_0";
+    # Determine host: localhost if same VM as dbgate (per build-dbgate.json), else WG IP
+    dbgateVm = buildContainer.vm;
     hostFor = db:
       if db.vm == dbgateVm then "localhost"
       else db.wg_ip;
@@ -130,9 +135,9 @@
           deploy:
             resources:
               limits:
-                memory: 256M
+                memory: ${config.mem_limit}
               reservations:
-                memory: 64M
+                memory: ${config.mem_reservation}
 
       volumes:
         dbgate_data:

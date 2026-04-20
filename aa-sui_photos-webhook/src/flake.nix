@@ -8,14 +8,19 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-photos-webhook.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     config = {
-      db_container = "photos-db";
-      db_image = "postgres:16-alpine";
-      webhook_container = "photos-webhook";
-      db_name = "photos";
-      db_user = "photos_user";
+      db_container = buildJson.containers.db.container_name;
+      db_image = buildJson.containers.db.image;
+      webhook_container = buildContainer.container.container_name;
+      webhook_image = buildJson.containers.app.image;
+      db_name = buildJson.containers.db.db_name;
+      db_user = buildJson.containers.db.db_user;
+      s3_region = buildJson.s3.region;
+      s3_bucket = buildJson.s3.bucket;
     };
 
     title = "Photos Webhook - PostgreSQL + webhook processor for PhotoPrism";
@@ -60,7 +65,7 @@
         };
         photos-webhook = docker.mkService {
           name = "photos-webhook";
-          image = "ghcr.io/diegonmarcos/photos-webhook:latest";
+          image = config.webhook_image;
           build = { context = "."; dockerfile = "Dockerfile"; };
           container_name = config.webhook_container;
           restart = "no";
@@ -72,8 +77,8 @@
             DB_PASSWORD = "\${DB_PASSWORD:-SECURE_PASSWORD_HERE}";
             S3_ACCESS_KEY = "\${S3_ACCESS_KEY}";
             S3_SECRET_KEY = "\${S3_SECRET_KEY}";
-            S3_REGION = "eu-marseille-1";
-            S3_BUCKET = "photos";
+            S3_REGION = config.s3_region;
+            S3_BUCKET = config.s3_bucket;
             WEBHOOK_PORT = "\"${toString (ports.valueOf "app")}\"";
           };
           depends_on = { photos-db = { condition = "service_healthy"; }; };

@@ -32,6 +32,7 @@
       "dbgate_data"
     ]
   },
+  "timezone": "Europe/Madrid",
   "containers": {
     "app": {
       "container_name": "dbgate",

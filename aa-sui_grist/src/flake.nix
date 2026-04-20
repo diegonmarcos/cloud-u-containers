@@ -9,20 +9,24 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-grist_app.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-grist_app.json);
 
     config = {
       domain = buildJson.domain;
-      container_name = "grist_app";
-      image = "gristlabs/grist:latest";
+      container_name = buildContainer.container.container_name;
       port = buildJson.ports.app;
+      admin_email = buildJson.grist_admin_email;
     };
 
     title = "Grist - Modern collaborative spreadsheet (Google Sheets alternative)";
 
     ghcr = docker.mkGhcrBuild {
       name = "grist";
-      fromImage = config.image;
+      fromImage = buildJson.upstream_image;
     };
 
   in {
@@ -45,7 +49,7 @@
             environment = [
               "GRIST_SESSION_SECRET=changeme-secret-key"
               "GRIST_SINGLE_ORG=docs"
-              "GRIST_DEFAULT_EMAIL=\${GRIST_ADMIN_EMAIL:-admin@diegonmarcos.com}"
+              "GRIST_DEFAULT_EMAIL=\${GRIST_ADMIN_EMAIL:-${config.admin_email}}"
               "APP_HOME_URL=https://${config.domain}"
               "GRIST_SANDBOX_FLAVOR=unsandboxed"
               "GRIST_LOG_LEVEL=info"

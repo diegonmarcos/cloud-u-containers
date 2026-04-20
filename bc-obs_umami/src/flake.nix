@@ -12,28 +12,39 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Per-container data-driven sources of truth
+    cUmami = (builtins.fromJSON (builtins.readFile ./build-umami.json)).container;
+    cUmamiDb = (builtins.fromJSON (builtins.readFile ./build-umami-db.json)).container;
+    cUmamiSetup = (builtins.fromJSON (builtins.readFile ./build-umami-setup.json)).container;
+    appC = buildJson.containers.app;
+    dbC = buildJson.containers.db;
 
     # GHCR images: wrap public images with OCI label for GHCR
     ghcrUmami = docker.mkGhcrBuild {
       name = "umami";
-      fromImage = "ghcr.io/umami-software/umami:latest";
+      fromImage = cUmami.image;
     };
     ghcrUmamiDb = docker.mkGhcrBuild {
       name = "umami-db";
-      fromImage = "postgres:16-alpine";
+      fromImage = cUmamiDb.image;
     };
     ghcrUmamiSetup = docker.mkGhcrBuild {
       name = "umami-setup";
-      fromImage = "curlimages/curl:latest";
+      fromImage = cUmamiSetup.image;
       configFiles = [ { src = "setup.sh"; dst = "/setup/setup.sh"; } ];
     };
 
     config = {
       domain = buildJson.domain;
-      container_name = "umami";
+      container_name = cUmami.container_name;
       port = ports.valueOf "app";
       db_port = ports.valueOf "db";
-      db_container = "umami-db";
+      db_container = cUmamiDb.container_name;
+      setup_container = cUmamiSetup.container_name;
+      app_mem_limit = appC.resources.limits.memory;
+      app_mem_reservation = appC.resources.reservations.memory;
+      db_mem_limit = dbC.resources.limits.memory;
+      db_mem_reservation = dbC.resources.reservations.memory;
     };
 
     title = "Umami Analytics";
@@ -82,9 +93,9 @@
           deploy:
             resources:
               limits:
-                memory: 1G
+                memory: ${config.app_mem_limit}
               reservations:
-                memory: 256M
+                memory: ${config.app_mem_reservation}
 
         umami-db:
           image: ${ghcrUmamiDb.image}
@@ -112,9 +123,9 @@
           deploy:
             resources:
               limits:
-                memory: 512M
+                memory: ${config.db_mem_limit}
               reservations:
-                memory: 128M
+                memory: ${config.db_mem_reservation}
 
         umami-setup:
           image: ${ghcrUmamiSetup.image}
@@ -122,7 +133,7 @@
             context: ${ghcrUmamiSetup.build.context}
             dockerfile_inline: |
               ${builtins.replaceStrings ["\n"] ["\n        "] ghcrUmamiSetup.build.dockerfile_inline}
-          container_name: umami-setup
+          container_name: ${config.setup_container}
           restart: "no"
           env_file:
             - .secrets
