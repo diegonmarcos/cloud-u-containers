@@ -33,9 +33,9 @@ result-*
 *.tfvars
 !*.tfvars.template
 
-# Node
+# Node — node_modules is machine-local; package-lock.json IS a source
+# artifact (deterministic deps, required by `npm ci`). Keep it tracked.
 node_modules/
-package-lock.json
 
 # Editor
 .idea/
