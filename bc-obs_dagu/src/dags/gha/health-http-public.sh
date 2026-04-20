@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ── Check all public HTTP endpoints ──
 # Usage: cloud-health-http-public.sh
-# Reads caddy-routes.json, curls every public domain
+# Reads build-proxy-caddy-routes.json, curls every public domain
 set -euo pipefail
 
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"

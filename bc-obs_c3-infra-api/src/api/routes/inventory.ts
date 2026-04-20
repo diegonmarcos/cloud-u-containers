@@ -207,7 +207,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     };
   });
 
-  // ── Caddy Routes (derived from build.json proxy fields → caddy-routes.json) ──
+  // ── Caddy Routes (derived from build.json proxy fields → build-proxy-caddy-routes.json) ──
   // Output format matches what the Caddy flake.nix expects:
   //   routes[]           — subdomain routes (1 domain = 1 upstream)
   //   path_routes[]      — grouped by parent_domain, each with paths[]
