@@ -13,7 +13,7 @@
 //   9. DRIFT             — missing containers, unmanaged containers, caddy orphan routes
 //  10. SECURITY          — TLS cert expiry, DMARC/SPF DNS, Authelia health, firewall ports
 //
-// Data sources: cloud-data-topology.json + cloud-data-caddy-routes.json + build.json (ports)
+// Data sources: cloud-data-topology.json + build-proxy-caddy-routes.json + build.json (ports)
 // Design: zero hardcoded service names. Promise.allSettled everywhere. SSH multiplexed.
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -124,7 +124,7 @@ function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<str
 }
 
 function loadCaddyRoutes(): CaddyRoute[] {
-  const filePath = join(CLOUD_DATA_DIR, "cloud-data-caddy-routes.json");
+  const filePath = join(CLOUD_DATA_DIR, "build-proxy-caddy-routes.json");
   if (!existsSync(filePath)) {
     log("caddy-routes.json not found");
     return [];

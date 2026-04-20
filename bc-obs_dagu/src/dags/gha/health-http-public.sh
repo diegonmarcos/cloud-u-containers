@@ -7,7 +7,7 @@ set -euo pipefail
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-R="I_cloud-data/cloud-data-caddy-routes.json"
+R="I_cloud-data/build-proxy-caddy-routes.json"
 [ ! -f "$R" ] && echo "ERROR: $R not found" >&2 && exit 1
 
 URLS="/tmp/urls-$$.txt"
