@@ -1,0 +1,15 @@
+[package]
+name = "fincept-ui-screens"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Phase 8: first 10 screens (Dashboard, Markets, Watchlist, News, Equity Research, Portfolio, Trading, Crypto, Economics, Settings)"
+
+[dependencies]
+fincept-ui-core = { path = "../ui-core" }
+fincept-ui-widgets = { path = "../ui-widgets" }
+fincept-ui-charts = { path = "../ui-charts" }
+egui = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

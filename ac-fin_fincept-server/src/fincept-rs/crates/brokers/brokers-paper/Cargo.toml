@@ -1,0 +1,18 @@
+[package]
+name = "fincept-brokers-paper"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Paper-trading broker: in-memory matching engine, deterministic, used for simulations and agent tests"
+
+[dependencies]
+fincept-brokers-core = { path = "../brokers-core" }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }

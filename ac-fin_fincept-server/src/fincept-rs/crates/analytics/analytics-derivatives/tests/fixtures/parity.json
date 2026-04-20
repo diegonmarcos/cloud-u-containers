@@ -1,0 +1,10 @@
+{
+  "note": "Benchmarks from Hull Options, Futures & Other Derivatives 10e; cross-checked against QuantLib-Python.",
+  "cases": [
+    { "fn": "black_scholes_call", "args": [42, 40, 0.10, 0.20, 0.5], "expected": 4.7594,  "tolerance": 1e-3 },
+    { "fn": "black_scholes_put",  "args": [42, 40, 0.10, 0.20, 0.5], "expected": 0.8086,  "tolerance": 1e-3 },
+    { "fn": "black_scholes_call", "args": [100, 100, 0.05, 0.20, 1.0], "expected": 10.4506, "tolerance": 1e-3 },
+    { "fn": "black_scholes_put",  "args": [100, 100, 0.05, 0.20, 1.0], "expected": 5.5735,  "tolerance": 1e-3 },
+    { "fn": "binomial_european_call", "args": [42, 40, 0.10, 0.20, 0.5, 500], "expected": 4.7594, "tolerance": 5e-2 }
+  ]
+}

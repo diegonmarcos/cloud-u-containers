@@ -1,0 +1,20 @@
+name = "Lynch"
+style = "growth-at-reasonable-price"
+description = "Peter Lynch — PEG ratio focus, invest in what you know, growth > value."
+
+[weights]
+pe_ratio = 0.15
+roe = 0.25
+debt_to_equity = 0.10
+fcf_yield = 0.20
+moat_score = 0.30
+
+[thresholds]
+pe_max = 25.0
+pe_ideal = 15.0
+roe_min = 0.12
+roe_ideal = 0.20
+debt_to_equity_max = 1.5
+debt_to_equity_ideal = 0.5
+fcf_yield_min = 0.04
+fcf_yield_ideal = 0.08

@@ -1,0 +1,483 @@
+{
+  "$schema": "./connector-specs.schema.json",
+  "note": "Data-driven connector registry. Each entry is interpreted by crates/data/data-generic. Edit this file to add vendors — no new crate needed. The integration test in data-generic/tests/specs_drive_tests.rs runs every spec through wiremock.",
+  "specs": [
+    {
+      "id": "ecb-exchangerates",
+      "description": "ECB daily euro reference exchange rates",
+      "base_url": "https://data-api.ecb.europa.eu",
+      "endpoint": "/service/data/EXR/{freq}.USD.EUR.SP00.A",
+      "topic_patterns": ["econ:ecb:exchangerates:*"],
+      "query": { "format": "jsondata", "lastNObservations": "1" },
+      "test": {
+        "path_params": { "freq": "D" },
+        "response": {
+          "dataSets": [{
+            "series": { "0:0:0:0:0": { "observations": { "0": [0.9234] } } }
+          }],
+          "structure": {
+            "dimensions": {
+              "observation": [{ "values": [{ "id": "2026-04-18" }] }]
+            }
+          }
+        },
+        "assertions": [
+          { "pointer": "/dataSets/0/series/0:0:0:0:0/observations/0/0", "expected": 0.9234 }
+        ]
+      }
+    },
+    {
+      "id": "treasury-fiscal",
+      "description": "US Treasury fiscal data — debt to the penny",
+      "base_url": "https://api.fiscaldata.treasury.gov",
+      "endpoint": "/services/api/fiscal_service/v2/accounting/od/debt_to_penny",
+      "topic_patterns": ["econ:treasury:debt:*"],
+      "query": { "format": "json", "page[size]": "1", "sort": "-record_date" },
+      "test": {
+        "path_params": {},
+        "response": {
+          "data": [{
+            "record_date": "2026-04-18",
+            "tot_pub_debt_out_amt": "34500000000000.00"
+          }],
+          "meta": { "count": 1 }
+        },
+        "assertions": [
+          { "pointer": "/data/0/record_date", "expected": "2026-04-18" },
+          { "pointer": "/meta/count", "expected": 1 }
+        ]
+      }
+    },
+    {
+      "id": "binance-ticker",
+      "description": "Binance 24h ticker price",
+      "base_url": "https://api.binance.com",
+      "endpoint": "/api/v3/ticker/24hr",
+      "topic_patterns": ["crypto:binance:*"],
+      "query": { "symbol": "{symbol}" },
+      "test": {
+        "path_params": { "symbol": "BTCUSDT" },
+        "response": {
+          "symbol": "BTCUSDT",
+          "lastPrice": "67500.50",
+          "volume": "12345.67"
+        },
+        "assertions": [
+          { "pointer": "/symbol", "expected": "BTCUSDT" },
+          { "pointer": "/lastPrice", "expected": "67500.50" }
+        ]
+      }
+    },
+    {
+      "id": "coinmarketcap-listings",
+      "description": "CoinMarketCap latest listings (sandbox)",
+      "base_url": "https://sandbox-api.coinmarketcap.com",
+      "endpoint": "/v1/cryptocurrency/listings/latest",
+      "topic_patterns": ["crypto:cmc:*"],
+      "query": { "start": "1", "limit": "1", "convert": "USD" },
+      "test": {
+        "path_params": {},
+        "response": {
+          "status": { "error_code": 0 },
+          "data": [{
+            "id": 1, "symbol": "BTC",
+            "quote": { "USD": { "price": 67500.12 } }
+          }]
+        },
+        "assertions": [
+          { "pointer": "/status/error_code", "expected": 0 },
+          { "pointer": "/data/0/symbol", "expected": "BTC" }
+        ]
+      }
+    },
+    {
+      "id": "defillama-tvl",
+      "description": "DefiLlama — DEX TVL",
+      "base_url": "https://api.llama.fi",
+      "endpoint": "/protocol/{protocol}",
+      "topic_patterns": ["crypto:defillama:tvl:*"],
+      "test": {
+        "path_params": { "protocol": "uniswap-v3" },
+        "response": {
+          "name": "Uniswap V3",
+          "tvl": [{ "date": 1713398400, "totalLiquidityUSD": 3800000000.0 }]
+        },
+        "assertions": [
+          { "pointer": "/name", "expected": "Uniswap V3" },
+          { "pointer": "/tvl/0/totalLiquidityUSD", "expected": 3800000000.0 }
+        ]
+      }
+    },
+    {
+      "id": "dexscreener-token",
+      "description": "Dexscreener token pairs",
+      "base_url": "https://api.dexscreener.com",
+      "endpoint": "/latest/dex/tokens/{token}",
+      "topic_patterns": ["crypto:dex:*"],
+      "test": {
+        "path_params": { "token": "0x0000000000000000000000000000000000000001" },
+        "response": {
+          "schemaVersion": "1.0.0",
+          "pairs": [{ "priceUsd": "0.0012", "liquidity": { "usd": 42000 } }]
+        },
+        "assertions": [
+          { "pointer": "/pairs/0/priceUsd", "expected": "0.0012" }
+        ]
+      }
+    },
+    {
+      "id": "bls-timeseries",
+      "description": "US Bureau of Labor Statistics — timeseries API v2",
+      "base_url": "https://api.bls.gov",
+      "endpoint": "/publicAPI/v2/timeseries/data/{series_id}",
+      "topic_patterns": ["econ:bls:*"],
+      "test": {
+        "path_params": { "series_id": "LNS14000000" },
+        "response": {
+          "status": "REQUEST_SUCCEEDED",
+          "Results": { "series": [{ "seriesID": "LNS14000000",
+            "data": [{ "year": "2026", "period": "M03", "value": "3.8" }] }] }
+        },
+        "assertions": [
+          { "pointer": "/status", "expected": "REQUEST_SUCCEEDED" },
+          { "pointer": "/Results/series/0/data/0/value", "expected": "3.8" }
+        ]
+      }
+    },
+    {
+      "id": "bea-gdp",
+      "description": "US Bureau of Economic Analysis — GDP",
+      "base_url": "https://apps.bea.gov",
+      "endpoint": "/api/data",
+      "topic_patterns": ["econ:bea:*"],
+      "query": {
+        "UserID": "X", "method": "GetData", "DataSetName": "NIPA",
+        "TableName": "T10101", "Frequency": "Q", "Year": "2025", "ResultFormat": "json"
+      },
+      "test": {
+        "path_params": {},
+        "response": {
+          "BEAAPI": { "Results": { "Data": [{ "TimePeriod": "2025Q1", "DataValue": "2.8" }] } }
+        },
+        "assertions": [
+          { "pointer": "/BEAAPI/Results/Data/0/TimePeriod", "expected": "2025Q1" }
+        ]
+      }
+    },
+    {
+      "id": "oecd-sdmx",
+      "description": "OECD SDMX-JSON data query",
+      "base_url": "https://stats.oecd.org",
+      "endpoint": "/sdmx-json/data/{dataset}/{filter}/all",
+      "topic_patterns": ["econ:oecd:*"],
+      "query": { "startTime": "2024", "endTime": "2025" },
+      "test": {
+        "path_params": { "dataset": "QNA", "filter": "USA.B1_GE.CQRSA.Q" },
+        "response": {
+          "dataSets": [{ "series": { "0:0:0:0": { "observations": { "0": [23456.1] } } } }]
+        },
+        "assertions": [
+          { "pointer": "/dataSets/0/series/0:0:0:0/observations/0/0", "expected": 23456.1 }
+        ]
+      }
+    },
+    {
+      "id": "eurostat",
+      "description": "Eurostat dataset query",
+      "base_url": "https://ec.europa.eu",
+      "endpoint": "/eurostat/api/dissemination/statistics/1.0/data/{dataset}",
+      "topic_patterns": ["econ:eurostat:*"],
+      "query": { "format": "JSON", "lang": "EN" },
+      "test": {
+        "path_params": { "dataset": "tec00001" },
+        "response": {
+          "value": { "0": 14200000.0 },
+          "dimension": {
+            "geo": { "category": { "label": { "DE": "Germany" } } }
+          }
+        },
+        "assertions": [
+          { "pointer": "/value/0", "expected": 14200000.0 }
+        ]
+      }
+    },
+    {
+      "id": "tradingeconomics",
+      "description": "Trading Economics sample endpoint",
+      "base_url": "https://api.tradingeconomics.com",
+      "endpoint": "/markets/historical/{symbol}",
+      "topic_patterns": ["market:tradingeconomics:*"],
+      "query": { "d1": "2025-01-01", "d2": "2026-01-01", "f": "json", "c": "guest:guest" },
+      "test": {
+        "path_params": { "symbol": "aapl:us" },
+        "response": [
+          { "Symbol": "AAPL:US", "Date": "2026-01-02T00:00:00", "Close": 187.4 }
+        ],
+        "assertions": [
+          { "pointer": "/0/Symbol", "expected": "AAPL:US" },
+          { "pointer": "/0/Close", "expected": 187.4 }
+        ]
+      }
+    },
+    {
+      "id": "sec-edgar-submissions",
+      "description": "SEC EDGAR filings submissions",
+      "base_url": "https://data.sec.gov",
+      "endpoint": "/submissions/{cik_padded}.json",
+      "topic_patterns": ["filings:edgar:*"],
+      "test": {
+        "path_params": { "cik_padded": "CIK0000320193" },
+        "response": {
+          "cik": "320193",
+          "name": "Apple Inc.",
+          "tickers": ["AAPL"],
+          "filings": { "recent": { "accessionNumber": ["0000320193-26-000050"] } }
+        },
+        "assertions": [
+          { "pointer": "/name", "expected": "Apple Inc." },
+          { "pointer": "/tickers/0", "expected": "AAPL" }
+        ]
+      }
+    },
+    {
+      "id": "polymarket-events",
+      "description": "Polymarket public events list",
+      "base_url": "https://gamma-api.polymarket.com",
+      "endpoint": "/events",
+      "topic_patterns": ["polymarket:events:*"],
+      "query": { "limit": "1", "active": "true" },
+      "test": {
+        "path_params": {},
+        "response": [
+          { "id": "1234", "slug": "us-election-2028", "title": "US Election 2028" }
+        ],
+        "assertions": [
+          { "pointer": "/0/slug", "expected": "us-election-2028" }
+        ]
+      }
+    },
+    {
+      "id": "acled-data",
+      "description": "ACLED conflict event data",
+      "base_url": "https://api.acleddata.com",
+      "endpoint": "/acled/read",
+      "topic_patterns": ["geopolitics:acled:*"],
+      "query": { "terms": "accept", "country": "{country}", "limit": "1" },
+      "test": {
+        "path_params": { "country": "Ukraine" },
+        "response": {
+          "status": 200,
+          "success": true,
+          "data": [{ "event_date": "2026-04-10", "event_type": "Battles", "fatalities": 5 }]
+        },
+        "assertions": [
+          { "pointer": "/success", "expected": true },
+          { "pointer": "/data/0/fatalities", "expected": 5 }
+        ]
+      }
+    },
+    {
+      "id": "hdx-datasets",
+      "description": "Humanitarian Data Exchange (HDX) dataset search",
+      "base_url": "https://data.humdata.org",
+      "endpoint": "/api/3/action/package_search",
+      "topic_patterns": ["geopolitics:hdx:*"],
+      "query": { "q": "{q}", "rows": "1" },
+      "test": {
+        "path_params": { "q": "conflict" },
+        "response": {
+          "success": true,
+          "result": {
+            "count": 1,
+            "results": [{ "name": "ucdp-data", "title": "UCDP Armed Conflicts" }]
+          }
+        },
+        "assertions": [
+          { "pointer": "/success", "expected": true },
+          { "pointer": "/result/results/0/name", "expected": "ucdp-data" }
+        ]
+      }
+    },
+    {
+      "id": "cftc-cot",
+      "description": "CFTC Commitments of Traders (Socrata)",
+      "base_url": "https://publicreporting.cftc.gov",
+      "endpoint": "/resource/6dca-aqww.json",
+      "topic_patterns": ["derivatives:cftc:*"],
+      "query": { "$limit": "1", "$order": "report_date_as_yyyy_mm_dd DESC" },
+      "test": {
+        "path_params": {},
+        "response": [
+          { "report_date_as_yyyy_mm_dd": "2026-04-15", "market_and_exchange_names": "GOLD - COMMODITY EXCHANGE INC." }
+        ],
+        "assertions": [
+          { "pointer": "/0/report_date_as_yyyy_mm_dd", "expected": "2026-04-15" }
+        ]
+      }
+    },
+    {
+      "id": "nasa-neo",
+      "description": "NASA Near-Earth Object feed",
+      "base_url": "https://api.nasa.gov",
+      "endpoint": "/neo/rest/v1/feed",
+      "topic_patterns": ["science:nasa:neo:*"],
+      "query": { "start_date": "2026-04-15", "api_key": "DEMO_KEY" },
+      "test": {
+        "path_params": {},
+        "response": {
+          "element_count": 1,
+          "near_earth_objects": {
+            "2026-04-15": [{ "name": "(2026 AB1)", "is_potentially_hazardous_asteroid": false }]
+          }
+        },
+        "assertions": [
+          { "pointer": "/element_count", "expected": 1 }
+        ]
+      }
+    },
+    {
+      "id": "openweather-current",
+      "description": "OpenWeather current weather",
+      "base_url": "https://api.openweathermap.org",
+      "endpoint": "/data/2.5/weather",
+      "topic_patterns": ["alt:weather:*"],
+      "query": { "q": "{city}", "appid": "demo", "units": "metric" },
+      "test": {
+        "path_params": { "city": "London" },
+        "response": {
+          "name": "London",
+          "main": { "temp": 14.2, "humidity": 72 },
+          "weather": [{ "main": "Clouds" }]
+        },
+        "assertions": [
+          { "pointer": "/name", "expected": "London" },
+          { "pointer": "/main/temp", "expected": 14.2 }
+        ]
+      }
+    },
+    {
+      "id": "newsapi-top",
+      "description": "NewsAPI top headlines",
+      "base_url": "https://newsapi.org",
+      "endpoint": "/v2/top-headlines",
+      "topic_patterns": ["news:*"],
+      "query": { "country": "us", "apiKey": "demo", "pageSize": "1" },
+      "test": {
+        "path_params": {},
+        "response": {
+          "status": "ok",
+          "totalResults": 1,
+          "articles": [{ "title": "Market closes higher", "source": { "name": "Reuters" } }]
+        },
+        "assertions": [
+          { "pointer": "/status", "expected": "ok" },
+          { "pointer": "/articles/0/source/name", "expected": "Reuters" }
+        ]
+      }
+    },
+    {
+      "id": "marinetraffic-vesselinfo",
+      "description": "MarineTraffic-style vessel info (example shape)",
+      "base_url": "https://services.marinetraffic.com",
+      "endpoint": "/api/exportvessel/v:5/{api_key}/vessel_id:{vessel_id}",
+      "topic_patterns": ["maritime:vessel:*"],
+      "test": {
+        "path_params": { "api_key": "demo", "vessel_id": "12345" },
+        "response": [
+          { "MMSI": "123456789", "NAME": "ATLANTIC STAR", "SPEED": 12.5, "STATUS": "Under way" }
+        ],
+        "assertions": [
+          { "pointer": "/0/NAME", "expected": "ATLANTIC STAR" }
+        ]
+      }
+    },
+    {
+      "id": "open-meteo-forecast",
+      "description": "Open-Meteo forecast API (no API key)",
+      "base_url": "https://api.open-meteo.com",
+      "endpoint": "/v1/forecast",
+      "topic_patterns": ["alt:openmeteo:*"],
+      "query": { "latitude": "{lat}", "longitude": "{lon}", "hourly": "temperature_2m" },
+      "test": {
+        "path_params": { "lat": "51.5074", "lon": "-0.1278" },
+        "response": {
+          "latitude": 51.5, "longitude": -0.125,
+          "hourly": { "time": ["2026-04-20T00:00"], "temperature_2m": [12.3] }
+        },
+        "assertions": [
+          { "pointer": "/hourly/temperature_2m/0", "expected": 12.3 }
+        ]
+      }
+    },
+    {
+      "id": "coinbase-spot",
+      "description": "Coinbase spot price",
+      "base_url": "https://api.coinbase.com",
+      "endpoint": "/v2/prices/{pair}/spot",
+      "topic_patterns": ["crypto:coinbase:*"],
+      "test": {
+        "path_params": { "pair": "BTC-USD" },
+        "response": {
+          "data": { "base": "BTC", "currency": "USD", "amount": "67420.45" }
+        },
+        "assertions": [
+          { "pointer": "/data/amount", "expected": "67420.45" }
+        ]
+      }
+    },
+    {
+      "id": "nseindia-marketstatus",
+      "description": "NSE India market status",
+      "base_url": "https://www.nseindia.com",
+      "endpoint": "/api/marketStatus",
+      "topic_patterns": ["market:in:status"],
+      "test": {
+        "path_params": {},
+        "response": {
+          "marketState": [
+            { "market": "Capital Market", "marketStatus": "Open", "tradeDate": "18-Apr-2026" }
+          ]
+        },
+        "assertions": [
+          { "pointer": "/marketState/0/marketStatus", "expected": "Open" }
+        ]
+      }
+    },
+    {
+      "id": "stooq-hist",
+      "description": "Stooq historical CSV (returned as JSON after vendor change)",
+      "base_url": "https://stooq.com",
+      "endpoint": "/q/d/l/",
+      "topic_patterns": ["market:stooq:*"],
+      "query": { "s": "{symbol}", "i": "d" },
+      "test": {
+        "path_params": { "symbol": "^spx" },
+        "response": {
+          "rows": [
+            { "date": "2026-04-18", "close": 5234.12 }
+          ]
+        },
+        "assertions": [
+          { "pointer": "/rows/0/close", "expected": 5234.12 }
+        ]
+      }
+    },
+    {
+      "id": "unhcr-refugees",
+      "description": "UNHCR refugee statistics",
+      "base_url": "https://api.unhcr.org",
+      "endpoint": "/population/v1/population",
+      "topic_patterns": ["geopolitics:unhcr:*"],
+      "query": { "year": "2025", "coo": "SYR", "limit": "1" },
+      "test": {
+        "path_params": {},
+        "response": {
+          "items": [{ "year": 2025, "coa_name": "Germany", "refugees": 700000 }]
+        },
+        "assertions": [
+          { "pointer": "/items/0/refugees", "expected": 700000 }
+        ]
+      }
+    }
+  ]
+}

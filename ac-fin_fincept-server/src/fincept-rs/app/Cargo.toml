@@ -1,0 +1,18 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Fincept Terminal binary (Rust port)"
+
+[[bin]]
+name = "fincept"
+path = "src/main.rs"
+
+[dependencies]
+fincept-core = { path = "../crates/core" }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }

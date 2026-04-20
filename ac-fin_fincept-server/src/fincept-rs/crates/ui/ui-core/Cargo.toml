@@ -1,0 +1,13 @@
+[package]
+name = "fincept-ui-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "UI foundation: Theme (loaded from assets/themes/*.json), Screen trait, headless test context"
+
+[dependencies]
+egui = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

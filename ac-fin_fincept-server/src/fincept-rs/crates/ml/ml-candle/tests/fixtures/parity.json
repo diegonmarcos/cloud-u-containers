@@ -1,0 +1,7 @@
+{
+  "cases": [
+    { "fn": "ols_slope", "args": [[[1, 0], [1, 1], [1, 2], [1, 3]], [3, 5, 7, 9]],     "expected": 2.0, "tolerance": 1e-10 },
+    { "fn": "ols_intercept", "args": [[[1, 0], [1, 1], [1, 2], [1, 3]], [3, 5, 7, 9]], "expected": 3.0, "tolerance": 1e-10 },
+    { "fn": "standardize_mean", "args": [[[1, 10], [2, 20], [3, 30], [4, 40]]],        "expected": 0.0, "tolerance": 1e-12 }
+  ]
+}

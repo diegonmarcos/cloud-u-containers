@@ -1,0 +1,12 @@
+[package]
+name = "fincept-nodegraph"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Node-editor graph primitives — nodes, edges, topological eval, JSON round-trip. egui_node_graph bindings ship Phase 9b."
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

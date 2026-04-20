@@ -1,0 +1,12 @@
+[package]
+name = "fincept-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Shared primitives: Result type, error taxonomy, config loader"
+
+[dependencies]
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "fincept-analytics-risk"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Risk metrics: Sharpe, Sortino, VaR (historical), volatility, max drawdown"
+
+[dependencies]
+fincept-analytics-quant = { path = "../analytics-quant" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,20 @@
+name = "Klarman"
+style = "distressed-value"
+description = "Seth Klarman — absolute return, catalyst-driven, risk-first. Deep margin of safety."
+
+[weights]
+pe_ratio = 0.20
+roe = 0.10
+debt_to_equity = 0.25
+fcf_yield = 0.30
+moat_score = 0.15
+
+[thresholds]
+pe_max = 18.0
+pe_ideal = 10.0
+roe_min = 0.08
+roe_ideal = 0.15
+debt_to_equity_max = 0.6
+debt_to_equity_ideal = 0.2
+fcf_yield_min = 0.10
+fcf_yield_ideal = 0.15

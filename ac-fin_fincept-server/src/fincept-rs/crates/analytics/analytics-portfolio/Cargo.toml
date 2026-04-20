@@ -1,0 +1,14 @@
+[package]
+name = "fincept-analytics-portfolio"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Portfolio math: equal weights, 2-asset min-variance, portfolio return/vol"
+
+[dependencies]
+fincept-analytics-quant = { path = "../analytics-quant" }
+fincept-analytics-risk = { path = "../analytics-risk" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

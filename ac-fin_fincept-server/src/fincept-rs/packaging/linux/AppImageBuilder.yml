@@ -1,0 +1,31 @@
+version: 1
+script:
+  - rm -rf AppDir | true
+  - mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
+  - cp target/release/fincept AppDir/usr/bin/
+  - cp packaging/linux/fincept.desktop AppDir/usr/share/applications/
+  - cp packaging/linux/fincept.png AppDir/usr/share/icons/hicolor/256x256/apps/ 2>/dev/null | true
+
+AppDir:
+  path: AppDir
+  app_info:
+    id: com.fincept.terminal-rs
+    name: Fincept Terminal
+    icon: fincept
+    version: 0.1.0
+    exec: usr/bin/fincept
+    exec_args: $@
+
+  runtime:
+    env:
+      PATH: '${APPDIR}/usr/bin:${PATH}'
+
+  files:
+    include:
+      - usr/bin/fincept
+      - usr/share/applications/fincept.desktop
+
+AppImage:
+  arch: x86_64
+  file_name: fincept-linux-x86_64.AppImage
+  update-information: None
