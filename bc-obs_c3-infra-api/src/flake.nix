@@ -8,14 +8,29 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    lib = nixpkgs.lib;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-c3-infra-api.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-c3-infra-api.json);
+    svc = buildContainer.services;
+
+    # base_domain derived from proxy parent_domain
+    # e.g. "api.diegonmarcos.com" → "diegonmarcos.com"
+    parent_domain = buildJson.proxy.primary.parent_domain;
+    base_domain =
+      let parts = lib.splitString "." parent_domain;
+      in lib.concatStringsSep "." (lib.drop 1 parts);
+    auth_domain = "auth.${base_domain}";
 
     config = {
-      container_name = buildJson.name;
-      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
-      port = buildJson.ports.app;
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
+      port = buildContainer.container.port;
+      base_domain = base_domain;
+      auth_domain = auth_domain;
+      auth_token_url = "https://${auth_domain}/api/oidc/token";
     };
 
     title = buildJson.description;
@@ -38,7 +53,7 @@
           "GIT_BASE=/root/git"
           "AUTHELIA_OIDC_CLIENT_ID=${config.container_name}"
           "AUTHELIA_OIDC_CLIENT_SECRET=\${AUTHELIA_OIDC_C3_INFRA_MCP_SECRET}"
-          "AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token"
+          "AUTHELIA_TOKEN_URL=${config.auth_token_url}"
           "RESEND_API_KEY=\${RESEND_API_KEY}"
           "CF_API_KEY=\${CF_API_KEY}"
           "CF_API_EMAIL=\${CF_API_EMAIL}"

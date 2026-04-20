@@ -10,12 +10,16 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-c3-services-mcp.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-c3-services-mcp.json);
+    svc = buildContainer.services;
 
     config = {
-      container_name = buildJson.name;
-      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
-      port = buildJson.ports.app;
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
+      port = buildContainer.container.port;
+      health_path = buildContainer.container.healthcheck;
     };
 
     title = buildJson.description;
@@ -37,7 +41,7 @@
           "NODE_ENV=production"
         ];
         healthcheck = {
-          test = ''["CMD-SHELL", "curl -so /dev/null -w '%{http_code}' http://localhost:${toString config.port}/mcp | grep -qE '^[2-4]' || exit 1"]'';
+          test = ''["CMD-SHELL", "curl -so /dev/null -w '%{http_code}' http://localhost:${toString config.port}${config.health_path} | grep -qE '^[2-4]' || exit 1"]'';
           interval = "30s";
           timeout = "10s";
           retries = 3;

@@ -10,12 +10,18 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-mail-mcp.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-mail-mcp.json);
+    svc = buildContainer.services;
+    mh = buildJson.mail_hosts;
+    mp = buildJson.mail_ports;
 
     config = {
-      container_name = "mail-mcp";
-      image = "ghcr.io/diegonmarcos/mail-mcp:latest";
-      mail_host = "mail.diegonmarcos.com";  # Use domain for TLS cert match (cert is for mail.diegonmarcos.com, not WG IP)
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
+      # Use domain for TLS cert match (cert is for mail.<base>, not WG IP)
+      mail_host = mh.maddy;
       port = ports.valueOf "app";
     };
 
@@ -39,13 +45,13 @@
           environment:
             PORT: "${toString config.port}"
             MAIL_HOST: ${config.mail_host}
-            MADDY_HOST: "mail.diegonmarcos.com"
-            MADDY_IMAP_PORT: "993"
-            MADDY_SMTP_PORT: "465"
-            STALWART_HOST: "mail-stalwart.diegonmarcos.com"
-            STALWART_IMAP_PORT: "2993"
-            STALWART_SMTP_PORT: "2465"
-            STALWART_JMAP_URL: "https://mail-stalwart.diegonmarcos.com:2443"
+            MADDY_HOST: "${mh.maddy}"
+            MADDY_IMAP_PORT: "${toString mp.maddy_imap}"
+            MADDY_SMTP_PORT: "${toString mp.maddy_smtp}"
+            STALWART_HOST: "${mh.stalwart}"
+            STALWART_IMAP_PORT: "${toString mp.stalwart_imap}"
+            STALWART_SMTP_PORT: "${toString mp.stalwart_smtp}"
+            STALWART_JMAP_URL: "https://${mh.stalwart}:${toString mp.stalwart_jmap_https}"
 
     '';
 

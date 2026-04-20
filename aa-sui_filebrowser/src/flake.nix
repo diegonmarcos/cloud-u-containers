@@ -8,13 +8,16 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-filebrowser_app.json (symlink → I_cloud-data/
+    # build-filebrowser_app.json). Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-filebrowser_app.json);
+    svc = buildContainer.services;
 
     config = {
       domain = buildJson.domain;
-      container_name = "filebrowser_app";
-      image = "filebrowser/filebrowser:latest";
+      container_name = buildContainer.container.container_name;
       port = buildJson.ports.app;
     };
 
@@ -22,7 +25,7 @@
 
     ghcr = docker.mkGhcrBuild {
       name = "filebrowser";
-      fromImage = config.image;
+      fromImage = buildJson.upstream_image;
     };
 
   in {

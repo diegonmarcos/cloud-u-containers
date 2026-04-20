@@ -8,21 +8,24 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-code-server.json (symlink → I_cloud-data/
+    # build-code-server.json). Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-code-server.json);
 
     config = {
       domain = buildJson.domain;
-      container_name = "code-server";
-      image = "linuxserver/code-server:latest";
+      container_name = buildContainer.container.container_name;
       port = buildJson.ports.app;
-      timezone = "Europe/Madrid";
+      timezone = buildJson.timezone;
     };
 
     title = "Code Server (VS Code in browser)";
 
     ghcr = docker.mkGhcrBuild {
       name = "code-server";
-      fromImage = config.image;
+      fromImage = buildJson.upstream_image;
     };
 
   in {

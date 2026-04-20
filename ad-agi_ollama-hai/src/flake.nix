@@ -7,20 +7,29 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
-    ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; cloudDataPath = ./cloud-data-service-connections.json; };
+
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-ollama-hai.json (symlink → I_cloud-data/
+    # build-ollama-hai.json). Engine resolves symlink before nix build.
+    buildOllama = builtins.fromJSON (builtins.readFile ./build-ollama-hai.json);
+    svc = buildOllama.services;
+    ports = import ../../_shared/lib/port-enforcement.nix {
+      buildJsonPath = ../build.json;
+      cloudDataPath = ./cloud-data-service-connections.json;
+    };
 
     config = {
-      container_name = "ollama-hai";
-      image = "ollama/ollama:latest";
+      container_name = buildOllama.container.container_name;
+      image = buildJson.upstream_image;
       api_port = ports.valueOf "app";
-      wg_ip = svc."ollama-hai".ip;
-      timezone = "America/Chicago";
-      keep_alive = "-1";
-      models = [
-        "qwen2.5:1.5b"
-        "nomic-embed-text"
-      ];
+      wg_ip = svc.${buildJson.name}.ip;
+      timezone = buildJson.timezone;
+      keep_alive = buildJson.ollama.keep_alive;
+      num_parallel = toString buildJson.ollama.num_parallel;
+      max_loaded_models = toString buildJson.ollama.max_loaded_models;
+      num_ctx = toString buildJson.ollama.num_ctx;
+      mem_limit = buildJson.resources.mem_limit;
+      models = buildJson.ollama.models;
     };
 
     title = "Ollama HAI (ARM CPU — qwen2.5:1.5b + nomic-embed-text)";
@@ -56,13 +65,13 @@
             - TZ=${config.timezone}
             - OLLAMA_KEEP_ALIVE=${config.keep_alive}
             - OLLAMA_HOST=${config.wg_ip}:${toString config.api_port}
-            - OLLAMA_NUM_PARALLEL=2
-            - OLLAMA_MAX_LOADED_MODELS=2
-            - OLLAMA_NUM_CTX=4096
+            - OLLAMA_NUM_PARALLEL=${config.num_parallel}
+            - OLLAMA_MAX_LOADED_MODELS=${config.max_loaded_models}
+            - OLLAMA_NUM_CTX=${config.num_ctx}
           deploy:
             resources:
               limits:
-                memory: 6G
+                memory: ${config.mem_limit}
           healthcheck:
             test: ["CMD", "ollama", "list"]
             interval: 30s

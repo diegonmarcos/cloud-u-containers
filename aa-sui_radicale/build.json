@@ -2,6 +2,7 @@
   "name": "radicale",
   "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
   "dns": "radicale.app",
+  "upstream_image": "tomsquest/docker-radicale:latest",
   "ports": {
     "app": 5232
   },

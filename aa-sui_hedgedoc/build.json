@@ -8,6 +8,7 @@
   },
   "category": "app",
   "domain": "doc.diegonmarcos.com",
+  "upstream_image": "quay.io/hedgedoc/hedgedoc:latest",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/hedgedoc",
@@ -79,7 +80,8 @@
       "read_only": false,
       "db_user": "hedgedoc",
       "db_name": "hedgedoc",
-      "protocol": "tcp"
+      "protocol": "tcp",
+      "db_engine": "postgres"
     }
   },
   "backup": {

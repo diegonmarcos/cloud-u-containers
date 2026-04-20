@@ -10,6 +10,9 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-gitea.json (symlink → I_cloud-data/
+    # build-gitea.json). Engine resolves symlink before nix build.
+    buildGitea = builtins.fromJSON (builtins.readFile ./build-gitea.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     giteaConfig = buildJson.gitea;
@@ -19,11 +22,11 @@
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
       name = "gitea";
-      fromImage = "gitea/gitea:latest";
+      fromImage = buildJson.upstream_image;
     };
 
     config = {
-      container_name = "gitea";
+      container_name = buildGitea.container.container_name;
       image = ghcr.image;
       port_http = ports.valueOf "app";
       port_ssh = buildJson.ssh_port;

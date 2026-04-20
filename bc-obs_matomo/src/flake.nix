@@ -10,12 +10,19 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # build-matomo-hybrid.json is the per-container data source of truth.
+    # It embeds .services (service IP/ports registry) via cloud-data-config-derive.
+    buildMatomo = builtins.fromJSON (builtins.readFile ./build-matomo-hybrid.json);
+    svc = buildMatomo.services;
+    appC = buildJson.containers.app;
 
     config = {
       domain = buildJson.domain;
-      container_name = "matomo-hybrid";
+      container_name = buildMatomo.container.container_name;
       port = ports.valueOf "app";
+      mem_limit = appC.resources.limits.memory;
+      mem_reservation = appC.resources.reservations.memory;
+      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
     };
 
     title = "Matomo Analytics (Hybrid Container)";
@@ -44,7 +51,7 @@
       services:
         matomo-hybrid:
           build: .
-          image: ghcr.io/diegonmarcos/matomo-hybrid:latest
+          image: ${config.image}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           ports:
@@ -65,9 +72,9 @@
           deploy:
             resources:
               limits:
-                memory: 1024M
+                memory: ${config.mem_limit}
               reservations:
-                memory: 64M
+                memory: ${config.mem_reservation}
 
       volumes:
         matomo_matomo_data:

@@ -29,5 +29,7 @@
     "image": "kg-graph",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
-  }
+  },
+  "upstream_image": "surrealdb/surrealdb:v2",
+  "data_path": "/opt/data/surrealdb"
 }

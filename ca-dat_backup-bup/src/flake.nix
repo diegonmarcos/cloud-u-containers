@@ -10,8 +10,13 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-bup-server.json (symlink → I_cloud-data/
+    # build-bup-server.json). Engine resolves symlink before nix build.
+    buildBup = builtins.fromJSON (builtins.readFile ./build-bup-server.json);
+
     config = {
-      container_name = "bup-server";
+      container_name = buildBup.container.container_name;
       ssh_port = ports.valueOf "app";
     };
 
@@ -20,7 +25,7 @@
     # GHCR image: wraps alpine with authorized_keys baked in
     ghcr = docker.mkGhcrBuild {
       name = "backup-bup";
-      fromImage = "alpine:3.20";
+      fromImage = buildJson.upstream_image;
       configFiles = [
         { src = "authorized_keys"; dst = "/root/.ssh/authorized_keys"; }
       ];

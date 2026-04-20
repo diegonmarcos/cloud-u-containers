@@ -11,16 +11,59 @@
 
   outputs = { self, nixpkgs, crawlee-src }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth for primary (app) container:
+    # build-crawlee_api.json (symlink → I_cloud-data/build-crawlee_api.json).
+    # Engine resolves symlink before nix build. Sidecar container configs
+    # come from build.json (same data, already consolidated).
+    buildCrawleeApi = builtins.fromJSON (builtins.readFile ./build-crawlee_api.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
+    # Container definitions — primary (app) from build-crawlee_api.json,
+    # sidecars from build.json.containers.
+    containers = buildJson.containers;
+
+    # GHCR image name prefix (registry + service image) — matches build.sh
+    # ghcr image naming convention "<registry>/<container-name>:latest".
+    registry = buildJson.docker.registry;
+    svcImageFor = subcomponent: "${registry}/crawlee-cloud-${subcomponent}:latest";
+
     config = {
+      api_container = buildCrawleeApi.container.container_name;
+      runner_container = containers.runner.container_name;
+      dashboard_container = containers.dashboard.container_name;
+      scheduler_container = containers.scheduler.container_name;
+      db_container = containers.db.container_name;
+      redis_container = containers.redis.container_name;
+      minio_container = containers.minio.container_name;
+      minio_init_container = "${containers.minio.container_name}_init";
+
+      api_image = svcImageFor "api";
+      runner_image = svcImageFor "runner";
+      dashboard_image = svcImageFor "dashboard";
+
+      db_upstream = containers.db.image;
+      redis_upstream = containers.redis.image;
+      minio_upstream = containers.minio.image;
+      minio_mc_upstream = "minio/mc:latest";
+
       api_port = ports.valueOf "app";
       dashboard_port = ports.valueOf "dashboard";
       minio_port = ports.valueOf "minio";
-      minio_console_port = 9001;
+      minio_console_port = buildJson.ports.minio_console;
       db_port = ports.valueOf "db";
       redis_port = ports.valueOf "redis";
+
+      node_env = buildJson.runtime.node_env;
+      log_level = buildJson.runtime.log_level;
+      rate_limit_max = toString buildJson.runtime.rate_limit_max;
+      max_concurrent_runs = toString buildJson.runtime.max_concurrent_runs;
+      actor_max_memory_mb = toString buildJson.runtime.actor_max_memory_mb;
+      actor_default_memory_mb = toString buildJson.runtime.actor_default_memory_mb;
+      actor_timeout_secs = toString buildJson.runtime.actor_timeout_secs;
+      s3_bucket = buildJson.runtime.s3_bucket;
+      s3_force_path_style = if buildJson.runtime.s3_force_path_style then "true" else "false";
     };
 
     title = "Crawlee Cloud - Self-hosted Apify-compatible scraping platform";
@@ -28,22 +71,22 @@
 
     ghcr-crawlee-db = docker.mkGhcrBuild {
       name = "crawlee-db";
-      fromImage = "postgres:16-alpine";
+      fromImage = config.db_upstream;
     };
 
     ghcr-crawlee-redis = docker.mkGhcrBuild {
       name = "crawlee-redis";
-      fromImage = "redis:7-alpine";
+      fromImage = config.redis_upstream;
     };
 
     ghcr-crawlee-minio = docker.mkGhcrBuild {
       name = "crawlee-minio";
-      fromImage = "minio/minio:latest";
+      fromImage = config.minio_upstream;
     };
 
     ghcr-crawlee-minio-mc = docker.mkGhcrBuild {
       name = "crawlee-minio-mc";
-      fromImage = "minio/mc:latest";
+      fromImage = config.minio_mc_upstream;
     };
 
     mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
@@ -61,21 +104,21 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.api
-          image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
-          container_name: crawlee_api
+          image: ${config.api_image}
+          container_name: ${config.api_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
           environment:
-            NODE_ENV: production
+            NODE_ENV: ${config.node_env}
             PORT: "${toString config.api_port}"
             REDIS_URL: redis://localhost:${toString config.redis_port}
             S3_ENDPOINT: http://localhost:${toString config.minio_port}
-            S3_BUCKET: crawlee-cloud
-            S3_FORCE_PATH_STYLE: "true"
-            RATE_LIMIT_MAX: "1000"
-            LOG_LEVEL: info
+            S3_BUCKET: ${config.s3_bucket}
+            S3_FORCE_PATH_STYLE: "${config.s3_force_path_style}"
+            RATE_LIMIT_MAX: "${config.rate_limit_max}"
+            LOG_LEVEL: ${config.log_level}
             DB_HOST: localhost
             DB_PORT: "${toString config.db_port}"
           command: >
@@ -86,11 +129,11 @@
               exec node packages/api/dist/index.js
             '
           depends_on:
-            crawlee_db:
+            ${config.db_container}:
               condition: service_healthy
-            crawlee_redis:
+            ${config.redis_container}:
               condition: service_healthy
-            crawlee_minio:
+            ${config.minio_container}:
               condition: service_healthy
           healthcheck:
             test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:${toString config.api_port}/health || exit 1"]
@@ -103,22 +146,22 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.runner
-          image: ghcr.io/diegonmarcos/crawlee-cloud-runner:latest
-          container_name: crawlee_runner
+          image: ${config.runner_image}
+          container_name: ${config.runner_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
           environment:
-            NODE_ENV: production
+            NODE_ENV: ${config.node_env}
             API_BASE_URL: http://localhost:${toString config.api_port}
             REDIS_URL: redis://localhost:${toString config.redis_port}
             DOCKER_SOCKET: /var/run/docker.sock
             DOCKER_NETWORK: host
-            MAX_CONCURRENT_RUNS: "5"
-            ACTOR_MAX_MEMORY_MB: "2048"
-            ACTOR_DEFAULT_MEMORY_MB: "512"
-            ACTOR_TIMEOUT_SECS: "3600"
+            MAX_CONCURRENT_RUNS: "${config.max_concurrent_runs}"
+            ACTOR_MAX_MEMORY_MB: "${config.actor_max_memory_mb}"
+            ACTOR_DEFAULT_MEMORY_MB: "${config.actor_default_memory_mb}"
+            ACTOR_TIMEOUT_SECS: "${config.actor_timeout_secs}"
             DB_HOST: localhost
             DB_PORT: "${toString config.db_port}"
           command: >
@@ -137,12 +180,12 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.dashboard
-          image: ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest
-          container_name: crawlee_dashboard
+          image: ${config.dashboard_image}
+          container_name: ${config.dashboard_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           environment:
-            NODE_ENV: production
+            NODE_ENV: ${config.node_env}
             PORT: "${toString config.dashboard_port}"
             NEXT_PUBLIC_API_URL: http://localhost:${toString config.api_port}
           depends_on:
@@ -153,14 +196,14 @@
           build:
             context: ./repo
             dockerfile: docker/Dockerfile.api
-          image: ghcr.io/diegonmarcos/crawlee-cloud-api:latest
-          container_name: crawlee_scheduler
+          image: ${config.api_image}
+          container_name: ${config.scheduler_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
           environment:
-            NODE_ENV: production
+            NODE_ENV: ${config.node_env}
             REDIS_URL: redis://localhost:${toString config.redis_port}
             DB_HOST: localhost
             DB_PORT: "${toString config.db_port}"
@@ -172,14 +215,14 @@
 
         # ═══ DATA STORES (standard images) ═══
 
-        crawlee_db:
+        ${config.db_container}:
           image: ${ghcr-crawlee-db.image}
           build:
             context: .
             dockerfile_inline: |
-              FROM postgres:16-alpine
+              FROM ${config.db_upstream}
               LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-          container_name: crawlee_db
+          container_name: ${config.db_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
@@ -194,14 +237,14 @@
             timeout: 5s
             retries: 5
 
-        crawlee_redis:
+        ${config.redis_container}:
           image: ${ghcr-crawlee-redis.image}
           build:
             context: .
             dockerfile_inline: |
-              FROM redis:7-alpine
+              FROM ${config.redis_upstream}
               LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-          container_name: crawlee_redis
+          container_name: ${config.redis_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           command: redis-server --appendonly yes --port ${toString config.redis_port}
@@ -213,14 +256,14 @@
             timeout: 5s
             retries: 5
 
-        crawlee_minio:
+        ${config.minio_container}:
           image: ${ghcr-crawlee-minio.image}
           build:
             context: .
             dockerfile_inline: |
-              FROM minio/minio:latest
+              FROM ${config.minio_upstream}
               LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-          container_name: crawlee_minio
+          container_name: ${config.minio_container}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
@@ -241,19 +284,19 @@
           build:
             context: .
             dockerfile_inline: |
-              FROM minio/mc:latest
+              FROM ${config.minio_mc_upstream}
               LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-          container_name: crawlee_minio_init
+          container_name: ${config.minio_init_container}
           network_mode: host
           depends_on:
-            crawlee_minio:
+            ${config.minio_container}:
               condition: service_healthy
           env_file:
             - .secrets
           entrypoint: >
             /bin/sh -c "
             mc alias set myminio http://localhost:${toString config.minio_port} $$MINIO_USER $$MINIO_PASSWORD;
-            mc mb myminio/crawlee-cloud --ignore-existing;
+            mc mb myminio/${config.s3_bucket} --ignore-existing;
             exit 0;
             "
 

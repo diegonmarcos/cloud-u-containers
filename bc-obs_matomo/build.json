@@ -73,12 +73,7 @@
       "container_name": "matomo-hybrid",
       "image": null,
       "port": 8084,
-      "extra_ports": [
-        {
-          "port": 3306,
-          "protocol": "tcp"
-        }
-      ],
+      "extra_ports": [],
       "port_env": null,
       "dns": "matomo.app",
       "public": true,
@@ -106,7 +101,14 @@
       },
       "read_only": false,
       "dump_cmd": "mysqldump -u matomo matomo",
-      "protocol": "http"
+      "protocol": "http",
+      "embedded_dbs": [
+        {
+          "engine": "mariadb",
+          "port": 3306,
+          "path": "/var/lib/mysql"
+        }
+      ]
     }
   }
 }

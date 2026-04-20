@@ -8,21 +8,24 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildApp = builtins.fromJSON (builtins.readFile ./build-mattermost.json);
+    buildDb = builtins.fromJSON (builtins.readFile ./build-mattermost-postgres.json);
+    buildBots = builtins.fromJSON (builtins.readFile ./build-mattermost-bots.json);
 
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    svc = buildBots.services;
 
     config = {
-      container_name = "mattermost";
-      postgres_container = "mattermost-postgres";
-      bridge_container = "mattermost-bots";
+      container_name = buildApp.container.container_name;
+      postgres_container = buildDb.container.container_name;
+      bridge_container = buildBots.container.container_name;
       # Upstream official, multi-arch (linux/amd64 + linux/arm64). Replaces the
       # ngrie/mattermost-team-edition-arm fork which only publishes amd64
       # manifests despite its name, breaking oci-apps (aarch64) builds.
-      image = "mattermost/mattermost-team-edition:10.11";
-      c3_api = "http://c3-infra-mcp-api:8080";
-      c3_port = 8887;
-      postgres_image = "postgres:16-alpine";
-      bridge_image = "python:3.12-slim";
+      image = buildJson.containers.app.image;
+      c3_api = buildJson.c3.api_url;
+      c3_port = buildJson.c3.port;
+      postgres_image = buildJson.containers.db.image;
+      bridge_image = buildJson.containers.bots.image;
       domain = buildJson.domain;
       port = buildJson.ports.app;
       postgres_port = buildJson.ports.db;
@@ -30,15 +33,20 @@
       ntfy_url = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
       # Scraped from bc-obs_ntfy/src/topic-scanner.py CONFIGURED_TOPICS
       topics = builtins.concatStringsSep "," (import ./ntfy-topics.nix);
-      timezone = "America/Chicago";
+      timezone = buildJson.timezone;
       ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
-      ollama_model = "deepseek-r1:14b-qwen-distill-q8_0";
+      ollama_model = buildJson.ollama.model;
       ollama_vm = svc.ollama.vm;
     };
 
     title = "Mattermost Team Chat";
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    lib = nixpkgs.lib;
+    # base_domain derived from service domain: "chat.example.com" → "example.com"
+    base_domain = lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
+    db_name = buildJson.containers.db.db_name;
+    db_user = buildJson.containers.db.db_user;
 
     ghcr-mattermost = docker.mkGhcrBuild {
       name = "mattermost";
@@ -117,11 +125,11 @@
           ];
           env_file = [".secrets"];
           environment = [
-            "POSTGRES_DB=mattermost"
-            "POSTGRES_USER=mattermost"
+            "POSTGRES_DB=${db_name}"
+            "POSTGRES_USER=${db_user}"
           ];
           healthcheck = {
-            test = ''["CMD-SHELL", "pg_isready -U mattermost -d mattermost"]'';
+            test = ''["CMD-SHELL", "pg_isready -U ${db_user} -d ${db_name}"]'';
             interval = "10s";
             timeout = "5s";
             retries = 5;
@@ -147,7 +155,7 @@
             "OLLAMA_VM=${config.ollama_vm}"
             "AUTHELIA_OIDC_CLIENT_ID=mattermost-cc"
             "AUTHELIA_OIDC_CLIENT_SECRET=\${AUTHELIA_OIDC_MATTERMOST_SECRET}"
-            "AUTHELIA_TOKEN_URL=https://auth.diegonmarcos.com/api/oidc/token"
+            "AUTHELIA_TOKEN_URL=https://auth.${base_domain}/api/oidc/token"
           ];
           depends_on = { mattermost = {}; };
         };

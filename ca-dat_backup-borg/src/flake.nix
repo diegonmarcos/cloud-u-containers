@@ -10,8 +10,13 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-borg-server.json (symlink → I_cloud-data/
+    # build-borg-server.json). Engine resolves symlink before nix build.
+    buildBorg = builtins.fromJSON (builtins.readFile ./build-borg-server.json);
+
     config = {
-      container_name = "borg-server";
+      container_name = buildBorg.container.container_name;
       ssh_port = ports.valueOf "app";
     };
 
@@ -20,7 +25,7 @@
     # GHCR image: wraps alpine with authorized_keys baked in
     ghcr = docker.mkGhcrBuild {
       name = "backup-borg";
-      fromImage = "alpine:3.19";
+      fromImage = buildJson.upstream_image;
       configFiles = [
         { src = "authorized_keys"; dst = "/root/.ssh/authorized_keys"; }
       ];

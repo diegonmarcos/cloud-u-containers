@@ -29,12 +29,23 @@
   "ports": {
     "app": 5002
   },
+  "s3": {
+    "region": "eu-marseille-1",
+    "bucket": "photos"
+  },
   "containers": {
     "app": {
       "container_name": "photos-webhook",
+      "image": "ghcr.io/diegonmarcos/photos-webhook:latest",
       "port": 5002,
       "port_env": "WEBHOOK_PORT",
       "protocol": "http"
+    },
+    "db": {
+      "container_name": "photos-db",
+      "image": "postgres:16-alpine",
+      "db_name": "photos",
+      "db_user": "photos_user"
     }
   }
 }

@@ -23,5 +23,6 @@
     "image": "backup-borg",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
-  }
+  },
+  "upstream_image": "alpine:3.19"
 }

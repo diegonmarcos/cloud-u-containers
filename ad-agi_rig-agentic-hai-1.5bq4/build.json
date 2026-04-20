@@ -15,6 +15,29 @@
       "protocol": "http"
     }
   },
+  "rig": {
+    "ollama_service": "ollama-hai",
+    "ollama_model": "qwen2.5:1.5b",
+    "c3_mcp_url": "http://c3-services-mcp.app",
+    "mattermost_url": "http://mattermost.app",
+    "mm_bot_mention": "@hai-1.5bq4-ai",
+    "guardrail_max_turns": 5,
+    "self_healing_enabled": false,
+    "rust_log": "rig_agentic=info",
+    "allowed_tools": [
+      "mm_post", "mm_reply", "mm_read", "mm_channels",
+      "mail_send", "mail_reply",
+      "ntfy_publish",
+      "services_list", "services_info",
+      "c3_topology", "c3_configs", "c3_deps",
+      "c3_topology_md", "c3_configs_md",
+      "c3_deps_front", "cloud_context",
+      "knowledge_vm_info", "knowledge_services_by_category",
+      "octocode_search", "octocode_memory",
+      "dagu_trigger", "dagu_list",
+      "gha_trigger", "gha_list_runs"
+    ]
+  },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "rig-agentic-hai",

@@ -7,16 +7,29 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+    docker = import ../../_shared/docker.nix;
 
-    config = {};
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # build-sauron-central.json (symlink → I_cloud-data/build-sauron-central.json)
+    # tracks the service container declaration; local build.json owns the two
+    # co-deployed containers (syslog-central + siem-api) since cloud-data only
+    # models a single "sauron-central" role.
+    buildSauron = builtins.fromJSON (builtins.readFile ./build-sauron-central.json);
+
+    containers = buildJson.containers;
+
+    config = {
+      service_container = buildSauron.container.container_name;
+      syslog_container = containers.syslog.container_name;
+      api_container = containers.api.container_name;
+    };
 
     title = "Sauron Central";
-    docker = import ../../_shared/docker.nix;
 
     # GHCR images: one per container
     ghcrSyslog = docker.mkGhcrBuild {
       name = "sauron-syslog";
-      fromImage = "ghcr.io/axoflow/axosyslog:4.8.1";
+      fromImage = containers.syslog.upstream_image;
       configFiles = [
         { src = "syslog-ng-central.conf"; dst = "/etc/syslog-ng/syslog-ng.conf"; }
       ];
@@ -24,7 +37,7 @@
 
     ghcrApi = docker.mkGhcrBuild {
       name = "sauron-api";
-      fromImage = "python:3.11-slim";
+      fromImage = containers.api.upstream_image;
       configFiles = [
         { src = "api/app.py"; dst = "/app/app.py"; }
       ];
@@ -38,7 +51,7 @@
           name = "syslog-central";
           image = ghcrSyslog.image;
           build = ghcrSyslog.build;
-          container_name = "syslog-central";
+          container_name = config.syslog_container;
           restart = "no";
           networkMode = "host";
           skipReadOnly = true;
@@ -52,7 +65,7 @@
           name = "siem-api";
           image = ghcrApi.image;
           build = ghcrApi.build;
-          container_name = "siem-api";
+          container_name = config.api_container;
           restart = "no";
           networkMode = "host";
           command = ''["python", "/app/app.py"]'';

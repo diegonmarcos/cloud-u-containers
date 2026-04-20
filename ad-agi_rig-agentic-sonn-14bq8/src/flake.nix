@@ -7,17 +7,34 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-rig-agentic-sonn-14bq8.json (symlink →
+    # I_cloud-data/build-rig-agentic-sonn-14bq8.json). Engine resolves
+    # symlink before nix build.
+    buildRig = builtins.fromJSON (builtins.readFile ./build-rig-agentic-sonn-14bq8.json);
+    svc = buildRig.services;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+
+    # Upstream service lookups from cloud-data
+    ollamaSvc = svc.${buildJson.rig.ollama_service};
+    mattermostSvc = svc.${buildJson.rig.mattermost_service};
+    selfSvc = svc.${buildJson.name};
 
     config = {
-      container_name = "rig-agentic-sonn-14bq8";
+      container_name = buildRig.container.container_name;
+      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
       port = ports.valueOf "app";
-      ollama_url = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
-      ollama_model = "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0";
-      c3_api_url = "http://c3-api.app";
-      c3_mcp_url = "http://c3-mcp.app";
-      mattermost_url = "http://${svc."mattermost-bots".ip}:${toString svc."mattermost-bots".ports.app}";
+      rig_host = selfSvc.ip;
+      ollama_url = "http://${ollamaSvc.ip}:${toString ollamaSvc.ports.app}";
+      ollama_model = buildJson.rig.ollama_model;
+      c3_api_url = buildJson.rig.c3_api_url;
+      c3_mcp_url = buildJson.rig.c3_mcp_url;
+      mattermost_url = "http://${mattermostSvc.ip}:${toString mattermostSvc.ports.app}";
+      mm_bot_mention = buildJson.rig.mm_bot_mention;
+      guardrail_max_turns = toString buildJson.rig.guardrail_max_turns;
+      self_healing_enabled = if buildJson.rig.self_healing_enabled then "true" else "false";
+      rust_log = buildJson.rig.rust_log;
     };
 
     title = "Rig Agentic AI";
@@ -35,14 +52,14 @@
           build:
             context: .
             dockerfile: Dockerfile
-          image: ghcr.io/diegonmarcos/rig-agentic-sonn:latest
+          image: ${config.image}
           container_name: ${config.container_name}
           restart: "no"  # container-init handles startup
           network_mode: host
           env_file:
             - .secrets
           environment:
-            - RIG_HOST=${svc."rig-agentic-sonn-14bq8".ip}
+            - RIG_HOST=${config.rig_host}
             - RIG_PORT=${toString config.port}
             - OLLAMA_URL=${config.ollama_url}
             - OLLAMA_API_BASE_URL=${config.ollama_url}
@@ -50,16 +67,16 @@
             - C3_API_URL=${config.c3_api_url}
             - C3_MCP_URL=${config.c3_mcp_url}
             - MATTERMOST_URL=${config.mattermost_url}
-            - GUARDRAIL_MAX_TURNS=20
+            - GUARDRAIL_MAX_TURNS=${config.guardrail_max_turns}
             - GUARDRAIL_DENIED_TOOLS=
             - GUARDRAIL_ALLOWED_TOOLS=
-            - SELF_HEALING_ENABLED=true
-            - MM_BOT_MENTION=@ollama-14bq8-ai
-            - RUST_LOG=rig_agentic=info
+            - SELF_HEALING_ENABLED=${config.self_healing_enabled}
+            - MM_BOT_MENTION=${config.mm_bot_mention}
+            - RUST_LOG=${config.rust_log}
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
           healthcheck:
-            test: ["CMD", "curl", "-sf", "http://${svc."rig-agentic-sonn-14bq8".ip}:${toString config.port}/health"]
+            test: ["CMD", "curl", "-sf", "http://${config.rig_host}:${toString config.port}/health"]
             interval: 30s
             timeout: 10s
             retries: 3

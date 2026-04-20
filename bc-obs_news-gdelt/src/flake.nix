@@ -10,13 +10,15 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # TODO: add news-gdelt to cloud-data topology, then use svc."news-gdelt".ip
-    vmIp = "10.0.0.6";  # oci-apps WG IP
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-news-gdelt.json);
+    svc = buildContainer.services;
+    vmIp = svc."news-gdelt".ip or "10.0.0.6";  # oci-apps WG IP
 
     config = {
-      container_name = buildJson.name;
-      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
       port = buildJson.ports.app;
+      timezone = buildJson.timezone;
     };
 
     title = buildJson.description;
@@ -35,7 +37,7 @@
           "NODE_ENV=production"
           "CACHE_DIR=/app/cache"
           "FETCH_INTERVAL=900"
-          "TZ=Europe/Paris"
+          "TZ=${config.timezone}"
           "BASE_PATH=/news"
           "PORT=${toString config.port}"
         ];

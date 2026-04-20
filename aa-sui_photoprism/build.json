@@ -7,6 +7,16 @@
   },
   "category": "app",
   "domain": "photos.diegonmarcos.com",
+  "timezone": "Europe/Madrid",
+  "s3": {
+    "bucket": "my-photos",
+    "endpoint": "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com",
+    "region": "eu-marseille-1"
+  },
+  "db": {
+    "name": "photoprism",
+    "user": "photoprism"
+  },
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/photoprism",
@@ -84,7 +94,8 @@
       "resources": null,
       "read_only": false,
       "db_user": "root",
-      "db_name": "photoprism"
+      "db_name": "photoprism",
+      "db_engine": "mariadb"
     },
     "rclone": {
       "container_name": "photoprism_rclone",

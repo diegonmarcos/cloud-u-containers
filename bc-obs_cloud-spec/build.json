@@ -48,6 +48,10 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "cloud-spec",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "from_image": "busybox:latest"
+  },
+  "runtime": {
+    "command": "busybox httpd -f -p %PORT% -h /srv"
   }
 }

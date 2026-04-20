@@ -44,6 +44,10 @@
   "compose": {
     "pre_hook": "mkdir -p data/cloud-data data/front-data && cp -f cloud-data-*.json cloud-data-*.md data/cloud-data/ 2>/dev/null; cp -f front-*.json data/front-data/ 2>/dev/null; cp -f config.json data/ 2>/dev/null; echo 'data dir ready'"
   },
+  "runtime": {
+    "git_root": "/home/diego/Mounts/Git",
+    "data_path": "/data"
+  },
   "containers": {
     "app": {
       "container_name": "cloud-cgc-mcp",

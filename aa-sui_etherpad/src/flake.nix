@@ -11,29 +11,31 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-etherpad_{app,postgres}.json (symlinks → I_cloud-data/).
+    # Engine resolves symlinks before nix build.
+    buildApp = builtins.fromJSON (builtins.readFile ./build-etherpad_app.json);
+    buildDb = builtins.fromJSON (builtins.readFile ./build-etherpad_postgres.json);
 
     config = {
       domain = buildJson.domain;
-      container_name = "etherpad_app";
-      image = "etherpad/etherpad:latest";
-      db_container = "etherpad_postgres";
-      db_image = "postgres:16-alpine";
+      container_name = buildApp.container.container_name;
+      db_container = buildDb.container.container_name;
       port = buildJson.ports.app;
       db_port = toString buildJson.ports.db;
-      db_user = "etherpad";
-      db_name = "etherpad";
+      db_user = buildDb.container.db_user;
+      db_name = buildDb.container.db_name;
     };
 
     title = "Etherpad - Real-time collaborative document editor";
 
     ghcr-etherpad = docker.mkGhcrBuild {
       name = "etherpad";
-      fromImage = config.image;
+      fromImage = buildJson.upstream_image;
     };
 
     ghcr-etherpad-db = docker.mkGhcrBuild {
       name = "etherpad-db";
-      fromImage = config.db_image;
+      fromImage = buildDb.container.image;
     };
 
   in {

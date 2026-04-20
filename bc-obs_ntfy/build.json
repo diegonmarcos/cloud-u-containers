@@ -32,6 +32,7 @@
   "ports": {
     "app": 8090
   },
+  "timezone": "Europe/Paris",
   "backup": {
     "enabled": true
   },
@@ -42,6 +43,14 @@
       "port": 8090,
       "port_env": null,
       "dns": "ntfy.app",
+      "resources": {
+        "limits": {
+          "memory": "64M"
+        },
+        "reservations": {
+          "memory": "16M"
+        }
+      },
       "public": true,
       "proxy": {
         "domain": "rss.diegonmarcos.com",
@@ -59,7 +68,6 @@
       ],
       "env_file": true,
       "depends_on": [],
-      "resources": null,
       "read_only": false,
       "db_path": "/var/cache/ntfy/cache.db",
       "protocol": "http",
@@ -89,7 +97,14 @@
       "depends_on": [
         "app"
       ],
-      "resources": null,
+      "resources": {
+        "limits": {
+          "memory": "32M"
+        },
+        "reservations": {
+          "memory": "8M"
+        }
+      },
       "read_only": false
     },
     "github-rss": {
@@ -110,7 +125,14 @@
       "depends_on": [
         "app"
       ],
-      "resources": null,
+      "resources": {
+        "limits": {
+          "memory": "32M"
+        },
+        "reservations": {
+          "memory": "8M"
+        }
+      },
       "read_only": false
     }
   },

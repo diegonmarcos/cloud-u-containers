@@ -11,23 +11,26 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildApp = builtins.fromJSON (builtins.readFile ./build-photoprism_app.json);
+    buildDb = builtins.fromJSON (builtins.readFile ./build-photoprism_mariadb.json);
+    buildRclone = builtins.fromJSON (builtins.readFile ./build-photoprism_rclone.json);
 
     config = {
       domain = buildJson.domain;
-      app_container = "photoprism_app";
-      db_container = "photoprism_mariadb";
-      rclone_container = "photoprism_rclone";
-      app_image = "photoprism/photoprism:latest";
-      db_image = "mariadb:11";
-      rclone_image = "rclone/rclone:latest";
+      app_container = buildApp.container.container_name;
+      db_container = buildDb.container.container_name;
+      rclone_container = buildRclone.container.container_name;
+      app_image = buildJson.containers.app.image;
+      db_image = buildJson.containers.db.image;
+      rclone_image = buildJson.containers.rclone.image;
       app_port = buildJson.ports.app;
-      timezone = "Europe/Madrid";
-      db_name = "photoprism";
-      db_user = "photoprism";
+      timezone = buildJson.timezone;
+      db_name = buildJson.db.name;
+      db_user = buildJson.db.user;
       # OCI Object Storage S3-compatible
-      s3_bucket = "my-photos";
-      s3_endpoint = "https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com";
-      s3_region = "eu-marseille-1";
+      s3_bucket = buildJson.s3.bucket;
+      s3_endpoint = buildJson.s3.endpoint;
+      s3_region = buildJson.s3.region;
     };
 
     title = "PhotoPrism Photo Gallery";
@@ -101,6 +104,7 @@
             ];
             allowWritableBindMounts = true;
             environment = [
+              "TZ=${config.timezone}"
               "PHOTOPRISM_ADMIN_USER=admin"
               "PHOTOPRISM_ADMIN_PASSWORD=\${PHOTOPRISM_ADMIN_PASSWORD:-changeme}"
               "PHOTOPRISM_AUTH_MODE=password"
@@ -150,8 +154,8 @@
             environment = [
               "MARIADB_AUTO_UPGRADE=1"
               "MARIADB_INITDB_SKIP_TZINFO=1"
-              "MARIADB_DATABASE=\${MARIADB_DATABASE:-photoprism}"
-              "MARIADB_USER=\${MARIADB_USER:-photoprism}"
+              "MARIADB_DATABASE=\${MARIADB_DATABASE:-${config.db_name}}"
+              "MARIADB_USER=\${MARIADB_USER:-${config.db_user}}"
               "MARIADB_PASSWORD=\${MARIADB_PASSWORD:-changeme}"
               "MARIADB_ROOT_PASSWORD=\${MARIADB_ROOT_PASSWORD:-changeme}"
             ];

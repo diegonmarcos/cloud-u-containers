@@ -9,12 +9,13 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-radicale.json);
+    svc = buildContainer.services;
 
     # GHCR image: bake config into image (no bind mount needed)
     ghcr = docker.mkGhcrBuild {
       name = "radicale";
-      fromImage = "tomsquest/docker-radicale:latest";
+      fromImage = buildJson.upstream_image;
       configFiles = [
         { src = "config/config"; dst = "/config/config"; }
       ];
@@ -22,7 +23,7 @@
 
     config = {
       domain = buildJson.domain;
-      container_name = "radicale";
+      container_name = buildContainer.container.container_name;
       image = ghcr.image;
       port = buildJson.ports.app;
     };
@@ -31,7 +32,7 @@
 
     mkRadicaleConfig = pkgs: pkgs.writeText "config" ''
       [server]
-      hosts = 0.0.0.0:5232
+      hosts = 0.0.0.0:${toString config.port}
 
       [auth]
       type = imap
@@ -64,7 +65,7 @@
             build = ghcr.build;
             container_name = config.container_name;
             networkMode = null;  # bridge mode — port mapping binds to WG IP only
-            ports = [ "${svc.radicale.ip}:${toString config.port}:5232" ];
+            ports = [ "${svc.radicale.ip}:${toString config.port}:${toString config.port}" ];
             networks = [ "default" ];
             volumes = [
               "radicale_data:/data"
@@ -73,7 +74,7 @@
               "TAKE_FILE_OWNERSHIP=true"
             ];
             healthcheck = {
-              test = "curl -f http://localhost:5232/.web/ || exit 1";
+              test = "curl -f http://localhost:${toString config.port}/.web/ || exit 1";
               interval = "30s";
               timeout = "10s";
               retries = 3;

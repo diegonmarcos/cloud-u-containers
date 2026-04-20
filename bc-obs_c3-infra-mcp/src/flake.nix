@@ -11,14 +11,17 @@
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-c3-infra-mcp.json (symlink → I_cloud-data/).
+    # Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-c3-infra-mcp.json);
+    svc = buildContainer.services;
 
     config = {
-      container_name = buildJson.name;
-      image = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
-      port = buildJson.ports.app;
+      container_name = buildContainer.container.container_name;
+      image = buildContainer.container.image;
+      port = buildContainer.container.port;
       health_path = buildJson.health.path;
-      mattermost_url = "http://mattermost.app";
+      mattermost_url = buildJson.upstream.mattermost_url;
     };
 
     title = buildJson.description;
