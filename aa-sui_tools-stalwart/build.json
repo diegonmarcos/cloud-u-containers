@@ -134,6 +134,18 @@
           "path": "/opt/stalwart-mail/data"
         }
       ]
+    },
+    "sorter": {
+      "container_name": "stalwart-sorter",
+      "image": "python:3-alpine",
+      "resources": {
+        "mem_limit": "64M",
+        "mem_reservation": "16M"
+      }
     }
-  }
+  },
+  "upstream_image": "stalwartlabs/stalwart:latest",
+  "timezone": "Europe/Madrid",
+  "admin_user": "me",
+  "noreply_user": "no-reply"
 }
