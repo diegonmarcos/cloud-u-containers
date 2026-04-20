@@ -84,5 +84,11 @@
     "image": "vaultwarden",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "upstream_image": "vaultwarden/server:latest",
+  "timezone": "Europe/Madrid",
+  "resources": {
+    "mem_limit": "128M",
+    "mem_reservation": "32M"
   }
 }

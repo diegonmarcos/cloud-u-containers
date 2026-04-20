@@ -47,9 +47,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 1G
         reservations:
-          memory: 32M
+          memory: 256M
 
   umami-db:
     image: ghcr.io/diegonmarcos/umami-db:latest
@@ -83,9 +83,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 512M
         reservations:
-          memory: 32M
+          memory: 128M
 
   umami-setup:
     image: ghcr.io/diegonmarcos/umami-setup:latest

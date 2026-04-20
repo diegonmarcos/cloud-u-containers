@@ -33,7 +33,8 @@ access_control:
   rules:
     - domain: auth.diegonmarcos.com
       policy: bypass
-
+    - domain: '*.diegonmarcos.com'
+      policy: two_factor
     - domain: "*.diegonmarcos.com"
       policy: two_factor
 

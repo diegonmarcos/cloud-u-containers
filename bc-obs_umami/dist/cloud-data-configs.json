@@ -4,7 +4,7 @@
     "generated_by": "cloud-data-config-derive.ts",
     "api_route": "GET /c3-api/cloud-data/configs",
     "source": "_cloud-data-consolidated.json",
-    "generated_at": "2026-04-18T10:42:56.616Z"
+    "generated_at": "2026-04-19T16:56:54.841Z"
   },
   "services": [
     {
@@ -21,7 +21,8 @@
       ],
       "containers": [
         "authelia",
-        "authelia-redis"
+        "authelia-redis",
+        "postlite-authelia"
       ]
     },
     {
@@ -46,18 +47,6 @@
       "networks": [],
       "containers": [
         "bup-server"
-      ]
-    },
-    {
-      "name": "backup-gitea",
-      "category": "data",
-      "vm": "oci-A1-f_0",
-      "description": "Self-hosted Gitea for git backups and mirroring",
-      "domain": "git.diegonmarcos.com",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "gitea"
       ]
     },
     {
@@ -131,8 +120,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "caddy",
-        "introspect-proxy"
+        "caddy"
       ]
     },
     {
@@ -456,10 +444,10 @@
       "name": "matomo",
       "category": "tools",
       "vm": "oci-A1-f_0",
-      "description": "Matomo hybrid analytics (oci-analytics)",
+      "description": "Matomo hybrid analytics (oci-apps)",
       "domain": "analytics.diegonmarcos.com",
       "ports": [
-        "10.0.0.4:8084:8084"
+        "10.0.0.6:8084:8080"
       ],
       "networks": [],
       "containers": [
@@ -770,7 +758,7 @@
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "domain": "analytics.diegonmarcos.com",
       "ports": [
-        "10.0.0.4:3006:3006"
+        "10.0.0.6:3006:3006"
       ],
       "networks": [],
       "containers": [
@@ -790,20 +778,6 @@
       "containers": [
         "vaultwarden"
       ]
-    },
-    {
-      "name": "windmill",
-      "category": "tools",
-      "vm": "oci-A1-f_0",
-      "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
-      "domain": "windmill.diegonmarcos.com",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "windmill-server",
-        "windmill-db",
-        "windmill-worker"
-      ]
     }
   ],
   "infra": [
@@ -821,7 +795,8 @@
       ],
       "containers": [
         "authelia",
-        "authelia-redis"
+        "authelia-redis",
+        "postlite-authelia"
       ]
     },
     {
@@ -846,18 +821,6 @@
       "networks": [],
       "containers": [
         "bup-server"
-      ]
-    },
-    {
-      "name": "backup-gitea",
-      "category": "data",
-      "vm": "oci-A1-f_0",
-      "description": "Self-hosted Gitea for git backups and mirroring",
-      "domain": "git.diegonmarcos.com",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "gitea"
       ]
     },
     {
@@ -905,8 +868,7 @@
       "ports": [],
       "networks": [],
       "containers": [
-        "caddy",
-        "introspect-proxy"
+        "caddy"
       ]
     },
     {
@@ -1096,10 +1058,10 @@
       "name": "matomo",
       "category": "tools",
       "vm": "oci-A1-f_0",
-      "description": "Matomo hybrid analytics (oci-analytics)",
+      "description": "Matomo hybrid analytics (oci-apps)",
       "domain": "analytics.diegonmarcos.com",
       "ports": [
-        "10.0.0.4:8084:8084"
+        "10.0.0.6:8084:8080"
       ],
       "networks": [],
       "containers": [
@@ -1199,27 +1161,13 @@
       "description": "Umami Analytics - lightweight privacy-focused web analytics",
       "domain": "analytics.diegonmarcos.com",
       "ports": [
-        "10.0.0.4:3006:3006"
+        "10.0.0.6:3006:3006"
       ],
       "networks": [],
       "containers": [
         "umami",
         "umami-db",
         "umami-setup"
-      ]
-    },
-    {
-      "name": "windmill",
-      "category": "tools",
-      "vm": "oci-A1-f_0",
-      "description": "Windmill workflow orchestration (windmill.diegonmarcos.com)",
-      "domain": "windmill.diegonmarcos.com",
-      "ports": [],
-      "networks": [],
-      "containers": [
-        "windmill-server",
-        "windmill-db",
-        "windmill-worker"
       ]
     }
   ],

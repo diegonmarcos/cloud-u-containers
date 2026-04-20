@@ -32,12 +32,360 @@
     "name": "cloud data dns services"
   },
   {
-    "file": "cloud-data-caddy-routes.json",
-    "name": "cloud data caddy routes"
+    "file": "build-caddy.json",
+    "name": "build caddy"
   },
   {
     "file": "cloud-data-authelia-acl.json",
     "name": "cloud data authelia acl"
+  },
+  {
+    "file": "build-authelia.json",
+    "name": "build authelia"
+  },
+  {
+    "file": "build-redis.json",
+    "name": "build redis"
+  },
+  {
+    "file": "build-code-server.json",
+    "name": "build code server"
+  },
+  {
+    "file": "build-etherpad_app.json",
+    "name": "build etherpad_app"
+  },
+  {
+    "file": "build-etherpad_postgres.json",
+    "name": "build etherpad_postgres"
+  },
+  {
+    "file": "build-filebrowser_app.json",
+    "name": "build filebrowser_app"
+  },
+  {
+    "file": "build-google-workspace-mcp.json",
+    "name": "build google workspace mcp"
+  },
+  {
+    "file": "build-grist_app.json",
+    "name": "build grist_app"
+  },
+  {
+    "file": "build-hedgedoc_app.json",
+    "name": "build hedgedoc_app"
+  },
+  {
+    "file": "build-hedgedoc_postgres.json",
+    "name": "build hedgedoc_postgres"
+  },
+  {
+    "file": "build-mail-mcp.json",
+    "name": "build mail mcp"
+  },
+  {
+    "file": "build-mattermost.json",
+    "name": "build mattermost"
+  },
+  {
+    "file": "build-mattermost-postgres.json",
+    "name": "build mattermost postgres"
+  },
+  {
+    "file": "build-mattermost-bots.json",
+    "name": "build mattermost bots"
+  },
+  {
+    "file": "build-mattermost-mcp.json",
+    "name": "build mattermost mcp"
+  },
+  {
+    "file": "build-photoprism_app.json",
+    "name": "build photoprism_app"
+  },
+  {
+    "file": "build-photoprism_mariadb.json",
+    "name": "build photoprism_mariadb"
+  },
+  {
+    "file": "build-photoprism_rclone.json",
+    "name": "build photoprism_rclone"
+  },
+  {
+    "file": "build-photos-webhook.json",
+    "name": "build photos webhook"
+  },
+  {
+    "file": "build-radicale.json",
+    "name": "build radicale"
+  },
+  {
+    "file": "build-revealmd_app.json",
+    "name": "build revealmd_app"
+  },
+  {
+    "file": "build-snappymail.json",
+    "name": "build snappymail"
+  },
+  {
+    "file": "build-maddy.json",
+    "name": "build maddy"
+  },
+  {
+    "file": "build-smtp-proxy.json",
+    "name": "build smtp proxy"
+  },
+  {
+    "file": "build-stalwart.json",
+    "name": "build stalwart"
+  },
+  {
+    "file": "build-vaultwarden.json",
+    "name": "build vaultwarden"
+  },
+  {
+    "file": "build-crawlee_api.json",
+    "name": "build crawlee_api"
+  },
+  {
+    "file": "build-crawlee_runner.json",
+    "name": "build crawlee_runner"
+  },
+  {
+    "file": "build-crawlee_dashboard.json",
+    "name": "build crawlee_dashboard"
+  },
+  {
+    "file": "build-crawlee_scheduler.json",
+    "name": "build crawlee_scheduler"
+  },
+  {
+    "file": "build-crawlee_db.json",
+    "name": "build crawlee_db"
+  },
+  {
+    "file": "build-crawlee_redis.json",
+    "name": "build crawlee_redis"
+  },
+  {
+    "file": "build-crawlee_minio.json",
+    "name": "build crawlee_minio"
+  },
+  {
+    "file": "build-quant_full_research.json",
+    "name": "build quant_full_research"
+  },
+  {
+    "file": "build-quant_full_analytics.json",
+    "name": "build quant_full_analytics"
+  },
+  {
+    "file": "build-quant_full_ml.json",
+    "name": "build quant_full_ml"
+  },
+  {
+    "file": "build-quant_full_risk.json",
+    "name": "build quant_full_risk"
+  },
+  {
+    "file": "build-quant_full_engine.json",
+    "name": "build quant_full_engine"
+  },
+  {
+    "file": "build-quant_full_db.json",
+    "name": "build quant_full_db"
+  },
+  {
+    "file": "build-quant_light_research.json",
+    "name": "build quant_light_research"
+  },
+  {
+    "file": "build-quant_light_engine.json",
+    "name": "build quant_light_engine"
+  },
+  {
+    "file": "build-quant_light_db.json",
+    "name": "build quant_light_db"
+  },
+  {
+    "file": "build-ollama.json",
+    "name": "build ollama"
+  },
+  {
+    "file": "build-ollama-arm.json",
+    "name": "build ollama arm"
+  },
+  {
+    "file": "build-ollama-hai.json",
+    "name": "build ollama hai"
+  },
+  {
+    "file": "build-rig-agentic-hai.json",
+    "name": "build rig agentic hai"
+  },
+  {
+    "file": "build-rig-agentic-sonn-14bq8.json",
+    "name": "build rig agentic sonn 14bq8"
+  },
+  {
+    "file": "build-cloudflare-worker.json",
+    "name": "build cloudflare worker"
+  },
+  {
+    "file": "build-gcloud.json",
+    "name": "build gcloud"
+  },
+  {
+    "file": "build-hickory-dns.json",
+    "name": "build hickory dns"
+  },
+  {
+    "file": "build-authelia-redis.json",
+    "name": "build authelia redis"
+  },
+  {
+    "file": "build-postlite-authelia.json",
+    "name": "build postlite authelia"
+  },
+  {
+    "file": "build-caddy-l4-image.json",
+    "name": "build caddy l4 image"
+  },
+  {
+    "file": "build-introspect-proxy.json",
+    "name": "build introspect proxy"
+  },
+  {
+    "file": "build-sauron-central.json",
+    "name": "build sauron central"
+  },
+  {
+    "file": "build-c3-infra-api.json",
+    "name": "build c3 infra api"
+  },
+  {
+    "file": "build-c3-infra-mcp.json",
+    "name": "build c3 infra mcp"
+  },
+  {
+    "file": "build-c3-services-api.json",
+    "name": "build c3 services api"
+  },
+  {
+    "file": "build-c3-services-mcp.json",
+    "name": "build c3 services mcp"
+  },
+  {
+    "file": "build-cloud-cgc-mcp.json",
+    "name": "build cloud cgc mcp"
+  },
+  {
+    "file": "build-cloud-spec.json",
+    "name": "build cloud spec"
+  },
+  {
+    "file": "build-dagu.json",
+    "name": "build dagu"
+  },
+  {
+    "file": "build-dbgate.json",
+    "name": "build dbgate"
+  },
+  {
+    "file": "build-dozzle.json",
+    "name": "build dozzle"
+  },
+  {
+    "file": "build-fluent-bit.json",
+    "name": "build fluent bit"
+  },
+  {
+    "file": "build-lgtm_grafana.json",
+    "name": "build lgtm_grafana"
+  },
+  {
+    "file": "build-lgtm_loki.json",
+    "name": "build lgtm_loki"
+  },
+  {
+    "file": "build-lgtm_tempo.json",
+    "name": "build lgtm_tempo"
+  },
+  {
+    "file": "build-lgtm_mimir.json",
+    "name": "build lgtm_mimir"
+  },
+  {
+    "file": "build-matomo-hybrid.json",
+    "name": "build matomo hybrid"
+  },
+  {
+    "file": "build-news-gdelt.json",
+    "name": "build news gdelt"
+  },
+  {
+    "file": "build-ntfy.json",
+    "name": "build ntfy"
+  },
+  {
+    "file": "build-syslog-bridge.json",
+    "name": "build syslog bridge"
+  },
+  {
+    "file": "build-github-rss.json",
+    "name": "build github rss"
+  },
+  {
+    "file": "build-sauron-forwarder.json",
+    "name": "build sauron forwarder"
+  },
+  {
+    "file": "build-sauron-lite.json",
+    "name": "build sauron lite"
+  },
+  {
+    "file": "build-syslog-forwarder.json",
+    "name": "build syslog forwarder"
+  },
+  {
+    "file": "build-umami.json",
+    "name": "build umami"
+  },
+  {
+    "file": "build-umami-db.json",
+    "name": "build umami db"
+  },
+  {
+    "file": "build-umami-setup.json",
+    "name": "build umami setup"
+  },
+  {
+    "file": "build-cloud-builder-x.json",
+    "name": "build cloud builder x"
+  },
+  {
+    "file": "build-borg-server.json",
+    "name": "build borg server"
+  },
+  {
+    "file": "build-bup-server.json",
+    "name": "build bup server"
+  },
+  {
+    "file": "build-c3-diego-personal-data-mcp.json",
+    "name": "build c3 diego personal data mcp"
+  },
+  {
+    "file": "build-db-agent.json",
+    "name": "build db agent"
+  },
+  {
+    "file": "build-gitea.json",
+    "name": "build gitea"
+  },
+  {
+    "file": "build-surrealdb.json",
+    "name": "build surrealdb"
   },
   {
     "file": "cloud-data-home-manager.json",
