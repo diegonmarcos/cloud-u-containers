@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ── Check all public HTTP endpoints ──
 # Usage: cloud-health-http-public.sh
-# Reads build-proxy-caddy-routes.json, curls every public domain
+# Reads build-caddy.json, curls every public domain
 set -euo pipefail
 
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-R="I_cloud-data/build-proxy-caddy-routes.json"
+R="I_cloud-data/build-caddy.json"
 [ ! -f "$R" ] && echo "ERROR: $R not found" >&2 && exit 1
 
 URLS="/tmp/urls-$$.txt"
