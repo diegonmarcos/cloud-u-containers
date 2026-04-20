@@ -8,10 +8,15 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-stalwart.json);
 
     title = "Stalwart Mail Server (Shadow)";
     docker = import ../../_shared/docker.nix;
     lib = nixpkgs.lib;
+
+    # base_domain derived from service domain: "mail-stalwart.example.com" → "example.com"
+    base_domain = lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
     # Admin password hash (SHA-512 crypt) — generated from secrets, baked into config
     # This is a HASH, not the plaintext password — safe to include in config
@@ -94,8 +99,8 @@
 
     # GHCR image: wrap upstream with config
     ghcr = docker.mkGhcrBuild {
-      name = "stalwart";
-      fromImage = "stalwartlabs/stalwart:latest";
+      name = buildContainer.container.container_name;
+      fromImage = buildJson.upstream_image;
       configFiles = [
         { src = "config.toml"; dst = "/opt/stalwart-mail/etc/config.toml"; }
       ];
@@ -120,25 +125,25 @@
           name = "stalwart";
           image = ghcr.image;
           build = ghcr.build;
-          container_name = "stalwart";
+          container_name = buildContainer.container.container_name;
           entrypoint = ["stalwart" "--config" "/opt/stalwart-mail/etc/config.toml"];
           skipCapDrop = true;
           skipReadOnly = true;
           environment = [
-            "TZ=Europe/Madrid"
+            "TZ=${buildJson.timezone}"
           ];
           volumes = [
             "stalwart_data:/opt/stalwart-mail/data"
             "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
             "./config.toml:/opt/stalwart-mail/etc/config.toml:ro"
           ];
-          memLimit = "256M";
-          memReservation = "32M";
+          memLimit = buildJson.containers.app.resources.limits.memory;
+          memReservation = buildJson.containers.app.resources.reservations.memory;
         };
         stalwart-sorter = docker.mkService {
-          name = "stalwart-sorter";
-          image = "python:3-alpine";
-          container_name = "stalwart-sorter";
+          name = buildJson.containers.sorter.container_name;
+          image = buildJson.containers.sorter.image;
+          container_name = buildJson.containers.sorter.container_name;
           entrypoint = ["python3" "/app/jmap-sorter.py"];
           env_file = [".secrets"];
           skipCapDrop = true;
@@ -152,8 +157,8 @@
             "./jmap-sorter.py:/app/jmap-sorter.py:ro"
             "./mail-rules.json:/data/mail-rules.json:ro"
           ];
-          memLimit = "64M";
-          memReservation = "16M";
+          memLimit = buildJson.containers.sorter.resources.mem_limit;
+          memReservation = buildJson.containers.sorter.resources.mem_reservation;
         };
       };
     };
@@ -177,18 +182,18 @@
 
       echo "[activate] Ensuring domain + accounts..."
       curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-        -d '{"type":"domain","name":"diegonmarcos.com"}' 2>/dev/null || true
+        -d '{"type":"domain","name":"${base_domain}"}' 2>/dev/null || true
 
       curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-        -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$PW"'"],"emails":["me@diegonmarcos.com"],"roles":["admin"]}' 2>/dev/null || true
+        -d '{"type":"individual","name":"me@${base_domain}","secrets":["'"$PW"'"],"emails":["me@${base_domain}"],"roles":["admin"]}' 2>/dev/null || true
 
       NR_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "noreply")
       curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-        -d '{"type":"individual","name":"no-reply@diegonmarcos.com","secrets":["'"$NR_PW"'"],"emails":["no-reply@diegonmarcos.com","noreply@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
+        -d '{"type":"individual","name":"no-reply@${base_domain}","secrets":["'"$NR_PW"'"],"emails":["no-reply@${base_domain}","noreply@${base_domain}"],"roles":["user"]}' 2>/dev/null || true
 
       # ── Upload Sieve script via JMAP ────────────────────────────────
       SIEVE_FILE="/opt/containers/stalwart/default.sieve"
-      USER="me@diegonmarcos.com"
+      USER="me@${base_domain}"
       JMAP_URL="$BASE/jmap/"
 
       if [ ! -f "$SIEVE_FILE" ]; then

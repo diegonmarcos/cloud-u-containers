@@ -14,5 +14,6 @@
     "image": "syslog-forwarder",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
-  }
+  },
+  "upstream_image": "balabit/syslog-ng:4.4.0"
 }

@@ -9,10 +9,11 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-smtp-proxy.json);
+    svc = buildContainer.services;
 
     config = {
-      container_name = "smtp-proxy";
+      container_name = buildContainer.container.container_name;
       port = ports.valueOf "app";
       wg_ip = svc."smtp-proxy".ip;
     };

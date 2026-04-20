@@ -8,15 +8,17 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
+    buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-syslog-forwarder.json);
 
     # GHCR image: wrap public image with OCI label for GHCR
     ghcr = docker.mkGhcrBuild {
-      name = "syslog-forwarder";
-      fromImage = "balabit/syslog-ng:4.4.0";
+      name = buildContainer.container.container_name;
+      fromImage = buildJson.upstream_image;
     };
 
     config = {
-      container_name = "syslog-forwarder";
+      container_name = buildContainer.container.container_name;
       image = ghcr.image;
     };
 

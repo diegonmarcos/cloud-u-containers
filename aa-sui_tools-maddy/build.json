@@ -95,6 +95,14 @@
           "path": "/data/imapsql.db"
         }
       ]
+    },
+    "sorter": {
+      "container_name": "maddy-sorter",
+      "image": "python:3-alpine",
+      "resources": {
+        "mem_limit": "64M",
+        "mem_reservation": "16M"
+      }
     }
   },
   "docker": {
@@ -102,5 +110,9 @@
     "image": "maddy",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
+  },
+  "oci_relay": {
+    "host": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
+    "port": "587"
   }
 }

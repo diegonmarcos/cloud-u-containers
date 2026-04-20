@@ -9,19 +9,24 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-snappymail.json);
+    svc = buildContainer.services;
+    lib = nixpkgs.lib;
+
+    # base_domain derived from service domain: "webmail.example.com" → "example.com"
+    base_domain = lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
     config = {
       port = toString buildJson.ports.app;
-      domain = "diegonmarcos.com";
-      mail_domain = "mail.diegonmarcos.com";
+      domain = base_domain;
+      mail_domain = "mail.${base_domain}";
     };
 
     title = "SnappyMail";
     docker = import ../../_shared/docker.nix;
 
     # ── SnappyMail domain config (IMAP + SMTP to Maddy on localhost) ──
-    mkDomainConfig = pkgs: pkgs.writeText "diegonmarcos.com.ini" ''
+    mkDomainConfig = pkgs: pkgs.writeText "${base_domain}.ini" ''
       imap_host = "localhost"
       imap_port = 993
       imap_secure = "SSL"
@@ -87,7 +92,7 @@
 
     ghcr = docker.mkGhcrBuild {
       name = "snappymail";
-      fromImage = "djmaze/snappymail:latest";
+      fromImage = buildJson.upstream_image;
     };
 
     mkDockerCompose = pkgs: docker.mkCompose pkgs {
@@ -100,7 +105,7 @@
           name = "snappymail";
           image = ghcr.image;
           build = ghcr.build;
-          container_name = "snappymail";
+          container_name = buildContainer.container.container_name;
           networkMode = null;  # bridge mode — port mapping binds to WG IP only
           ports = ["${svc.snappymail.ip}:${config.port}:${config.port}"];
           skipReadOnly = true;
@@ -111,8 +116,8 @@
           ];
           entrypoint = [ "/bin/sh" "-c" "cp -f /opt/snappymail-config/application.ini /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true; exec /entrypoint.sh" ];
           allowWritableBindMounts = true;  # config overlay on named volume
-          memLimit = "64M";
-          memReservation = "16M";
+          memLimit = buildJson.resources.mem_limit;
+          memReservation = buildJson.resources.mem_reservation;
           healthcheck = {
             test = "['CMD', 'curl', '-sf', 'http://localhost:${config.port}/']";
             interval = "30s";

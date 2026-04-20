@@ -10,12 +10,17 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-maddy.json);
+    lib = nixpkgs.lib;
+
+    # base_domain derived from service domain: "mail.example.com" → "example.com"
+    base_domain = lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
     config = {
-      domain = "diegonmarcos.com";
+      domain = base_domain;
       mail_domain = buildJson.domain;
-      oci_relay_host = "smtp.email.eu-marseille-1.oci.oraclecloud.com";
-      oci_relay_port = "587";
+      oci_relay_host = buildJson.oci_relay.host;
+      oci_relay_port = buildJson.oci_relay.port;
     };
 
     title = "Maddy Mail Server";
@@ -30,8 +35,8 @@
       services = {
         maddy = docker.mkService {
           name = "maddy";
-          image = "ghcr.io/diegonmarcos/maddy:latest";
-          container_name = "maddy";
+          image = buildJson.containers.app.image;
+          container_name = buildContainer.container.container_name;
           entrypoint = ["sh" "/etc/maddy/init.sh"];
           env_file = [".secrets"];
           skipCapDrop = true;
@@ -42,13 +47,13 @@
             "./init.sh:/etc/maddy/init.sh:ro"
             "./tls:/data/tls:ro"
           ];
-          memLimit = "256M";
-          memReservation = "32M";
+          memLimit = buildJson.containers.app.resources.limits.memory;
+          memReservation = buildJson.containers.app.resources.reservations.memory;
         };
         maddy-sorter = docker.mkService {
-          name = "maddy-sorter";
-          image = "python:3-alpine";
-          container_name = "maddy-sorter";
+          name = buildJson.containers.sorter.container_name;
+          image = buildJson.containers.sorter.image;
+          container_name = buildJson.containers.sorter.container_name;
           entrypoint = ["python3" "/app/imap-sorter.py"];
           env_file = [".secrets"];
           skipCapDrop = true;
@@ -57,8 +62,8 @@
             "./imap-sorter.py:/app/imap-sorter.py:ro"
             "./mail-rules.json:/data/mail-rules.json:ro"
           ];
-          memLimit = "64M";
-          memReservation = "16M";
+          memLimit = buildJson.containers.sorter.resources.mem_limit;
+          memReservation = buildJson.containers.sorter.resources.mem_reservation;
         };
       };
     };
