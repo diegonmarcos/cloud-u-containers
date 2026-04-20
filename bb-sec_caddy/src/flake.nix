@@ -28,9 +28,10 @@
     # from the JSON data files in data/. Nix just copies it.
 
     # ── Route data from cloud-data pipeline ─────────────────────
-    # Single source of truth: caddy-routes.json (symlink → I_cloud-data/
-    # build-proxy-caddy-routes.json). Engine resolves symlink before nix build.
-    caddyRoutes = builtins.fromJSON (builtins.readFile ./caddy-routes.json);
+    # Single source of truth: build-proxy-caddy-routes.json (symlink →
+    # I_cloud-data/build-proxy-caddy-routes.json). Engine resolves symlink
+    # before nix build.
+    caddyRoutes = builtins.fromJSON (builtins.readFile ./build-proxy-caddy-routes.json);
 
     # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
     # All values below are READ from build-proxy-caddy-routes.json —
