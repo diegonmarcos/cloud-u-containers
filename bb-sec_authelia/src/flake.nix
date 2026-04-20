@@ -9,7 +9,10 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    svc = (builtins.fromJSON (builtins.readFile ./cloud-data-service-connections.json)).services;
+    # Single source of truth: build-authelia.json (symlink → I_cloud-data/
+    # build-authelia.json). Engine resolves symlink before nix build.
+    buildAuthelia = builtins.fromJSON (builtins.readFile ./build-authelia.json);
+    svc = buildAuthelia.services;
 
     config = {
       domain = buildJson.domain;
@@ -35,12 +38,12 @@
       ];
     };
 
-    # ACL rules from external JSON (cloud-data-authelia-acl.json)
-    # Falls back to a minimal default if the file doesn't exist
+    # ACL rules from build-authelia.json (buildAuthelia.acl). Falls back to a
+    # minimal default if no rules are declared.
     autheliaAcl =
-      if builtins.pathExists ./cloud-data-authelia-acl.json
-      then builtins.fromJSON (builtins.readFile ./cloud-data-authelia-acl.json)
-      else { rules = [{ domain = "*.diegonmarcos.com"; policy = "two_factor"; service = "_default"; }]; };
+      if buildAuthelia.acl.rules == []
+      then { rules = [{ domain = "*.diegonmarcos.com"; policy = "two_factor"; service = "_default"; }]; }
+      else buildAuthelia.acl;
 
     # Generate YAML access_control rules from the JSON structure
     # Each rule can have: domain, policy, resources_bypass, resources_two_factor
