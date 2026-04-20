@@ -9,9 +9,11 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-introspect-proxy.json);
 
     config = {
       port = toString buildJson.ports.app;
+      container_name = buildContainer.container.container_name;
     };
 
     title = "Introspect Proxy";
@@ -23,7 +25,7 @@
         introspect-proxy = docker.mkService {
           name = "introspect-proxy";
           image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
-          container_name = "introspect-proxy";
+          container_name = config.container_name;
           skipReadOnly = true;
           memLimit = "64M";
           memReservation = "16M";

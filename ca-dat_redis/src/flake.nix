@@ -21,7 +21,7 @@
     };
 
     config = {
-      container_name = "redis";
+      container_name = buildRedis.container.container_name;
       image = ghcr.image;
       port = ports.valueOf "app";
       maxmemory = "128mb";
