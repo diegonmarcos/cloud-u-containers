@@ -14,14 +14,21 @@
     buildAuthelia = builtins.fromJSON (builtins.readFile ./build-authelia.json);
     svc = buildAuthelia.services;
 
+    lib = nixpkgs.lib;
+
+    # base_domain derived from service domain: "auth.<base>" → "<base>" (e.g. "auth.example.com" → "example.com")
+    base_domain =
+      let parts = lib.splitString "." buildJson.domain;
+      in lib.concatStringsSep "." (lib.drop 1 parts);
+
     config = {
       domain = buildJson.domain;
-      base_domain = "diegonmarcos.com";
-      container_name = "authelia";
+      base_domain = base_domain;
+      container_name = buildAuthelia.container.container_name;
       image = ghcr.image;
       port = buildJson.ports.app;
       redis_port = toString buildJson.ports.redis;
-      timezone = "Europe/Madrid";
+      timezone = buildJson.timezone or "Europe/Madrid";
     };
 
     title = "Authelia 2FA Authentication";
@@ -42,7 +49,7 @@
     # minimal default if no rules are declared.
     autheliaAcl =
       if buildAuthelia.acl.rules == []
-      then { rules = [{ domain = "*.diegonmarcos.com"; policy = "two_factor"; service = "_default"; }]; }
+      then { rules = [{ domain = "*.${base_domain}"; policy = "two_factor"; service = "_default"; }]; }
       else buildAuthelia.acl;
 
     # Generate YAML access_control rules from the JSON structure
@@ -50,8 +57,6 @@
     # A rule with resources_bypass produces a bypass rule with those resources
     # A rule with resources_two_factor produces a two_factor rule with those resources
     # A plain rule (no resources_*) produces a single rule with domain+policy
-    lib = nixpkgs.lib;
-
     # Generate YAML rules with exact indentation for the output YAML
     # Rules appear under `rules:` at 6-space indent in the final config
     ind = "    ";  # 4 spaces for list items under access_control.rules
@@ -119,7 +124,7 @@
         redis = docker.mkService {
           name = "redis";
           image = "ghcr.io/diegonmarcos/redis:latest";
-          container_name = "authelia-redis";
+          container_name = buildJson.containers.redis.container_name;
           networkMode = null;  # bridge mode — isolated in auth-net
           env_file = [".secrets"];
           command = "sh -c 'redis-server --port ${config.redis_port} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";
@@ -214,11 +219,11 @@
       disable_startup_check: true
       smtp:
         address: submissions://${svc.maddy.ip}:${toString svc.maddy.ports.smtp}
-        username: no-reply@diegonmarcos.com
+        username: no-reply@${base_domain}
         password: '{{ secret "/tmp/.secrets.d/AUTHELIA_SMTP_PASSWORD" }}'
-        sender: "Authelia <no-reply@diegonmarcos.com>"
+        sender: "Authelia <no-reply@${base_domain}>"
         tls:
-          server_name: mail.diegonmarcos.com
+          server_name: mail.${base_domain}
 
     webauthn:
       disable: false
@@ -308,7 +313,7 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
+              - https://api.${base_domain}/
 
           - client_id: claude-admin
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET" }}'
@@ -334,8 +339,8 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
 
           - client_id: cloud-admin
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET" }}'
@@ -361,9 +366,9 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
-              - https://api.diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
+              - https://api.${base_domain}/
 
           - client_id: claude-opus
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET" }}'
@@ -389,9 +394,9 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
-              - https://api.diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
+              - https://api.${base_domain}/
 
           - client_id: claude-sonnet
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET" }}'
@@ -417,9 +422,9 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
-              - https://api.diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
+              - https://api.${base_domain}/
 
           - client_id: claude-haiku
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET" }}'
@@ -445,9 +450,9 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
-              - https://api.diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
+              - https://api.${base_domain}/
 
           - client_id: dagu-ops
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_DAGU_SECRET" }}'
@@ -473,7 +478,7 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
+              - https://api.${base_domain}/
 
           - client_id: dagu-cc
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET" }}'
@@ -487,7 +492,7 @@
             token_endpoint_auth_method: client_secret_basic
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
+              - https://api.${base_domain}/
 
           - client_id: monitoring-read
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MONITORING_SECRET" }}'
@@ -513,7 +518,7 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
+              - https://api.${base_domain}/
 
           - client_id: mattermost-ops
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET" }}'
@@ -539,8 +544,8 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
-              - https://rss.diegonmarcos.com/
+              - https://api.${base_domain}/
+              - https://rss.${base_domain}/
 
           - client_id: mattermost-cc
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET" }}'
@@ -554,8 +559,8 @@
             token_endpoint_auth_method: client_secret_basic
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
-              - https://rss.diegonmarcos.com/
+              - https://api.${base_domain}/
+              - https://rss.${base_domain}/
 
           - client_id: c3-infra-mcp-api
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET" }}'
@@ -568,7 +573,7 @@
             token_endpoint_auth_method: client_secret_basic
             access_token_signed_response_alg: RS256
             audience:
-              - https://api.diegonmarcos.com/
+              - https://api.${base_domain}/
 
           - client_id: cli
             client_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_CLIENT_CLI_SECRET" }}'
@@ -594,8 +599,8 @@
             pkce_challenge_method: S256
             access_token_signed_response_alg: RS256
             audience:
-              - https://*.diegonmarcos.com/
-              - https://diegonmarcos.com/
+              - https://*.${base_domain}/
+              - https://${base_domain}/
     '';
 
     # Users database generated at runtime by init.sh from AUTHELIA_USER_DIEGO_HASH env var
@@ -643,10 +648,10 @@
     cat > /tmp/users_database.yml <<USERDB
     ---
     users:
-      me@diegonmarcos.com:
+      me@${base_domain}:
         displayname: "Diego"
         password: "$AUTHELIA_USER_DIEGO_HASH"
-        email: me@diegonmarcos.com
+        email: me@${base_domain}
         groups:
           - admins
           - users

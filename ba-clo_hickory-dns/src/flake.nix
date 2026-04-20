@@ -9,14 +9,18 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    # Single source of truth: build-hickory-dns.json (symlink → I_cloud-data/
+    # build-hickory-dns.json). Engine resolves symlink before nix build.
+    buildContainer = builtins.fromJSON (builtins.readFile ./build-hickory-dns.json);
 
     config = {
       dns_port = buildJson.ports.dns;
+      container_name = buildContainer.container.container_name;
     };
 
     # Caddy's WG IP — every wildcard zone points here.
     # Caddy terminates TLS + L7 routing per-hostname via its own config.
-    caddy_wg_ip = "10.0.0.1";
+    caddy_wg_ip = buildContainer.services.caddy.ip;
 
     # Declared suffixes — add a new one here to create a whole new TLD.
     zones = [ "app" "db" ];
@@ -91,7 +95,7 @@
           name = "hickory-dns";
           image = ghcr-hickory.image;
           build = ghcr-hickory.build;
-          container_name = "hickory-dns";
+          container_name = config.container_name;
           networkMode = "host";
           skipCapDrop = true;
           environment = [
