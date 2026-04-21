@@ -23,14 +23,16 @@
     title = "SnappyMail";
     docker = import ../../_shared/docker.nix;
 
-    # ── SnappyMail domain config (IMAP + SMTP to Maddy on localhost) ──
+    # ── SnappyMail domain config (IMAP + SMTP to Maddy via mail FQDN) ──
+    # ${config.mail_domain} resolves to 127.0.0.1 on the VM via /etc/hosts, so
+    # PHP TLS verify_peer_name passes against the *.diegonmarcos.com wildcard cert.
     mkDomainConfig = pkgs: pkgs.writeText "${base_domain}.ini" ''
-      imap_host = "localhost"
+      imap_host = "${config.mail_domain}"
       imap_port = 993
       imap_secure = "SSL"
       imap_short_login = 0
 
-      smtp_host = "localhost"
+      smtp_host = "${config.mail_domain}"
       smtp_port = 465
       smtp_secure = "SSL"
       smtp_short_login = 0
