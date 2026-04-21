@@ -1,0 +1,46 @@
+{
+  "_comment": "cloud-sec-data-report runtime config. Keep concurrency <= SSH MaxSessions (default 10) when (vm_parallel * container_parallel) outstanding channels are counted per-host.",
+  "phases": {
+    "yara_enabled": false,
+    "export_enabled": true,
+    "docker_cp_fallback_enabled": false,
+    "siem_enabled": true,
+    "threat_intel_enabled": true,
+    "journal_enabled": true,
+    "runtime_enabled": true,
+    "diff_enabled": true
+  },
+  "concurrency": {
+    "vm_parallel": 8,
+    "container_parallel": 8
+  },
+  "limits": {
+    "max_bytes_per_dir": 52428800,
+    "ssh_timeout_secs": 30
+  },
+  "targets": {
+    "scan_dirs": [
+      "etc",
+      "opt",
+      "app",
+      "usr/local/bin",
+      "usr/local/sbin"
+    ],
+    "skip_db_patterns": [
+      "db",
+      "redis",
+      "postgres",
+      "mysql",
+      "mariadb",
+      "mongo"
+    ]
+  },
+  "evidence_files": [
+    "manifest.json",
+    "diff.json",
+    "journal-24h.json.gz",
+    "docker-inspect.json",
+    "processes.txt",
+    "connections.txt"
+  ]
+}
