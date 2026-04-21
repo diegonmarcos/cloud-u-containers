@@ -10,7 +10,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    # Single source of truth: build-mail-mcp.json (symlink → I_cloud-data/).
+    # Single source of truth: build-mail-mcp.json (symlink → 2_configs/dist/).
     # Engine resolves symlink before nix build.
     buildContainer = builtins.fromJSON (builtins.readFile ./build-mail-mcp.json);
     svc = buildContainer.services;

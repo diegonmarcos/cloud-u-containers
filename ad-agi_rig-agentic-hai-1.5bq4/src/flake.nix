@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-rig-agentic-hai.json (symlink → I_cloud-data/
+    # Single source of truth: build-rig-agentic-hai.json (symlink → 2_configs/dist/
     # build-rig-agentic-hai.json). Engine resolves symlink before nix build.
     buildRig = builtins.fromJSON (builtins.readFile ./build-rig-agentic-hai.json);
     svc = buildRig.services;

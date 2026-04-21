@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     docker = import ../../_shared/docker.nix;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
-    # Single source of truth: build-redis.json (symlink → I_cloud-data/
+    # Single source of truth: build-redis.json (symlink → 2_configs/dist/
     # build-redis.json). Engine resolves symlink before nix build.
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     buildRedis = builtins.fromJSON (builtins.readFile ./build-redis.json);

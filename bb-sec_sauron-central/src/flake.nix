@@ -10,7 +10,7 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # build-sauron-central.json (symlink → I_cloud-data/build-sauron-central.json)
+    # build-sauron-central.json (symlink → 2_configs/dist/build-sauron-central.json)
     # tracks the service container declaration; local build.json owns the two
     # co-deployed containers (syslog-central + siem-api) since cloud-data only
     # models a single "sauron-central" role.

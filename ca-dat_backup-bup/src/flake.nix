@@ -11,7 +11,7 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-bup-server.json (symlink → I_cloud-data/
+    # Single source of truth: build-bup-server.json (symlink → 2_configs/dist/
     # build-bup-server.json). Engine resolves symlink before nix build.
     buildBup = builtins.fromJSON (builtins.readFile ./build-bup-server.json);
 

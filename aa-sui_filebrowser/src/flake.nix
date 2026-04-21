@@ -10,7 +10,7 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-filebrowser_app.json (symlink → I_cloud-data/
+    # Single source of truth: build-filebrowser_app.json (symlink → 2_configs/dist/
     # build-filebrowser_app.json). Engine resolves symlink before nix build.
     buildContainer = builtins.fromJSON (builtins.readFile ./build-filebrowser_app.json);
     svc = buildContainer.services;

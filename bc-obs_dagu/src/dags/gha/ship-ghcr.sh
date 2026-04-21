@@ -8,7 +8,7 @@ FILTER="${1:-}"
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-GHA_CONFIG="I_cloud-data/cloud-data-gha-config.json"
+GHA_CONFIG="2_configs/dist/cloud-data-gha-config.json"
 if [ ! -f "$GHA_CONFIG" ]; then
   echo "ERROR: $GHA_CONFIG not found" >&2
   exit 1

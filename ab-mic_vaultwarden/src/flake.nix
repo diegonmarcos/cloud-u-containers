@@ -11,7 +11,7 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-vaultwarden.json (symlink → I_cloud-data/
+    # Single source of truth: build-vaultwarden.json (symlink → 2_configs/dist/
     # build-vaultwarden.json). Engine resolves symlink before nix build.
     buildVaultwarden = builtins.fromJSON (builtins.readFile ./build-vaultwarden.json);
     svc = buildVaultwarden.services;
