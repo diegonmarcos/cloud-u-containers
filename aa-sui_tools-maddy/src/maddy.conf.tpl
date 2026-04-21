@@ -22,6 +22,13 @@ auth.pass_table local_authdb {
 storage.imapsql local_mailboxes {
     driver sqlite3
     dsn imapsql.db
+
+    # Delivery-time routing + tagging. External script reads mail-rules.json
+    # and returns (folder, flags) per incoming message. Replaces the former
+    # post-hoc IMAP polling sorter (killed the IMAP backend under load).
+    imap_filter {
+        command /usr/local/bin/mail-filter {account_name} {sender} {rcpt_to} {subject}
+    }
 }
 
 # ── SMTP endpoints + message routing ─────────────────────────────

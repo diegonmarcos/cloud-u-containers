@@ -46,24 +46,14 @@
             "./maddy.conf.tpl:/etc/maddy/maddy.conf.tpl:ro"
             "./init.sh:/etc/maddy/init.sh:ro"
             "./tls:/data/tls:ro"
+            # Delivery-time filter: Maddy forks this per incoming message via
+            # imap.filter.command (see maddy.conf.tpl). mail-rules.json is the
+            # declarative single source of truth for routing + tag flags.
+            "./mail-rules.json:/data/mail-rules.json:ro"
+            "./mail-filter.py:/usr/local/bin/mail-filter:ro"
           ];
           memLimit = buildJson.containers.app.resources.limits.memory;
           memReservation = buildJson.containers.app.resources.reservations.memory;
-        };
-        maddy-sorter = docker.mkService {
-          name = buildJson.containers.sorter.container_name;
-          image = buildJson.containers.sorter.image;
-          container_name = buildJson.containers.sorter.container_name;
-          entrypoint = ["python3" "/app/imap-sorter.py"];
-          env_file = [".secrets"];
-          skipCapDrop = true;
-          skipReadOnly = true;
-          volumes = [
-            "./imap-sorter.py:/app/imap-sorter.py:ro"
-            "./mail-rules.json:/data/mail-rules.json:ro"
-          ];
-          memLimit = buildJson.containers.sorter.resources.mem_limit;
-          memReservation = buildJson.containers.sorter.resources.mem_reservation;
         };
       };
     };
@@ -117,9 +107,9 @@
         cp ${mkDockerCompose pkgs} $out/docker-compose.yml
         cp ${mkMaddyConf pkgs} $out/maddy.conf.tpl
         cp ${mkInitSh pkgs} $out/init.sh
-        cp ${./imap-sorter.py} $out/imap-sorter.py
+        cp ${./mail-filter.py} $out/mail-filter.py
         cp ${./mail-rules.json} $out/mail-rules.json
-        chmod +x $out/init.sh
+        chmod +x $out/init.sh $out/mail-filter.py
       '';
     in {
       default = defaultPkg;

@@ -95,14 +95,6 @@
           "path": "/data/imapsql.db"
         }
       ]
-    },
-    "sorter": {
-      "container_name": "maddy-sorter",
-      "image": "python:3-alpine",
-      "resources": {
-        "mem_limit": "64M",
-        "mem_reservation": "16M"
-      }
     }
   },
   "docker": {
