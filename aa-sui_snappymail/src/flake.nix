@@ -9,8 +9,6 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    buildContainer = builtins.fromJSON (builtins.readFile ./build-snappymail.json);
-    svc = buildContainer.services;
     lib = nixpkgs.lib;
 
     # base_domain derived from service domain: "webmail.example.com" → "example.com"
@@ -73,18 +71,20 @@
     '';
 
     # ── Init script (substitutes secrets into config templates) ──────────
+    # .secrets is shell-escaped (KEY='val') by the engine, so source it as bash
+    # rather than parsing KEY=VALUE manually — otherwise the literal single
+    # quotes leak into envsubst output and break password_verify().
     mkInitSh = pkgs: pkgs.writeText "init.sh" ''
-      #!/bin/sh
+      #!/usr/bin/env bash
       set -e
       cd "$(dirname "$0")"
 
       ENV_VARS='$SNAPPYMAIL_ADMIN_PASSWORD'
 
       echo "[init] Substituting secrets into application.ini..."
-      while IFS='=' read -r _key _val; do
-        case "$_key" in ""|\#*) continue ;; esac
-        export "$_key=$_val"
-      done < .secrets
+      set -a
+      . ./.secrets
+      set +a
       envsubst "$ENV_VARS" < config/application.ini.tpl > config/application.ini
 
       echo "[init] Done — configs mounted directly into container via named volume overlays."
@@ -105,7 +105,7 @@
           name = "snappymail";
           image = ghcr.image;
           build = ghcr.build;
-          container_name = buildContainer.container.container_name;
+          container_name = buildJson.containers.app.container_name;
           # host network: shares lo with co-located maddy (also host-mode) so
           # domain config can use imap_host=localhost. VM INPUT policy is DROP
           # except 10.0.0.0/24+lo, so :8888 stays reachable only via WG.
