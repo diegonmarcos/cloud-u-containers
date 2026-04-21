@@ -28,6 +28,15 @@ result-*
 *.pem
 **/*.pem
 
+# ── dist layout v2 (gitignored sub-dirs per plan) ──────────
+# Engine + ship-engine write to these; never commit their contents.
+#   secrets/    sops-decrypted env + .secrets.d (ship engine)
+#   sensitive/  long-term crypto material (jwks, dkim, tls certs)
+#   .build/     transient: src-hash, push digests, logs
+**/dist/secrets/
+**/dist/sensitive/
+**/dist/.build/
+
 # Terraform
 .terraform/
 *.tfvars
