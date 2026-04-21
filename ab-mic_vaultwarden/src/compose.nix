@@ -1,0 +1,50 @@
+# compose.nix — pure attrset describing docker-compose.yml for vaultwarden.
+# engine.nix serialises it via lib.generators.toYAML, merging compose-defaults.json.
+{ buildJson, container, base_domain }:
+
+let
+  svc = container.services;
+  app = buildJson.containers.app;
+
+  # Engine builds per-arch Dockerfiles into dist/code/<arch>/ and wraps them
+  # into a GHCR image; at runtime we pull the published binaries image.
+  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+in
+{
+  services = {
+    vaultwarden = {
+      image = binariesImage;
+      container_name = app.container_name;
+      network_mode = "host";
+      read_only = true;
+      tmpfs = [ "/tmp" ];
+      env_file = [ ".secrets" ];
+      environment = {
+        TZ                  = buildJson.timezone;
+        ROCKET_ADDRESS      = svc.vaultwarden.ip;           # bind to WG IP
+        ROCKET_PORT         = toString buildJson.ports.app;
+        DOMAIN              = "https://${buildJson.domain}";
+        SIGNUPS_ALLOWED     = "true";
+        INVITATIONS_ALLOWED = "true";
+        SHOW_PASSWORD_HINT  = "false";
+        WEBSOCKET_ENABLED   = "true";
+        LOG_LEVEL           = "warn";
+        SMTP_HOST           = svc.maddy.ip;
+        SMTP_PORT           = toString svc.maddy.ports.smtp;
+        SMTP_FROM           = "noreply@${base_domain}";
+        SMTP_USERNAME       = "noreply@${base_domain}";
+        SMTP_SECURITY       = "force_tls";
+        SMTP_PASSWORD       = "\${SMTP_PASSWORD}";
+        ADMIN_TOKEN         = "\${ADMIN_TOKEN}";
+      };
+      volumes = [ "vaultwarden_data:/data" ];
+      deploy.resources = {
+        limits       = { memory = buildJson.resources.mem_limit;       cpus = "1.0"; };
+        reservations = { memory = buildJson.resources.mem_reservation; };
+      };
+    };
+  };
+  volumes = {
+    vaultwarden_data = {};
+  };
+}
