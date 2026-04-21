@@ -1,0 +1,24 @@
+{
+  "_comment": "Fleet-wide compose defaults merged into every service by engine.nix. A service's own composeSpec field (if present) overrides the corresponding default. Keep this file the single source of truth for universal container policy.",
+  "defaults": {
+    "restart": "no",
+    "stop_grace_period": "30s",
+    "dns": ["10.0.0.1", "1.1.1.1"],
+    "security_opt": ["no-new-privileges:true"],
+    "ulimits": {
+      "nofile": { "soft": 65536, "hard": 65536 }
+    },
+    "logging": {
+      "driver": "json-file",
+      "options": {
+        "max-size": "10m",
+        "max-file": "3"
+      }
+    },
+    "deploy": {
+      "resources": {
+        "limits": { "pids": 256 }
+      }
+    }
+  }
+}
