@@ -63,78 +63,77 @@ case "${1:-}" in
 esac
 
 # ── 3. SSH setup ──────────────────────────────────────────────────
-# /root/.ssh is always fresh + writable (host secrets mount at /mnt/host-ssh:ro
-# — compose.yaml).  Precedence:  env vars  >  /mnt/host-ssh copy  >  WARN.
-mkdir -p /root/.ssh && chmod 700 /root/.ssh
-chown root:root /root/.ssh 2>/dev/null || true
-ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null || true
+# /root/.ssh may be mounted :ro from host. Everything uses || true — failures are non-fatal.
+# Precedence:  env vars  >  /mnt/host-ssh copy  >  host-mounted .ssh  >  WARN.
+SSH_DIR=/root/.ssh
+mkdir -p "$SSH_DIR" 2>/dev/null || true
+chmod 700 "$SSH_DIR" 2>/dev/null || true
+ssh-keyscan github.com >> "$SSH_DIR/known_hosts" 2>/dev/null || true
 
 # (a) CI-mode — env vars provided by GHA
 if [ -n "${SSH_KEY:-}" ]; then
-  echo "$SSH_KEY" > /root/.ssh/id_deploy
-  chmod 600 /root/.ssh/id_deploy
-  echo "[setup] SSH key from env var → /root/.ssh/id_deploy"
+  echo "$SSH_KEY" > "$SSH_DIR/id_deploy" 2>/dev/null || true
+  chmod 600 "$SSH_DIR/id_deploy" 2>/dev/null || true
+  echo "[setup] SSH key from env var"
 fi
 if [ -n "${SSH_ALIAS:-}" ] && [ -n "${SSH_HOST:-}" ]; then
-  cat >> /root/.ssh/config <<EOF
+  cat >> "$SSH_DIR/config" 2>/dev/null <<EOF || true
 Host ${SSH_ALIAS}
   HostName ${SSH_HOST}
   User ${SSH_USER:-ubuntu}
-  IdentityFile /root/.ssh/id_deploy
+  IdentityFile $SSH_DIR/id_deploy
   StrictHostKeyChecking no
   ServerAliveInterval 30
   ServerAliveCountMax 10
 EOF
-  chmod 600 /root/.ssh/config
-  echo "[setup] SSH config generated for ${SSH_ALIAS}"
+  chmod 600 "$SSH_DIR/config" 2>/dev/null || true
+  echo "[setup] SSH config for ${SSH_ALIAS}"
 fi
 
-# (b) Local/Dagu mode — host keys mounted at /mnt/host-ssh:ro.  Copy in and
-# re-own as root so the SSH client accepts them inside the container.
+# (b) Local/Dagu mode — host keys mounted at /mnt/host-ssh:ro
 if [ -d /mnt/host-ssh ]; then
   for f in /mnt/host-ssh/id_* /mnt/host-ssh/config /mnt/host-ssh/known_hosts; do
     [ -f "$f" ] || continue
     bn=$(basename "$f")
-    # Never overwrite env-var-sourced files
-    [ -f "/root/.ssh/$bn" ] && continue
-    cp "$f" "/root/.ssh/$bn"
-    chown root:root "/root/.ssh/$bn"
+    [ -f "$SSH_DIR/$bn" ] && continue
+    cp "$f" "$SSH_DIR/$bn" 2>/dev/null || true
+    chown root:root "$SSH_DIR/$bn" 2>/dev/null || true
     case "$bn" in
-      config|id_*) chmod 600 "/root/.ssh/$bn" ;;
-      *)           chmod 644 "/root/.ssh/$bn" ;;
+      config|id_*) chmod 600 "$SSH_DIR/$bn" 2>/dev/null || true ;;
+      *)           chmod 644 "$SSH_DIR/$bn" 2>/dev/null || true ;;
     esac
   done
-  echo "[setup] SSH from /mnt/host-ssh (copied + re-owned to root)"
+  echo "[setup] SSH from /mnt/host-ssh"
 fi
 
-if [ ! -f /root/.ssh/config ] && [ ! -f /root/.ssh/id_deploy ] && [ ! -f /root/.ssh/id_rsa ]; then
-  echo "[setup] WARNING: no SSH keys found (env vars unset and /mnt/host-ssh empty)"
+if [ ! -f "$SSH_DIR/config" ] && [ ! -f "$SSH_DIR/id_deploy" ]; then
+  echo "[setup] WARNING: no SSH keys found"
 fi
 
 # ── 4. SOPS setup ─────────────────────────────────────────────────
 # Precedence: env var (CI) > /mnt/host-sops (local).
-mkdir -p /root/.config/sops/age
+mkdir -p /root/.config/sops/age 2>/dev/null || true
 if [ -n "${SOPS_AGE_KEY:-}" ]; then
-  echo "$SOPS_AGE_KEY" > /root/.config/sops/age/keys.txt
-  chmod 600 /root/.config/sops/age/keys.txt
+  echo "$SOPS_AGE_KEY" > /root/.config/sops/age/keys.txt 2>/dev/null || true
+  chmod 600 /root/.config/sops/age/keys.txt 2>/dev/null || true
   export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-  echo "[setup] SOPS age key from env var → /root/.config/sops/age/keys.txt"
+  echo "[setup] SOPS age key from env var"
 elif [ -f /mnt/host-sops/age/keys.txt ]; then
-  cp /mnt/host-sops/age/keys.txt /root/.config/sops/age/keys.txt
-  chown root:root /root/.config/sops/age/keys.txt
-  chmod 600 /root/.config/sops/age/keys.txt
+  cp /mnt/host-sops/age/keys.txt /root/.config/sops/age/keys.txt 2>/dev/null || true
+  chown root:root /root/.config/sops/age/keys.txt 2>/dev/null || true
+  chmod 600 /root/.config/sops/age/keys.txt 2>/dev/null || true
   export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
-  echo "[setup] SOPS age key from /mnt/host-sops (copied + re-owned)"
+  echo "[setup] SOPS age key from /mnt/host-sops"
 else
   echo "[setup] WARNING: no SOPS age key found"
 fi
 
 # ── 4b. gh CLI config (optional, local-dev) ───────────────────────
 if [ -d /mnt/host-gh ] && [ ! -d /root/.config/gh ]; then
-  mkdir -p /root/.config/gh
-  cp -r /mnt/host-gh/. /root/.config/gh/
-  chown -R root:root /root/.config/gh
-  echo "[setup] gh CLI config from /mnt/host-gh (copied + re-owned)"
+  mkdir -p /root/.config/gh 2>/dev/null || true
+  cp -r /mnt/host-gh/. /root/.config/gh/ 2>/dev/null || true
+  chown -R root:root /root/.config/gh 2>/dev/null || true
+  echo "[setup] gh CLI config from /mnt/host-gh"
 fi
 
 # ── 5. GHCR login ─────────────────────────────────────────────────
@@ -170,9 +169,9 @@ Endpoint = 35.226.147.64:51820
 AllowedIPs = 10.0.0.0/24
 PersistentKeepalive = 25
 WGEOF
-  _run mkdir -p /etc/wireguard
-  _run cp /tmp/wg0.conf /etc/wireguard/wg0.conf
-  rm /tmp/wg0.conf
+  _run mkdir -p /etc/wireguard 2>/dev/null || true
+  _run cp /tmp/wg0.conf /etc/wireguard/wg0.conf 2>/dev/null || true
+  rm /tmp/wg0.conf 2>/dev/null || true
   _run wg-quick up wg0 2>/dev/null && echo "[setup] WireGuard up" || echo "[setup] WireGuard failed (non-fatal)"
   unset -f _run
 fi
