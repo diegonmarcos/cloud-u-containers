@@ -145,7 +145,8 @@
         "app"
       ],
       "resources": null,
-      "read_only": false
+      "read_only": false,
+      "init_job": true
     }
   }
 }

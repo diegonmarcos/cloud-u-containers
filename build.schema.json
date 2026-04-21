@@ -318,6 +318,7 @@
           "depends_on": { "type": "array", "items": { "type": "string" } },
           "resources": { "type": ["object", "null"] },
           "read_only": { "type": "boolean" },
+          "init_job": { "type": "boolean", "description": "One-shot init container — health reports treat Exited (0) within depends_on start window as success, not crash" },
           "capabilities": { "type": "array", "items": { "type": "string" } },
           "log_level": { "type": "string" },
           "db_user": { "type": ["string", "null"], "description": "Database user for pg_dump/mariadb-dump" },
