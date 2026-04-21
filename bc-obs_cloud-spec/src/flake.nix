@@ -10,7 +10,7 @@
     docker = import ../../_shared/docker.nix;
     lib = nixpkgs.lib;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-cloud-spec.json (symlink → I_cloud-data/).
+    # Single source of truth: build-cloud-spec.json (symlink → 2_configs/dist/).
     # Engine resolves symlink before nix build.
     buildContainer = builtins.fromJSON (builtins.readFile ./build-cloud-spec.json);
 

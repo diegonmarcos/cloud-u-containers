@@ -14,7 +14,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     # Single source of truth for primary (app) container:
-    # build-crawlee_api.json (symlink → I_cloud-data/build-crawlee_api.json).
+    # build-crawlee_api.json (symlink → 2_configs/dist/build-crawlee_api.json).
     # Engine resolves symlink before nix build. Sidecar container configs
     # come from build.json (same data, already consolidated).
     buildCrawleeApi = builtins.fromJSON (builtins.readFile ./build-crawlee_api.json);

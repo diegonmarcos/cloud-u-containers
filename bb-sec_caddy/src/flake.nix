@@ -29,7 +29,7 @@
 
     # ── Route data from cloud-data pipeline ─────────────────────
     # Single source of truth: build-caddy.json (symlink →
-    # I_cloud-data/build-caddy.json). Engine resolves symlink
+    # 2_configs/dist/build-caddy.json). Engine resolves symlink
     # before nix build.
     caddyRoutes = builtins.fromJSON (builtins.readFile ./build-caddy.json);
 

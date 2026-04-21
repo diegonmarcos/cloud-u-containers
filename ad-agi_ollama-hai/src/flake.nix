@@ -9,7 +9,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-ollama-hai.json (symlink → I_cloud-data/
+    # Single source of truth: build-ollama-hai.json (symlink → 2_configs/dist/
     # build-ollama-hai.json). Engine resolves symlink before nix build.
     buildOllama = builtins.fromJSON (builtins.readFile ./build-ollama-hai.json);
     svc = buildOllama.services;

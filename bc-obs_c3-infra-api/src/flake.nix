@@ -11,7 +11,7 @@
     lib = nixpkgs.lib;
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-c3-infra-api.json (symlink → I_cloud-data/).
+    # Single source of truth: build-c3-infra-api.json (symlink → 2_configs/dist/).
     # Engine resolves symlink before nix build.
     buildContainer = builtins.fromJSON (builtins.readFile ./build-c3-infra-api.json);
     svc = buildContainer.services;

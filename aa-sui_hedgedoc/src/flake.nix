@@ -11,7 +11,7 @@
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-hedgedoc_{app,postgres}.json (symlinks → I_cloud-data/).
+    # Single source of truth: build-hedgedoc_{app,postgres}.json (symlinks → 2_configs/dist/).
     # Engine resolves symlinks before nix build.
     buildApp = builtins.fromJSON (builtins.readFile ./build-hedgedoc_app.json);
     buildDb = builtins.fromJSON (builtins.readFile ./build-hedgedoc_postgres.json);

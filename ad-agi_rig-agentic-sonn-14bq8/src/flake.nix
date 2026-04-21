@@ -10,7 +10,7 @@
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     # Single source of truth: build-rig-agentic-sonn-14bq8.json (symlink →
-    # I_cloud-data/build-rig-agentic-sonn-14bq8.json). Engine resolves
+    # 2_configs/dist/build-rig-agentic-sonn-14bq8.json). Engine resolves
     # symlink before nix build.
     buildRig = builtins.fromJSON (builtins.readFile ./build-rig-agentic-sonn-14bq8.json);
     svc = buildRig.services;

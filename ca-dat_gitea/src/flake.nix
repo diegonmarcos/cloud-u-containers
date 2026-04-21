@@ -10,7 +10,7 @@
     docker = import ../../_shared/docker.nix;
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-gitea.json (symlink → I_cloud-data/
+    # Single source of truth: build-gitea.json (symlink → 2_configs/dist/
     # build-gitea.json). Engine resolves symlink before nix build.
     buildGitea = builtins.fromJSON (builtins.readFile ./build-gitea.json);
     ports = import ../../_shared/lib/port-enforcement.nix { buildJsonPath = ../build.json; };
