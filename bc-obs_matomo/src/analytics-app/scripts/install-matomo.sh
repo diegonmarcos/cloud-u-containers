@@ -1,7 +1,22 @@
 #!/bin/sh
 # POSIX-compliant script to install Docker, Matomo, and configure HTTPS
+#
+# Secrets: this script reads DB credentials from env vars that must be
+# exported BEFORE running. Populate them from the service's sops secrets:
+#
+#   eval "$(sops -d --output-type dotenv \
+#     ~/git/cloud/a_solutions/bc-obs_matomo/src/secrets.yaml \
+#     | grep -v '^_' | sed 's/^/export /')"
+#   sh install-matomo.sh
+#
+# Required env vars: MYSQL_ROOT_PASSWORD MATOMO_DB_NAME MATOMO_DB_USER MATOMO_DB_PASSWORD
 
 set -e
+
+: "${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD from secrets.yaml before running}"
+: "${MATOMO_DB_NAME:?Set MATOMO_DB_NAME from secrets.yaml before running}"
+: "${MATOMO_DB_USER:?Set MATOMO_DB_USER from secrets.yaml before running}"
+: "${MATOMO_DB_PASSWORD:?Set MATOMO_DB_PASSWORD from secrets.yaml before running}"
 
 # Configuration
 SERVER_IP="130.110.251.193"
@@ -47,7 +62,7 @@ echo ""
 
 echo "Step 4: Creating docker-compose.yml..."
 echo "---------------------------------------"
-cat > docker-compose.yml << 'EOF'
+cat > docker-compose.yml <<EOF
 version: '3'
 
 services:
@@ -56,10 +71,10 @@ services:
     container_name: matomo-db
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=<REDACTED-LEAK-2026-04-21>
-      - MYSQL_DATABASE=matomo
-      - MYSQL_USER=matomo
-      - MYSQL_PASSWORD=<REDACTED-LEAK-2026-04-21>
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MATOMO_DB_NAME}
+      - MYSQL_USER=${MATOMO_DB_USER}
+      - MYSQL_PASSWORD=${MATOMO_DB_PASSWORD}
     volumes:
       - ./db:/var/lib/mysql
 
@@ -73,9 +88,9 @@ services:
       - MATOMO_DATABASE_HOST=mariadb
       - MATOMO_DATABASE_ADAPTER=mysql
       - MATOMO_DATABASE_TABLES_PREFIX=matomo_
-      - MATOMO_DATABASE_USERNAME=matomo
-      - MATOMO_DATABASE_PASSWORD=<REDACTED-LEAK-2026-04-21>
-      - MATOMO_DATABASE_DBNAME=matomo
+      - MATOMO_DATABASE_USERNAME=${MATOMO_DB_USER}
+      - MATOMO_DATABASE_PASSWORD=${MATOMO_DB_PASSWORD}
+      - MATOMO_DATABASE_DBNAME=${MATOMO_DB_NAME}
     volumes:
       - ./matomo:/var/www/html
     ports:
@@ -161,10 +176,10 @@ echo "   HTTPS Matomo:        https://${DOMAIN} (after DNS + NPM setup)"
 echo "   Nginx Proxy Manager: http://${SERVER_IP}:${NPM_PORT}"
 echo ""
 echo "📝 Database credentials (for Matomo setup):"
-echo "   Database Server:  mariadb"
-echo "   Database Name:    matomo"
-echo "   Database User:    matomo"
-echo "   Database Password: <REDACTED-LEAK-2026-04-21>"
+echo "   Database Server:   mariadb"
+echo "   Database Name:     ${MATOMO_DB_NAME}"
+echo "   Database User:     ${MATOMO_DB_USER}"
+echo "   Database Password: (see sops secrets.yaml — MATOMO_DB_PASSWORD)"
 echo ""
 echo "🔐 Nginx Proxy Manager default login:"
 echo "   URL:      http://${SERVER_IP}:${NPM_PORT}"
