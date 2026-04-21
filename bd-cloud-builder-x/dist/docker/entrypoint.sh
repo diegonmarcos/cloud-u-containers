@@ -20,7 +20,11 @@ set -e
 # ── 1. Nix/HM profile ─────────────────────────────────────────────
 [ -f /root/.nix-profile/etc/profile.d/nix.sh ] && . /root/.nix-profile/etc/profile.d/nix.sh 2>/dev/null
 [ -f /root/.nix-profile/etc/profile.d/hm-session-vars.sh ] && . /root/.nix-profile/etc/profile.d/hm-session-vars.sh 2>/dev/null
-export PATH="$HOME/.nix-profile/bin:$HOME/.node_modules/node_modules/.bin:/usr/local/bin:$PATH"
+# HM home-path has the actual tool binaries (jq, node, sops, etc.)
+HM_PROFILE="$HOME/.local/state/nix/profiles/home-manager"
+HM_PATH=""
+[ -d "$HM_PROFILE/home-path/bin" ] && HM_PATH="$HM_PROFILE/home-path/bin"
+export PATH="$HM_PATH:$HOME/.nix-profile/bin:$HOME/.node_modules/node_modules/.bin:/usr/local/bin:$PATH"
 
 # ── 2. Help / passthrough ─────────────────────────────────────────
 case "${1:-}" in
@@ -58,53 +62,79 @@ case "${1:-}" in
     ;;
 esac
 
-# ── 3. SSH setup (env vars OR mounted files) ──────────────────────
-# NEVER write to mounted paths — use /tmp for CI-generated files.
-# If ~/.ssh is mounted :ro, it already has what we need.
-_ssh_writable() { touch ~/.ssh/.probe 2>/dev/null && rm -f ~/.ssh/.probe; }
+# ── 3. SSH setup ──────────────────────────────────────────────────
+# /root/.ssh is always fresh + writable (host secrets mount at /mnt/host-ssh:ro
+# — compose.yaml).  Precedence:  env vars  >  /mnt/host-ssh copy  >  WARN.
+mkdir -p /root/.ssh && chmod 700 /root/.ssh
+chown root:root /root/.ssh 2>/dev/null || true
+ssh-keyscan github.com >> /root/.ssh/known_hosts 2>/dev/null || true
 
-if _ssh_writable; then
-  # Writable ~/.ssh — CI mode or local dev without :ro mount
-  mkdir -p ~/.ssh && chmod 700 ~/.ssh
-  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-  if [ -n "${SSH_KEY:-}" ]; then
-    echo "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
-    echo "[setup] SSH key from env var → ~/.ssh/id_deploy"
-  fi
-  if [ -n "${SSH_ALIAS:-}" ] && [ -n "${SSH_HOST:-}" ]; then
-    cat >> ~/.ssh/config <<EOF
+# (a) CI-mode — env vars provided by GHA
+if [ -n "${SSH_KEY:-}" ]; then
+  echo "$SSH_KEY" > /root/.ssh/id_deploy
+  chmod 600 /root/.ssh/id_deploy
+  echo "[setup] SSH key from env var → /root/.ssh/id_deploy"
+fi
+if [ -n "${SSH_ALIAS:-}" ] && [ -n "${SSH_HOST:-}" ]; then
+  cat >> /root/.ssh/config <<EOF
 Host ${SSH_ALIAS}
   HostName ${SSH_HOST}
   User ${SSH_USER:-ubuntu}
-  IdentityFile ~/.ssh/id_deploy
+  IdentityFile /root/.ssh/id_deploy
   StrictHostKeyChecking no
   ServerAliveInterval 30
   ServerAliveCountMax 10
 EOF
-    chmod 600 ~/.ssh/config
-    echo "[setup] SSH config generated for ${SSH_ALIAS}"
-  fi
-elif [ -f ~/.ssh/id_rsa ] || [ -f ~/.ssh/vault_id_rsa ] || [ -f ~/.ssh/id_deploy ] || [ -f ~/.ssh/config ]; then
-  # Read-only mount with content already there — use as-is
-  echo "[setup] SSH from mounted ~/.ssh (read-only)"
-else
-  echo "[setup] WARNING: no SSH keys found (env or mount)"
+  chmod 600 /root/.ssh/config
+  echo "[setup] SSH config generated for ${SSH_ALIAS}"
 fi
 
-# ── 4. SOPS setup (env var OR mounted file) ───────────────────────
-# Same rule: never write to a read-only mount.
-if [ -f ~/.config/sops/age/keys.txt ]; then
-  # Already mounted — use directly
-  export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
-  echo "[setup] SOPS age key from mounted file"
-elif [ -n "${SOPS_AGE_KEY:-}" ]; then
-  # CI mode: write to /tmp (always writable)
-  mkdir -p /tmp/sops-age
-  echo "$SOPS_AGE_KEY" > /tmp/sops-age/keys.txt
-  export SOPS_AGE_KEY_FILE=/tmp/sops-age/keys.txt
-  echo "[setup] SOPS age key from env var → /tmp"
+# (b) Local/Dagu mode — host keys mounted at /mnt/host-ssh:ro.  Copy in and
+# re-own as root so the SSH client accepts them inside the container.
+if [ -d /mnt/host-ssh ]; then
+  for f in /mnt/host-ssh/id_* /mnt/host-ssh/config /mnt/host-ssh/known_hosts; do
+    [ -f "$f" ] || continue
+    bn=$(basename "$f")
+    # Never overwrite env-var-sourced files
+    [ -f "/root/.ssh/$bn" ] && continue
+    cp "$f" "/root/.ssh/$bn"
+    chown root:root "/root/.ssh/$bn"
+    case "$bn" in
+      config|id_*) chmod 600 "/root/.ssh/$bn" ;;
+      *)           chmod 644 "/root/.ssh/$bn" ;;
+    esac
+  done
+  echo "[setup] SSH from /mnt/host-ssh (copied + re-owned to root)"
+fi
+
+if [ ! -f /root/.ssh/config ] && [ ! -f /root/.ssh/id_deploy ] && [ ! -f /root/.ssh/id_rsa ]; then
+  echo "[setup] WARNING: no SSH keys found (env vars unset and /mnt/host-ssh empty)"
+fi
+
+# ── 4. SOPS setup ─────────────────────────────────────────────────
+# Precedence: env var (CI) > /mnt/host-sops (local).
+mkdir -p /root/.config/sops/age
+if [ -n "${SOPS_AGE_KEY:-}" ]; then
+  echo "$SOPS_AGE_KEY" > /root/.config/sops/age/keys.txt
+  chmod 600 /root/.config/sops/age/keys.txt
+  export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
+  echo "[setup] SOPS age key from env var → /root/.config/sops/age/keys.txt"
+elif [ -f /mnt/host-sops/age/keys.txt ]; then
+  cp /mnt/host-sops/age/keys.txt /root/.config/sops/age/keys.txt
+  chown root:root /root/.config/sops/age/keys.txt
+  chmod 600 /root/.config/sops/age/keys.txt
+  export SOPS_AGE_KEY_FILE=/root/.config/sops/age/keys.txt
+  echo "[setup] SOPS age key from /mnt/host-sops (copied + re-owned)"
 else
   echo "[setup] WARNING: no SOPS age key found"
+fi
+
+# ── 4b. gh CLI config (optional, local-dev) ───────────────────────
+if [ -d /mnt/host-gh ] && [ ! -d /root/.config/gh ]; then
+  mkdir -p /root/.config/gh
+  cp -r /mnt/host-gh/. /root/.config/gh/
+  chown -R root:root /root/.config/gh
+  echo "[setup] gh CLI config from /mnt/host-gh (copied + re-owned)"
 fi
 
 # ── 5. GHCR login ─────────────────────────────────────────────────
@@ -118,7 +148,16 @@ fi
 
 # ── 6. WireGuard (if key provided) ────────────────────────────────
 if [ -n "${WG_PRIVATE_KEY:-}" ]; then
-  SUDO=""; command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+  # Smart privilege escalation: try sudo, fall back to direct (root in container)
+  _run() {
+    if [ "$(id -u)" = "0" ]; then
+      "$@"
+    elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      sudo "$@"
+    else
+      "$@"  # last resort — may fail if not root, but won't hang
+    fi
+  }
   umask 077
   cat > /tmp/wg0.conf << WGEOF
 [Interface]
@@ -131,10 +170,11 @@ Endpoint = 35.226.147.64:51820
 AllowedIPs = 10.0.0.0/24
 PersistentKeepalive = 25
 WGEOF
-  $SUDO mkdir -p /etc/wireguard
-  $SUDO cp /tmp/wg0.conf /etc/wireguard/wg0.conf
+  _run mkdir -p /etc/wireguard
+  _run cp /tmp/wg0.conf /etc/wireguard/wg0.conf
   rm /tmp/wg0.conf
-  $SUDO wg-quick up wg0 2>/dev/null && echo "[setup] WireGuard up" || echo "[setup] WireGuard failed (non-fatal)"
+  _run wg-quick up wg0 2>/dev/null && echo "[setup] WireGuard up" || echo "[setup] WireGuard failed (non-fatal)"
+  unset -f _run
 fi
 
 # ── 7. Rebase all repos (baked at build time under ~/git/) ───────
