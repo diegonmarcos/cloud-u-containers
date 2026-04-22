@@ -94,14 +94,24 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse): Prom
 
   if (req.method === "POST" && !clientSessionId) {
     // New client connecting — recreate session with native tools,
-    // proxied tools join via retry loop + tools/list_changed notification
+    // proxied tools join via retry loop + tools/list_changed notification.
+    //
+    // IMPORTANT: proactively close the previous session's transport + server
+    // so Node can GC the streams / AbortControllers. Without this, every
+    // client reconnect leaks one StreamableHTTPServerTransport.
     log("New client initialize — recreating session");
+    if (session) {
+      try { await session.transport.close?.(); } catch { /* already closed */ }
+      try { await session.server.close?.(); } catch { /* already closed */ }
+    }
     connectedChildren.clear();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => SESSION_ID });
     const server = await createNativeServer();
     await server.connect(transport);
     session = { transport, server };
-    // Proxy tools connect in background, send listChanged when ready
+    // Proxy tools connect in background, send listChanged when ready.
+    // startProxyRetryLoop is idempotent (guarded by module-level retryTimer),
+    // so calling it on every init does NOT spawn additional setIntervals.
     connectProxiesInBackground(server);
     await session.transport.handleRequest(req, res);
   } else if (clientSessionId === SESSION_ID) {
