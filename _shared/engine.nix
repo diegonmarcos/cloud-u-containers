@@ -151,12 +151,23 @@ let
         CMD ["${baseNameOf nativeBuild.binary}"]
       ''
     else
-      let upstream = buildJson.upstream_image or (container.container.image or "alpine:latest"); in
+      let
+        upstream = buildJson.upstream_image or (container.container.image or "alpine:latest");
+        # Declarative opt-in: build.json#docker.runtime_packages = { apk=..; apt=..; }
+        # Lets Type B (wrap upstream) extend the image without a service-local Dockerfile.
+        rtPkgs   = buildJson.docker.runtime_packages or {};
+        apkList  = rtPkgs.apk or "";
+        aptList  = rtPkgs.apt or "";
+      in
       pkgs.writeText "Dockerfile" ''
         ${mkBanner "#"}# Type B — wrap upstream, arch=${arch}
         FROM ${upstream}
         LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
         LABEL cloud.diegonmarcos.from-image="${upstream}"
+        ${lib.optionalString (apkList != "")
+          "RUN apk add --no-cache ${apkList}"}
+        ${lib.optionalString (aptList != "")
+          "RUN apt-get update && apt-get install -y --no-install-recommends ${aptList} && rm -rf /var/lib/apt/lists/*"}
       '';
 
   # ──────────────────────────────────────────────────────────────
