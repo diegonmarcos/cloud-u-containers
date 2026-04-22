@@ -1,0 +1,7 @@
+{
+  "_comment": "ntfy user provisioning — rendered into init.sh via flake.nix. Each entry: username, role (admin|user), and the env var (from .secrets) holding the password.",
+  "users": [
+    { "username": "admin", "role": "admin", "password_env": "NTFY_ADMIN_PASSWORD" },
+    { "username": "diego", "role": "user",  "password_env": "NTFY_USER_PASSWORD"  }
+  ]
+}

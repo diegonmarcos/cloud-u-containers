@@ -1,5 +1,5 @@
 # ntfy server configuration (auth enabled)
-base-url: https://rss.diegonmarcos.com
+base-url: https://@DOMAIN@
 
 # Cache and retention
 cache-file: /var/cache/ntfy/cache.db
@@ -21,7 +21,7 @@ enable-signup: false
 enable-reservations: false
 
 # Listen on non-default port (host networking — port 80 is Caddy's)
-listen-http: :8090
+listen-http: :@PORT@
 
 # Behind reverse proxy (Authelia handles auth)
 behind-proxy: true
