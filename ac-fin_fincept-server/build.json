@@ -68,6 +68,12 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "fincept-server",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "cmd": "cargo build --release --bin fincept-server",
+      "binary": "target/release/fincept-server",
+      "base_image": "debian:bookworm-slim",
+      "apt": "ca-certificates libssl3 curl"
+    }
   }
 }

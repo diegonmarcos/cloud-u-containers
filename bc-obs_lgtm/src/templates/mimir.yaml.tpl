@@ -1,0 +1,30 @@
+multitenancy_enabled: false
+
+blocks_storage:
+  backend: filesystem
+  filesystem:
+    dir: /data/blocks
+
+server:
+  http_listen_port: @MIMIR_PORT@
+  grpc_listen_port: 9113
+
+distributor:
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester:
+  ring:
+    kvstore:
+      store: inmemory
+    replication_factor: 1
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+
+compactor:
+  sharding_ring:
+    kvstore:
+      store: inmemory
