@@ -1,6 +1,7 @@
 {
   "name": "cloud-builder-x",
   "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
+  "on_demand": true,
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/cloud-builder-x"
