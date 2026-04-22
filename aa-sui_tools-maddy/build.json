@@ -108,9 +108,12 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "maddy",
-    "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "image": "maddy-binaries",
+    "dockerfile": "code/amd64/Dockerfile",
+    "arch": "amd64",
+    "runtime_packages": {
+      "apk": "jq"
+    }
   },
   "upstream_image": "foxcpp/maddy:0.9",
   "oci_relay": {
