@@ -3,12 +3,35 @@
   "description": "Central DB Backup Agent (deployed on all VMs)",
   "category": "data",
   "multi_vm": true,
+  "timezone": "UTC",
   "deploy": {
     "host": "all",
     "remote_path": "/opt/containers/db-agent"
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "db-agent"
+    "image": "db-agent",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "apk add --no-cache bash sqlite postgresql16-client mariadb-client redis bup openssh-client curl docker-cli tzdata && chmod +x /usr/local/bin/entrypoint.sh",
+      "entrypoint": "/usr/local/bin/entrypoint.sh",
+      "base_image": "alpine:3.19",
+      "app_dir": "code"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "db-agent",
+      "public": false,
+      "env_file": false,
+      "read_only": false,
+      "protocol": "none"
+    }
+  },
+  "resources": {
+    "mem_limit": "64m",
+    "mem_reservation": "16m"
   }
 }

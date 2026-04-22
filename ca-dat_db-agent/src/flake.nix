@@ -1,5 +1,5 @@
 {
-  description = "Bup — Git-based backup server for database dumps (SSH receiver) — dist layout v2";
+  description = "db-agent — central DB backup agent (all VMs) — dist layout v2 (Type A, own code)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -8,9 +8,10 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-bup-server.json);
+    container = builtins.fromJSON (builtins.readFile ./build-db-agent.json);
 
     engine = import ../../_shared/engine.nix;
+    nb = buildJson.docker.native_build;
 
   in {
     packages = forAllSystems (system: let
@@ -19,17 +20,18 @@
       default = engine {
         inherit pkgs buildJson container;
         srcDir = ./.;
-        templates = [
-          {
-            name = "init.sh";
-            vars = {
-              SSH_PORT = toString buildJson.ports.app;
-            };
-          }
-        ];
+        templates = [];
         composeSpec = import ./compose.nix { inherit buildJson container; };
-        extraAssets = [ ./authorized_keys ];
-        title = "Bup Backup Server (SSH receiver)";
+        nativeBuild = {
+          cmd       = nb.cmd;
+          # Not a compiled binary — ENTRYPOINT is the baked entrypoint.sh.
+          # Engine's Type A Dockerfile stub uses baseNameOf(binary) only as a
+          # label; the real build is done by ship-engine via image-wrapper.
+          binary    = nb.entrypoint;
+          baseImage = nb.base_image;
+          apt       = nb.apt or "";
+        };
+        title = "db-agent — Central DB Backup Agent (v2)";
       };
     });
   };
