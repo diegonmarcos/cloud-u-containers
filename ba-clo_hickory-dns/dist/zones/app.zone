@@ -1,6 +1,0 @@
-$ORIGIN app.
-$TTL 60
-@    IN SOA  hickory-dns.app. admin.app. 1 3600 900 604800 60
-@    IN NS   hickory-dns.app.
-@    IN A    10.0.0.1
-*    IN A    10.0.0.1

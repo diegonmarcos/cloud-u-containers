@@ -232,10 +232,13 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
   ) allArchs}
 
   # ── configs/ — Dockerfile + rendered templates ──
+  # Template names may contain / (e.g. zones/app.zone) — mkdir -p the parent.
   cp ${configsDockerfile} $out/configs/Dockerfile
   ${lib.concatMapStringsSep "\n" (t:
-    let rendered = renderTemplate t; in
-    "cp ${rendered} $out/configs/${t.name}"
+    let rendered = renderTemplate t; in ''
+      mkdir -p "$(dirname "$out/configs/${t.name}")"
+      cp ${rendered} $out/configs/${t.name}
+    ''
   ) templates}
 
   # ── compose/ ──
