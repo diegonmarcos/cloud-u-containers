@@ -34,6 +34,10 @@
       "type": "boolean",
       "description": "When true, this service is deployed to all VMs (deploy.host should be 'all')"
     },
+    "on_demand": {
+      "type": "boolean",
+      "description": "When true, service is launched by CI/orchestration on demand (cloud-builder-x pattern). Health reports treat `absent from docker ps` as Info, not Critical."
+    },
     "ports": {
       "type": "object",
       "description": "Named port mappings for the service",
