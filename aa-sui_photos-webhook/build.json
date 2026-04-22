@@ -12,7 +12,7 @@
     "native_build": {
       "type": "app",
       "cmd": "pip install --target=.deps -r requirements.txt",
-      "entrypoint": "python webhook.py flask",
+      "entrypoint": "./entrypoint.sh",
       "base_image": "python:3.12-slim",
       "apt": "postgresql-client curl",
       "env": "PYTHONPATH=/app/.deps"

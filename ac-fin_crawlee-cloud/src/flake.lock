@@ -3,11 +3,11 @@
     "crawlee-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1768642741,
-        "narHash": "sha256-wESkfSiVMHly4mueJY1VGwI32+LwGB66KcR2gHLKWlc=",
+        "lastModified": 1775510256,
+        "narHash": "sha256-uhraKmg/W8EJUh7Ejsy+FLez2Ozilshh3fEbEAZFEys=",
         "owner": "crawlee-cloud",
         "repo": "crawlee-cloud",
-        "rev": "e8580ffad31d1829be221bdd88c06fef95dce565",
+        "rev": "717f33102d145263e5407bfff85cab4f11779227",
         "type": "github"
       },
       "original": {

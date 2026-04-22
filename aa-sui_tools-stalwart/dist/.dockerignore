@@ -1,8 +1,0 @@
-.secrets
-.secrets.d/
-*.key
-*.pem
-*.age
-Dockerfile.configs
-.dockerignore.bak
-.configs-hash
