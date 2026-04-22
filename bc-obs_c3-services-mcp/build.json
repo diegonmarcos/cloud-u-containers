@@ -55,7 +55,12 @@
       "volumes": [],
       "env_file": true,
       "depends_on": [],
-      "resources": null,
+      "resources": {
+        "mem_limit": "1G",
+        "mem_reservation": "128M",
+        "pids_limit": 256
+      },
+      "restart_policy": "unless-stopped",
       "read_only": false,
       "protocol": "http"
     }
