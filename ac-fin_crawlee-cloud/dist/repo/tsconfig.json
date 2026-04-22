@@ -1,9 +1,0 @@
-{
-  "files": [],
-  "references": [
-    { "path": "packages/actor" },
-    { "path": "packages/cli" },
-    { "path": "packages/api" },
-    { "path": "packages/runner" }
-  ]
-}
