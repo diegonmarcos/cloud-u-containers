@@ -49,10 +49,16 @@ def fetch_oidc_token():
 
 
 C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://10.0.0.8:11434")  # from cloud-data
+OLLAMA_URL = os.environ["OLLAMA_URL"]  # required; injected from cloud-data via compose
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
 OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
 OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"
+
+# C3 slash-command HTTP server bind + URL config (env-driven; set by compose)
+C3_BIND_IP = os.environ.get("C3_BIND_IP", "0.0.0.0")
+C3_PORT = int(os.environ.get("C3_PORT", "8887"))
+C3_ACTION_URL = os.environ.get("C3_ACTION_URL", f"http://mattermost-bots:{C3_PORT}/c3/action")
+C3_SLASH_URL = os.environ.get("C3_SLASH_URL", f"http://mattermost-bots:{C3_PORT}/c3")
 _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
 _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
@@ -601,7 +607,7 @@ def handle_c3_command(text):
         )
 
 
-ACTION_URL = "http://mattermost-bots:8887/c3/action"
+ACTION_URL = C3_ACTION_URL
 
 def make_buttons(actions):
     """Build Mattermost interactive message buttons. actions = [(label, command), ...]"""
@@ -708,7 +714,7 @@ def register_slash_command(headers, team_id):
         "team_id": team_id,
         "trigger": "c3",
         "method": "P",
-        "url": "http://mattermost-bots:8887/c3",
+        "url": C3_SLASH_URL,
         "display_name": "C3 Infrastructure",
         "description": "Control VMs and containers",
         "auto_complete": True,
@@ -1462,9 +1468,9 @@ def main():
 
     # Register /c3 slash command and start HTTP server
     register_slash_command(headers, team_id)
-    server = HTTPServer(("10.0.0.6", 8887), C3CommandHandler)
+    server = HTTPServer((C3_BIND_IP, C3_PORT), C3CommandHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    log.info("C3 command server listening on :8887")
+    log.info("C3 command server listening on %s:%d", C3_BIND_IP, C3_PORT)
 
     # Get ALL channels (public + private) for bot membership
     r = mm_api("GET", f"/teams/{team_id}/channels?per_page=200", headers)
