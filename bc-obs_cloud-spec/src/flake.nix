@@ -1,42 +1,23 @@
 {
-  description = "Unified Cloud Documentation Portal";
+  description = "Unified Cloud Documentation Portal — dist layout v2 (flake as orchestrator)";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
-    docker = import ../../_shared/docker.nix;
-    lib = nixpkgs.lib;
+
+    # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-cloud-spec.json (symlink → 2_configs/dist/).
-    # Engine resolves symlink before nix build.
-    buildContainer = builtins.fromJSON (builtins.readFile ./build-cloud-spec.json);
+    container = builtins.fromJSON (builtins.readFile ./build-cloud-spec.json);
 
-    config = {
-      container_name = buildContainer.container.container_name;
-      port = buildContainer.container.port;
-      # Static-serve command template: %PORT% is substituted with the declared port
-      command =
-        lib.replaceStrings [ "%PORT%" ] [ (toString buildContainer.container.port) ]
-          buildJson.runtime.command;
-    };
-
-    title = buildJson.description;
-
-    # GHCR image: wraps base image for static file serving
-    # Base image declared in build.json (docker.from_image)
-    ghcr = docker.mkGhcrBuild {
-      name = buildJson.name;
-      fromImage = buildJson.docker.from_image;
-    };
+    engine = import ../../_shared/engine.nix;
 
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      site = pkgs.runCommand "${config.container_name}-site" {
+      # Build the mdbook documentation site as a Nix derivation.
+      site = pkgs.runCommand "cloud-spec-site" {
         nativeBuildInputs = [ pkgs.mdbook ];
       } ''
         mkdir -p build/src
@@ -45,36 +26,32 @@
         cd build && mdbook build -d $out
       '';
 
-      compose = docker.mkCompose pkgs {
-        banner = docker.banner "~/git/cloud/a_solutions/bc-obs_cloud-spec/src/flake.nix";
-
-        services.${config.container_name} = docker.mkService {
-          name = config.container_name;
-          image = ghcr.image;
-          build = ghcr.build;
-          container_name = config.container_name;
-          restart = "no";
-          networkMode = "host";
-          command = config.command;
-          volumes = [
-            "./site:/srv:ro"
-          ];
-          skipReadOnly = true;
-        };
+      # Engine output (manifest.json, compose/, code/, configs/, assets/).
+      baseDist = engine {
+        inherit pkgs buildJson container;
+        srcDir = ./.;
+        templates = [];
+        composeSpec = import ./compose.nix { inherit buildJson container; };
+        title = buildJson.description;
       };
 
     in {
-      default = pkgs.runCommand config.container_name {} ''
+      # Wrap engine output, overlaying the built mdbook site at assets/site/
+      # so compose.nix can mount ./assets/site:/srv:ro.
+      default = pkgs.runCommand "${buildJson.name}-dist-v2" {
+        passthru = { inherit (baseDist.passthru) manifest declaredArchs; };
+      } ''
         mkdir -p $out
-        cp -r ${site}/* $out/
-        # Flatten: move html/ contents to site/ for compose mount
-        mkdir -p $out/site
+        cp -r ${baseDist}/. $out/
+        chmod -R u+w $out
+        mkdir -p $out/assets/site
+        # mdbook emits into site root; if an 'html/' subdir exists (older
+        # mdbook versions), flatten it — otherwise copy contents verbatim.
         if [ -d ${site}/html ]; then
-          cp -r ${site}/html/* $out/site/
+          cp -r ${site}/html/. $out/assets/site/
         else
-          cp -r ${site}/* $out/site/
+          cp -r ${site}/. $out/assets/site/
         fi
-        cp ${compose} $out/docker-compose.yml
       '';
     });
   };
