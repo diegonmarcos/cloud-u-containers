@@ -42,15 +42,16 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "rig-agentic-hai",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "cmd": "cargo build --release",
+      "binary": "target/release/rig-agentic",
+      "base_image": "debian:trixie-slim",
+      "apt": "curl ca-certificates"
+    }
   },
   "build": {
-    "include_cloud_data": "true",
-    "extra_copy": [
-      "Cargo.toml",
-      "Dockerfile",
-      "src"
-    ]
+    "include_cloud_data": "true"
   },
   "deploy": {
     "host": "oci-apps",
