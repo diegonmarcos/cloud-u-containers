@@ -2,8 +2,19 @@
  * MCP Proxy — connects as MCP CLIENT to child MCP servers and re-exposes
  * their tools under this hub server.
  *
- * Truly persistent: retries failed children in background, sends
- * tools/list_changed notification so Claude Code refreshes automatically.
+ * Data flow (no hardcoded URLs):
+ *   build.json .proxied_mcps.{infra,user}[]  → flake.nix resolves via
+ *   cloud-data {ip,ports}                    → PROXIED_MCPS env var (JSON)
+ *   → this module parses it at import time.
+ *
+ * Resilience invariants (see build.json .proxied_mcps.retry):
+ *   - Per-child exponential backoff (initial → max).
+ *   - Bounded retry-state LRU (max_retry_state_entries) so the Map can
+ *     never grow beyond declared children. This closes the OOM leak
+ *     (H1 root cause: unbounded retry-state + orphaned setInterval timers
+ *     across session re-creates).
+ *   - Failed client/transport are closed even on connect throw, so
+ *     Node doesn't leak AbortControllers / sockets.
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -12,86 +23,154 @@ import { z } from "zod";
 
 const log = (msg: string) => process.stderr.write(`[proxy-mcp] ${msg}\n`);
 
-// Exponential backoff — start at 10s, double each failure, cap at 2 min.
-// Without backoff, a persistently-down child retried every 30s over ~75 min
-// accumulated enough transport client state inside a 512 MiB container to
-// trigger Node OOM (SIGABRT 134). See T2.1 in the health-errors plan.
-const RETRY_INITIAL_MS = 10_000;
-const RETRY_MAX_MS = 120_000;
+// ── Config (data-driven from build.json via PROXIED_MCPS env var) ────
 
-interface ChildMcp {
-  name: string;
-  url: string;
+interface ChildMcp { name: string; url: string; }
+interface RetryCfg {
+  initial_ms: number;
+  max_ms: number;
+  max_retry_state_entries: number;
+}
+interface ProxiedMcpsCfg {
+  infra: ChildMcp[];
+  user: ChildMcp[];
+  retry: RetryCfg;
 }
 
-// Per-child exponential backoff state.
-const retryState = new Map<string, { nextAttempt: number; intervalMs: number }>();
+// Defaults match previous behaviour if PROXIED_MCPS is unset (dev/test).
+const DEFAULT_CFG: ProxiedMcpsCfg = {
+  infra: [],
+  user: [],
+  retry: { initial_ms: 10_000, max_ms: 120_000, max_retry_state_entries: 32 },
+};
 
-// ── INFRA proxied MCPs ──────────────────────────
-// All containers use host network — no Docker DNS, use localhost
-const INFRA_MCPS: ChildMcp[] = [
-  { name: "cloud-cgc-mcp", url: "http://127.0.0.1:3105/mcp" },
-];
+function loadConfig(): ProxiedMcpsCfg {
+  const raw = process.env.PROXIED_MCPS;
+  if (!raw) {
+    log("PROXIED_MCPS env var not set — no child MCPs will be proxied");
+    return DEFAULT_CFG;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<ProxiedMcpsCfg>;
+    return {
+      infra: parsed.infra ?? [],
+      user: parsed.user ?? [],
+      retry: {
+        initial_ms: parsed.retry?.initial_ms ?? DEFAULT_CFG.retry.initial_ms,
+        max_ms: parsed.retry?.max_ms ?? DEFAULT_CFG.retry.max_ms,
+        max_retry_state_entries:
+          parsed.retry?.max_retry_state_entries ?? DEFAULT_CFG.retry.max_retry_state_entries,
+      },
+    };
+  } catch (err) {
+    log(`PROXIED_MCPS JSON parse failed: ${err} — falling back to defaults`);
+    return DEFAULT_CFG;
+  }
+}
 
-// ── USER proxied MCPs ──────────────────────────
-const USER_MCPS: ChildMcp[] = [
-  { name: "mattermost-mcp", url: "http://127.0.0.1:3102/mcp" },
-  { name: "mail-mcp", url: "http://127.0.0.1:3103/mcp" },
-  { name: "google-workspace-mcp", url: "http://127.0.0.1:3104/mcp" },
-];
+const CFG: ProxiedMcpsCfg = loadConfig();
+const INFRA_MCPS: ChildMcp[] = CFG.infra;
+const USER_MCPS: ChildMcp[] = CFG.user;
 
-// Track which children are connected so we don't re-register
+log(
+  `config: infra=[${INFRA_MCPS.map((c) => c.name).join(",")}] ` +
+    `user=[${USER_MCPS.map((c) => c.name).join(",")}] ` +
+    `retry(initial=${CFG.retry.initial_ms}ms,max=${CFG.retry.max_ms}ms,cap=${CFG.retry.max_retry_state_entries})`,
+);
+
+// ── Bounded retry state (LRU) ────────────────────────────────────────
+//
+// Map#set preserves insertion order; on hit we delete+reinsert to move the
+// key to the tail. When size exceeds max, we evict from the head.
+// Guarantees: size <= max_retry_state_entries AT ALL TIMES, even if
+// callers mistakenly schedule retries for unknown children.
+
+interface RetryEntry { nextAttempt: number; intervalMs: number; }
+const retryState = new Map<string, RetryEntry>();
+
+function touchRetryEntry(name: string, entry: RetryEntry): void {
+  if (retryState.has(name)) retryState.delete(name);
+  retryState.set(name, entry);
+  while (retryState.size > CFG.retry.max_retry_state_entries) {
+    // Evict oldest (Map iteration is insertion order).
+    const oldestKey = retryState.keys().next().value;
+    if (oldestKey === undefined) break;
+    retryState.delete(oldestKey);
+    log(`retry-state LRU evicted ${oldestKey} (cap=${CFG.retry.max_retry_state_entries})`);
+  }
+}
+
+// ── Connected-children tracking ──────────────────────────────────────
 export const connectedChildren = new Set<string>();
 
+// Single-timer guard: http.ts recreates the MCP server on every client
+// `initialize`, but we MUST NOT spawn a new setInterval on each recreate
+// — that was the other half of the OOM leak.
+let retryTimer: ReturnType<typeof setInterval> | null = null;
+
+// Remember the live server so the retry loop can re-register tools on
+// late-connect even after a session swap.
+let activeServer: McpServer | null = null;
+
 export async function registerProxiedInfraTools(server: McpServer): Promise<void> {
+  activeServer = server;
   await connectChildren(server, INFRA_MCPS);
 }
 
 export async function registerProxiedUserTools(server: McpServer): Promise<void> {
+  activeServer = server;
   await connectChildren(server, USER_MCPS);
 }
 
 /** @deprecated Use registerProxiedInfraTools + registerProxiedUserTools */
 export async function registerProxiedTools(server: McpServer): Promise<void> {
+  activeServer = server;
   await connectChildren(server, [...INFRA_MCPS, ...USER_MCPS]);
 }
 
 /** Start background retry loop for any children that failed initial connect.
- *  Per-child exponential backoff (10s → 2 min cap) prevents transport-client
- *  accumulation under persistent upstream failure (H1 OOM root cause). */
+ *  Idempotent — safe to call on every session recreate. */
 export function startProxyRetryLoop(server: McpServer): void {
-  const allChildren = [...INFRA_MCPS, ...USER_MCPS];
+  activeServer = server;
 
-  // Initialise per-child state.
-  for (const c of allChildren) {
-    retryState.set(c.name, { nextAttempt: 0, intervalMs: RETRY_INITIAL_MS });
+  // Initialise per-child retry state (bounded).
+  for (const c of [...INFRA_MCPS, ...USER_MCPS]) {
+    if (!retryState.has(c.name)) {
+      touchRetryEntry(c.name, { nextAttempt: 0, intervalMs: CFG.retry.initial_ms });
+    }
   }
 
-  // Tick at the minimum retry cadence; each child is only attempted when its
-  // own backoff deadline has elapsed.
-  setInterval(async () => {
+  // Guard against multiple intervals — critical to avoid timer leak across
+  // session recreates (http.ts calls us on every client `initialize`).
+  if (retryTimer !== null) return;
+
+  retryTimer = setInterval(async () => {
+    const srv = activeServer;
+    if (!srv) return;
+
     const now = Date.now();
-    const pending = allChildren.filter((c) => !connectedChildren.has(c.name));
+    const all = [...INFRA_MCPS, ...USER_MCPS];
+    const pending = all.filter((c) => !connectedChildren.has(c.name));
     if (pending.length === 0) return;
 
     for (const child of pending) {
-      const state = retryState.get(child.name)!;
-      if (now < state.nextAttempt) continue;
+      const state = retryState.get(child.name);
+      if (!state || now < state.nextAttempt) continue;
 
       try {
-        await connectChild(server, child);
+        await connectChild(srv, child);
         log(`${child.name}: late-connected — sending tools/list_changed`);
-        server.sendToolListChanged();
-        // success — reset backoff for any future disconnect cycle.
-        state.intervalMs = RETRY_INITIAL_MS;
-        state.nextAttempt = 0;
+        srv.sendToolListChanged();
+        touchRetryEntry(child.name, { nextAttempt: 0, intervalMs: CFG.retry.initial_ms });
       } catch {
-        // schedule the next attempt using exponential backoff.
-        state.nextAttempt = now + state.intervalMs;
-        state.intervalMs = Math.min(state.intervalMs * 2, RETRY_MAX_MS);
+        const nextInterval = Math.min(state.intervalMs * 2, CFG.retry.max_ms);
+        touchRetryEntry(child.name, {
+          nextAttempt: now + state.intervalMs,
+          intervalMs: nextInterval,
+        });
       }
     }
-  }, RETRY_INITIAL_MS);
+  }, CFG.retry.initial_ms);
 }
 
 // ── Internals ────────────────────────────────────────────────────────
@@ -119,13 +198,13 @@ async function connectChild(server: McpServer, child: ChildMcp): Promise<void> {
     await client.connect(transport);
   } catch (err) {
     // Close transport + client on failure so retries don't leak sockets /
-    // AbortControllers into the container's 1 GiB cgroup — root cause of H1.
+    // AbortControllers into the container's memory cgroup.
     await client.close().catch(() => { /* ignore — already bad state */ });
     await transport.close().catch(() => { /* ignore */ });
     throw err;
   }
   const { tools } = await client.listTools();
-  log(`${child.name}: discovered ${tools.length} tools`);
+  log(`${child.name}: discovered ${tools.length} tools at ${child.url}`);
 
   for (const tool of tools) {
     const zodShape = jsonSchemaToZod(tool.inputSchema);
