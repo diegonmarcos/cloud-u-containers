@@ -1,7 +1,0 @@
-FROM node:22-slim
-
-
-WORKDIR /app
-COPY . /app
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-CMD ["npx","tsx","src/index.ts","--http"]
