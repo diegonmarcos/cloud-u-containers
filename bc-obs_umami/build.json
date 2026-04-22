@@ -146,7 +146,9 @@
       ],
       "resources": null,
       "read_only": false,
-      "init_job": true
+      "init_job": true,
+      "one_shot": true,
+      "idempotent_marker": "/output/site_id"
     }
   }
 }
