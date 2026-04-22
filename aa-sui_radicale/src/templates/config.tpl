@@ -1,9 +1,9 @@
 [server]
-hosts = 0.0.0.0:5232
+hosts = 0.0.0.0:@APP_PORT@
 
 [auth]
 type = imap
-imap_host = 10.0.0.3:993
+imap_host = @MADDY_IP@:@MADDY_IMAP_PORT@
 imap_security = tls
 
 [storage]
