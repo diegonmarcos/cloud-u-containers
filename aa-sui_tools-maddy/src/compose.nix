@@ -27,11 +27,10 @@ in
         "./configs/init.sh:/etc/maddy/init.sh:ro"
         # Wildcard cert from Caddy, pushed out-of-band to the VM
         "./tls:/data/tls:ro"
-        # DKIM keys (written by init.sh from DKIM_PRIVATE_KEY_B64 secret,
-        # persisted via the maddy_data volume at /data/dkim). Mount here
-        # kept for backward-compat with any pre-existing /opt/containers/maddy/dkim
-        # directory; init.sh is the source of truth.
-        "./dkim:/data/dkim:ro"
+        # DKIM keys: init.sh writes from DKIM_PRIVATE_KEY_B64 secret into the
+        # maddy_data volume at /data/dkim. DO NOT bind-mount ./dkim here —
+        # it would shadow the volume path with a read-only host dir and
+        # crash init on first start. Source of truth is the sops secret.
         # Delivery-time filter. Maddy forks mail-filter per incoming message via
         # imap_filter.command (see maddy.conf.tpl). mail-rules.json is the
         # declarative single source of truth for routing (Maddy-only schema:

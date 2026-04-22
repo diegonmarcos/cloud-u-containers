@@ -1,0 +1,50 @@
+{
+  "_comment": "Declarative list of external mailboxes to mirror + their local delivery targets. Edits land after `build.sh ship`. Secrets referenced by env var name; values live in sops-encrypted secrets.yaml.",
+  "defaults": {
+    "idle_refresh_secs": 1700,
+    "poll_fallback_secs": 30,
+    "reconnect_backoff_secs": [5, 15, 60, 300],
+    "fetch_batch": 50
+  },
+  "delivery_targets": {
+    "maddy":    { "host": "127.0.0.1", "port": 587, "starttls": true,  "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" },
+    "stalwart": { "host": "127.0.0.1", "port": 2587, "starttls": true, "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" }
+  },
+  "sources": [
+    {
+      "id": "gmail-primary",
+      "provider": "gmail",
+      "imap_host": "imap.gmail.com",
+      "imap_port": 993,
+      "email": "diegonmarcos1@gmail.com",
+      "mailboxes": ["INBOX"],
+      "oauth": {
+        "client_id_env":     "GMAIL_CLIENT_ID",
+        "client_secret_env": "GMAIL_CLIENT_SECRET",
+        "refresh_token_env": "GMAIL_REFRESH_TOKEN",
+        "token_url":         "https://oauth2.googleapis.com/token"
+      },
+      "deliver_envelope_from": "diegonmarcos1@gmail.com",
+      "deliver_envelope_to":   "me@diegonmarcos.com",
+      "targets": ["maddy", "stalwart"]
+    },
+    {
+      "id": "live-primary",
+      "provider": "outlook",
+      "imap_host": "outlook.office365.com",
+      "imap_port": 993,
+      "email": "diegonmarcos@live.com",
+      "mailboxes": ["INBOX"],
+      "oauth": {
+        "client_id_env":     "OUTLOOK_CLIENT_ID",
+        "client_secret_env": "OUTLOOK_CLIENT_SECRET",
+        "refresh_token_env": "OUTLOOK_REFRESH_TOKEN",
+        "token_url":         "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
+        "scope":             "https://outlook.office.com/IMAP.AccessAsUser.All offline_access"
+      },
+      "deliver_envelope_from": "diegonmarcos@live.com",
+      "deliver_envelope_to":   "me@diegonmarcos.com",
+      "targets": ["maddy", "stalwart"]
+    }
+  ]
+}

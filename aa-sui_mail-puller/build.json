@@ -1,0 +1,71 @@
+{
+  "name": "mail-puller",
+  "description": "Rust sidecar — IMAP-IDLE pulls from external providers (Gmail, Outlook/Live, …) and dual-delivers into Maddy + Stalwart via SMTP submission. Declarative source list in src/sources.json; OAuth2 creds via sops.",
+  "dns": "mail-puller.app",
+  "category": "app",
+  "domain": "mail-puller.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/mail-puller",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true,
+    "pre_hook": "configs/init.sh"
+  },
+  "proxy": {
+    "primary": null,
+    "app_hub": false,
+    "mail_hub": false
+  },
+  "health": {
+    "path": null
+  },
+  "monitoring": {
+    "container_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [ "mail_puller_state" ]
+  },
+  "ports": {
+    "app": null
+  },
+  "containers": {
+    "app": {
+      "container_name": "mail-puller",
+      "image": "ghcr.io/diegonmarcos/mail-puller-binaries:latest",
+      "port": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "volumes": [
+        "mail_puller_state:/var/lib/mail-puller"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "limits":       { "memory": "128M" },
+        "reservations": { "memory": "16M"  }
+      },
+      "read_only": false,
+      "embedded_dbs": [
+        { "engine": "sqlite", "path": "/var/lib/mail-puller/state.db" }
+      ]
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "mail-puller-binaries",
+    "dockerfile": "code/amd64/Dockerfile",
+    "arch": "amd64",
+    "native_build": {
+      "type": "binary",
+      "cmd": "docker run --rm --network host -v $PWD/crate:/src -w /src -e CARGO_HOME=/src/.cargo-home rust:1-slim-bookworm cargo build --release",
+      "binary": "crate/target/release/mail-puller",
+      "base_image": "debian:bookworm-slim",
+      "apt": "ca-certificates libssl3"
+    }
+  },
+  "upstream_image": "debian:bookworm-slim"
+}

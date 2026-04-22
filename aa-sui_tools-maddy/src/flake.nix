@@ -40,11 +40,14 @@
           { name = "maddy.conf.tpl"; vars = maddyConfVars; }
         ];
         # mail-filter.sh / mail-rules.json bind-mounted from dist/assets/;
-        # cleanup-stale-mailboxes.sh runs via lifecycle.ssh_run on the VM host.
+        # cleanup-stale-mailboxes.sh + dedupe-inbox.sh run via lifecycle.ssh_run
+        # on the VM host (see build.json#lifecycle).
         extraAssets = [
           ./mail-filter.sh
           ./mail-rules.json
           ./cleanup-stale-mailboxes.sh
+          ./dedupe-inbox.sh
+          ./dedupe-folders.sh
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Maddy Mail Server";

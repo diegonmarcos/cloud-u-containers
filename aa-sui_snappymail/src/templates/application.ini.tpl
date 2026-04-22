@@ -3,8 +3,8 @@ title = "Diego Mail"
 loading_description = "Diego Mail"
 theme = "Default"
 allow_languages_on_login = 1
-allow_additional_accounts = 0
-allow_additional_identities = 0
+allow_additional_accounts = 1
+allow_additional_identities = 1
 
 [interface]
 show_attachment_thumbnail = 1

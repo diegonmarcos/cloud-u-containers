@@ -30,9 +30,19 @@
         inherit pkgs buildJson container;
         srcDir = ./.;
         templates = [
-          { name = "init.sh";         vars = {}; }
-          { name = "application.ini"; vars = appConfigVars; }
-          { name = "domain.ini";      vars = domainConfigVars; }
+          { name = "init.sh";                             vars = {}; }
+          { name = "application.ini";                     vars = appConfigVars; }
+          { name = "domain.ini";                          vars = domainConfigVars; }
+          { name = "live.com.ini";                        vars = {}; }
+          { name = "gmail.com.ini";                       vars = {}; }
+          { name = "mail-stalwart.diegonmarcos.com.ini";  vars = {}; }
+        ];
+        # Pre-seed data + PHP executor for SnappyMail's additional accounts.
+        # Mounted into the container by compose.nix; invoked by init.sh at
+        # container start.
+        extraAssets = [
+          ./seed-accounts.json
+          ./seed-accounts.php
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "SnappyMail Webmail";

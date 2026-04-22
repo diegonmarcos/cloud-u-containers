@@ -20,6 +20,20 @@
         "vm": "oci-mail",
         "script": "/opt/containers/maddy/assets/cleanup-stale-mailboxes.sh"
       }
+    ],
+    "dedupe": [
+      {
+        "action": "ssh_run",
+        "vm": "oci-mail",
+        "script": "/opt/containers/maddy/assets/dedupe-inbox.sh"
+      }
+    ],
+    "dedupe-folders": [
+      {
+        "action": "ssh_run",
+        "vm": "oci-mail",
+        "script": "/opt/containers/maddy/assets/dedupe-folders.sh"
+      }
     ]
   },
   "proxy": {
