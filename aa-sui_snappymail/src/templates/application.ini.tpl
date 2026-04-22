@@ -19,7 +19,7 @@ allow_admin_panel = 1
 csrf_protection = 1
 
 [login]
-default_domain = "diegonmarcos.com"
+default_domain = "@BASE_DOMAIN@"
 allow_languages_on_login = 1
 
 [plugins]
