@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
+# Runtime phase (host side): engine.nix already rendered configs/application.ini
+# from templates/application.ini.tpl with @VAR@ substitution. Only
+# ${SNAPPYMAIL_ADMIN_PASSWORD} and Stalwart alias vars remain — secrets, not
+# build data. Envsubst them in-place from .secrets before the image boots.
 set -e
 cd "$(dirname "$0")"
 
-ENV_VARS='$SNAPPYMAIL_ADMIN_PASSWORD'
+ENV_VARS='$SNAPPYMAIL_ADMIN_PASSWORD $MAIL_STALWART_HOST $MAIL_STALWART_IMAP_PORT $MAIL_STALWART_SMTP_PORT'
 
-echo "[init] Substituting secrets into application.ini..."
+echo "[init] Substituting runtime secrets into application.ini + domain configs..."
 set -a
 . ../.secrets
+: "${MAIL_STALWART_HOST:=mail-stalwart.diegonmarcos.com}"
+: "${MAIL_STALWART_IMAP_PORT:=2993}"
+: "${MAIL_STALWART_SMTP_PORT:=2465}"
 set +a
-envsubst "$ENV_VARS" < application.ini.tpl > application.ini
 
-echo "[init] Done — configs mounted directly into container via bind mounts."
+for f in application.ini mail-stalwart.diegonmarcos.com.ini; do
+    [ -f "$f" ] || continue
+    envsubst "$ENV_VARS" < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+done
+
+echo "[init] Done — configs mounted into container via bind mounts."

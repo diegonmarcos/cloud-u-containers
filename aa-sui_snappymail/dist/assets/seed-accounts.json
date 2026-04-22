@@ -1,0 +1,37 @@
+{
+  "_comment": "Declarative pre-seed of SnappyMail additional accounts under the primary user. At container start, seed-accounts.sh writes the encrypted `accounts` file under the primary user's data dir using SnappyMail's own Crypt class. Secrets referenced by `pass_env` come from .secrets (sops-encrypted).",
+  "primary": {
+    "email": "me@diegonmarcos.com",
+    "pass_env": "ME_PASSWORD"
+  },
+  "extras": [
+    {
+      "email": "me@mail-stalwart.diegonmarcos.com",
+      "login": "me@diegonmarcos.com",
+      "pass_env": "ME_PASSWORD_STALWART",
+      "imap": { "host": "mail-stalwart.diegonmarcos.com", "port": 2993, "secure": "SSL" },
+      "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
+    },
+    {
+      "email": "no-reply@diegonmarcos.com",
+      "login": "no-reply@diegonmarcos.com",
+      "pass_env": "NOREPLY_PASSWORD",
+      "imap": { "host": "mail.diegonmarcos.com", "port": 993, "secure": "SSL" },
+      "smtp": { "host": "mail.diegonmarcos.com", "port": 465, "secure": "SSL" }
+    },
+    {
+      "email": "diegonmarcos@live.com",
+      "login": "diegonmarcos@live.com",
+      "pass_env": "LIVE_APP_PASSWORD",
+      "imap": { "host": "outlook.office365.com", "port": 993, "secure": "SSL" },
+      "smtp": { "host": "smtp-mail.outlook.com", "port": 587, "secure": "TLS" }
+    },
+    {
+      "email": "diegonmarcos1@gmail.com",
+      "login": "diegonmarcos1@gmail.com",
+      "pass_env": "GMAIL_APP_PASSWORD",
+      "imap": { "host": "imap.gmail.com", "port": 993, "secure": "SSL" },
+      "smtp": { "host": "smtp.gmail.com", "port": 587, "secure": "TLS" }
+    }
+  ]
+}

@@ -10,3 +10,5 @@
 FROM djmaze/snappymail:latest
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 LABEL cloud.diegonmarcos.from-image="djmaze/snappymail:latest"
+
+

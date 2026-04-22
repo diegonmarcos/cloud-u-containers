@@ -15,20 +15,26 @@ fi
 
 echo "[cleanup] account=$ACCOUNT  drop_name_regex=$REGEX"
 
-MBOXES="$(docker exec maddy maddy imap-mboxes list "$ACCOUNT" 2>/dev/null | awk -v re="$REGEX" '$0 ~ re { print $0 }' || true)"
+# Output of `maddy imap-mboxes list` is TSV: "<name>\t[<flags>]". Take the
+# first field only. Sort reverse so IMAP children (e.g. "1-…1-2…") drop
+# before their parents ("1-…") — otherwise IMAP refuses to remove a
+# non-empty hierarchy node.
+MBOXES="$(docker exec maddy maddy imap-mboxes list "$ACCOUNT" 2>/dev/null \
+    | awk -F '\t' -v re="$REGEX" '$1 ~ re { print $1 }' \
+    | sort -r || true)"
 
 if [ -z "$MBOXES" ]; then
     echo "[cleanup] no mailboxes matched — nothing to do"
     exit 0
 fi
 
-echo "[cleanup] will drop:"
-printf '  %s\n' $MBOXES
+COUNT=$(printf '%s\n' "$MBOXES" | wc -l)
+echo "[cleanup] will drop $COUNT mailboxes"
 
 printf '%s\n' "$MBOXES" | while IFS= read -r mbox; do
     [ -z "$mbox" ] && continue
     echo "[cleanup] removing: $mbox"
-    docker exec maddy maddy imap-mboxes remove "$ACCOUNT" "$mbox" || \
+    docker exec maddy maddy imap-mboxes remove --yes "$ACCOUNT" "$mbox" 2>&1 || \
         echo "[cleanup] WARN: remove failed for: $mbox" >&2
 done
 

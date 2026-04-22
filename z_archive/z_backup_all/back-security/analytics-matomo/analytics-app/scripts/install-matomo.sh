@@ -56,10 +56,10 @@ services:
     container_name: matomo-db
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=<REDACTED-LEAK-2026-04-21>
+      - MYSQL_ROOT_PASSWORD=MatomoRoot2025!
       - MYSQL_DATABASE=matomo
       - MYSQL_USER=matomo
-      - MYSQL_PASSWORD=<REDACTED-LEAK-2026-04-21>
+      - MYSQL_PASSWORD=MatomoDB2025!
     volumes:
       - ./db:/var/lib/mysql
 
@@ -74,7 +74,7 @@ services:
       - MATOMO_DATABASE_ADAPTER=mysql
       - MATOMO_DATABASE_TABLES_PREFIX=matomo_
       - MATOMO_DATABASE_USERNAME=matomo
-      - MATOMO_DATABASE_PASSWORD=<REDACTED-LEAK-2026-04-21>
+      - MATOMO_DATABASE_PASSWORD=MatomoDB2025!
       - MATOMO_DATABASE_DBNAME=matomo
     volumes:
       - ./matomo:/var/www/html
@@ -164,7 +164,7 @@ echo "📝 Database credentials (for Matomo setup):"
 echo "   Database Server:  mariadb"
 echo "   Database Name:    matomo"
 echo "   Database User:    matomo"
-echo "   Database Password: <REDACTED-LEAK-2026-04-21>"
+echo "   Database Password: MatomoDB2025!"
 echo ""
 echo "🔐 Nginx Proxy Manager default login:"
 echo "   URL:      http://${SERVER_IP}:${NPM_PORT}"

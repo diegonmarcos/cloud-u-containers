@@ -30,7 +30,7 @@ in
       environment = {
         MATOMO_DATABASE_HOST     = "localhost";
         MATOMO_DATABASE_USERNAME = "\${MATOMO_DB_USER:-matomo}";
-        MATOMO_DATABASE_PASSWORD = "\${MATOMO_DB_PASSWORD:-<REDACTED-LEAK-2026-04-21>}";
+        MATOMO_DATABASE_PASSWORD = "\${MATOMO_DB_PASSWORD:-MatomoDB2025!}";
         MATOMO_DATABASE_DBNAME   = "\${MATOMO_DB_NAME:-matomo}";
         MATOMO_API_TOKEN         = "\${MATOMO_API_TOKEN}";
       };

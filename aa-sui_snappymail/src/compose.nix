@@ -22,12 +22,38 @@ in
       network_mode = "host";
       volumes = [
         "snappymail_data:/var/lib/snappymail"
+        # Configs bind-mounted OUTSIDE the data volume (read-only at
+        # /opt/snappymail-config/) and copied into the data volume on startup.
+        # Direct mounts into /var/lib/snappymail/.../ break the image's
+        # entrypoint chown pass.
         "./configs/application.ini:/opt/snappymail-config/application.ini:ro"
-        "./configs/domain.ini:/var/lib/snappymail/_data_/_default_/domains/${base_domain}.ini:ro"
+        "./configs/domain.ini:/opt/snappymail-config/domain.ini:ro"
+        "./configs/live.com.ini:/opt/snappymail-config/live.com.ini:ro"
+        "./configs/gmail.com.ini:/opt/snappymail-config/gmail.com.ini:ro"
+        "./configs/mail-stalwart.diegonmarcos.com.ini:/opt/snappymail-config/mail-stalwart.diegonmarcos.com.ini:ro"
+        # Pre-seed data + PHP executor for additional accounts.
+        "./assets/seed-accounts.json:/opt/snappymail-config/seed-accounts.json:ro"
+        "./assets/seed-accounts.php:/opt/snappymail-config/seed-accounts.php:ro"
       ];
+      env_file = [ ".secrets" ];
+      # NB: `$$` is compose-file escape for a literal `$`. Without it,
+      # docker-compose tries to interpolate `$d/$src/$dest` itself and they
+      # reach the shell empty.
       entrypoint = [
         "/bin/sh" "-c"
-        "cp -f /opt/snappymail-config/application.ini /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true; exec /entrypoint.sh"
+        ("mkdir -p /var/lib/snappymail/_data_/_default_/domains"
+         + " /var/lib/snappymail/_data_/_default_/configs;"
+         + " cp -f /opt/snappymail-config/application.ini"
+         + " /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true;"
+         + " for d in domain live.com gmail.com mail-stalwart.diegonmarcos.com; do"
+         + "   src=/opt/snappymail-config/$$d.ini;"
+         + "   case $$d in domain) dest=/var/lib/snappymail/_data_/_default_/domains/${base_domain}.ini ;;"
+         + "     *) dest=/var/lib/snappymail/_data_/_default_/domains/$$d.ini ;;"
+         + "   esac;"
+         + "   [ -f \"$$src\" ] && cp -f \"$$src\" \"$$dest\" 2>/dev/null || true;"
+         + " done;"
+         + " php /opt/snappymail-config/seed-accounts.php 2>&1 | sed 's/^/[seed-accounts] /' >&2 || true;"
+         + " exec /entrypoint.sh")
       ];
       healthcheck = {
         test = [ "CMD" "curl" "-sf" "http://localhost:${port}/" ];

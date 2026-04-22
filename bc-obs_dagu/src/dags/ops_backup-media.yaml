@@ -2,7 +2,7 @@ schedule: "0 4 * * 0"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - AWS_ACCESS_KEY_ID: "<REDACTED-LEAK-2026-04-21>"
+  - AWS_ACCESS_KEY_ID: "21dd4572b47aaf91fc5d3f9cabcc88f9e6e7984e"
   - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
   - RUSTIC_REPO: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-binaries-medias"
   - RUSTIC_PASSWORD: ${RUSTIC_PASSWORD}
