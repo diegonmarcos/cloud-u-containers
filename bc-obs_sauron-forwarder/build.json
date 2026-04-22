@@ -11,6 +11,7 @@
   "compose": {
     "custom": true
   },
+  "upstream_image": "debian:bookworm-slim",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "sauron-forwarder",
