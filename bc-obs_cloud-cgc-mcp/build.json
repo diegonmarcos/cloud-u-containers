@@ -11,7 +11,14 @@
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
     "platform": "linux/arm64",
-    "arch": "arm64"
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "npm install --omit=dev",
+      "entrypoint": "npx tsx index.ts",
+      "base_image": "node:22-slim",
+      "app_dir": "code"
+    }
   },
   "deploy": {
     "host": "oci-apps",
@@ -28,21 +35,7 @@
     "app_hub": false
   },
   "build": {
-    "include_cloud_data": true,
-    "extra_copy": [
-      "Dockerfile",
-      "package.json",
-      "package-lock.json",
-      "tsconfig.json",
-      "index.ts",
-      "config.ts",
-      "context.ts",
-      "tools",
-      "shared"
-    ]
-  },
-  "compose": {
-    "pre_hook": "mkdir -p data/cloud-data data/front-data && cp -f cloud-data-*.json cloud-data-*.md data/cloud-data/ 2>/dev/null; cp -f front-*.json data/front-data/ 2>/dev/null; cp -f config.json data/ 2>/dev/null; echo 'data dir ready'"
+    "include_cloud_data": true
   },
   "runtime": {
     "git_root": "/home/diego/Mounts/Git",
