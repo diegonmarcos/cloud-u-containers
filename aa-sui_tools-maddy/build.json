@@ -11,7 +11,16 @@
   },
   "compose": {
     "custom": true,
-    "pre_hook": "init.sh"
+    "pre_hook": "configs/init.sh"
+  },
+  "lifecycle": {
+    "cleanup": [
+      {
+        "action": "ssh_run",
+        "vm": "oci-mail",
+        "script": "/opt/containers/maddy/assets/cleanup-stale-mailboxes.sh"
+      }
+    ]
   },
   "proxy": {
     "primary": {
@@ -103,6 +112,7 @@
     "dockerfile": "Dockerfile",
     "arch": "amd64"
   },
+  "upstream_image": "foxcpp/maddy:0.9",
   "oci_relay": {
     "host": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
     "port": "587"
