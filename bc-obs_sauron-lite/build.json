@@ -3,12 +3,46 @@
   "description": "File Integrity Scanner (deployed on all VMs)",
   "category": "tools",
   "multi_vm": true,
+  "timezone": "Europe/Madrid",
   "deploy": {
     "host": "all",
     "remote_path": "/opt/containers/sauron-lite"
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "sauron-lite"
+    "image": "sauron-lite",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "apk add --no-cache bash inotify-tools yara && chmod +x /app/entrypoint.sh /app/watcher.sh /app/scanner.sh && mkdir -p /var/log/sauron /var/spool/sauron /etc/sauron/yara-rules /watch && cp -r /app/yara-rules/* /etc/sauron/yara-rules/ && echo '*/5 * * * * /app/scanner.sh >> /var/log/sauron/scanner.log 2>&1' > /etc/crontabs/root",
+      "entrypoint": "/app/entrypoint.sh",
+      "base_image": "alpine:3.19",
+      "app_dir": "code"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "sauron",
+      "public": false,
+      "env_file": false,
+      "read_only": false,
+      "protocol": "none"
+    },
+    "forwarder": {
+      "container_name": "sauron-forwarder",
+      "public": false,
+      "env_file": false,
+      "read_only": false,
+      "protocol": "none"
+    }
+  },
+  "resources": {
+    "mem_limit": "64m",
+    "mem_reservation": "16m"
+  },
+  "central": {
+    "host": "35.226.147.64",
+    "port": 5514
   }
 }
