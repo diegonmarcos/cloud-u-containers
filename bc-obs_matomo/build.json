@@ -10,8 +10,16 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "matomo-hybrid",
-    "dockerfile": "matomo-hybrid/Dockerfile",
-    "arch": "arm64"
+    "dockerfile": "code/Dockerfile",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "",
+      "entrypoint": "/scripts/entrypoint.sh",
+      "base_image": "debian:bookworm-slim",
+      "apt": "",
+      "app_dir": "./code"
+    }
   },
   "deploy": {
     "host": "oci-apps",
