@@ -7,7 +7,7 @@ let
   image = "ghcr.io/diegonmarcos/${buildJson.name}:latest";
   port = toString buildJson.ports.app;
   healthPath = buildJson.health.path;
-  mattermostUrl = buildJson.upstream.mattermost_url;
+  mattermostUrl = buildJson.env_config.mattermost_url;
   daguUrl = "http://${svc.dagu.ip}:${toString svc.dagu.ports.app}";
 in
 {
