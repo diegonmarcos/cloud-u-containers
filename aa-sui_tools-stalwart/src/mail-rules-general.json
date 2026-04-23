@@ -1,0 +1,1567 @@
+{
+  "schema_version": 2,
+  "kind": "general",
+  "description": "Universal mail rules — domain-pattern-based, language-neutral (English), no profile identity. Safe to publish. Meant to be merged with a profile overlay at build time.",
+  "sieve_require": [
+    "fileinto",
+    "imap4flags",
+    "mailbox",
+    "envelope",
+    "mime",
+    "copy",
+    "body",
+    "relational",
+    "regex"
+  ],
+  "folders": {
+    "development": "🎓 Development & Tech",
+    "career": "💼 Career & Network",
+    "lifestyle": "✈️ Lifestyle & Logistics",
+    "admin": "🛡️ Admin & Finance",
+    "information": "📰 Information & Feeds",
+    "cloud": "☁️ Cloud (Homelab)",
+    "others": "📦 Others"
+  },
+  "routing_default": "others",
+  "inbox_copy": {
+    "enabled": true,
+    "flags": [
+      "\\Seen"
+    ],
+    "comment": "Every inbound message lands in INBOX marked read; unread copies live in the category folders."
+  },
+  "cleanup": {
+    "drop_name_regex": "^[0-9]-",
+    "comment": "Used by cleanup-stale-mailboxes.sh, not by delivery filter."
+  },
+  "predicates": {
+    "github_any": {
+      "any_of": [
+        {
+          "type": "from_domain",
+          "values": [
+            "github.com",
+            "noreply.github.com"
+          ]
+        },
+        {
+          "type": "from_domain_suffix",
+          "values": [
+            ".github.com"
+          ]
+        }
+      ]
+    },
+    "automated_sender": {
+      "any_of": [
+        {
+          "type": "header_exists",
+          "header": "X-Auto-Response-Suppress"
+        },
+        {
+          "type": "header_exists",
+          "header": "Auto-Submitted"
+        },
+        {
+          "type": "header_contains",
+          "header": "Precedence",
+          "values": [
+            "bulk",
+            "list",
+            "junk"
+          ]
+        },
+        {
+          "type": "header_contains",
+          "header": "From",
+          "values": [
+            "noreply",
+            "no-reply",
+            "donotreply",
+            "mailer-daemon",
+            "postmaster"
+          ]
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "id": "route.dev.code_hosting",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "github.com",
+          "noreply.github.com",
+          "gitlab.com",
+          "bitbucket.org",
+          "codeberg.org",
+          "stackoverflow.com",
+          "stackexchange.com",
+          "npmjs.com",
+          "crates.io",
+          "pypi.org",
+          "docker.com",
+          "hub.docker.com",
+          "nixos.org",
+          "discourse.nixos.org"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "route.dev.saas_productivity",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "vercel.com",
+          "netlify.com",
+          "railway.app",
+          "heroku.com",
+          "notion.so",
+          "figma.com",
+          "miro.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "route.dev.saas_creative",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "jetbrains.com",
+          "adobe.com",
+          "canva.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "route.dev.learning",
+      "kind": "route",
+      "priority": 110,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "udemy.com",
+          "coursera.org",
+          "edx.org",
+          "skillshare.com",
+          "pluralsight.com",
+          "duolingo.com",
+          "babbel.com",
+          "busuu.com",
+          "dev.to",
+          "hashnode.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "development"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "tag.dev.github",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "ref": "github_any"
+      },
+      "actions": {
+        "flags": [
+          "Dev_platform:GitHub"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.gitlab",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "gitlab.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Dev_platform:GitLab"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.pull_request",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "pull request",
+          "merge request",
+          "[PR]",
+          "review requested"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Dev_type:PullRequest"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.saas_productivity",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "vercel.com",
+          "netlify.com",
+          "railway.app",
+          "heroku.com",
+          "notion.so",
+          "figma.com",
+          "miro.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "SaaS_Productivity"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.saas_creative",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "jetbrains.com",
+          "adobe.com",
+          "canva.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "SaaS_Creative"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.edu_languages",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "duolingo.com",
+          "babbel.com",
+          "busuu.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Edu_Languages"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.dev.edu_general",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "udemy.com",
+          "coursera.org",
+          "edx.org",
+          "skillshare.com",
+          "pluralsight.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Edu_General"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.career.platforms",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "linkedin.com",
+          "indeed.com",
+          "glassdoor.com",
+          "hired.com",
+          "wellfound.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "career"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "tag.career.job_alerts",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "glassdoor.com",
+          "hired.com",
+          "wellfound.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_JobAlerts"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.career.linkedin",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "linkedin.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_source:LinkedIn"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.career.indeed",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "indeed.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_source:Indeed"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.career.application_update",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "application",
+          "your application",
+          "application status"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_type:Application_Update"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.career.interview_invite",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "interview",
+          "schedule a call",
+          "phone screen"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_type:Interview_Invite"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.career.recruiter",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "recruiter",
+          "headhunt",
+          "opportunity",
+          "we found your profile",
+          "job match",
+          "talent"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_type:Recruiter_Message"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.lifestyle.travel_air",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "ryanair.com",
+          "easyjet.com",
+          "vueling.com",
+          "lufthansa.com",
+          "klm.com",
+          "iberia.com",
+          "flixbus.com",
+          "renfe.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Travel_type:Flight"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.rideshare",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "uber.com",
+          "bolt.eu",
+          "freenow.com",
+          "blablacar.com",
+          "lyft.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Travel_type:Rideshare"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.lodging",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "airbnb.com",
+          "booking.com",
+          "hostelworld.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "tag.lifestyle.airbnb",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "airbnb.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Lodging_from:Airbnb"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.lifestyle.hostelworld",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "hostelworld.com"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Lodging_from:Hostelworld"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.lifestyle.postal_intl",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "dhl.com",
+          "dhl.de",
+          "ups.com",
+          "fedex.com",
+          "dpd.com",
+          "gls-group.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Logistics_Postal_Courier"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.food_delivery",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "deliveroo.com",
+          "ubereats.com",
+          "glovo.com",
+          "justeat.com",
+          "lieferando.de",
+          "doordash.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Lifestyle_FoodDelivery"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.wellness",
+      "kind": "route",
+      "priority": 110,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "gympass.com",
+          "freeletics.com",
+          "strava.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Lifestyle_Wellness_Sports"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.events",
+      "kind": "route",
+      "priority": 110,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "eventbrite.com",
+          "meetup.com",
+          "ticketmaster.com",
+          "dice.fm",
+          "stubhub.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Lifestyle_Leisure"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.lifestyle.dating",
+      "kind": "route",
+      "priority": 110,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "tinder.com",
+          "bumble.com",
+          "hinge.co",
+          "okcupid.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Social_Dating"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.admin.payments",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "paypal.com",
+          "stripe.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_type:Receipt"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "tag.admin.invoice_en",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "invoice",
+          "billing statement"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Fin_type:Invoice"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.admin.subscriptions",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "apple.com",
+          "spotify.com",
+          "netflix.com",
+          "adobe.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_type:Subscription"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.admin.insurance_intl",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "allianz.com",
+          "axa.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_type:Insurance"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.admin.bank_neobank",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "n26.com",
+          "revolut.com",
+          "wise.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_entity:Bank"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.admin.marketplace",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "amazon.com",
+          "amazon.de",
+          "amazon.es",
+          "ebay.com",
+          "ebay.de",
+          "aliexpress.com",
+          "zalando.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Shopping_Online"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.admin.security_accounts",
+      "kind": "route",
+      "priority": 90,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "bitwarden.com",
+          "1password.com",
+          "accounts.google.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Sec_type:Login_Alert"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "tag.admin.gdpr_en",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "GDPR",
+          "privacy policy",
+          "data protection",
+          "data subject"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Admin_Compliance:GDPR"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.admin.action_required",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "review requested",
+          "action required",
+          "requires your attention",
+          "please review"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Action_ReviewRequested"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.info.tech_media",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "theregister.com",
+          "arstechnica.com",
+          "hackernewsletter.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "information",
+        "flags": [
+          "Read_topic:Tech"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.info.news_intl",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "bbc.com",
+          "reuters.com",
+          "theguardian.com",
+          "nytimes.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "information",
+        "flags": [
+          "Read_type:News"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.info.newsletters",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "substack.com",
+          "medium.com",
+          "beehiiv.com",
+          "revue.email"
+        ]
+      },
+      "actions": {
+        "copy_to": "information",
+        "flags": [
+          "Read_type:Magazine"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.info.video_music",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "youtube.com",
+          "twitch.tv",
+          "hbomax.com",
+          "disneyplus.com",
+          "primevideo.com",
+          "soundcloud.com",
+          "bandcamp.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "information"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "route.info.books_games",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "goodreads.com",
+          "kindle.amazon.com",
+          "audible.com",
+          "steampowered.com",
+          "epicgames.com",
+          "gog.com",
+          "playstation.com",
+          "xbox.com",
+          "nintendo.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "information"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "route.info.social",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "twitter.com",
+          "x.com",
+          "mastodon.social",
+          "facebook.com",
+          "instagram.com",
+          "whatsapp.com",
+          "reddit.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "information",
+        "flags": [
+          "Social_Notification"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "tag.info.promo_en",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "% off",
+          "sale",
+          "discount",
+          "promo",
+          "deal"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Promo_Occasional"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "route.cloud.letsencrypt",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "letsencrypt.org"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud",
+        "flags": [
+          "Cloud_Sec:Cert_Renewal"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.cloud.registrars",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "namecheap.com",
+          "gandi.net",
+          "name.com",
+          "godaddy.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud",
+        "flags": [
+          "Cloud_Cost:Domain_Renewal"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.cloud.hardware",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "hetzner.com",
+          "hetzner.de",
+          "dell.com",
+          "lenovo.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud",
+        "flags": [
+          "Cloud_Cost:Hardware_Asset"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.cloud.providers",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "oraclecloud.com",
+          "oracle.com",
+          "cloud.google.com",
+          "google.cloud",
+          "cloudflare.com",
+          "digitalocean.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud",
+        "flags": [
+          "Cloud_Cost:External_SaaS"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.cloud.notifications",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "ntfy.sh",
+          "resend.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      }
+    },
+    {
+      "id": "tag.cloud.uptime_alert",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "[alert]",
+          "[warning]",
+          "is down",
+          "unreachable",
+          "uptime"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Cloud_Ops:Uptime_Alert"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.cloud.backup_status",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "backup",
+          "restic",
+          "snapshot",
+          "restore"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Cloud_Ops:Backup_Status"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.cloud.storage_warning",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "disk full",
+          "storage",
+          "quota",
+          "low space",
+          "inode"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Cloud_Ops:Storage_Warning"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.cloud.auth_alert",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "login attempt",
+          "auth",
+          "unauthorized",
+          "suspicious sign"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Cloud_Sec:Auth_Alert"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.cloud.threat_blocked",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "blocked",
+          "threat",
+          "intrusion",
+          "fail2ban",
+          "banned"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Cloud_Sec:Threat_Blocked"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "meta.size.large_attach",
+      "kind": "meta",
+      "priority": 900,
+      "when": {
+        "type": "size_over",
+        "bytes": 10485760
+      },
+      "actions": {
+        "flags": [
+          "Meta_Size:Large_10MB+"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      },
+      "comment": "Maddy filter sees headers only — dropping to avoid reading full body stream."
+    },
+    {
+      "id": "meta.attach.pdf",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "application/pdf"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:PDF"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.attach.image",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "image/jpeg",
+          "image/png",
+          "image/heic"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:Image"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.attach.document",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "text/plain"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:Document"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.attach.spreadsheet",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "text/csv"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:Spreadsheet"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.attach.archive",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "application/zip",
+          "application/x-rar-compressed",
+          "application/gzip",
+          "application/x-tar"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:Archive"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.attach.media",
+      "kind": "meta",
+      "priority": 910,
+      "when": {
+        "type": "content_type",
+        "values": [
+          "audio/mpeg",
+          "audio/wav",
+          "video/mp4",
+          "video/quicktime"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Meta_Attach:Media"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "drop"
+      }
+    },
+    {
+      "id": "meta.route.has_cc",
+      "kind": "meta",
+      "priority": 850,
+      "when": {
+        "type": "has_cc"
+      },
+      "actions": {
+        "flags": [
+          "Meta_Route:CC"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "meta.route.self_sent",
+      "kind": "meta",
+      "priority": 850,
+      "when": {
+        "type": "self_sent"
+      },
+      "actions": {
+        "flags": [
+          "Meta_Route:SelfSent"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "meta.route.list_header",
+      "kind": "meta",
+      "priority": 850,
+      "when": {
+        "type": "list_header"
+      },
+      "actions": {
+        "flags": [
+          "Meta_Route:BCC_MailingList"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "meta.sender.automated",
+      "kind": "meta",
+      "priority": 860,
+      "when": {
+        "ref": "automated_sender"
+      },
+      "actions": {
+        "flags": [
+          "Meta_Sender:Automated"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    }
+  ]
+}
