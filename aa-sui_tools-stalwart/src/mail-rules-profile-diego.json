@@ -1,0 +1,393 @@
+{
+  "schema_version": 2,
+  "kind": "profile",
+  "profile_id": "diego",
+  "requires_general": true,
+  "description": "Diego's overlay: 42 Berlin school, DE+ES regional services (housing, postal, tax, banks, insurance), localized subject keywords, homelab domain.",
+  "account": "me@diegonmarcos.com",
+  "rules": [
+    {
+      "id": "route.profile.42_school",
+      "kind": "route",
+      "priority": 50,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "42berlin.de",
+          "42heilbronn.de",
+          "42.fr",
+          "intra.42.fr"
+        ]
+      },
+      "actions": {
+        "copy_to": "development",
+        "flags": [
+          "Dev_context:42Berlin"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      },
+      "comment": "42 Berlin / 42 network — routes to development folder, tags with school context."
+    },
+    {
+      "id": "tag.profile.42_evaluations",
+      "kind": "tag",
+      "priority": 60,
+      "when": {
+        "any_of": [
+          {
+            "type": "subject_contains",
+            "values": [
+              "evaluation",
+              "peer review",
+              "correction"
+            ]
+          },
+          {
+            "type": "subject_contains",
+            "values": [
+              "evaluaci"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Dev_context:42Evaluations"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      },
+      "comment": "42 evaluation vocabulary (EN + ES partial)."
+    },
+    {
+      "id": "route.profile.homelab",
+      "kind": "route",
+      "priority": 90,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "diegonmarcos.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "cloud",
+        "flags": [
+          "Cloud_Homelab"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      },
+      "comment": "Owned domain — always to cloud folder."
+    },
+    {
+      "id": "route.profile.career_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "indeed.de",
+          "xing.com",
+          "stepstone.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "career"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      },
+      "comment": "DE-specific job portals. LinkedIn/Indeed.com/Glassdoor live in general."
+    },
+    {
+      "id": "tag.profile.career_indeed_de",
+      "kind": "tag",
+      "priority": 200,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "indeed.de"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_source:Indeed"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      }
+    },
+    {
+      "id": "tag.profile.career_subjects_es_de",
+      "kind": "tag",
+      "priority": 250,
+      "when": {
+        "any_of": [
+          {
+            "type": "subject_contains",
+            "values": [
+              "candidatura",
+              "Bewerbung"
+            ]
+          },
+          {
+            "type": "subject_contains",
+            "values": [
+              "entrevista",
+              "Vorstellungsgespr"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Career_type:Application_Update"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      },
+      "comment": "Spanish + German job-search subject keywords."
+    },
+    {
+      "id": "route.profile.housing_es_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "idealista.com",
+          "fotocasa.es",
+          "pisos.com",
+          "immobilienscout24.de",
+          "immowelt.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Housing_RealEstate"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.profile.postal_es",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "correos.es",
+          "seur.com",
+          "mrw.es"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Logistics_Postal_ES"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.profile.health_eu",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "doctolib.de",
+          "doctolib.com"
+        ]
+      },
+      "actions": {
+        "copy_to": "lifestyle",
+        "flags": [
+          "Lifestyle_Wellness_Sports"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      },
+      "comment": "EU healthcare booking (DE/FR)."
+    },
+    {
+      "id": "route.profile.banks_es_de",
+      "kind": "route",
+      "priority": 90,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "ing.es",
+          "ing.de",
+          "commerzbank.de",
+          "deutschebank.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_entity:Bank"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.profile.insurance_es_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "mapfre.com",
+          "huk.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_type:Insurance"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    },
+    {
+      "id": "route.profile.tax_authorities",
+      "kind": "route",
+      "priority": 80,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "elster.de",
+          "agenciatributaria.es",
+          "tax.service.gov.uk"
+        ]
+      },
+      "actions": {
+        "copy_to": "admin",
+        "flags": [
+          "Fin_entity:Tax"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      },
+      "comment": "DE/ES/UK tax authorities — high priority (low number) so nothing else steals them."
+    },
+    {
+      "id": "tag.profile.invoice_es_de",
+      "kind": "tag",
+      "priority": 210,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "factura",
+          "Rechnung"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Fin_type:Invoice"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      },
+      "comment": "ES + DE invoice subject words."
+    },
+    {
+      "id": "tag.profile.gdpr_de",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "Datenschutz"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Admin_Compliance:GDPR"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      },
+      "comment": "German GDPR keyword (EN equivalents in general)."
+    },
+    {
+      "id": "tag.profile.promo_es_de",
+      "kind": "tag",
+      "priority": 220,
+      "when": {
+        "type": "subject_contains",
+        "values": [
+          "oferta",
+          "descuento",
+          "Rabatt"
+        ]
+      },
+      "actions": {
+        "flags": [
+          "Promo_Occasional"
+        ]
+      },
+      "engines": {
+        "stalwart": "tag_only",
+        "maddy": "tag_only"
+      },
+      "comment": "ES + DE promo subject words."
+    },
+    {
+      "id": "route.profile.news_es_de",
+      "kind": "route",
+      "priority": 100,
+      "when": {
+        "type": "from_domain",
+        "values": [
+          "elpais.com",
+          "spiegel.de"
+        ]
+      },
+      "actions": {
+        "copy_to": "information",
+        "flags": [
+          "Read_type:News"
+        ]
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "full"
+      }
+    }
+  ]
+}

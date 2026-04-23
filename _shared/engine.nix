@@ -256,8 +256,14 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
   cp ${composeYaml} $out/compose/docker-compose.yml
 
   # ── assets/ — verbatim copy; also home for hooks/ subdir ──
+  # Entry forms:
+  #   • path              (source path, uses baseNameOf for dest name)
+  #   • { name; src; }    (explicit dest name, for derived/store assets
+  #                        whose baseName would be hash-prefixed)
   ${lib.concatMapStringsSep "\n" (a:
-    "cp -r ${a} $out/assets/${baseNameOf a}"
+    if builtins.isAttrs a && a ? name && a ? src
+    then "cp -r ${a.src} $out/assets/${a.name}"
+    else "cp -r ${a} $out/assets/${baseNameOf a}"
   ) extraAssets}
   ${lib.optionalString (lib.pathExists (srcDir + "/hooks")) ''
     cp -r ${srcDir + "/hooks"} $out/assets/hooks
