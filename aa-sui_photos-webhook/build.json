@@ -47,5 +47,8 @@
       "db_name": "photos",
       "db_user": "photos_user"
     }
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

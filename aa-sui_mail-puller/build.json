@@ -26,7 +26,9 @@
   },
   "backup": {
     "enabled": true,
-    "volumes": [ "mail_puller_state" ]
+    "volumes": [
+      "mail_puller_state"
+    ]
   },
   "ports": {
     "app": null
@@ -45,12 +47,19 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "limits":       { "memory": "128M" },
-        "reservations": { "memory": "16M"  }
+        "limits": {
+          "memory": "128M"
+        },
+        "reservations": {
+          "memory": "16M"
+        }
       },
       "read_only": false,
       "embedded_dbs": [
-        { "engine": "sqlite", "path": "/var/lib/mail-puller/state.db" }
+        {
+          "engine": "sqlite",
+          "path": "/var/lib/mail-puller/state.db"
+        }
       ]
     }
   },
@@ -67,5 +76,8 @@
       "apt": "ca-certificates libssl3"
     }
   },
-  "upstream_image": "debian:bookworm-slim"
+  "upstream_image": "debian:bookworm-slim",
+  "build": {
+    "headers_enforced": true
+  }
 }

@@ -8,7 +8,8 @@
   },
   "category": "app",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "domain": "cal.diegonmarcos.com",
   "deploy": {

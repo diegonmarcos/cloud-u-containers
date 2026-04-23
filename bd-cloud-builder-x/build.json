@@ -24,5 +24,8 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "cloud-builder-x"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

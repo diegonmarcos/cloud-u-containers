@@ -2,7 +2,8 @@
   "name": "c3-services-api",
   "enabled": true,
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "description": "C3 Services REST API — service API gateway Fastify API",
   "dns": "c3-services-api.app",

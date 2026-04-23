@@ -25,17 +25,30 @@
     "self_healing_enabled": false,
     "rust_log": "rig_agentic=info",
     "allowed_tools": [
-      "mm_post", "mm_reply", "mm_read", "mm_channels",
-      "mail_send", "mail_reply",
+      "mm_post",
+      "mm_reply",
+      "mm_read",
+      "mm_channels",
+      "mail_send",
+      "mail_reply",
       "ntfy_publish",
-      "services_list", "services_info",
-      "c3_topology", "c3_configs", "c3_deps",
-      "c3_topology_md", "c3_configs_md",
-      "c3_deps_front", "cloud_context",
-      "knowledge_vm_info", "knowledge_services_by_category",
-      "octocode_search", "octocode_memory",
-      "dagu_trigger", "dagu_list",
-      "gha_trigger", "gha_list_runs"
+      "services_list",
+      "services_info",
+      "c3_topology",
+      "c3_configs",
+      "c3_deps",
+      "c3_topology_md",
+      "c3_configs_md",
+      "c3_deps_front",
+      "cloud_context",
+      "knowledge_vm_info",
+      "knowledge_services_by_category",
+      "octocode_search",
+      "octocode_memory",
+      "dagu_trigger",
+      "dagu_list",
+      "gha_trigger",
+      "gha_list_runs"
     ]
   },
   "docker": {
@@ -51,7 +64,8 @@
     }
   },
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "deploy": {
     "host": "oci-apps",

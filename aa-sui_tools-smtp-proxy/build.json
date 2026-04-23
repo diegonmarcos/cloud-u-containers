@@ -4,7 +4,8 @@
   "dns": "smtp-proxy.app",
   "category": "app",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "domain": "smtp.diegonmarcos.com",
   "docker": {

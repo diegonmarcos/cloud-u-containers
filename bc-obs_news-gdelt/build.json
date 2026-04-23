@@ -34,5 +34,8 @@
       "port": 3019,
       "port_env": "PORT"
     }
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

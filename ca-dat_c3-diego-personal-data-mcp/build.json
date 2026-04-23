@@ -1,5 +1,8 @@
 {
   "name": "c3-diego-personal-data-mcp",
   "description": "MCP server — READ-ONLY personal data access (vault metadata, identity, comms, media, finance, health)",
-  "category": "data"
+  "category": "data",
+  "build": {
+    "headers_enforced": true
+  }
 }

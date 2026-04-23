@@ -7,7 +7,8 @@
   },
   "category": "obs",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
@@ -44,12 +45,28 @@
   "proxied_mcps": {
     "_note": "URLs resolved at flake build time from cloud-data services{}. Container runs in bridge mode, so 127.0.0.1 will NOT reach host-bound services — we MUST use the WG IP (10.0.0.6) of whichever VM hosts the child MCP.",
     "infra": [
-      { "name": "cloud-cgc-mcp", "service": "cloud-cgc-mcp", "path": "/mcp" }
+      {
+        "name": "cloud-cgc-mcp",
+        "service": "cloud-cgc-mcp",
+        "path": "/mcp"
+      }
     ],
     "user": [
-      { "name": "mattermost-mcp",       "service": "mattermost-mcp",       "path": "/mcp" },
-      { "name": "mail-mcp",             "service": "mail-mcp",             "path": "/mcp" },
-      { "name": "google-workspace-mcp", "service": "google-workspace-mcp", "path": "/mcp" }
+      {
+        "name": "mattermost-mcp",
+        "service": "mattermost-mcp",
+        "path": "/mcp"
+      },
+      {
+        "name": "mail-mcp",
+        "service": "mail-mcp",
+        "path": "/mcp"
+      },
+      {
+        "name": "google-workspace-mcp",
+        "service": "google-workspace-mcp",
+        "path": "/mcp"
+      }
     ],
     "retry": {
       "initial_ms": 10000,

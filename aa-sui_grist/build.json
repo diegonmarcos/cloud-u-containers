@@ -68,5 +68,8 @@
     "image": "grist",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

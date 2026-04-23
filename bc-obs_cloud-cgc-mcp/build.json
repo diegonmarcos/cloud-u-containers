@@ -35,7 +35,8 @@
     "app_hub": false
   },
   "build": {
-    "include_cloud_data": true
+    "include_cloud_data": true,
+    "headers_enforced": true
   },
   "runtime": {
     "git_root": "/home/diego/Mounts/Git",

@@ -46,7 +46,8 @@
       "Cargo.lock",
       "Dockerfile",
       "src"
-    ]
+    ],
+    "headers_enforced": true
   },
   "deploy": {
     "host": "oci-apps",

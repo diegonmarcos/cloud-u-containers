@@ -75,5 +75,8 @@
       "base_image": "debian:bookworm-slim",
       "apt": "ca-certificates libssl3 curl"
     }
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

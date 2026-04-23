@@ -4,7 +4,8 @@
   "dns": "vaultwarden.app",
   "category": "mic",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "domain": "vault.diegonmarcos.com",
   "deploy": {

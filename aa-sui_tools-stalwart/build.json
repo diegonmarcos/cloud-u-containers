@@ -86,12 +86,42 @@
       "image": "stalwartlabs/stalwart:latest",
       "port": 2443,
       "extra_ports": [
-        { "port": 2025, "protocol": "starttls", "bind": "127.0.0.1", "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)" },
-        { "port": 2443, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "HTTPS admin/JMAP — WG-only" },
-        { "port": 2465, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "SMTPS — WG-only" },
-        { "port": 2587, "protocol": "starttls", "bind": "10.0.0.3",  "desc": "Submission — WG-only" },
-        { "port": 2993, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "IMAPS — WG-only" },
-        { "port": 6190, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "ManageSieve — WG-only" }
+        {
+          "port": 2025,
+          "protocol": "starttls",
+          "bind": "127.0.0.1",
+          "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)"
+        },
+        {
+          "port": 2443,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "HTTPS admin/JMAP — WG-only"
+        },
+        {
+          "port": 2465,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "SMTPS — WG-only"
+        },
+        {
+          "port": 2587,
+          "protocol": "starttls",
+          "bind": "10.0.0.3",
+          "desc": "Submission — WG-only"
+        },
+        {
+          "port": 2993,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "IMAPS — WG-only"
+        },
+        {
+          "port": 6190,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "ManageSieve — WG-only"
+        }
       ],
       "port_env": null,
       "dns": "stalwart.app",
@@ -141,5 +171,8 @@
   "upstream_image": "stalwartlabs/stalwart:latest",
   "timezone": "Europe/Madrid",
   "admin_user": "me",
-  "noreply_user": "no-reply"
+  "noreply_user": "no-reply",
+  "build": {
+    "headers_enforced": true
+  }
 }

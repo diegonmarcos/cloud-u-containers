@@ -53,5 +53,8 @@
   },
   "runtime": {
     "command": "busybox httpd -f -p %PORT% -h /srv"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

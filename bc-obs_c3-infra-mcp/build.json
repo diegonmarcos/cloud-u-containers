@@ -26,7 +26,8 @@
     "compose_flags": "--build"
   },
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "secrets": {
     "escape_dollars": "true"

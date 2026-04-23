@@ -9,7 +9,8 @@
   "domain": "mcp.diegonmarcos.com",
   "user_google_email": "me@diegonmarcos.com",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "docker": {
     "image": "google-workspace-mcp",
