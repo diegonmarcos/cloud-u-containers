@@ -93,7 +93,7 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (ports 465/587) — authenticated outbound ───────────
-submission tls://0.0.0.0:465 tcp://0.0.0.0:587 {
+submission tls://@BIND_465@:465 tcp://@BIND_587@:587 {
     limits {
         all rate 50 1s
     }
@@ -143,7 +143,7 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-imap tls://0.0.0.0:993 tcp://0.0.0.0:143 {
+imap tls://@BIND_993@:993 tcp://@BIND_143@:143 {
     auth &local_authdb
     storage &local_mailboxes
 }
