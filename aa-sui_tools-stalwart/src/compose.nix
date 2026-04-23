@@ -6,9 +6,11 @@ let
   app    = buildJson.containers.app;
   sorter = buildJson.containers.sorter;
 
-  # Engine wraps the upstream stalwart image into
-  # ghcr.io/diegonmarcos/<name>-binaries:latest; at runtime we pull that image.
-  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # Image name is taken from build.json docker.{registry,image}. Stalwart's
+  # docker.image = "stalwart" (no -binaries suffix), so the compose reference
+  # must match — not a templated "<name>-binaries". Getting this wrong yields
+  # "manifest denied" at compose pull time because the package doesn't exist.
+  binariesImage = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
   appPort       = toString app.port;
 
   # Port mappings driven by extra_ports[].bind in build.json.
