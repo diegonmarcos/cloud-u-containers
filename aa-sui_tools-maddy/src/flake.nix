@@ -17,7 +17,15 @@
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
-    maddyConfVars = {
+    # Per-port bind addresses: reads extra_ports[].bind from build.json and
+    # generates BIND_465, BIND_587, BIND_993, BIND_143 etc. for template substitution.
+    # Fallback to 0.0.0.0 if a port has no bind (backward-compatible).
+    bindVars = builtins.listToAttrs (
+      map (ep: { name = "BIND_${toString ep.port}"; value = ep.bind or "0.0.0.0"; })
+          (buildJson.containers.app.extra_ports or [])
+    );
+
+    maddyConfVars = bindVars // {
       DOMAIN         = base_domain;
       MAIL_DOMAIN    = buildJson.domain;
       OCI_RELAY_HOST = buildJson.oci_relay.host;

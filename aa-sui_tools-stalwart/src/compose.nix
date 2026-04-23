@@ -10,6 +10,14 @@ let
   # ghcr.io/diegonmarcos/<name>-binaries:latest; at runtime we pull that image.
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
   appPort       = toString app.port;
+
+  # Port mappings driven by extra_ports[].bind in build.json.
+  # Format: "BIND_IP:HOST_PORT:CONTAINER_PORT" — controls which host interface
+  # each port is published on. WG-only ports use 10.0.0.3; loopback-only use
+  # 127.0.0.1; public ports use 0.0.0.0. Container-internal listener stays [::].
+  portMappings = map (ep:
+    "${ep.bind or "0.0.0.0"}:${toString ep.port}:${toString ep.port}"
+  ) (app.extra_ports or []);
 in
 {
   services = {
@@ -17,6 +25,7 @@ in
       image          = binariesImage;
       container_name = app.container_name;
       entrypoint     = [ "stalwart" "--config" "/opt/stalwart-mail/etc/config.toml" ];
+      ports          = portMappings;
       environment = {
         TZ = buildJson.timezone;
       };
