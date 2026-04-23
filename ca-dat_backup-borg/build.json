@@ -24,5 +24,8 @@
     "dockerfile": "Dockerfile",
     "arch": "arm64"
   },
-  "upstream_image": "alpine:3.19"
+  "upstream_image": "alpine:3.19",
+  "build": {
+    "headers_enforced": true
+  }
 }

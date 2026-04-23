@@ -76,5 +76,8 @@
   },
   "secrets": {
     "escape_dollars": true
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

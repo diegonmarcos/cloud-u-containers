@@ -17,5 +17,8 @@
     "image": "sauron-forwarder",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

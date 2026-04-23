@@ -94,11 +94,36 @@
       "image": "ghcr.io/diegonmarcos/maddy:latest",
       "port": null,
       "extra_ports": [
-        { "port": 25,  "protocol": "tcp",      "bind": "0.0.0.0",   "desc": "MX (inbound — must be public)" },
-        { "port": 465, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "SMTPS — WG-only" },
-        { "port": 587, "protocol": "starttls", "bind": "10.0.0.3",  "desc": "Submission — WG-only" },
-        { "port": 993, "protocol": "tls",      "bind": "10.0.0.3",  "desc": "IMAPS — WG-only" },
-        { "port": 143, "protocol": "tcp",      "bind": "10.0.0.3",  "desc": "IMAP plain — WG-only" }
+        {
+          "port": 25,
+          "protocol": "tcp",
+          "bind": "0.0.0.0",
+          "desc": "MX (inbound — must be public)"
+        },
+        {
+          "port": 465,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "SMTPS — WG-only"
+        },
+        {
+          "port": 587,
+          "protocol": "starttls",
+          "bind": "10.0.0.3",
+          "desc": "Submission — WG-only"
+        },
+        {
+          "port": 993,
+          "protocol": "tls",
+          "bind": "10.0.0.3",
+          "desc": "IMAPS — WG-only"
+        },
+        {
+          "port": 143,
+          "protocol": "tcp",
+          "bind": "10.0.0.3",
+          "desc": "IMAP plain — WG-only"
+        }
       ],
       "dns": "maddy.app",
       "public": false,
@@ -140,5 +165,8 @@
   "oci_relay": {
     "host": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
     "port": "587"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

@@ -23,5 +23,8 @@
       "container_name": "siem-api",
       "upstream_image": "python:3.11-slim"
     }
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

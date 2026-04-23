@@ -18,7 +18,8 @@
     "mem_limit": "6G"
   },
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "ports": {
     "app": 11435

@@ -4,7 +4,8 @@
   "dns": "matomo.app",
   "category": "tools",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "domain": "analytics.diegonmarcos.com",
   "docker": {

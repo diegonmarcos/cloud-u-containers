@@ -3,7 +3,8 @@
   "description": "Cloudflare Email Worker - routes inbound email (me@diegonmarcos.com) to Mailu via SMTP proxy",
   "category": "cloud",
   "build": {
-    "copy_only": "true"
+    "copy_only": "true",
+    "headers_enforced": true
   },
   "deploy": {
     "wrangler": "true"

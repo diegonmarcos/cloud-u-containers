@@ -4,7 +4,8 @@
   "dns": "mail-mcp.app",
   "category": "app",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "docker": {
     "image": "mail-mcp",

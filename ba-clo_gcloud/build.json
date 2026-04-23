@@ -5,5 +5,8 @@
   "deploy": {
     "host": "local",
     "remote_path": ""
+  },
+  "build": {
+    "headers_enforced": true
   }
 }

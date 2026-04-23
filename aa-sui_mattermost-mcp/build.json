@@ -5,7 +5,8 @@
   "category": "app",
   "upstream_image": "ghcr.io/diegonmarcos/mattermost-mcp:latest",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "docker": {
     "image": "mattermost-mcp",

@@ -3,7 +3,8 @@
   "description": "Ollama LLM server (ARM CPU, 7b models)",
   "category": "agi",
   "build": {
-    "include_cloud_data": "true"
+    "include_cloud_data": "true",
+    "headers_enforced": true
   },
   "frozen": true,
   "deploy": {

@@ -8,5 +8,8 @@
     "image": "diegonmarcos/caddy-l4",
     "dockerfile": "code/Dockerfile",
     "arch": "amd64"
+  },
+  "build": {
+    "headers_enforced": true
   }
 }
