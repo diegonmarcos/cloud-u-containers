@@ -2,44 +2,52 @@ schedule: "0 6 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - REPORT_IMAGE: ghcr.io/diegonmarcos/cloud-data-reports:latest
 mail_on:
   failure: true
   success: false
 steps:
   - name: run-cloud-health
     command: |
-      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-      # Run health_cloud.ts inside the C3 API container (has all deps + SSH keys)
-      RESULT=$($SSH ubuntu@10.0.0.6 "docker exec c3-infra-mcp npx tsx mcp/tools/health_cloud.ts 2>&1") || true
+      # Run the Rust cloud-health-full-daily master report (replaces the old
+      # TypeScript health_cloud.ts, retired 2026-04-23). The container writes
+      # cloud_health_daily.{md,html,_web.html,json} into the dagu_data volume.
+      docker run --rm --network host \
+        -v dagu_data:/var/lib/dagu/data \
+        -v /opt/ssh-keys/dagu:/root/.ssh:ro \
+        -w /var/lib/dagu/data/cloud-data/reports \
+        "$REPORT_IMAGE" daily
 
-      if [ -z "$RESULT" ]; then
+      RESULT_JSON=/var/lib/dagu/data/cloud-data/reports/dist/cloud_health_daily.json
+      if [ ! -f "$RESULT_JSON" ]; then
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Cloud Health FAILED — could not run check" \
+          -H "Title: Cloud Health FAILED — no report artefact" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,cloud" \
-          -d "health_cloud.ts returned empty output"
+          -d "cloud-health-full-daily did not write cloud_health_daily.json"
         exit 1
       fi
 
-      # Parse JSON result
-      STATUS=$(echo "$RESULT" | jq -r '.status // .overall // "unknown"' 2>/dev/null || echo "unknown")
-      SUMMARY=$(echo "$RESULT" | jq -r '.summary // empty' 2>/dev/null || echo "$RESULT" | tail -10)
-      FAILS=$(echo "$RESULT" | jq -r '.failed // 0' 2>/dev/null || echo "?")
+      CRITICAL=$(jq -r '.exec_summary.critical // 0' "$RESULT_JSON")
+      WARNINGS=$(jq -r '.exec_summary.warnings // 0' "$RESULT_JSON")
+      OK=$(jq -r '.exec_summary.ok // 0' "$RESULT_JSON")
+      FLEET=$(jq -r '"\(.fleet_running)/\(.fleet_total) containers running (\(.fleet_unhealthy) unhealthy)"' "$RESULT_JSON")
+      ISSUES=$(jq -r '.exec_summary.top_issues[]? | "  \(.severity): \(.message)"' "$RESULT_JSON" | head -15)
 
-      if [ "$STATUS" = "ok" ] || [ "$STATUS" = "healthy" ] || [ "$STATUS" = "pass" ] || [ "$FAILS" = "0" ]; then
+      if [ "$CRITICAL" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Cloud Health OK" \
+          -H "Title: Cloud Health OK ($WARNINGS warnings)" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,cloud" \
-          -d "$(echo -e "All layers passed\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+          -d "$(printf 'Fleet: %s\nOK=%s · WARN=%s · CRIT=%s\n\nDagu: http://10.0.0.3:8070' "$FLEET" "$OK" "$WARNINGS" "$CRITICAL")"
       else
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
-          -H "Title: Cloud Health FAILED ($FAILS issues)" \
+          -H "Title: Cloud Health CRITICAL ($CRITICAL critical, $WARNINGS warnings)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,cloud" \
-          -d "$(echo -e "Status: $STATUS\n\n$SUMMARY\n\nDagu: http://10.0.0.3:8070")"
+          -d "$(printf 'Fleet: %s\n\nTop issues:\n%s\n\nDagu: http://10.0.0.3:8070' "$FLEET" "$ISSUES")"
         exit 1
       fi
