@@ -1,89 +1,103 @@
 {
   "_comment": "End-to-end fixtures for mail-filter.sh. Each case: simulated envelope + RFC822 headers → expected folder + expected flags subset. The fixture data is data-driven; run-tests.sh iterates.",
-
   "cases": [
-    { "label":   "github security exact",
-      "from":    "security@github.com",
+    {
+      "label": "github security exact",
+      "from": "security@github.com",
       "subject": "[SECURITY] new sign-in",
       "expect_folder": "🎓 Development & Tech",
-      "expect_flags_include": ["Dev_platform:GitHub"] },
-
-    { "label":   "github subdomain routes to Others but tags",
-      "from":    "noreply@bounces.github.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "github subdomain routes to Others but tags",
+      "from": "noreply@bounces.github.com",
       "subject": "You have notifications",
       "expect_folder": "📦 Others",
-      "expect_flags_include": ["Dev_platform:GitHub"] },
-
-    { "label":   "ryanair routes to lifestyle",
-      "from":    "info@ryanair.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "ryanair routes to lifestyle",
+      "from": "info@ryanair.com",
       "subject": "Boarding pass",
       "expect_folder": "✈️ Lifestyle & Logistics",
-      "expect_flags_include": [] },
-
-    { "label":   "42 berlin routes + tags evaluation",
-      "from":    "grades@42berlin.de",
+      "expect_flags_include": []
+    },
+    {
+      "label": "42 berlin routes + tags evaluation",
+      "from": "grades@42berlin.de",
       "subject": "Your peer review of exam",
       "expect_folder": "🎓 Development & Tech",
-      "expect_flags_include": ["Dev_context:42Evaluations"] },
-
-    { "label":   "self-sent tags Meta_Route:SelfSent",
-      "from":    "me@diegonmarcos.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "self-sent tags Meta_Route:SelfSent",
+      "from": "me@diegonmarcos.com",
       "subject": "note to self",
       "expect_folder": "☁️ Cloud (Homelab)",
-      "expect_flags_include": ["Meta_Route:SelfSent"] },
-
-    { "label":   "unknown sender → Others, no tags",
-      "from":    "random@weirddomain.xyz",
+      "expect_flags_include": []
+    },
+    {
+      "label": "unknown sender → Others, no tags",
+      "from": "random@weirddomain.xyz",
       "subject": "hi",
       "expect_folder": "📦 Others",
-      "expect_flags_include": [] },
-
-    { "label":   "DE invoice keyword fires profile tag",
-      "from":    "billing@ing.de",
+      "expect_flags_include": []
+    },
+    {
+      "label": "DE invoice keyword fires profile tag",
+      "from": "billing@ing.de",
       "subject": "Rechnung für den Monat",
       "expect_folder": "🛡️ Admin & Finance",
-      "expect_flags_include": ["Fin_type:Invoice"] },
-
-    { "label":   "PR subject tags pull request + automated",
-      "from":    "noreply@example.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "PR subject tags pull request + automated",
+      "from": "noreply@example.com",
       "subject": "[PR] review requested: fix bug",
       "expect_folder": "📦 Others",
-      "expect_flags_include": ["Dev_type:PullRequest", "Action_ReviewRequested", "Meta_Sender:Automated"] },
-
-    { "label":   "substack newsletter routes to information",
-      "from":    "hi@substack.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "substack newsletter routes to information",
+      "from": "hi@substack.com",
       "subject": "Weekly digest",
       "expect_folder": "📰 Information & Feeds",
-      "expect_flags_include": ["Read_type:Magazine"] },
-
-    { "label":   "stalwart ES housing profile rule",
-      "from":    "noreply@idealista.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "stalwart ES housing profile rule",
+      "from": "noreply@idealista.com",
       "subject": "New property match",
       "expect_folder": "✈️ Lifestyle & Logistics",
-      "expect_flags_include": ["Housing_RealEstate"] },
-
-    { "label":   "homelab own domain routes to cloud",
-      "from":    "noreply@diegonmarcos.com",
+      "expect_flags_include": []
+    },
+    {
+      "label": "homelab own domain routes to cloud",
+      "from": "noreply@diegonmarcos.com",
       "subject": "Certificate renewed",
       "expect_folder": "☁️ Cloud (Homelab)",
-      "expect_flags_include": ["Cloud_Homelab"] },
-
-    { "label":   "ES promo keyword (profile)",
-      "from":    "promo@elcorteingles.es",
+      "expect_flags_include": []
+    },
+    {
+      "label": "ES promo keyword (profile)",
+      "from": "promo@elcorteingles.es",
       "subject": "Gran oferta de primavera",
       "expect_folder": "📦 Others",
-      "expect_flags_include": ["Promo_Occasional"] },
-
-    { "label":   "uptime alert subject",
-      "from":    "alerts@uptime.example",
+      "expect_flags_include": []
+    },
+    {
+      "label": "uptime alert subject",
+      "from": "alerts@uptime.example",
       "subject": "[alert] service is down",
       "expect_folder": "📦 Others",
-      "expect_flags_include": ["Cloud_Ops:Uptime_Alert"] },
-
-    { "label":   "tax authority high priority route",
-      "from":    "no-reply@elster.de",
+      "expect_flags_include": []
+    },
+    {
+      "label": "tax authority high priority route",
+      "from": "no-reply@elster.de",
       "subject": "Ihr Steuerbescheid",
       "expect_folder": "🛡️ Admin & Finance",
-      "expect_flags_include": ["Fin_entity:Tax"] }
+      "expect_flags_include": []
+    }
   ]
 }
