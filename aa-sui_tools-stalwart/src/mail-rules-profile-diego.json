@@ -27,7 +27,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       },
       "comment": "42 Berlin / 42 network — routes to development folder, tags with school context."
     },
@@ -60,7 +60,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       },
       "comment": "42 evaluation vocabulary (EN + ES partial)."
     },
@@ -82,7 +82,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       },
       "comment": "Owned domain — always to cloud folder."
     },
@@ -124,7 +124,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       }
     },
     {
@@ -156,7 +156,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       },
       "comment": "Spanish + German job-search subject keywords."
     },
@@ -182,7 +182,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       }
     },
     {
@@ -205,7 +205,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       }
     },
     {
@@ -227,7 +227,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       },
       "comment": "EU healthcare booking (DE/FR)."
     },
@@ -252,7 +252,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       }
     },
     {
@@ -274,7 +274,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       }
     },
     {
@@ -297,7 +297,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       },
       "comment": "DE/ES/UK tax authorities — high priority (low number) so nothing else steals them."
     },
@@ -319,7 +319,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       },
       "comment": "ES + DE invoice subject words."
     },
@@ -340,7 +340,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       },
       "comment": "German GDPR keyword (EN equivalents in general)."
     },
@@ -363,7 +363,7 @@
       },
       "engines": {
         "stalwart": "tag_only",
-        "maddy": "tag_only"
+        "maddy": "drop"
       },
       "comment": "ES + DE promo subject words."
     },
@@ -386,7 +386,7 @@
       },
       "engines": {
         "stalwart": "full",
-        "maddy": "full"
+        "maddy": "route_only"
       }
     }
   ]

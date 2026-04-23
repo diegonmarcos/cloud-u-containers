@@ -7,9 +7,6 @@
   "routing_default": "📦 Others",
   "rules": [
     {
-      "flags": [
-        "Dev_context:42Berlin"
-      ],
       "folder": "🎓 Development & Tech",
       "id": "route.profile.42_school",
       "priority": 50,
@@ -24,34 +21,6 @@
       }
     },
     {
-      "flags": [
-        "Dev_context:42Evaluations"
-      ],
-      "id": "tag.profile.42_evaluations",
-      "priority": 60,
-      "when": {
-        "any_of": [
-          {
-            "type": "subject_contains",
-            "values": [
-              "evaluation",
-              "peer review",
-              "correction"
-            ]
-          },
-          {
-            "type": "subject_contains",
-            "values": [
-              "evaluaci"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Fin_entity:Tax"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.profile.tax_authorities",
       "priority": 80,
@@ -65,9 +34,6 @@
       }
     },
     {
-      "flags": [
-        "Sec_type:Login_Alert"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.security_accounts",
       "priority": 90,
@@ -81,9 +47,6 @@
       }
     },
     {
-      "flags": [
-        "Cloud_Homelab"
-      ],
       "folder": "☁️ Cloud (Homelab)",
       "id": "route.profile.homelab",
       "priority": 90,
@@ -95,9 +58,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_entity:Bank"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.profile.banks_es_de",
       "priority": 90,
@@ -181,9 +141,6 @@
       }
     },
     {
-      "flags": [
-        "Travel_type:Flight"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.travel_air",
       "priority": 100,
@@ -202,9 +159,6 @@
       }
     },
     {
-      "flags": [
-        "Travel_type:Rideshare"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.rideshare",
       "priority": 100,
@@ -233,9 +187,6 @@
       }
     },
     {
-      "flags": [
-        "Logistics_Postal_Courier"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.postal_intl",
       "priority": 100,
@@ -252,9 +203,6 @@
       }
     },
     {
-      "flags": [
-        "Lifestyle_FoodDelivery"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.food_delivery",
       "priority": 100,
@@ -271,9 +219,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_type:Receipt"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.payments",
       "priority": 100,
@@ -286,9 +231,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_type:Subscription"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.subscriptions",
       "priority": 100,
@@ -303,9 +245,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_type:Insurance"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.insurance_intl",
       "priority": 100,
@@ -318,9 +257,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_entity:Bank"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.bank_neobank",
       "priority": 100,
@@ -334,9 +270,6 @@
       }
     },
     {
-      "flags": [
-        "Shopping_Online"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.admin.marketplace",
       "priority": 100,
@@ -354,9 +287,6 @@
       }
     },
     {
-      "flags": [
-        "Read_topic:Tech"
-      ],
       "folder": "📰 Information & Feeds",
       "id": "route.info.tech_media",
       "priority": 100,
@@ -370,9 +300,6 @@
       }
     },
     {
-      "flags": [
-        "Read_type:News"
-      ],
       "folder": "📰 Information & Feeds",
       "id": "route.info.news_intl",
       "priority": 100,
@@ -387,9 +314,6 @@
       }
     },
     {
-      "flags": [
-        "Read_type:Magazine"
-      ],
       "folder": "📰 Information & Feeds",
       "id": "route.info.newsletters",
       "priority": 100,
@@ -440,9 +364,6 @@
       }
     },
     {
-      "flags": [
-        "Social_Notification"
-      ],
       "folder": "📰 Information & Feeds",
       "id": "route.info.social",
       "priority": 100,
@@ -460,9 +381,6 @@
       }
     },
     {
-      "flags": [
-        "Cloud_Sec:Cert_Renewal"
-      ],
       "folder": "☁️ Cloud (Homelab)",
       "id": "route.cloud.letsencrypt",
       "priority": 100,
@@ -474,9 +392,6 @@
       }
     },
     {
-      "flags": [
-        "Cloud_Cost:Domain_Renewal"
-      ],
       "folder": "☁️ Cloud (Homelab)",
       "id": "route.cloud.registrars",
       "priority": 100,
@@ -491,9 +406,6 @@
       }
     },
     {
-      "flags": [
-        "Cloud_Cost:Hardware_Asset"
-      ],
       "folder": "☁️ Cloud (Homelab)",
       "id": "route.cloud.hardware",
       "priority": 100,
@@ -508,9 +420,6 @@
       }
     },
     {
-      "flags": [
-        "Cloud_Cost:External_SaaS"
-      ],
       "folder": "☁️ Cloud (Homelab)",
       "id": "route.cloud.providers",
       "priority": 100,
@@ -552,9 +461,6 @@
       }
     },
     {
-      "flags": [
-        "Housing_RealEstate"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.profile.housing_es_de",
       "priority": 100,
@@ -570,9 +476,6 @@
       }
     },
     {
-      "flags": [
-        "Logistics_Postal_ES"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.profile.postal_es",
       "priority": 100,
@@ -586,9 +489,6 @@
       }
     },
     {
-      "flags": [
-        "Lifestyle_Wellness_Sports"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.profile.health_eu",
       "priority": 100,
@@ -601,9 +501,6 @@
       }
     },
     {
-      "flags": [
-        "Fin_type:Insurance"
-      ],
       "folder": "🛡️ Admin & Finance",
       "id": "route.profile.insurance_es_de",
       "priority": 100,
@@ -616,9 +513,6 @@
       }
     },
     {
-      "flags": [
-        "Read_type:News"
-      ],
       "folder": "📰 Information & Feeds",
       "id": "route.profile.news_es_de",
       "priority": 100,
@@ -651,9 +545,6 @@
       }
     },
     {
-      "flags": [
-        "Lifestyle_Wellness_Sports"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.wellness",
       "priority": 110,
@@ -667,9 +558,6 @@
       }
     },
     {
-      "flags": [
-        "Lifestyle_Leisure"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.events",
       "priority": 110,
@@ -685,9 +573,6 @@
       }
     },
     {
-      "flags": [
-        "Social_Dating"
-      ],
       "folder": "✈️ Lifestyle & Logistics",
       "id": "route.lifestyle.dating",
       "priority": 110,
@@ -698,535 +583,6 @@
           "bumble.com",
           "hinge.co",
           "okcupid.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Dev_platform:GitHub"
-      ],
-      "id": "tag.dev.github",
-      "priority": 200,
-      "when": {
-        "any_of": [
-          {
-            "type": "from_domain",
-            "values": [
-              "github.com",
-              "noreply.github.com"
-            ]
-          },
-          {
-            "type": "from_domain_suffix",
-            "values": [
-              ".github.com"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Dev_platform:GitLab"
-      ],
-      "id": "tag.dev.gitlab",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "gitlab.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_JobAlerts"
-      ],
-      "id": "tag.career.job_alerts",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "glassdoor.com",
-          "hired.com",
-          "wellfound.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_source:LinkedIn"
-      ],
-      "id": "tag.career.linkedin",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "linkedin.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_source:Indeed"
-      ],
-      "id": "tag.career.indeed",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "indeed.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Lodging_from:Airbnb"
-      ],
-      "id": "tag.lifestyle.airbnb",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "airbnb.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Lodging_from:Hostelworld"
-      ],
-      "id": "tag.lifestyle.hostelworld",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "hostelworld.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_source:Indeed"
-      ],
-      "id": "tag.profile.career_indeed_de",
-      "priority": 200,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "indeed.de"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Dev_type:PullRequest"
-      ],
-      "id": "tag.dev.pull_request",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "pull request",
-          "merge request",
-          "[PR]",
-          "review requested"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_type:Application_Update"
-      ],
-      "id": "tag.career.application_update",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "application",
-          "your application",
-          "application status"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_type:Interview_Invite"
-      ],
-      "id": "tag.career.interview_invite",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "interview",
-          "schedule a call",
-          "phone screen"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_type:Recruiter_Message"
-      ],
-      "id": "tag.career.recruiter",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "recruiter",
-          "headhunt",
-          "opportunity",
-          "we found your profile",
-          "job match",
-          "talent"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Fin_type:Invoice"
-      ],
-      "id": "tag.admin.invoice_en",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "invoice",
-          "billing statement"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Fin_type:Invoice"
-      ],
-      "id": "tag.profile.invoice_es_de",
-      "priority": 210,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "factura",
-          "Rechnung"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "SaaS_Productivity"
-      ],
-      "id": "tag.dev.saas_productivity",
-      "priority": 220,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "vercel.com",
-          "netlify.com",
-          "railway.app",
-          "heroku.com",
-          "notion.so",
-          "figma.com",
-          "miro.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "SaaS_Creative"
-      ],
-      "id": "tag.dev.saas_creative",
-      "priority": 220,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "jetbrains.com",
-          "adobe.com",
-          "canva.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Edu_Languages"
-      ],
-      "id": "tag.dev.edu_languages",
-      "priority": 220,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "duolingo.com",
-          "babbel.com",
-          "busuu.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Edu_General"
-      ],
-      "id": "tag.dev.edu_general",
-      "priority": 220,
-      "when": {
-        "type": "from_domain",
-        "values": [
-          "udemy.com",
-          "coursera.org",
-          "edx.org",
-          "skillshare.com",
-          "pluralsight.com"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Admin_Compliance:GDPR"
-      ],
-      "id": "tag.admin.gdpr_en",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "GDPR",
-          "privacy policy",
-          "data protection",
-          "data subject"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Action_ReviewRequested"
-      ],
-      "id": "tag.admin.action_required",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "review requested",
-          "action required",
-          "requires your attention",
-          "please review"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Promo_Occasional"
-      ],
-      "id": "tag.info.promo_en",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "% off",
-          "sale",
-          "discount",
-          "promo",
-          "deal"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Cloud_Ops:Uptime_Alert"
-      ],
-      "id": "tag.cloud.uptime_alert",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "[alert]",
-          "[warning]",
-          "is down",
-          "unreachable",
-          "uptime"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Cloud_Ops:Backup_Status"
-      ],
-      "id": "tag.cloud.backup_status",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "backup",
-          "restic",
-          "snapshot",
-          "restore"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Cloud_Ops:Storage_Warning"
-      ],
-      "id": "tag.cloud.storage_warning",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "disk full",
-          "storage",
-          "quota",
-          "low space",
-          "inode"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Cloud_Sec:Auth_Alert"
-      ],
-      "id": "tag.cloud.auth_alert",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "login attempt",
-          "auth",
-          "unauthorized",
-          "suspicious sign"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Cloud_Sec:Threat_Blocked"
-      ],
-      "id": "tag.cloud.threat_blocked",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "blocked",
-          "threat",
-          "intrusion",
-          "fail2ban",
-          "banned"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Admin_Compliance:GDPR"
-      ],
-      "id": "tag.profile.gdpr_de",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "Datenschutz"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Promo_Occasional"
-      ],
-      "id": "tag.profile.promo_es_de",
-      "priority": 220,
-      "when": {
-        "type": "subject_contains",
-        "values": [
-          "oferta",
-          "descuento",
-          "Rabatt"
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Career_type:Application_Update"
-      ],
-      "id": "tag.profile.career_subjects_es_de",
-      "priority": 250,
-      "when": {
-        "any_of": [
-          {
-            "type": "subject_contains",
-            "values": [
-              "candidatura",
-              "Bewerbung"
-            ]
-          },
-          {
-            "type": "subject_contains",
-            "values": [
-              "entrevista",
-              "Vorstellungsgespr"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "flags": [
-        "Meta_Route:CC"
-      ],
-      "id": "meta.route.has_cc",
-      "priority": 850,
-      "when": {
-        "type": "has_cc"
-      }
-    },
-    {
-      "flags": [
-        "Meta_Route:SelfSent"
-      ],
-      "id": "meta.route.self_sent",
-      "priority": 850,
-      "when": {
-        "type": "self_sent"
-      }
-    },
-    {
-      "flags": [
-        "Meta_Route:BCC_MailingList"
-      ],
-      "id": "meta.route.list_header",
-      "priority": 850,
-      "when": {
-        "type": "list_header"
-      }
-    },
-    {
-      "flags": [
-        "Meta_Sender:Automated"
-      ],
-      "id": "meta.sender.automated",
-      "priority": 860,
-      "when": {
-        "any_of": [
-          {
-            "header": "X-Auto-Response-Suppress",
-            "type": "header_exists"
-          },
-          {
-            "header": "Auto-Submitted",
-            "type": "header_exists"
-          },
-          {
-            "header": "Precedence",
-            "type": "header_contains",
-            "values": [
-              "bulk",
-              "list",
-              "junk"
-            ]
-          },
-          {
-            "header": "From",
-            "type": "header_contains",
-            "values": [
-              "noreply",
-              "no-reply",
-              "donotreply",
-              "mailer-daemon",
-              "postmaster"
-            ]
-          }
         ]
       }
     }

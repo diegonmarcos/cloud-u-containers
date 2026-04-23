@@ -85,6 +85,31 @@ assert "every maddy route has a folder that exists in general.folders" \
     | length
   ' "$TMP/maddy.json")" = 0
 
+# A+B architectural contract:
+# • Maddy = A only (INBOX copy + one of 7 category folders, NO tags).
+# • Stalwart = A + B (routes + tag system via IMAP keywords).
+# Any rule that gives Maddy a flag breaks the contract. Enforce here, not
+# only in prose, so future edits can't silently reintroduce tag-emission.
+assert "A+B contract: no Maddy rule emits flags" \
+  test "$(jq '[.rules[] | select((.flags // []) | length > 0)] | length' "$TMP/maddy.json")" = 0
+
+assert "A+B contract: no Maddy rule is flags-only (tag-like leak)" \
+  test "$(jq '[.rules[] | select(.folder == null or .folder == "")] | length' "$TMP/maddy.json")" = 0
+
+assert "A+B contract: every canonical tag|meta rule drops in Maddy" \
+  test "$(jq -s '
+    [ (.[0].rules + .[1].rules)[]
+      | select((.kind == "tag" or .kind == "meta") and .engines.maddy != "drop") ]
+    | length
+  ' "$GENERAL" "$PROFILE")" = 0
+
+assert "A+B contract: every canonical route rule is route_only or full in Maddy with no flags leak" \
+  test "$(jq -s '
+    [ (.[0].rules + .[1].rules)[]
+      | select(.kind == "route" and .engines.maddy == "full") ]
+    | length
+  ' "$GENERAL" "$PROFILE")" = 0
+
 assert "sieve starts with require" \
   grep -q '^require \[' "$TMP/stalwart.sieve"
 
