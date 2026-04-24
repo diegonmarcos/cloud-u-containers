@@ -7,6 +7,44 @@
   "routing_default": "📦 Others",
   "rules": [
     {
+      "folder": "🚫 Junk",
+      "id": "route.junk.spam_flagged",
+      "priority": 30,
+      "when": {
+        "any_of": [
+          {
+            "header": "X-Spam-Status",
+            "type": "header_contains",
+            "values": [
+              "Yes"
+            ]
+          },
+          {
+            "header": "X-Spam-Flag",
+            "type": "header_contains",
+            "values": [
+              "YES"
+            ]
+          },
+          {
+            "header": "X-Microsoft-Antispam-Message-Info",
+            "type": "header_contains",
+            "values": [
+              "spam"
+            ]
+          },
+          {
+            "header": "Authentication-Results",
+            "type": "header_contains",
+            "values": [
+              "dmarc=fail",
+              "spf=fail"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "folder": "🎓 Development & Tech",
       "id": "route.profile.42_school",
       "priority": 50,
