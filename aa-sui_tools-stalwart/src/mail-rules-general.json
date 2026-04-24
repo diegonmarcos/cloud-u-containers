@@ -14,17 +14,17 @@
     "regex"
   ],
   "folders": {
-    "important": "00. ⭐ Important",
-    "admin": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
-    "logistics": "10. 🗂️ ADMIN/12. ✈️ Logistics",
-    "cloud": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
-    "career": "20. 📨 INFORMS/21. 💼 Career & Network",
-    "social": "20. 📨 INFORMS/22. 📰 Social & General",
-    "government": "20. 📨 INFORMS/23. 🧻 Goverment",
-    "development": "30. 💻 DEV/31. 🎓 Development & Tech",
-    "others": "AA. 📦 OTHERS/Aa. 📬 Others (fallback)",
-    "archive": "AA. 📦 OTHERS/Ab. 📥 Archive",
-    "junk": "AA. 📦 OTHERS/Ac. 🚫 Junk"
+    "important": "00 ⭐ Important",
+    "admin": "10 🗂️ ADMIN/11 🛡️ Admin & Finance",
+    "logistics": "10 🗂️ ADMIN/12 ✈️ Logistics",
+    "cloud": "10 🗂️ ADMIN/13 ☁️ Cloud (Homelab)",
+    "career": "20 📨 INFORMS/21 💼 Career & Network",
+    "social": "20 📨 INFORMS/22 📰 Social & General",
+    "government": "20 📨 INFORMS/23 🧻 Goverment",
+    "development": "30 💻 DEV/31 🎓 Development & Tech",
+    "others": "AA 📦 OTHERS/Aa 📬 Others (fallback)",
+    "archive": "AA 📦 OTHERS/Ab 📥 Archive",
+    "junk": "AA 📦 OTHERS/Ac 🚫 Junk"
   },
   "routing_default": "others",
   "inbox_copy": {
