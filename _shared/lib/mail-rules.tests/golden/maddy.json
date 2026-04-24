@@ -4,10 +4,10 @@
   "inbox_copy_flags": [
     "\\Seen"
   ],
-  "routing_default": "7. 📦-Others",
+  "routing_default": "AA. 📦 OTHERS/Aa. 📬 Others (fallback)",
   "rules": [
     {
-      "folder": "8. 🚫-Junk",
+      "folder": "AA. 📦 OTHERS/Ac. 🚫 Junk",
       "id": "route.junk.spam_flagged",
       "priority": 30,
       "when": {
@@ -45,7 +45,7 @@
       }
     },
     {
-      "folder": "1. 🎓-Development & Tech",
+      "folder": "30. 💻 DEV/31. 🎓 Development & Tech",
       "id": "route.profile.42_school",
       "priority": 50,
       "when": {
@@ -59,7 +59,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "20. 📨 INFORMS/23. 🧻 Goverment",
       "id": "route.profile.tax_authorities",
       "priority": 80,
       "when": {
@@ -72,7 +72,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.security_accounts",
       "priority": 90,
       "when": {
@@ -85,7 +85,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.profile.homelab",
       "priority": 90,
       "when": {
@@ -96,7 +96,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.profile.banks_es_de",
       "priority": 90,
       "when": {
@@ -110,7 +110,7 @@
       }
     },
     {
-      "folder": "1. 🎓-Development & Tech",
+      "folder": "30. 💻 DEV/31. 🎓 Development & Tech",
       "id": "route.dev.code_hosting",
       "priority": 100,
       "when": {
@@ -134,7 +134,7 @@
       }
     },
     {
-      "folder": "1. 🎓-Development & Tech",
+      "folder": "30. 💻 DEV/31. 🎓 Development & Tech",
       "id": "route.dev.saas_productivity",
       "priority": 100,
       "when": {
@@ -151,7 +151,7 @@
       }
     },
     {
-      "folder": "1. 🎓-Development & Tech",
+      "folder": "30. 💻 DEV/31. 🎓 Development & Tech",
       "id": "route.dev.saas_creative",
       "priority": 100,
       "when": {
@@ -164,7 +164,7 @@
       }
     },
     {
-      "folder": "2. 💼-Career & Network",
+      "folder": "20. 📨 INFORMS/21. 💼 Career & Network",
       "id": "route.career.platforms",
       "priority": 100,
       "when": {
@@ -179,7 +179,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.lifestyle.travel_air",
       "priority": 100,
       "when": {
@@ -197,7 +197,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.lifestyle.rideshare",
       "priority": 100,
       "when": {
@@ -212,7 +212,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.lifestyle.lodging",
       "priority": 100,
       "when": {
@@ -225,7 +225,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.lifestyle.postal_intl",
       "priority": 100,
       "when": {
@@ -241,7 +241,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.lifestyle.food_delivery",
       "priority": 100,
       "when": {
@@ -257,7 +257,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.payments",
       "priority": 100,
       "when": {
@@ -269,7 +269,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.subscriptions",
       "priority": 100,
       "when": {
@@ -283,7 +283,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.insurance_intl",
       "priority": 100,
       "when": {
@@ -295,7 +295,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.bank_neobank",
       "priority": 100,
       "when": {
@@ -308,7 +308,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.admin.marketplace",
       "priority": 100,
       "when": {
@@ -325,7 +325,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.tech_media",
       "priority": 100,
       "when": {
@@ -338,7 +338,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.news_intl",
       "priority": 100,
       "when": {
@@ -352,7 +352,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.newsletters",
       "priority": 100,
       "when": {
@@ -366,7 +366,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.video_music",
       "priority": 100,
       "when": {
@@ -383,7 +383,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.books_games",
       "priority": 100,
       "when": {
@@ -402,7 +402,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.info.social",
       "priority": 100,
       "when": {
@@ -419,7 +419,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.cloud.letsencrypt",
       "priority": 100,
       "when": {
@@ -430,7 +430,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.cloud.registrars",
       "priority": 100,
       "when": {
@@ -444,7 +444,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.cloud.hardware",
       "priority": 100,
       "when": {
@@ -458,7 +458,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.cloud.providers",
       "priority": 100,
       "when": {
@@ -474,7 +474,7 @@
       }
     },
     {
-      "folder": "6. ☁️-Cloud (Homelab)",
+      "folder": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
       "id": "route.cloud.notifications",
       "priority": 100,
       "when": {
@@ -486,7 +486,7 @@
       }
     },
     {
-      "folder": "2. 💼-Career & Network",
+      "folder": "20. 📨 INFORMS/21. 💼 Career & Network",
       "id": "route.profile.career_de",
       "priority": 100,
       "when": {
@@ -499,7 +499,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.profile.housing_es_de",
       "priority": 100,
       "when": {
@@ -514,7 +514,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "10. 🗂️ ADMIN/12. ✈️ Logistics",
       "id": "route.profile.postal_es",
       "priority": 100,
       "when": {
@@ -527,7 +527,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.profile.health_eu",
       "priority": 100,
       "when": {
@@ -539,7 +539,7 @@
       }
     },
     {
-      "folder": "4. 🛡️-Admin & Finance",
+      "folder": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
       "id": "route.profile.insurance_es_de",
       "priority": 100,
       "when": {
@@ -551,7 +551,7 @@
       }
     },
     {
-      "folder": "5. 📰-Information & Feeds",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.profile.news_es_de",
       "priority": 100,
       "when": {
@@ -563,7 +563,7 @@
       }
     },
     {
-      "folder": "1. 🎓-Development & Tech",
+      "folder": "30. 💻 DEV/31. 🎓 Development & Tech",
       "id": "route.dev.learning",
       "priority": 110,
       "when": {
@@ -583,7 +583,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.lifestyle.wellness",
       "priority": 110,
       "when": {
@@ -596,7 +596,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.lifestyle.events",
       "priority": 110,
       "when": {
@@ -611,7 +611,7 @@
       }
     },
     {
-      "folder": "3. ✈️-Lifestyle & Logistics",
+      "folder": "20. 📨 INFORMS/22. 📰 Social & General",
       "id": "route.lifestyle.dating",
       "priority": 110,
       "when": {
