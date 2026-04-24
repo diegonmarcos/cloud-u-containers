@@ -14,14 +14,14 @@
     "regex"
   ],
   "folders": {
-    "development": "🎓 Development & Tech",
-    "career": "💼 Career & Network",
-    "lifestyle": "✈️ Lifestyle & Logistics",
-    "admin": "🛡️ Admin & Finance",
-    "information": "📰 Information & Feeds",
-    "cloud": "☁️ Cloud (Homelab)",
-    "others": "📦 Others",
-    "junk": "🚫 Junk"
+    "development": "1. 🎓-Development & Tech",
+    "career": "2. 💼-Career & Network",
+    "lifestyle": "3. ✈️-Lifestyle & Logistics",
+    "admin": "4. 🛡️-Admin & Finance",
+    "information": "5. 📰-Information & Feeds",
+    "cloud": "6. ☁️-Cloud (Homelab)",
+    "others": "7. 📦-Others",
+    "junk": "8. 🚫-Junk"
   },
   "routing_default": "others",
   "inbox_copy": {
