@@ -20,7 +20,8 @@
     "admin": "🛡️ Admin & Finance",
     "information": "📰 Information & Feeds",
     "cloud": "☁️ Cloud (Homelab)",
-    "others": "📦 Others"
+    "others": "📦 Others",
+    "junk": "🚫 Junk"
   },
   "routing_default": "others",
   "inbox_copy": {
@@ -86,6 +87,52 @@
     }
   },
   "rules": [
+    {
+      "id": "route.junk.spam_flagged",
+      "kind": "route",
+      "priority": 30,
+      "when": {
+        "any_of": [
+          {
+            "type": "header_contains",
+            "header": "X-Spam-Status",
+            "values": [
+              "Yes"
+            ]
+          },
+          {
+            "type": "header_contains",
+            "header": "X-Spam-Flag",
+            "values": [
+              "YES"
+            ]
+          },
+          {
+            "type": "header_contains",
+            "header": "X-Microsoft-Antispam-Message-Info",
+            "values": [
+              "spam"
+            ]
+          },
+          {
+            "type": "header_contains",
+            "header": "Authentication-Results",
+            "values": [
+              "dmarc=fail",
+              "spf=fail"
+            ]
+          }
+        ]
+      },
+      "actions": {
+        "copy_to": "junk"
+      },
+      "engines": {
+        "stalwart": "full",
+        "maddy": "route_only"
+      },
+      "comment": "Route anything flagged by upstream spam engines (Stalwart internal, Gmail/Outlook via mail-puller, SA-style headers) into the unified Junk folder. Runs before all other routes so spam never pollutes category folders."
+    },
     {
       "id": "route.dev.code_hosting",
       "kind": "route",

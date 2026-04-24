@@ -217,6 +217,13 @@ if anyof(header :mime :anychild :contenttype "Content-Type" "audio/mpeg", header
 }
 
 # ─── ROUTES ─────────────────────────────────────────────────────
+# route.junk.spam_flagged
+if anyof(header :contains "X-Spam-Status" "Yes", header :contains "X-Spam-Flag" "YES", header :contains "X-Microsoft-Antispam-Message-Info" "spam", header :contains "Authentication-Results" ["dmarc=fail", "spf=fail"]) {
+  fileinto :copy :create "🚫 Junk";
+  addflag "\\Seen";
+  stop;
+}
+
 # route.profile.42_school
 if address :domain :is "From" ["42berlin.de", "42heilbronn.de", "42.fr", "intra.42.fr"] {
   addflag "Dev_context:42Berlin";

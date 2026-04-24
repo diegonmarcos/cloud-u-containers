@@ -135,7 +135,12 @@ if [[ -f "$FILTER" && -f "$FIXTURES" ]]; then
     want_folder="$(jq -r ".cases[$i].expect_folder" "$FIXTURES")"
     want_flags_json="$(jq   -c ".cases[$i].expect_flags_include" "$FIXTURES")"
 
-    email="$(printf 'From: %s\nTo: me@diegonmarcos.com\nSubject: %s\n\nbody\n' "$from" "$subj")"
+    extra_headers="$(jq -r ".cases[$i].extra_headers // empty" "$FIXTURES")"
+    email="$(
+      printf 'From: %s\nTo: me@diegonmarcos.com\nSubject: %s\n' "$from" "$subj"
+      [[ -n "$extra_headers" ]] && printf '%s\n' "$extra_headers"
+      printf '\nbody\n'
+    )"
     out="$(printf '%s' "$email" | RULES_PATH="$TMP/maddy.json" "$FILTER" \
              me@diegonmarcos.com "$from" me@diegonmarcos.com "$subj" || true)"
     got_folder="$(printf '%s\n' "$out" | head -1)"

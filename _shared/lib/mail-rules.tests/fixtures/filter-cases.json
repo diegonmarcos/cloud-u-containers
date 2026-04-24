@@ -98,6 +98,30 @@
       "subject": "Ihr Steuerbescheid",
       "expect_folder": "🛡️ Admin & Finance",
       "expect_flags_include": []
+    },
+    {
+      "label": "spam-status Yes beats category route",
+      "from": "noreply@github.com",
+      "subject": "You have notifications",
+      "extra_headers": "X-Spam-Status: Yes, score=7.2 required=5.0 tests=BAYES_99",
+      "expect_folder": "🚫 Junk",
+      "expect_flags_include": []
+    },
+    {
+      "label": "spam-flag YES → Junk",
+      "from": "info@ryanair.com",
+      "subject": "Boarding pass",
+      "extra_headers": "X-Spam-Flag: YES",
+      "expect_folder": "🚫 Junk",
+      "expect_flags_include": []
+    },
+    {
+      "label": "microsoft antispam spam verdict → Junk",
+      "from": "marketing@weird-sender.xyz",
+      "subject": "Big sale",
+      "extra_headers": "X-Microsoft-Antispam-Message-Info: BCL:0;spamverdict:spam",
+      "expect_folder": "🚫 Junk",
+      "expect_flags_include": []
     }
   ]
 }
