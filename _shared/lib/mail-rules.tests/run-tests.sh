@@ -113,8 +113,21 @@ assert "A+B contract: every canonical route rule is route_only or full in Maddy 
 assert "sieve starts with require" \
   grep -q '^require \[' "$TMP/stalwart.sieve"
 
-assert "sieve has fallback fileinto to Others (nested)" \
-  grep -qF 'fileinto :copy :create "AA 📦 OTHERS/Aa 📬 Others (fallback)"' "$TMP/stalwart.sieve"
+assert "sieve has fallback fileinto to Others (flat)" \
+  grep -qF 'fileinto :copy :create "Aa  📬 Others (fallback)"' "$TMP/stalwart.sieve"
+
+# Spec: each routed leaf folder = 2-char prefix + TWO spaces + non-space.
+# Each folders_ui entry = 2-char prefix + ONE space + non-space. Validates
+# the exact naming the user specified — any future edit that collapses
+# spaces or adds them fails the suite.
+assert "folders spacing: every leaf matches '^AZ  X…'" \
+  test "$(jq '[.folders | to_entries[] | select(.value | test("^[0-9A-Za-z]{2}  [^ ]") | not)] | length' "$GENERAL")" = 0
+
+assert "folders_ui spacing: every parent matches '^AZ X…'" \
+  test "$(jq '[.folders_ui[] | select(test("^[0-9A-Za-z]{2} [^ ]") | not)] | length' "$GENERAL")" = 0
+
+assert "folders_ui: exactly 4 parent UI entries" \
+  test "$(jq '.folders_ui | length' "$GENERAL")" = 4
 
 assert "sieve has inbox-read addflag on routes when inbox_copy.enabled" \
   test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
