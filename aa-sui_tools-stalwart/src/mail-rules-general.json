@@ -14,14 +14,17 @@
     "regex"
   ],
   "folders": {
-    "development": "1. 🎓-Development & Tech",
-    "career": "2. 💼-Career & Network",
-    "lifestyle": "3. ✈️-Lifestyle & Logistics",
-    "admin": "4. 🛡️-Admin & Finance",
-    "information": "5. 📰-Information & Feeds",
-    "cloud": "6. ☁️-Cloud (Homelab)",
-    "others": "7. 📦-Others",
-    "junk": "8. 🚫-Junk"
+    "important": "00. ⭐ Important",
+    "admin": "10. 🗂️ ADMIN/11. 🛡️ Admin & Finance",
+    "logistics": "10. 🗂️ ADMIN/12. ✈️ Logistics",
+    "cloud": "10. 🗂️ ADMIN/13. ☁️ Cloud (Homelab)",
+    "career": "20. 📨 INFORMS/21. 💼 Career & Network",
+    "social": "20. 📨 INFORMS/22. 📰 Social & General",
+    "government": "20. 📨 INFORMS/23. 🧻 Goverment",
+    "development": "30. 💻 DEV/31. 🎓 Development & Tech",
+    "others": "AA. 📦 OTHERS/Aa. 📬 Others (fallback)",
+    "archive": "AA. 📦 OTHERS/Ab. 📥 Archive",
+    "junk": "AA. 📦 OTHERS/Ac. 🚫 Junk"
   },
   "routing_default": "others",
   "inbox_copy": {
@@ -560,7 +563,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Travel_type:Flight"
         ]
@@ -585,7 +588,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Travel_type:Rideshare"
         ]
@@ -608,7 +611,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle"
+        "copy_to": "logistics"
       },
       "engines": {
         "stalwart": "full",
@@ -671,7 +674,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Logistics_Postal_Courier"
         ]
@@ -697,7 +700,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Lifestyle_FoodDelivery"
         ]
@@ -720,7 +723,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "social",
         "flags": [
           "Lifestyle_Wellness_Sports"
         ]
@@ -745,7 +748,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "social",
         "flags": [
           "Lifestyle_Leisure"
         ]
@@ -769,7 +772,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "social",
         "flags": [
           "Social_Dating"
         ]
@@ -1000,7 +1003,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information",
+        "copy_to": "social",
         "flags": [
           "Read_topic:Tech"
         ]
@@ -1024,7 +1027,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information",
+        "copy_to": "social",
         "flags": [
           "Read_type:News"
         ]
@@ -1048,7 +1051,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information",
+        "copy_to": "social",
         "flags": [
           "Read_type:Magazine"
         ]
@@ -1075,7 +1078,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information"
+        "copy_to": "social"
       },
       "engines": {
         "stalwart": "full",
@@ -1101,7 +1104,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information"
+        "copy_to": "social"
       },
       "engines": {
         "stalwart": "full",
@@ -1125,7 +1128,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information",
+        "copy_to": "social",
         "flags": [
           "Social_Notification"
         ]

@@ -175,7 +175,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Housing_RealEstate"
         ]
@@ -198,7 +198,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "logistics",
         "flags": [
           "Logistics_Postal_ES"
         ]
@@ -220,7 +220,7 @@
         ]
       },
       "actions": {
-        "copy_to": "lifestyle",
+        "copy_to": "social",
         "flags": [
           "Lifestyle_Wellness_Sports"
         ]
@@ -290,7 +290,7 @@
         ]
       },
       "actions": {
-        "copy_to": "admin",
+        "copy_to": "government",
         "flags": [
           "Fin_entity:Tax"
         ]
@@ -379,7 +379,7 @@
         ]
       },
       "actions": {
-        "copy_to": "information",
+        "copy_to": "social",
         "flags": [
           "Read_type:News"
         ]
