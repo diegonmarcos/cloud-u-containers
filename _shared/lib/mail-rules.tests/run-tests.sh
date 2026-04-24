@@ -114,7 +114,7 @@ assert "sieve starts with require" \
   grep -q '^require \[' "$TMP/stalwart.sieve"
 
 assert "sieve has fallback fileinto to Others" \
-  grep -qF 'fileinto :copy :create "📦 Others"' "$TMP/stalwart.sieve"
+  grep -qF 'fileinto :copy :create "7. 📦-Others"' "$TMP/stalwart.sieve"
 
 assert "sieve has inbox-read addflag on routes when inbox_copy.enabled" \
   test "$(grep -c 'addflag "\\\\Seen"' "$TMP/stalwart.sieve")" -gt 0
