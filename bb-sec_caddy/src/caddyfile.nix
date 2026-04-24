@@ -165,13 +165,18 @@ let
   '';
 
   # ── Route generators ──
+  # listen: optional — when the derive emits a "listen" field (e.g. "10.0.0.1:465"
+  # for listen_scope=wg), Caddy binds only on that IP:port. Absent → :<port> =
+  # all interfaces = current public behavior. One data-driven knob flips public
+  # vs WG-only per entry in config.json → vms[gcp-proxy].public_ports[].
   mkL4Block = route:
     let
       pp = route.proxy_protocol or false;
       ppLine = if pp then "\n                proxy_protocol v2" else "";
+      listenSpec = route.listen or ":${toString route.port}";
     in ''
         # ${route.comment or ""}
-        :${toString route.port} {
+        ${listenSpec} {
           route {
             proxy {
               upstream ${route.upstream}${ppLine}
