@@ -14,17 +14,17 @@
     "regex"
   ],
   "folders": {
-    "important": "00  ⭐ Important",
-    "admin": "11  🛡️ Admin & Finance",
-    "logistics": "12  ✈️ Logistics",
-    "cloud": "13  ☁️ Cloud (Homelab)",
-    "career": "21  💼 Career & Network",
-    "social": "22  📰 Social & General",
-    "government": "23  🧻 Goverment",
-    "development": "31  🎓 Development & Tech",
-    "others": "Aa  📬 Others (fallback)",
-    "archive": "Ab  📥 Archive",
-    "junk": "Ac  🚫 Junk"
+    "admin": "11    🛡️ Admin & Finance",
+    "logistics": "12    ✈️ Logistics",
+    "cloud_reports": "13    ☁️ Cloud - General & Reports",
+    "cloud_workflows": "14    ☁️ Cloud - Workflows",
+    "career": "21    💼 Career & Network",
+    "social": "22    📰 Social & General",
+    "government": "23    🧻 Goverment",
+    "development": "31    🎓 Development & Tech",
+    "others": "Aa    📬 Others (fallback)",
+    "archive": "Ab    📥 Archive",
+    "junk": "Ac    🚫 Junk"
   },
   "routing_default": "others",
   "inbox_copy": {
@@ -1173,7 +1173,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud",
+        "copy_to": "cloud_reports",
         "flags": [
           "Cloud_Sec:Cert_Renewal"
         ]
@@ -1197,7 +1197,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud",
+        "copy_to": "cloud_reports",
         "flags": [
           "Cloud_Cost:Domain_Renewal"
         ]
@@ -1221,7 +1221,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud",
+        "copy_to": "cloud_reports",
         "flags": [
           "Cloud_Cost:Hardware_Asset"
         ]
@@ -1247,7 +1247,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud",
+        "copy_to": "cloud_reports",
         "flags": [
           "Cloud_Cost:External_SaaS"
         ]
@@ -1269,7 +1269,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud"
+        "copy_to": "cloud_reports"
       },
       "engines": {
         "stalwart": "full",
@@ -1615,9 +1615,9 @@
     }
   ],
   "folders_ui": [
-    "10 🗂️ ADMIN",
-    "20 📨 INFORMS",
-    "30 💻 DEV",
-    "AA 📦 OTHERS"
+    "10 _ ADMIN",
+    "20 _ INFORMS",
+    "30 _ DEV",
+    "AA _ OTHERS"
   ]
 }

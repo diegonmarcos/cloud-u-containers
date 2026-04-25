@@ -5,98 +5,98 @@
       "label": "github security exact",
       "from": "security@github.com",
       "subject": "[SECURITY] new sign-in",
-      "expect_folder": "31  🎓 Development & Tech",
+      "expect_folder": "31    🎓 Development & Tech",
       "expect_flags_include": []
     },
     {
       "label": "github subdomain routes to Others but tags",
       "from": "noreply@bounces.github.com",
       "subject": "You have notifications",
-      "expect_folder": "Aa  📬 Others (fallback)",
+      "expect_folder": "Aa    📬 Others (fallback)",
       "expect_flags_include": []
     },
     {
       "label": "ryanair routes to lifestyle",
       "from": "info@ryanair.com",
       "subject": "Boarding pass",
-      "expect_folder": "12  ✈️ Logistics",
+      "expect_folder": "12    ✈️ Logistics",
       "expect_flags_include": []
     },
     {
       "label": "42 berlin routes + tags evaluation",
       "from": "grades@42berlin.de",
       "subject": "Your peer review of exam",
-      "expect_folder": "31  🎓 Development & Tech",
+      "expect_folder": "31    🎓 Development & Tech",
       "expect_flags_include": []
     },
     {
       "label": "self-sent tags Meta_Route:SelfSent",
       "from": "me@diegonmarcos.com",
       "subject": "note to self",
-      "expect_folder": "13  ☁️ Cloud (Homelab)",
+      "expect_folder": "13    ☁️ Cloud - General & Reports",
       "expect_flags_include": []
     },
     {
       "label": "unknown sender → Others, no tags",
       "from": "random@weirddomain.xyz",
       "subject": "hi",
-      "expect_folder": "Aa  📬 Others (fallback)",
+      "expect_folder": "Aa    📬 Others (fallback)",
       "expect_flags_include": []
     },
     {
       "label": "DE invoice keyword fires profile tag",
       "from": "billing@ing.de",
       "subject": "Rechnung für den Monat",
-      "expect_folder": "11  🛡️ Admin & Finance",
+      "expect_folder": "11    🛡️ Admin & Finance",
       "expect_flags_include": []
     },
     {
       "label": "PR subject tags pull request + automated",
       "from": "noreply@example.com",
       "subject": "[PR] review requested: fix bug",
-      "expect_folder": "Aa  📬 Others (fallback)",
+      "expect_folder": "Aa    📬 Others (fallback)",
       "expect_flags_include": []
     },
     {
       "label": "substack newsletter routes to information",
       "from": "hi@substack.com",
       "subject": "Weekly digest",
-      "expect_folder": "22  📰 Social & General",
+      "expect_folder": "22    📰 Social & General",
       "expect_flags_include": []
     },
     {
       "label": "stalwart ES housing profile rule",
       "from": "noreply@idealista.com",
       "subject": "New property match",
-      "expect_folder": "12  ✈️ Logistics",
+      "expect_folder": "12    ✈️ Logistics",
       "expect_flags_include": []
     },
     {
       "label": "homelab own domain routes to cloud",
       "from": "noreply@diegonmarcos.com",
       "subject": "Certificate renewed",
-      "expect_folder": "13  ☁️ Cloud (Homelab)",
+      "expect_folder": "13    ☁️ Cloud - General & Reports",
       "expect_flags_include": []
     },
     {
       "label": "ES promo keyword (profile)",
       "from": "promo@elcorteingles.es",
       "subject": "Gran oferta de primavera",
-      "expect_folder": "Aa  📬 Others (fallback)",
+      "expect_folder": "Aa    📬 Others (fallback)",
       "expect_flags_include": []
     },
     {
       "label": "uptime alert subject",
       "from": "alerts@uptime.example",
       "subject": "[alert] service is down",
-      "expect_folder": "Aa  📬 Others (fallback)",
+      "expect_folder": "Aa    📬 Others (fallback)",
       "expect_flags_include": []
     },
     {
       "label": "tax authority high priority route",
       "from": "no-reply@elster.de",
       "subject": "Ihr Steuerbescheid",
-      "expect_folder": "23  🧻 Goverment",
+      "expect_folder": "23    🧻 Goverment",
       "expect_flags_include": []
     },
     {
@@ -104,7 +104,7 @@
       "from": "noreply@github.com",
       "subject": "You have notifications",
       "extra_headers": "X-Spam-Status: Yes, score=7.2 required=5.0 tests=BAYES_99",
-      "expect_folder": "Ac  🚫 Junk",
+      "expect_folder": "Ac    🚫 Junk",
       "expect_flags_include": []
     },
     {
@@ -112,7 +112,7 @@
       "from": "info@ryanair.com",
       "subject": "Boarding pass",
       "extra_headers": "X-Spam-Flag: YES",
-      "expect_folder": "Ac  🚫 Junk",
+      "expect_folder": "Ac    🚫 Junk",
       "expect_flags_include": []
     },
     {
@@ -120,7 +120,7 @@
       "from": "marketing@weird-sender.xyz",
       "subject": "Big sale",
       "extra_headers": "X-Microsoft-Antispam-Message-Info: BCL:0;spamverdict:spam",
-      "expect_folder": "Ac  🚫 Junk",
+      "expect_folder": "Ac    🚫 Junk",
       "expect_flags_include": []
     }
   ]
