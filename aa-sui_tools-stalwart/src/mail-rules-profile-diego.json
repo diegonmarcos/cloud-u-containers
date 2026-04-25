@@ -75,7 +75,7 @@
         ]
       },
       "actions": {
-        "copy_to": "cloud",
+        "copy_to": "cloud_reports",
         "flags": [
           "Cloud_Homelab"
         ]
