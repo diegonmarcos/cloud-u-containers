@@ -20,7 +20,12 @@ in
         "\${HOME}/.ssh:/mnt/host-ssh:ro"
         "\${HOME}/.config/sops:/mnt/host-sops:ro"
         "\${HOME}/.config/gh:/mnt/host-gh:ro"
-        "\${HOME}/git/vault/A0_keys/providers/github:/home/diego/git/vault/A0_keys/providers/github:ro"
+        # Full vault read-only — single source of truth for ALL secrets
+        # (GHCR PAT, OCI/GCP keys, sops age key, …). Engine reads
+        # /home/diego/git/vault/A0_keys/providers/github/api-key_opaque/token
+        # to docker-login before push, replacing the stale host
+        # ~/.docker/config.json that previously caused "denied: denied".
+        "\${HOME}/git/vault:/home/diego/git/vault:ro"
         "\${HOME}/.docker/config.json:/root/.docker/config.json:ro"
       ];
       environment = [
