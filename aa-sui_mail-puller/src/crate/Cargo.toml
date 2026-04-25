@@ -18,8 +18,10 @@ webpki-roots  = "0.26"
 async-imap    = "0.9"
 futures       = "0.3"
 
-# SMTP delivery
-lettre        = { version = "=0.11.20", default-features = false, features = ["tokio1", "tokio1-rustls-tls", "builder", "smtp-transport"] }
+# SMTP delivery — hand-rolled in src/deliver.rs (lettre 0.11 had Envelope
+# private + MIME-rewrap issues; needs are minimal: 1 authenticated submission
+# over STARTTLS in trusted WG mesh, raw RFC822 forward).
+base64        = "0.22"
 
 # OAuth2 token refresh (Gmail + Outlook)
 reqwest       = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
