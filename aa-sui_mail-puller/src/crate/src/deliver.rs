@@ -40,8 +40,13 @@ pub async fn deliver_raw(
     let pass = target.resolve_pass()?;
     let creds = Credentials::new(user, pass);
 
+    // Local-net trust domain: puller connects to Maddy/Stalwart by WG IP
+    // (e.g. 10.0.0.3) but their certs are issued for *.diegonmarcos.com.
+    // Skip both cert-chain and hostname checks — we're inside the WG mesh,
+    // not exposed to the internet.
     let tls = TlsParameters::builder(target.host.clone())
-        .dangerous_accept_invalid_certs(true) // local-net trust domain
+        .dangerous_accept_invalid_certs(true)
+        .dangerous_accept_invalid_hostnames(true)
         .build()?;
 
     let transport: AsyncSmtpTransport<Tokio1Executor> = if target.starttls {
