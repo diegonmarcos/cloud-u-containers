@@ -27,7 +27,7 @@ async function main() {
 
   if (process.argv.includes("--http")) {
     const { startMcpHttpServer } = await import("./http.js");
-    const port = parseInt(process.env.MCP_HTTP_PORT || process.env.PORT || "3105", 10);
+    const port = parseInt(process.env.MCP_HTTP_PORT || process.env.PORT || "3106", 10);
     await startMcpHttpServer(port);
   } else {
     const server = new McpServer({ name: "google-personal-mcp", version: "1.0.0" });

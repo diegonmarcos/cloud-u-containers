@@ -16,6 +16,25 @@ let
   # Cert is for mail.<base>; use domain for TLS SNI (not the raw WG IP).
   mailHost      = mh.maddy;
   stalwartJmap  = "https://${mh.stalwart}:${toString mp.stalwart_jmap_https}";
+
+  # ── Resolve proxied MCP URLs from cloud-data (mirrors c3-services-mcp) ──
+  # build.json declares child MCP names; each is looked up in `svc.<name>` to
+  # get its WG IP + app port. Bridge-mode container, so we use WG IPs.
+  proxyCfg = buildJson.proxied_mcps or { children = []; retry = {
+    initial_ms              = 10000;
+    max_ms                  = 120000;
+    max_retry_state_entries = 32;
+  }; };
+  resolveChild = child:
+    let s = svc.${child.service}; in {
+      inherit (child) name path;
+      url = "http://${s.ip}:${toString s.ports.app}${child.path}";
+    };
+  proxiedMcps = {
+    children = map resolveChild proxyCfg.children;
+    retry    = proxyCfg.retry;
+  };
+  proxiedMcpsJson = builtins.toJSON proxiedMcps;
 in
 {
   services = {
@@ -34,6 +53,7 @@ in
         STALWART_IMAP_PORT  = toString mp.stalwart_imap;
         STALWART_SMTP_PORT  = toString mp.stalwart_smtp;
         STALWART_JMAP_URL   = stalwartJmap;
+        PROXIED_MCPS        = proxiedMcpsJson;
       };
     };
   };

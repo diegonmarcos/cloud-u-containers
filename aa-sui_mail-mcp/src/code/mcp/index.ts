@@ -7,6 +7,7 @@ import { registerAdminTools } from "./tools/admin.js";
 import { registerResendTools } from "./tools/resend.js";
 import { registerDebugTools } from "./tools/debug.js";
 import { registerStalwartTools } from "./tools/stalwart.js";
+import { registerProxiedMcpTools, startProxyRetryLoop } from "./shared/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mail-mcp] ${msg}\n`);
 
@@ -33,10 +34,12 @@ async function main() {
     registerResendTools(server);
     registerDebugTools(server);
     registerStalwartTools(server);
+    await registerProxiedMcpTools(server);   // google-personal-mcp + future MCPs from build.json
     const transport = new StdioServerTransport();
-    log("Starting mail-mcp v1.4.0 (28 tools: 10 inbox, 3 compose, 2 admin, 7 resend, 3 debug, 3 stalwart)...");
+    log("Starting mail-mcp v1.5.0 (28 native tools + proxied MCPs)...");
     await server.connect(transport);
     log("Connected via stdio transport");
+    startProxyRetryLoop(server);
   }
 }
 
