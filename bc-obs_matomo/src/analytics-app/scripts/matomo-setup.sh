@@ -118,7 +118,8 @@ cd ~/matomo
 echo "Pulling Docker images..."
 docker compose config --images 2>/dev/null | sort -u | while read img; do echo "  pull: $img"; docker pull "$img" 2>/dev/null || true; done
 echo "Starting containers..."
-docker-compose up -d
+# Policy: VMs never build — pre-built images on GHCR.
+docker compose up -d --no-build
 echo "Waiting for services to start..."
 sleep 10
 docker-compose ps

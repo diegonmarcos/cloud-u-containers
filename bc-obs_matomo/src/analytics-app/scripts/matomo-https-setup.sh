@@ -47,7 +47,8 @@ if docker-compose ps | grep -q "Up"; then
     echo "✅ Matomo containers are running"
 else
     echo "Starting Matomo containers..."
-    docker-compose up -d
+    # Policy: VMs never build — pre-built images on GHCR.
+    docker compose pull --quiet && docker compose up -d --no-build
     sleep 10
 fi
 ENDSSH
