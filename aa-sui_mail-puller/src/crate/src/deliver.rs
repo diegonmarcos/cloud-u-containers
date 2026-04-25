@@ -25,11 +25,7 @@ use tokio::{
 };
 use tokio_rustls::{
     rustls::{
-        client::{
-            danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
-            WebPkiServerVerifier,
-        },
-        crypto::{ring, CryptoProvider},
+        client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
         pki_types::{CertificateDer, ServerName, UnixTime},
         ClientConfig, DigitallySignedStruct, SignatureScheme,
     },
@@ -201,18 +197,8 @@ fn normalise_for_data(input: &[u8]) -> Vec<u8> {
 
 fn tls_client_config() -> ClientConfig {
     // Inside the WG mesh we connect by IP but the cert is for *.diegonmarcos.com.
-    // Skip cert chain + hostname verification — same trust assumption as the
-    // pre-rewrite lettre TlsParameters.
-    let provider = Arc::new(ring::default_provider());
-    let _ = CryptoProvider::install_default(ring::default_provider());
-    let _ = WebPkiServerVerifier::builder_with_provider(
-        Arc::new(rustls::RootCertStore::empty()),
-        provider.clone(),
-    );
-
-    ClientConfig::builder_with_provider(provider)
-        .with_safe_default_protocol_versions()
-        .expect("rustls: protocol versions")
+    // Skip cert chain + hostname verification — local-net trust domain.
+    ClientConfig::builder()
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(NoVerify))
         .with_no_client_auth()
