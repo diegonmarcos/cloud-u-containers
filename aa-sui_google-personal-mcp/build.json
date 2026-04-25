@@ -52,13 +52,13 @@
     "app_hub": false
   },
   "ports": {
-    "app": 3105
+    "app": 3106
   },
   "containers": {
     "app": {
       "container_name": "google-personal-mcp",
       "image": "ghcr.io/diegonmarcos/google-personal-mcp:latest",
-      "port": 3105,
+      "port": 3106,
       "port_env": "PORT",
       "dns": "g-personal-mcp.app",
       "public": true,

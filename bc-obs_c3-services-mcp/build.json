@@ -66,6 +66,11 @@
         "name": "google-workspace-mcp",
         "service": "google-workspace-mcp",
         "path": "/mcp"
+      },
+      {
+        "name": "google-personal-mcp",
+        "service": "google-personal-mcp",
+        "path": "/mcp"
       }
     ],
     "retry": {
@@ -95,8 +100,8 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "mem_limit": "1G",
-        "mem_reservation": "128M",
+        "mem_limit": "2G",
+        "mem_reservation": "256M",
         "pids_limit": 256
       },
       "restart_policy": "unless-stopped",

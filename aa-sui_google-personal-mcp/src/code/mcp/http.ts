@@ -112,7 +112,7 @@ async function initSession(port: number): Promise<void> {
   log(`Persistent session ready: ${SESSION_ID}`);
 }
 
-export function startMcpHttpServer(port: number = 3105): Promise<void> {
+export function startMcpHttpServer(port: number = 3106): Promise<void> {
   return new Promise((resolve) => {
     const httpServer = createServer(async (req, res) => {
       try { await handleMcpRequest(req, res); }

@@ -10,7 +10,7 @@ MCP server for **personal** Google accounts (gmail.com), parallel to `aa-sui_goo
 | Transport | MCP Streamable HTTP at `https://mcp.diegonmarcos.com/g-personal/mcp` |
 | Health | `https://mcp.diegonmarcos.com/g-personal/health` |
 | Tools | `account_list`, `account_test`, `gmail_search`, `gmail_read`, `gmail_send`, `gmail_labels_list`, `gmail_label_apply`, `gmail_message_move`, `gmail_thread_messages` |
-| Container | `ghcr.io/diegonmarcos/google-personal-mcp:latest` on `oci-apps:3105` |
+| Container | `ghcr.io/diegonmarcos/google-personal-mcp:latest` on `oci-apps:3106` |
 
 Gmail-specific IMAP extensions exposed: `X-GM-RAW` (full Gmail search), `X-GM-THRID` (conversation threads), `X-GM-LABELS` (labels = mailboxes).
 
