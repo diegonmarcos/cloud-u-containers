@@ -22,11 +22,7 @@
     "remote_path": "/opt/containers/dagu",
     "excludes": [
       "data"
-    ],
-    "clean_dirs": [
-      "dags"
-    ],
-    "compose_flags": "--build"
+    ]
   },
   "compose": {
     "custom": true
