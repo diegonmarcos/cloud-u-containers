@@ -18,11 +18,9 @@
       "imap_port": 993,
       "email": "diegonmarcos1@gmail.com",
       "mailboxes": ["INBOX"],
-      "oauth": {
-        "client_id_env":     "GMAIL_CLIENT_ID",
-        "client_secret_env": "GMAIL_CLIENT_SECRET",
-        "refresh_token_env": "GMAIL_REFRESH_TOKEN",
-        "token_url":         "https://oauth2.googleapis.com/token"
+      "auth": {
+        "method": "app_password",
+        "password_env": "GMAIL_APP_PASSWORD"
       },
       "deliver_envelope_from": "diegonmarcos1@gmail.com",
       "deliver_envelope_to":   "me@diegonmarcos.com",

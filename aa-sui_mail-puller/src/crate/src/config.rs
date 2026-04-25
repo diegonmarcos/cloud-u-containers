@@ -41,6 +41,17 @@ pub struct OAuthRef {
     pub scope:             Option<String>,
 }
 
+/// New tagged auth field — supports both OAuth (Gmail/Outlook future-proof) and
+/// plain App Password (Gmail "App passwords", IMAP LOGIN). Preferred over the
+/// legacy top-level `oauth: {…}` field, which is kept for backward compat with
+/// existing sources.json files.
+#[derive(Deserialize, Debug, Clone)]
+#[serde(tag = "method", rename_all = "snake_case")]
+pub enum AuthMethod {
+    Oauth(OAuthRef),
+    AppPassword { password_env: String },
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct Source {
     pub id: String,
@@ -49,10 +60,31 @@ pub struct Source {
     pub imap_port: u16,
     pub email: String,
     pub mailboxes: Vec<String>,
-    pub oauth: OAuthRef,
+    /// New (preferred) — `{ "method": "oauth"|"app_password", … }`.
+    #[serde(default)]
+    pub auth: Option<AuthMethod>,
+    /// Legacy — promoted to `AuthMethod::Oauth` if `auth` is absent.
+    #[serde(default)]
+    pub oauth: Option<OAuthRef>,
     pub deliver_envelope_from: String,
     pub deliver_envelope_to:   String,
     pub targets: Vec<String>,
+}
+
+impl Source {
+    /// Resolve the effective auth method, normalizing legacy `oauth` → tagged enum.
+    pub fn resolve_auth(&self) -> Result<AuthMethod> {
+        if let Some(a) = &self.auth {
+            return Ok(a.clone());
+        }
+        if let Some(o) = &self.oauth {
+            return Ok(AuthMethod::Oauth(o.clone()));
+        }
+        Err(anyhow!(
+            "source {}: neither `auth` nor legacy `oauth` field is set",
+            self.id
+        ))
+    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
