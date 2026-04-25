@@ -117,7 +117,17 @@ submission tls://@BIND_465@:465 tcp://@BIND_587@:587 {
         }
     }
     default_source {
-        reject 501 5.1.8 "Non-local sender domain"
+        # Authenticated relay from external accounts (mail-puller fetching
+        # Gmail / Outlook IMAP and re-injecting). Non-local envelope-FROM
+        # allowed — the auth gate (&local_authdb above) is what vouches.
+        # We accept only LOCAL recipients here (no DKIM, no outbound queue):
+        # external→local relay, never external→external open relay.
+        destination postmaster $(local_domains) {
+            deliver_to &local_routing
+        }
+        default_destination {
+            reject 550 5.7.1 "Relay denied: external sender + external recipient (open-relay guard)"
+        }
     }
 }
 
