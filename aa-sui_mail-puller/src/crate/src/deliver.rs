@@ -7,12 +7,12 @@
 
 use anyhow::{Context, Result};
 use lettre::{
-    message::header::ContentType,
+    address::Address,
     transport::smtp::{
         authentication::Credentials,
         client::{Tls, TlsParameters},
     },
-    AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+    AsyncSmtpTransport, AsyncTransport, Envelope, Tokio1Executor,
 };
 
 use crate::config::SmtpTarget;
@@ -22,19 +22,22 @@ pub async fn deliver_raw(
     target: &SmtpTarget,
     envelope_from: &str,
     envelope_to: &str,
-    subject_hint: &str,
+    _subject_hint: &str,
     raw_rfc822: &[u8],
 ) -> Result<()> {
-    // Build envelope; body is the raw RFC822 bytes from the source server.
-    // lettre's builder needs a Subject header; reuse what we parsed, falling
-    // back to a marker so local sorters still classify.
-    let msg = Message::builder()
-        .from(envelope_from.parse()?)
-        .to(envelope_to.parse()?)
-        .subject(subject_hint)
-        .header(ContentType::parse("message/rfc822")?)
-        .body(raw_rfc822.to_vec())
-        .context("build lettre message")?;
+    // Forward the original RFC822 message verbatim — preserve every header
+    // (From, To, Subject, Message-Id, DKIM-Signature, Received, …) exactly
+    // as the upstream provider sent it. Wrapping with Message::builder()
+    // would re-encode and corrupt Gmail/Outlook MIME structures.
+    //
+    // SMTP envelope (MAIL FROM / RCPT TO) is set independently from the
+    // headers — that is the whole point of envelope routing.
+    let from_addr: Address = envelope_from.parse()
+        .with_context(|| format!("parse envelope_from: {}", envelope_from))?;
+    let to_addr: Address = envelope_to.parse()
+        .with_context(|| format!("parse envelope_to: {}", envelope_to))?;
+    let envelope = Envelope::new(Some(from_addr), vec![to_addr])
+        .context("build SMTP envelope")?;
 
     let user = target.resolve_user()?;
     let pass = target.resolve_pass()?;
@@ -62,7 +65,7 @@ pub async fn deliver_raw(
             .build()
     };
 
-    transport.send(msg).await
+    transport.send_raw(&envelope, raw_rfc822).await
         .with_context(|| format!("smtp send to target={} {}:{}", target_name, target.host, target.port))?;
     Ok(())
 }
