@@ -17,7 +17,8 @@
       "cmd": "npm ci --omit=dev",
       "entrypoint": "npx tsx mcp/index.ts --http",
       "base_image": "node:22-slim",
-      "apt": "dnsutils openssh-client"
+      "apt": "dnsutils openssh-client",
+      "app_dir": "code"
     }
   },
   "deploy": {
