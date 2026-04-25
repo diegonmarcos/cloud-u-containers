@@ -22,7 +22,8 @@
       "cmd": "uv sync --frozen --no-dev --extra disk",
       "entrypoint": "uv run main.py --transport streamable-http --tool-tier complete",
       "base_image": "python:3.11-slim",
-      "apt": "curl"
+      "apt": "curl",
+      "app_dir": "code"
     }
   },
   "deploy": {

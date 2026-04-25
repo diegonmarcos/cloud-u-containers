@@ -17,7 +17,8 @@
       "type": "app",
       "cmd": "npm ci --omit=dev",
       "entrypoint": "npx tsx src/index.ts --http",
-      "base_image": "node:22-slim"
+      "base_image": "node:22-slim",
+      "app_dir": "code"
     }
   },
   "deploy": {

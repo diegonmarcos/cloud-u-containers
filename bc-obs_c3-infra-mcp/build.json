@@ -17,7 +17,8 @@
       "cmd": "npm ci --omit=dev && npm install tsx",
       "entrypoint": "./entrypoint.sh",
       "base_image": "node:22-bookworm-slim",
-      "apt": "ca-certificates openssh-client iputils-ping curl git python3 build-essential dnsutils openssl netcat-openbsd"
+      "apt": "ca-certificates openssh-client iputils-ping curl git python3 build-essential dnsutils openssl netcat-openbsd",
+      "app_dir": "code"
     }
   },
   "deploy": {

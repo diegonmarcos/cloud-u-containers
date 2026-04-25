@@ -22,7 +22,8 @@
       "cmd": "npm ci --omit=dev",
       "entrypoint": "./entrypoint.sh",
       "base_image": "node:22-bookworm-slim",
-      "apt": "ca-certificates curl"
+      "apt": "ca-certificates curl",
+      "app_dir": "code"
     }
   },
   "deploy": {
