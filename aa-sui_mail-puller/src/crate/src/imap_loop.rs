@@ -15,7 +15,8 @@ use tokio::net::TcpStream;
 use tokio_rustls::{rustls::{ClientConfig, RootCertStore}, TlsConnector};
 use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 
-use crate::{config::{Config, Source}, deliver, oauth, state::State};
+use std::env;
+use crate::{config::{AuthMethod, Config, Source}, deliver, oauth, state::State};
 
 type ImapStream = Compat<tokio_rustls::client::TlsStream<TcpStream>>;
 
@@ -72,13 +73,27 @@ async fn one_cycle(src: &Source, mbox: &str, cfg: &Config, state: &State) -> Res
     let tls_stream = tls.connect(dns, tcp).await.context("TLS handshake")?;
 
     let client = Client::new(tls_stream.compat());
-    let access = oauth::fetch(&src.oauth).await.context("oauth refresh")?;
-    let auth = XOAuth2 { user: src.email.clone(), token: access.value };
 
-    let mut session: Session<ImapStream> = client
-        .authenticate("XOAUTH2", &auth)
-        .await
-        .map_err(|(e, _)| anyhow!("XOAUTH2 auth failed: {:?}", e))?;
+    // Resolve auth (supports new tagged AuthMethod + legacy `oauth` field).
+    let auth_method = src.resolve_auth()?;
+    let mut session: Session<ImapStream> = match auth_method {
+        AuthMethod::Oauth(oauth_ref) => {
+            let access = oauth::fetch(&oauth_ref).await.context("oauth refresh")?;
+            let auth = XOAuth2 { user: src.email.clone(), token: access.value };
+            client
+                .authenticate("XOAUTH2", &auth)
+                .await
+                .map_err(|(e, _)| anyhow!("XOAUTH2 auth failed: {:?}", e))?
+        }
+        AuthMethod::AppPassword { password_env } => {
+            let pw = env::var(&password_env)
+                .with_context(|| format!("env var {} unset (App Password for {})", password_env, src.id))?;
+            client
+                .login(&src.email, &pw)
+                .await
+                .map_err(|(e, _)| anyhow!("LOGIN auth failed for {}: {:?}", src.email, e))?
+        }
+    };
 
     let select = session.select(mbox).await.with_context(|| format!("SELECT {}", mbox))?;
     let uidvalidity = select.uid_validity.unwrap_or(0) as u32;
