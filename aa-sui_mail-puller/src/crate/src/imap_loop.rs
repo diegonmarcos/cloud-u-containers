@@ -147,7 +147,7 @@ async fn fetch_and_deliver(
                     &raw,
                 ).await {
                     Ok(()) => tracing::info!(source = %src.id, mailbox = %mbox, uid, target = %target_name, "delivered"),
-                    Err(e) => tracing::error!(source = %src.id, mailbox = %mbox, uid, target = %target_name, error = %e, "deliver failed"),
+                    Err(e) => tracing::error!(source = %src.id, mailbox = %mbox, uid, target = %target_name, error = ?e, "deliver failed"),
                 }
             }
         }
