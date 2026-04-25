@@ -65,6 +65,23 @@ secret = "@ADMIN_HASH@"
 [session.auth]
 require = [{if = "local_port != 2025", then = true}, {else = false}]
 
+# ── Security: WG mesh is fully trusted ───────────────────────────────
+# All Stalwart listeners bind WG-only (or to gcp-proxy / smtp-proxy via WG),
+# so IP-based fail2ban / auto-blocking is redundant and actively harmful
+# (it bans the puller after a single auth misconfig retry storm).
+# Disable by setting fail2ban thresholds to never-trigger values.
+[auth.fail2ban]
+authentication = "0/0"
+invalid-rcpt   = "0/0"
+loiter         = "0/0"
+
+# ── STARTTLS on submission (port 2587) ───────────────────────────────
+# Without this the listener accepts plaintext but never advertises
+# STARTTLS, so the mail-puller can't upgrade the connection. We bind on
+# WG only — the cert is wildcard *.diegonmarcos.com via Caddy renewal.
+[server.listener.submission.tls]
+implicit = false
+
 [tracer.log]
 type = "stdout"
 level = "info"
