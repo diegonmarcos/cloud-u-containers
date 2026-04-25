@@ -22,7 +22,7 @@
         "method": "app_password",
         "password_env": "GMAIL_APP_PASSWORD"
       },
-      "deliver_envelope_from": "diegonmarcos1@gmail.com",
+      "deliver_envelope_from": "no-reply@diegonmarcos.com",
       "deliver_envelope_to":   "me@diegonmarcos.com",
       "targets": ["maddy", "stalwart"]
     },
@@ -40,7 +40,7 @@
         "token_url":         "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
         "scope":             "https://outlook.office.com/IMAP.AccessAsUser.All offline_access"
       },
-      "deliver_envelope_from": "diegonmarcos@live.com",
+      "deliver_envelope_from": "no-reply@diegonmarcos.com",
       "deliver_envelope_to":   "me@diegonmarcos.com",
       "targets": ["maddy", "stalwart"]
     }
