@@ -115,7 +115,8 @@ echo ""
 echo "Step 5: Starting Docker containers..."
 echo "--------------------------------------"
 echo "Note: Using sudo because group membership requires re-login"
-sudo docker compose up -d
+# Policy: VMs never build — pre-built images on GHCR. Pull then up.
+sudo docker compose pull --quiet && sudo docker compose up -d --no-build
 echo "✅ Containers starting..."
 echo ""
 

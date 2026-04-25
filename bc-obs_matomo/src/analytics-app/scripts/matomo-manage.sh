@@ -45,7 +45,8 @@ run_remote() {
 case "${1:-}" in
     start)
         echo "Starting Matomo containers..."
-        run_remote "cd ~/matomo && docker-compose up -d"
+        # Policy: VMs never build — pre-built images on GHCR. Pull then up.
+        run_remote "cd ~/matomo && docker compose pull --quiet && docker compose up -d --no-build"
         echo "✅ Matomo started"
         ;;
     stop)
@@ -79,7 +80,8 @@ case "${1:-}" in
         ;;
     update)
         echo "Updating Matomo images..."
-        run_remote "cd ~/matomo && docker compose config --images 2>/dev/null | sort -u | while read img; do docker pull \"\$img\" 2>/dev/null || true; done && docker compose up -d"
+        # Policy: VMs never build. Update = pull latest GHCR digest + recreate.
+        run_remote "cd ~/matomo && docker compose pull && docker compose up -d --no-build --force-recreate"
         echo "✅ Matomo updated"
         ;;
     shell)

@@ -57,7 +57,8 @@ run_remote() {
 case "${1:-}" in
     start)
         echo "Starting matomo-hybrid container..."
-        run_remote "cd ~/matomo-hybrid && docker compose up -d"
+        # Policy: VMs never build. Pre-built image is on GHCR — pull then up.
+        run_remote "cd ~/matomo-hybrid && docker compose pull --quiet && docker compose up -d --no-build"
         echo "Container started (receiver mode, ~30-50MB RAM)"
         ;;
     stop)
@@ -120,8 +121,12 @@ case "${1:-}" in
         echo "  scp -i ${SSH_KEY} ${SSH_USER}@${SERVER_IP}:~/${BACKUP_NAME} ."
         ;;
     update)
-        echo "Rebuilding matomo-hybrid image..."
-        run_remote "cd ~/matomo-hybrid && docker compose build && docker compose up -d"
+        echo "Updating matomo-hybrid (pull pre-built image from GHCR)..."
+        # Policy: NEVER build on the VM. Image is pre-built and pushed to
+        # GHCR by the cloud build pipeline. Update = pull latest digest +
+        # recreate. To rebuild the image, run the cloud-builder workflow,
+        # NOT this script.
+        run_remote "cd ~/matomo-hybrid && docker compose pull && docker compose up -d --no-build --force-recreate"
         echo "Container updated and restarted"
         ;;
     shell)
