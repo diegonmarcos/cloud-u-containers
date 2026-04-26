@@ -1,4 +1,4 @@
-//! Typed client for `fincept-server`. WebSocket subscription helper ships
+//! Typed client for `fin-api` (the deployed fincept-server). WebSocket subscription helper ships
 //! Phase 11b; Phase 11a covers the REST surface so desktop + WASM frontends
 //! can compile against a single contract.
 
@@ -17,7 +17,7 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-// ── DTOs — mirrors fincept-server response shapes ────────────────────────────
+// ── DTOs — mirrors fin-api response shapes ────────────────────────────────────
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Health {

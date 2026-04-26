@@ -1,8 +1,8 @@
-//! Full round-trip: fincept-client → fincept-server over loopback.
+//! Full round-trip: fincept-client → fin-api over loopback.
 //! Nothing mocked — this locks the REST contract between the two crates.
 
 use fincept_client::{Client, StockMetrics};
-use fincept_server::{build_router, AppState};
+use fin_api::{build_router, AppState};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 

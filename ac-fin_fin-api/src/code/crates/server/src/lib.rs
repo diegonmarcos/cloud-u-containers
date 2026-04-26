@@ -1,4 +1,4 @@
-//! fincept-server — HTTP + WebSocket shell around the Rust port's backend.
+//! fin-api — HTTP + WebSocket shell around the Fincept Terminal Rust port's backend.
 //!
 //! Exposes:
 //!   GET  /health                          — liveness

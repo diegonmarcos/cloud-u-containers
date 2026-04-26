@@ -1,4 +1,4 @@
-use fincept_server::{build_router, AppState};
+use fin_api::{build_router, AppState};
 use std::net::SocketAddr;
 
 #[tokio::main]
@@ -13,12 +13,12 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState::try_new()?;
     let app = build_router(state);
 
-    let port: u16 = std::env::var("FINCEPT_PORT")
+    let port: u16 = std::env::var("FIN_API_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8080);
     let addr: SocketAddr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!(%addr, "fincept-server listening");
+    tracing::info!(%addr, "fin-api listening");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

@@ -1,4 +1,4 @@
-# compose.nix — docker-compose spec for fincept-server (Type A, own code)
+# compose.nix — docker-compose spec for fin-api (Type A, own code)
 # engine.nix serialises this attrset via lib.generators.toYAML and merges
 # compose-defaults.json into every service.
 { buildJson, container }:
@@ -9,12 +9,12 @@ let
 in
 {
   services = {
-    fincept-server = {
+    fin-api = {
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
       environment = {
-        FINCEPT_PORT = toString app.port;
+        FIN_API_PORT = toString app.port;
         RUST_LOG = "info,tower_http=info";
       };
       deploy.resources = {

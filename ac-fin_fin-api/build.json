@@ -1,15 +1,15 @@
 {
-  "name": "fincept-server",
-  "description": "Fincept Terminal backend — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
-  "dns": "fincept-api.app",
+  "name": "fin-api",
+  "description": "Fincept Terminal backend (fin-api) — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools",
+  "dns": "fin-api.app",
   "ports": {
     "app": 8340
   },
   "category": "fin",
-  "domain": "fincept-api.diegonmarcos.com",
+  "domain": "api.diegonmarcos.com/fin-api",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/fincept-server",
+    "remote_path": "/opt/containers/fin-api",
     "compose_flags": "--build"
   },
   "compose": {
@@ -17,13 +17,19 @@
   },
   "proxy": {
     "primary": {
-      "domain": "fincept-api.diegonmarcos.com",
-      "auth": "default"
-    },
-    "app_hub": true
+      "type": "path",
+      "parent_domain": "api.diegonmarcos.com",
+      "base_path": "/fin-api",
+      "auth": "two_factor",
+      "paths": {
+        "/health": {
+          "auth": "public"
+        }
+      }
+    }
   },
   "health": {
-    "path": "/health"
+    "path": "/fin-api/health"
   },
   "monitoring": {
     "tls_check": true,
@@ -35,15 +41,17 @@
   },
   "containers": {
     "app": {
-      "container_name": "fincept-server",
-      "image": "ghcr.io/diegonmarcos/fincept-server:latest",
+      "container_name": "fin-api",
+      "image": "ghcr.io/diegonmarcos/fin-api:latest",
       "port": 8340,
-      "port_env": "FINCEPT_PORT",
-      "dns": "fincept-api.app",
+      "port_env": "FIN_API_PORT",
+      "dns": "fin-api.app",
       "public": true,
       "proxy": {
-        "domain": "fincept-api.diegonmarcos.com",
-        "auth": "default"
+        "type": "path",
+        "parent_domain": "api.diegonmarcos.com",
+        "base_path": "/fin-api",
+        "auth": "two_factor"
       },
       "healthcheck": "/health",
       "monitoring": {
@@ -66,14 +74,15 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "fincept-server",
+    "image": "fin-api",
     "dockerfile": "Dockerfile",
     "arch": "arm64",
     "native_build": {
-      "cmd": "cargo build --release --bin fincept-server",
-      "binary": "target/release/fincept-server",
+      "cmd": "cargo build --release --bin fin-api",
+      "binary": "target/release/fin-api",
       "base_image": "debian:bookworm-slim",
-      "apt": "ca-certificates libssl3 curl"
+      "apt": "ca-certificates libssl3 curl",
+      "app_dir": "code"
     }
   },
   "build": {
