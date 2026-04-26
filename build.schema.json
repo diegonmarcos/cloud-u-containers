@@ -268,7 +268,7 @@
     },
     "api": {
       "type": "object",
-      "description": "Declarative API surface. Consumed by 2_configs/src/engines/cloud-data-config-derive.ts -> cloud-data-c3-services-api.json. Replaces the previous KNOWN_API_PATHS hardcoded map and the API_META map in c3-services-api/registry/definitions.ts.",
+      "description": "Declarative API surface. Flows from build.json -> _cloud-data-consolidated.json (consolidator) -> services.<name>.api inside every per-container build-{name}.json (deriveServiceConnections). Each container reads only its own build-{containername}.json to introspect peers.",
       "additionalProperties": false,
       "required": ["type"],
       "properties": {
@@ -311,7 +311,7 @@
     },
     "mcp": {
       "type": "object",
-      "description": "Declarative MCP (Model Context Protocol) surface. Consumed by cloud-data-c3-services-api.json alongside 'api'. Describes the deployed/network-reachable transport, not stdio-only dev mode.",
+      "description": "Declarative MCP (Model Context Protocol) surface. Flows from build.json -> services.<name>.mcp inside every per-container build-{name}.json. Describes the deployed/network-reachable transport — stdio-only services should still declare it (for catalogue completeness) and consumers filter on transport at read time.",
       "additionalProperties": false,
       "required": ["transport"],
       "properties": {
