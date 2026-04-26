@@ -15,7 +15,7 @@ Living log of the FinceptTerminal → Rust port. Updated as each phase lands.
 | 8     | UI shell + first 10 screens   | **done**     | headless egui `Context::run` — all 10 screens tick without panic under both dark + light themes |
 | 9     | Remaining 41 screens + node editor | **done**  | 51/51 screens in registry; screen-specs.json loaded and per-spec field invariants tested; node-graph topological sort + cycle detection |
 | 10    | Packaging + cutover           | **done**     | migration crate (C++ SQLite → Rust); AppImage/DMG/NSIS recipes; `./build.sh ship` stages 1.3 MB Linux binary; CI release matrix wired on tag push |
-| 11    | Backend/frontend split        | **active**   | fincept-server (Axum REST+WS) + fincept-client + ac-fin_fincept-server cloud wrapper; 180 tests, live server proved |
+| 11    | Backend/frontend split        | **active**   | fin-api (Axum REST+WS; package/binary renamed from `fincept-server` 2026-04-26) + fincept-client + ac-fin_fin-api cloud wrapper; 180 tests, live server proved |
 
 ## Phase 10 acceptance
 

@@ -1,7 +1,7 @@
 //! End-to-end HTTP smoke tests. Spin up the real router on a random port,
 //! hit it with `reqwest`, assert shapes.
 
-use fincept_server::{build_router, AppState};
+use fin_api::{build_router, AppState};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 

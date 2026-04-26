@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Typed async client for fincept-server. Consumed by the desktop binary and (eventually) the WASM web frontend."
+description = "Typed async client for fin-api. Consumed by the desktop binary and (eventually) the WASM web frontend."
 
 [dependencies]
 reqwest = { workspace = true }
@@ -17,4 +17,4 @@ tracing = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread"] }
 axum = { workspace = true }
-fincept-server = { path = "../server" }
+fin-api = { path = "../server" }

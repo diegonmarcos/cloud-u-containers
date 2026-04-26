@@ -1,5 +1,5 @@
 {
-  description = "Fincept Terminal backend — dist layout v2 (Type A, own code)";
+  description = "fin-api — Fincept Terminal backend, dist layout v2 (Type A, own code)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-fincept-server.json);
+    container = builtins.fromJSON (builtins.readFile ./build-fin-api.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
@@ -27,7 +27,7 @@
           baseImage = nb.base_image;
           apt       = nb.apt or "";
         };
-        title = "Fincept Terminal backend (v2)";
+        title = "fin-api (Fincept Terminal backend, v2)";
       };
     });
   };
