@@ -37,11 +37,16 @@ async function fetchJson(url) {
         const timeout = setTimeout(() => controller.abort(), 15_000);
         const res = await fetch(url, { signal: controller.signal });
         clearTimeout(timeout);
-        if (!res.ok)
+        if (!res.ok) {
+            console.error(`[gdelt] HTTP ${res.status} from ${url}`);
             return null;
+        }
         return (await res.json());
     }
-    catch {
+    catch (e) {
+        // FIX #1: log silent failures (was previously `catch { return null }`)
+        const code = e?.cause?.code ?? e?.code ?? e?.name ?? "unknown";
+        console.error(`[gdelt] fetch failed: ${code} ${e?.message ?? ""} url=${url}`);
         return null;
     }
 }
@@ -55,11 +60,24 @@ function buildUrl(query, mode) {
     return `${GDELT_BASE}?${params}`;
 }
 async function fetchTopic(topic) {
-    const [artRes, tlRes, toneRes] = await Promise.all([
-        fetchJson(buildUrl(topic, "artlist")),
-        fetchJson(buildUrl(topic, "timelinevol")),
-        fetchJson(buildUrl(topic, "tonechart")),
-    ]);
+    // FIX #3: sequential rather than Promise.all — 3 simultaneous requests
+    // per topic was tripping GDELT per-IP rate limits. Sequential keeps
+    // outbound concurrency = 1 globally; combined with the inter-topic
+    // delay in fetchAllTopics, total upstream pressure stays well below
+    // the (undocumented) GDELT throttle.
+    const sleepMs = (n) => new Promise((r) => setTimeout(r, n));
+    const artRes = await fetchJson(buildUrl(topic, "artlist"));
+    await sleepMs(500);
+    const tlRes = await fetchJson(buildUrl(topic, "timelinevol"));
+    await sleepMs(500);
+    const toneRes = await fetchJson(buildUrl(topic, "tonechart"));
+    // FIX #2: don't wipe the cache when ALL three upstream calls failed.
+    // Previously, fallback `?? []` silently replaced any prior good data
+    // with empty arrays — single rate-limit episode = total cache loss.
+    if (artRes == null && tlRes == null && toneRes == null) {
+        console.error(`[gdelt] all 3 upstream calls failed for "${topic}" — preserving prior cache`);
+        return;
+    }
     const articles = (artRes?.articles ?? []).map((a) => ({
         url: a.url ?? "",
         title: a.title ?? "",
