@@ -87,5 +87,14 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/docs/json",
+    "base_path": "/c3-infra-api",
+    "endpoint_count": 100,
+    "display_name": "C3 Cloud Control Center API",
+    "description": "REST API for cloud infrastructure operations, lifecycle control, and observability across inventory, operations, security, and FinOps.",
+    "auth": "bearer"
   }
 }

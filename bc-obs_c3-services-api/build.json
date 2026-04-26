@@ -78,5 +78,14 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/docs/json",
+    "base_path": "/c3-services-api",
+    "endpoint_count": 25,
+    "display_name": "C3 Services API Gateway",
+    "description": "Unified service API gateway that proxies and wraps OpenAPI services and custom REST/protocol endpoints.",
+    "auth": "bearer"
   }
 }
