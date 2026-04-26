@@ -87,5 +87,12 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/fin-api",
+    "display_name": "Fincept Terminal (Rust)",
+    "description": "Bloomberg-class financial intelligence platform with 35 data connectors, 7 analytics modules, 17 brokers, and 6 investor personas.",
+    "auth": "bearer"
   }
 }
