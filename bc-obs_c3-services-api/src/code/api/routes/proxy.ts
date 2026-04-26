@@ -38,7 +38,7 @@ export async function registerProxyRoutes(app: FastifyInstance) {
     }
 
     const svc = registry.get(req.params.service)!;
-    if (svc.api.type === "no-api") {
+    if (!svc.api || svc.api.type === "no-api") {
       reply.code(400);
       return { error: `Service '${req.params.service}' has no API` };
     }

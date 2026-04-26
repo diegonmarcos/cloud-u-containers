@@ -21,7 +21,14 @@ in
         HOST = vmIp;
         PORT = port;
         NODE_ENV = "production";
+        # GIT_BASE — registry consumer reads
+        # ${GIT_BASE}/cloud/2_configs/dist/cloud-data-c3-services-api.json
+        # to populate SERVICE_DEFINITIONS at startup.
+        GIT_BASE = "/root/git";
       };
+      # Reuse the c3-infra-api git-repos volume on oci-apps. Same VM, same
+      # cloud-data file source, same external named volume.
+      volumes = [ "c3_git_repos:/root/git:ro" ];
       healthcheck = {
         test = [
           "CMD-SHELL"
@@ -32,6 +39,12 @@ in
         retries = 3;
         start_period = "15s";
       };
+    };
+  };
+  volumes = {
+    c3_git_repos = {
+      external = true;
+      name = "c3-mcp-api_c3-repos";
     };
   };
 }

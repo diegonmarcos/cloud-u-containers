@@ -119,5 +119,12 @@
         }
       ]
     }
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/?module=API",
+    "display_name": "Matomo Reporting API",
+    "description": "Web analytics platform with Matomo Reporting API for tracking and admin operations.",
+    "auth": "api-key"
   }
 }

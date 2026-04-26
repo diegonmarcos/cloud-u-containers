@@ -65,5 +65,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 114,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "Google Workspace MCP",
+    "description": "Gmail, Calendar, Drive, Docs, Sheets, Forms, Slides, Chat, Tasks, Contacts, Search, Apps Script via OAuth 2.0/2.1.",
+    "auth": "oidc",
+    "sdk": "fastmcp@3.1.1"
   }
 }

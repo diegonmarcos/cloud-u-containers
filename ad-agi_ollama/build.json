@@ -56,5 +56,13 @@
     "image": "ollama",
     "dockerfile": "Dockerfile",
     "arch": "amd64"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "endpoint_count": 16,
+    "display_name": "Ollama LLM API (gcp-t4)",
+    "description": "REST API for LLM inference, embeddings, model management, and version information.",
+    "auth": "none"
   }
 }

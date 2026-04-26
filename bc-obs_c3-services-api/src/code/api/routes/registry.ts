@@ -42,9 +42,9 @@ export async function registerRegistryRoutes(app: FastifyInstance) {
       displayName: s.displayName,
       description: s.description,
       vm: s.vm,
-      apiType: s.api.type,
-      endpointCount: s.api.endpointCount,
-      hasSpec: !!s.api.specUrl,
+      apiType: s.api?.type ?? (s.mcp ? "mcp" : "no-api"),
+      endpointCount: s.api?.endpointCount ?? s.mcp?.toolsCount ?? 0,
+      hasSpec: !!s.api?.specUrl,
     }));
     return { services, total: services.length };
   });
@@ -84,7 +84,7 @@ export async function registerRegistryRoutes(app: FastifyInstance) {
       reply.code(404);
       return { error: `Service '${req.params.service}' not found` };
     }
-    if (!svc.api.specUrl) {
+    if (!svc.api?.specUrl) {
       reply.code(404);
       return { error: `Service '${req.params.service}' has no OpenAPI spec` };
     }

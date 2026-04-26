@@ -55,5 +55,13 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/",
+    "endpoint_count": 2,
+    "display_name": "JWT Introspection Proxy",
+    "description": "Validates bearer JWT tokens locally using Authelia JWKS public keys for Caddy forward_auth.",
+    "auth": "bearer"
   }
 }

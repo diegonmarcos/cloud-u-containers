@@ -84,5 +84,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 109,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "C3 Infra MCP",
+    "description": "Cloud health, DevOps operations, workflows, cost tracking, security scanning, observability, front-end deployment.",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

@@ -194,5 +194,14 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/openapi.json",
+    "base_path": "/v2",
+    "endpoint_count": 74,
+    "display_name": "Crawlee Cloud Apify-Compatible API",
+    "description": "Self-hosted Apify-compatible web scraping platform with actors, runs, datasets, queues, and schedules.",
+    "auth": "api-key"
   }
 }

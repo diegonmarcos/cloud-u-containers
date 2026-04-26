@@ -78,5 +78,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 9,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "Google Personal MCP",
+    "description": "IMAP/SMTP access for personal Google accounts via App Password, multi-account support.",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

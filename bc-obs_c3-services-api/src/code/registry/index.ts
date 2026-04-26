@@ -28,7 +28,7 @@ export class ServiceRegistry {
 
   async fetchSpec(name: string): Promise<unknown | null> {
     const svc = this.services.get(name);
-    if (!svc || !svc.api.specUrl) return null;
+    if (!svc?.api?.specUrl) return null;
 
     const result = rawHttpRequest("GET", svc.api.specUrl, undefined, 10_000);
     if (result.ok) return result.data;

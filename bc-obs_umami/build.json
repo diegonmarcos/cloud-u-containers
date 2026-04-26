@@ -151,5 +151,12 @@
       "one_shot": true,
       "idempotent_marker": "/output/site_id"
     }
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/umami",
+    "display_name": "Umami Analytics API",
+    "description": "Lightweight privacy-focused web analytics with tracking API and admin interface.",
+    "auth": "bearer"
   }
 }

@@ -27,5 +27,13 @@
       "port_format": "host",
       "protocol": "http"
     }
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "endpoint_count": 16,
+    "display_name": "Ollama LLM API (ARM)",
+    "description": "REST API for LLM inference, embeddings, model management on ARM CPU.",
+    "auth": "none"
   }
 }

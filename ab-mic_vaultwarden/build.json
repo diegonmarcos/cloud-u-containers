@@ -91,5 +91,12 @@
   "resources": {
     "mem_limit": "128M",
     "mem_reservation": "32M"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "display_name": "Vaultwarden",
+    "description": "Bitwarden-compatible password manager with REST API.",
+    "auth": "bearer"
   }
 }

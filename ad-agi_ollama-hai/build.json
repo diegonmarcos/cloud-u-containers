@@ -59,5 +59,13 @@
     "image": "ollama-hai",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "endpoint_count": 16,
+    "display_name": "Ollama LLM API (HAI)",
+    "description": "REST API for LLM inference and embeddings for HAI agent and octocode support.",
+    "auth": "none"
   }
 }

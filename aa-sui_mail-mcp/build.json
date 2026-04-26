@@ -88,5 +88,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 28,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "Mail MCP",
+    "description": "IMAP/SMTP/Admin via Stalwart REST API; proxies google-personal-mcp tools.",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }
