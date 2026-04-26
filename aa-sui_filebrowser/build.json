@@ -76,5 +76,12 @@
     "image": "filebrowser",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "display_name": "FileBrowser",
+    "description": "Web-based file manager with REST API.",
+    "auth": "bearer"
   }
 }

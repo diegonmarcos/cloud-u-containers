@@ -266,6 +266,98 @@
         }
       }
     },
+    "api": {
+      "type": "object",
+      "description": "Declarative API surface. Consumed by 2_configs/src/engines/cloud-data-config-derive.ts -> cloud-data-c3-services-api.json. Replaces the previous KNOWN_API_PATHS hardcoded map and the API_META map in c3-services-api/registry/definitions.ts.",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "API style. 'no-api' = service has no programmatic interface and should be excluded from the registry.",
+          "enum": ["openapi", "custom-rest", "custom-protocol", "no-api"]
+        },
+        "spec_path": {
+          "type": "string",
+          "description": "Path on the upstream that returns an OpenAPI/Swagger document (e.g. '/swagger.json', '/docs/json'). Used to build api_url at runtime."
+        },
+        "spec_url": {
+          "type": "string",
+          "description": "Absolute URL override for the OpenAPI document when hosted off-service. Takes precedence over spec_path."
+        },
+        "base_path": {
+          "type": "string",
+          "description": "Conventional API path prefix (e.g. '/api/v1', '/api'). For documentation and discovery; not used for routing."
+        },
+        "endpoint_count": {
+          "type": "integer",
+          "description": "Number of distinct endpoints exposed. 0 if not enumerated; the registry can backfill this by inspecting the live spec.",
+          "minimum": 0
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Human-readable name shown in the registry."
+        },
+        "description": {
+          "type": "string",
+          "description": "One-sentence description of what the API exposes."
+        },
+        "auth": {
+          "type": "string",
+          "description": "Authentication enforced by the upstream itself (NOT what Caddy/Authelia adds in front).",
+          "enum": ["none", "bearer", "oidc", "basic", "api-key", "two_factor"]
+        }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "description": "Declarative MCP (Model Context Protocol) surface. Consumed by cloud-data-c3-services-api.json alongside 'api'. Describes the deployed/network-reachable transport, not stdio-only dev mode.",
+      "additionalProperties": false,
+      "required": ["transport"],
+      "properties": {
+        "transport": {
+          "type": "string",
+          "description": "MCP transport actually exposed by the deployed container. stdio is for dev-only services not reachable over the network and should be excluded from the registry.",
+          "enum": ["stdio", "sse", "http", "streamable-http"]
+        },
+        "endpoint_path": {
+          "type": "string",
+          "description": "URL path the MCP server listens on (e.g. '/mcp', '/sse')."
+        },
+        "tools_count": {
+          "type": "integer",
+          "description": "Number of MCP tools registered.",
+          "minimum": 0
+        },
+        "resources_count": {
+          "type": "integer",
+          "description": "Number of MCP resources registered.",
+          "minimum": 0
+        },
+        "prompts_count": {
+          "type": "integer",
+          "description": "Number of MCP prompts registered.",
+          "minimum": 0
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Human-readable name shown in the registry."
+        },
+        "description": {
+          "type": "string",
+          "description": "One-sentence description of what the MCP exposes."
+        },
+        "auth": {
+          "type": "string",
+          "description": "Authentication enforced by the MCP server itself (NOT what Caddy/Authelia adds in front).",
+          "enum": ["none", "bearer", "oidc", "basic", "api-key"]
+        },
+        "sdk": {
+          "type": "string",
+          "description": "MCP SDK package and version (e.g. '@modelcontextprotocol/sdk@^1.12.0', 'fastmcp@3.1.1')."
+        }
+      }
+    },
     "monitoring": {
       "type": "object",
       "description": "Monitoring probe configuration",

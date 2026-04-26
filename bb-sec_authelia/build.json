@@ -124,5 +124,12 @@
     "dockerfile": "Dockerfile",
     "arch": "amd64"
   },
-  "timezone": "Europe/Madrid"
+  "timezone": "Europe/Madrid",
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "display_name": "Authelia Auth API",
+    "description": "OpenID Connect/OAuth2 authorization and 2FA authentication server with WebAuthn support.",
+    "auth": "oidc"
+  }
 }

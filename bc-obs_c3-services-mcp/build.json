@@ -109,5 +109,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 127,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "C3 Services MCP",
+    "description": "Unified service API gateway: Grafana, Matomo, Umami, Ntfy, Syncthing, Crawlee, Authelia, NocoDB, PhotoPrism, Gitea, Grist, HedgeDoc, Etherpad, Vaultwarden; proxies infra and user MCPs.",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

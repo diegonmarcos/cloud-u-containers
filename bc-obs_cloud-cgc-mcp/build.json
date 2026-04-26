@@ -67,5 +67,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 48,
+    "resources_count": 2,
+    "prompts_count": 0,
+    "display_name": "Cloud CGC MCP",
+    "description": "Code Graph Context: cloud specs, docs, inventory, configs, skills; Octocode semantic search; CodeGraph analysis (future).",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

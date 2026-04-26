@@ -144,5 +144,12 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/v1",
+    "display_name": "ntfy Push Notifications",
+    "description": "Push notification server with HTTP POST interface for sending messages to topics.",
+    "auth": "bearer"
   }
 }

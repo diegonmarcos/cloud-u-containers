@@ -124,5 +124,12 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api/v1",
+    "display_name": "PhotoPrism",
+    "description": "AI-powered photo management system with REST API.",
+    "auth": "bearer"
   }
 }

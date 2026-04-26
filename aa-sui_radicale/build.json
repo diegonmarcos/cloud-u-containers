@@ -71,5 +71,12 @@
     "image": "radicale",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "api": {
+    "type": "custom-protocol",
+    "base_path": "/.well-known/caldav",
+    "display_name": "Radicale CalDAV/CardDAV Server",
+    "description": "WebDAV-based CalDAV/CardDAV server for calendar and contact synchronization.",
+    "auth": "basic"
   }
 }

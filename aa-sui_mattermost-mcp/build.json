@@ -61,5 +61,16 @@
       "read_only": false,
       "protocol": "http"
     }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 10,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "Mattermost MCP",
+    "description": "Mattermost chat read, post, react, channel management via Mattermost API.",
+    "auth": "bearer",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

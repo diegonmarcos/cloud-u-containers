@@ -95,5 +95,12 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api/1",
+    "display_name": "Etherpad",
+    "description": "Collaborative real-time text editor with HTTP API.",
+    "auth": "api-key"
   }
 }

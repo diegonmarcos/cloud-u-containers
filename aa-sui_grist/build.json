@@ -71,5 +71,12 @@
   },
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "display_name": "Grist",
+    "description": "Self-hosted spreadsheet and database with REST API.",
+    "auth": "api-key"
   }
 }

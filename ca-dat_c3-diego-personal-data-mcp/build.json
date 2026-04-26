@@ -4,5 +4,15 @@
   "category": "data",
   "build": {
     "headers_enforced": true
+  },
+  "mcp": {
+    "transport": "stdio",
+    "tools_count": 16,
+    "resources_count": 0,
+    "prompts_count": 0,
+    "display_name": "Diego Personal Data MCP",
+    "description": "READ-ONLY personal data access: vault metadata, identity docs, communications, media, finance, health (redacted).",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
   }
 }

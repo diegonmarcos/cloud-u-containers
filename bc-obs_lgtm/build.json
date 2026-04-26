@@ -143,5 +143,13 @@
     "image": "lgtm",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/api/docs/swagger",
+    "base_path": "/grafana",
+    "display_name": "Grafana HTTP API",
+    "description": "Observability stack with Grafana UI and REST API, backed by Loki logs, Mimir metrics, and Tempo traces.",
+    "auth": "none"
   }
 }

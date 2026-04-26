@@ -131,5 +131,12 @@
     "image": "mattermost-bots",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api/v4",
+    "display_name": "Mattermost",
+    "description": "Open-source team chat platform with REST API.",
+    "auth": "bearer"
   }
 }

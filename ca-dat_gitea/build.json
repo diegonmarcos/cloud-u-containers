@@ -106,5 +106,13 @@
   "upstream_image": "gitea/gitea:latest",
   "build": {
     "headers_enforced": true
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/swagger.v1.json",
+    "base_path": "/api/v1",
+    "display_name": "Gitea",
+    "description": "Self-hosted Git service with REST API and repository management.",
+    "auth": "bearer"
   }
 }
