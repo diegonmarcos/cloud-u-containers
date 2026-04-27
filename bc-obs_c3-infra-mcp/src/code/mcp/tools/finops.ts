@@ -61,12 +61,13 @@ const log = (msg: string) => process.stderr.write(`[finops] ${msg}\n`);
 function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<string, TopologyService> } {
   // Migrated 2026-04-27: read own build-c3-infra-mcp.json (has services map enriched
   // by deriveServiceConnections) + fall back to consolidated for full vm/service data.
+  // 2026-04-27 migrated: cloud-data-topology.json legacy fallback dropped — consolidated covers all data
   const candidates = [
     "/app/build-c3-infra-mcp.json",
     join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "build-c3-infra-mcp.json"),
     "/app/_cloud-data-consolidated.json",
     join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),
-    join(CLOUD_DATA_DIR, "cloud-data-topology.json"), // legacy fallback
+    join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
   ];
   for (const p of candidates) {
     if (!existsSync(p)) continue;
@@ -375,18 +376,20 @@ async function finOpsAssets(): Promise<string> {
 
   // 5. Cloudflare DNS records
   sections.push("\n── CLOUDFLARE DNS ──");
-  // Migrated 2026-04-27: read consolidated (has full DNS/cloudflare data) or own build-{name}.json
+  // 2026-04-27 migrated: cloud-data-cloudflare-dns.json → _cloud-data-consolidated.json[.dns]
   const cfCandidates = [
     "/app/_cloud-data-consolidated.json",
     join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),
-    join(CLOUD_DATA_DIR, "cloud-data-cloudflare-dns.json"), // legacy fallback
+    join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
   ];
   const cfPath = cfCandidates.find((p) => existsSync(p));
   if (cfPath) {
     try {
       const cf = JSON.parse(readFileSync(cfPath, "utf-8"));
-      // consolidated has .dns; legacy has .records / .dns_records
-      const records = cf.dns?.cloudflare?.records ?? cf.records ?? cf.dns_records ?? [];
+      // consolidated has .dns.derived_entries (records) + .dns.cloudflare (raw entries)
+      const records = (Array.isArray(cf.dns?.cloudflare) && cf.dns.cloudflare.length > 0
+        ? cf.dns.cloudflare
+        : cf.dns?.derived_entries) ?? [];
       if (Array.isArray(records)) {
         sections.push(`  ${records.length} DNS records`);
         const byType = new Map<string, number>();
@@ -400,7 +403,7 @@ async function finOpsAssets(): Promise<string> {
       }
     } catch { sections.push("  parse error"); }
   } else {
-    sections.push("  cloudflare-dns.json not found");
+    sections.push("  _cloud-data-consolidated.json not found");
   }
 
   // 6. Git repos
