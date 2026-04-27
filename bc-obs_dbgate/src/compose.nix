@@ -3,9 +3,11 @@
 #
 # Per-database env vars (LABEL_*, SERVER_*, PORT_*, USER_*, PASSWORD_*,
 # ENGINE_*, DATABASE_*, READONLY_*) are generated programmatically from
-# the resolved cloud-data-databases.json (bundled at /app/ in-image, with
-# dist/ + legacy fallbacks resolved by flake.nix) and folded into
+# the resolved _cloud-data-consolidated.json (bundled at /app/ in-image, with
+# dist/ + legacy fallbacks resolved by flake.nix) — the databases array is
+# derived from .services[].containers[*].db_engine — and folded into
 # services.dbgate.environment.
+# 2026-04-27 migrated: cloud-data-databases.json → _cloud-data-consolidated.json
 { lib, buildJson, container, dbData }:
 
 let
