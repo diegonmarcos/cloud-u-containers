@@ -1,0 +1,165 @@
+# DISABLED 2026-04-27 — DAG kept for reference, not loaded by Dagu (.disabled suffix).
+# This DAG used to push cloud-data-{name}.json into git@github.com:diegonmarcos/cloud-data.git
+# on every cloud-repo push (webhook-triggered). Replaced by the per-container
+# build-{name}.json pattern: each container reads its own build-{containername}.json
+# (already symlinked into src/, copied into the image by include_cloud_data: true).
+# The cloud-data-{name}.json files in cloud-data/ are now frozen historical artefacts —
+# we never retire those files but no longer refresh them.
+#
+# No schedule — triggered by ntfy-dagu-bridge sidecar on GitHub push webhook
+env:
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - C3_API: http://10.0.0.6:8081
+  - REPO_DIR: /var/lib/dagu/data/cloud-data
+  - REPO_URL: git@github.com:diegonmarcos/cloud-data.git
+  - NTFY_URL: http://10.0.0.6:8090
+  - MIN_SIZE: 50
+mail_on:
+  failure: true
+  success: false
+type: graph
+steps:
+  - name: ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      if [ ! -d "$REPO_DIR/.git" ]; then
+        git clone "$REPO_URL" "$REPO_DIR"
+        cd "$REPO_DIR"
+        git config user.name "dagu-bot"
+        git config user.email "no-reply@diegonmarcos.com"
+      fi
+  - name: pull-rebase
+    depends:
+      - ensure-clone
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      # Clean stale git locks from crashed processes
+      rm -f .git/index.lock .git/shallow.lock .git/refs/heads/*.lock 2>/dev/null
+      git pull --rebase origin main || {
+        echo "Rebase conflict — resetting to remote"
+        git rebase --abort 2>/dev/null
+        git reset --hard origin/main
+      }
+  - name: fetch-all
+    depends:
+      - pull-rebase
+    command: |
+      # ── Robust fetch function ──────────────────────────────────────
+      # Guards: non-empty, valid JSON, has _generated field, size sanity
+      fetch_cloud_data() {
+        local endpoint="$1"
+        local filename="cloud-data-${endpoint}.json"
+        local target="$REPO_DIR/$filename"
+        local tmp="$target.tmp"
+
+        # 1. Fetch from API
+        if ! curl -sf --max-time 30 "$C3_API/cloud-data/$endpoint" > "$tmp" 2>/dev/null; then
+          rm -f "$tmp"
+          echo "SKIP $filename (curl failed or API unreachable)"
+          return 0
+        fi
+
+        # 2. Check minimum size (reject tiny/empty responses)
+        local new_size=$(wc -c < "$tmp")
+        if [ "$new_size" -lt "$MIN_SIZE" ]; then
+          rm -f "$tmp"
+          echo "SKIP $filename (too small: ${new_size} bytes < ${MIN_SIZE} min)"
+          return 0
+        fi
+
+        # 3. Validate JSON syntax
+        if ! jq '.' "$tmp" > /dev/null 2>&1; then
+          rm -f "$tmp"
+          echo "SKIP $filename (invalid JSON)"
+          return 0
+        fi
+
+        # 4. Reject error responses (must have _generated or be an array)
+        if ! jq -e '._generated // (type == "array")' "$tmp" > /dev/null 2>&1; then
+          # Check if it's an error response
+          if jq -e '.error // .statusCode' "$tmp" > /dev/null 2>&1; then
+            rm -f "$tmp"
+            echo "SKIP $filename (API returned error: $(jq -r '.error // .detail // "unknown"' "$tmp" 2>/dev/null))"
+            return 0
+          fi
+        fi
+
+        # 5. Size sanity: reject if new is <30% of existing (catastrophic shrink)
+        if [ -f "$target" ]; then
+          local old_size=$(wc -c < "$target")
+          if [ "$old_size" -gt "$MIN_SIZE" ] && [ "$new_size" -lt $((old_size * 30 / 100)) ]; then
+            rm -f "$tmp"
+            echo "REJECT $filename (catastrophic shrink: ${old_size} → ${new_size} bytes, <30%)"
+            return 0
+          fi
+        fi
+
+        # 6. Pretty-print and atomically replace
+        jq '.' "$tmp" > "${tmp}.pretty" 2>/dev/null && mv "${tmp}.pretty" "$tmp"
+        mv "$tmp" "$target"
+        echo "OK $filename (${new_size} bytes)"
+        return 0
+      }
+
+      # ── Fetch consolidated mother file ──────────────────────────
+      # _cloud-data-consolidated.json is the v2 source — all others derive from it
+      fetch_consolidated() {
+        local target="$REPO_DIR/_cloud-data-consolidated.json"
+        local tmp="$target.tmp"
+        if curl -sf --max-time 60 "$C3_API/cloud-data/consolidated" > "$tmp" 2>/dev/null; then
+          local sz=$(wc -c < "$tmp")
+          if [ "$sz" -gt 1000 ] && jq '._meta.version' "$tmp" > /dev/null 2>&1; then
+            jq '.' "$tmp" > "${tmp}.pretty" 2>/dev/null && mv "${tmp}.pretty" "$tmp"
+            mv "$tmp" "$target"
+            echo "OK _cloud-data-consolidated.json (${sz} bytes)"
+            return 0
+          fi
+        fi
+        rm -f "$tmp"
+        echo "SKIP _cloud-data-consolidated.json (not available yet)"
+        return 0
+      }
+      fetch_consolidated
+
+      # ── Fetch all per-consumer endpoints ────────────────────────
+      ENDPOINTS="topology configs deps dns-services caddy-routes authelia-acl monitoring-targets firewall-rules backup-targets wireguard-peers ntfy-acl cloudflare-dns matomo-sites container-resources log-routing gha-config containers-gcp-proxy containers-oci-mail containers-oci-analytics containers-oci-apps containers-gcp-t4"
+
+      OK=0
+      SKIP=0
+      REJECT=0
+      for ep in $ENDPOINTS; do
+        result=$(fetch_cloud_data "$ep")
+        echo "$result"
+        case "$result" in
+          OK*)     OK=$((OK + 1)) ;;
+          REJECT*) REJECT=$((REJECT + 1)) ;;
+          *)       SKIP=$((SKIP + 1)) ;;
+        esac
+      done
+
+      echo ""
+      echo "Summary: ${OK} updated, ${SKIP} skipped, ${REJECT} rejected (of $(echo $ENDPOINTS | wc -w) total)"
+
+      if [ "$REJECT" -gt 0 ]; then
+        echo "WARNING: ${REJECT} file(s) rejected due to catastrophic shrink — check C3 API health"
+      fi
+  - name: commit-and-push
+    depends:
+      - fetch-all
+    command: |
+      export GIT_SSH_COMMAND="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      cd "$REPO_DIR"
+      # Regenerate manifest
+      ls -1 *.json 2>/dev/null | grep -v manifest.json | sed 's/\.json$//' | \
+        awk '{name=$0; gsub(/-/," ",name); for(i=1;i<=split(name,a," ");i++) a[i]=toupper(substr(a[i],1,1)) substr(a[i],2); name=""; for(i=1;i<=length(a);i++) name=name (i>1?" ":"") a[i]; printf "{\"file\":\"%s.json\",\"name\":\"%s\"}\n",$0,name}' | \
+        jq -s '.' > manifest.json
+      git add -A *.json manifest.json
+      if git diff --cached --quiet; then
+        echo "No changes — skipping commit"
+        exit 0
+      fi
+      STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      git commit -m "sync: cloud data ${STAMP}"
+      git push origin main
+      echo "Pushed changes at ${STAMP}"
