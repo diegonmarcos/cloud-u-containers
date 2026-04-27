@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { execSync } from "child_process";
 import { homedir } from "os";
 import { join } from "path";
@@ -30,21 +30,64 @@ export const SSH_IDENTITY = [
   join(GIT_BASE, "vault/A0_keys/ssh/id_rsa"),
 ].find((p) => existsSync(p)) ?? join(HOME, ".ssh/id_rsa");
 export const SOLUTIONS_DIR = join(GIT_BASE, "cloud/a_solutions");
-// Topology source priority: cloud-data clone > deployed cloud-data > config.json fallback
-// Lazy getter — re-evaluated each time so it picks up cloned repos after syncRepos()
+
+// CLOUD_DATA_DIR / CLOUD_DATA_REPO declared early so resolveCloudDataPath can
+// reference them. Used as a legacy fallback path (the c3_git_repos volume clone).
+export const CLOUD_DATA_DIR = join(GIT_BASE, "cloud-data");
+export const CLOUD_DATA_REPO = "git@github.com:diegonmarcos/cloud-data.git";
+
+// Cloud-data file resolution.
+//
+// 2026-04-27: priority changed so the IN-IMAGE bundled copies win — every
+// container with `build.include_cloud_data: true` in its build.json gets every
+// 2_configs/dist/*.json copied into its image at /app/<filename>. That removes
+// the dependency on the c3_git_repos volume mount (which is the deprecated
+// shared-registry pattern). Falls back to the c3_git_repos clone + the cloud
+// repo's 2_configs/dist/ for backwards compatibility during the soft transition.
+function resolveCloudDataPath(filename: string): string {
+  if (filename === "cloud-data-topology.json" && process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
+  if (filename === "cloud-data-topology.json" && process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
+  const candidates = [
+    `/app/${filename}`,                                            // bundled in-image (preferred)
+    join(SOLUTIONS_DIR, "..", "2_configs", "dist", filename),      // dev: cloud repo dist/
+    join(CLOUD_DATA_DIR, filename),                                // legacy: c3_git_repos clone
+    join(SOLUTIONS_DIR, "..", filename),                           // legacy: cloud repo root
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  return candidates[0]; // best-guess for error paths
+}
+
 function resolveConfigPath(): string {
+  // Topology fallback chain: env > resolveCloudDataPath > legacy config.json.
   if (process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
   if (process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
-  const fromClone = join(CLOUD_DATA_DIR, "cloud-data-topology.json");
-  if (existsSync(fromClone)) return fromClone;
-  const fromDeployed = join(SOLUTIONS_DIR, "..", "cloud-data-topology.json");
-  if (existsSync(fromDeployed)) return fromDeployed;
+  const candidates = [
+    `/app/cloud-data-topology.json`,
+    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "cloud-data-topology.json"),
+    join(CLOUD_DATA_DIR, "cloud-data-topology.json"),
+    join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"),
+    join(SOLUTIONS_DIR, "..", "config.json"),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
   return join(SOLUTIONS_DIR, "..", "config.json");
 }
 
-export { resolveConfigPath as getConfigPath };
-export const CONFIGS_PATH = join(SOLUTIONS_DIR, "..", "cloud-data-configs.json");
-export const DEPS_PATH = join(SOLUTIONS_DIR, "..", "cloud-data-deps.json");
+export { resolveConfigPath as getConfigPath, resolveCloudDataPath };
+// Lazy getters so the path is re-resolved on each read (handles late-arriving
+// cloud-data clones from syncRepos and the bundled in-image path equally).
+export const getConfigsPath = () => resolveCloudDataPath("cloud-data-configs.json");
+export const getDepsPath = () => resolveCloudDataPath("cloud-data-deps.json");
+export const getConsolidatedPath = () => resolveCloudDataPath("_cloud-data-consolidated.json");
+export const getOwnBuildPath = () => resolveCloudDataPath("build-c3-infra-api.json");
+// Back-compat exports — call sites can still treat these as path strings.
+// Lazy-evaluated at first access so we pick up the in-image path even if the
+// container's working dir is set after import.
+export const CONFIGS_PATH = getConfigsPath();
+export const DEPS_PATH = getDepsPath();
 export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
@@ -75,8 +118,7 @@ export const C3_API_PUBLIC = _c3Api.public;
 export const FRONT_DIR = join(GIT_BASE, "front");
 export const FRONT_BUILD_SCRIPT = join(FRONT_DIR, "build.sh");
 
-export const CLOUD_DATA_DIR = join(GIT_BASE, "cloud-data");
-export const CLOUD_DATA_REPO = "git@github.com:diegonmarcos/cloud-data.git";
+// (CLOUD_DATA_DIR + CLOUD_DATA_REPO declared earlier in the file.)
 
 export const REPOS: Record<string, string> = {
   "cloud-data": CLOUD_DATA_DIR,

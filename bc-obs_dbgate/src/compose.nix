@@ -3,7 +3,9 @@
 #
 # Per-database env vars (LABEL_*, SERVER_*, PORT_*, USER_*, PASSWORD_*,
 # ENGINE_*, DATABASE_*, READONLY_*) are generated programmatically from
-# cloud-data-databases.json and folded into services.dbgate.environment.
+# the resolved cloud-data-databases.json (bundled at /app/ in-image, with
+# dist/ + legacy fallbacks resolved by flake.nix) and folded into
+# services.dbgate.environment.
 { lib, buildJson, container, dbData }:
 
 let

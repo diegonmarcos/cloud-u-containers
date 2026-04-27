@@ -15,7 +15,7 @@ import {
   getServicesForVm,
   resolveVmId,
 } from "../../shared/libs/config.js";
-import { SOLUTIONS_DIR, REPOS, DEPS_PATH, FRONT_DIR } from "../../shared/libs/paths.js";
+import { SOLUTIONS_DIR, REPOS, getDepsPath, FRONT_DIR } from "../../shared/libs/paths.js";
 import { exec } from "../../shared/libs/exec.js";
 import {
   listServices as listServiceApis,
@@ -621,10 +621,11 @@ export function registerInventoryTools(server: McpServer) {
     "Get consolidated node dependencies across all cloud services (from cloud-data-deps.json). Grouped by language for home-manager consumption.",
     {},
     async () => {
-      if (!existsSync(DEPS_PATH)) {
+      const depsPath = getDepsPath();
+      if (!existsSync(depsPath)) {
         return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
       }
-      return jsonText("Cloud deps", JSON.parse(readFileSync(DEPS_PATH, "utf-8")));
+      return jsonText("Cloud deps", JSON.parse(readFileSync(depsPath, "utf-8")));
     },
   );
 
@@ -633,10 +634,11 @@ export function registerInventoryTools(server: McpServer) {
     "Get merged node package.json (dependencies + devDependencies) across all cloud services — ready for ~/.node_modules/",
     {},
     async () => {
-      if (!existsSync(DEPS_PATH)) {
+      const depsPath = getDepsPath();
+      if (!existsSync(depsPath)) {
         return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
       }
-      const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+      const deps = JSON.parse(readFileSync(depsPath, "utf-8"));
       return jsonText("Merged node deps", deps.node?.merged ?? {});
     },
   );

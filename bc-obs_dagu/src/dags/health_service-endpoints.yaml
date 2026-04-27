@@ -9,6 +9,12 @@ mail_on:
 steps:
   - name: check-endpoints-and-notify
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+               /app/cloud-data-monitoring-targets.json; do
+        [ -f "$p" ] && MON_TARGETS="$p" && break
+      done
       FAILED=""
       ENDPOINTS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.endpoint_checks[] | "\(.url):\(.name)"' "$MON_TARGETS"; else echo -e "https://auth.diegonmarcos.com/api/health:Authelia 2FA\nhttps://vault.diegonmarcos.com/:Vaultwarden\nhttps://api.diegonmarcos.com/c3-api/health:C3 API"; fi)
       echo "$ENDPOINTS" | while IFS=: read -r proto rest; do

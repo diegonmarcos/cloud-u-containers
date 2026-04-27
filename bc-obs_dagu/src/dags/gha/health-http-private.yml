@@ -39,8 +39,14 @@ jobs:
 
       - name: Check all .app DNS (single SSH, batch dig)
         run: |
-          DNS_FILE="2_configs/dist/cloud-data-dns-services.json"
-          [ ! -f "$DNS_FILE" ] || [ ! -s "$DNS_FILE" ] && echo "::error::$DNS_FILE missing" && exit 1
+          DNS_FILE=""
+          for p in "2_configs/dist/cloud-data-dns-services.json" \
+                   "/var/lib/dagu/data/cloud-data/cloud-data-dns-services.json" \
+                   "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-dns-services.json" \
+                   "/app/cloud-data-dns-services.json"; do
+            [ -f "$p" ] && [ -s "$p" ] && DNS_FILE="$p" && break
+          done
+          [ -z "$DNS_FILE" ] && echo "::error::cloud-data-dns-services.json not found in any known location" && exit 1
 
           # Build batch dig script — single SSH call resolves ALL names
           NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)

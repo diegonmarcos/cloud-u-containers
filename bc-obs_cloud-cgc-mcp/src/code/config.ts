@@ -2,7 +2,7 @@
  * Minimal config reader for skill prompts.
  * Reads config.json directly via CONFIG_PATH env var.
  */
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 export interface VmConfig {
@@ -50,6 +50,31 @@ export function getRepoRoot(): string {
   const configPath = getConfigPath();
   // config.json is at repo root
   return join(configPath, "..");
+}
+
+/**
+ * Resolve a cloud-data / build / consolidated file. Priority:
+ *   1. /app/<filename>                             — bundled in-image (build pipeline copies dist/* into the image)
+ *   2. <repoRoot>/2_configs/dist/<filename>        — dev: cloud repo dist/
+ *   3. <repoRoot>/cloud-data/<filename>            — legacy c3_git_repos clone
+ *   4. <repoRoot>/<filename>                       — legacy cloud repo root
+ *
+ * 2026-04-27: replaces the previous `getRepoRoot() + "cloud-data" + filename`
+ * pattern which assumed a sibling cloud-data clone existed under the repo root.
+ * The new pattern lets each container read its bundled-in-image copy.
+ */
+export function getCloudDataPath(filename: string): string {
+  const repoRoot = (() => { try { return getRepoRoot(); } catch { return ""; } })();
+  const candidates = [
+    `/app/${filename}`,
+    repoRoot ? join(repoRoot, "2_configs", "dist", filename) : "",
+    repoRoot ? join(repoRoot, "cloud-data", filename) : "",
+    repoRoot ? join(repoRoot, filename) : "",
+  ].filter(Boolean) as string[];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  return candidates[0] ?? `/app/${filename}`;
 }
 
 export function getConfig(): InfraConfig {

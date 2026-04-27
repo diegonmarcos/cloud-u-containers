@@ -8,6 +8,12 @@ mail_on:
 steps:
   - name: check-backups-and-notify
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_TARGETS="$p" && break
+      done
       SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       ALERTS=""
       # Data-driven VM list from cloud-data-backup-targets.json

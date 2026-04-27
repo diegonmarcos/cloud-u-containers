@@ -9,11 +9,20 @@
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     container = builtins.fromJSON (builtins.readFile ./build-dbgate.json);
-    # cloud-data-databases.json lives in the tracked submodule at
-    # 2_configs/dist/ — read via repo-relative path (nix resolves it
-    # from the flake's source tree, no src/ symlink needed).
-    dbData    = builtins.fromJSON (builtins.readFile
-      ../../../2_configs/dist/cloud-data-databases.json);
+    # cloud-data-databases.json resolution (2026-04-27):
+    #   1. /app/cloud-data-databases.json        — bundled in-image
+    #   2. ../../../2_configs/dist/...           — dev: cloud repo dist/
+    #   3. ../../../cloud-data/...               — legacy: c3_git_repos clone
+    #   4. ../../../cloud-data-databases.json    — legacy: cloud repo root
+    dbDataPath =
+      if builtins.pathExists /app/cloud-data-databases.json
+        then /app/cloud-data-databases.json
+      else if builtins.pathExists ../../../2_configs/dist/cloud-data-databases.json
+        then ../../../2_configs/dist/cloud-data-databases.json
+      else if builtins.pathExists ../../../cloud-data/cloud-data-databases.json
+        then ../../../cloud-data/cloud-data-databases.json
+      else ../../../cloud-data-databases.json;
+    dbData    = builtins.fromJSON (builtins.readFile dbDataPath);
 
     engine = import ../../_shared/engine.nix;
 

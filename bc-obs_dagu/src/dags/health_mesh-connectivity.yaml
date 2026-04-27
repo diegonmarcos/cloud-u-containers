@@ -9,6 +9,12 @@ mail_on:
 steps:
   - name: check-mesh-and-notify
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+               /app/cloud-data-monitoring-targets.json; do
+        [ -f "$p" ] && MON_TARGETS="$p" && break
+      done
       FAILED=""
       PEERS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.vms[] | "\(.ip):\(.name):22"' "$MON_TARGETS"; else echo -e "10.0.0.1:gcp-proxy:22\n10.0.0.3:oci-mail:25\n10.0.0.4:oci-analytics:22"; fi)
       echo "$PEERS" | while IFS=: read -r ip name port; do

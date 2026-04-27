@@ -4,7 +4,7 @@
  */
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
-import { getConfig, getVmSshAlias, getRepoRoot } from "./config.js";
+import { getConfig, getVmSshAlias, getRepoRoot, getCloudDataPath } from "./config.js";
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -94,12 +94,12 @@ export function buildContextSummary(size: "compact" | "full"): string {
   if (size === "full") {
     const repoRoot = getRepoRoot();
 
-    // Add topology markdown
-    const topoMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-topology.md"));
+    // Add topology markdown (uses getCloudDataPath for in-image / dist / clone fallback chain)
+    const topoMd = readFileSafe(getCloudDataPath("cloud-data-topology.md"));
     if (topoMd) parts.push(`## Full Topology\n\n${topoMd}`);
 
     // Add configs markdown
-    const configsMd = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-configs.md"));
+    const configsMd = readFileSafe(getCloudDataPath("cloud-data-configs.md"));
     if (configsMd) parts.push(`## Full Configs\n\n${configsMd}`);
 
     // Add README
@@ -107,7 +107,7 @@ export function buildContextSummary(size: "compact" | "full"): string {
     if (readme) parts.push(`## README\n\n${readme}`);
 
     // Add deps summary
-    const deps = readFileSafe(join(repoRoot, "cloud-data", "cloud-data-deps.json"));
+    const deps = readFileSafe(getCloudDataPath("cloud-data-deps.json"));
     if (deps) {
       try {
         const parsed = JSON.parse(deps);

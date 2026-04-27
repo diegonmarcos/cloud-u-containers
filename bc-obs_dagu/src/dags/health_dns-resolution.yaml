@@ -9,6 +9,12 @@ mail_on:
 steps:
   - name: check-dns-and-notify
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+               /app/cloud-data-monitoring-targets.json; do
+        [ -f "$p" ] && MON_TARGETS="$p" && break
+      done
       FAILED=""
       DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.dns_checks[]' "$MON_TARGETS"; else echo -e "diegonmarcos.com\nauth.diegonmarcos.com\nvault.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com"; fi)
       for domain in $DOMAINS; do
