@@ -1,19 +1,37 @@
 schedule: "0 11 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
-  - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
+  - BACKUP_TARGETS: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
 mail_on:
   failure: false
   success: false
 steps:
   - name: check-backups-and-notify
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_TARGETS="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_TARGETS="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '{
+          by_vm: (
+            [.vms | to_entries[]
+              | select(.value.ssh_alias and .value.wg_ip)
+              | {key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}}]
+            | from_entries
+          )
+        }' "$CONS" > "$BACKUP_TARGETS"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_TARGETS="$p" && break
+        done
+      fi
       SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
       ALERTS=""
       # Data-driven VM list from cloud-data-backup-targets.json

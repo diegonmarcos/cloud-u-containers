@@ -1,6 +1,12 @@
 /**
  * Config tools — raw cloud-data and front-data file readers.
  * Serve the JSON/markdown source-of-truth files directly.
+ *
+ * 2026-04-27 migrated: cloud-data-{topology,configs,deps}.json -> _cloud-data-consolidated.json[.{configs,deps}]
+ * All three legacy split files are now slices of `_cloud-data-consolidated.json`:
+ *   - topology shape  -> consolidated top-level (consolidated IS a superset of topology)
+ *   - configs slice   -> consolidated.configs
+ *   - deps slice      -> consolidated.deps
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readFileSync, existsSync } from "fs";
@@ -12,41 +18,57 @@ function readJsonSafe(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf-8"));
 }
 
+function readConsolidated(): any {
+  const path = getCloudDataPath("_cloud-data-consolidated.json");
+  return readJsonSafe(path);
+}
+
 export function registerConfigTools(server: McpServer) {
 
   server.tool(
     "knowledge.config.topology",
-    "Get cloud-data-topology.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
+    "Get _cloud-data-consolidated.json — VMs, services, networking, full infrastructure map. The source of truth for all cloud config.",
     {},
     async () => {
-      const path = getCloudDataPath("cloud-data-topology.json");
+      // 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level)
+      const path = getCloudDataPath("_cloud-data-consolidated.json");
       const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: `cloud-data-topology.json not found (looked at ${path})` }] };
+      if (!data) return { content: [{ type: "text" as const, text: `_cloud-data-consolidated.json not found (looked at ${path})` }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     }
   );
 
   server.tool(
     "knowledge.config.configs",
-    "Get cloud-data-configs.json — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
+    "Get _cloud-data-consolidated.json[.configs] — generated configuration for all services (domains, ports, images, routes, Caddy/Authelia/DNS config).",
     {},
     async () => {
-      const path = getCloudDataPath("cloud-data-configs.json");
-      const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: `cloud-data-configs.json not found (looked at ${path})` }] };
-      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+      // 2026-04-27 migrated: cloud-data-configs.json -> _cloud-data-consolidated.json.configs
+      const consolidated = readConsolidated();
+      if (!consolidated) {
+        const path = getCloudDataPath("_cloud-data-consolidated.json");
+        return { content: [{ type: "text" as const, text: `_cloud-data-consolidated.json not found (looked at ${path})` }] };
+      }
+      const slice = consolidated.configs;
+      if (slice == null) return { content: [{ type: "text" as const, text: ".configs slice not present in _cloud-data-consolidated.json" }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(slice, null, 2) }] };
     }
   );
 
   server.tool(
     "knowledge.config.deps",
-    "Get cloud-data-deps.json — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
+    "Get _cloud-data-consolidated.json[.deps] — npm dependencies for all cloud services (per-service + merged). Shows what packages each service uses.",
     {},
     async () => {
-      const path = getCloudDataPath("cloud-data-deps.json");
-      const data = readJsonSafe(path);
-      if (!data) return { content: [{ type: "text" as const, text: `cloud-data-deps.json not found (looked at ${path})` }] };
-      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+      // 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
+      const consolidated = readConsolidated();
+      if (!consolidated) {
+        const path = getCloudDataPath("_cloud-data-consolidated.json");
+        return { content: [{ type: "text" as const, text: `_cloud-data-consolidated.json not found (looked at ${path})` }] };
+      }
+      const slice = consolidated.deps;
+      if (slice == null) return { content: [{ type: "text" as const, text: ".deps slice not present in _cloud-data-consolidated.json" }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(slice, null, 2) }] };
     }
   );
 

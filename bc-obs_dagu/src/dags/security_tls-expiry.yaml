@@ -2,21 +2,36 @@ schedule: "0 8 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
 mail_on:
   failure: false
   success: false
 steps:
   - name: check-tls-and-notify
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
-               /app/cloud-data-monitoring-targets.json; do
-        [ -f "$p" ] && MON_TARGETS="$p" && break
+      # 2026-04-27 migrated: cloud-data-monitoring-targets.json -> _cloud-data-consolidated.json[.services]
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        MON_TARGETS="${RUNNER_TEMP:-/tmp}/derived-mon-targets.$$.json"
+        jq '{
+          tls_checks: [.services | to_entries[]
+            | select(.value.monitoring.tls_check == true and .value.domain)
+            | {service: .key, domain: (.value.domain | split("/")[0])}]
+        }' "$CONS" > "$MON_TARGETS"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+                 /app/cloud-data-monitoring-targets.json; do
+          [ -f "$p" ] && MON_TARGETS="$p" && break
+        done
+      fi
       ALERTS=""
-      TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[]' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
+      TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[].domain' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
       for domain in $TLS_DOMAINS; do
         EXPIRY=$(echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
         if [ -n "$EXPIRY" ]; then

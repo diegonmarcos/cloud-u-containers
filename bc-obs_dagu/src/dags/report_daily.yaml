@@ -24,6 +24,7 @@ steps:
   - name: daily-mail
     command: >-
       docker run --rm --network host
+      --pull always
       -v /opt/ssh-keys/dagu:/root/.ssh
       -v dagu_dagu_data:/var/lib/dagu/data
       -w /var/lib/dagu/data/cloud-data/reports

@@ -1,0 +1,23 @@
+# Weekly security data scan — sec-data is YARA + git-grep against the local
+# clone (~140s on warm cache). It's pure local-CPU work that the daily report
+# snapshot can't speed up, so it runs on its own slower cadence here instead
+# of inside the daily fan-out.
+schedule: "0 4 * * 1"   # Mondays 04:00
+type: graph
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+  - GITHUB_TOKEN: ${GITHUB_TOKEN}
+mail_on:
+  failure: true
+  success: false
+steps:
+  - name: sec-data-scan
+    command: >-
+      docker run --rm --network host
+      --pull always
+      -v /opt/ssh-keys/dagu:/root/.ssh
+      -v dagu_dagu_data:/var/lib/dagu/data
+      -w /var/lib/dagu/data/cloud-data/reports
+      -e GITHUB_TOKEN=$GITHUB_TOKEN
+      ghcr.io/diegonmarcos/cloud-data-reports:latest
+      bash src/build.sh sec

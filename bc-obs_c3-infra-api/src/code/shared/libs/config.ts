@@ -7,7 +7,8 @@ let _config: InfraConfig | null = null;
 let _configTimestamp = 0;
 const CONFIG_TTL = 5 * 60 * 1000; // 5 minutes
 
-// SSH alias fallback — only used if cloud-data-topology.json VMs lack ssh_alias.
+// SSH alias fallback — only used if _cloud-data-consolidated.json VMs lack ssh_alias.
+// 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level — superset)
 // Data-driven: populated from getConfig().vms at runtime. Empty = no fallback needed.
 const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {};
 
@@ -190,7 +191,7 @@ function buildAliasMap(): { vmToAlias: Record<string, string>; aliasToVm: Record
   const vmToAlias: Record<string, string> = { ...VM_SSH_ALIASES_FALLBACK };
   const aliasToVm: Record<string, string> = {};
 
-  // Prefer ssh_alias from cloud-data-topology.json when present
+  // Prefer ssh_alias from _cloud-data-consolidated.json when present
   for (const [vmId, vm] of Object.entries(config.vms)) {
     if (vm.ssh_alias) {
       vmToAlias[vmId] = vm.ssh_alias;

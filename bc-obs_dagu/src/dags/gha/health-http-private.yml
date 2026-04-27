@@ -39,14 +39,40 @@ jobs:
 
       - name: Check all .app DNS (single SSH, batch dig)
         run: |
-          DNS_FILE=""
-          for p in "2_configs/dist/cloud-data-dns-services.json" \
-                   "/var/lib/dagu/data/cloud-data/cloud-data-dns-services.json" \
-                   "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-dns-services.json" \
-                   "/app/cloud-data-dns-services.json"; do
-            [ -f "$p" ] && [ -s "$p" ] && DNS_FILE="$p" && break
+          # 2026-04-27 migrated: cloud-data-dns-services.json -> _cloud-data-consolidated.json[.services,.vms]
+          CONS=""
+          for p in "2_configs/dist/_cloud-data-consolidated.json" \
+                   "/var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json" \
+                   "/var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json" \
+                   "/app/_cloud-data-consolidated.json"; do
+            [ -f "$p" ] && [ -s "$p" ] && CONS="$p" && break
           done
-          [ -z "$DNS_FILE" ] && echo "::error::cloud-data-dns-services.json not found in any known location" && exit 1
+          DNS_FILE=""
+          if [ -n "$CONS" ]; then
+            DNS_FILE="${RUNNER_TEMP:-/tmp}/derived-dns-services.json"
+            jq '
+              (.vms | to_entries[] | select(.value.ssh_alias == "gcp-proxy") | .value.wg_ip) as $caddy_ip
+              | {
+                  caddy_ip: $caddy_ip,
+                  services: (
+                    [
+                      (.services | to_entries[] | {key: .key, value: {ip: $caddy_ip}}),
+                      (.services | to_entries[] | .value.containers // {} | to_entries[]
+                        | select(.value.dns)
+                        | {key: (.value.dns | split(".")[0]), value: {ip: $caddy_ip}})
+                    ] | from_entries
+                  )
+                }
+            ' "$CONS" > "$DNS_FILE"
+          else
+            for p in "2_configs/dist/cloud-data-dns-services.json" \
+                     "/var/lib/dagu/data/cloud-data/cloud-data-dns-services.json" \
+                     "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-dns-services.json" \
+                     "/app/cloud-data-dns-services.json"; do
+              [ -f "$p" ] && [ -s "$p" ] && DNS_FILE="$p" && break
+            done
+          fi
+          [ -z "$DNS_FILE" ] && echo "::error::_cloud-data-consolidated.json (or legacy cloud-data-dns-services.json) not found in any known location" && exit 1
 
           # Build batch dig script — single SSH call resolves ALL names
           NAMES=$(jq -r '.services | keys[]' "$DNS_FILE" | sort)

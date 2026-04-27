@@ -2,21 +2,36 @@ schedule: "*/5 * * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
 mail_on:
   failure: false
   success: false
 steps:
   - name: check-endpoints-and-notify
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
-               /app/cloud-data-monitoring-targets.json; do
-        [ -f "$p" ] && MON_TARGETS="$p" && break
+      # 2026-04-27 migrated: cloud-data-monitoring-targets.json -> _cloud-data-consolidated.json[.services]
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        MON_TARGETS="${RUNNER_TEMP:-/tmp}/derived-mon-targets.$$.json"
+        jq '{
+          endpoint_checks: [.services | to_entries[]
+            | select(.value.monitoring.endpoint_check == true and .value.domain)
+            | {service: .key, url: ("https://" + .value.domain + "/")}]
+        }' "$CONS" > "$MON_TARGETS"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+                 /app/cloud-data-monitoring-targets.json; do
+          [ -f "$p" ] && MON_TARGETS="$p" && break
+        done
+      fi
       FAILED=""
-      ENDPOINTS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.endpoint_checks[] | "\(.url):\(.name)"' "$MON_TARGETS"; else echo -e "https://auth.diegonmarcos.com/api/health:Authelia 2FA\nhttps://vault.diegonmarcos.com/:Vaultwarden\nhttps://api.diegonmarcos.com/c3-api/health:C3 API"; fi)
+      ENDPOINTS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.endpoint_checks[] | "\(.url):\(.service)"' "$MON_TARGETS"; else echo -e "https://auth.diegonmarcos.com/api/health:Authelia 2FA\nhttps://vault.diegonmarcos.com/:Vaultwarden\nhttps://api.diegonmarcos.com/c3-api/health:C3 API"; fi)
       echo "$ENDPOINTS" | while IFS=: read -r proto rest; do
         [ -z "$proto" ] && continue
         svc=${rest##*:}

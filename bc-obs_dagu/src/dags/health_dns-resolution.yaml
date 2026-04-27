@@ -2,21 +2,37 @@ schedule: "0 8 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - MON_TARGETS: /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json
+  - MON_TARGETS: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
 mail_on:
   failure: false
   success: false
 steps:
   - name: check-dns-and-notify
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
-               /app/cloud-data-monitoring-targets.json; do
-        [ -f "$p" ] && MON_TARGETS="$p" && break
+      # 2026-04-27 migrated: cloud-data-monitoring-targets.json -> _cloud-data-consolidated.json[.services]
+      # Resolve consolidated first; fall back to legacy split file if absent.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        MON_TARGETS="${RUNNER_TEMP:-/tmp}/derived-mon-targets.$$.json"
+        jq '{
+          dns_checks: [.services | to_entries[]
+            | select(.value.monitoring.dns_check == true and .value.domain)
+            | {service: .key, domain: (.value.domain | split("/")[0])}]
+        }' "$CONS" > "$MON_TARGETS"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+                 /app/cloud-data-monitoring-targets.json; do
+          [ -f "$p" ] && MON_TARGETS="$p" && break
+        done
+      fi
       FAILED=""
-      DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.dns_checks[]' "$MON_TARGETS"; else echo -e "diegonmarcos.com\nauth.diegonmarcos.com\nvault.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com"; fi)
+      DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.dns_checks[].domain' "$MON_TARGETS"; else echo -e "diegonmarcos.com\nauth.diegonmarcos.com\nvault.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com"; fi)
       for domain in $DOMAINS; do
         RESULT=$(dig +short "$domain" @1.1.1.1 2>&1)
         if [ -z "$RESULT" ]; then

@@ -38,15 +38,26 @@ export const CLOUD_DATA_REPO = "git@github.com:diegonmarcos/cloud-data.git";
 
 // Cloud-data file resolution.
 //
-// 2026-04-27: priority changed so the IN-IMAGE bundled copies win — every
-// container with `build.include_cloud_data: true` in its build.json gets every
-// 2_configs/dist/*.json copied into its image at /app/<filename>. That removes
-// the dependency on the c3_git_repos volume mount (which is the deprecated
-// shared-registry pattern). Falls back to the c3_git_repos clone + the cloud
-// repo's 2_configs/dist/ for backwards compatibility during the soft transition.
+// 2026-04-27 migrated: cloud-data-{topology,configs,deps}.json → _cloud-data-consolidated.json[.{configs,deps}]
+// All three deprecated split files are now slices of `_cloud-data-consolidated.json`:
+//   - topology shape  → consolidated top-level (consolidated IS a superset of topology)
+//   - configs slice   → consolidated.configs
+//   - deps slice      → consolidated.deps
+// Back-compat: getConfigPath / CONFIGS_PATH / DEPS_PATH all resolve to the
+// consolidated file. Use getConfigsSlice() / getDepsSlice() / getTopologySlice()
+// to pull the relevant nested key.
+//
+// 2026-04-27: priority puts IN-IMAGE bundled copies first — every container with
+// `build.include_cloud_data: true` gets 2_configs/dist/*.json copied into its
+// image at /app/<filename>. Falls back to dev repo dist/, c3_git_repos clone,
+// and cloud repo root for backwards compatibility.
+// 2026-04-27 migrated: ENV var (CONFIG_JSON_PATH / CONFIG_PATH) overrides apply
+// when the caller asks for the consolidated file (the new topology source) OR the
+// legacy topology filename (back-compat for any external caller).
 function resolveCloudDataPath(filename: string): string {
-  if (filename === "cloud-data-topology.json" && process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
-  if (filename === "cloud-data-topology.json" && process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
+  const isTopology = filename === "_cloud-data-consolidated.json" || filename === "cloud-data-topology.json";
+  if (isTopology && process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
+  if (isTopology && process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
     `/app/${filename}`,                                            // bundled in-image (preferred)
     join(SOLUTIONS_DIR, "..", "2_configs", "dist", filename),      // dev: cloud repo dist/
@@ -59,35 +70,61 @@ function resolveCloudDataPath(filename: string): string {
   return candidates[0]; // best-guess for error paths
 }
 
+// 2026-04-27 migrated: cloud-data-topology.json → _cloud-data-consolidated.json
+// Topology readers can keep reading `.services` / `.vms` etc. unchanged because
+// consolidated is a superset of the old topology shape.
 function resolveConfigPath(): string {
-  // Topology fallback chain: env > resolveCloudDataPath > legacy config.json.
   if (process.env.CONFIG_JSON_PATH) return process.env.CONFIG_JSON_PATH;
   if (process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
-    `/app/cloud-data-topology.json`,
-    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "cloud-data-topology.json"),
-    join(CLOUD_DATA_DIR, "cloud-data-topology.json"),
-    join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"),
+    `/app/_cloud-data-consolidated.json`,
+    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "_cloud-data-consolidated.json"),
+    join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
+    join(SOLUTIONS_DIR, "..", "_cloud-data-consolidated.json"),
+    `/app/cloud-data-topology.json`,                                                          // 2026-04-27 migrated: legacy fallback
+    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "cloud-data-topology.json"),               // 2026-04-27 migrated: legacy fallback
+    join(CLOUD_DATA_DIR, "cloud-data-topology.json"),                                          // 2026-04-27 migrated: legacy fallback
+    join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"),                                     // 2026-04-27 migrated: legacy fallback
     join(SOLUTIONS_DIR, "..", "config.json"),
   ];
   for (const p of candidates) {
     if (existsSync(p)) return p;
   }
-  return join(SOLUTIONS_DIR, "..", "config.json");
+  return join(SOLUTIONS_DIR, "..", "2_configs", "dist", "_cloud-data-consolidated.json");
 }
 
 export { resolveConfigPath as getConfigPath, resolveCloudDataPath };
 // Lazy getters so the path is re-resolved on each read (handles late-arriving
 // cloud-data clones from syncRepos and the bundled in-image path equally).
-export const getConfigsPath = () => resolveCloudDataPath("cloud-data-configs.json");
-export const getDepsPath = () => resolveCloudDataPath("cloud-data-deps.json");
+// 2026-04-27 migrated: getConfigsPath/getDepsPath now point at the consolidated
+// file instead of the deprecated split files. Use getConfigsSlice/getDepsSlice
+// helpers below to extract the actual configs/deps payload.
 export const getConsolidatedPath = () => resolveCloudDataPath("_cloud-data-consolidated.json");
+export const getConfigsPath = () => getConsolidatedPath();
+export const getDepsPath = () => getConsolidatedPath();
 export const getOwnBuildPath = () => resolveCloudDataPath("build-c3-infra-api.json");
 // Back-compat exports — call sites can still treat these as path strings.
-// Lazy-evaluated at first access so we pick up the in-image path even if the
-// container's working dir is set after import.
+// 2026-04-27 migrated: now resolve to _cloud-data-consolidated.json. Existing
+// call sites that JSON.parse(readFileSync(CONFIGS_PATH))/(DEPS_PATH) and read a
+// nested key MUST be updated to use the slice helpers below; call sites that
+// only check `existsSync(path)` keep working.
 export const CONFIGS_PATH = getConfigsPath();
 export const DEPS_PATH = getDepsPath();
+
+// ── Slice helpers — read consolidated and return the relevant nested key.
+// 2026-04-27 migrated: replaces JSON.parse(readFileSync(CONFIGS_PATH/DEPS_PATH)).
+function readConsolidated(): any {
+  const path = getConsolidatedPath();
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+export const getTopologySlice = (): any => readConsolidated() ?? {};
+export const getConfigsSlice = (): any => readConsolidated()?.configs ?? null;
+export const getDepsSlice = (): any => readConsolidated()?.deps ?? null;
 export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");

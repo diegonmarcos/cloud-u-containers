@@ -1,4 +1,4 @@
-# Data-driven database backup — reads all targets from cloud-data-backup-targets.json
+# Data-driven database backup — reads all targets from _cloud-data-consolidated.json
 # Adding a new database: update the service's build.json containers section with db_user/db_name/db_path/dump_cmd
 # then regenerate cloud-data. This DAG picks it up automatically via sync_cloud-data.yaml (every 5 min).
 schedule: "0 3 * * *"
@@ -9,7 +9,7 @@ env:
   - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
   - RUSTIC_REPO: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-db"
   - RUSTIC_PASSWORD: ${RUSTIC_PASSWORD}
-  - BACKUP_JSON: /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json
+  - BACKUP_JSON: /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json
   - SSH_OPTS: "-i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 mail_on:
   failure: true
@@ -19,12 +19,60 @@ steps:
   # ── Phase 1: Dump databases on each VM (parallel) ──────────────────
   - name: dump-oci-apps
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       VM="oci-apps"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -53,12 +101,60 @@ steps:
 
   - name: dump-gcp-proxy
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       VM="gcp-proxy"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -87,12 +183,60 @@ steps:
 
   - name: dump-oci-mail
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       VM="oci-mail"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -121,12 +265,60 @@ steps:
 
   - name: dump-oci-analytics
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       VM="oci-analytics"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -161,12 +353,60 @@ steps:
       - dump-oci-mail
       - dump-oci-analytics
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       STAMP=$(date +%Y%m%d)
       COLLECT_IP=$(jq -r '.by_vm."oci-apps".wg_ip' "$BACKUP_JSON")
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
@@ -217,12 +457,60 @@ steps:
     depends:
       - collect-and-upload
     command: |
-      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
-      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
-               /app/cloud-data-backup-targets.json; do
-        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      # 2026-04-27 migrated: cloud-data-backup-targets.json -> _cloud-data-consolidated.json[.vms,.services]
+      # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
+      # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
+      CONS=""
+      for p in /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /app/_cloud-data-consolidated.json; do
+        [ -f "$p" ] && CONS="$p" && break
       done
+      if [ -n "$CONS" ]; then
+        BACKUP_JSON="${RUNNER_TEMP:-/tmp}/derived-backup-targets.$$.json"
+        jq '
+          . as $root
+          | ($root.vms | with_entries({key: .value.ssh_alias, value: {wg_ip: .value.wg_ip, user: .value.user}})) as $alias_vms
+          | ($root.vms | with_entries({key: .key, value: .value.ssh_alias})) as $canon_to_alias
+          | {
+              by_vm: (
+                $alias_vms
+                | with_entries(
+                    .key as $alias
+                    | .value as $vm_info
+                    | {
+                        key: $alias,
+                        value: ($vm_info + {
+                          databases: [
+                            $root.services | to_entries[]
+                            | select(.value.backup.enabled == true)
+                            | select($canon_to_alias[.value.vm] == $alias)
+                            | (.key) as $svc
+                            | .value.containers | to_entries[]
+                            | select(.value.db_engine or .value.db_path)
+                            | (.key) as $ckey
+                            | .value as $c
+                            | if $c.db_engine == "postgres" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "postgres", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_engine == "mariadb" then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "mariadb", user: $c.db_user, db: $c.db_name}
+                              elif $c.db_path then
+                                {service: $svc, container: $c.container_name, container_key: $ckey, type: "sqlite", path: $c.db_path}
+                              else empty end
+                          ]
+                        })
+                      }
+                  )
+              )
+            }
+        ' "$CONS" > "$BACKUP_JSON"
+      else
+        for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+                 /app/cloud-data-backup-targets.json; do
+          [ -f "$p" ] && BACKUP_JSON="$p" && break
+        done
+      fi
       COLLECT_IP=$(jq -r '.by_vm."oci-apps".wg_ip' "$BACKUP_JSON")
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
       COUNT=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "ls /var/backups/collected/*$(date +%Y%m%d)* 2>/dev/null | wc -l")

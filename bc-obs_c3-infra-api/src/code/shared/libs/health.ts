@@ -1,9 +1,9 @@
-import { readFileSync, existsSync } from "fs";
 import { sshExec, checkVmReachable } from "./ssh.js";
 import { getConfig, resolveVmId, getVmSshAlias, getServicesForVm } from "./config.js";
 import { listContainers } from "./docker.js";
 import { exec } from "./exec.js";
-import { CONFIGS_PATH } from "./paths.js";
+// 2026-04-27 migrated: cloud-data-configs.json → _cloud-data-consolidated.json[.configs]
+import { getConfigsSlice } from "./paths.js";
 import type { VmConfig, ServiceConfig } from "./types.js";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -151,7 +151,8 @@ export function healthAlive(): { status: string; version: string } {
 }
 
 /**
- * Returns declared VMs and services from cloud-data-topology.json. No network probing.
+ * Returns declared VMs and services from _cloud-data-consolidated.json. No network probing.
+ * 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level)
  */
 export function healthDeclared(): HealthDeclaredResult {
   const config = getConfig();
@@ -195,7 +196,7 @@ export function healthDeployed(vmId?: string): DeployedVm[] {
 }
 
 /**
- * Compare declared services (cloud-data-topology.json) with deployed containers (docker ps).
+ * Compare declared services (_cloud-data-consolidated.json) with deployed containers (docker ps).
  * For each service, check if expected containers are running.
  */
 export function healthDrift(): DriftEntry[] {
@@ -811,14 +812,16 @@ export interface ReachResult {
 }
 
 /**
- * Look up a service's domain from cloud-data-configs.json (Caddy routes + services).
+ * Look up a service's domain from _cloud-data-consolidated.json[.configs] (Caddy routes + services).
  * Falls back to topology service domain.
+ *
+ * 2026-04-27 migrated: cloud-data-configs.json -> _cloud-data-consolidated.json.configs
  */
 function resolveServiceDomain(target: string): string | undefined {
-  // 1. cloud-data-configs.json — has Caddy routes and service domains
-  if (existsSync(CONFIGS_PATH)) {
+  // 1. consolidated.configs — has Caddy routes and service domains
+  const configs = getConfigsSlice();
+  if (configs) {
     try {
-      const configs = JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
       // Check services list
       const svc = configs.services?.find((s: any) => s.name === target);
       if (svc?.domain && svc.domain !== "\u2014") return svc.domain;
@@ -836,7 +839,7 @@ function resolveServiceDomain(target: string): string | undefined {
 
 /**
  * /reach/:target — Test actual route reachability through Caddy/Cloudflare.
- * Looks up domain from cloud-data-configs.json, probes HTTPS + HTTP + TCP in parallel.
+ * Looks up domain from _cloud-data-consolidated.json[.configs], probes HTTPS + HTTP + TCP in parallel.
  */
 export function checkReach(target: string): ReachResult {
   const start = Date.now();
