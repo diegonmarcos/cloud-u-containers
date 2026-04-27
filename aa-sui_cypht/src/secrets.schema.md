@@ -37,9 +37,22 @@ cd ~/git/cloud/a_solutions/aa-sui_cypht
 ./build.sh ship
 ```
 
-The seeder is idempotent — re-ship overwrites `hm_user_settings` rows with
-the current declarative list. Missing env vars cause that account to be
-skipped silently (rest of the seed still applies).
+## Seeder scope (important — Cypht limitation)
+
+Cypht stores IMAP/SMTP/JMAP server entries in `hm_user_settings.settings` as
+a **BYTEA encrypted with the user's master password**. The seeder can NOT
+inject server configs server-side without the master password's derived
+encryption key.
+
+What the seeder DOES:
+- Initializes the PostgreSQL schema (`setup_database.php`)
+- Creates the master user `me@diegonmarcos.com` with `ME_PASSWORD`
+
+What you DO once after first ship:
+- Log in to `https://webmail.diegonmarcos.com` with `me@diegonmarcos.com`
+  and the value of `ME_PASSWORD`
+- Open the Servers page; add the 5 backends from `seed-accounts.json`.
+  Use the corresponding `*_PASSWORD` values from `.secrets` for each.
 
 ## Initial bootstrap
 

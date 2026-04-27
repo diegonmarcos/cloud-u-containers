@@ -27,6 +27,10 @@
     # On oci-mail (host network), it resolves through the same Caddy chain.
     stalwart_domain = "mail-stalwart.${base_domain}";
 
+    # WG IP for oci-mail (where cypht runs). Binding nginx here enforces
+    # WG-only access at the socket level — same pattern as Maddy/Stalwart.
+    wg_ip = "10.0.0.3";
+
     # Template substitution vars (build-time, @VAR@ syntax).
     cyphtEnvVars = {
       BASE_DOMAIN          = base_domain;
@@ -40,6 +44,11 @@
       POSTGRES_PORT        = "5432";
       POSTGRES_DB          = "cypht";
       POSTGRES_USER        = "cypht";
+    };
+
+    nginxConfVars = {
+      WG_IP      = wg_ip;
+      CYPHT_PORT = toString buildJson.ports.app;
     };
 
     # Seed-accounts SQL template uses no @VAR@ (it's read at runtime by the
@@ -56,6 +65,7 @@
         templates = [
           { name = "init.sh";              vars = {}; }
           { name = "cypht.env";            vars = cyphtEnvVars; }
+          { name = "nginx.conf";           vars = nginxConfVars; }
           { name = "seed-accounts.sql";    vars = sqlVars; }
         ];
         # Account inventory + idempotent psql seeder.

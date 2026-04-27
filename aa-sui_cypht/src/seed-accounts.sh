@@ -1,89 +1,81 @@
 #!/bin/sh
-# seed-accounts.sh — idempotent pre-seed of Cypht accounts into PostgreSQL.
+# seed-accounts.sh — bootstrap Cypht's master user account.
+#
 # Mounted into the cypht container at /opt/cypht-config/seed-accounts.sh,
 # invoked by compose entrypoint BEFORE docker-entrypoint.sh starts cypht-fpm.
 #
-# Architecture:
-#   - cypht-postgres sidecar already healthy (depends_on: service_healthy).
-#   - Cypht's own setup_database.php runs on first HTTP request — we wait
-#     for the user-settings table to appear (or skip silently if it doesn't).
-#   - For each account in seed-accounts.json, upsert into hm_user_settings
-#     with the per-account password resolved from .secrets via env_file.
+# What this seeder DOES:
+#   1. Wait for cypht-postgres healthcheck.
+#   2. Run Cypht's setup_database.php to create the schema (hm_user,
+#      hm_user_session, hm_user_settings tables).
+#   3. Run Cypht's create_account.php to create the master user account
+#      "me@diegonmarcos.com" with password from $ME_PASSWORD env var.
+#      (Idempotent — skips if user already exists.)
 #
-# Failure mode: if Cypht's schema isn't what we expect (Open Question #1 in
-# the plan), the seeder logs + exits 0. Accounts can still be added via UI.
+# What this seeder does NOT do (Cypht limitation, not laziness):
+#   * IMAP/SMTP/JMAP server entries are stored in hm_user_settings.settings
+#     as an encrypted BYTEA. The encryption key is derived from the user's
+#     master password. We CAN'T inject server configs server-side without
+#     impersonating an authenticated session.
+#
+# After this seeder runs:
+#   * Log in once at https://webmail.diegonmarcos.com with
+#     username = me@diegonmarcos.com, password = $ME_PASSWORD
+#   * Use the "Servers" page to add the 5 IMAP/JMAP/SMTP backends
+#     declared in seed-accounts.json. The corresponding passwords from
+#     .secrets are documented in secrets.schema.md.
+#
+# Failure modes:
+#   * Schema creation fails → exit 0, log error. Cypht's web entrypoint
+#     will retry on first request.
+#   * User creation fails → exit 0, log error. Manual fallback: log into
+#     Cypht (no users yet → first user becomes admin).
+
 set -e
 
 CFG=/opt/cypht-config
-SEED_JSON="$CFG/seed-accounts.json"
-PROBE_SQL="$CFG/seed-accounts.sql"
+APP=/usr/local/share/cypht
 
 PGHOST=127.0.0.1
 PGUSER=cypht
 PGDATABASE=cypht
 export PGHOST PGUSER PGDATABASE PGPASSWORD="${CYPHT_DB_PASSWORD:-${POSTGRES_PASSWORD:-}}"
 
-# ── 1. Wait for postgres to accept connections (depends_on:healthy already ensures this, belt+braces) ──
+# ── 1. Wait for postgres to accept connections ──
 i=0
 while [ $i -lt 30 ]; do
     pg_isready -h "$PGHOST" -U "$PGUSER" >/dev/null 2>&1 && break
     i=$((i + 1)); sleep 1
 done
-
-# ── 2. Wait for Cypht to initialize schema (setup_database.php on first hit) ──
-# We give it up to 60 s. If table doesn't appear, exit 0 (non-fatal).
-i=0
-schema_ready=0
-while [ $i -lt 60 ]; do
-    out=$(psql -tA -c "SELECT to_regclass('public.hm_user_settings') IS NOT NULL" 2>/dev/null || true)
-    if [ "$out" = "t" ]; then schema_ready=1; break; fi
-    i=$((i + 1)); sleep 2
-done
-
-if [ "$schema_ready" != "1" ]; then
-    echo "Cypht schema not ready after 120s — accounts must be added via UI."
-    echo "(Cypht's setup_database.php hasn't run yet. Reseed by re-execing this script after first UI login.)"
+if ! pg_isready -h "$PGHOST" -U "$PGUSER" >/dev/null 2>&1; then
+    echo "postgres not reachable — skipping seed (cypht web entrypoint will retry)"
     exit 0
 fi
 
-# ── 3. Iterate accounts and upsert ──
-echo "Schema ready. Seeding accounts from $SEED_JSON ..."
-seed_one() {
-    acct="$1"
-    email=$(echo "$acct" | jq -r .email)
-    login=$(echo "$acct" | jq -r '.login // .email')
-    pass_env=$(echo "$acct" | jq -r .pass_env)
-    password=$(eval "printf '%s' \"\$$pass_env\"")
-    if [ -z "$password" ]; then
-        echo "  skip $email — env var $pass_env unset"
-        return
-    fi
-    settings=$(jq -n --arg login "$login" --arg pwd "$password" \
-                    --argjson imap "$(echo "$acct" | jq '.imap // null')" \
-                    --argjson smtp "$(echo "$acct" | jq '.smtp // null')" \
-                    --argjson jmap "$(echo "$acct" | jq '.jmap // null')" \
-                    '{login:$login, pass:$pwd, imap:$imap, smtp:$smtp, jmap:$jmap}')
-
-    # Upsert. EXACT column names per Cypht's schema may need adjustment after
-    # first deploy — see plan Open Question #1. The conservative approach is
-    # to DELETE + INSERT inside a transaction (idempotent regardless of
-    # whether a unique constraint exists).
-    psql -v ON_ERROR_STOP=1 <<SQL >/dev/null
-BEGIN;
-DELETE FROM hm_user_settings WHERE username = '$email';
-INSERT INTO hm_user_settings (username, settings) VALUES ('$email', '$settings'::jsonb);
-COMMIT;
-SQL
-    echo "  seeded $email"
+# ── 2. Initialize Cypht schema (idempotent — has IF NOT EXISTS guards) ──
+echo "Running setup_database.php..."
+cd "$APP" || { echo "cypht install dir missing"; exit 0; }
+php scripts/setup_database.php 2>&1 | sed 's/^/  /' || {
+    echo "setup_database.php failed — schema may not be ready, exiting non-fatal"
+    exit 0
 }
 
-# Primary
-primary=$(jq -c .primary "$SEED_JSON")
-seed_one "$primary"
+# ── 3. Create master user account ──
+PRIMARY_EMAIL=$(jq -r .primary.email "$CFG/seed-accounts.json")
+PRIMARY_PASS_ENV=$(jq -r .primary.pass_env "$CFG/seed-accounts.json")
+PRIMARY_PASS=$(eval "printf '%s' \"\$$PRIMARY_PASS_ENV\"")
 
-# Extras
-jq -c '.extras[]' "$SEED_JSON" | while read -r acct; do
-    seed_one "$acct"
-done
+if [ -z "$PRIMARY_PASS" ]; then
+    echo "primary password env $PRIMARY_PASS_ENV unset — skipping user creation"
+    exit 0
+fi
 
-echo "Seed complete."
+echo "Creating user account: $PRIMARY_EMAIL ..."
+php scripts/create_account.php "$PRIMARY_EMAIL" "$PRIMARY_PASS" 2>&1 | sed 's/^/  /' || true
+
+echo ""
+echo "Seed complete. To finish setup:"
+echo "  1. Visit https://webmail.diegonmarcos.com"
+echo "  2. Log in with $PRIMARY_EMAIL + the password from \$$PRIMARY_PASS_ENV"
+echo "  3. Open Servers page; add the 5 backends from seed-accounts.json"
+echo "     (passwords for each in /run/secrets/<KEY> or env vars)"

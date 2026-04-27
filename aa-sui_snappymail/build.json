@@ -30,19 +30,8 @@
     "arch": "amd64"
   },
   "proxy": {
-    "primary": {
-      "domain": "webmail.diegonmarcos.com",
-      "auth": "two_factor"
-    },
-    "mail_hub": {
-      "parent_domain": "mail.diegonmarcos.com",
-      "base_path": "/snappy",
-      "auth": "two_factor",
-      "error_redirect": "/",
-      "asset_paths": [
-        "/snappymail"
-      ]
-    }
+    "_demoted_2026-04-27": "Public webmail.diegonmarcos.com handed off to aa-sui_cypht (pure-kindling-pixel.md). SnappyMail keeps running on internal snappymail.app route only — fallback in case Cypht has issues. Re-promote by restoring primary + mail_hub fields and re-shipping caddy.",
+    "primary": null
   },
   "containers": {
     "app": {
@@ -52,10 +41,7 @@
       "port_env": null,
       "dns": "snappymail.app",
       "public": true,
-      "proxy": {
-        "domain": "webmail.diegonmarcos.com",
-        "auth": "two_factor"
-      },
+      "proxy": null,
       "healthcheck": "/",
       "monitoring": null,
       "volumes": [
