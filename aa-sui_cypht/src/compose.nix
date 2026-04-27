@@ -27,6 +27,10 @@ in
         "cypht_data:/var/lib/hm3"
         # Cypht's main config. PHP/Nginx process reads this on boot.
         "./configs/cypht.env:/usr/local/share/cypht/.env:ro"
+        # Override upstream image's nginx.conf to bind 10.0.0.3:8889 (WG-only)
+        # instead of the default 0.0.0.0:80. Defense in depth: matches the
+        # Maddy/Stalwart pattern of explicit WG-IP socket binding.
+        "./configs/nginx.conf:/etc/nginx/nginx.conf:ro"
         # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
         "./assets/seed-accounts.json:/opt/cypht-config/seed-accounts.json:ro"
         "./assets/seed-accounts.sh:/opt/cypht-config/seed-accounts.sh:ro"
@@ -45,7 +49,9 @@ in
          + "exec docker-entrypoint.sh")
       ];
       healthcheck = {
-        test = [ "CMD" "curl" "-sf" "http://127.0.0.1:${port}/" ];
+        # Healthcheck via WG IP (where nginx is now bound) — 127.0.0.1:port
+        # would fail because nginx is bound 10.0.0.3 only.
+        test = [ "CMD" "curl" "-sf" "http://10.0.0.3:${port}/" ];
         interval = "30s";
         timeout  = "10s";
         retries  = 3;
