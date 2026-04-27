@@ -1,5 +1,5 @@
 /**
- * Discovery & Drift — compares cloud-data-topology (all deployed services)
+ * Discovery & Drift — compares the local build-c3-services-mcp.json (peer service map)
  * against what c3-services-mcp actually covers via:
  *   1. Native tool wrappers (API_META in definitions.ts)
  *   2. Proxied child MCPs (proxy-mcp.ts)
@@ -67,12 +67,18 @@ interface TopoData {
 }
 
 function loadTopology(): TopoData | null {
+  // c3-services-mcp reads its own build-c3-services-mcp.json (already symlinked
+  // into src/ by the engine, copied into /app/ in the image via include_cloud_data).
+  // The .services map is enriched with peer api/mcp metadata by deriveServiceConnections.
+  // Falls back to the consolidated file (cross-cutting reads) if needed.
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
-  const paths = [
-    join(gitBase, "cloud-data", "cloud-data-topology.json"),
-    join(gitBase, "cloud", "cloud-data", "cloud-data-topology.json"),
+  const candidates = [
+    "/app/build-c3-services-mcp.json",                                                            // in-image
+    join(gitBase, "cloud", "2_configs", "dist", "build-c3-services-mcp.json"),                    // dev / co-located clone
+    "/app/_cloud-data-consolidated.json",                                                         // in-image fallback
+    join(gitBase, "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),                 // dev fallback
   ];
-  for (const p of paths) {
+  for (const p of candidates) {
     if (!existsSync(p)) continue;
     try { return JSON.parse(readFileSync(p, "utf-8")) as TopoData; }
     catch { /* skip */ }
@@ -83,12 +89,12 @@ function loadTopology(): TopoData | null {
 export function registerDiscoveryTools(server: McpServer) {
   server.tool(
     "meta.discovery.drift",
-    "Compare all deployed cloud services (from cloud-data-topology.json) against what c3-services-mcp covers. Reports: covered (native wrapper or proxied MCP), infra (no API needed), self (MCP hub services), and UNCOVERED (the gap).",
+    "Compare all deployed cloud services (from build-c3-services-mcp.json) against what c3-services-mcp covers. Reports: covered (native wrapper or proxied MCP), infra (no API needed), self (MCP hub services), and UNCOVERED (the gap).",
     {},
     async () => {
       const topo = loadTopology();
       if (!topo) {
-        return { content: [{ type: "text" as const, text: "ERROR: cloud-data-topology.json not found" }], isError: true };
+        return { content: [{ type: "text" as const, text: "ERROR: build-c3-services-mcp.json not found" }], isError: true };
       }
 
       const allServices = Object.keys(topo.services).sort();

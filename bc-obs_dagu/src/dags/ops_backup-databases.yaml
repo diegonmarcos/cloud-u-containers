@@ -19,6 +19,12 @@ steps:
   # ── Phase 1: Dump databases on each VM (parallel) ──────────────────
   - name: dump-oci-apps
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       VM="oci-apps"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -47,6 +53,12 @@ steps:
 
   - name: dump-gcp-proxy
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       VM="gcp-proxy"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -75,6 +87,12 @@ steps:
 
   - name: dump-oci-mail
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       VM="oci-mail"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -103,6 +121,12 @@ steps:
 
   - name: dump-oci-analytics
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       VM="oci-analytics"
       IP=$(jq -r ".by_vm.\"$VM\".wg_ip" "$BACKUP_JSON")
       USER=$(jq -r ".by_vm.\"$VM\".user" "$BACKUP_JSON")
@@ -137,6 +161,12 @@ steps:
       - dump-oci-mail
       - dump-oci-analytics
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       STAMP=$(date +%Y%m%d)
       COLLECT_IP=$(jq -r '.by_vm."oci-apps".wg_ip' "$BACKUP_JSON")
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
@@ -187,6 +217,12 @@ steps:
     depends:
       - collect-and-upload
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-backup-targets.json \
+               /app/cloud-data-backup-targets.json; do
+        [ -f "$p" ] && BACKUP_JSON="$p" && break
+      done
       COLLECT_IP=$(jq -r '.by_vm."oci-apps".wg_ip' "$BACKUP_JSON")
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
       COUNT=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "ls /var/backups/collected/*$(date +%Y%m%d)* 2>/dev/null | wc -l")

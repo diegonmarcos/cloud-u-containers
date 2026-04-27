@@ -11,9 +11,15 @@ FILTER="${2:-}"
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-GHA_CONFIG="2_configs/dist/cloud-data-gha-config.json"
-if [ ! -f "$GHA_CONFIG" ]; then
-  echo "ERROR: $GHA_CONFIG not found" >&2
+GHA_CONFIG=""
+for p in "2_configs/dist/cloud-data-gha-config.json" \
+         "/var/lib/dagu/data/cloud-data/cloud-data-gha-config.json" \
+         "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-gha-config.json" \
+         "/app/cloud-data-gha-config.json"; do
+  [ -f "$p" ] && GHA_CONFIG="$p" && break
+done
+if [ -z "$GHA_CONFIG" ]; then
+  echo "ERROR: cloud-data-gha-config.json not found in any known location" >&2
   exit 1
 fi
 

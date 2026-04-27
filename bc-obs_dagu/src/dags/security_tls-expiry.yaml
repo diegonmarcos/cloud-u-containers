@@ -9,6 +9,12 @@ mail_on:
 steps:
   - name: check-tls-and-notify
     command: |
+      # Path-priority chain: legacy clone → 2_configs/dist → in-image bundled copy
+      for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
+               /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+               /app/cloud-data-monitoring-targets.json; do
+        [ -f "$p" ] && MON_TARGETS="$p" && break
+      done
       ALERTS=""
       TLS_DOMAINS=$(if [ -f "$MON_TARGETS" ]; then jq -r '.tls_checks[]' "$MON_TARGETS"; else echo -e "auth.diegonmarcos.com\nvault.diegonmarcos.com\nproxy.diegonmarcos.com\napi.diegonmarcos.com\nanalytics.diegonmarcos.com\nmail.diegonmarcos.com\nsync.diegonmarcos.com"; fi)
       for domain in $TLS_DOMAINS; do

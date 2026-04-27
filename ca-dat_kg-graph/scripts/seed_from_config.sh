@@ -11,7 +11,30 @@
 set -euo pipefail
 
 SURREAL_URL="${1:-http://localhost:8001}"
-CONFIG_JSON="${2:-/opt/containers/kg-graph/cloud-data-topology.json}"
+# cloud-data-topology.json resolution (2026-04-27):
+#   1. /app/cloud-data-topology.json                                  — bundled in-image
+#   2. ${CONFIG_JSON} (env or $2)                                     — explicit override / legacy
+#   3. /opt/containers/kg-graph/cloud-data-topology.json              — legacy compose-mounted
+#   4. <repoRoot>/2_configs/dist/cloud-data-topology.json             — dev: cloud repo dist/
+#   5. <script_dir>/../cloud-data-topology.json                       — legacy: kg-graph dir
+_resolve_topology() {
+    local override="${1:-${CONFIG_JSON:-}}"
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local candidates=(
+        "/app/cloud-data-topology.json"
+        "${override}"
+        "/opt/containers/kg-graph/cloud-data-topology.json"
+        "${script_dir}/../../../2_configs/dist/cloud-data-topology.json"
+        "${script_dir}/../cloud-data-topology.json"
+    )
+    for p in "${candidates[@]}"; do
+        [ -n "$p" ] && [ -f "$p" ] && { echo "$p"; return 0; }
+    done
+    # Best-guess fallback for error messages
+    echo "/app/cloud-data-topology.json"
+}
+CONFIG_JSON="$(_resolve_topology "${2:-}")"
 SURREAL_NS="infra"
 SURREAL_DB="production"
 
@@ -99,22 +122,21 @@ else
 fi
 
 # ---- Parse cloud-data-topology.json and generate seed data ----
-log "Parsing cloud-data-topology.json..."
+log "Parsing cloud-data-topology.json (resolved: $CONFIG_JSON)..."
 
 if ! [ -f "$CONFIG_JSON" ]; then
-    # Try local path relative to script
-    CONFIG_JSON="$(dirname "$0")/../cloud-data-topology.json"
-    if ! [ -f "$CONFIG_JSON" ]; then
-        log "ERROR: cloud-data-topology.json not found at $CONFIG_JSON"
-        exit 1
-    fi
+    log "ERROR: cloud-data-topology.json not found (resolved path: $CONFIG_JSON)"
+    exit 1
 fi
+
+# Export so the heredoc python3 block picks up the resolved path
+export CONFIG_JSON
 
 # Generate SurrealQL using python3
 SEED_SQL=$(python3 << 'PYEOF'
 import json, sys, os
 
-config_path = os.environ.get("CONFIG_JSON", "/opt/containers/kg-graph/cloud-data-topology.json")
+config_path = os.environ.get("CONFIG_JSON", "/app/cloud-data-topology.json")
 with open(config_path) as f:
     config = json.load(f)
 

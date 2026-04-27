@@ -4,7 +4,9 @@
 # ║ Import:                                                          ║
 # ║   ports = import ../../_shared/lib/port-enforcement.nix {        ║
 # ║     buildJsonPath = ../build.json;                               ║
-# ║     cloudDataPath = ./cloud-data-service-connections.json;       ║
+# ║     cloudDataPath = ./build-<name>.json;                         ║
+# ║     # ↑ per-service consolidated build file (replaces the legacy ║
+# ║     # cloud-data-service-connections.json shared registry).      ║
 # ║   };                                                             ║
 # ║                                                                  ║
 # ║ Usage with docker.mkService:                                     ║
