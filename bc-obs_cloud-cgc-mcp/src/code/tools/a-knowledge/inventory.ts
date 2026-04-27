@@ -15,7 +15,10 @@ import {
   getServicesForVm,
   resolveVmId,
 } from "../../shared/libs/config.js";
-import { SOLUTIONS_DIR, REPOS, getDepsPath, FRONT_DIR } from "../../shared/libs/paths.js";
+// 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
+// getDepsPath() now resolves to the consolidated file; use getDepsSlice() to extract
+// the actual deps payload (was the top level of the legacy split deps file).
+import { SOLUTIONS_DIR, REPOS, getDepsPath, getDepsSlice, FRONT_DIR } from "../../shared/libs/paths.js";
 import { exec } from "../../shared/libs/exec.js";
 import {
   listServices as listServiceApis,
@@ -180,7 +183,7 @@ export function registerInventoryTools(server: McpServer) {
     "knowledge.inventory.service_detail",
     "Get full service info: folder, flake.nix presence, secrets status, dist files",
     {
-      service: z.string().describe("Service name from cloud-data-topology.json"),
+      service: z.string().describe("Service name from _cloud-data-consolidated.json"),
     },
     async ({ service }) => {
       const config = getConfig();
@@ -243,7 +246,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.reload",
-    "Reload cloud-data-topology.json from disk and show diff (services/VMs added or removed since last load)",
+    "Reload _cloud-data-consolidated.json from disk and show diff (services/VMs added or removed since last load)",
     {},
     async () => {
       const oldConfig = getConfig();
@@ -276,10 +279,10 @@ export function registerInventoryTools(server: McpServer) {
       lines.push(`\n--- Drift Report ---`);
       lines.push(`Auto-discovered: ${autoCount} services from build.json`);
       if (drift.onDiskOnly.length) {
-        lines.push(`On disk only (auto-discovered, not in cloud-data-topology.json): ${drift.onDiskOnly.join(", ")}`);
+        lines.push(`On disk only (auto-discovered, not in _cloud-data-consolidated.json): ${drift.onDiskOnly.join(", ")}`);
       }
       if (drift.configOnly.length) {
-        lines.push(`In cloud-data-topology.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
+        lines.push(`In _cloud-data-consolidated.json only (no folder on disk): ${drift.configOnly.join(", ")}`);
       }
       if (!drift.onDiskOnly.length && !drift.configOnly.length) {
         lines.push("Config and disk are in sync.");
@@ -544,7 +547,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.topology_drift",
-    "Compare cloud-data-topology.json with on-disk services to find drift",
+    "Compare _cloud-data-consolidated.json with on-disk services to find drift",
     {},
     async () => {
       const drift = getDriftReport();
@@ -579,7 +582,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.topology_volumes",
-    "Show Docker volumes per VM (from cloud-data-topology.json)",
+    "Show Docker volumes per VM (from _cloud-data-consolidated.json)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
@@ -589,7 +592,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.topology_images",
-    "Show Docker images per VM (from cloud-data-topology.json containers)",
+    "Show Docker images per VM (from _cloud-data-consolidated.json containers)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
@@ -602,7 +605,7 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.topology_deps",
-    "Show service dependencies (from cloud-data-topology.json)",
+    "Show service dependencies (from _cloud-data-consolidated.json)",
     {},
     async () => {
       const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
@@ -618,14 +621,16 @@ export function registerInventoryTools(server: McpServer) {
 
   server.tool(
     "knowledge.inventory.deps",
-    "Get consolidated node dependencies across all cloud services (from cloud-data-deps.json). Grouped by language for home-manager consumption.",
+    "Get consolidated node dependencies across all cloud services (from _cloud-data-consolidated.json[.deps]). Grouped by language for home-manager consumption.",
     {},
     async () => {
-      const depsPath = getDepsPath();
-      if (!existsSync(depsPath)) {
-        return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
+      // 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
+      if (!existsSync(getDepsPath())) {
+        return plainText("_cloud-data-consolidated.json not generated yet. Run: build.sh config");
       }
-      return jsonText("Cloud deps", JSON.parse(readFileSync(depsPath, "utf-8")));
+      const deps = getDepsSlice();
+      if (!deps) return plainText(".deps slice not present in _cloud-data-consolidated.json");
+      return jsonText("Cloud deps", deps);
     },
   );
 
@@ -634,12 +639,12 @@ export function registerInventoryTools(server: McpServer) {
     "Get merged node package.json (dependencies + devDependencies) across all cloud services — ready for ~/.node_modules/",
     {},
     async () => {
-      const depsPath = getDepsPath();
-      if (!existsSync(depsPath)) {
-        return plainText("cloud-data-deps.json not generated yet. Run: build.sh config");
+      // 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
+      if (!existsSync(getDepsPath())) {
+        return plainText("_cloud-data-consolidated.json not generated yet. Run: build.sh config");
       }
-      const deps = JSON.parse(readFileSync(depsPath, "utf-8"));
-      return jsonText("Merged node deps", deps.node?.merged ?? {});
+      const deps = getDepsSlice();
+      return jsonText("Merged node deps", deps?.node?.merged ?? {});
     },
   );
 

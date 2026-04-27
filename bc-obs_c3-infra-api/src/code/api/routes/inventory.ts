@@ -7,7 +7,18 @@ import type { FastifyInstance } from "fastify";
 import { listServices, getService, probeSpec, getAllSpecs } from "../../shared/libs/discovery.js";
 import { getDriftReport, getConfig, getServiceFolder } from "../../shared/libs/config.js";
 import { getConfigFile } from "../../shared/libs/files.js";
-import { getConfigPath, CONFIGS_PATH, DEPS_PATH, FRONT_DEPS_PATH, SOLUTIONS_DIR } from "../../shared/libs/paths.js";
+// 2026-04-27 migrated: cloud-data-{topology,configs,deps}.json -> _cloud-data-consolidated.json[.{configs,deps}]
+// getConfigPath() now resolves to _cloud-data-consolidated.json (topology shape is a subset).
+// CONFIGS_PATH / DEPS_PATH also point to the consolidated file; use the slice helpers
+// (getConfigsSlice / getDepsSlice / getTopologySlice) to extract the relevant nested key.
+import {
+  getConfigPath,
+  getConsolidatedPath,
+  getConfigsSlice,
+  getDepsSlice,
+  FRONT_DEPS_PATH,
+  SOLUTIONS_DIR,
+} from "../../shared/libs/paths.js";
 
 // ── Cloud-data output validator ──
 // Ensures API never returns empty/broken data that would overwrite good files.
@@ -96,10 +107,12 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     return getAllSpecs();
   });
 
-  // ── Topology (serves cloud-data-topology.json directly) ──
+  // ── Topology (serves _cloud-data-consolidated.json directly — superset of legacy topology shape) ──
+  // 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level)
+  // Consolidated is a superset of topology, so clients reading .services/.vms keep working.
 
   app.get("/cloud-data/topology", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     return JSON.parse(readFileSync(getConfigPath(), "utf-8"));
   });
 
@@ -112,30 +125,36 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     return { onDiskOnly: drift.onDiskOnly, configOnly: drift.configOnly, summary: parts.join(" | ") };
   });
 
-  // ── Configs (serves cloud-data-configs.json directly) ──
+  // ── Configs (serves _cloud-data-consolidated.json[.configs] slice) ──
+  // 2026-04-27 migrated: cloud-data-configs.json -> _cloud-data-consolidated.json.configs
 
   app.get("/cloud-data/configs", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(CONFIGS_PATH)) { reply.code(404).send({ error: "cloud-data-configs.json not generated yet" }); return; }
-    return JSON.parse(readFileSync(CONFIGS_PATH, "utf-8"));
+    if (!existsSync(getConsolidatedPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
+    const configs = getConfigsSlice();
+    if (configs == null) { reply.code(404).send({ error: ".configs slice not present in _cloud-data-consolidated.json" }); return; }
+    return configs;
   });
 
-  // ── Deps (serves cloud-data-deps.json — consolidated node packages grouped by language) ──
+  // ── Deps (serves _cloud-data-consolidated.json[.deps] slice — consolidated node packages grouped by language) ──
+  // 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
 
   app.get("/cloud-data/deps", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-data-deps.json not generated yet. Run: build.sh config" }); return; }
-    return JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
+    if (!existsSync(getConsolidatedPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet. Run: build.sh config" }); return; }
+    const deps = getDepsSlice();
+    if (deps == null) { reply.code(404).send({ error: ".deps slice not present in _cloud-data-consolidated.json" }); return; }
+    return deps;
   });
 
   app.get("/cloud-data/deps/node", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-data-deps.json not generated yet" }); return; }
-    const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
-    return deps.node ?? {};
+    if (!existsSync(getConsolidatedPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
+    const deps = getDepsSlice();
+    return deps?.node ?? {};
   });
 
   app.get("/cloud-data/deps/node/merged", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(DEPS_PATH)) { reply.code(404).send({ error: "cloud-data-deps.json not generated yet" }); return; }
-    const deps = JSON.parse(readFileSync(DEPS_PATH, "utf-8"));
-    return deps.node?.merged ?? {};
+    if (!existsSync(getConsolidatedPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
+    const deps = getDepsSlice();
+    return deps?.node?.merged ?? {};
   });
 
   app.get("/cloud-data/deps/front", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
@@ -146,7 +165,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── DNS Registry (container name → WG IP, for Hickory DNS auto-generation) ──
 
   app.get("/cloud-data/dns-services", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
     const services: Record<string, { ip: string; desc: string }> = {};
     const vms: Record<string, string> = {};
@@ -200,7 +219,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/dns-services",
+      _source: "_cloud-data-consolidated.json via /cloud-data/dns-services",
       suffix: "app",
       services,
       vms,
@@ -469,7 +488,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Authelia ACL (derived from topology proxy.auth fields → authelia-acl.json) ──
 
   app.get("/cloud-data/authelia-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const rules: any[] = [];
@@ -508,7 +527,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/authelia-acl",
+      _source: "_cloud-data-consolidated.json via /cloud-data/authelia-acl",
       rules,
     };
   });
@@ -516,7 +535,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Monitoring Targets (derived from topology health/monitoring fields) ──
 
   app.get("/cloud-data/monitoring-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const endpoint_checks: any[] = [];
@@ -554,7 +573,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/monitoring-targets",
+      _source: "_cloud-data-consolidated.json via /cloud-data/monitoring-targets",
       endpoint_checks,
       dns_checks,
       tls_checks,
@@ -565,7 +584,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Firewall Rules (Terraform + OS firewalls + declared_ports) ──
 
   app.get("/cloud-data/firewall-rules", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const vms: Record<string, { ingress: any[]; source: string[] }> = {};
@@ -636,7 +655,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/firewall-rules",
+      _source: "_cloud-data-consolidated.json via /cloud-data/firewall-rules",
       vms,
     };
   });
@@ -644,7 +663,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Backup Targets (services with backup.enabled) ──
 
   app.get("/cloud-data/backup-targets", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const targets: any[] = [];
@@ -666,7 +685,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/backup-targets",
+      _source: "_cloud-data-consolidated.json via /cloud-data/backup-targets",
       targets,
     };
   });
@@ -674,7 +693,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── WireGuard Peers (derived from topology VMs with wg_ip) ──
 
   app.get("/cloud-data/wireguard-peers", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const peers: any[] = [];
@@ -695,7 +714,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/wireguard-peers",
+      _source: "_cloud-data-consolidated.json via /cloud-data/wireguard-peers",
       hub: wg.hub ?? null,
       peers: wg.peers ?? peers,
       mesh_peers: peers,
@@ -705,7 +724,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── ntfy ACL (derived from topology notifications fields) ──
 
   app.get("/cloud-data/ntfy-acl", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const topics: Record<string, { publishers: string[]; desc: string }> = {};
@@ -727,7 +746,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/ntfy-acl",
+      _source: "_cloud-data-consolidated.json via /cloud-data/ntfy-acl",
       topics,
     };
   });
@@ -735,7 +754,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Cloudflare DNS (Terraform records + service-derived CNAMEs) ──
 
   app.get("/cloud-data/cloudflare-dns", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const records: any[] = [];
@@ -776,7 +795,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/cloudflare-dns",
+      _source: "_cloud-data-consolidated.json via /cloud-data/cloudflare-dns",
       zone: "diegonmarcos.com",
       records,
     };
@@ -785,7 +804,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Matomo Sites (services with domains that have analytics tracking) ──
 
   app.get("/cloud-data/matomo-sites", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const sites: any[] = [];
@@ -802,7 +821,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/matomo-sites",
+      _source: "_cloud-data-consolidated.json via /cloud-data/matomo-sites",
       sites,
     };
   });
@@ -810,7 +829,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Container Resources (derived from topology — mem/cpu per service) ──
 
   app.get("/cloud-data/container-resources", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const services: Record<string, any> = {};
@@ -829,7 +848,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/container-resources",
+      _source: "_cloud-data-consolidated.json via /cloud-data/container-resources",
       services,
     };
   });
@@ -837,7 +856,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
   // ── Log Routing (derived from topology — container → log config) ──
 
   app.get("/cloud-data/log-routing", { schema: { tags: ["Inventory"] } }, async (_req, reply) => {
-    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "cloud-data-topology.json not generated yet" }); return; }
+    if (!existsSync(getConfigPath())) { reply.code(404).send({ error: "_cloud-data-consolidated.json not generated yet" }); return; }
     const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
 
     const routes: Record<string, any[]> = {};
@@ -858,7 +877,7 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
 
     return {
       _generated: new Date().toISOString(),
-      _source: "cloud-data-topology.json via /cloud-data/log-routing",
+      _source: "_cloud-data-consolidated.json via /cloud-data/log-routing",
       vms: routes,
     };
   });
@@ -944,12 +963,16 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
       } catch { /* build.json not accessible — expected on VMs */ }
     }
 
-    // Fallback: read existing keys from cloud-data-home-manager.json (preserved by derive)
-    const existingHmPath = join(process.env.GIT_BASE ?? "", "cloud", "cloud-data", "cloud-data-home-manager.json");
+    // Fallback: read existing WG public keys from _cloud-data-consolidated.json
+    // 2026-04-27 migrated: cloud-data-home-manager.json -> _cloud-data-consolidated.json (native.wireguard.peers / wireguard.peers)
     try {
-      const existing = JSON.parse(readFileSync(existingHmPath, "utf-8"));
-      for (const p of (existing.wireguard?.peers ?? [])) {
-        if (p.name && p.wg_public_key && !hmKeysByAlias[p.name]) hmKeysByAlias[p.name] = p.wg_public_key;
+      const consolidatedPath = getConsolidatedPath();
+      if (existsSync(consolidatedPath)) {
+        const existing = JSON.parse(readFileSync(consolidatedPath, "utf-8"));
+        const peers = existing.native?.wireguard?.peers ?? existing.wireguard?.peers ?? existing._home_manager?.wireguard?.peers ?? [];
+        for (const p of peers) {
+          if (p.name && p.wg_public_key && !hmKeysByAlias[p.name]) hmKeysByAlias[p.name] = p.wg_public_key;
+        }
       }
     } catch { /* not available */ }
 

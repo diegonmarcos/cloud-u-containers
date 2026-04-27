@@ -28,7 +28,8 @@ export interface InfraConfig {
   services: Record<string, ServiceConfig>;
 }
 
-// Hardcoded fallback — used when cloud-data-topology.json VMs lack ssh_alias
+// Hardcoded fallback — used when _cloud-data-consolidated.json VMs lack ssh_alias
+// 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level — superset)
 const VM_SSH_ALIASES_FALLBACK: Record<string, string> = {
   "gcp-E2-f_0": "gcp-proxy",
   "oci-E2-f_0": "oci-mail",

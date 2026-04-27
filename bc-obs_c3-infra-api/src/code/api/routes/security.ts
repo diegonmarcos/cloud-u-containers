@@ -85,7 +85,8 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // ── Security topology (derived from cloud-data-topology.json) ──
+  // ── Security topology (derived from _cloud-data-consolidated.json) ──
+  // 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level)
 
   app.get(
     "/cloud-data/topology/security",
@@ -99,7 +100,8 @@ export const registerSecurityRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // ── Network topology (from cloud-data-topology.json — networks per VM) ──
+  // ── Network topology (from _cloud-data-consolidated.json — networks per VM) ──
+  // 2026-04-27 migrated: cloud-data-topology.json -> _cloud-data-consolidated.json (top-level)
 
   app.get(
     "/cloud-data/topology/network",

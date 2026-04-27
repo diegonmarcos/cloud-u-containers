@@ -8,15 +8,28 @@ FILTER="${1:-}"
 REPO_ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 cd "$REPO_ROOT"
 
-GHA_CONFIG=""
-for p in "2_configs/dist/cloud-data-gha-config.json" \
-         "/var/lib/dagu/data/cloud-data/cloud-data-gha-config.json" \
-         "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-gha-config.json" \
-         "/app/cloud-data-gha-config.json"; do
-  [ -f "$p" ] && GHA_CONFIG="$p" && break
+# 2026-04-27 migrated: cloud-data-gha-config.json -> _cloud-data-consolidated.json[._gha]
+CONS=""
+for p in "2_configs/dist/_cloud-data-consolidated.json" \
+         "/var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json" \
+         "/var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json" \
+         "/app/_cloud-data-consolidated.json"; do
+  [ -f "$p" ] && CONS="$p" && break
 done
+GHA_CONFIG=""
+if [ -n "$CONS" ]; then
+  GHA_CONFIG="${RUNNER_TEMP:-/tmp}/derived-gha-config.$$.json"
+  jq '._gha' "$CONS" > "$GHA_CONFIG"
+else
+  for p in "2_configs/dist/cloud-data-gha-config.json" \
+           "/var/lib/dagu/data/cloud-data/cloud-data-gha-config.json" \
+           "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-gha-config.json" \
+           "/app/cloud-data-gha-config.json"; do
+    [ -f "$p" ] && GHA_CONFIG="$p" && break
+  done
+fi
 if [ -z "$GHA_CONFIG" ]; then
-  echo "ERROR: cloud-data-gha-config.json not found in any known location" >&2
+  echo "ERROR: _cloud-data-consolidated.json (or legacy cloud-data-gha-config.json) not found in any known location" >&2
   exit 1
 fi
 

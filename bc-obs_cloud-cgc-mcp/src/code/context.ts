@@ -37,7 +37,7 @@ function buildServiceTable(): string {
 
 function buildArchitectureSummary(): string {
   return `## Architecture
-- Nix flakes → Docker Compose stacks, cloud-data-topology.json is source of truth
+- Nix flakes → Docker Compose stacks, _cloud-data-consolidated.json is source of truth
 - Per-service build.sh: build → secrets (sops) → deploy (rsync) → compose
 - WireGuard mesh 10.0.0.0/24 connects all VMs
 - GCP proxy (gcp-E2-f_0): Caddy + Authelia entry point
@@ -50,9 +50,9 @@ function buildToolIndex(): string {
 ### A: Specs (9 tools)
 | Tool | Description |
 |------|-------------|
-| c3_topology | cloud-data-topology.json — VMs, services, networking |
-| c3_configs | cloud-data-configs.json — domains, ports, images, routes |
-| c3_deps | cloud-data-deps.json — npm dependencies per cloud service |
+| c3_topology | _cloud-data-consolidated.json (top-level) — VMs, services, networking |
+| c3_configs | _cloud-data-consolidated.json[.configs] — domains, ports, images, routes |
+| c3_deps | _cloud-data-consolidated.json[.deps] — npm dependencies per cloud service |
 | c3_topology_md | cloud-topology.md — human-readable topology |
 | c3_configs_md | cloud-configs.md — Caddy routes, Authelia clients, DNS |
 | c3_deps_front | front-deps.json — front-end project dependencies |
@@ -107,11 +107,13 @@ export function buildContextSummary(size: "compact" | "full"): string {
     if (readme) parts.push(`## README\n\n${readme}`);
 
     // Add deps summary
-    const deps = readFileSafe(getCloudDataPath("cloud-data-deps.json"));
-    if (deps) {
+    // 2026-04-27 migrated: cloud-data-deps.json -> _cloud-data-consolidated.json.deps
+    const consolidated = readFileSafe(getCloudDataPath("_cloud-data-consolidated.json"));
+    if (consolidated) {
       try {
-        const parsed = JSON.parse(deps);
-        const serviceCount = Object.keys(parsed.services ?? parsed).length;
+        const parsed = JSON.parse(consolidated);
+        const depsRoot = parsed.deps ?? {};
+        const serviceCount = Object.keys(depsRoot.services ?? depsRoot).length;
         parts.push(`## Dependencies\n\n${serviceCount} services with npm dependencies tracked.`);
       } catch { /* skip malformed */ }
     }
