@@ -1,0 +1,106 @@
+{
+  "name": "cypht",
+  "description": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com",
+  "dns": "cypht.app",
+  "ports": {
+    "app": 8889
+  },
+  "category": "app",
+  "build": {
+    "include_cloud_data": "true",
+    "headers_enforced": true
+  },
+  "domain": "webmail.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-mail",
+    "remote_path": "/opt/containers/cypht",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true,
+    "pre_hook": "configs/init.sh"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "cypht-binaries",
+    "dockerfile": "code/amd64/Dockerfile",
+    "arch": "amd64"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "webmail.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "cypht",
+      "image": "cypht/cypht:latest",
+      "port": 8889,
+      "port_env": null,
+      "dns": "cypht.app",
+      "public": true,
+      "proxy": {
+        "domain": "webmail.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": null,
+      "volumes": [
+        "cypht_data:/var/lib/hm3"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "cypht-postgres"
+      ],
+      "resources": {
+        "mem_limit": "256M",
+        "mem_reservation": "64M"
+      },
+      "read_only": false,
+      "protocol": "http",
+      "embedded_dbs": []
+    },
+    "db": {
+      "container_name": "cypht-postgres",
+      "image": "postgres:16-alpine",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "cypht_pgdata:/var/lib/postgresql/data"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "128M",
+        "mem_reservation": "32M"
+      },
+      "read_only": false,
+      "protocol": "tcp",
+      "extra_ports": [
+        {
+          "port": 5432,
+          "protocol": "tcp",
+          "bind": "127.0.0.1",
+          "desc": "PostgreSQL — loopback only (cypht co-located via host network)"
+        }
+      ],
+      "embedded_dbs": [
+        {
+          "engine": "postgres",
+          "path": "/var/lib/postgresql/data"
+        }
+      ]
+    }
+  },
+  "upstream_image": "cypht/cypht:latest",
+  "resources": {
+    "mem_limit": "256M",
+    "mem_reservation": "64M"
+  }
+}

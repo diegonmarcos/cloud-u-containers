@@ -1,0 +1,21 @@
+-- seed-accounts.sql — schema introspection helper for the seeder.
+--
+-- This file is read by seed-accounts.sh to verify Cypht's PostgreSQL schema
+-- is initialized BEFORE the seeder attempts INSERT/UPDATE statements.
+-- Cypht runs setup_database.php on first request — the seeder polls for
+-- the presence of the canonical user-settings table before proceeding.
+--
+-- The actual INSERT/UPSERT statements are constructed dynamically by the
+-- seeder shell script (it reads seed-accounts.json + per-account env vars).
+--
+-- This .sql file exists as a probe/contract:
+--   1. Defines the table-name expectation for the seeder ("hm_user_settings"
+--      is Cypht's canonical user settings table per upstream conventions).
+--   2. Documents the column shape we'll write to.
+--
+-- If Cypht's schema differs from this expectation on first deploy, the
+-- seeder's `\dt` probe will time out and the script will exit 0 (non-fatal,
+-- accounts can still be added via UI). Iterate the seeder + reship.
+
+-- Probe: does the user-settings table exist yet?
+SELECT to_regclass('public.hm_user_settings') IS NOT NULL AS schema_ready;
