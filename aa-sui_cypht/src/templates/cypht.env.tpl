@@ -3,12 +3,15 @@
 # ${VAR} tokens are substituted at deploy time by configs/init.sh from .secrets.
 
 # ── Database (PostgreSQL sidecar on loopback) ──────────────────────
+# Upstream cypht expects DB_PASS (not DB_PASSWORD) and DB_CONNECTION_TYPE=host.
 DB_DRIVER=pgsql
+DB_CONNECTION_TYPE=host
 DB_HOST=@POSTGRES_HOST@
 DB_PORT=@POSTGRES_PORT@
 DB_USER=@POSTGRES_USER@
 DB_NAME=@POSTGRES_DB@
-DB_PASSWORD=${CYPHT_DB_PASSWORD}
+DB_PASS=${CYPHT_DB_PASSWORD}
+DB_SOCKET=
 
 # Postgres image expects POSTGRES_PASSWORD as well.
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
