@@ -18,13 +18,23 @@ SURREAL_URL="${1:-http://localhost:8001}"
 #   4. <repoRoot>/2_configs/dist/cloud-data-topology.json             — dev: cloud repo dist/
 #   5. <script_dir>/../cloud-data-topology.json                       — legacy: kg-graph dir
 _resolve_topology() {
+    # 2026-04-28 migrated: prefer _cloud-data-consolidated.json (master file —
+    # consolidated.services + consolidated.vms are a superset of cloud-data-topology.json
+    # so existing downstream jq filters keep working unchanged). Falls back to legacy
+    # cloud-data-topology.json paths in z_archive / clone for soft transition.
     local override="${1:-${CONFIG_JSON:-}}"
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local candidates=(
-        "/app/cloud-data-topology.json"
+        "/app/_cloud-data-consolidated.json"
         "${override}"
+        "/opt/containers/kg-graph/_cloud-data-consolidated.json"
+        "${script_dir}/../../../2_configs/dist/_cloud-data-consolidated.json"
+        "${script_dir}/../_cloud-data-consolidated.json"
+        # Legacy fallbacks (deprecated cloud-data-topology.json — soft transition)
+        "/app/cloud-data-topology.json"
         "/opt/containers/kg-graph/cloud-data-topology.json"
+        "${script_dir}/../../../2_configs/dist/z_archive/cloud-data-topology.json"
         "${script_dir}/../../../2_configs/dist/cloud-data-topology.json"
         "${script_dir}/../cloud-data-topology.json"
     )
@@ -32,7 +42,7 @@ _resolve_topology() {
         [ -n "$p" ] && [ -f "$p" ] && { echo "$p"; return 0; }
     done
     # Best-guess fallback for error messages
-    echo "/app/cloud-data-topology.json"
+    echo "/app/_cloud-data-consolidated.json"
 }
 CONFIG_JSON="$(_resolve_topology "${2:-}")"
 SURREAL_NS="infra"
