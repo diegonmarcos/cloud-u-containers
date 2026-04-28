@@ -2,7 +2,10 @@
 { buildJson, container }:
 
 let
-  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # Caddy has no Dockerfile / native_build.cmd → engine skips the
+  # -binaries cache layer push, only ghcr.io/diegonmarcos/caddy:latest
+  # exists on GHCR. Reference the canonical image directly.
+  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}:latest";
 in
 {
   services = {

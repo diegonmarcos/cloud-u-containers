@@ -188,6 +188,39 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
+  # Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com
+  webmail.diegonmarcos.com {
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.3:8889
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.3:8889
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
   # Grist spreadsheet/database (sheets.diegonmarcos.com)
   sheets.diegonmarcos.com {
 import security
@@ -318,39 +351,6 @@ forward_auth 10.0.0.1:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy 10.0.0.6:5232
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # SnappyMail webmail client (mail.diegonmarcos.com/webmail)
-  webmail.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.3:8888
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.3:8888
   }
 
     handle_errors {
@@ -1194,6 +1194,12 @@ code-server.app {
   reverse_proxy 10.0.0.6:8443
 }
 
+cypht.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.3:8889
+}
+
 etherpad.app {
   bind 10.0.0.1
   tls internal
@@ -1483,6 +1489,14 @@ code-server-https-8443.app {
   reverse_proxy 10.0.0.6:8443
 }
 
+cypht-http-8889.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.3:8889
+}
+
 etherpad_app-http-3012.app {
   bind 10.0.0.1
   tls internal {
@@ -1649,6 +1663,22 @@ caddy-https-443.app {
     on_demand
   }
   reverse_proxy 10.0.0.1:443
+}
+
+caddy-http-80.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.1:80
+}
+
+caddy-http-2019.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.1:2019
 }
 
 c3-infra-api-http-8081.app {
