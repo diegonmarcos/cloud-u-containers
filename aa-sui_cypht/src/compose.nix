@@ -33,7 +33,10 @@ in
         "./configs/nginx.conf:/etc/nginx/nginx.conf:ro"
         # Override php-fpm pool: TCP :9000 collides with snappymail
         # (both run network_mode: host on oci-mail). Use unix socket.
-        "./configs/php-fpm-www.conf:/usr/local/etc/php-fpm.d/www.conf:ro"
+        # Mount as zzz-* so it loads AFTER zz-docker.conf (which the
+        # upstream image uses to force listen=9000) — alphabetic load
+        # order, last-wins semantics within the same [www] pool.
+        "./configs/php-fpm-www.conf:/usr/local/etc/php-fpm.d/zzz-cypht.conf:ro"
         # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
         "./assets/seed-accounts.json:/opt/cypht-config/seed-accounts.json:ro"
         "./assets/seed-accounts.sh:/opt/cypht-config/seed-accounts.sh:ro"
