@@ -46,7 +46,9 @@ http {
 			fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 			fastcgi_param SCRIPT_NAME $fastcgi_script_name;
 			fastcgi_index index.php;
-			fastcgi_pass 127.0.0.1:9000;
+			# UNIX socket — shared with cypht's php-fpm via /run (tmpfs).
+			# TCP :9000 collides with snappymail (both host-network on oci-mail).
+			fastcgi_pass unix:/run/cypht-php-fpm.sock;
 		}
 	}
 }

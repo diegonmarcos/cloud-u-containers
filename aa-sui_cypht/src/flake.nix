@@ -66,6 +66,7 @@
           { name = "init.sh";              vars = {}; }
           { name = "cypht.env";            vars = cyphtEnvVars; }
           { name = "nginx.conf";           vars = nginxConfVars; }
+          { name = "php-fpm-www.conf";     vars = {}; }
           { name = "seed-accounts.sql";    vars = sqlVars; }
         ];
         # Account inventory + idempotent psql seeder.
