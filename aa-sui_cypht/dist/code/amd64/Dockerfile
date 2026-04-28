@@ -11,4 +11,4 @@ FROM cypht/cypht:latest
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 LABEL cloud.diegonmarcos.from-image="cypht/cypht:latest"
 
-
+RUN apt-get update && apt-get install -y --no-install-recommends jq postgresql-client && rm -rf /var/lib/apt/lists/*
