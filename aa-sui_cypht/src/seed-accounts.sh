@@ -1,7 +1,7 @@
 #!/bin/sh
 # seed-accounts.sh — bootstrap Cypht's master user + 5 mail backends.
 #
-# Mounted into the cypht container at /opt/cypht-config/seed-accounts.sh,
+# Mounted into the cypht container at /tmp/cypht-config/seed-accounts.sh,
 # invoked by compose entrypoint BEFORE docker-entrypoint.sh starts cypht-fpm.
 #
 # Pipeline:
@@ -26,7 +26,7 @@
 
 set -e
 
-CFG=/opt/cypht-config
+CFG=/tmp/cypht-config
 APP=/usr/local/share/cypht
 
 PGHOST=127.0.0.1
@@ -75,7 +75,7 @@ php scripts/create_account.php "$PRIMARY_EMAIL" "$PRIMARY_PASS" 2>&1 | sed 's/^/
 # with the user's plaintext password (same key Cypht uses on login). Server
 # entries are stored under imap_servers / smtp_servers / jmap_servers in
 # the user's config blob.
-SEEDER_PHP=/opt/cypht-config/seed-accounts.php
+SEEDER_PHP=/tmp/cypht-config/seed-accounts.php
 if [ -f "$SEEDER_PHP" ]; then
     echo "Seeding mail backends from seed-accounts.json ..."
     php "$SEEDER_PHP" 2>&1 | sed 's/^/  /' || true

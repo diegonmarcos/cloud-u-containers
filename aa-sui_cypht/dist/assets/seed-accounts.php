@@ -8,7 +8,7 @@
  * Hm_User_Config_DB so encryption stays under the same key Cypht expects on
  * login (the user's plaintext password — see lib/config.php::save()).
  *
- * Data source: /opt/cypht-config/seed-accounts.json
+ * Data source: /tmp/cypht-config/seed-accounts.json
  * Secrets:     environment variables named in {primary,extras[]}.pass_env,
  *              injected from .secrets at container start.
  *
@@ -22,7 +22,7 @@
  */
 declare(strict_types=1);
 
-$seedJson = '/opt/cypht-config/seed-accounts.json';
+$seedJson = '/tmp/cypht-config/seed-accounts.json';
 if (!file_exists($seedJson)) {
     fwrite(STDERR, "[seed-accounts.php] seed file missing: $seedJson\n");
     exit(0);

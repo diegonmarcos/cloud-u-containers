@@ -38,10 +38,10 @@ in
         # order, last-wins semantics within the same [www] pool.
         "./configs/php-fpm-www.conf:/usr/local/etc/php-fpm.d/zzz-cypht.conf:ro"
         # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
-        "./assets/seed-accounts.json:/opt/cypht-config/seed-accounts.json:ro"
-        "./assets/seed-accounts.sh:/opt/cypht-config/seed-accounts.sh:ro"
-        "./assets/seed-accounts.php:/opt/cypht-config/seed-accounts.php:ro"
-        "./configs/seed-accounts.sql:/opt/cypht-config/seed-accounts.sql:ro"
+        "./assets/seed-accounts.json:/tmp/cypht-config/seed-accounts.json:ro"
+        "./assets/seed-accounts.sh:/tmp/cypht-config/seed-accounts.sh:ro"
+        "./assets/seed-accounts.php:/tmp/cypht-config/seed-accounts.php:ro"
+        "./configs/seed-accounts.sql:/tmp/cypht-config/seed-accounts.sql:ro"
         # Sops-decrypted secrets per-key (env_file at .secrets covers env;
         # individual files at /run/secrets/<KEY> available for any script).
         "./.secrets.d:/run/secrets:ro"
@@ -52,7 +52,7 @@ in
       # schema to exist (first GET to / triggers it), then seed.
       entrypoint = [
         "/bin/sh" "-c"
-        ("/opt/cypht-config/seed-accounts.sh 2>&1 | sed 's/^/[seed-accounts] /' >&2 || true; "
+        ("/tmp/cypht-config/seed-accounts.sh 2>&1 | sed 's/^/[seed-accounts] /' >&2 || true; "
          + "exec docker-entrypoint.sh")
       ];
       healthcheck = {
