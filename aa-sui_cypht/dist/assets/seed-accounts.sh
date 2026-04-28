@@ -1,35 +1,28 @@
 #!/bin/sh
-# seed-accounts.sh — bootstrap Cypht's master user account.
+# seed-accounts.sh — bootstrap Cypht's master user + 5 mail backends.
 #
 # Mounted into the cypht container at /opt/cypht-config/seed-accounts.sh,
 # invoked by compose entrypoint BEFORE docker-entrypoint.sh starts cypht-fpm.
 #
-# What this seeder DOES:
-#   1. Wait for cypht-postgres healthcheck.
+# Pipeline:
+#   1. Wait for cypht-postgres healthcheck (30s budget).
 #   2. Run Cypht's setup_database.php to create the schema (hm_user,
 #      hm_user_session, hm_user_settings tables).
-#   3. Run Cypht's create_account.php to create the master user account
+#   3. Run Cypht's create_account.php — creates the master user
 #      "me@diegonmarcos.com" with password from $ME_PASSWORD env var.
-#      (Idempotent — skips if user already exists.)
+#      (Idempotent: scripts/create_account.php skips on conflict.)
+#   4. Run our seed-accounts.php — encrypts and persists 5 IMAP/SMTP/JMAP
+#      backends (from seed-accounts.json) into hm_user_settings.settings.
+#      Uses Cypht's own Hm_User_Config_DB so the encryption key matches
+#      what Cypht expects on login (the user's plaintext password — see
+#      lib/config.php::save).
 #
-# What this seeder does NOT do (Cypht limitation, not laziness):
-#   * IMAP/SMTP/JMAP server entries are stored in hm_user_settings.settings
-#     as an encrypted BYTEA. The encryption key is derived from the user's
-#     master password. We CAN'T inject server configs server-side without
-#     impersonating an authenticated session.
-#
-# After this seeder runs:
-#   * Log in once at https://webmail.diegonmarcos.com with
-#     username = me@diegonmarcos.com, password = $ME_PASSWORD
-#   * Use the "Servers" page to add the 5 IMAP/JMAP/SMTP backends
-#     declared in seed-accounts.json. The corresponding passwords from
-#     .secrets are documented in secrets.schema.md.
-#
-# Failure modes:
-#   * Schema creation fails → exit 0, log error. Cypht's web entrypoint
-#     will retry on first request.
-#   * User creation fails → exit 0, log error. Manual fallback: log into
-#     Cypht (no users yet → first user becomes admin).
+# Failure modes (all non-fatal — exit 0):
+#   * Schema creation fails → cypht's web entrypoint will retry on first
+#     request.
+#   * create_account.php returns "already exists" → fine, idempotent.
+#   * seed-accounts.php detects placeholder TODO_* secrets → skips the
+#     extras silently; primary user is still usable for manual UI add.
 
 set -e
 
@@ -73,9 +66,18 @@ fi
 echo "Creating user account: $PRIMARY_EMAIL ..."
 php scripts/create_account.php "$PRIMARY_EMAIL" "$PRIMARY_PASS" 2>&1 | sed 's/^/  /' || true
 
+# ── 4. Seed the 5 IMAP/SMTP/JMAP backends ──
+# Uses Cypht's own Hm_User_Config_DB → hm_user_settings.settings, encrypted
+# with the user's plaintext password (same key Cypht uses on login). Server
+# entries are stored under imap_servers / smtp_servers / jmap_servers in
+# the user's config blob.
+SEEDER_PHP=/opt/cypht-config/seed-accounts.php
+if [ -f "$SEEDER_PHP" ]; then
+    echo "Seeding mail backends from seed-accounts.json ..."
+    php "$SEEDER_PHP" 2>&1 | sed 's/^/  /' || true
+else
+    echo "seed-accounts.php missing — skipping backend seed"
+fi
+
 echo ""
-echo "Seed complete. To finish setup:"
-echo "  1. Visit https://webmail.diegonmarcos.com"
-echo "  2. Log in with $PRIMARY_EMAIL + the password from \$$PRIMARY_PASS_ENV"
-echo "  3. Open Servers page; add the 5 backends from seed-accounts.json"
-echo "     (passwords for each in /run/secrets/<KEY> or env vars)"
+echo "Seed complete. Log in at https://webmail.diegonmarcos.com with $PRIMARY_EMAIL"

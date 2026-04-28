@@ -40,6 +40,7 @@ in
         # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
         "./assets/seed-accounts.json:/opt/cypht-config/seed-accounts.json:ro"
         "./assets/seed-accounts.sh:/opt/cypht-config/seed-accounts.sh:ro"
+        "./assets/seed-accounts.php:/opt/cypht-config/seed-accounts.php:ro"
         "./configs/seed-accounts.sql:/opt/cypht-config/seed-accounts.sql:ro"
         # Sops-decrypted secrets per-key (env_file at .secrets covers env;
         # individual files at /run/secrets/<KEY> available for any script).
