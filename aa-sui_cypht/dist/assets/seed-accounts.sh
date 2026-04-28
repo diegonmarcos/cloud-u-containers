@@ -35,15 +35,20 @@ PGDATABASE=cypht
 export PGHOST PGUSER PGDATABASE PGPASSWORD="${CYPHT_DB_PASSWORD:-${POSTGRES_PASSWORD:-}}"
 
 # ── 1. Wait for postgres to accept connections ──
+# pg_isready is NOT in the cypht image — postgres-client is a sidecar tool.
+# Use PHP (always available, since cypht IS PHP) for the TCP probe. Compose
+# `depends_on: service_healthy` already gates this start, so postgres is
+# usually ready immediately; the 30s budget is just a safety net.
 i=0
 while [ $i -lt 30 ]; do
-    pg_isready -h "$PGHOST" -U "$PGUSER" >/dev/null 2>&1 && break
+    php -r 'exit(@fsockopen("'"$PGHOST"'", 5432, $e, $s, 2) ? 0 : 1);' && break
     i=$((i + 1)); sleep 1
 done
-if ! pg_isready -h "$PGHOST" -U "$PGUSER" >/dev/null 2>&1; then
-    echo "postgres not reachable — skipping seed (cypht web entrypoint will retry)"
+if ! php -r 'exit(@fsockopen("'"$PGHOST"'", 5432, $e, $s, 2) ? 0 : 1);'; then
+    echo "postgres not reachable on 127.0.0.1:5432 after 30s — skipping seed (cypht web entrypoint will retry)"
     exit 0
 fi
+echo "postgres reachable — proceeding"
 
 # ── 2. Initialize Cypht schema (idempotent — has IF NOT EXISTS guards) ──
 echo "Running setup_database.php..."
