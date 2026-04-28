@@ -75,6 +75,7 @@
         extraAssets = [
           ./seed-accounts.json
           ./seed-accounts.sh
+          ./seed-accounts.php
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Cypht Webmail";
