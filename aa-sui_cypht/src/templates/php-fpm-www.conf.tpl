@@ -1,11 +1,11 @@
-# Cypht php-fpm pool — UNIX socket only.
-# Mounted RO over /usr/local/etc/php-fpm.d/www.conf to override the upstream
-# image's `listen = 127.0.0.1:9000`. The TCP port collides with SnappyMail's
-# php-fpm because BOTH services run network_mode: host on oci-mail and share
-# the host's network namespace; the kernel routes :9000 to whichever socket
-# bound first (snappymail at boot), so cypht's nginx ends up talking to
-# snappymail's php-fpm, which returns "File not found" because root mismatches.
-# Unix socket sidesteps the conflict entirely — no port, no collision.
+; Cypht php-fpm pool — UNIX socket only.
+; Mounted RO over /usr/local/etc/php-fpm.d/www.conf to override the upstream
+; image's `listen = 127.0.0.1:9000`. The TCP port collides with SnappyMail's
+; php-fpm because BOTH services run network_mode: host on oci-mail and share
+; the host's network namespace; the kernel routes :9000 to whichever socket
+; bound first (snappymail at boot), so cypht's nginx ends up talking to
+; snappymail's php-fpm, which returns "File not found" because root mismatches.
+; Unix socket sidesteps the conflict entirely — no port, no collision.
 [www]
 user = www-data
 group = www-data

@@ -80,9 +80,40 @@ let
   # so nested attrsets (deploy.resources.limits.pids etc.) survive overlay.
   mergeSvc = svc: lib.recursiveUpdate composeDefaults svc;
 
+  # ──────────────────────────────────────────────────────────────
+  # Conditional secrets auto-mount.
+  #
+  # Whenever src/secrets.yaml exists, the engine-side
+  # cloud-ship-container-step-secrets-decrypt.sh produces:
+  #   dist/.secrets              KEY=VALUE dotenv
+  #   dist/.secrets.d/<KEY>      one file per key (mode 0600)
+  #   dist/.secrets.json         {"KEY":"value", ...}
+  #
+  # Wire all three into every container service so consumers can pick
+  # the daemon-native pattern (env / _FILE / app-side JSON) instead of
+  # shell-text manipulation. List-aware concatenation — services that
+  # already declare env_file/volumes keep their entries.
+  # ──────────────────────────────────────────────────────────────
+  hasSecrets = builtins.pathExists (srcDir + "/secrets.yaml");
+
+  secretsEnvFile = [ ".secrets" ];
+  secretsVolumes = [
+    "./.secrets.d:/run/secrets:ro"
+    "./.secrets.json:/run/secrets.json:ro"
+  ];
+
+  mergeSecretsInto = svc:
+    if !hasSecrets then svc
+    else svc // {
+      env_file = lib.unique ((svc.env_file or []) ++ secretsEnvFile);
+      volumes  = lib.unique ((svc.volumes  or []) ++ secretsVolumes);
+    };
+
   applyDefaults = spec:
     spec // {
-      services = lib.mapAttrs (_: mergeSvc) (spec.services or {});
+      services = lib.mapAttrs
+        (_: svc: mergeSecretsInto (mergeSvc svc))
+        (spec.services or {});
     };
 
   # ──────────────────────────────────────────────────────────────
@@ -106,9 +137,14 @@ let
   # ──────────────────────────────────────────────────────────────
   pickPrefix = name:
     let n = name; in
-    if lib.hasSuffix ".sh"   n || lib.hasSuffix ".yml" n
+    # php-fpm + ini-style configs use `;` for comments — `#` triggers
+    # ZEND_INI_PARSER_ENTRY error and FPM init failure. Detect by name.
+    if lib.hasSuffix ".ini" n
+    || lib.hasInfix "php-fpm" n
+    || lib.hasInfix "php.fpm" n then ";"
+    else if lib.hasSuffix ".sh"   n || lib.hasSuffix ".yml" n
     || lib.hasSuffix ".yaml" n || lib.hasSuffix ".conf" n
-    || lib.hasSuffix ".toml" n || lib.hasSuffix ".ini"  n
+    || lib.hasSuffix ".toml" n
     || n == "Dockerfile" || lib.hasPrefix "Dockerfile" n then "#"
     else if lib.hasSuffix ".js" n || lib.hasSuffix ".ts" n
          || lib.hasSuffix ".rs" n || lib.hasSuffix ".go" n then "//"
