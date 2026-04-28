@@ -31,6 +31,9 @@ in
         # instead of the default 0.0.0.0:80. Defense in depth: matches the
         # Maddy/Stalwart pattern of explicit WG-IP socket binding.
         "./configs/nginx.conf:/etc/nginx/nginx.conf:ro"
+        # Override php-fpm pool: TCP :9000 collides with snappymail
+        # (both run network_mode: host on oci-mail). Use unix socket.
+        "./configs/php-fpm-www.conf:/usr/local/etc/php-fpm.d/www.conf:ro"
         # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
         "./assets/seed-accounts.json:/opt/cypht-config/seed-accounts.json:ro"
         "./assets/seed-accounts.sh:/opt/cypht-config/seed-accounts.sh:ro"
