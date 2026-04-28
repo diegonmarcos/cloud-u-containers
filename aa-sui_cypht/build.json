@@ -24,7 +24,10 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "cypht-binaries",
     "dockerfile": "code/amd64/Dockerfile",
-    "arch": "amd64"
+    "arch": "amd64",
+    "runtime_packages": {
+      "apt": "jq postgresql-client"
+    }
   },
   "proxy": {
     "primary": {
