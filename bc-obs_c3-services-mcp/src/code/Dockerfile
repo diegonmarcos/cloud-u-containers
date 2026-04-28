@@ -15,8 +15,12 @@ COPY shared/ ./src/shared/
 COPY mcp/ ./src/mcp/
 COPY registry/ ./src/registry/
 
-COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+# `--chmod=0755` bakes the perm bit into the COPY layer's content hash so
+# --cache-from can't resurrect a stale layer where chmod hadn't been
+# applied yet (which is exactly what bit us 2026-04-28 after step_docker
+# started using --cache-from: tini exec ./entrypoint.sh failed:
+# Permission denied even though `RUN chmod +x` followed the COPY).
+COPY --chmod=0755 entrypoint.sh ./
 
 EXPOSE 3101
 

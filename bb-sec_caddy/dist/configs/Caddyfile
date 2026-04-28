@@ -41,11 +41,11 @@
     }
   }
 }
-# IMAPS -- TLS passthrough to stalwart
-:2993 {
+# HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)
+:2443 {
   route {
     proxy {
-      upstream 10.0.0.3:2993
+      upstream 10.0.0.3:2443
     }
   }
 }
@@ -65,11 +65,11 @@
     }
   }
 }
-# HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)
-:2443 {
+# IMAPS -- TLS passthrough to stalwart
+:2993 {
   route {
     proxy {
-      upstream 10.0.0.3:2443
+      upstream 10.0.0.3:2993
     }
   }
 }
@@ -408,39 +408,6 @@ import request_limits
 
 
         reverse_proxy 10.0.0.6:8880
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
-  # Fincept Terminal backend — REST + WebSocket over DataHub, 35 data connectors, 7 analytics, 17 brokers, 6 investor personas, MCP tools
-  fincept-api.diegonmarcos.com {
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:8340
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:8340
-  }
-
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -859,7 +826,27 @@ forward_auth 10.0.0.1:9091 {
 
 }
 
-handle_path /c3-api/* {
+handle_path /fin-api/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8340
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8340
+  }
+
+}
+
+handle_path /c3-infra-api/* {
     @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth 10.0.0.1:4182 {
@@ -879,7 +866,7 @@ forward_auth 10.0.0.1:9091 {
 
 }
 
-handle_path /services/* {
+handle_path /c3-services-api/* {
     @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth 10.0.0.1:4182 {
@@ -973,6 +960,11 @@ reverse_proxy https://diegonmarcos.github.io {
   mcp.diegonmarcos.com {
 import security
 import request_limits
+handle_path /g-personal/* {
+  reverse_proxy 10.0.0.6:3106 {
+    flush_interval -1
+  }
+}
 handle_path /g-workspace/* {
   reverse_proxy 10.0.0.6:3104 {
     flush_interval -1
@@ -1004,7 +996,7 @@ handle_path /cloud-cgc-mcp/* {
   }
 }
     handle {
-      respond "MCP Hub -- use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp" 200
+      respond "MCP Hub -- use /g-personal/mcp, /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp" 200
     }
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -1214,6 +1206,12 @@ filebrowser.app {
   reverse_proxy 10.0.0.6:3015
 }
 
+g-personal-mcp.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:3106
+}
+
 g-workspace-mcp.app {
   bind 10.0.0.1
   tls internal
@@ -1268,12 +1266,6 @@ radicale.app {
   reverse_proxy 10.0.0.6:5232
 }
 
-revealmd.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3014
-}
-
 snappymail.app {
   bind 10.0.0.1
   tls internal
@@ -1304,7 +1296,7 @@ crawlee.app {
   reverse_proxy 10.0.0.6:3000
 }
 
-fincept-api.app {
+fin-api.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.6:8340
@@ -1320,12 +1312,6 @@ ollama-hai.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.6:11435
-}
-
-rig-agentic-hai-1.5bq4.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8091
 }
 
 rig-agentic-sonn-14bq8.app {
@@ -1442,28 +1428,10 @@ umami.app {
   reverse_proxy 10.0.0.6:3006
 }
 
-backup-borg.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:2224
-}
-
-backup-bup.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:2223
-}
-
 gitea.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.6:3002
-}
-
-kg-graph.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:8001
 }
 
 redis.app {
@@ -1529,6 +1497,14 @@ filebrowser_app-http-3015.app {
     on_demand
   }
   reverse_proxy 10.0.0.6:3015
+}
+
+google-personal-mcp-http-3106.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.6:3106
 }
 
 google-workspace-mcp-http-3104.app {
@@ -1603,14 +1579,6 @@ radicale-http-5232.app {
   reverse_proxy 10.0.0.6:5232
 }
 
-revealmd_app-http-3014.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:3014
-}
-
 snappymail-http-8888.app {
   bind 10.0.0.1
   tls internal {
@@ -1651,52 +1619,12 @@ crawlee_api-http-3000.app {
   reverse_proxy 10.0.0.6:3000
 }
 
-crawlee_dashboard-http-3001.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:3001
-}
-
-crawlee_minio-http-9000.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:9000
-}
-
-fincept-server-http-8340.app {
+fin-api-http-8340.app {
   bind 10.0.0.1
   tls internal {
     on_demand
   }
   reverse_proxy 10.0.0.6:8340
-}
-
-ollama-http-11434.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.8:11434
-}
-
-ollama-hai-http-11435.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:11435
-}
-
-rig-agentic-hai-http-8091.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:8091
 }
 
 rig-agentic-sonn-14bq8-http-8091.app {
@@ -1721,30 +1649,6 @@ caddy-https-443.app {
     on_demand
   }
   reverse_proxy 10.0.0.1:443
-}
-
-caddy-http-80.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.1:80
-}
-
-caddy-http-2019.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.1:2019
-}
-
-introspect-proxy-http-4182.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.1:4182
 }
 
 c3-infra-api-http-8081.app {
@@ -1827,30 +1731,6 @@ lgtm_grafana-http-3200.app {
   reverse_proxy 10.0.0.6:3200
 }
 
-lgtm_loki-http-3110.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:3110
-}
-
-lgtm_tempo-http-3210.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:3210
-}
-
-lgtm_mimir-http-9009.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:9009
-}
-
 matomo-hybrid-http-8084.app {
   bind 10.0.0.1
   tls internal {
@@ -1875,22 +1755,6 @@ umami-http-3006.app {
   reverse_proxy 10.0.0.6:3006
 }
 
-borg-server-http-2224.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:2224
-}
-
-bup-server-http-2223.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:2223
-}
-
 gitea-http-3002.app {
   bind 10.0.0.1
   tls internal {
@@ -1899,38 +1763,6 @@ gitea-http-3002.app {
   reverse_proxy 10.0.0.6:3002
 }
 
-surrealdb-http-8001.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:8001
-}
-
-
-mattermost-bots-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-photoprism_mariadb-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-photoprism_rclone-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
 
 photos-db-null.app {
   bind 10.0.0.1
@@ -1948,87 +1780,7 @@ stalwart-sorter-null.app {
   respond "Portless worker/sidecar — no HTTP endpoint" 204
 }
 
-crawlee_runner-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-crawlee_scheduler-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-postlite-authelia-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-syslog-central-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-siem-api-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
 news-gdelt-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-syslog-bridge-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-github-rss-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-sauron-forwarder-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-umami-setup-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
-
-cloud-builder-x-null.app {
   bind 10.0.0.1
   tls internal {
     on_demand
@@ -2041,44 +1793,12 @@ cloud-builder-x-null.app {
   # DB ZONE — {container}-{engine}-{port}.db HTTPS catalog endpoints
   # ════════════════════════════════════════════════════════════
 
-etherpad_postgres-postgres-5436.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=etherpad_postgres engine=postgres port=5436 upstream=10.0.0.6:5436 path=- vm=oci-A1-f_0" 200
-}
-
 filebrowser_app-sqlite-null.db {
   bind 10.0.0.1
   tls internal {
     on_demand
   }
   respond "DB catalog — container=filebrowser_app engine=sqlite port= upstream=(embedded) path=/data/filebrowser.db vm=oci-A1-f_0" 200
-}
-
-hedgedoc_postgres-postgres-5439.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=hedgedoc_postgres engine=postgres port=5439 upstream=10.0.0.6:5439 path=- vm=oci-A1-f_0" 200
-}
-
-mattermost-postgres-postgres-5435.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=mattermost-postgres engine=postgres port=5435 upstream=10.0.0.6:5435 path=- vm=oci-A1-f_0" 200
-}
-
-photoprism_mariadb-mariadb-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=photoprism_mariadb engine=mariadb port= upstream=(embedded) path=- vm=oci-A1-f_0" 200
 }
 
 radicale-files-null.db {
@@ -2097,14 +1817,6 @@ snappymail-files-null.db {
   respond "DB catalog — container=snappymail engine=files port= upstream=(embedded) path=/var/lib/snappymail vm=oci-E2-f_0" 200
 }
 
-maddy-sqlite-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=maddy engine=sqlite port= upstream=(embedded) path=/data/imapsql.db vm=oci-E2-f_0" 200
-}
-
 stalwart-rocksdb-null.db {
   bind 10.0.0.1
   tls internal {
@@ -2121,44 +1833,12 @@ vaultwarden-sqlite-null.db {
   respond "DB catalog — container=vaultwarden engine=sqlite port= upstream=(embedded) path=/data/db.sqlite3 vm=oci-A1-f_0" 200
 }
 
-crawlee_db-postgres-5433.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=crawlee_db engine=postgres port=5433 upstream=10.0.0.6:5433 path=- vm=oci-A1-f_0" 200
-}
-
-crawlee_redis-redis-6381.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=crawlee_redis engine=redis port=6381 upstream=10.0.0.6:6381 path=- vm=oci-A1-f_0" 200
-}
-
-crawlee_minio-minio-9000.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=crawlee_minio engine=minio port=9000 upstream=10.0.0.6:9000 path=- vm=oci-A1-f_0" 200
-}
-
 authelia-sqlite-null.db {
   bind 10.0.0.1
   tls internal {
     on_demand
   }
   respond "DB catalog — container=authelia engine=sqlite port= upstream=(embedded) path=/var/lib/authelia/db.sqlite3 vm=gcp-E2-f_0" 200
-}
-
-authelia-redis-redis-6380.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=authelia-redis engine=redis port=6380 upstream=10.0.0.1:6380 path=- vm=gcp-E2-f_0" 200
 }
 
 dagu-sqlite-null.db {
@@ -2177,30 +1857,6 @@ lgtm_grafana-sqlite-null.db {
   respond "DB catalog — container=lgtm_grafana engine=sqlite port= upstream=(embedded) path=/var/lib/grafana/grafana.db vm=oci-A1-f_0" 200
 }
 
-lgtm_loki-boltdb-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=lgtm_loki engine=boltdb port= upstream=(embedded) path=/loki/index vm=oci-A1-f_0" 200
-}
-
-lgtm_tempo-wal-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=lgtm_tempo engine=wal port= upstream=(embedded) path=/var/tempo vm=oci-A1-f_0" 200
-}
-
-lgtm_mimir-tsdb-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=lgtm_mimir engine=tsdb port= upstream=(embedded) path=/var/mimir vm=oci-A1-f_0" 200
-}
-
 matomo-hybrid-mariadb-3306.db {
   bind 10.0.0.1
   tls internal {
@@ -2217,36 +1873,12 @@ ntfy-sqlite-null.db {
   respond "DB catalog — container=ntfy engine=sqlite port= upstream=(embedded) path=/var/cache/ntfy/cache.db vm=oci-A1-f_0" 200
 }
 
-umami-db-postgres-5442.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=umami-db engine=postgres port=5442 upstream=10.0.0.6:5442 path=- vm=oci-A1-f_0" 200
-}
-
 gitea-sqlite-null.db {
   bind 10.0.0.1
   tls internal {
     on_demand
   }
   respond "DB catalog — container=gitea engine=sqlite port= upstream=(embedded) path=/data/gitea/gitea.db vm=oci-A1-f_0" 200
-}
-
-surrealdb-surrealdb-8001.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=surrealdb engine=surrealdb port=8001 upstream=10.0.0.6:8001 path=- vm=oci-A1-f_0" 200
-}
-
-redis-redis-6379.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=redis engine=redis port=6379 upstream=10.0.0.1:6379 path=- vm=gcp-E2-f_0" 200
 }
 
 

@@ -32,7 +32,10 @@ in
     };
 
     introspect-proxy = {
-      image = "ghcr.io/diegonmarcos/introspect-proxy-binaries:latest";
+      # introspect-proxy's docker.native_build.type=image-wrapper produces
+      # only ghcr.io/diegonmarcos/introspect-proxy (no -binaries cache layer)
+      # — referencing -binaries here causes a 401/missing-image pull failure.
+      image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
       container_name = "introspect-proxy";
       network_mode = "host";
       environment = {
