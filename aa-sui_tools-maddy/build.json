@@ -88,6 +88,17 @@
     "smtp": 465,
     "imap": 993
   },
+  "users": {
+    "admin": {
+      "name": "me",
+      "pass_env": "ME_PASSWORD"
+    },
+    "noreply": {
+      "name": "no-reply",
+      "pass_env": "NOREPLY_PASSWORD",
+      "aliases": ["noreply"]
+    }
+  },
   "containers": {
     "app": {
       "container_name": "maddy",

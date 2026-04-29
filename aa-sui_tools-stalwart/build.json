@@ -170,8 +170,17 @@
   },
   "upstream_image": "stalwartlabs/stalwart:latest",
   "timezone": "Europe/Madrid",
-  "admin_user": "me",
-  "noreply_user": "no-reply",
+  "users": {
+    "admin": {
+      "name": "me",
+      "pass_env": "ME_PASSWORD"
+    },
+    "noreply": {
+      "name": "no-reply",
+      "pass_env": "NOREPLY_PASSWORD",
+      "aliases": ["noreply"]
+    }
+  },
   "build": {
     "headers_enforced": true
   }
