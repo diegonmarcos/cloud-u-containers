@@ -8,6 +8,15 @@
 { lib, caddyRoutes }:
 
 let
+  # ── Dual-bind public *.diegonmarcos.com routes to BOTH the public socket
+  # and the WG-internal IP. Hickory wildcards *.diegonmarcos.com → wgBindIp
+  # for the WG fast-path (skips Cloudflare); without dual-binding here,
+  # WG traffic lands on the more-specific listener created by *.app blocks
+  # (which doesn't carry the public host matchers) and falls through to an
+  # empty 200 response. Source-of-truth: build.json caddy_config.global.wg_bind_ip.
+  wgBindIp = caddyRoutes.global.wg_bind_ip or "10.0.0.1";
+  publicBindLine = "  bind 0.0.0.0 ${wgBindIp}";
+
   # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
   ss = caddyRoutes.security_snippets or {};
 
@@ -280,6 +289,7 @@ let
     in ''
     # ${route.comment or route.domain}
     ${route.domain} {
+  ${publicBindLine}
   ${secLine}${uploadBlock}
   ${wgBlock}
   ${bypassBlock}${landingBlock}
@@ -329,6 +339,7 @@ let
     in ''
     # ${route.comment or route.domain}
     ${route.domain} {
+  ${publicBindLine}
   ${sec}
   ${wkdBlock}
       ${handleErrors}
@@ -397,6 +408,7 @@ let
     in ''
     # ${group.comment or group.parent_domain}
     ${group.parent_domain} {
+  ${publicBindLine}
   ${sec}
   ${landingRootBlock}${pathBlocks}
   ${fallbackBlock}
@@ -417,6 +429,7 @@ let
     in ''
     # ${group.comment or group.parent_domain}
     ${group.parent_domain} {
+  ${publicBindLine}
   ${sec}
   ${endpointBlocks}
       handle {
@@ -429,6 +442,7 @@ let
   mkRedirectRoute = route: ''
     # ${route.comment or route.domain}
     ${route.domain} {
+  ${publicBindLine}
   ${sec}
       redir ${route.target} permanent
       ${handleErrors}
@@ -494,6 +508,7 @@ let
     in ''
     # ${mail.comment or "mail"}
     ${mail.domain} {
+  ${publicBindLine}
   ${sec}
       @root path /
       handle @root {
@@ -516,6 +531,7 @@ let
     else ''
     # ${ntfy.comment or "ntfy"}
     ${ntfy.domain} {
+  ${publicBindLine}
   ${sec}
       handle /setup {
   ${authelia}
@@ -549,6 +565,7 @@ let
     in ''
     # ${a.comment or "Analytics"}
     ${a.domain} {
+  ${publicBindLine}
   ${sec}
       @tracking {
         path ${trackingPaths}
@@ -592,6 +609,7 @@ let
     else ''
     # ${pd.comment or "Proxy dashboard"}
     ${pd.domain} {
+  ${publicBindLine}
   ${sec}
       @bearer header Authorization Bearer*
       handle @bearer {
@@ -790,6 +808,7 @@ ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
   # ════════════════════════════════════════════════════════════
 
   ${(caddyRoutes.mta_sts or {}).domain} {
+  ${publicBindLine}
 ${secNoLimit}
     tls {
       dns cloudflare {env.CF_API_TOKEN}
@@ -810,6 +829,7 @@ max_age: ${toString ((caddyRoutes.mta_sts or {}).max_age or 604800)}
   # ════════════════════════════════════════════════════════════
 
   ${(caddyRoutes.catch_all or {}).domain} {
+  ${publicBindLine}
 ${secNoLimit}
     tls {
       dns cloudflare {env.CF_API_TOKEN}
