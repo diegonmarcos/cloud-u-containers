@@ -56,13 +56,16 @@ $session->set('username', $primaryEmail);
 \Hm_SMTP_List::init($uc, $session);
 \Hm_Feed_List::init($uc, $session);
 
-\fwrite(STDOUT, "imap_count="  . \Hm_IMAP_List::count() . "\n");
+// JMAP entries live INSIDE imap_servers with type='jmap' — same Hm_IMAP_List
+// (verified in modules/imap/handler_modules.php Hm_Handler_process_add_jmap_server
+// → Hm_IMAP_List::add(['type' => 'jmap', ...])). Count by type.
+$imapAll  = \Hm_IMAP_List::dump(false, true);
+$imapOnly = \array_filter($imapAll, fn($s) => ($s['type'] ?? 'imap') !== 'jmap');
+$jmapOnly = \array_filter($imapAll, fn($s) => ($s['type'] ?? '')      === 'jmap');
+\fwrite(STDOUT, "imap_count="  . \count($imapOnly) . "\n");
+\fwrite(STDOUT, "jmap_count="  . \count($jmapOnly) . "\n");
 \fwrite(STDOUT, "smtp_count="  . \Hm_SMTP_List::count() . "\n");
 \fwrite(STDOUT, "feeds_count=" . \Hm_Feed_List::count() . "\n");
-
-// JMAP shares Hm_IMAP_List storage but a separate jmap_servers key — read directly.
-$jmap = $uc->get('jmap_servers', []);
-\fwrite(STDOUT, "jmap_count=" . \count(\is_array($jmap) ? $jmap : []) . "\n");
 
 $cdav = $uc->get('carddav_contacts_auth_setting', []);
 \fwrite(STDOUT, "carddav_count=" . \count(\is_array($cdav) ? $cdav : []) . "\n");
