@@ -4,7 +4,8 @@
   "dns": {
     "zones": [
       "app",
-      "db"
+      "db",
+      "diegonmarcos.com"
     ],
     "forwarders": [
       "1.1.1.1",
