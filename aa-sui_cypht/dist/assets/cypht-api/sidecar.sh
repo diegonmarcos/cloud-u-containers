@@ -76,17 +76,24 @@ if [ -z "$PRIMARY_PASS" ] || [ "${PRIMARY_PASS#TODO_}" != "$PRIMARY_PASS" ]; the
     exit 0
 fi
 
-# Probe: does the new password authenticate?
+# Probe: does the new password authenticate against the existing user?
+# Needs APP_PATH/VENDOR_PATH/WEB_ROOT defined (mirrors scripts/create_account.php
+# bootstrap at /usr/local/share/cypht/scripts/create_account.php).
 PROBE_OUT=$(PHP_EMAIL="$PRIMARY_EMAIL" PHP_PASS="$PRIMARY_PASS" php -r '
-require "/usr/local/share/cypht/vendor/autoload.php";
-require "/usr/local/share/cypht/lib/framework.php";
+define("APP_PATH",   "/usr/local/share/cypht/");
+define("VENDOR_PATH","/usr/local/share/cypht/vendor/");
+define("WEB_ROOT",   "");
+require APP_PATH . "vendor/autoload.php";
+require APP_PATH . "lib/framework.php";
 $env=Hm_Environment::getInstance(); $env->load();
 if(!defined("DEBUG_MODE")) define("DEBUG_MODE", false);
 $cfg=new Hm_Site_Config_File(); $env->define_default_constants($cfg);
+$dbh=Hm_DB::connect($cfg);
+$row=Hm_DB::execute($dbh, "select 1 as r from hm_user where username = ?", [getenv("PHP_EMAIL")]);
+$exists = !empty($row);
 $auth=new Hm_Auth_DB($cfg);
-$row=Hm_DB::execute(Hm_DB::connect($cfg), "select 1 from hm_user where username = ?", [getenv("PHP_EMAIL")]);
-echo $row ? "EXISTS:" : "MISSING:";
-echo $auth->check_credentials(getenv("PHP_EMAIL"), getenv("PHP_PASS")) ? "AUTH_OK" : "AUTH_FAIL";
+$ok = $auth->check_credentials(getenv("PHP_EMAIL"), getenv("PHP_PASS"));
+echo ($exists ? "EXISTS:" : "MISSING:") . ($ok ? "AUTH_OK" : "AUTH_FAIL");
 ' 2>&1 | tail -1)
 echo "[cypht-api] auth probe: $PROBE_OUT"
 
