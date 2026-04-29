@@ -18,11 +18,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 echo "[init] Generating maddy.conf from template..."
+# maddy.conf uses native `{env:VAR}` interpolation for secrets — no sed,
+# no shell-text mangling. Maddy reads env vars at config-load time.
+# Source of every secret value: src/secrets.yaml -> env_file (.secrets) -> $env.
 cp /etc/maddy/maddy.conf.tpl /data/maddy.conf
-
-# Substitute relay secrets (sed-safe: values contain no slashes/pipes)
-sed -i "s|\${OCI_RELAYUSER}|$OCI_RELAYUSER|g" /data/maddy.conf
-sed -i "s|\${OCI_RELAYPASSWORD}|$OCI_RELAYPASSWORD|g" /data/maddy.conf
 
 # Write DKIM private key from base64
 if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
@@ -32,11 +31,33 @@ if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
   chmod 600 /data/dkim/diegonmarcos.com.key
 fi
 
-# Create accounts (idempotent — errors ignored if already exist)
-echo "[init] Ensuring accounts..."
-echo "$ME_PASSWORD"      | maddy creds create me@diegonmarcos.com       2>/dev/null || true
-echo "$NOREPLY_PASSWORD" | maddy creds create no-reply@diegonmarcos.com 2>/dev/null || true
-maddy imap-acct create me@diegonmarcos.com       2>/dev/null || true
+# Create accounts AND sync passwords on every boot.
+# `creds create` errors if the account exists, so an existing account would
+# keep a stale password forever (drift between secrets.yaml and the maddy
+# credentials.db). Pair with `creds password` to UPSERT the secret —
+# `creds create` for first-boot, `creds password` for password rotation.
+# Pipe passwords via stdin — never `--password $VAR` (the value would land in
+# process args / `docker top` / `ps` output). maddy's own --help carries the
+# same warning. Source of every value is sops-encrypted src/secrets.yaml,
+# which docker compose injects as env_file -> $ME_PASSWORD / $NOREPLY_PASSWORD.
+#
+# `printf '%s'` (no trailing \n) — `echo` would append a newline that maddy
+# then bcrypts into the stored hash, so SMTP clients sending the bare value
+# would never authenticate.
+#
+# Stderr stays visible so that any `creds password` failure (locked db,
+# missing config block, version skew) shows up in `docker logs maddy`.
+# `creds create` is expected to error on existing accounts — that's fine,
+# `creds password` is the unconditional upsert.
+echo "[init] Ensuring accounts + syncing passwords..."
+# USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
+# Each entry produces: creds create + creds password + imap-acct create.
+# Source: aa-sui_tools-maddy/build.json#users (this service's own SoT).
+printf '%s' "$ME_PASSWORD" | maddy creds create   me@diegonmarcos.com 2>&1 | sed 's|^|  [creds:create me]   |' || true
+printf '%s' "$ME_PASSWORD" | maddy creds password me@diegonmarcos.com 2>&1 | sed 's|^|  [creds:password me] |' || true
+maddy imap-acct create me@diegonmarcos.com 2>/dev/null || true
+printf '%s' "$NOREPLY_PASSWORD" | maddy creds create   no-reply@diegonmarcos.com 2>&1 | sed 's|^|  [creds:create no-reply]   |' || true
+printf '%s' "$NOREPLY_PASSWORD" | maddy creds password no-reply@diegonmarcos.com 2>&1 | sed 's|^|  [creds:password no-reply] |' || true
 maddy imap-acct create no-reply@diegonmarcos.com 2>/dev/null || true
 
 echo "[init] Starting Maddy..."

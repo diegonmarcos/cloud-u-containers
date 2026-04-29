@@ -93,7 +93,10 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (ports 465/587) — authenticated outbound ───────────
-submission tls://@BIND_465@:465 tcp://@BIND_587@:587 {
+# Two endpoints per protocol: WG-bind (external clients via Caddy L4) +
+# 127.0.0.1 (loopback for co-located SnappyMail using network_mode: host).
+# Cert validates *.diegonmarcos.com; loopback clients use verify_peer=false.
+submission tls://@BIND_465@:465 tls://127.0.0.1:465 tcp://@BIND_587@:587 tcp://127.0.0.1:587 {
     limits {
         all rate 50 1s
     }
@@ -134,7 +137,7 @@ submission tls://@BIND_465@:465 tcp://@BIND_587@:587 {
 # ── Outbound relay (OCI SMTP) ─────────────────────────────────────
 target.smtp outbound_delivery {
     targets tcp://@OCI_RELAY_HOST@:@OCI_RELAY_PORT@
-    auth plain ${OCI_RELAYUSER} ${OCI_RELAYPASSWORD}
+    auth plain {env:OCI_RELAYUSER} {env:OCI_RELAYPASSWORD}
     starttls yes
 }
 
@@ -153,7 +156,8 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-imap tls://@BIND_993@:993 tcp://@BIND_143@:143 {
+# Two endpoints: WG-bind + 127.0.0.1 loopback (same rationale as submission).
+imap tls://@BIND_993@:993 tls://127.0.0.1:993 tcp://@BIND_143@:143 tcp://127.0.0.1:143 {
     auth &local_authdb
     storage &local_mailboxes
 }

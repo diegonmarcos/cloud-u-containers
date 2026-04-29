@@ -44,9 +44,28 @@
       ADMIN_HASH = adminHash;
     };
 
+    # User creation block — generated from build.json#users (this service's SoT).
+    # Each user becomes a Stalwart "individual" principal POSTed via the admin API.
+    # Each role is mapped: admin→admin, all others→user. Aliases land in `emails`.
+    mkUserLines = key: u:
+      let
+        addr   = "${u.name}@${base_domain}";
+        emails = [ addr ] ++ (lib.optionals (u ? aliases) (map (a: "${a}@${base_domain}") u.aliases));
+        emailsJson = "[" + lib.concatStringsSep "," (map (e: "\"${e}\"") emails) + "]";
+        role   = if key == "admin" then "admin" else "user";
+        passShell = "\"$" + u.pass_env + "\"";
+      in lib.concatStringsSep "\n" [
+        "${lib.toUpper key}_PW=$(cat /opt/containers/stalwart/.secrets.d/${u.pass_env} 2>/dev/null || echo ${passShell})"
+        "curl -sk -u \"admin:$PW\" -X POST \"$URL\" -H \"Content-Type: application/json\" \\"
+        "  -d '{\"type\":\"individual\",\"name\":\"${addr}\",\"secrets\":[\"'\"\$${lib.toUpper key}_PW\"'\"],\"emails\":${emailsJson},\"roles\":[\"${role}\"]}' 2>/dev/null || true"
+      ];
+
+    userBlock = lib.concatStringsSep "\n\n" (lib.mapAttrsToList mkUserLines (buildJson.users or {}));
+
     activateShVars = {
-      BASE_DOMAIN = base_domain;
-      APP_PORT    = appPort;
+      BASE_DOMAIN          = base_domain;
+      APP_PORT             = appPort;
+      USER_CREATION_BLOCK  = userBlock;
     };
 
   in {

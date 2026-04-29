@@ -105,5 +105,97 @@
   "resources": {
     "mem_limit": "256M",
     "mem_reservation": "64M"
+  },
+  "mail_clients": {
+    "_doc": "Cypht-only declarations. Cross-service data (mail server hosts/ports, mailbox identities) is JOINED at engine derive time from peers' build.json (services.<peer>.users + .domain + .ports/extra_ports). Output lands in build-cypht.json#mail_accounts (resolved). The cypht flake reads build-cypht.json and emits dist/assets/seed-accounts.json + dist/assets/cypht-api/configs.json — no hand-written duplicates.",
+    "primary_user": {
+      "_doc": "Cypht UI master login (Hm_Auth_DB). INDEPENDENT from the mailbox passwords (those come from peers' users{}.pass_env). Cypht-only data — owned by cypht.",
+      "user_ref": "maddy.users.admin",
+      "pass_env": "CYPHT_LOGIN_PASSWORD"
+    },
+    "via_internal": [
+      {
+        "_doc": "Each entry references a peer service's users{} entry + service labels for receive/send channels. Engine resolves user_ref → {address, pass_env}, receive_via → {host, port, secure}, send_via → {host, port, secure} by looking up the matching extra_ports[].service on the peer.",
+        "label_template": "{addr_short} | IMAP-Maddy",
+        "user_ref":    "maddy.users.admin",
+        "receive_via": { "service": "maddy",    "via": "imap_ssl"      },
+        "send_via":    { "service": "maddy",    "via": "smtp_ssl"      }
+      },
+      {
+        "label_template": "{addr_short} | JMAP-Stalwart",
+        "user_ref":    "stalwart.users.admin",
+        "receive_via": { "service": "stalwart", "via": "jmap_tls"      },
+        "send_via":    { "service": "stalwart", "via": "smtp_ssl"      },
+        "alias_email": "me-jmap@stalwart"
+      },
+      {
+        "label_template": "{addr_short} | SMTP-Stalwart-STARTTLS",
+        "user_ref":    "stalwart.users.admin",
+        "receive_via": null,
+        "send_via":    { "service": "stalwart", "via": "smtp_starttls" },
+        "alias_email": "me-starttls@stalwart"
+      },
+      {
+        "label_template": "{addr_short} | IMAP-Maddy",
+        "user_ref":    "maddy.users.noreply",
+        "receive_via": { "service": "maddy",    "via": "imap_ssl"      },
+        "send_via":    { "service": "maddy",    "via": "smtp_ssl"      }
+      }
+    ],
+    "via_external": [
+      {
+        "_doc": "External providers (no internal SoT exists). Hosts/ports declared inline because no peer service owns them.",
+        "label": "diegonmarcos@livecom | IMAP-outlook",
+        "email": "diegonmarcos@live.com",
+        "pass_env": "LIVE_APP_PASSWORD",
+        "imap": { "host": "outlook.office365.com", "port": 993, "secure": "SSL" },
+        "smtp": { "host": "smtp-mail.outlook.com", "port": 587, "secure": "TLS" }
+      },
+      {
+        "label": "diegonmarcos1@gmail.com | IMAP-gaccount",
+        "email": "diegonmarcos1@gmail.com",
+        "pass_env": "GMAIL_APP_PASSWORD",
+        "imap": { "host": "imap.gmail.com", "port": 993, "secure": "SSL" },
+        "smtp": { "host": "smtp.gmail.com", "port": 587, "secure": "TLS" }
+      }
+    ],
+    "carddav": {
+      "_doc": "CardDAV providers. Engine resolves service_ref → services.radicale.domain at derive time.",
+      "radicale": {
+        "service_ref": "radicale",
+        "path_template": "/{user_url_encoded}/",
+        "user_ref": "maddy.users.admin",
+        "pass_env": "ME_PASSWORD"
+      }
+    },
+    "feeds": {
+      "_doc": "RSS feeds. Engine resolves service_ref → services.ntfy.domain. topics_source is a path (relative to cypht src/) to a topics list — itself a build-time copy of the canonical I_cloud-data/ntfy-api/src/topics.json.",
+      "service_ref": "ntfy",
+      "topics_source": "../ntfy-topics.json",
+      "url_path_template": "/{topic}/json?poll=1"
+    },
+    "profiles": {
+      "_doc": "Cypht send-as profiles (Hm_Profiles, modules/profiles). Profile is a CYPHT-ONLY concept — owned by cypht. match_template is rendered after via_internal labels are resolved; engine wires smtp_id/imap_id by name lookup at apply-time.",
+      "diego": {
+        "name": "Diego",
+        "user_ref": "maddy.users.admin",
+        "match_template": "{addr_short} | IMAP-Maddy",
+        "default": true,
+        "sig": "",
+        "rmk": ""
+      }
+    },
+    "settings": {
+      "_doc": "Per-user UI prefs. Each key MUST end in _setting (Cypht convention). Cypht-only — owned by cypht.",
+      "theme_setting":                           "darkly",
+      "start_page_setting":                      "unread",
+      "enable_sieve_filter_setting":             true,
+      "enable_snooze_setting":                   true,
+      "smtp_compose_type_setting":               1,
+      "enable_attachment_reminder_setting":      true,
+      "enable_compose_delivery_receipt_setting": true,
+      "mailto_handler_setting":                  true,
+      "enable_collect_address_on_send_setting":  true
+    }
   }
 }

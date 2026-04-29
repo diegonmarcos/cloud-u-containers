@@ -43,8 +43,26 @@
       OCI_RELAY_PORT = buildJson.oci_relay.port;
     };
 
+    # User creation block — generated from build.json#users (this service's SoT).
+    # Each user gets creds create + creds password (UPSERT) + imap-acct create.
+    # Pipe passwords via stdin (never --password $VAR — would leak via `docker top`).
+    # Shell-level $ENV refs are built via string concat to avoid Nix interpolation
+    # confusion with multi-line `''...''` strings.
+    mkUserLines = key: u:
+      let
+        addr      = "${u.name}@${base_domain}";
+        passShell = "\"$" + u.pass_env + "\"";
+      in lib.concatStringsSep "\n" [
+        "printf '%s' ${passShell} | maddy creds create   ${addr} 2>&1 | sed 's|^|  [creds:create ${u.name}]   |' || true"
+        "printf '%s' ${passShell} | maddy creds password ${addr} 2>&1 | sed 's|^|  [creds:password ${u.name}] |' || true"
+        "maddy imap-acct create ${addr} 2>/dev/null || true"
+      ];
+
+    userBlock = lib.concatStringsSep "\n" (lib.mapAttrsToList mkUserLines (buildJson.users or {}));
+
     initShVars = {
-      BASE_DOMAIN = base_domain;
+      BASE_DOMAIN          = base_domain;
+      USER_CREATION_BLOCK  = userBlock;
     };
 
   in {
