@@ -157,6 +157,7 @@
 
   # VS Code IDE (ide.diegonmarcos.com)
   ide.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -190,6 +191,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com
   webmail.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -223,6 +225,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Grist spreadsheet/database (sheets.diegonmarcos.com)
   sheets.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -256,6 +259,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Mattermost team chat with ntfy bridge and C3 command bot
   chat.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -289,6 +293,7 @@ forward_auth 10.0.0.1:9091 {
 
   # PhotoPrism AI-powered photo management (oci-flex-1)
   photos.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -332,6 +337,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)
   cal.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -365,6 +371,7 @@ forward_auth 10.0.0.1:9091 {
 
   # HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)
   smtp.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -382,6 +389,7 @@ import request_limits
 
   # Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)
   mail-stalwart.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -403,6 +411,7 @@ import request_limits
 
   # Bitwarden password manager
   vault.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -420,6 +429,7 @@ import request_limits
 
   # SSO and 2FA authentication portal
   auth.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -453,6 +463,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Dagu - Lightweight DAG-based workflow scheduler
   workflows.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -486,6 +497,7 @@ forward_auth 10.0.0.1:9091 {
 
   # DBGate - Universal database manager for all cloud databases
   db.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -519,6 +531,7 @@ forward_auth 10.0.0.1:9091 {
 
   # LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)
   grafana.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -552,6 +565,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Self-hosted Git service
   git.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -590,6 +604,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Landing page + WKD (Web Key Directory for PGP)
   diegonmarcos.com, www.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     # WKD — PGP public key discovery (no auth — must be public per spec)
@@ -617,6 +632,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # linktree.diegonmarcos.com
   linktree.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /linktree{uri}
@@ -636,6 +652,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # nexus.diegonmarcos.com
   nexus.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /nexus{uri}
@@ -655,6 +672,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # suite.diegonmarcos.com
   suite.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /suite{uri}
@@ -674,6 +692,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # maps.diegonmarcos.com
   maps.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /mymaps{uri}
@@ -698,6 +717,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # App hub -- path-based routing
   app.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -795,6 +815,7 @@ handle {
 
   # API hub -- path-based routing to backend APIs
   api.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 @root path /
@@ -904,6 +925,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # Cloud dashboard + spec viewer
   cloud.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 @root path /
@@ -958,6 +980,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # MCP -- Streamable HTTP endpoints for Claude Code MCP clients
   mcp.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 handle_path /g-personal/* {
@@ -1015,6 +1038,7 @@ handle_path /cloud-cgc-mcp/* {
 
   # mail → webmail redirect
   mail.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     redir https://webmail.diegonmarcos.com{uri} permanent
@@ -1037,6 +1061,7 @@ import request_limits
 
   # Matomo (public tracking + protected admin) + Umami (path-based)
   analytics.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     @tracking {
@@ -1107,6 +1132,7 @@ forward_auth 10.0.0.1:9091 {
 
   # ntfy notifications -- 3-tier auth: JWT bearer, tk_ bearer, cookie
   rss.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     handle /setup {
@@ -1151,6 +1177,7 @@ forward_auth 10.0.0.1:9091 {
 
   # Infrastructure dashboard (static HTML)
   proxy.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     @bearer header Authorization Bearer*
@@ -1967,6 +1994,7 @@ s3-photos.app {
   # ════════════════════════════════════════════════════════════
 
   mta-sts.diegonmarcos.com {
+    bind 0.0.0.0 10.0.0.1
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}
@@ -1989,6 +2017,7 @@ max_age: 604800
   # ════════════════════════════════════════════════════════════
 
   *.diegonmarcos.com {
+    bind 0.0.0.0 10.0.0.1
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}

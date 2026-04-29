@@ -26,7 +26,9 @@
       "debug": true,
       "admin_bind": "localhost:2019",
       "order": "respond before handle",
-      "auto_https": "disable_redirects"
+      "auto_https": "disable_redirects",
+      "_doc_wg_bind_ip": "Caddy's WG IP — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip) so Hickory's *.diegonmarcos.com → 10.0.0.1 fast-path lands on the same routing table the public listener uses. Without this, WG-internal traffic hits the *:443 listener that's shadowed by the more-specific 10.0.0.1:443 listener (created by *.app blocks), and unmatched hosts get an empty 200 response.",
+      "wg_bind_ip": "10.0.0.1"
     },
     "on_demand_tls": {
       "ask_bind": "127.0.0.1:2020",
