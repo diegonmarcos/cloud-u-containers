@@ -63,11 +63,50 @@ php scripts/setup_database.php 2>&1 | sed 's/^/[cypht-api]   /' || {
     exit 0
 }
 
-# ── 3. Master user (idempotent; create_account.php skips on conflict) ──
+# ── 3. Master user — declarative password-rotation aware ──
+# create_account.php is idempotent (skips on conflict), but if the
+# configured pass_env value changes, the existing hm_user.hash still
+# validates the OLD password and login with the new one fails. Detect
+# mismatch via Hm_Auth_DB::check_credentials and DELETE the user rows
+# so create_account.php recreates with the new password. apply.php
+# below will then re-seed all servers/settings with the new
+# encryption key (single-source-of-truth: ${PRIMARY_PASS_ENV}).
 if [ -z "$PRIMARY_PASS" ] || [ "${PRIMARY_PASS#TODO_}" != "$PRIMARY_PASS" ]; then
     echo "[cypht-api] $PRIMARY_PASS_ENV unset/placeholder — skipping user creation"
     exit 0
 fi
+
+# Probe: does the new password authenticate?
+PROBE_OUT=$(PHP_EMAIL="$PRIMARY_EMAIL" PHP_PASS="$PRIMARY_PASS" php -r '
+require "/usr/local/share/cypht/vendor/autoload.php";
+require "/usr/local/share/cypht/lib/framework.php";
+$env=Hm_Environment::getInstance(); $env->load();
+if(!defined("DEBUG_MODE")) define("DEBUG_MODE", false);
+$cfg=new Hm_Site_Config_File(); $env->define_default_constants($cfg);
+$auth=new Hm_Auth_DB($cfg);
+$row=Hm_DB::execute(Hm_DB::connect($cfg), "select 1 from hm_user where username = ?", [getenv("PHP_EMAIL")]);
+echo $row ? "EXISTS:" : "MISSING:";
+echo $auth->check_credentials(getenv("PHP_EMAIL"), getenv("PHP_PASS")) ? "AUTH_OK" : "AUTH_FAIL";
+' 2>&1 | tail -1)
+echo "[cypht-api] auth probe: $PROBE_OUT"
+
+case "$PROBE_OUT" in
+    EXISTS:AUTH_FAIL)
+        echo "[cypht-api] PASSWORD ROTATION detected (existing user, new pass) — dropping user rows"
+        PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" \
+            -c "DELETE FROM hm_user_session WHERE TRUE;" \
+            -c "DELETE FROM hm_user_settings WHERE username = '$PRIMARY_EMAIL';" \
+            -c "DELETE FROM hm_user WHERE username = '$PRIMARY_EMAIL';" 2>&1 \
+            | sed 's/^/[cypht-api]   /' || true
+        ;;
+    EXISTS:AUTH_OK)
+        echo "[cypht-api] user exists with current password — no rotation needed"
+        ;;
+    MISSING:*)
+        echo "[cypht-api] user missing — fresh create"
+        ;;
+esac
+
 echo "[cypht-api] running create_account.php for $PRIMARY_EMAIL"
 php scripts/create_account.php "$PRIMARY_EMAIL" "$PRIMARY_PASS" 2>&1 | sed 's/^/[cypht-api]   /' || true
 
