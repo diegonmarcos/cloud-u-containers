@@ -3,7 +3,11 @@
 
 let
   app = buildJson.containers.app;
-  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # hickory-dns has no service-side Dockerfile / native_build.cmd → engine
+  # skips the -binaries cache push (same as caddy/introspect-proxy). Only
+  # ghcr.io/diegonmarcos/hickory-dns:latest exists on GHCR. Reference the
+  # canonical image directly.
+  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}:latest";
 in
 {
   services = {
