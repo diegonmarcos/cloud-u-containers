@@ -37,15 +37,18 @@ in
         # upstream image uses to force listen=9000) — alphabetic load
         # order, last-wins semantics within the same [www] pool.
         "./configs/php-fpm-www.conf:/usr/local/etc/php-fpm.d/zzz-cypht.conf:ro"
-        # Pre-seed accounts assets — mounted RO, copied/used by entrypoint.
+        # ── cypht-api sidecar ─────────────────────────────────────
+        # Declarative user-config injection (accounts, CardDAV, feeds,
+        # UI settings). See src/cypht-api/README.md for the schema.
+        # Whole directory mounted RO so apply.php can require_once
+        # ./lib/*.php from its own location.
+        "./assets/cypht-api:/tmp/cypht-config/cypht-api:ro"
+        # Canonical data sources alongside the sidecar:
+        #   seed-accounts.json — shared mail-account inventory (with snappymail)
+        #   ntfy-topics.json   — copied at flake build time from
+        #                        I_cloud-data/ntfy-api/src/topics.json
         "./assets/seed-accounts.json:/tmp/cypht-config/seed-accounts.json:ro"
-        "./assets/seed-accounts.sh:/tmp/cypht-config/seed-accounts.sh:ro"
-        "./assets/seed-accounts.php:/tmp/cypht-config/seed-accounts.php:ro"
-        # Declarative CardDAV + feeds-source + UI settings inventory
-        "./assets/seed-config.json:/tmp/cypht-config/seed-config.json:ro"
-        # ntfy topic list (canonical source: I_cloud-data/ntfy-api/src/topics.json)
         "./assets/ntfy-topics.json:/tmp/cypht-config/ntfy-topics.json:ro"
-        "./configs/seed-accounts.sql:/tmp/cypht-config/seed-accounts.sql:ro"
         # Sops-decrypted secrets per-key (env_file at .secrets covers env;
         # individual files at /run/secrets/<KEY> available for any script).
         "./.secrets.d:/run/secrets:ro"
@@ -56,7 +59,7 @@ in
       # schema to exist (first GET to / triggers it), then seed.
       entrypoint = [
         "/bin/sh" "-c"
-        ("/tmp/cypht-config/seed-accounts.sh 2>&1 | sed 's/^/[seed-accounts] /' >&2 || true; "
+        ("/tmp/cypht-config/cypht-api/sidecar.sh 2>&1 | sed 's/^/[cypht-api] /' >&2 || true; "
          + "exec docker-entrypoint.sh")
       ];
       healthcheck = {
