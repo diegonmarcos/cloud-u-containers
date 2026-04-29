@@ -137,9 +137,11 @@ let
   # ──────────────────────────────────────────────────────────────
   pickPrefix = name:
     let n = name; in
-    # php-fpm + ini-style configs use `;` for comments — `#` triggers
-    # ZEND_INI_PARSER_ENTRY error and FPM init failure. Detect by name.
+    # php-fpm + ini configs use `;` (else FPM dies with ZEND_INI_PARSER_ENTRY).
+    # DNS zone files (RFC 1035) also use `;` — `#` causes hickory-dns to abort
+    # with "Label contains invalid characters". Detect by name.
     if lib.hasSuffix ".ini" n
+    || lib.hasSuffix ".zone" n
     || lib.hasInfix "php-fpm" n
     || lib.hasInfix "php.fpm" n then ";"
     else if lib.hasSuffix ".sh"   n || lib.hasSuffix ".yml" n
