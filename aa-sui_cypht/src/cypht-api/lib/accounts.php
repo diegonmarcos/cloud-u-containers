@@ -38,6 +38,9 @@ class AccountsApi {
         // JMAP and the rest as IMAP. Writing to a 'jmap_servers' key is dead
         // storage — UI never reads it.
         $imap = []; $smtp = []; $imapCount = 0; $jmapCount = 0; $skipped = [];
+        // name → id index for ProfilesApi to wire smtp_id/imap_id without
+        // hardcoding (Hm_Profiles requires these to point at real seeded rows).
+        $byNameImap = []; $byNameSmtp = [];
         foreach ($seed['extras'] as $extra) {
             $passEnv = $extra['pass_env'] ?? '';
             $pass    = $passEnv ? (\getenv($passEnv) ?: '') : '';
@@ -47,9 +50,10 @@ class AccountsApi {
                 continue;
             }
             $extra['_pass'] = $pass;
-            if ($e = self::buildImap($extra)) { [$id, $ent] = repoEntity($e); $imap[$id] = $ent; $imapCount++; }
-            if ($e = self::buildSmtp($extra)) { [$id, $ent] = repoEntity($e); $smtp[$id] = $ent; }
-            if ($e = self::buildJmap($extra)) { [$id, $ent] = repoEntity($e); $imap[$id] = $ent; $jmapCount++; }
+            $name = $extra['name'] ?? $extra['email'];
+            if ($e = self::buildImap($extra)) { [$id, $ent] = repoEntity($e); $imap[$id] = $ent; $imapCount++; $byNameImap[$name] = $id; }
+            if ($e = self::buildSmtp($extra)) { [$id, $ent] = repoEntity($e); $smtp[$id] = $ent; $byNameSmtp[$name] = $id; }
+            if ($e = self::buildJmap($extra)) { [$id, $ent] = repoEntity($e); $imap[$id] = $ent; $jmapCount++; $byNameImap[$name] = $id; }
         }
 
         $userConfig->set('imap_servers', $imap);
@@ -59,10 +63,14 @@ class AccountsApi {
         $userConfig->set('jmap_servers', []);
 
         return [
-            'imap'    => $imapCount,
-            'smtp'    => \count($smtp),
-            'jmap'    => $jmapCount,
-            'skipped' => $skipped,
+            'imap'        => $imapCount,
+            'smtp'        => \count($smtp),
+            'jmap'        => $jmapCount,
+            'skipped'     => $skipped,
+            'by_name_imap'=> $byNameImap,
+            'by_name_smtp'=> $byNameSmtp,
+            'imap_rows'   => $imap,
+            'smtp_rows'   => $smtp,
         ];
     }
 
