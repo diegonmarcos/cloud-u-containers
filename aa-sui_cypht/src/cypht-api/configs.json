@@ -3,9 +3,9 @@
   "_version": 1,
 
   "primary_user": {
-    "_doc":     "Master user account — created via Cypht's own scripts/create_account.php. Password also serves as the encryption key for hm_user_settings.settings (lib/config.php::save). The same env var is exposed to the seeder so subsequent sections can resolve it via {pass_env: 'ME_PASSWORD'}.",
+    "_doc":     "Master user account — created via Cypht's own scripts/create_account.php. Password serves dual purpose: (1) login auth (hm_user.hash), (2) encryption key for hm_user_settings.settings (lib/config.php::save). It's INDEPENDENT from ME_PASSWORD (which is Maddy IMAP's password used by CardDAV/Radicale + future Maddy backends). When this env value changes, sidecar.sh detects mismatch (Hm_Auth_DB::check_credentials returns false) and rotates the hash + re-seeds.",
     "email":    "me@diegonmarcos.com",
-    "pass_env": "ME_PASSWORD"
+    "pass_env": "CYPHT_LOGIN_PASSWORD"
   },
 
   "accounts": {
