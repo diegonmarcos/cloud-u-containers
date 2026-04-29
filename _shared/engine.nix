@@ -300,8 +300,15 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
   #                        whose baseName would be hash-prefixed)
   ${lib.concatMapStringsSep "\n" (a:
     if builtins.isAttrs a && a ? name && a ? src
-    then "cp -r ${a.src} $out/assets/${a.name}"
-    else "cp -r ${a} $out/assets/${baseNameOf a}"
+    then ''
+      mkdir -p "$out/assets/$(dirname '${a.name}')"
+      cp -rL ${a.src} "$out/assets/${a.name}"
+      chmod -R u+w "$out/assets/${a.name}"
+    ''
+    else ''
+      cp -rL ${a} "$out/assets/${baseNameOf a}"
+      chmod -R u+w "$out/assets/${baseNameOf a}"
+    ''
   ) extraAssets}
   ${lib.optionalString (lib.pathExists (srcDir + "/hooks")) ''
     cp -r ${srcDir + "/hooks"} $out/assets/hooks

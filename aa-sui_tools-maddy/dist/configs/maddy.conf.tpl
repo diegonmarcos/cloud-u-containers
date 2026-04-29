@@ -101,7 +101,10 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (ports 465/587) — authenticated outbound ───────────
-submission tls://10.0.0.3:465 tcp://10.0.0.3:587 {
+# Two endpoints per protocol: WG-bind (external clients via Caddy L4) +
+# 127.0.0.1 (loopback for co-located SnappyMail using network_mode: host).
+# Cert validates *.diegonmarcos.com; loopback clients use verify_peer=false.
+submission tls://10.0.0.3:465 tls://127.0.0.1:465 tcp://10.0.0.3:587 tcp://127.0.0.1:587 {
     limits {
         all rate 50 1s
     }
@@ -125,14 +128,24 @@ submission tls://10.0.0.3:465 tcp://10.0.0.3:587 {
         }
     }
     default_source {
-        reject 501 5.1.8 "Non-local sender domain"
+        # Authenticated relay from external accounts (mail-puller fetching
+        # Gmail / Outlook IMAP and re-injecting). Non-local envelope-FROM
+        # allowed — the auth gate (&local_authdb above) is what vouches.
+        # We accept only LOCAL recipients here (no DKIM, no outbound queue):
+        # external→local relay, never external→external open relay.
+        destination postmaster $(local_domains) {
+            deliver_to &local_routing
+        }
+        default_destination {
+            reject 550 5.7.1 "Relay denied: external sender + external recipient (open-relay guard)"
+        }
     }
 }
 
 # ── Outbound relay (OCI SMTP) ─────────────────────────────────────
 target.smtp outbound_delivery {
     targets tcp://smtp.email.eu-marseille-1.oci.oraclecloud.com:587
-    auth plain ${OCI_RELAYUSER} ${OCI_RELAYPASSWORD}
+    auth plain {env:OCI_RELAYUSER} {env:OCI_RELAYPASSWORD}
     starttls yes
 }
 
@@ -151,7 +164,8 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-imap tls://10.0.0.3:993 tcp://10.0.0.3:143 {
+# Two endpoints: WG-bind + 127.0.0.1 loopback (same rationale as submission).
+imap tls://10.0.0.3:993 tls://127.0.0.1:993 tcp://10.0.0.3:143 tcp://127.0.0.1:143 {
     auth &local_authdb
     storage &local_mailboxes
 }

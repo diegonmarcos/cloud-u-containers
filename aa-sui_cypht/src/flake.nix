@@ -55,9 +55,37 @@
     # seeder, which substitutes per-account values in shell).
     sqlVars = {};
 
+    # ── Mail accounts: derived from build-cypht.json#mail_accounts ───
+    # The derive engine (cloud-data-config-derive.ts/resolveMailAccounts)
+    # joined cypht/build.json#mail_clients with maddy + stalwart's users{}
+    # and extra_ports{service} into a fully-resolved block. We materialise
+    # both data files from it — no hand-written src/ duplicates.
+    mailAccounts = container.mail_accounts or null;
+    hasMail = mailAccounts != null;
+
+    derivedSeedAccountsJson =
+      if !hasMail then null else builtins.toJSON {
+        _generated_from = "build-cypht.json#mail_accounts.extras (cloud-data-config-derive resolveMailAccounts) — DO NOT EDIT; modify cypht/build.json#mail_clients or peers' build.json instead.";
+        extras = mailAccounts.extras;
+      };
+
+    derivedCyphtApiConfigsJson =
+      if !hasMail then null else builtins.toJSON {
+        _generated_from = "build-cypht.json#mail_accounts (cloud-data-config-derive resolveMailAccounts) — DO NOT EDIT; modify cypht/build.json#mail_clients or peers' build.json instead.";
+        _version = 1;
+        primary_user = mailAccounts.primary_user;
+        accounts = { source = "../seed-accounts.json"; };
+        carddav = mailAccounts.carddav;
+        feeds = mailAccounts.feeds;
+        profiles = mailAccounts.profiles;
+        settings = mailAccounts.settings;
+      };
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
+      derivedSeedFile      = pkgs.writeText "seed-accounts.json"      derivedSeedAccountsJson;
+      derivedConfigsFile   = pkgs.writeText "configs.json"            derivedCyphtApiConfigsJson;
     in {
       default = engine {
         inherit pkgs buildJson container;
@@ -70,16 +98,20 @@
           { name = "seed-accounts.sql";    vars = sqlVars; }
         ];
         # Declarative cypht-api sidecar — see src/cypht-api/README.md.
-        # The whole directory is bind-mounted at /tmp/cypht-config/cypht-api/
-        # in the container; sidecar.sh runs from the compose entrypoint.
-        # seed-accounts.json + ntfy-topics.json sit alongside it as canonical
-        # data sources (shared with snappymail, derived from cloud-data).
+        # ORDER MATTERS:
+        #   1. ./cypht-api copies the directory tree (lib/, sidecar.sh,
+        #      apply.php, verify.php, README.md). configs.json is NOT in src/
+        #      anymore — derived below.
+        #   2. The two derived JSONs (seed-accounts.json + cypht-api/configs.json)
+        #      land at their dest paths; the second one populates inside the
+        #      already-created cypht-api/ directory.
+        #   3. ntfy-topics.json is a build-time mirror of canonical
+        #      I_cloud-data/ntfy-api/src/topics.json (asserted equal by tester).
         extraAssets = [
-          ./seed-accounts.json
-          ./ntfy-topics.json
-          # The cypht-api/ subtree contains: configs.json, sidecar.sh,
-          # apply.php, verify.php, lib/{bootstrap,accounts,carddav,feeds,settings}.php
           ./cypht-api
+          { name = "seed-accounts.json";     src = derivedSeedFile;    }
+          { name = "cypht-api/configs.json"; src = derivedConfigsFile; }
+          ./ntfy-topics.json
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Cypht Webmail";

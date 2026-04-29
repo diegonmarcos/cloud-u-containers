@@ -26,17 +26,18 @@ echo "[activate] Ensuring domain + accounts..."
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
   -d '{"type":"domain","name":"diegonmarcos.com"}' 2>/dev/null || true
 
-# me@ user secret = ME_PASSWORD (NOT $PW = ADMIN_PASSWORD).
-# Previously this reused $PW so the mail user shared the admin secret —
-# coincidentally the same value across our sops vault, but a rotation
-# footgun: rotating ADMIN_PASSWORD would break IMAP/JMAP for me@.
-ME_PW=$(cat /opt/containers/stalwart/.secrets.d/ME_PASSWORD 2>/dev/null || echo "$PW")
+# USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
+# Each user gets a Stalwart "individual" principal POST. pass_env values are
+# read from .secrets.d/. Source: aa-sui_tools-stalwart/build.json#users.
+# Each user's password is NEVER conflated with $PW (=ADMIN_PASSWORD) — rotation
+# of ADMIN_PASSWORD must not break IMAP/JMAP for mail users.
+ADMIN_PW=$(cat /opt/containers/stalwart/.secrets.d/ME_PASSWORD 2>/dev/null || echo "$ME_PASSWORD")
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$ME_PW"'"],"emails":["me@diegonmarcos.com"],"roles":["admin"]}' 2>/dev/null || true
+  -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$ADMIN_PW"'"],"emails":["me@diegonmarcos.com"],"roles":["admin"]}' 2>/dev/null || true
 
-NR_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "noreply")
+NOREPLY_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "$NOREPLY_PASSWORD")
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"no-reply@diegonmarcos.com","secrets":["'"$NR_PW"'"],"emails":["no-reply@diegonmarcos.com","noreply@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
+  -d '{"type":"individual","name":"no-reply@diegonmarcos.com","secrets":["'"$NOREPLY_PW"'"],"emails":["no-reply@diegonmarcos.com","noreply@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
 
 # ── Upload Sieve script via JMAP ────────────────────────────────
 SIEVE_FILE="/opt/containers/stalwart/default.sieve"

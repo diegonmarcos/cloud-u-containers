@@ -10,11 +10,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 echo "[init] Generating maddy.conf from template..."
+# maddy.conf uses native `{env:VAR}` interpolation for secrets — no sed,
+# no shell-text mangling. Maddy reads env vars at config-load time.
+# Source of every secret value: src/secrets.yaml -> env_file (.secrets) -> $env.
 cp /etc/maddy/maddy.conf.tpl /data/maddy.conf
-
-# Substitute relay secrets (sed-safe: values contain no slashes/pipes)
-sed -i "s|\${OCI_RELAYUSER}|$OCI_RELAYUSER|g" /data/maddy.conf
-sed -i "s|\${OCI_RELAYPASSWORD}|$OCI_RELAYPASSWORD|g" /data/maddy.conf
 
 # Write DKIM private key from base64
 if [ -n "$DKIM_PRIVATE_KEY_B64" ]; then
@@ -43,12 +42,10 @@ fi
 # `creds create` is expected to error on existing accounts — that's fine,
 # `creds password` is the unconditional upsert.
 echo "[init] Ensuring accounts + syncing passwords..."
-printf '%s' "$ME_PASSWORD"      | maddy creds create   me@@BASE_DOMAIN@       2>&1 | sed 's/^/  [creds:create me]      /' || true
-printf '%s' "$ME_PASSWORD"      | maddy creds password me@@BASE_DOMAIN@       2>&1 | sed 's/^/  [creds:password me]    /' || true
-printf '%s' "$NOREPLY_PASSWORD" | maddy creds create   no-reply@@BASE_DOMAIN@ 2>&1 | sed 's/^/  [creds:create noreply] /' || true
-printf '%s' "$NOREPLY_PASSWORD" | maddy creds password no-reply@@BASE_DOMAIN@ 2>&1 | sed 's/^/  [creds:password noreply] /' || true
-maddy imap-acct create me@@BASE_DOMAIN@       2>/dev/null || true
-maddy imap-acct create no-reply@@BASE_DOMAIN@ 2>/dev/null || true
+# USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
+# Each entry produces: creds create + creds password + imap-acct create.
+# Source: aa-sui_tools-maddy/build.json#users (this service's own SoT).
+@USER_CREATION_BLOCK@
 
 echo "[init] Starting Maddy..."
 exec maddy -config /data/maddy.conf run
