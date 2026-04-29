@@ -20,6 +20,15 @@ in
       # → Maddy at 127.0.0.1:993, cypht-postgres at 127.0.0.1:5432 (loopback bind).
       # VM INPUT policy is DROP except 10.0.0.0/24+lo, so :8889 is WG-only.
       network_mode = "host";
+      # /etc/hosts overrides — public hostnames re-pointed to local/WG IPs so
+      # cypht doesn't loop back through Cloudflare → gcp-proxy → Caddy → here.
+      # • mail-stalwart.diegonmarcos.com → 10.0.0.3 (Stalwart docker-proxy
+      #   listens on 10.0.0.3:2993/2465/2443 — reachable from this host directly).
+      # Note: with network_mode:host, Docker still injects extra_hosts into
+      # the container's /etc/hosts despite sharing the host's net namespace.
+      extra_hosts = [
+        "mail-stalwart.diegonmarcos.com:10.0.0.3"
+      ];
       depends_on = {
         cypht-postgres = { condition = "service_healthy"; };
       };
