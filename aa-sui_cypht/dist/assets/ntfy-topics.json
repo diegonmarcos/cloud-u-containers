@@ -1,0 +1,24 @@
+{
+  "_comment": "Declarative ntfy channel/topic registry. Currently consumed by cloud-data/ntfy-api/build.sh (this snapshotter). FOLLOW-UP: refactor cloud/a_solutions/bc-obs_ntfy/src/code/topic-scanner.py to also read from this file (or a copy in the ntfy service src/) so there is exactly ONE source-of-truth — today the same list lives both here and in CONFIGURED_TOPICS in topic-scanner.py.",
+  "_source": "/home/diego/git/cloud-data/ntfy-api/src/topics.json",
+  "_upstream_mirror": "cloud/a_solutions/bc-obs_ntfy/src/code/topic-scanner.py CONFIGURED_TOPICS — keep in sync until refactored",
+  "topics": [
+    "all",
+    "dev_commits",
+    "dev_pull-requests",
+    "dev_releases",
+    "deploy_ship",
+    "deploy_containers",
+    "health_mesh",
+    "health_endpoints",
+    "health_dns",
+    "health_resources",
+    "health_containers",
+    "ops_backups",
+    "ops_reports",
+    "sec_audit",
+    "sec_tls",
+    "sec_connections",
+    "sec_yara"
+  ]
+}

@@ -41,6 +41,10 @@ in
         "./assets/seed-accounts.json:/tmp/cypht-config/seed-accounts.json:ro"
         "./assets/seed-accounts.sh:/tmp/cypht-config/seed-accounts.sh:ro"
         "./assets/seed-accounts.php:/tmp/cypht-config/seed-accounts.php:ro"
+        # Declarative CardDAV + feeds-source + UI settings inventory
+        "./assets/seed-config.json:/tmp/cypht-config/seed-config.json:ro"
+        # ntfy topic list (canonical source: I_cloud-data/ntfy-api/src/topics.json)
+        "./assets/ntfy-topics.json:/tmp/cypht-config/ntfy-topics.json:ro"
         "./configs/seed-accounts.sql:/tmp/cypht-config/seed-accounts.sql:ro"
         # Sops-decrypted secrets per-key (env_file at .secrets covers env;
         # individual files at /run/secrets/<KEY> available for any script).

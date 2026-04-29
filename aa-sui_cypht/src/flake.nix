@@ -76,6 +76,12 @@
           ./seed-accounts.json
           ./seed-accounts.sh
           ./seed-accounts.php
+          ./seed-config.json
+          # ntfy topics: copied from canonical I_cloud-data/ntfy-api/src/topics.json
+          # at build.sh pre-flake time (nix pure-eval can't reach across submodule
+          # boundaries via symlink). The copy is regenerated from the source whenever
+          # build.sh runs, so the canonical file remains the SoT.
+          ./ntfy-topics.json
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Cypht Webmail";
