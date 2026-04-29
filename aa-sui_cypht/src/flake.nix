@@ -69,19 +69,17 @@
           { name = "php-fpm-www.conf";     vars = {}; }
           { name = "seed-accounts.sql";    vars = sqlVars; }
         ];
-        # Account inventory + idempotent psql seeder.
-        # Mounted into the container by compose.nix; invoked by entrypoint
-        # at container start (after cypht-postgres is healthy).
+        # Declarative cypht-api sidecar — see src/cypht-api/README.md.
+        # The whole directory is bind-mounted at /tmp/cypht-config/cypht-api/
+        # in the container; sidecar.sh runs from the compose entrypoint.
+        # seed-accounts.json + ntfy-topics.json sit alongside it as canonical
+        # data sources (shared with snappymail, derived from cloud-data).
         extraAssets = [
           ./seed-accounts.json
-          ./seed-accounts.sh
-          ./seed-accounts.php
-          ./seed-config.json
-          # ntfy topics: copied from canonical I_cloud-data/ntfy-api/src/topics.json
-          # at build.sh pre-flake time (nix pure-eval can't reach across submodule
-          # boundaries via symlink). The copy is regenerated from the source whenever
-          # build.sh runs, so the canonical file remains the SoT.
           ./ntfy-topics.json
+          # The cypht-api/ subtree contains: configs.json, sidecar.sh,
+          # apply.php, verify.php, lib/{bootstrap,accounts,carddav,feeds,settings}.php
+          ./cypht-api
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Cypht Webmail";

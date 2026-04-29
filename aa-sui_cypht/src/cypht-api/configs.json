@@ -1,0 +1,44 @@
+{
+  "_doc": "Cypht user-config — fully declarative inventory consumed by sidecar.sh → apply.php at container start. See cypht-api/README.md for schema.",
+  "_version": 1,
+
+  "primary_user": {
+    "_doc":     "Master user account — created via Cypht's own scripts/create_account.php. Password also serves as the encryption key for hm_user_settings.settings (lib/config.php::save). The same env var is exposed to the seeder so subsequent sections can resolve it via {pass_env: 'ME_PASSWORD'}.",
+    "email":    "me@diegonmarcos.com",
+    "pass_env": "ME_PASSWORD"
+  },
+
+  "accounts": {
+    "_doc":   "Mail accounts (IMAP / SMTP / JMAP). Source-of-truth file is shared with aa-sui_snappymail to avoid duplication. Path is relative to the cypht-api/ directory inside the container (/tmp/cypht-config/cypht-api/).",
+    "source": "../seed-accounts.json"
+  },
+
+  "carddav": {
+    "_doc": "CardDAV providers. Each named source becomes a key in carddav_contacts_auth_setting (modules/carddav_contacts/modules.php:28). server_template tokens: {user_url_encoded} = rawurlencode(primary_user.email).",
+    "radicale": {
+      "server_template": "https://cal.diegonmarcos.com/{user_url_encoded}/",
+      "user_env":        "PRIMARY_EMAIL",
+      "pass_env":        "ME_PASSWORD"
+    }
+  },
+
+  "feeds": {
+    "_doc":         "RSS feeds. Source = JSON file containing a topics list at $.topics. Path is relative to cypht-api/ (../ntfy-topics.json is a build-time copy of I_cloud-data/ntfy-api/src/topics.json — canonical SoT). url_template tokens: {topic} = rawurlencode(topic).",
+    "source":       "../ntfy-topics.json",
+    "url_template": "https://rss.diegonmarcos.com/{topic}/json?poll=1"
+  },
+
+  "settings": {
+    "_doc": "Per-user UI preferences. Each key must end in _setting per Cypht convention. Verified against modules/themes/modules.php (theme_setting), modules/sievefilters/modules.php, modules/smtp/modules.php, modules/contacts/modules.php on cypht-org/cypht.",
+
+    "theme_setting":                           "darkly",
+    "start_page_setting":                      "unread",
+    "enable_sieve_filter_setting":             true,
+    "enable_snooze_setting":                   true,
+    "smtp_compose_type_setting":               1,
+    "enable_attachment_reminder_setting":      true,
+    "enable_compose_delivery_receipt_setting": true,
+    "mailto_handler_setting":                  true,
+    "enable_collect_address_on_send_setting":  true
+  }
+}
