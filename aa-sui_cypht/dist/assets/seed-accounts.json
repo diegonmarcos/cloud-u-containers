@@ -6,6 +6,13 @@
   },
   "extras": [
     {
+      "email": "me@diegonmarcos.com",
+      "login": "me@diegonmarcos.com",
+      "pass_env": "ME_PASSWORD",
+      "imap": { "host": "mail.diegonmarcos.com", "port": 993, "secure": "SSL" },
+      "smtp": { "host": "mail.diegonmarcos.com", "port": 465, "secure": "SSL" }
+    },
+    {
       "email": "me@mail-stalwart.diegonmarcos.com",
       "login": "me@diegonmarcos.com",
       "pass_env": "ME_PASSWORD_STALWART",
