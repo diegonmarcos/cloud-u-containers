@@ -17,6 +17,7 @@ namespace CyphtApi;
 
 require_once __DIR__ . '/lib/bootstrap.php';
 require_once __DIR__ . '/lib/accounts.php';
+require_once __DIR__ . '/lib/profiles.php';
 require_once __DIR__ . '/lib/carddav.php';
 require_once __DIR__ . '/lib/feeds.php';
 require_once __DIR__ . '/lib/settings.php';
@@ -41,7 +42,10 @@ $primaryEmail  = $ctx['primary']['email'];
 $configsDir    = __DIR__;
 
 // ── Apply each section ──────────────────────────────────────────────
+// Accounts MUST run before Profiles — ProfilesApi consumes the seeded
+// server-id index from AccountsApi::apply's return value.
 $accounts = AccountsApi::apply($userConfig, $configs['accounts'] ?? [],  $configsDir);
+$profiles = ProfilesApi::apply($userConfig, $configs['profiles'] ?? [],  $accounts);
 $carddav  = CardDavApi ::apply($userConfig, $configs['carddav']  ?? [],  $primaryEmail);
 $feeds    = FeedsApi   ::apply($userConfig, $configs['feeds']    ?? [],  $configsDir);
 $settings = SettingsApi::apply($userConfig, $configs['settings'] ?? []);
@@ -55,13 +59,16 @@ if ($ok === false) {
 
 // ── Summary ─────────────────────────────────────────────────────────
 \fwrite(STDERR, \sprintf(
-    "[cypht-api] applied: %d IMAP, %d SMTP, %d JMAP, %d CardDAV, %d feeds, %d settings under %s\n",
+    "[cypht-api] applied: %d IMAP, %d SMTP, %d JMAP, %d profiles, %d CardDAV, %d feeds, %d settings under %s\n",
     $accounts['imap'], $accounts['smtp'], $accounts['jmap'],
-    $carddav['count'], $feeds['count'], $settings['count'],
+    $profiles['count'], $carddav['count'], $feeds['count'], $settings['count'],
     $primaryEmail
 ));
 if (!empty($accounts['skipped'])) {
     \fwrite(STDERR, "[cypht-api] skipped accounts (placeholder secrets): " . \implode(', ', $accounts['skipped']) . "\n");
+}
+if (!empty($profiles['missing'])) {
+    \fwrite(STDERR, "[cypht-api] skipped profiles (no matching seed account): " . \implode(', ', $profiles['missing']) . "\n");
 }
 if (!empty($settings['invalid'])) {
     \fwrite(STDERR, "[cypht-api] skipped invalid setting keys: " . \implode(', ', $settings['invalid']) . "\n");

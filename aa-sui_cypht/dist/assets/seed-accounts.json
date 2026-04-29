@@ -14,14 +14,6 @@
       "smtp": { "host": "mail.diegonmarcos.com", "port": 465, "secure": "SSL" }
     },
     {
-      "name": "me@dnm.com | IMAP-Stalwart",
-      "email": "me@mail-stalwart.diegonmarcos.com",
-      "login": "me@diegonmarcos.com",
-      "pass_env": "ME_PASSWORD",
-      "imap": { "host": "mail-stalwart.diegonmarcos.com", "port": 2993, "secure": "SSL" },
-      "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
-    },
-    {
       "name": "me@dnm.com | JMAP-Stalwart",
       "email": "me-jmap@stalwart",
       "login": "me@diegonmarcos.com",

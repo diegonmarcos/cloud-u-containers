@@ -70,6 +70,17 @@ $jmapOnly = \array_filter($imapAll, fn($s) => ($s['type'] ?? '')      === 'jmap'
 $cdav = $uc->get('carddav_contacts_auth_setting', []);
 \fwrite(STDOUT, "carddav_count=" . \count(\is_array($cdav) ? $cdav : []) . "\n");
 
+// Profiles (Hm_Profiles via Hm_Repository, user_config 'profiles' key)
+$profiles = $uc->get('profiles', []);
+$profiles = \is_array($profiles) ? $profiles : [];
+\fwrite(STDOUT, "profiles_count=" . \count($profiles) . "\n");
+foreach ($profiles as $p) {
+    $name    = $p['name']    ?? '<unnamed>';
+    $address = $p['address'] ?? '';
+    $default = !empty($p['default']) ? 'default' : 'normal';
+    \fwrite(STDOUT, "profile=[$default] $name <$address>\n");
+}
+
 // Echo every settings key declared in configs.json (skipping doc keys).
 foreach (($configs['settings'] ?? []) as $k => $expected) {
     if (\str_starts_with((string)$k, '_')) continue;

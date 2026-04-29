@@ -28,6 +28,20 @@
     "url_template": "https://rss.diegonmarcos.com/{topic}/json?poll=1"
   },
 
+  "profiles": {
+    "_doc": "Send-as profiles (modules/profiles/hm-profiles.php → Hm_Profiles, stored under user_config 'profiles' key via Hm_Repository). Each profile pins an outgoing identity (address+signature+reply_to) to a specific (smtp_id, imap_id) pair. Server IDs are looked up at apply-time by matching `address` against the seeded imap_servers/smtp_servers user/server fields — no manual id wiring. Padronization: re-uses the same name+address conventions as seed-accounts.json.",
+    "diego": {
+      "name":     "Diego",
+      "address":  "me@diegonmarcos.com",
+      "match":    "me@dnm.com | IMAP-Maddy",
+      "replyto":  "me@diegonmarcos.com",
+      "sig":      "",
+      "rmk":      "",
+      "type":     "imap",
+      "default":  true
+    }
+  },
+
   "settings": {
     "_doc": "Per-user UI preferences. Each key must end in _setting per Cypht convention. Verified against modules/themes/modules.php (theme_setting), modules/sievefilters/modules.php, modules/smtp/modules.php, modules/contacts/modules.php on cypht-org/cypht.",
 
