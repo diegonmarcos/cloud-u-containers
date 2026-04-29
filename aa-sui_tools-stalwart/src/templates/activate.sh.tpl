@@ -18,8 +18,13 @@ echo "[activate] Ensuring domain + accounts..."
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
   -d '{"type":"domain","name":"@BASE_DOMAIN@"}' 2>/dev/null || true
 
+# me@ user secret = ME_PASSWORD (NOT $PW = ADMIN_PASSWORD).
+# Previously this reused $PW so the mail user shared the admin secret —
+# coincidentally the same value across our sops vault, but a rotation
+# footgun: rotating ADMIN_PASSWORD would break IMAP/JMAP for me@.
+ME_PW=$(cat /opt/containers/stalwart/.secrets.d/ME_PASSWORD 2>/dev/null || echo "$PW")
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"me@@BASE_DOMAIN@","secrets":["'"$PW"'"],"emails":["me@@BASE_DOMAIN@"],"roles":["admin"]}' 2>/dev/null || true
+  -d '{"type":"individual","name":"me@@BASE_DOMAIN@","secrets":["'"$ME_PW"'"],"emails":["me@@BASE_DOMAIN@"],"roles":["admin"]}' 2>/dev/null || true
 
 NR_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "noreply")
 curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \

@@ -1,5 +1,5 @@
 {
-  "_comment": "Declarative pre-seed of Cypht user accounts. At container start, seed-accounts.sh upserts each entry into Cypht's PostgreSQL hm_user_settings table after waiting for the schema to be ready (Cypht's setup_database.php runs on first HTTP request). Secrets referenced by `pass_env` come from .secrets (sops-encrypted, same keys as snappymail's seed). The `name` field is the human-readable label shown in Cypht's UI — convention: `<email-with-dnm-shorthand> | <PROTO>-<backend>`.",
+  "_comment": "Declarative pre-seed of Cypht user accounts. At container start, sidecar.sh + apply.php upsert each entry into Cypht's PostgreSQL hm_user_settings table. Secrets referenced by `pass_env` come from .secrets (sops-encrypted). Padronization rule: env-var names match across services — when Maddy/Stalwart/cypht use the same secret value, they reference the same env var name (no per-service variants). The `name` field is the human-readable UI label, convention `<email> | <PROTO>-<backend>`.",
   "primary": {
     "email": "me@diegonmarcos.com",
     "pass_env": "ME_PASSWORD"
@@ -17,7 +17,7 @@
       "name": "me@dnm.com | IMAP-Stalwart",
       "email": "me@mail-stalwart.diegonmarcos.com",
       "login": "me@diegonmarcos.com",
-      "pass_env": "ME_PASSWORD_STALWART",
+      "pass_env": "ME_PASSWORD",
       "imap": { "host": "mail-stalwart.diegonmarcos.com", "port": 2993, "secure": "SSL" },
       "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
     },
@@ -25,9 +25,16 @@
       "name": "me@dnm.com | JMAP-Stalwart",
       "email": "me-jmap@stalwart",
       "login": "me@diegonmarcos.com",
-      "pass_env": "ME_PASSWORD_STALWART",
+      "pass_env": "ME_PASSWORD",
       "jmap": { "host": "mail-stalwart.diegonmarcos.com", "port": 2443, "secure": "TLS" },
       "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
+    },
+    {
+      "name": "me@dnm.com | SMTP-Stalwart-STARTTLS",
+      "email": "me-starttls@stalwart",
+      "login": "me@diegonmarcos.com",
+      "pass_env": "ME_PASSWORD",
+      "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2587, "secure": "STARTTLS" }
     },
     {
       "name": "no-reply@dnm.com | IMAP-Maddy",
