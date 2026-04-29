@@ -1,11 +1,12 @@
 {
-  "_comment": "Declarative pre-seed of Cypht user accounts. At container start, seed-accounts.sh upserts each entry into Cypht's PostgreSQL hm_user_settings table after waiting for the schema to be ready (Cypht's setup_database.php runs on first HTTP request). Secrets referenced by `pass_env` come from .secrets (sops-encrypted, same keys as snappymail's seed). Adds a 6th JMAP-to-Stalwart account to expose the JMAP backend that SnappyMail couldn't reach.",
+  "_comment": "Declarative pre-seed of Cypht user accounts. At container start, seed-accounts.sh upserts each entry into Cypht's PostgreSQL hm_user_settings table after waiting for the schema to be ready (Cypht's setup_database.php runs on first HTTP request). Secrets referenced by `pass_env` come from .secrets (sops-encrypted, same keys as snappymail's seed). The `name` field is the human-readable label shown in Cypht's UI — convention: `<email-with-dnm-shorthand> | <PROTO>-<backend>`.",
   "primary": {
     "email": "me@diegonmarcos.com",
     "pass_env": "ME_PASSWORD"
   },
   "extras": [
     {
+      "name": "me@dnm.com | IMAP-Maddy",
       "email": "me@diegonmarcos.com",
       "login": "me@diegonmarcos.com",
       "pass_env": "ME_PASSWORD",
@@ -13,6 +14,7 @@
       "smtp": { "host": "mail.diegonmarcos.com", "port": 465, "secure": "SSL" }
     },
     {
+      "name": "me@dnm.com | IMAP-Stalwart",
       "email": "me@mail-stalwart.diegonmarcos.com",
       "login": "me@diegonmarcos.com",
       "pass_env": "ME_PASSWORD_STALWART",
@@ -20,6 +22,7 @@
       "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
     },
     {
+      "name": "me@dnm.com | JMAP-Stalwart",
       "email": "me-jmap@stalwart",
       "login": "me@diegonmarcos.com",
       "pass_env": "ME_PASSWORD_STALWART",
@@ -27,6 +30,7 @@
       "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
     },
     {
+      "name": "no-reply@dnm.com | IMAP-Maddy",
       "email": "no-reply@diegonmarcos.com",
       "login": "no-reply@diegonmarcos.com",
       "pass_env": "NOREPLY_PASSWORD",
@@ -34,6 +38,7 @@
       "smtp": { "host": "mail.diegonmarcos.com", "port": 465, "secure": "SSL" }
     },
     {
+      "name": "diegonmarcos@livecom | IMAP-outlook",
       "email": "diegonmarcos@live.com",
       "login": "diegonmarcos@live.com",
       "pass_env": "LIVE_APP_PASSWORD",
@@ -41,6 +46,7 @@
       "smtp": { "host": "smtp-mail.outlook.com", "port": 587, "secure": "TLS" }
     },
     {
+      "name": "diegonmarcos1@gmail.com | IMAP-gaccount",
       "email": "diegonmarcos1@gmail.com",
       "login": "diegonmarcos1@gmail.com",
       "pass_env": "GMAIL_APP_PASSWORD",
