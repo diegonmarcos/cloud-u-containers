@@ -120,6 +120,30 @@ if [ -f "$DEFAULTS_JSON" ] && [ -f "$COMPOSE" ]; then
             fi
         done
     done
+
+    # ── 5c. Specific value checks for security-critical defaults ────
+    # init: true (tini PID-1 reaper — fixes zombie-class bugs like Dagu 2026-04-29)
+    # logging.options.max-file: 7 (≈ 7 days retention for low-traffic containers)
+    printf '\n── compose defaults (specific values) ──\n'
+    for svc in $svcs; do
+        # Containers using their own init system explicitly override init:false;
+        # the test accepts either true OR explicit false (presence is what matters).
+        init_val=$(yq -r ".services.\"$svc\".init // \"MISSING\"" "$COMPOSE" 2>/dev/null)
+        case "$init_val" in
+            true|false) pass "services.$svc.init = $init_val (declared)" ;;
+            MISSING|null|"") fail "services.$svc.init MISSING (engine should merge default true)" ;;
+            *)          fail "services.$svc.init unexpected value: $init_val" ;;
+        esac
+
+        max_file=$(yq -r ".services.\"$svc\".logging.options.\"max-file\" // \"MISSING\"" "$COMPOSE" 2>/dev/null)
+        if [ "$max_file" = "7" ] || [ "$max_file" = "MISSING" ] || [ "$max_file" = "null" ]; then
+            [ "$max_file" = "7" ] && pass "services.$svc.logging.options.max-file = 7" \
+                                  || fail "services.$svc.logging.options.max-file MISSING (engine should merge default 7)"
+        else
+            # Service explicitly overrode — accept any non-default value but log it
+            pass "services.$svc.logging.options.max-file = $max_file (per-service override)"
+        fi
+    done
 fi
 
 # ── 6. Forbidden folders must NOT be committed ───────────────────
