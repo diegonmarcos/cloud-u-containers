@@ -31,12 +31,17 @@ in
         # maddy_data volume at /data/dkim. DO NOT bind-mount ./dkim here —
         # it would shadow the volume path with a read-only host dir and
         # crash init on first start. Source of truth is the sops secret.
-        # Delivery-time filter. Maddy forks mail-filter per incoming message via
-        # imap_filter.command (see maddy.conf.tpl). mail-rules.json is the
-        # declarative single source of truth for routing (Maddy-only schema:
-        # pure MOVE, no Sieve/tags — Stalwart uses a different rules file).
+        # Delivery-time Sieve-subset filter. Maddy forks the script per incoming
+        # message via imap_filter.command (see maddy.conf.tpl). mail-rules.json
+        # is the canonical single source of truth (also drives Stalwart's Sieve
+        # via _shared/lib/mail-rules.nix; here we render the Maddy subset).
         "./assets/mail-rules.json:/data/mail-rules.json:ro"
-        "./assets/mail-filter.sh:/usr/local/bin/mail-filter:ro"
+        "./assets/mail-sieve-subset-delivery-time.sh:/usr/local/bin/mail-sieve-subset-delivery-time:ro"
+        # Post-hoc maintenance script (operator-triggered via build.sh
+        # post-hoc-* lifecycle hooks). SQL-direct on imapsql.db for 30k-scale
+        # safety. Subcommands: integrity-check, integrity-fix, recover-headers,
+        # apply-rules, dedupe, cleanup-mailboxes, all.
+        "./assets/mail-sieve-subset-post-hoc.sh:/usr/local/bin/mail-sieve-subset-post-hoc:ro"
       ];
       deploy.resources = {
         limits       = { memory = app.resources.limits.memory;       cpus = "1.0"; };

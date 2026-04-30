@@ -10,5 +10,5 @@
 FROM foxcpp/maddy:0.9
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 LABEL cloud.diegonmarcos.from-image="foxcpp/maddy:0.9"
-RUN apk add --no-cache jq
+RUN apk add --no-cache jq sqlite coreutils
 

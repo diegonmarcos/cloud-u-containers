@@ -9,13 +9,16 @@
 #!/bin/sh
 set -e
 
-# Install jq for the delivery-time mail-filter (idempotent — no-op if present).
-# Upstream foxcpp/maddy is alpine-based; pulling jq at startup avoids baking a
-# custom Dockerfile layer just for one package.
-if ! command -v jq >/dev/null 2>&1; then
-  echo "[init] Installing jq (required by mail-filter)..."
-  apk add --no-cache jq >/dev/null 2>&1 || true
-fi
+# Install jq + sqlite3 — required by:
+#   /usr/local/bin/mail-sieve-subset-delivery-time (jq for per-message rule eval)
+#   /usr/local/bin/mail-sieve-subset-post-hoc      (jq + sqlite3 for batch ops)
+# Idempotent — no-op if already present (alpine apk).
+for pkg in jq sqlite; do
+  if ! command -v "${pkg%sqlite}sqlite3" >/dev/null 2>&1 && ! command -v "$pkg" >/dev/null 2>&1; then
+    echo "[init] Installing $pkg..."
+    apk add --no-cache "$pkg" >/dev/null 2>&1 || true
+  fi
+done
 
 echo "[init] Generating maddy.conf from template..."
 # maddy.conf uses native `{env:VAR}` interpolation for secrets — no sed,
