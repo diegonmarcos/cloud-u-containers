@@ -39,9 +39,8 @@ CYPHT_MODULES=core,contacts,local_contacts,carddav_contacts,feeds,imap,jmap,smtp
 APP_2FA_SECRET=${CYPHT_2FA_SECRET}
 
 # ── Default IMAP server hint (for new accounts via UI) ─────────────
-# Cypht's default IMAP server settings — Maddy via loopback (mail.${BASE_DOMAIN}
-# resolves to 127.0.0.1 on oci-mail per /etc/hosts override; Maddy dual-binds
-# 127.0.0.1 + 10.0.0.3 so loopback IMAPS works).
+# mail.${BASE_DOMAIN} resolves via Hickory DNS (10.0.0.1) → Caddy L4 forwarder
+# → 10.0.0.3:993 (Maddy WG bind). NO loopback shortcut. Caddy = sole route owner.
 IMAP_AUTH_SERVER=@MAIL_DOMAIN@
 IMAP_AUTH_PORT=993
 IMAP_AUTH_TLS=1
