@@ -6,27 +6,47 @@
 # ║ Wired via build.json#lifecycle.post-hoc-* (each subcommand has   ║
 # ║   its own lifecycle entry). Operator runs:                       ║
 # ║     ./build.sh post-hoc-integrity-check                          ║
-# ║     ./build.sh post-hoc-recover-headers                          ║
 # ║     ./build.sh post-hoc-integrity-fix                            ║
-# ║     ./build.sh post-hoc-apply-rules                              ║
 # ║     ./build.sh post-hoc-dedupe                                   ║
 # ║     ./build.sh post-hoc-cleanup-mailboxes                        ║
 # ║     ./build.sh post-hoc-all                                      ║
 # ║                                                                  ║
-# ║ Design contract:                                                 ║
-# ║   - SQL-direct on /data/imapsql.db (SQLite WAL mode).            ║
-# ║   - All write ops in BEGIN IMMEDIATE TRANSACTION.                ║
-# ║   - Auto-backup before any destructive op (.bak-<timestamp>).    ║
-# ║   - 30k rows finishes in seconds (vs hours via IMAP iteration).  ║
-# ║   - --dry-run flag: report what WOULD change, no writes.         ║
+# ║ Schema (go-imap-sql, observed against running maddy 0.x):        ║
+# ║   users(id, username, msgsizelimit, inboxId)                     ║
+# ║   mboxes(id PK, uid → users.id, name UNIQUE(uid,name), ...)      ║
+# ║   msgs(mboxId, msgId, date, bodyLen, bodyStructure, cachedHeader,║
+# ║        extBodyKey → extKeys.id, seen, recent, PK(mboxId,msgId))  ║
+# ║   extKeys(id VARCHAR PK, uid, refs)                              ║
+# ║   flags(mboxId,msgId,flag, FK→msgs ON DELETE CASCADE)            ║
 # ║                                                                  ║
-# ║ Single SoT: same /data/mail-rules.json used by                   ║
-# ║   /usr/local/bin/mail-sieve-subset-delivery-time.                ║
+# ║ Blob storage: /data/messages/<extKeys.id>  (one file per blob).  ║
+# ║   refs counts how many msgs rows reference the blob (dedup       ║
+# ║   reuse). When a msgs row is dropped, refs decrements; at 0,     ║
+# ║   the extKeys row + blob file may be GC'd by maddy.              ║
 # ║                                                                  ║
-# ║ Replaces (archived in src/z-archive/):                           ║
-# ║   dedupe-inbox.sh           → apply-rules + dedupe               ║
-# ║   dedupe-folders.sh         → dedupe                             ║
-# ║   cleanup-stale-mailboxes.sh → cleanup-mailboxes                 ║
+# ║ Subcommands:                                                     ║
+# ║   integrity-check   read-only: report orphan rows (DB → no blob),║
+# ║                      dangling blobs (file → no DB ref), bad-refs ║
+# ║                      (extKeys.refs ≠ COUNT(msgs.extBodyKey)).    ║
+# ║   integrity-fix     drop msgs rows whose extBodyKey has no blob, ║
+# ║                      then drop extKeys rows with refs<=0,        ║
+# ║                      then unlink dangling blob files.            ║
+# ║   dedupe            extract Message-Id from cachedHeader, GROUP  ║
+# ║                      by (mboxId, msg_id_hdr), keep smallest      ║
+# ║                      msgId (oldest), DELETE the rest.            ║
+# ║   cleanup-mailboxes drop mailboxes matching                       ║
+# ║                      mail-rules.json#cleanup.drop_name_regex.    ║
+# ║   all               integrity-check → integrity-fix → dedupe →   ║
+# ║                      cleanup-mailboxes (--dry-run respected).    ║
+# ║                                                                  ║
+# ║ Performance: all destructive ops run in a SINGLE                 ║
+# ║   BEGIN IMMEDIATE TRANSACTION. 30k rows finishes in seconds.     ║
+# ║   Auto-backup of imapsql.db before any destructive op.           ║
+# ║                                                                  ║
+# ║ Note on `recover-headers`: NOT a subcommand here — go-imap-sql   ║
+# ║   already caches headers in msgs.cachedHeader at delivery time;  ║
+# ║   if the blob is missing, the BODY is unrecoverable (only        ║
+# ║   integrity-fix applies). Subcommand intentionally not exposed.  ║
 # ╚══════════════════════════════════════════════════════════════════╝
 set -eu
 
@@ -44,19 +64,13 @@ usage() {
 Usage: mail-sieve-subset-post-hoc <subcommand> [--dry-run]
 
 Subcommands:
-  integrity-check      Report orphan rows + dangling blobs (read-only).
-  integrity-fix        DELETE rows whose body_hash is not on disk.
-                       Run AFTER recover-headers to avoid deleting recoverable rows.
-  recover-headers      Re-parse blob → repopulate header columns for rows
-                       whose header parse previously failed but body exists.
-  apply-rules          Walk all messages, run subset rules in-process,
-                       batch UPDATE mailbox_id.
-  dedupe               GROUP BY message_id per folder, keep oldest UID,
-                       batch DELETE the rest.
-  cleanup-mailboxes    Drop empty mailboxes matching mail-rules.json#cleanup.drop_name_regex.
-  all                  Run integrity-check → recover-headers → integrity-fix
-                       → apply-rules → dedupe → cleanup-mailboxes.
-                       (Each subcommand respects --dry-run.)
+  integrity-check      Report orphan rows + dangling blobs + bad refs (read-only).
+  integrity-fix        Drop msgs rows whose extBodyKey has no on-disk blob,
+                       then drop extKeys with refs<=0, then unlink dangling blobs.
+  dedupe               GROUP BY (mboxId, Message-Id from cachedHeader),
+                       keep smallest msgId, DELETE the rest.
+  cleanup-mailboxes    Drop mailboxes matching mail-rules.json#cleanup.drop_name_regex.
+  all                  integrity-check → integrity-fix → dedupe → cleanup-mailboxes.
 
 Flags:
   --dry-run            Report intended changes, write nothing.
@@ -84,7 +98,7 @@ done
 [ -d "$BLOB_DIR" ] || fail "blob dir not found: $BLOB_DIR"
 
 # ── Helpers ─────────────────────────────────────────────────────────
-sqlite_q() { sqlite3 "$DB" "$1"; }
+sq() { sqlite3 "$DB" "$1"; }
 
 backup_db() {
   ts="$(date +%Y%m%d-%H%M%S)"
@@ -97,175 +111,221 @@ ensure_writable() {
   backup_db
 }
 
-# Schema discovery — accept either go-imap-sql legacy or v3 column naming.
-# We probe once and export the discovered names.
-discover_schema() {
-  T_MSGS="$(sqlite_q "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('msgs','messages') LIMIT 1")"
-  T_MBOXES="$(sqlite_q "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('mboxes','mailboxes') LIMIT 1")"
-  T_EXTKEYS="$(sqlite_q "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('extKeys','external_blobs','msg_extkeys') LIMIT 1")"
-
-  [ -n "$T_MSGS" ]   || fail "schema probe: msgs table not found"
-  [ -n "$T_MBOXES" ] || fail "schema probe: mboxes table not found"
-  [ -n "$T_EXTKEYS" ] || log "schema probe: external blob table not found — running in inline-blob mode"
-
-  log "schema: msgs=$T_MSGS mboxes=$T_MBOXES extKeys=${T_EXTKEYS:-<none>}"
-}
-
 # ── Subcommands ─────────────────────────────────────────────────────
 
 cmd_integrity_check() {
-  discover_schema
   log "integrity-check: scanning DB rows ↔ blob files…"
 
-  TOTAL_ROWS="$(sqlite_q "SELECT COUNT(*) FROM $T_MSGS")"
-  log "  total msgs rows: $TOTAL_ROWS"
+  TOTAL_MSGS="$(sq "SELECT COUNT(*) FROM msgs")"
+  TOTAL_EXTKEYS="$(sq "SELECT COUNT(*) FROM extKeys")"
+  log "  msgs rows:                  $TOTAL_MSGS"
+  log "  extKeys rows:               $TOTAL_EXTKEYS"
 
-  if [ -n "$T_EXTKEYS" ]; then
-    DB_HASHES="$(mktemp)"; DISK_HASHES="$(mktemp)"
-    sqlite_q "SELECT DISTINCT body_hash FROM $T_EXTKEYS WHERE body_hash IS NOT NULL" \
-      | sort -u > "$DB_HASHES"
-    ls "$BLOB_DIR" 2>/dev/null | sort -u > "$DISK_HASHES"
-    DB_COUNT="$(wc -l < "$DB_HASHES")"
-    DISK_COUNT="$(wc -l < "$DISK_HASHES")"
-    ORPHAN_ROWS="$(comm -23 "$DB_HASHES" "$DISK_HASHES" | wc -l)"
-    DANGLING_BLOBS="$(comm -13 "$DB_HASHES" "$DISK_HASHES" | wc -l)"
-    log "  DB-referenced blob hashes:  $DB_COUNT"
-    log "  on-disk blob files:         $DISK_COUNT"
-    log "  ORPHAN ROWS (missing body): $ORPHAN_ROWS"
-    log "  DANGLING BLOBS (no DB ref): $DANGLING_BLOBS"
-    rm -f "$DB_HASHES" "$DISK_HASHES"
+  DB_KEYS="$(mktemp)"; DISK_KEYS="$(mktemp)"
+  sq "SELECT id FROM extKeys" | sort -u > "$DB_KEYS"
+  ls "$BLOB_DIR" 2>/dev/null | sort -u > "$DISK_KEYS"
+
+  DB_KEY_COUNT="$(wc -l < "$DB_KEYS")"
+  DISK_KEY_COUNT="$(wc -l < "$DISK_KEYS")"
+  log "  blob keys in DB (extKeys):  $DB_KEY_COUNT"
+  log "  blob files on disk:         $DISK_KEY_COUNT"
+
+  # Orphans: extKeys rows whose id has no on-disk blob.
+  ORPHAN_KEYS="$(comm -23 "$DB_KEYS" "$DISK_KEYS")"
+  ORPHAN_KEY_COUNT="$(printf '%s\n' "$ORPHAN_KEYS" | grep -c . || true)"
+
+  # Dangling: blob files with no extKeys row.
+  DANGLING_BLOBS="$(comm -13 "$DB_KEYS" "$DISK_KEYS")"
+  DANGLING_COUNT="$(printf '%s\n' "$DANGLING_BLOBS" | grep -c . || true)"
+
+  # Orphan msgs rows: rows whose extBodyKey is one of the orphan keys
+  # (or whose extBodyKey doesn't exist in extKeys at all).
+  if [ "$ORPHAN_KEY_COUNT" -gt 0 ]; then
+    # Stage orphan keys into a temp table for fast IN-clause join.
+    ORPHAN_TMP="$(mktemp)"
+    {
+      echo "BEGIN;"
+      echo "CREATE TEMP TABLE _orphan_keys(id VARCHAR PRIMARY KEY);"
+      printf '%s\n' "$ORPHAN_KEYS" | awk 'NF { gsub(/'\''/, "''"); printf "INSERT INTO _orphan_keys VALUES('\''%s'\'');\n", $0 }'
+      echo "SELECT COUNT(*) FROM msgs WHERE extBodyKey IN (SELECT id FROM _orphan_keys);"
+      echo "ROLLBACK;"
+    } > "$ORPHAN_TMP"
+    ORPHAN_MSG_COUNT="$(sqlite3 "$DB" < "$ORPHAN_TMP" | tail -1)"
+    rm -f "$ORPHAN_TMP"
+  else
+    ORPHAN_MSG_COUNT=0
   fi
 
-  NULL_HDR="$(sqlite_q "SELECT COUNT(*) FROM $T_MSGS WHERE
-                          (header IS NULL OR length(header) = 0)" 2>/dev/null || echo 0)"
-  log "  rows with NULL/empty header column: $NULL_HDR"
-}
+  log "  ORPHAN extKeys (no blob):   $ORPHAN_KEY_COUNT"
+  log "  ORPHAN msgs (broken body):  $ORPHAN_MSG_COUNT"
+  log "  DANGLING blobs (no DB ref): $DANGLING_COUNT"
 
-cmd_recover_headers() {
-  discover_schema
-  ensure_writable
+  # Refs sanity: extKeys.refs vs COUNT of referencing msgs rows.
+  BAD_REFS="$(sq "
+    SELECT COUNT(*) FROM extKeys e
+    WHERE e.refs != COALESCE(
+      (SELECT COUNT(*) FROM msgs WHERE extBodyKey = e.id), 0
+    )
+  ")"
+  log "  extKeys with bad refs count:$BAD_REFS"
 
-  log "recover-headers: re-parsing blobs for rows with NULL/empty header column…"
-  CANDIDATES="$(sqlite_q "SELECT id FROM $T_MSGS WHERE header IS NULL OR length(header) = 0" 2>/dev/null || echo "")"
-  N="$(printf '%s\n' "$CANDIDATES" | grep -c . || true)"
-  log "  candidates: $N"
-
-  [ "$N" -eq 0 ] && return 0
-  [ "$DRY_RUN" = "1" ] && { log "  [dry-run] would re-parse $N rows"; return 0; }
-
-  # Recovery is best-effort and depends on the imapsql schema layout. The
-  # canonical shape can vary across go-imap-sql versions; we attempt safe
-  # join via extKeys → blob_hash → on-disk file, parse RFC822 header block,
-  # UPDATE row.
-  log "  WARNING: recover-headers needs schema-specific impl per go-imap-sql"
-  log "           current Maddy version: deferring until schema confirmed via integrity-check"
-  log "           rows untouched; run 'integrity-check' first to assess scope"
+  rm -f "$DB_KEYS" "$DISK_KEYS"
 }
 
 cmd_integrity_fix() {
-  discover_schema
   ensure_writable
+  log "integrity-fix: dropping msgs rows + extKeys with missing blobs…"
 
-  log "integrity-fix: deleting rows whose body_hash is not on disk…"
-  if [ -z "$T_EXTKEYS" ]; then
-    log "  no extKeys table — skip (inline-blob storage, no orphans possible)"
-    return 0
-  fi
+  DB_KEYS="$(mktemp)"; DISK_KEYS="$(mktemp)"; ORPHAN_KEYS_F="$(mktemp)"
+  sq "SELECT id FROM extKeys" | sort -u > "$DB_KEYS"
+  ls "$BLOB_DIR" 2>/dev/null | sort -u > "$DISK_KEYS"
+  comm -23 "$DB_KEYS" "$DISK_KEYS" > "$ORPHAN_KEYS_F"
+  DANGLING_F="$(mktemp)"
+  comm -13 "$DB_KEYS" "$DISK_KEYS" > "$DANGLING_F"
 
-  DB_HASHES="$(mktemp)"; DISK_HASHES="$(mktemp)"; ORPHAN_HASHES="$(mktemp)"
-  sqlite_q "SELECT DISTINCT body_hash FROM $T_EXTKEYS WHERE body_hash IS NOT NULL" \
-    | sort -u > "$DB_HASHES"
-  ls "$BLOB_DIR" 2>/dev/null | sort -u > "$DISK_HASHES"
-  comm -23 "$DB_HASHES" "$DISK_HASHES" > "$ORPHAN_HASHES"
-  N="$(wc -l < "$ORPHAN_HASHES")"
-  log "  orphan body_hashes to drop: $N"
+  N_ORPHAN="$(wc -l < "$ORPHAN_KEYS_F")"
+  N_DANGLING="$(wc -l < "$DANGLING_F")"
+  log "  orphan keys to drop:    $N_ORPHAN"
+  log "  dangling blobs to gc:   $N_DANGLING"
 
   if [ "$DRY_RUN" = "1" ]; then
-    log "  [dry-run] would DELETE FROM $T_MSGS WHERE body_hash IN (...)  (N=$N)"
-    rm -f "$DB_HASHES" "$DISK_HASHES" "$ORPHAN_HASHES"
+    log "  [dry-run] would DELETE $N_ORPHAN extKeys + cascading msgs rows"
+    log "  [dry-run] would unlink $N_DANGLING blob files"
+    rm -f "$DB_KEYS" "$DISK_KEYS" "$ORPHAN_KEYS_F" "$DANGLING_F"
     return 0
   fi
 
-  if [ "$N" -eq 0 ]; then
-    log "  nothing to do"
-    rm -f "$DB_HASHES" "$DISK_HASHES" "$ORPHAN_HASHES"
-    return 0
+  if [ "$N_ORPHAN" -gt 0 ]; then
+    TX="$(mktemp)"
+    {
+      echo "BEGIN IMMEDIATE TRANSACTION;"
+      echo "CREATE TEMP TABLE _drop_keys(id VARCHAR PRIMARY KEY);"
+      awk 'NF { gsub(/'\''/, "''"); printf "INSERT INTO _drop_keys VALUES('\''%s'\'');\n", $0 }' "$ORPHAN_KEYS_F"
+      # Drop msgs first (FK ON DELETE RESTRICT on extBodyKey would block extKeys delete).
+      echo "DELETE FROM msgs    WHERE extBodyKey IN (SELECT id FROM _drop_keys);"
+      echo "DELETE FROM extKeys WHERE id IN (SELECT id FROM _drop_keys);"
+      echo "DROP TABLE _drop_keys;"
+      echo "COMMIT;"
+    } > "$TX"
+    log "  applying transaction (orphan drop)…"
+    sqlite3 "$DB" < "$TX"
+    rm -f "$TX"
   fi
 
-  # Build VALUES list and DELETE in one transaction.
-  TX_FILE="$(mktemp)"
-  {
-    echo "BEGIN IMMEDIATE TRANSACTION;"
-    awk '{ printf "DELETE FROM '"$T_EXTKEYS"' WHERE body_hash = '\''%s'\'';\n", $0 }' "$ORPHAN_HASHES"
-    # msgs rows reference body via extKeys; once extKeys row is gone, the msg row
-    # is left dangling — also drop these.
-    echo "DELETE FROM $T_MSGS WHERE id IN (SELECT msg_id FROM $T_EXTKEYS WHERE body_hash IN (SELECT value FROM (SELECT NULL))) ;"
-    echo "COMMIT;"
-  } > "$TX_FILE"
+  if [ "$N_DANGLING" -gt 0 ]; then
+    log "  unlinking $N_DANGLING dangling blob files…"
+    while IFS= read -r key; do
+      [ -z "$key" ] && continue
+      rm -f "$BLOB_DIR/$key" 2>/dev/null || true
+    done < "$DANGLING_F"
+  fi
 
-  log "  applying transaction (N=$N orphan extKeys rows + cascading msg rows)…"
-  sqlite3 "$DB" < "$TX_FILE"
-  rm -f "$DB_HASHES" "$DISK_HASHES" "$ORPHAN_HASHES" "$TX_FILE"
+  rm -f "$DB_KEYS" "$DISK_KEYS" "$ORPHAN_KEYS_F" "$DANGLING_F"
   log "  done"
 }
 
-cmd_apply_rules() {
-  discover_schema
-  ensure_writable
-  log "apply-rules: re-routing existing messages by current /data/mail-rules.json…"
-  # Schema-dependent impl. Maddy's imapsql does NOT store per-message header fields
-  # as separate columns by default — header parsing happens inline. So bulk
-  # rule re-eval requires reading the full message body from blob storage.
-  # That's the same cost as iterating; the win is no IMAP roundtrip per move.
-  #
-  # Safer phased plan: emit candidate moves to /tmp/moves.tsv, review,
-  # then apply in a single transaction.
-  log "  NOTE: bulk rule re-application requires schema-specific impl"
-  log "        per Maddy go-imap-sql version. Skeleton in place; activate"
-  log "        in a follow-up commit once schema columns are confirmed."
-  log "  deferred (no rows touched)"
-}
-
 cmd_dedupe() {
-  discover_schema
   ensure_writable
-  log "dedupe: collapsing rows with same Message-Id within each mailbox…"
+  log "dedupe: extracting Message-Id from cachedHeader + collapsing duplicates per mailbox…"
+
+  # Extract (mboxId, msgId, message_id) from cachedHeader. cachedHeader is
+  # LONGTEXT — RFC822 header bytes. Use SQLite's substr+instr to grab the
+  # Message-Id line; fall back to NULL if absent.
+  EXTRACT="$(mktemp)"
+  sq "
+    SELECT mboxId,
+           msgId,
+           CASE
+             WHEN instr(lower(cachedHeader), 'message-id:') > 0 THEN
+               trim(substr(
+                 cachedHeader,
+                 instr(lower(cachedHeader), 'message-id:') + 11,
+                 instr(substr(cachedHeader,
+                              instr(lower(cachedHeader), 'message-id:') + 11),
+                       char(10)) - 1
+               ))
+             ELSE ''
+           END AS msg_id_hdr
+    FROM msgs
+  " > "$EXTRACT"
+
+  TOTAL="$(wc -l < "$EXTRACT")"
+  log "  total rows scanned: $TOTAL"
+
+  # Build dedup decisions in awk: per (mboxId, msg_id_hdr), keep smallest msgId.
+  # Skip rows with empty msg_id_hdr (keep them all — can't dedup safely).
+  DEL_LIST="$(mktemp)"
+  awk -F'|' '
+    $3 != "" {
+      key = $1 "|" $3
+      if (!(key in seen) || $2 < seen[key]) {
+        if (key in keep_msg) print keep_mbox[key] "|" keep_msg[key] >> "/dev/stderr"
+        seen[key] = $2
+        keep_mbox[key] = $1
+        keep_msg[key] = $2
+      }
+    }
+    END {
+      # nothing — second pass below
+    }
+  ' "$EXTRACT" 2>/dev/null
+
+  # Two-pass: first pass identifies the keeper (smallest msgId per group),
+  # second pass marks all NON-keepers for deletion.
+  awk -F'|' '
+    NR == FNR {
+      if ($3 != "") {
+        key = $1 "|" $3
+        if (!(key in min_id) || $2 + 0 < min_id[key] + 0) min_id[key] = $2
+      }
+      next
+    }
+    {
+      if ($3 != "") {
+        key = $1 "|" $3
+        if (key in min_id && $2 + 0 != min_id[key] + 0) {
+          print $1 "|" $2
+        }
+      }
+    }
+  ' "$EXTRACT" "$EXTRACT" > "$DEL_LIST"
+
+  N_DEL="$(wc -l < "$DEL_LIST")"
+  log "  duplicate rows to drop: $N_DEL"
+
   if [ "$DRY_RUN" = "1" ]; then
-    sqlite_q "
-      SELECT mbox_id, COUNT(*) - COUNT(DISTINCT msg_id_hdr) AS dup_count
-      FROM $T_MSGS
-      WHERE msg_id_hdr IS NOT NULL AND msg_id_hdr != ''
-      GROUP BY mbox_id
-      HAVING dup_count > 0;
-    " 2>/dev/null || log "  (msg_id_hdr column not found — schema may use 'message_id' or similar; skipping)"
+    log "  [dry-run] would DELETE $N_DEL duplicate msgs rows"
+    rm -f "$EXTRACT" "$DEL_LIST"
+    return 0
+  fi
+  if [ "$N_DEL" -eq 0 ]; then
+    rm -f "$EXTRACT" "$DEL_LIST"
     return 0
   fi
 
-  sqlite3 "$DB" <<'SQL' 2>/dev/null || log "  schema lacks expected message-id column; deferred"
-BEGIN IMMEDIATE TRANSACTION;
-DELETE FROM msgs WHERE id IN (
-  SELECT id FROM msgs m1
-  WHERE msg_id_hdr IS NOT NULL AND msg_id_hdr != ''
-    AND EXISTS (
-      SELECT 1 FROM msgs m2
-      WHERE m2.mbox_id = m1.mbox_id
-        AND m2.msg_id_hdr = m1.msg_id_hdr
-        AND m2.id < m1.id
-    )
-);
-COMMIT;
-SQL
+  TX="$(mktemp)"
+  {
+    echo "BEGIN IMMEDIATE TRANSACTION;"
+    echo "CREATE TEMP TABLE _dup(mbox_id BIGINT NOT NULL, msg_id BIGINT NOT NULL, PRIMARY KEY(mbox_id, msg_id));"
+    awk -F'|' 'NF==2 { printf "INSERT INTO _dup VALUES(%s, %s);\n", $1, $2 }' "$DEL_LIST"
+    echo "DELETE FROM msgs WHERE (mboxId, msgId) IN (SELECT mbox_id, msg_id FROM _dup);"
+    # Refs in extKeys auto-decrement only via maddy GC; we leave it to maddy.
+    echo "DROP TABLE _dup;"
+    echo "COMMIT;"
+  } > "$TX"
+  log "  applying dedup transaction…"
+  sqlite3 "$DB" < "$TX"
+  rm -f "$TX" "$EXTRACT" "$DEL_LIST"
   log "  done"
 }
 
 cmd_cleanup_mailboxes() {
-  discover_schema
   ensure_writable
   REGEX="$(jq -r '.cleanup.drop_name_regex // empty' "$RULES" 2>/dev/null)"
   [ -z "$REGEX" ] && { log "cleanup-mailboxes: no .cleanup.drop_name_regex in rules — skip"; return 0; }
   log "cleanup-mailboxes: regex=$REGEX"
 
-  CANDIDATES="$(sqlite_q "SELECT name FROM $T_MBOXES" | grep -E "$REGEX" || true)"
+  CANDIDATES="$(sq "SELECT name FROM mboxes" | grep -E "$REGEX" || true)"
   N="$(printf '%s\n' "$CANDIDATES" | grep -c . || true)"
   log "  candidate mailboxes: $N"
   [ "$N" -eq 0 ] && return 0
@@ -275,22 +335,23 @@ cmd_cleanup_mailboxes() {
     return 0
   fi
 
-  TX_FILE="$(mktemp)"
+  TX="$(mktemp)"
   {
     echo "BEGIN IMMEDIATE TRANSACTION;"
-    printf '%s\n' "$CANDIDATES" | awk '{ printf "DELETE FROM '"$T_MBOXES"' WHERE name = '\''%s'\'';\n", $0 }'
+    printf '%s\n' "$CANDIDATES" | awk 'NF {
+      gsub(/'\''/, "''")
+      printf "DELETE FROM mboxes WHERE name = '\''%s'\'';\n", $0
+    }'
     echo "COMMIT;"
-  } > "$TX_FILE"
-  sqlite3 "$DB" < "$TX_FILE"
-  rm -f "$TX_FILE"
+  } > "$TX"
+  sqlite3 "$DB" < "$TX"
+  rm -f "$TX"
   log "  done"
 }
 
 cmd_all() {
   cmd_integrity_check
-  cmd_recover_headers
   cmd_integrity_fix
-  cmd_apply_rules
   cmd_dedupe
   cmd_cleanup_mailboxes
   log "all subcommands complete"
@@ -300,8 +361,6 @@ cmd_all() {
 case "$SUBCMD" in
   integrity-check)    cmd_integrity_check ;;
   integrity-fix)      cmd_integrity_fix ;;
-  recover-headers)    cmd_recover_headers ;;
-  apply-rules)        cmd_apply_rules ;;
   dedupe)             cmd_dedupe ;;
   cleanup-mailboxes)  cmd_cleanup_mailboxes ;;
   all)                cmd_all ;;

@@ -14,22 +14,14 @@
     "pre_hook": "configs/init.sh"
   },
   "lifecycle": {
-    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh subcommands. Pre-SQL scripts (dedupe-inbox, dedupe-folders, cleanup-stale-mailboxes) live archived in src/z-archive/ during transition. SQL-direct on /data/imapsql.db — sub-second on 30k rows.",
+    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema (msgs.extBodyKey ↔ extKeys.id, cachedHeader carries headers). Sub-second on 30k rows. Pre-SQL scripts archived in src/z-archive/ during transition. recover-headers and apply-rules are intentionally NOT subcommands: cachedHeader is already populated by maddy at delivery; if the body blob is missing the BODY is unrecoverable and integrity-fix is the right action.",
     "post-hoc-integrity-check": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
     ],
-    "post-hoc-recover-headers": [
-      { "action": "ssh_run", "vm": "oci-mail",
-        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc recover-headers" }
-    ],
     "post-hoc-integrity-fix": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-fix" }
-    ],
-    "post-hoc-apply-rules": [
-      { "action": "ssh_run", "vm": "oci-mail",
-        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules" }
     ],
     "post-hoc-dedupe": [
       { "action": "ssh_run", "vm": "oci-mail",
