@@ -87,11 +87,11 @@
       "port": 2443,
       "extra_ports": [
         { "port": 2025, "protocol": "starttls", "bind": "127.0.0.1", "service": "smtp_shadow",   "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)" },
-        { "port": 2443, "protocol": "tls",      "bind": "10.0.0.3",  "service": "jmap_tls",      "desc": "HTTPS admin/JMAP — WG-only" },
-        { "port": 2465, "protocol": "tls",      "bind": "10.0.0.3",  "service": "smtp_ssl",      "desc": "SMTPS — WG-only" },
-        { "port": 2587, "protocol": "starttls", "bind": "10.0.0.3",  "service": "smtp_starttls", "desc": "Submission — WG-only" },
-        { "port": 2993, "protocol": "tls",      "bind": "10.0.0.3",  "service": "imap_ssl",      "desc": "IMAPS — WG-only" },
-        { "port": 6190, "protocol": "tls",      "bind": "10.0.0.3",  "service": "manage_sieve",  "desc": "ManageSieve — WG-only" }
+        { "port": 2443, "protocol": "tls",      "bind": "10.0.0.3",  "service": "jmap_tls",      "desc": "HTTPS admin/JMAP — wg0 bind, reached via Caddy L4" },
+        { "port": 2465, "protocol": "tls",      "bind": "10.0.0.3",  "service": "smtp_ssl",      "desc": "SMTPS — wg0 bind, reached via Caddy L4" },
+        { "port": 2587, "protocol": "starttls", "bind": "10.0.0.3",  "service": "smtp_starttls", "desc": "Submission — wg0 bind, reached via Caddy L4" },
+        { "port": 2993, "protocol": "tls",      "bind": "10.0.0.3",  "service": "imap_ssl",      "desc": "IMAPS — wg0 bind, reached via Caddy L4" },
+        { "port": 6190, "protocol": "tls",      "bind": "10.0.0.3",  "service": "manage_sieve",  "desc": "ManageSieve — wg0 bind, reached via Caddy L4" }
       ],
       "port_env": null,
       "dns": "stalwart.app",
