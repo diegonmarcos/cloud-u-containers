@@ -93,10 +93,13 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (ports 465/587) — authenticated outbound ───────────
-# WG-bind only. Co-located services connect to mail.diegonmarcos.com which
-# resolves via Hickory (10.0.0.1) → Caddy L4 forwarder → 10.0.0.3:465/587 →
-# Maddy. NO loopback shortcut — Caddy is the sole route owner.
-submission tls://@BIND_465@:465 tcp://@BIND_587@:587 {
+# WG-bind (10.0.0.3) primary path — co-located services reach Maddy via
+# mail.diegonmarcos.com → Hickory (10.0.0.1) → Caddy L4 forwarder → 10.0.0.3.
+# Loopback bind retained UNTIL vm-pilot/network/etc-hosts-clean.nix ships to
+# oci-mail (HM workflow currently blocked). Once /etc/hosts hijack is gone,
+# the loopback duplicates are no longer needed and can be dropped. Tracker:
+# pair-removal with etc-hosts-clean activation (see commits 8048d87da/ffce1b537).
+submission tls://@BIND_465@:465 tls://127.0.0.1:465 tcp://@BIND_587@:587 tcp://127.0.0.1:587 {
     limits {
         all rate 50 1s
     }
@@ -156,9 +159,9 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-# WG-bind only. Co-located clients reach Maddy via mail.diegonmarcos.com →
-# Hickory (10.0.0.1) → Caddy L4 → 10.0.0.3:993. Caddy is sole route owner.
-imap tls://@BIND_993@:993 tcp://@BIND_143@:143 {
+# Same dual-bind pattern as submission (loopback temporarily retained
+# pending etc-hosts-clean.nix activation on oci-mail).
+imap tls://@BIND_993@:993 tls://127.0.0.1:993 tcp://@BIND_143@:143 tcp://127.0.0.1:143 {
     auth &local_authdb
     storage &local_mailboxes
 }
