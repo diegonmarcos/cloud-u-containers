@@ -106,10 +106,10 @@
       "port": null,
       "extra_ports": [
         { "port": 25,  "protocol": "tcp",      "bind": "0.0.0.0", "service": "smtp_mx",       "desc": "MX (inbound — must be public)" },
-        { "port": 465, "protocol": "tls",      "bind": "10.0.0.3","service": "smtp_ssl",      "desc": "SMTPS — WG-only" },
-        { "port": 587, "protocol": "starttls", "bind": "10.0.0.3","service": "smtp_starttls", "desc": "Submission — WG-only" },
-        { "port": 993, "protocol": "tls",      "bind": "10.0.0.3","service": "imap_ssl",      "desc": "IMAPS — WG-only" },
-        { "port": 143, "protocol": "tcp",      "bind": "10.0.0.3","service": "imap_plain",    "desc": "IMAP plain — WG-only" }
+        { "port": 465, "protocol": "tls",      "bind": "10.0.0.3","service": "smtp_ssl",      "desc": "SMTPS — wg0 bind, reached via Caddy L4 from gcp-proxy" },
+        { "port": 587, "protocol": "starttls", "bind": "10.0.0.3","service": "smtp_starttls", "desc": "Submission — wg0 bind, reached via Caddy L4 from gcp-proxy" },
+        { "port": 993, "protocol": "tls",      "bind": "10.0.0.3","service": "imap_ssl",      "desc": "IMAPS — wg0 bind, reached via Caddy L4 from gcp-proxy" },
+        { "port": 143, "protocol": "tcp",      "bind": "10.0.0.3","service": "imap_plain",    "desc": "IMAP plain — wg0 bind" }
       ],
       "dns": "maddy.app",
       "public": false,
