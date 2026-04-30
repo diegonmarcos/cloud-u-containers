@@ -68,7 +68,7 @@
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      # Derived Maddy subset — consumed by mail-filter.sh at /data/mail-rules.json.
+      # Derived Maddy subset — consumed by mail-sieve-subset-delivery-time.sh at /data/mail-rules.json.
       # Keeping filename stable means compose volume mounts need no change.
       mailRulesDerived = pkgs.writeText "mail-rules.json" maddyRulesJson;
     in {
@@ -79,16 +79,20 @@
           { name = "init.sh";       vars = initShVars; }
           { name = "maddy.conf.tpl"; vars = maddyConfVars; }
         ];
-        # mail-filter.sh / mail-rules.json bind-mounted from dist/assets/.
-        # mail-rules.json is DERIVED (Maddy subset) via _shared/lib/mail-rules.nix.
-        # cleanup-stale-mailboxes.sh + dedupe-inbox.sh run via lifecycle.ssh_run
-        # on the VM host (see build.json#lifecycle).
+        # Two scripts only:
+        #   mail-sieve-subset-delivery-time.sh — per-message at delivery (jq)
+        #   mail-sieve-subset-post-hoc.sh      — batch maintenance (sqlite + jq)
+        # Both consume /data/mail-rules.json (derived Maddy subset of canonical
+        # rules via _shared/lib/mail-rules.nix → toMaddyJson; same SoT also
+        # renders Stalwart's default.sieve).
+        # The retired pre-SQL scripts live in src/z-archive/ for the transition
+        # period — NOT bundled here, NOT mounted into the container, NOT
+        # referenced by build.json#lifecycle. Will be deleted in a follow-up
+        # commit after Phase 4 prod migration + 30-day soak (see z-archive/README.md).
         extraAssets = [
-          ./mail-filter.sh
+          ./mail-sieve-subset-delivery-time.sh
+          ./mail-sieve-subset-post-hoc.sh
           { name = "mail-rules.json"; src = mailRulesDerived; }
-          ./cleanup-stale-mailboxes.sh
-          ./dedupe-inbox.sh
-          ./dedupe-folders.sh
         ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Maddy Mail Server";

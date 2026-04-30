@@ -14,26 +14,34 @@
     "pre_hook": "configs/init.sh"
   },
   "lifecycle": {
-    "cleanup": [
-      {
-        "action": "ssh_run",
-        "vm": "oci-mail",
-        "script": "/opt/containers/maddy/assets/cleanup-stale-mailboxes.sh"
-      }
+    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh subcommands. Pre-SQL scripts (dedupe-inbox, dedupe-folders, cleanup-stale-mailboxes) live archived in src/z-archive/ during transition. SQL-direct on /data/imapsql.db — sub-second on 30k rows.",
+    "post-hoc-integrity-check": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
     ],
-    "dedupe": [
-      {
-        "action": "ssh_run",
-        "vm": "oci-mail",
-        "script": "/opt/containers/maddy/assets/dedupe-inbox.sh"
-      }
+    "post-hoc-recover-headers": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc recover-headers" }
     ],
-    "dedupe-folders": [
-      {
-        "action": "ssh_run",
-        "vm": "oci-mail",
-        "script": "/opt/containers/maddy/assets/dedupe-folders.sh"
-      }
+    "post-hoc-integrity-fix": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-fix" }
+    ],
+    "post-hoc-apply-rules": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules" }
+    ],
+    "post-hoc-dedupe": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc dedupe" }
+    ],
+    "post-hoc-cleanup-mailboxes": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc cleanup-mailboxes" }
+    ],
+    "post-hoc-all": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc all" }
     ]
   },
   "proxy": {
@@ -144,7 +152,7 @@
     "dockerfile": "code/amd64/Dockerfile",
     "arch": "amd64",
     "runtime_packages": {
-      "apk": "jq"
+      "apk": "jq sqlite coreutils"
     }
   },
   "upstream_image": "foxcpp/maddy:0.9",
