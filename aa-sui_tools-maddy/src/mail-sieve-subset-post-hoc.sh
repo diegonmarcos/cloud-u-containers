@@ -220,6 +220,18 @@ cmd_integrity_fix() {
     done < "$DANGLING_F"
   fi
 
+  # ── Refs counter fixup ─────────────────────────────────────────
+  # extKeys.refs is supposed to equal COUNT(msgs.extBodyKey = e.id).
+  # SQL-direct deletes here bypass maddy's normal refs-- code path,
+  # so refs drifts. Recompute in one UPDATE — idempotent + cheap.
+  log "  recomputing extKeys.refs counters…"
+  sqlite3 "$DB" <<'SQL'
+BEGIN IMMEDIATE TRANSACTION;
+UPDATE extKeys
+   SET refs = (SELECT COUNT(*) FROM msgs WHERE msgs.extBodyKey = extKeys.id);
+COMMIT;
+SQL
+
   rm -f "$DB_KEYS" "$DISK_KEYS" "$ORPHAN_KEYS_F" "$DANGLING_F"
   log "  done"
 }
