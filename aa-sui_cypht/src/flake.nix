@@ -17,9 +17,9 @@
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
-    # mail.${base_domain} resolves to 127.0.0.1 on oci-mail (via /etc/hosts)
-    # → Maddy's loopback bind handles IMAPS/SMTPS for the primary account.
-    # Same routing approach as snappymail (already proven working).
+    # mail.${base_domain} resolves via Hickory DNS (10.0.0.1) → Caddy L4 →
+    # 10.0.0.3:993/465 (Maddy WG bind). NO /etc/hosts override, NO loopback
+    # shortcut — Caddy is the sole route owner per cypht-mail-derive-refactor.
     mail_domain = "mail.${base_domain}";
 
     # Stalwart hostname for the JMAP + IMAP secondary backend.
