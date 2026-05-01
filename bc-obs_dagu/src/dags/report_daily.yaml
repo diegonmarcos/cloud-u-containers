@@ -22,12 +22,18 @@ steps:
   # entrypoint target (already in src/), this command can shorten to just
   # `cloud-data-reports:latest daily-mail`.
   - name: daily-mail
+    # CLOUD_DATA_DIR points at the dagu-volume location of the PRIVATE
+    # cloud repo's 2_configs/dist/, populated hourly by sync_secrets.yaml.
+    # Both the entrypoint's SSH-config derivation and the Rust report
+    # engine's reports-common::find_cloud_data_file honour this env var,
+    # so a single declaration unblocks both consumers.
     command: >-
       docker run --rm --network host
       --pull always
       -v /opt/ssh-keys/dagu:/root/.ssh
       -v dagu_dagu_data:/var/lib/dagu/data
       -w /var/lib/dagu/data/cloud-data/reports
+      -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist
       -e NOREPLY_PASSWORD=$NOREPLY_PASSWORD
       -e GITHUB_TOKEN=$GITHUB_TOKEN
       -e UMAMI_USERNAME=$UMAMI_USERNAME
