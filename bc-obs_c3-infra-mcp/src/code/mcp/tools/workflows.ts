@@ -41,14 +41,21 @@ async function daguFetch(path: string, method = "GET", body?: string): Promise<{
       body,
       signal: AbortSignal.timeout(10_000),
     });
+    const text = await resp.text();
     if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      return { ok: false, data: null, error: `HTTP ${resp.status}: ${text.slice(0, 200)}` };
+      return { ok: false, data: null, error: `HTTP ${resp.status} from ${DAGU_API}${path}: ${text.slice(0, 200)}` };
     }
-    const data = await resp.json().catch(() => ({}));
-    return { ok: true, data };
+    if (!text) {
+      return { ok: false, data: null, error: `empty response body from ${DAGU_API}${path} (HTTP 200)` };
+    }
+    try {
+      return { ok: true, data: JSON.parse(text) };
+    } catch {
+      return { ok: false, data: null, error: `non-JSON response from ${DAGU_API}${path}: ${text.slice(0, 200)}` };
+    }
   } catch (e: unknown) {
-    return { ok: false, data: null, error: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, data: null, error: `${msg} (DAGU_API=${DAGU_API})` };
   }
 }
 
@@ -125,27 +132,46 @@ interface DaguDag {
   schedule?: string;
 }
 
-async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
-  const r = await daguFetch("/api/v2/dags");
-  if (!r.ok) return { dags: [], error: r.error };
-  const data = r.data as any;
-  // Dagu v2 API
-  if (data?.dags) return { dags: data.dags.map((d: any) => ({
-    name: d.dag?.name ?? d.fileName ?? "?",
-    statusText: d.latestDAGRun?.statusLabel,
-    startedAt: d.latestDAGRun?.startedAt,
-    finishedAt: d.latestDAGRun?.finishedAt,
-    schedule: Array.isArray(d.dag?.schedule) ? d.dag.schedule.map((s: any) => s.expression).join(", ") : undefined,
-  })) };
-  // Dagu v1 API fallback
-  if (data?.DAGs) return { dags: data.DAGs.map((d: any) => ({
-    name: d.DAG?.Name ?? "?",
+function mapV2Entry(d: any): DaguDag {
+  return {
+    name: d.dag?.name ?? d.fileName ?? d.name ?? "?",
+    statusText: d.latestDAGRun?.statusLabel ?? d.latestRun?.statusLabel ?? d.status?.statusLabel,
+    startedAt: d.latestDAGRun?.startedAt ?? d.latestRun?.startedAt ?? d.status?.startedAt,
+    finishedAt: d.latestDAGRun?.finishedAt ?? d.latestRun?.finishedAt ?? d.status?.finishedAt,
+    schedule: Array.isArray(d.dag?.schedule) ? d.dag.schedule.map((s: any) => s.expression ?? s).join(", ") : undefined,
+  };
+}
+
+function mapV1Entry(d: any): DaguDag {
+  return {
+    name: d.DAG?.Name ?? d.Name ?? "?",
     statusText: d.Status?.StatusText,
     startedAt: d.Status?.StartedAt,
     finishedAt: d.Status?.FinishedAt,
     schedule: d.DAG?.Schedule,
-  })) };
-  return { dags: [], error: "unexpected format" };
+  };
+}
+
+async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
+  const r = await daguFetch("/api/v2/dags");
+  if (!r.ok) return { dags: [], error: r.error };
+  const data = r.data as any;
+
+  // Dagu v2 (current): { dags: [{dag, latestDAGRun, ...}], pagination?: ... }
+  if (Array.isArray(data?.dags)) return { dags: data.dags.map(mapV2Entry) };
+  // Newer/paginated shapes occasionally seen in v2.5+
+  if (Array.isArray(data?.items))   return { dags: data.items.map(mapV2Entry) };
+  if (Array.isArray(data?.results)) return { dags: data.results.map(mapV2Entry) };
+  if (Array.isArray(data?.data))    return { dags: data.data.map(mapV2Entry) };
+  // Top-level array
+  if (Array.isArray(data))          return { dags: data.map(mapV2Entry) };
+  // Dagu v1 API fallback
+  if (Array.isArray(data?.DAGs))    return { dags: data.DAGs.map(mapV1Entry) };
+
+  // Unknown — surface the actual top-level keys + a preview so we can extend the parser
+  const keys = data && typeof data === "object" ? Object.keys(data).slice(0, 20).join(",") : typeof data;
+  const preview = JSON.stringify(data).slice(0, 200);
+  return { dags: [], error: `unexpected format from ${DAGU_API}/api/v2/dags (keys=[${keys}] preview=${preview})` };
 }
 
 async function daguHistory(dagName: string): Promise<unknown[]> {
