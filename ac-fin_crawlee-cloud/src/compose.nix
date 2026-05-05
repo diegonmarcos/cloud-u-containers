@@ -146,9 +146,17 @@ in
       environment = {
         NODE_ENV            = runtime.node_env;
         PORT                = dashboardPort;
+        HOSTNAME            = "0.0.0.0";
         NEXT_PUBLIC_API_URL = "http://localhost:${apiPort}";
       };
       depends_on.api = { condition = "service_healthy"; };
+      healthcheck = {
+        test         = [ "CMD-SHELL" "wget -qO /dev/null http://127.0.0.1:${dashboardPort}/ || exit 1" ];
+        interval     = "15s";
+        timeout      = "5s";
+        retries      = 3;
+        start_period = "30s";
+      };
     };
 
     scheduler = {

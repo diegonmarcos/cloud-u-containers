@@ -23,9 +23,12 @@ in
       };
       volumes = [
         "authelia_data:/data"
-        "./config/oidc_jwks.pem:/config/oidc_jwks.pem:ro"
-        "./.secrets.d:/config/.secrets.d:ro"
       ];
+      # NOTE: .secrets, .secrets.d/, .secrets.json are auto-mounted by
+      # _shared/engine.nix when src/secrets.yaml exists. Authelia's
+      # configuration.yml uses {{ secret "/run/secrets/X" }} for all secret
+      # references including the multi-line JWKS PEM. No oidc_jwks.pem
+      # carve-out, no legacy /config/.secrets.d mount needed.
       ports = [ "${svc.authelia.ip}:${toString buildJson.ports.app}:9091" ];
       networks = [ "auth-net" ];
       depends_on.redis = { condition = "service_started"; };

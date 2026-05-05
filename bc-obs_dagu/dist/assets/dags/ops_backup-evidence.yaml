@@ -1,0 +1,112 @@
+# Evidence vault — daily full-capture of container filesystems + journal + runtime state
+# Each VM runs /opt/scripts/evidence-collector.sh (deployed via vm-pilot home-manager).
+# This DAG orchestrates: trigger capture on all VMs → collect on oci-apps → rustic → OCI S3.
+# The cloud-sec-data-report reads from this bucket (never touches live VMs during analysis).
+schedule: "30 2 * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
+  - AWS_ACCESS_KEY_ID: "21dd4572b47aaf91fc5d3f9cabcc88f9e6e7984e"
+  - AWS_SECRET_ACCESS_KEY: ${OCI_S3_SECRET_KEY}
+  - RUSTIC_REPO: "s3:https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com/cloud-backups-non-binaries"
+  - RUSTIC_PASSWORD: ${RUSTIC_PASSWORD}
+  - SSH_OPTS: "-i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+mail_on:
+  failure: true
+  success: false
+type: graph
+steps:
+  # ── Phase 1: Trigger evidence capture on each VM (parallel) ───────
+  - name: capture-gcp-proxy
+    command: |
+      echo "[evidence] Triggering capture on gcp-proxy"
+      ssh $SSH_OPTS diego@10.0.0.1 bash -c "
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        /opt/scripts/evidence-collector.sh
+      " 2>&1 || echo "WARN: gcp-proxy capture failed"
+
+  - name: capture-gcp-t4
+    command: |
+      echo "[evidence] Triggering capture on gcp-t4"
+      ssh $SSH_OPTS diego@10.0.0.8 bash -c "
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        /opt/scripts/evidence-collector.sh
+      " 2>&1 || echo "WARN: gcp-t4 capture failed (may be offline)"
+
+  - name: capture-oci-apps
+    command: |
+      echo "[evidence] Triggering capture on oci-apps"
+      ssh $SSH_OPTS ubuntu@10.0.0.6 bash -c "
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        /opt/scripts/evidence-collector.sh
+      " 2>&1 || echo "WARN: oci-apps capture failed"
+
+  - name: capture-oci-mail
+    command: |
+      echo "[evidence] Triggering capture on oci-mail"
+      ssh $SSH_OPTS ubuntu@10.0.0.3 bash -c "
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        /opt/scripts/evidence-collector.sh
+      " 2>&1 || echo "WARN: oci-mail capture failed"
+
+  - name: capture-oci-analytics
+    command: |
+      echo "[evidence] Triggering capture on oci-analytics"
+      ssh $SSH_OPTS ubuntu@10.0.0.4 bash -c "
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        /opt/scripts/evidence-collector.sh
+      " 2>&1 || echo "WARN: oci-analytics capture failed"
+
+  # ── Phase 2: Verify + retention policy ────────────────────────────
+  - name: verify-and-prune
+    depends:
+      - capture-gcp-proxy
+      - capture-gcp-t4
+      - capture-oci-apps
+      - capture-oci-mail
+      - capture-oci-analytics
+    command: |
+      # Run rustic operations from oci-apps (most storage)
+      ssh $SSH_OPTS ubuntu@10.0.0.6 bash -c "
+        export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+        export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+        export RUSTIC_REPO='$RUSTIC_REPO'
+        export RUSTIC_PASSWORD='$RUSTIC_PASSWORD'
+
+        echo '=== Recent evidence snapshots ==='
+        rustic snapshots --tag evidence 2>/dev/null | tail -20 || echo 'No snapshots found'
+
+        echo ''
+        echo '=== Applying retention policy ==='
+        rustic forget --keep-daily 30 --keep-weekly 12 --keep-monthly 12 --prune 2>/dev/null || echo 'Prune skipped'
+      "
+
+  # ── Phase 3: Notify ───────────────────────────────────────────────
+  - name: notify
+    depends:
+      - verify-and-prune
+    command: |
+      DATE=$(date +%Y-%m-%d)
+      VM_COUNT=5
+      MSG="Evidence vault capture $DATE\n$VM_COUNT VMs targeted\nBucket: cloud-backups-evidence\nRetention: 30d/12w/12m\nDagu: http://10.0.0.3:8070"
+      curl -s -X POST "$NTFY_URL/sec_audit" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Evidence Vault — $DATE" \
+        -H "Priority: 2" \
+        -H "Tags: shield,white_check_mark" \
+        -d "$(echo -e "$MSG")"

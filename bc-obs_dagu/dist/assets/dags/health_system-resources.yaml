@@ -1,0 +1,33 @@
+schedule: "0 9 * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: check-resources
+    command: |
+      ALERTS=""
+      for vm in "10.0.0.1:gcp-proxy" "10.0.0.3:oci-mail" "10.0.0.4:oci-analytics" "10.0.0.6:oci-apps"; do
+        ip="${vm%%:*}"
+        name="${vm#*:}"
+        DATA=$(curl -sf --max-time 5 "http://${ip}:8199/latest.json" 2>/dev/null)
+        if [ -z "$DATA" ]; then
+          ALERTS="${ALERTS}${name}: unreachable\n"
+          continue
+        fi
+        DISK=$(echo "$DATA" | jq -r '.disk.pct // "?"' | tr -d '%')
+        MEM=$(echo "$DATA" | jq -r '.mem.pct // 0')
+        LOAD=$(echo "$DATA" | jq -r '.load // "?"' | awk '{print $1}')
+        if [ "$DISK" != "?" ] && [ "$DISK" -gt 80 ] 2>/dev/null || [ "$MEM" -gt 90 ] 2>/dev/null; then
+          ALERTS="${ALERTS}${name}: disk=${DISK}% mem=${MEM}% load=${LOAD}\n"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        printf "High resource usage:\n%b\nDagu: http://10.0.0.3:8070" "$ALERTS" | \
+          curl -sf -X POST "$NTFY_URL/health_resources" \
+            -H "Title: System Resources Alert" -H "Priority: 4" -H "Tags: warning,chart_with_upwards_trend" -d @-
+        printf "%b" "$ALERTS"
+        exit 1
+      fi
+      echo "All VMs within thresholds"

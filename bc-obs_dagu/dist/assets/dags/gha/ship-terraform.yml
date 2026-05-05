@@ -1,0 +1,179 @@
+name: "Ship → terraform"
+
+on:
+  push:
+    paths:
+      - "c_vps/ba-clo_cloudflare/src/**"
+      - "c_vps/vps_gcloud/src/**"
+      - "c_vps/vps_oci/src/**"
+      - "c_vps/vps_aws/src/**"
+      - "c_vps/vps_hetzner/src/**"
+      - ".github/workflows/ship-terraform.yml"
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      project:
+        description: "Target project (cloudflare, gcloud, oci, aws, or empty for all changed)"
+        required: false
+        type: string
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            cloudflare:
+              - 'c_vps/ba-clo_cloudflare/src/**'
+            gcloud:
+              - 'c_vps/vps_gcloud/src/**'
+            oci:
+              - 'c_vps/vps_oci/src/**'
+            aws:
+              - 'c_vps/vps_aws/src/**'
+            hetzner:
+              - 'c_vps/vps_hetzner/src/**'
+
+      - name: Force project override
+        id: force
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          proj="${{ inputs.project }}"
+          for name in cloudflare gcloud oci aws hetzner; do
+            if [ -z "$proj" ] || [ "$proj" = "$name" ]; then
+              echo "$name=true" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      # ════════════════════════════════════════════════════════════
+      # Setup — Nix (for sops), Terraform, cloud CLIs
+      # ════════════════════════════════════════════════════════════
+
+      - uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-24.11
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9"
+
+      - name: Setup SOPS age key
+        run: |
+          mkdir -p ~/.config/sops/age
+          echo "${{ secrets.SOPS_AGE_KEY }}" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+      # ════════════════════════════════════════════════════════════
+      # Cloudflare — DNS, Email Routing, Tunnel
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — Cloudflare
+        if: steps.changes.outputs.cloudflare == 'true' || steps.force.outputs.cloudflare == 'true'
+        working-directory: c_vps/ba-clo_cloudflare/src
+        env:
+          TF_VAR_cloudflare_api_key: ${{ secrets.CLOUDFLARE_API_KEY }}
+        run: |
+          # Decrypt sops secrets → inject into tfvars
+          nix-shell -p sops --run "sops -d secrets.yaml" > /tmp/cf-secrets.env
+          # Build tfvars from template + secrets
+          cp terraform.tfvars.template terraform.tfvars
+          CF_API_KEY=$(grep 'cloudflare_api_key' /tmp/cf-secrets.env | awk -F': ' '{print $2}' | tr -d '"' || echo "$TF_VAR_cloudflare_api_key")
+          awk -v key="$CF_API_KEY" '{gsub(/INJECTED_FROM_SECRETS/, key)}1' terraform.tfvars > terraform.tfvars.tmp && mv terraform.tfvars.tmp terraform.tfvars
+          rm -f /tmp/cf-secrets.env
+
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # GCP — VMs, firewall, budget
+      # ════════════════════════════════════════════════════════════
+
+      - name: Authenticate GCP
+        if: steps.changes.outputs.gcloud == 'true' || steps.force.outputs.gcloud == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Terraform — GCP
+        if: steps.changes.outputs.gcloud == 'true' || steps.force.outputs.gcloud == 'true'
+        working-directory: c_vps/vps_gcloud/src
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.GCP_SSH_PUBLIC_KEY }}
+        run: |
+          cp terraform.tfvars.template terraform.tfvars
+          awk -v key="$TF_VAR_ssh_public_key" '{gsub(/FILL_FROM_VAULT/, key)}1' terraform.tfvars > terraform.tfvars.tmp && mv terraform.tfvars.tmp terraform.tfvars
+
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # OCI — VMs, VCN, security lists
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — OCI
+        if: steps.changes.outputs.oci == 'true' || steps.force.outputs.oci == 'true'
+        working-directory: c_vps/vps_oci/src
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+          OCI_CLI_USER: ${{ secrets.OCI_USER_OCID }}
+          OCI_CLI_TENANCY: ${{ secrets.OCI_TENANCY_OCID }}
+          OCI_CLI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_PRIVATE_KEY }}
+          OCI_CLI_REGION: ${{ secrets.OCI_REGION }}
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # AWS — SES email relay, IAM
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — AWS
+        if: steps.changes.outputs.aws == 'true' || steps.force.outputs.aws == 'true'
+        working-directory: c_vps/vps_aws/src
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      # ════════════════════════════════════════════════════════════
+      # Hetzner — VMs (placeholder, ready for provisioning)
+      # ════════════════════════════════════════════════════════════
+
+      - name: Terraform — Hetzner
+        if: steps.changes.outputs.hetzner == 'true' || steps.force.outputs.hetzner == 'true'
+        working-directory: c_vps/vps_hetzner/src
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HETZNER_API_TOKEN }}
+        run: |
+          terraform init -input=false
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan

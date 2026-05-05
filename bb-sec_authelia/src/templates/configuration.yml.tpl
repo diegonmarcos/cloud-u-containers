@@ -39,10 +39,10 @@ access_control:
 
 identity_validation:
   reset_password:
-    jwt_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_JWT_SECRET" }}'
+    jwt_secret: '{{ secret "/run/secrets/AUTHELIA_JWT_SECRET" }}'
 
 session:
-  secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_SESSION_SECRET" }}'
+  secret: '{{ secret "/run/secrets/AUTHELIA_SESSION_SECRET" }}'
   name: authelia_session
   cookies:
     - name: authelia_session
@@ -54,7 +54,7 @@ session:
   redis:
     host: redis
     port: @REDIS_PORT@
-    password: '{{ secret "/tmp/.secrets.d/AUTHELIA_REDIS_PASSWORD" }}'
+    password: '{{ secret "/run/secrets/AUTHELIA_REDIS_PASSWORD" }}'
 
 regulation:
   max_retries: 3
@@ -62,7 +62,7 @@ regulation:
   ban_time: 15m
 
 storage:
-  encryption_key: '{{ secret "/tmp/.secrets.d/AUTHELIA_STORAGE_ENCRYPTION_KEY" }}'
+  encryption_key: '{{ secret "/run/secrets/AUTHELIA_STORAGE_ENCRYPTION_KEY" }}'
   local:
     path: /data/db.sqlite3
 
@@ -71,7 +71,7 @@ notifier:
   smtp:
     address: submissions://@MADDY_IP@:@MADDY_SMTP_PORT@
     username: no-reply@@BASE_DOMAIN@
-    password: '{{ secret "/tmp/.secrets.d/AUTHELIA_SMTP_PASSWORD" }}'
+    password: '{{ secret "/run/secrets/AUTHELIA_SMTP_PASSWORD" }}'
     sender: "Authelia <no-reply@@BASE_DOMAIN@>"
     tls:
       server_name: mail.@BASE_DOMAIN@
@@ -89,7 +89,7 @@ totp:
 
 identity_providers:
   oidc:
-    hmac_secret: '{{ secret "/tmp/.secrets.d/AUTHELIA_OIDC_HMAC_SECRET" }}'
+    hmac_secret: '{{ secret "/run/secrets/AUTHELIA_OIDC_HMAC_SECRET" }}'
     lifespans:
       access_token: 87600h
       refresh_token: 87600h

@@ -44,12 +44,14 @@ in
       environment = {
         NODE_ENV      = "production";
         MCP_HTTP_PORT = port;
-        # PROXIED_MCPS: JSON config for proxy-mcp.ts. Child URLs resolved from
-        # cloud-data at build time so we don't hardcode 127.0.0.1 (which would
-        # fail from this bridge-mode container).
-        PROXIED_MCPS = proxiedMcpsJson;
+        NODE_OPTIONS  = "--max-old-space-size=1536";
+        PROXIED_MCPS  = proxiedMcpsJson;
       };
       init = buildJson.runtime.init or false;
+      deploy.resources = {
+        limits       = { memory = app.resources.mem_limit; };
+        reservations = { memory = app.resources.mem_reservation; };
+      };
       healthcheck = {
         test = [
           "CMD-SHELL"

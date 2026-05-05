@@ -1,0 +1,35 @@
+schedule: "0 10 * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: check-containers
+    command: |
+      ALERTS=""
+      for vm in "10.0.0.1:gcp-proxy" "10.0.0.3:oci-mail" "10.0.0.4:oci-analytics" "10.0.0.6:oci-apps"; do
+        ip="${vm%%:*}"
+        name="${vm#*:}"
+        DATA=$(curl -sf --max-time 5 "http://${ip}:8199/latest.json" 2>/dev/null)
+        if [ -z "$DATA" ]; then
+          ALERTS="${ALERTS}${name}: health endpoint unreachable\n"
+          continue
+        fi
+        UNHEALTHY=$(echo "$DATA" | jq -r '.containers[] | select(.health == "unhealthy") | .name' 2>/dev/null)
+        EXITED=$(echo "$DATA" | jq -r '.containers[] | select(.health == "exited") | "\(.name) (\(.status))"' 2>/dev/null)
+        if [ -n "$UNHEALTHY" ]; then
+          ALERTS="${ALERTS}${name} UNHEALTHY: ${UNHEALTHY}\n"
+        fi
+        if [ -n "$EXITED" ]; then
+          ALERTS="${ALERTS}${name} CRASHED: ${EXITED}\n"
+        fi
+      done
+      if [ -n "$ALERTS" ]; then
+        printf "Container issues:\n%b\nDagu: http://10.0.0.3:8070" "$ALERTS" | \
+          curl -sf -X POST "$NTFY_URL/health_containers" \
+            -H "Title: Container Health Issues" -H "Priority: 4" -H "Tags: whale,warning" -d @-
+        printf "%b" "$ALERTS"
+        exit 1
+      fi
+      echo "All containers healthy"

@@ -18,7 +18,18 @@ in
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
-      env_file = [ ".secrets" ];
+      # Explicit command override: ensures gunicorn binds to 0.0.0.0 even
+      # if the cached/published GHCR image's CMD still has the older
+      # 127.0.0.1 hardcode (current binary build does 0.0.0.0). Caddy
+      # forward_auth calls `<gcp-proxy WG IP>:4182` per
+      # cloud-data-config-derive.ts (auth_upstreams = `${vm.wg_ip}:${port}`),
+      # so the listener MUST be reachable from a non-loopback interface.
+      command = [
+        "gunicorn"
+        "--bind" "0.0.0.0:${toString buildJson.ports.app}"
+        "--workers" "1" "--threads" "1" "--timeout" "120"
+        "main:app"
+      ];
       environment = {
         JWKS_URL       = "https://auth.diegonmarcos.com/jwks.json";
         ISSUER         = "https://auth.diegonmarcos.com";

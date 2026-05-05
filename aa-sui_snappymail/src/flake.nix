@@ -17,6 +17,15 @@
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
+    # `mail.${base_domain}` matches Maddy's TLS cert and is the public name.
+    # On oci-mail (where snappymail runs network_mode: host), /etc/hosts
+    # overrides it to 127.0.0.1 so the connection stays loopback — Maddy now
+    # binds *both* 10.0.0.3 and 127.0.0.1 (see maddy.conf.tpl.tpl). External
+    # clients hit the public hostname → Caddy L4 :993 → 10.0.0.3.
+    # NOTE: .app names cannot be used here. They route on Caddy :443 only
+    # (HTTPS reverse_proxy); Caddy L4 :993 is port-based, not hostname-based.
+    # Plus .app is a real public TLD — Cloudflare returns spurious AAAA that
+    # PHP picks before the Hickory A record, breaking IPv4-only paths.
     mail_domain = "mail.${base_domain}";
 
     appConfigVars    = { BASE_DOMAIN = base_domain; };

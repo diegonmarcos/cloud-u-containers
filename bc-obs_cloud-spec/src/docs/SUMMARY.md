@@ -53,9 +53,8 @@
 
 - [Alerts API](../services/bc-obs_alerts-api/index.html)
 - [Dozzle](../services/bc-obs_dozzle/index.html)
-- [Fluent Bit](../services/bc-obs_fluent-bit/index.html)
-- [LGTM Stack](../services/bc-obs_lgtm/index.html)
 - [Matomo](../services/bc-obs_matomo/index.html)
+- [OpenObserve](../services/bc-obs_openobserve/index.html)
 - [NocoDB](../services/bc-obs_nocodb/index.html)
 - [ntfy](../services/bc-obs_ntfy/index.html)
 - [Rig](../services/bc-obs_rig/index.html)

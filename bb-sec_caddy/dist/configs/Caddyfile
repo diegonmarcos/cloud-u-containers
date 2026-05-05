@@ -529,7 +529,7 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # LGTM observability stack (Grafana, Loki, Tempo, Mimir) (NEW - not deployed yet)
+  # OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack.
   grafana.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
@@ -543,14 +543,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.6:3200
+    reverse_proxy 10.0.0.6:5080
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.6:3200
+    reverse_proxy 10.0.0.6:5080
   }
 
     handle_errors {
@@ -1431,12 +1431,6 @@ dozzle.app {
   reverse_proxy 10.0.0.4:9999
 }
 
-grafana.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:3200
-}
-
 matomo.app {
   bind 10.0.0.1
   tls internal
@@ -1453,6 +1447,12 @@ ntfy.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.6:8090
+}
+
+openobserve.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:5080
 }
 
 umami.app {
@@ -1780,14 +1780,6 @@ dozzle-http-9999.app {
   reverse_proxy 10.0.0.4:9999
 }
 
-lgtm_grafana-http-3200.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:3200
-}
-
 matomo-hybrid-http-8084.app {
   bind 10.0.0.1
   tls internal {
@@ -1802,6 +1794,14 @@ ntfy-http-8090.app {
     on_demand
   }
   reverse_proxy 10.0.0.6:8090
+}
+
+openobserve-http-5080.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.6:5080
 }
 
 umami-http-3006.app {
@@ -1906,14 +1906,6 @@ dagu-sqlite-null.db {
   respond "DB catalog — container=dagu engine=sqlite port= upstream=(embedded) path=/var/lib/dagu/dagu.db vm=oci-E2-f_1" 200
 }
 
-lgtm_grafana-sqlite-null.db {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "DB catalog — container=lgtm_grafana engine=sqlite port= upstream=(embedded) path=/var/lib/grafana/grafana.db vm=oci-A1-f_0" 200
-}
-
 matomo-hybrid-mariadb-3306.db {
   bind 10.0.0.1
   tls internal {
@@ -1928,6 +1920,14 @@ ntfy-sqlite-null.db {
     on_demand
   }
   respond "DB catalog — container=ntfy engine=sqlite port= upstream=(embedded) path=/var/cache/ntfy/cache.db vm=oci-A1-f_0" 200
+}
+
+openobserve-parquet-null.db {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  respond "DB catalog — container=openobserve engine=parquet port= upstream=(embedded) path=/data vm=oci-A1-f_0" 200
 }
 
 gitea-sqlite-null.db {

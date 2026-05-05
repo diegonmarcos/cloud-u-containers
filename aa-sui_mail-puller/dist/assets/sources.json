@@ -1,5 +1,5 @@
 {
-  "_comment": "Declarative list of external mailboxes to mirror + their local delivery targets. Edits land after `build.sh ship`. Secrets referenced by env var name; values live in sops-encrypted secrets.yaml.",
+  "_comment": "Declarative list of external mailboxes to mirror + their local delivery targets. Edits land after `build.sh ship`. Secrets referenced by env var name; values live in sops-encrypted secrets.yaml. delivery_targets.host is the VM's WG IP (oci-mail = 10.0.0.3) because Maddy/Stalwart bind WG-only (Phase A); mail-puller runs with network_mode=host so 10.0.0.3 is directly reachable via the WG interface.",
   "defaults": {
     "idle_refresh_secs": 1700,
     "poll_fallback_secs": 30,
@@ -7,8 +7,8 @@
     "fetch_batch": 50
   },
   "delivery_targets": {
-    "maddy":    { "host": "127.0.0.1", "port": 587, "starttls": true,  "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" },
-    "stalwart": { "host": "127.0.0.1", "port": 2587, "starttls": true, "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" }
+    "maddy":    { "host": "10.0.0.3", "port": 587, "starttls": true,  "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" },
+    "stalwart": { "host": "10.0.0.3", "port": 2587, "starttls": true, "user_env": "LOCAL_DELIVERY_USER", "pass_env": "LOCAL_DELIVERY_PASSWORD" }
   },
   "sources": [
     {

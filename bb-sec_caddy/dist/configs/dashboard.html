@@ -339,7 +339,7 @@ tr:hover td{background:#0d0d15}
 <tr><td><code>app.diegonmarcos.com/hedgedoc/</code></td><td><strong>HedgeDoc</strong></td><td>oci-apps-1</td><td>3010</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/revealmd/</code></td><td><strong>Reveal.md</strong></td><td>oci-apps-1</td><td>3014</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/dozzle/</code></td><td><strong>Dozzle</strong></td><td>gcp-proxy</td><td>9999</td><td>Authelia + Bearer</td><td>24/7</td></tr>
-<tr><td><code>app.diegonmarcos.com/grafana/</code></td><td><strong>Grafana</strong></td><td>oci-apps-1</td><td>3016</td><td>Authelia + Bearer</td><td>Wake</td></tr>
+<tr><td><code>grafana.diegonmarcos.com</code></td><td><strong>OpenObserve</strong></td><td>oci-apps</td><td>5080</td><td>Authelia + Bearer</td><td>24/7</td></tr>
 <tr><td><code>app.diegonmarcos.com/gitea/</code></td><td><strong>Gitea</strong></td><td>oci-apps-1</td><td>3000</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 </tbody></table>
 
@@ -496,10 +496,7 @@ Bearer?  Cookie?
 <tr><td><strong>oci-apps-1</strong></td><td>revealmd</td><td>3014</td><td><code>10.0.0.2</code></td><td>1948</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>gitea</td><td>3000</td><td><code>10.0.0.2</code></td><td>3000</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>gitea-ssh</td><td>2222</td><td><code>10.0.0.2</code></td><td>22</td><td>WG only</td></tr>
-<tr><td><strong>oci-apps-1</strong></td><td>grafana</td><td>3016</td><td><code>10.0.0.2</code></td><td>3000</td><td>WG only</td></tr>
-<tr><td><strong>oci-apps-1</strong></td><td>loki</td><td>3017</td><td><code>10.0.0.2</code></td><td>3100</td><td>WG only</td></tr>
-<tr><td><strong>oci-apps-1</strong></td><td>tempo</td><td>3018</td><td><code>10.0.0.2</code></td><td>3200</td><td>WG only</td></tr>
-<tr><td><strong>oci-apps-1</strong></td><td>mimir</td><td>3019</td><td><code>10.0.0.2</code></td><td>8080</td><td>WG only</td></tr>
+<tr><td><strong>oci-apps</strong></td><td>openobserve</td><td>5080</td><td><code>10.0.0.6</code></td><td>5080</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>quant_research</td><td>8888</td><td><code>10.0.0.6</code></td><td>8888</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>nautilus_engine</td><td>5000</td><td><code>10.0.0.6</code></td><td>5000</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>quant_analytics</td><td>8050</td><td><code>10.0.0.6</code></td><td>8050</td><td>WG only</td></tr>
@@ -548,7 +545,7 @@ Bearer?  Cookie?
 <tr><td><strong>gcp-proxy</strong></td><td>8</td><td>authelia, caddy, dozzle, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>1</td><td>matomo</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>10</td><td>crawlee_api, crawlee_dashboard, crawlee_db, crawlee_minio, crawlee_redis, nautilus_engine, quant_analytics, quant_db, quant_research, rust-api</td></tr>
-<tr><td><strong>oci-apps-1</strong></td><td>14</td><td>code-server, etherpad, filebrowser, gitea, gitea-ssh, grafana, grist, hedgedoc, loki, mimir, nocodb, photoprism, revealmd, tempo</td></tr>
+<tr><td><strong>oci-apps-1</strong></td><td>11</td><td>code-server, etherpad, filebrowser, gitea, gitea-ssh, grist, hedgedoc, nocodb, openobserve, photoprism, revealmd</td></tr>
 <tr><td><strong>oci-mail</strong></td><td>3</td><td>mailu-front, radicale, syncthing</td></tr>
 </tbody></table>
 

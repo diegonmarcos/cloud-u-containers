@@ -4,6 +4,11 @@
 
 set -e
 
+# Fail fast and loudly if sops didn't deliver required secrets.
+# `:-default` fallbacks would silently boot with a known-bad password
+# (memory: project_secrets-remediation, FIRE rule "no default secrets").
+: "${MATOMO_DATABASE_PASSWORD:?MATOMO_DATABASE_PASSWORD missing — check secrets.yaml/.secrets}"
+
 echo "[entrypoint] Starting matomo-hybrid container..."
 
 # ═══════════════════════════════════════════════════════════════════════════════

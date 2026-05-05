@@ -44,11 +44,14 @@ RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
 TOKEN=$(json_val "$RESP" "token")
 
 if [ -z "$TOKEN" ]; then
-  # Default login failed — try configured credentials
+  # Default login failed — try configured credentials.
+  # Body built via jq -n so an ADMIN_PASSWORD containing " or \ doesn't
+  # break JSON. Never shell-interpolate secrets into JSON strings.
   echo "[umami-setup] Default login failed, trying configured credentials..."
-  RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASSWORD\"}" 2>/dev/null || echo "")
+  RESP=$(jq -nc --arg u admin --arg p "$ADMIN_PASSWORD" '{username:$u,password:$p}' \
+    | curl -sf "$UMAMI_URL/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d @- 2>/dev/null || echo "")
   TOKEN=$(json_val "$RESP" "token")
 
   if [ -z "$TOKEN" ]; then
@@ -64,17 +67,19 @@ if [ -z "$TOKEN" ]; then
   fi
   echo "[umami-setup] Already configured, verifying website..."
 else
-  # Change admin password
+  # Change admin password — body via jq -n (JSON-safe).
   echo "[umami-setup] Changing admin password..."
-  curl -sf "$UMAMI_URL/api/me/password" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $TOKEN" \
-    -d "{\"currentPassword\":\"umami\",\"newPassword\":\"$ADMIN_PASSWORD\"}" >/dev/null
+  jq -nc --arg c umami --arg n "$ADMIN_PASSWORD" '{currentPassword:$c,newPassword:$n}' \
+    | curl -sf "$UMAMI_URL/api/me/password" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $TOKEN" \
+        -d @- >/dev/null
 
   # Re-login with new password (username stays 'admin')
-  RESP=$(curl -sf "$UMAMI_URL/api/auth/login" \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASSWORD\"}" 2>/dev/null || echo "")
+  RESP=$(jq -nc --arg u admin --arg p "$ADMIN_PASSWORD" '{username:$u,password:$p}' \
+    | curl -sf "$UMAMI_URL/api/auth/login" \
+        -H "Content-Type: application/json" \
+        -d @- 2>/dev/null || echo "")
   TOKEN=$(json_val "$RESP" "token")
   echo "[umami-setup] Admin password updated"
 fi

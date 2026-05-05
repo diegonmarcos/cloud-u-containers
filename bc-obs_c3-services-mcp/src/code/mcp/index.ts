@@ -8,7 +8,6 @@ import { registerProxyTools } from "./tools/proxy.js";
 import { registerDiscoveryTools } from "./tools/discovery.js";
 
 // ── Infra: ops, observability, automation ───────
-import { registerGrafanaTools } from "./tools/grafana.js";
 import { registerMatomoTools } from "./tools/matomo.js";
 import { registerUmamiTools } from "./tools/umami.js";
 import { registerNtfyTools } from "./tools/ntfy.js";
@@ -50,7 +49,6 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════
   // INFRA — ops, observability, automation, platform
   // ═══════════════════════════════════════════════════════════════
-  registerGrafanaTools(server);       // 10: health, dashboards, detail, datasources, alerts, state, annotations, create, folders, org
   registerMatomoTools(server);        //  5: visits, sites, actions, referrers, live
   registerUmamiTools(server);         //  6: websites, stats, pageviews, metrics, active, events
   registerNtfyTools(server);          //  5: health, publish, read, stats, tier

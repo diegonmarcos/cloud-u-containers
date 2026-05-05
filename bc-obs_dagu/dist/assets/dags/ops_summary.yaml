@@ -1,0 +1,30 @@
+schedule: "0 18 * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: gather-and-report
+    command: |
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        UPTIME=$($SSH $user@$ip "uptime -p" 2>/dev/null || echo "N/A")
+        CONTAINERS=$($SSH $user@$ip "docker ps -q 2>/dev/null | wc -l" 2>/dev/null || echo "N/A")
+        DISK=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \$5}'" 2>/dev/null || echo "N/A")
+        MEM=$($SSH $user@$ip "free | awk 'NR==2 {printf \"%.0f%%\", (\$3/\$2)*100}'" 2>/dev/null || echo "N/A")
+        REPORT="${REPORT}$name ($ip):\n  Uptime: $UPTIME\n  Containers: $CONTAINERS | Disk: $DISK | Mem: $MEM\n\n"
+      done
+      MSG=$(echo -e "Daily Ops Summary:\n\n${REPORT}Dagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/ops_reports" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Daily Ops Summary" \
+        -H "Priority: 2" \
+        -H "Tags: chart_with_upwards_trend" \
+        -d "$MSG"

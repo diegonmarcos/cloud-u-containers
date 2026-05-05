@@ -27,6 +27,7 @@ in
     "${db.container_name}" = {
       image = db.image;
       container_name = db.container_name;
+      platform = "linux/${buildJson.docker.arch}";
       environment = {
         POSTGRES_DB       = db.db_name;
         POSTGRES_USER     = db.db_user;
@@ -51,6 +52,7 @@ in
     photos-webhook = {
       image = binariesImage;
       container_name = app.container_name;
+      platform = "linux/${buildJson.docker.arch}";
       env_file = [ ".secrets" ];
       environment = {
         DB_HOST       = db.container_name;
