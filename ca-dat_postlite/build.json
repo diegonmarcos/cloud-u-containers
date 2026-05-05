@@ -1,0 +1,29 @@
+{
+  "name": "postlite",
+  "enabled": false,
+  "description": "SQLite REST API (WireGuard only)",
+  "category": "data",
+  "ports": {
+    "npm_rest": 8890,
+    "vaultwarden_rest": 8891,
+    "ntfy_rest": 8892,
+    "authelia_rest": 8893,
+    "npm_pg": 5433,
+    "vaultwarden_pg": 5434,
+    "ntfy_pg": 5435,
+    "authelia_pg": 5436
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "postlite",
+    "dockerfile": "Dockerfile",
+    "arch": "amd64"
+  },
+  "deploy": {
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/postlite"
+  },
+  "compose": {
+    "custom": true
+  }
+}
