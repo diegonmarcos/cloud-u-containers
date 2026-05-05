@@ -1,20 +1,18 @@
-# compose.nix — docker-compose spec for caddy + introspect-proxy
+# compose.nix — docker-compose spec for caddy
+# introspect-proxy lives in its own service folder (bb-sec_introspect-proxy)
+# and runs as its own compose project; Caddy reaches it over host network
+# at 127.0.0.1:4182 (or 10.0.0.1:4182 for WG-side forward_auth).
 { buildJson, container }:
 
-let
-  # Caddy has no Dockerfile / native_build.cmd → engine skips the
-  # -binaries cache layer push, only ghcr.io/diegonmarcos/caddy:latest
-  # exists on GHCR. Reference the canonical image directly.
-  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}:latest";
-in
 {
   services = {
     caddy = {
-      image = binariesImage;
-      container_name = "caddy";
+      # Image declared in build.json (containers.app.image); compose reads it
+      # directly so a single source of truth governs which binary image runs.
+      image = buildJson.containers.app.image;
+      container_name = buildJson.containers.app.container_name;
       network_mode = "host";
       env_file = [ ".secrets" ];
-      depends_on = [ "introspect-proxy" ];
       cap_add = [ "NET_BIND_SERVICE" ];
       read_only = false;
       volumes = [
@@ -31,32 +29,6 @@ in
       deploy.resources = {
         limits       = { memory = "128M"; };
         reservations = { memory = "48M"; };
-      };
-    };
-
-    introspect-proxy = {
-      # introspect-proxy's docker.native_build.type=image-wrapper produces
-      # only ghcr.io/diegonmarcos/introspect-proxy (no -binaries cache layer)
-      # — referencing -binaries here causes a 401/missing-image pull failure.
-      image = "ghcr.io/diegonmarcos/introspect-proxy:latest";
-      container_name = "introspect-proxy";
-      network_mode = "host";
-      environment = {
-        JWKS_URL = "https://auth.diegonmarcos.com/jwks.json";
-        ISSUER = "https://auth.diegonmarcos.com";
-        REQUIRED_SCOPE = "authelia.bearer.authz";
-        DEBUG = "true";
-      };
-      deploy.resources = {
-        limits       = { memory = "64M"; };
-        reservations = { memory = "16M"; };
-      };
-      healthcheck = {
-        test = [ "CMD" "python3" "-c" "import urllib.request; urllib.request.urlopen('http://localhost:4182/health')" ];
-        interval = "30s";
-        timeout = "5s";
-        retries = 3;
-        start_period = "10s";
       };
     };
   };
