@@ -1,0 +1,29 @@
+schedule: "0 9 * * 1"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: review-capacity-and-notify
+    command: |
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      REPORT=""
+      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        DISK_DETAIL=$($SSH $user@$ip "df -h / | awk 'NR==2 {print \"Used: \" \$3 \"/\" \$2 \" (\" \$5 \")\"}'" 2>/dev/null || echo "N/A")
+        DOCKER_IMAGES=$($SSH $user@$ip "docker system df --format '{{.Type}}\t{{.Size}}' 2>/dev/null | head -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    N/A")
+        LARGEST=$($SSH $user@$ip "du -sh /opt/containers/*/data 2>/dev/null | sort -rh | head -3 | awk '{print \"    \" \$0}'" 2>/dev/null || echo "    N/A")
+        REPORT="${REPORT}$name ($ip):\n  Disk: $DISK_DETAIL\n  Docker storage:\n$DOCKER_IMAGES\n  Largest data dirs:\n$LARGEST\n\n"
+      done
+      MSG=$(echo -e "Weekly Capacity Review:\n\n${REPORT}Action:\n  ssh <user>@<ip> 'docker system prune -f'\n  ssh <user>@<ip> 'du -sh /opt/containers/*/data | sort -rh'\n\nDagu: http://10.0.0.3:8070")
+      curl -s -X POST "$NTFY_URL/ops_reports" \
+        -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+        -H "Title: Weekly Capacity Review" \
+        -H "Priority: 2" \
+        -H "Tags: bar_chart" \
+        -d "$MSG"

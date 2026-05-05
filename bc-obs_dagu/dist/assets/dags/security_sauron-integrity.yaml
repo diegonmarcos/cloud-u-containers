@@ -1,0 +1,36 @@
+schedule: "0 3 * * 0"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+mail_on:
+  failure: false
+  success: false
+steps:
+  - name: verify-scanners-and-notify
+    command: |
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      RUNNING=0
+      TOTAL=0
+      MISSING=""
+      VM_LIST="10.0.0.1:gcp-proxy:diego 10.0.0.3:oci-mail:ubuntu 10.0.0.4:oci-analytics:ubuntu 10.0.0.6:oci-apps:ubuntu"
+      for vm_data in $VM_LIST; do
+        ip=${vm_data%%:*}
+        temp=${vm_data#*:}
+        name=${temp%:*}
+        user=${temp#*:}
+        TOTAL=$((TOTAL + 1))
+        if $SSH $user@$ip "docker ps --format '{{.Names}}' | grep -q sauron" 2>/dev/null; then
+          RUNNING=$((RUNNING + 1))
+        else
+          MISSING="${MISSING}  - $name ($ip): sauron-lite NOT running\n"
+        fi
+      done
+      if [ $RUNNING -lt $TOTAL ]; then
+        MSG=$(echo -e "YARA scanner status: $RUNNING/$TOTAL running\n\nMissing:\n${MISSING}\nAction:\n  ssh <user>@<ip> 'docker ps -a | grep sauron'\n  ssh <user>@<ip> 'cd /opt/containers/sauron && docker compose up -d'\n\nDagu: http://10.0.0.3:8070")
+        curl -s -X POST "$NTFY_URL/sec_yara" \
+          -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
+          -H "Title: Sauron Scanner(s) Down" \
+          -H "Priority: 4" \
+          -H "Tags: warning,eye" \
+          -d "$MSG"
+        exit 1
+      fi

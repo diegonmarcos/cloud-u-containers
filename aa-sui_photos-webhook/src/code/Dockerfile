@@ -17,9 +17,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY webhook.py .
 
-# Health check
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
-    CMD curl -f http://localhost:5001/health || exit 1
+    CMD curl -f http://localhost:${WEBHOOK_PORT:-5002}/health || exit 1
 
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 

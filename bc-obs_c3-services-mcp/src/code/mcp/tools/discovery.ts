@@ -21,7 +21,6 @@ const NATIVE_WRAPPED: Set<string> = new Set([
   "ntfy", "ollama", "ollama-hai", "photoprism", "radicale",
   "rig-agentic-hai-1.5bq4", "rig-agentic-sonn-14bq8", "snappymail",
   "syncthing", "umami", "vaultwarden",
-  "lgtm",              // topology name for grafana (grafana.ts wraps it)
 ]);
 
 // ── Proxied child MCP servers ───────────────────────────────────────────

@@ -1,0 +1,92 @@
+schedule: "0 */6 * * *"
+env:
+  - NTFY_URL: http://10.0.0.6:8090
+  - MM_URL: http://10.0.0.6:8065
+  - MM_BOT_TOKEN: ${MM_BOT_TOKEN}
+  - NTFY_TOPICS: dev_commits,dev_pull-requests,dev_releases,deploy_ship,deploy_containers,health_mesh,health_endpoints,health_dns,health_resources,health_containers,ops_backups,ops_reports,sec_audit,sec_tls,sec_connections,sec_yara
+mail_on:
+  failure: true
+  success: false
+type: graph
+steps:
+  - name: check-ntfy-alive
+    command: |
+      echo "── ntfy health ──"
+      RESP=$(curl -sf --max-time 5 "$NTFY_URL/v1/health" 2>/dev/null)
+      if echo "$RESP" | grep -q '"healthy":true'; then
+        echo "OK: ntfy healthy"
+      else
+        echo "FAIL: ntfy unreachable or unhealthy"
+        exit 1
+      fi
+
+  - name: check-mattermost-alive
+    command: |
+      echo "── Mattermost health ──"
+      RESP=$(curl -sf --max-time 5 "$MM_URL/api/v4/system/ping" 2>/dev/null)
+      if echo "$RESP" | grep -q '"status":"OK"'; then
+        echo "OK: Mattermost healthy"
+      else
+        echo "FAIL: Mattermost unreachable or unhealthy"
+        exit 1
+      fi
+
+  - name: check-channels-exist
+    depends:
+      - check-ntfy-alive
+      - check-mattermost-alive
+    command: |
+      echo "── Channel sync check ──"
+      MISSING=""
+      FOUND=0
+      TOTAL=0
+      for topic in $(echo "$NTFY_TOPICS" | tr ',' ' '); do
+        TOTAL=$((TOTAL + 1))
+        RESP=$(curl -sf --max-time 5 -H "Authorization: Bearer $MM_BOT_TOKEN" \
+          "$MM_URL/api/v4/teams/$(curl -sf -H "Authorization: Bearer $MM_BOT_TOKEN" "$MM_URL/api/v4/teams" | jq -r '.[0].id')/channels/name/$topic" 2>/dev/null)
+        if echo "$RESP" | jq -e '.id' >/dev/null 2>&1; then
+          FOUND=$((FOUND + 1))
+        else
+          MISSING="$MISSING $topic"
+        fi
+      done
+
+      echo "Channels: $FOUND/$TOTAL present"
+      if [ -n "$MISSING" ]; then
+        echo "MISSING:$MISSING"
+        exit 1
+      fi
+      echo "OK: All channels synced"
+
+  - name: check-ntfy-bridge
+    depends:
+      - check-mattermost-alive
+    command: |
+      echo "── ntfy bridge check ──"
+      # Verify mattermost-bots container is running and connected to ntfy
+      SSH="ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+      STATUS=$($SSH ubuntu@10.0.0.6 "docker ps --filter name=mattermost-bots --format '{{.Status}}'" 2>/dev/null)
+      if echo "$STATUS" | grep -q "Up"; then
+        echo "OK: mattermost-bots running ($STATUS)"
+      else
+        echo "FAIL: mattermost-bots not running (status: $STATUS)"
+        exit 1
+      fi
+
+      # Check last log line for connection status
+      LAST=$($SSH ubuntu@10.0.0.6 "docker logs mattermost-bots --tail 5 2>&1" | tail -1)
+      echo "Last log: $LAST"
+      if echo "$LAST" | grep -qi "error\|disconnect\|fail"; then
+        echo "WARN: Bridge may have issues"
+      else
+        echo "OK: Bridge appears healthy"
+      fi
+
+  - name: summary
+    depends:
+      - check-channels-exist
+      - check-ntfy-bridge
+    command: |
+      echo "══════════════════════════════════"
+      echo "ntfy ↔ Mattermost sync: ALL OK"
+      echo "══════════════════════════════════"

@@ -1,34 +1,16 @@
 #!/bin/sh
+# Authelia init — minimal, declarative, no secret-shell-mangling.
+#
+# The engine produces dist/.secrets.d/<KEY> (mode 0600) and auto-mounts it
+# at /run/secrets/ via _shared/engine.nix. The {{ secret "/run/secrets/X" }}
+# template directive in configuration.yml reads each value at startup.
+# No eval/printf/sed loop needed — every secret is already a file in the
+# container at the canonical path before authelia starts.
+#
+# Two artefacts still need rendering at boot (multi-line, env-derived):
+#   /tmp/users_database.yml    — user list with hashed password from $env
+#   /tmp/jwks-overlay.yml      — wraps the PEM private key from /run/secrets/
 set -e
-
-echo "[init] Writing secrets to files for {{ secret }} template..."
-
-mkdir -p /tmp/.secrets.d
-for var in \
-  AUTHELIA_JWT_SECRET \
-  AUTHELIA_SESSION_SECRET \
-  AUTHELIA_STORAGE_ENCRYPTION_KEY \
-  AUTHELIA_REDIS_PASSWORD \
-  AUTHELIA_SMTP_PASSWORD \
-  AUTHELIA_OIDC_HMAC_SECRET \
-  AUTHELIA_OIDC_CLIENT_NPM_SECRET \
-  AUTHELIA_OIDC_CLIENT_NOCODB_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLOUDFLARE_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLAUDE_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLOUD_ADMIN_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLAUDE_OPUS_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLAUDE_SONNET_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLAUDE_HAIKU_SECRET \
-  AUTHELIA_OIDC_CLIENT_DAGU_SECRET \
-  AUTHELIA_OIDC_CLIENT_DAGU_CC_SECRET \
-  AUTHELIA_OIDC_CLIENT_MONITORING_SECRET \
-  AUTHELIA_OIDC_CLIENT_MATTERMOST_SECRET \
-  AUTHELIA_OIDC_CLIENT_MATTERMOST_CC_SECRET \
-  AUTHELIA_OIDC_CLIENT_C3_MCP_SECRET \
-  AUTHELIA_OIDC_CLIENT_CLI_SECRET; do
-  eval "val=\$$var"
-  printf '%s' "$val" > "/tmp/.secrets.d/$var"
-done
 
 echo "[init] Generating users database..."
 cat > /tmp/users_database.yml <<USERDB
@@ -53,7 +35,9 @@ identity_providers:
         use: sig
         key: |
 JWKSEOF
-sed 's/^/              /' /config/oidc_jwks.pem >> /tmp/jwks-overlay.yml
+# Indent each line of the PEM by 14 spaces so it nests under `key: |`.
+# Source: /run/secrets/AUTHELIA_OIDC_JWKS_PRIVATE_KEY (engine-mounted, mode 0600).
+awk '{ print "              " $0 }' /run/secrets/AUTHELIA_OIDC_JWKS_PRIVATE_KEY >> /tmp/jwks-overlay.yml
 
 echo "[init] Starting Authelia..."
 exec authelia \

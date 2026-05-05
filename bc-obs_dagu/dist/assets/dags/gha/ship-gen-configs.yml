@@ -1,0 +1,78 @@
+name: "Ship → gen-configs (cloud-data)"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "a_solutions/*/build.json"
+      - "config.json"
+      - "c_vps/ba-clo_cloudflare/src/main.tf"
+      - "c_vps/vps_*/src/main.tf"
+      - "b_infra/home-manager/**/src/*.nix"
+      - "a_solutions/bb-sec_caddy/src/**"
+      - "a_solutions/bb-sec_authelia/src/**"
+      - "a_solutions/ba-clo_hickory-dns/src/**"
+      - "a_solutions/bc-obs_c3-infra-mcp/src/engines/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gen-configs
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Update submodules to latest
+        run: git submodule update --remote
+          fetch-depth: 0
+          ssh-key: ${{ secrets.CLOUD_DATA_DEPLOY_KEY }}
+
+      - uses: ./.github/actions/setup-deps
+
+      - name: Generate cloud-data (topology + configs + deps)
+        env:
+          GIT_BASE: ${{ github.workspace }}/../
+        run: bash build.sh config
+
+      - name: Commit and push cloud-data submodule
+        run: |
+          cd cloud-data
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stash generated files, checkout main, pop stash, pull latest
+          git stash --include-untracked
+          git checkout main
+          git pull --rebase origin main
+          git stash pop || true
+          git add -A *.json *.md
+          if git diff --cached --quiet; then
+            echo "cloud-data: no changes"
+            exit 0
+          fi
+          git commit -m "auto: regenerate cloud-data from build.json + config.json [skip ci]"
+          git push origin main
+
+      - name: Update submodule reference in main repo
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Reset any nix/cache modifications, keep only cloud-data change
+          git checkout -- . 2>/dev/null || true
+          git add cloud-data
+          if git diff --cached --quiet; then
+            echo "main repo: submodule ref unchanged"
+            exit 0
+          fi
+          git commit -m "auto: update cloud-data submodule ref [skip ci]"
+          # Push main repo via HTTPS + GITHUB_TOKEN (deploy key only works for cloud-data)
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/diegonmarcos/cloud.git"
+          git push origin main

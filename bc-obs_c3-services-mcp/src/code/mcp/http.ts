@@ -7,7 +7,6 @@ import { registerRegistryTools } from "./tools/registry.js";
 import { registerProxyTools } from "./tools/proxy.js";
 import { registerDiscoveryTools } from "./tools/discovery.js";
 // ── Infra ───────────────────────────────────────
-import { registerGrafanaTools } from "./tools/grafana.js";
 import { registerMatomoTools } from "./tools/matomo.js";
 import { registerUmamiTools } from "./tools/umami.js";
 import { registerNtfyTools } from "./tools/ntfy.js";
@@ -41,7 +40,6 @@ function createNativeServer(): McpServer {
   registerProxyTools(server);
   registerDiscoveryTools(server);
   // Infra
-  registerGrafanaTools(server);
   registerMatomoTools(server);
   registerUmamiTools(server);
   registerNtfyTools(server);
