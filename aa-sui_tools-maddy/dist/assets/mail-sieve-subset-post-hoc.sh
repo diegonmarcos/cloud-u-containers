@@ -468,62 +468,69 @@ cmd_apply_rules() {
   log "  scan complete — scanned $SCANNED rows, $PLAN_COUNT route out of INBOX"
 
   if [ "$PLAN_COUNT" -eq 0 ]; then
-    rm -f "$PLAN"
     log "  no moves planned"
-    return 0
+    # Don't early-return: the msgsCount resync at the end is idempotent
+    # and cheap, and prior runs (or maddy itself) may have left the
+    # cache stale. Skip the moves block via PLAN_COUNT == 0 check below.
   fi
-
-  # Per-target summary — sorted, count desc.
-  log "  plan by destination folder:"
-  awk -F'\t' '{ c[$1]++ } END { for (k in c) print c[k] "\t" k }' "$PLAN" \
-    | sort -rn \
-    | while IFS=$(printf '\t') read -r n folder; do
-        log "    $n  →  $folder"
-      done
-
-  if [ "$DRY_RUN" = "1" ]; then
-    log "  [dry-run] no moves performed — re-run without --dry-run to apply"
-    rm -f "$PLAN"
-    return 0
-  fi
-
-  # Resolve which planned target folders actually exist for this user.
-  EXISTING_MBOX="$(mktemp)"
-  sq "SELECT name FROM mboxes WHERE uid = $USER_ID" | sort -u > "$EXISTING_MBOX"
-
-  # Per-target list rendered to a temp file so the moves loop can run via
-  # input redirection (NOT a pipe) — same set-e + subshell-loses-vars
-  # pitfall as the scan loop. Without this, MOVED_TOTAL increments inside
-  # the subshell are discarded and the summary always reports moved=0.
-  TARGETS="$(mktemp)"
-  awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS"
 
   MOVED_TOTAL=0
   SKIPPED_TOTAL=0
-  while IFS= read -r folder; do
-    [ -z "$folder" ] && continue
-    if ! grep -qxF "$folder" "$EXISTING_MBOX"; then
-      n="$(awk -F'\t' -v f="$folder" '$1 == f { c++ } END { print c+0 }' "$PLAN")"
-      err "target mailbox missing — skipping $n msgs → '$folder'"
-      SKIPPED_TOTAL=$((SKIPPED_TOTAL + n))
-      continue
+  EXISTING_MBOX=""
+  TARGETS=""
+
+  if [ "$PLAN_COUNT" -gt 0 ]; then
+    # Per-target summary — sorted, count desc.
+    log "  plan by destination folder:"
+    awk -F'\t' '{ c[$1]++ } END { for (k in c) print c[k] "\t" k }' "$PLAN" \
+      | sort -rn \
+      | while IFS=$(printf '\t') read -r n folder; do
+          log "    $n  →  $folder"
+        done
+
+    if [ "$DRY_RUN" = "1" ]; then
+      log "  [dry-run] no moves performed — re-run without --dry-run to apply"
+      rm -f "$PLAN"
+      return 0
     fi
-    # SEQSET: comma-separated UIDs (each msgId is the IMAP UID in this schema).
-    SEQSET="$(awk -F'\t' -v f="$folder" '$1 == f { print $2 }' "$PLAN" | paste -sd, -)"
-    n="$(printf '%s\n' "$SEQSET" | awk -F, '{ print NF }')"
-    log "  moving $n msgs → '$folder' (maddy imap-msgs move -u)"
-    if maddy imap-msgs move -u "$ACCT" INBOX "$SEQSET" "$folder" >/dev/null 2>&1; then
-      MOVED_TOTAL=$((MOVED_TOTAL + n))
-    else
-      err "    move FAILED for folder '$folder' — leaving msgs in INBOX"
-    fi
-    : # body must exit 0 — same pitfall as the scan loop
-  done < "$TARGETS"
+
+    # Resolve which planned target folders actually exist for this user.
+    EXISTING_MBOX="$(mktemp)"
+    sq "SELECT name FROM mboxes WHERE uid = $USER_ID" | sort -u > "$EXISTING_MBOX"
+
+    # Per-target list rendered to a temp file so the moves loop can run via
+    # input redirection (NOT a pipe) — same set-e + subshell-loses-vars
+    # pitfall as the scan loop. Without this, MOVED_TOTAL increments inside
+    # the subshell are discarded and the summary always reports moved=0.
+    TARGETS="$(mktemp)"
+    awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS"
+
+    while IFS= read -r folder; do
+      [ -z "$folder" ] && continue
+      if ! grep -qxF "$folder" "$EXISTING_MBOX"; then
+        n="$(awk -F'\t' -v f="$folder" '$1 == f { c++ } END { print c+0 }' "$PLAN")"
+        err "target mailbox missing — skipping $n msgs → '$folder'"
+        SKIPPED_TOTAL=$((SKIPPED_TOTAL + n))
+        continue
+      fi
+      # SEQSET: comma-separated UIDs (each msgId is the IMAP UID in this schema).
+      SEQSET="$(awk -F'\t' -v f="$folder" '$1 == f { print $2 }' "$PLAN" | paste -sd, -)"
+      n="$(printf '%s\n' "$SEQSET" | awk -F, '{ print NF }')"
+      log "  moving $n msgs → '$folder' (maddy imap-msgs move -u)"
+      if maddy imap-msgs move -u "$ACCT" INBOX "$SEQSET" "$folder" >/dev/null 2>&1; then
+        MOVED_TOTAL=$((MOVED_TOTAL + n))
+      else
+        err "    move FAILED for folder '$folder' — leaving msgs in INBOX"
+      fi
+      : # body must exit 0 — same pitfall as the scan loop
+    done < "$TARGETS"
+  fi
 
   # Maddy maintains mboxes.msgsCount lazily; SQL-direct + CLI-driven moves
   # bypass the cache update path, leaving stale per-mailbox totals (IMAP
   # clients see wrong counts until next sync). Recompute from the canonical
-  # msgs table — idempotent, sub-second on 30k rows.
+  # msgs table — idempotent, sub-second on 30k rows. Runs unconditionally
+  # because prior runs (or maddy itself) may have left the cache stale.
   log "  recomputing mboxes.msgsCount counters from msgs (cache resync)…"
   sqlite3 "$DB" <<SQL
 BEGIN IMMEDIATE TRANSACTION;
