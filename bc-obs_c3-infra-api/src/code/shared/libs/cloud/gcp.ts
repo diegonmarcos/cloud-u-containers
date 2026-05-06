@@ -390,7 +390,7 @@ export function getCostsHistory(months: number = 6): { ok: boolean; costs: Cloud
       ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)), 2) AS amount,
       currency
     FROM ${BILLING_FQN}
-    WHERE usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
+    WHERE DATE(usage_start_time) >= DATE_SUB(CURRENT_DATE(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
     GROUP BY period, service, currency
     HAVING amount != 0
     ORDER BY period DESC, amount DESC
@@ -443,7 +443,7 @@ export function getCostsByVm(months: number = 6): { ok: boolean; costs: CloudCos
         credits,
         currency
       FROM ${BILLING_FQN}
-      WHERE usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
+      WHERE DATE(usage_start_time) >= DATE_SUB(CURRENT_DATE(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
     )
     SELECT
       period,
