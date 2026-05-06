@@ -8,6 +8,18 @@ export interface ExecResult {
   ok: boolean;
 }
 
+// Cloud CLIs (gcloud/oci/aws) read config from $HOME/.config/<tool> or
+// $HOME/.<tool>. The entrypoint overrides HOME=/tmp/c3-home so SSH finds
+// its writable .ssh dir, but that breaks every cloud CLI which then can't
+// find /root/.config/gcloud, /root/.oci/config, etc. Override HOME=/root
+// when invoking cloud CLIs so they hit the materialised configs.
+const CLOUD_CLIS = new Set(["gcloud", "bq", "gsutil", "oci", "aws", "az", "kubectl", "helm"]);
+function resolveExecEnv(command: string): NodeJS.ProcessEnv {
+  const base = { ...process.env, SOPS_AGE_KEY_FILE } as NodeJS.ProcessEnv;
+  if (CLOUD_CLIS.has(command)) base.HOME = "/root";
+  return base;
+}
+
 export function exec(
   command: string,
   args: string[],
@@ -18,10 +30,7 @@ export function exec(
     timeout,
     cwd: options?.cwd,
     encoding: "utf-8",
-    env: {
-      ...process.env,
-      SOPS_AGE_KEY_FILE,
-    },
+    env: resolveExecEnv(command),
     maxBuffer: 10 * 1024 * 1024,
   });
 
@@ -42,7 +51,7 @@ export function execAsync(
   return new Promise((resolve) => {
     const proc = spawn(command, args, {
       cwd: options?.cwd,
-      env: { ...process.env, SOPS_AGE_KEY_FILE },
+      env: resolveExecEnv(command),
       stdio: ["pipe", "pipe", "pipe"],
     });
 

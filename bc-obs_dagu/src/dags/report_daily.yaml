@@ -29,19 +29,24 @@ steps:
     # Both the entrypoint's SSH-config derivation and the Rust report
     # engine's reports-common::find_cloud_data_file honour this env var,
     # so a single declaration unblocks both consumers.
-    command: >-
-      docker run --rm --network host
-      --pull always
-      -v /opt/ssh-keys/dagu:/root/.ssh
-      -v dagu_dagu_data:/var/lib/dagu/data
-      -w /var/lib/dagu/data/cloud-data/reports
-      -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist
-      -e NOREPLY_PASSWORD=$NOREPLY_PASSWORD
-      -e SMTP_PROXY_URL=$SMTP_PROXY_URL
-      -e SMTP_PROXY_API_KEY=$SMTP_PROXY_API_KEY
-      -e GITHUB_TOKEN=$GITHUB_TOKEN
-      -e UMAMI_USERNAME=$UMAMI_USERNAME
-      -e UMAMI_PASSWORD=$UMAMI_PASSWORD
-      -e UMAMI_URL=$UMAMI_URL
-      ghcr.io/diegonmarcos/cloud-data-reports:latest
-      bash src/cloud-health-full-daily/build.sh ship
+    #
+    # NOTE: command: | (literal block) is mandatory — Dagu runs it through
+    # bash so $VAR references expand. The previous `>-` (folded) form was
+    # exec'd directly, leaving `${SMTP_PROXY_API_KEY}` as a literal string
+    # in the inner container's env → smtp-proxy returned 401 every day.
+    command: |
+      docker run --rm --network host \
+        --pull always \
+        -v /opt/ssh-keys/dagu:/root/.ssh \
+        -v dagu_dagu_data:/var/lib/dagu/data \
+        -w /var/lib/dagu/data/cloud-data/reports \
+        -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist \
+        -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
+        -e SMTP_PROXY_URL="$SMTP_PROXY_URL" \
+        -e SMTP_PROXY_API_KEY="$SMTP_PROXY_API_KEY" \
+        -e GITHUB_TOKEN="$GITHUB_TOKEN" \
+        -e UMAMI_USERNAME="$UMAMI_USERNAME" \
+        -e UMAMI_PASSWORD="$UMAMI_PASSWORD" \
+        -e UMAMI_URL="$UMAMI_URL" \
+        ghcr.io/diegonmarcos/cloud-data-reports:latest \
+        bash src/cloud-health-full-daily/build.sh ship

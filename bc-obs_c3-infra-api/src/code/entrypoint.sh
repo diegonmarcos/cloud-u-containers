@@ -18,4 +18,4 @@ if [ -d /root/.ssh ]; then
   echo "c3-api-entrypoint: SSH keys copied to $SSH_DIR (fixed permissions)"
 fi
 
-exec npx tsx src/api/index.ts
+exec npx tsx api/index.ts

@@ -9,6 +9,6 @@
 # Type A — own code, arch=arm64
 FROM node:22-slim
 
-COPY index.ts --http /usr/local/bin/index.ts --http
+COPY npx tsx index.ts --http /usr/local/bin/npx tsx index.ts --http
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-CMD ["index.ts --http"]
+CMD ["npx tsx index.ts --http"]

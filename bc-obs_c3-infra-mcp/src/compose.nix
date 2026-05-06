@@ -28,6 +28,11 @@ in
         DAGU_API = daguUrl;
         MCP_HTTP_PORT = port;
         PATH = "/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+        # entrypoint.sh sets HOME=/tmp/c3-home for SSH, which makes gcloud
+        # look at /tmp/c3-home/.config/gcloud (empty) and fail with
+        # "You do not currently have an active account selected".
+        # CLOUDSDK_CONFIG pins gcloud to the mounted creds regardless of HOME.
+        CLOUDSDK_CONFIG = "/root/.config/gcloud";
       };
       volumes = [
         "/opt/ssh-keys/${app.container_name}:/root/.ssh:ro"

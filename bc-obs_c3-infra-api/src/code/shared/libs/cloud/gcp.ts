@@ -336,3 +336,139 @@ export function getCosts(): { ok: boolean; costs: CloudCost[]; error?: string } 
 
   return { ok: true, costs };
 }
+
+// ── BigQuery billing export queries ──
+//
+// The `gcp_billing_export_v1_<billing_account_id>` table is populated by
+// Cloud Billing once the user enables Daily cost detail export in:
+// console.cloud.google.com/billing/<id>/export. After enabling, Google
+// backfills ~30 days and then writes daily. Schema documented at
+// https://cloud.google.com/billing/docs/how-to/export-data-bigquery-tables
+//
+// Each row represents a usage line item with cost, credits, service, sku,
+// project, and resource labels (incl. compute resource_name for per-VM
+// breakdown). All cost queries below subtract credits to match the invoice
+// total Google bills.
+
+const BILLING_PROJECT  = "diegonmarcos-infra-prod";
+const BILLING_DATASET  = "billing_export";
+const BILLING_TABLE    = "gcp_billing_export_v1_016370_B652E5_7E0A8A";
+const BILLING_FQN      = `\`${BILLING_PROJECT}.${BILLING_DATASET}.${BILLING_TABLE}\``;
+
+function bqQuery(sql: string, timeout = 60_000): { ok: boolean; rows: unknown[]; error?: string } {
+  const result = exec("bq", [
+    "query",
+    `--project_id=${BILLING_PROJECT}`,
+    "--nouse_legacy_sql",
+    "--format=json",
+    "--max_rows=10000",
+    sql,
+  ], { timeout });
+  // bq prints query errors to stdout (not stderr) — concat both so the
+  // caller's "table not found" detection works.
+  const combined = `${result.stderr ?? ""}\n${result.stdout ?? ""}`.trim();
+  if (!result.ok) {
+    return { ok: false, rows: [], error: combined || `exit ${result.exitCode}` };
+  }
+  try {
+    return { ok: true, rows: JSON.parse(result.stdout) as unknown[] };
+  } catch (e) {
+    return { ok: false, rows: [], error: `json parse: ${(e as Error).message}; stdout: ${result.stdout.slice(0, 200)}` };
+  }
+}
+
+/**
+ * Get GCP costs across multiple months from BigQuery billing export.
+ * Requires Cloud Billing → BigQuery export enabled (one-time console step).
+ * Returns per-month per-service breakdown, credits already subtracted.
+ */
+export function getCostsHistory(months: number = 6): { ok: boolean; costs: CloudCost[]; error?: string } {
+  const sql = `
+    SELECT
+      FORMAT_DATE('%Y-%m', DATE(usage_start_time)) AS period,
+      service.description AS service,
+      ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)), 2) AS amount,
+      currency
+    FROM ${BILLING_FQN}
+    WHERE usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
+    GROUP BY period, service, currency
+    HAVING amount != 0
+    ORDER BY period DESC, amount DESC
+  `;
+  const r = bqQuery(sql);
+  if (!r.ok) {
+    // Distinguish "table doesn't exist yet" from other errors so the caller
+    // can surface a helpful message while waiting for first BQ export run.
+    const msg = (r.error ?? "").toLowerCase();
+    if (msg.includes("not found") && msg.includes("table")) {
+      return { ok: false, costs: [], error: "Billing export table not yet populated. First export runs ~12-24h after enabling. Dataset: " + BILLING_DATASET };
+    }
+    return { ok: false, costs: [], error: r.error };
+  }
+  type Row = { period: string; service: string; amount: string; currency: string };
+  const costs: CloudCost[] = (r.rows as Row[]).map((row) => ({
+    service: row.service,
+    amount: Number(row.amount),
+    currency: row.currency,
+    period: row.period,
+  }));
+  // Append totals per period
+  const totals = new Map<string, { amount: number; currency: string }>();
+  for (const row of r.rows as Row[]) {
+    const key = row.period;
+    const cur = totals.get(key) ?? { amount: 0, currency: row.currency };
+    cur.amount += Number(row.amount);
+    totals.set(key, cur);
+  }
+  for (const [period, t] of [...totals.entries()].sort().reverse()) {
+    costs.push({ service: "GCP TOTAL", amount: Math.round(t.amount * 100) / 100, currency: t.currency, period });
+  }
+  return { ok: true, costs };
+}
+
+/**
+ * Get GCP per-VM (per resource) cost breakdown from BigQuery billing export.
+ * Groups Compute Engine line items by resource_name (system_label) so each
+ * VM gets its own row. Uses the last N months (default 6).
+ */
+export function getCostsByVm(months: number = 6): { ok: boolean; costs: CloudCost[]; error?: string } {
+  // system_labels is an ARRAY<STRUCT<key,value>>; resource_name lives at
+  // key='compute.googleapis.com/resource_name'. UNNEST + WHERE filters it.
+  const sql = `
+    WITH labelled AS (
+      SELECT
+        FORMAT_DATE('%Y-%m', DATE(usage_start_time)) AS period,
+        (SELECT value FROM UNNEST(system_labels) WHERE key = 'compute.googleapis.com/resource_name') AS vm,
+        cost,
+        credits,
+        currency
+      FROM ${BILLING_FQN}
+      WHERE usage_start_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL ${Math.min(Math.max(months, 1), 24)} MONTH)
+    )
+    SELECT
+      period,
+      IFNULL(vm, '(non-compute)') AS vm,
+      ROUND(SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)), 2) AS amount,
+      currency
+    FROM labelled
+    GROUP BY period, vm, currency
+    HAVING amount != 0
+    ORDER BY period DESC, amount DESC
+  `;
+  const r = bqQuery(sql);
+  if (!r.ok) {
+    const msg = (r.error ?? "").toLowerCase();
+    if (msg.includes("not found") && msg.includes("table")) {
+      return { ok: false, costs: [], error: "Billing export table not yet populated. First export runs ~12-24h after enabling." };
+    }
+    return { ok: false, costs: [], error: r.error };
+  }
+  type Row = { period: string; vm: string; amount: string; currency: string };
+  const costs: CloudCost[] = (r.rows as Row[]).map((row) => ({
+    service: row.vm,
+    amount: Number(row.amount),
+    currency: row.currency,
+    period: row.period,
+  }));
+  return { ok: true, costs };
+}
