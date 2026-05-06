@@ -36,8 +36,21 @@
 # ║                      msgId (oldest), DELETE the rest.            ║
 # ║   cleanup-mailboxes drop mailboxes matching                       ║
 # ║                      mail-rules.json#cleanup.drop_name_regex.    ║
+# ║   apply-rules       re-route every INBOX msg through the same    ║
+# ║                      rule engine the delivery-time filter uses.  ║
+# ║                      For each msg: feed cachedHeader to          ║
+# ║                      mail-sieve-subset-delivery-time; group by   ║
+# ║                      target folder; batch-MOVE via               ║
+# ║                      `maddy imap-msgs move -u`. Use after a      ║
+# ║                      delivery-time outage to redistribute the    ║
+# ║                      INBOX backlog. Rule evaluation goes through ║
+# ║                      delivery-time.sh (single SoT) and the move  ║
+# ║                      uses maddy's CLI (correct IMAP UID + uid-   ║
+# ║                      validity semantics, no SQL-direct rewrites).║
 # ║   all               integrity-check → integrity-fix → dedupe →   ║
 # ║                      cleanup-mailboxes (--dry-run respected).    ║
+# ║                      apply-rules is intentionally NOT in `all` — ║
+# ║                      it's a corrective action, not maintenance.  ║
 # ║                                                                  ║
 # ║ Performance: all destructive ops run in a SINGLE                 ║
 # ║   BEGIN IMMEDIATE TRANSACTION. 30k rows finishes in seconds.     ║
@@ -70,7 +83,13 @@ Subcommands:
   dedupe               GROUP BY (mboxId, Message-Id from cachedHeader),
                        keep smallest msgId, DELETE the rest.
   cleanup-mailboxes    Drop mailboxes matching mail-rules.json#cleanup.drop_name_regex.
+  apply-rules          Re-route every INBOX message through the delivery-time
+                       rule engine; batch-MOVE via maddy imap-msgs. Use after a
+                       delivery-time outage to redistribute the INBOX backlog.
+                       Sources rule eval from mail-sieve-subset-delivery-time
+                       (single SoT) and uses maddy's CLI for the actual move.
   all                  integrity-check → integrity-fix → dedupe → cleanup-mailboxes.
+                       (apply-rules NOT included — corrective, not maintenance.)
 
 Flags:
   --dry-run            Report intended changes, write nothing.
@@ -79,6 +98,7 @@ Env:
   IMAPSQL_DB           default: /data/imapsql.db
   RULES_PATH           default: /data/mail-rules.json
   BLOB_DIR             default: /data/messages
+  FILTER_BIN           default: /usr/local/bin/mail-sieve-subset-delivery-time
 EOF
 }
 
@@ -361,6 +381,121 @@ cmd_cleanup_mailboxes() {
   log "  done"
 }
 
+cmd_apply_rules() {
+  # Re-route every INBOX message through the same rule engine the
+  # delivery-time filter uses. Single SoT for evaluation:
+  # /usr/local/bin/mail-sieve-subset-delivery-time. Single SoT for the
+  # move: maddy's CLI (correct IMAP UID + uidvalidity semantics —
+  # SQL-direct mboxId rewrites would corrupt UIDs).
+  #
+  # Pipeline:
+  #   1. Resolve account from rules JSON; resolve INBOX mboxId via SQL.
+  #   2. Stream every INBOX row's (msgId, hex(cachedHeader)).
+  #   3. xxd -r -p the headers, terminate with a blank line, pipe to
+  #      mail-sieve-subset-delivery-time → first stdout line = target.
+  #   4. Group plan rows (target → list of msgIds).
+  #   5. For each target ≠ INBOX, build an IMAP SEQSET (`u1,u2,…`) and
+  #      run `maddy imap-msgs move -u <user> INBOX <SEQSET> <target>`.
+  #   6. Empty target → skip; missing target mailbox → warn + skip
+  #      (operator's job to ensure rules-defined folders exist).
+  #
+  # Trade-off: per-message subprocess to delivery-time = ~30ms each.
+  # On 2.7k messages = ~90s. Acceptable for a corrective one-shot;
+  # a future optimization can JSONL-batch into a single jq call.
+  FILTER_BIN_DEFAULT=/usr/local/bin/mail-sieve-subset-delivery-time
+  FILTER_BIN="${FILTER_BIN:-$FILTER_BIN_DEFAULT}"
+  [ -x "$FILTER_BIN" ] || fail "filter binary not found/executable: $FILTER_BIN"
+  command -v xxd       >/dev/null 2>&1 || fail "xxd not in PATH (apk add xxd)"
+  command -v maddy     >/dev/null 2>&1 || fail "maddy CLI not in PATH"
+
+  ACCT="$(jq -r '.account // empty' "$RULES")"
+  [ -n "$ACCT" ] || fail "rules missing .account — cannot resolve user"
+
+  USER_ID="$(sq "SELECT id FROM users WHERE username = '$ACCT'")"
+  [ -n "$USER_ID" ] || fail "user not in DB: $ACCT"
+
+  INBOX_ID="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = 'INBOX'")"
+  [ -n "$INBOX_ID" ] || fail "INBOX not found for user $ACCT (uid=$USER_ID)"
+
+  TOTAL="$(sq "SELECT COUNT(*) FROM msgs WHERE mboxId = $INBOX_ID")"
+  log "apply-rules: INBOX has $TOTAL messages (user=$ACCT, mboxId=$INBOX_ID)"
+  [ "$TOTAL" -eq 0 ] && { log "  nothing to do"; return 0; }
+
+  ensure_writable
+
+  PLAN="$(mktemp)"   # cols: target_folder \t msgId
+  SCANNED=0
+
+  # SQLite default '|' separator + hex() output → safe line-by-line read.
+  sq "SELECT msgId, hex(cachedHeader) FROM msgs WHERE mboxId = $INBOX_ID" \
+  | while IFS='|' read -r msgid hex; do
+      [ -z "$msgid" ] && continue
+      target="$(
+        {
+          printf '%s' "$hex" | xxd -r -p
+          # Terminate the header block with a blank line — delivery-time's
+          # awk paragraph-mode (RS="") needs it to detect end-of-headers.
+          printf '\n\n'
+        } | "$FILTER_BIN" "$ACCT" "" "" "" 2>/dev/null | head -1
+      )"
+      [ -n "$target" ] && [ "$target" != "INBOX" ] && \
+          printf '%s\t%s\n' "$target" "$msgid" >> "$PLAN"
+      SCANNED=$((SCANNED + 1))
+      [ $((SCANNED % 200)) -eq 0 ] && log "  scanned $SCANNED / $TOTAL…"
+    done
+
+  PLAN_COUNT="$(wc -l < "$PLAN" 2>/dev/null || echo 0)"
+  log "  scan complete — $PLAN_COUNT messages route out of INBOX"
+
+  if [ "$PLAN_COUNT" -eq 0 ]; then
+    rm -f "$PLAN"
+    log "  no moves planned"
+    return 0
+  fi
+
+  # Per-target summary — sorted, count desc.
+  log "  plan by destination folder:"
+  awk -F'\t' '{ c[$1]++ } END { for (k in c) print c[k] "\t" k }' "$PLAN" \
+    | sort -rn \
+    | while IFS=$(printf '\t') read -r n folder; do
+        log "    $n  →  $folder"
+      done
+
+  if [ "$DRY_RUN" = "1" ]; then
+    log "  [dry-run] no moves performed — re-run without --dry-run to apply"
+    rm -f "$PLAN"
+    return 0
+  fi
+
+  # Resolve which planned target folders actually exist for this user.
+  EXISTING_MBOX="$(mktemp)"
+  sq "SELECT name FROM mboxes WHERE uid = $USER_ID" | sort -u > "$EXISTING_MBOX"
+
+  MOVED_TOTAL=0
+  SKIPPED_TOTAL=0
+  awk -F'\t' '{ print $1 }' "$PLAN" | sort -u | while IFS= read -r folder; do
+    [ -z "$folder" ] && continue
+    if ! grep -qxF "$folder" "$EXISTING_MBOX"; then
+      n="$(awk -F'\t' -v f="$folder" '$1 == f { c++ } END { print c+0 }' "$PLAN")"
+      err "target mailbox missing — skipping $n msgs → '$folder'"
+      SKIPPED_TOTAL=$((SKIPPED_TOTAL + n))
+      continue
+    fi
+    # SEQSET: comma-separated UIDs (each msgId is the IMAP UID in this schema).
+    SEQSET="$(awk -F'\t' -v f="$folder" '$1 == f { print $2 }' "$PLAN" | paste -sd, -)"
+    n="$(printf '%s\n' "$SEQSET" | awk -F, '{ print NF }')"
+    log "  moving $n msgs → '$folder' (maddy imap-msgs move -u)"
+    if maddy imap-msgs move -u "$ACCT" INBOX "$SEQSET" "$folder" >/dev/null 2>&1; then
+      MOVED_TOTAL=$((MOVED_TOTAL + n))
+    else
+      err "    move FAILED for folder '$folder' — leaving msgs in INBOX"
+    fi
+  done
+
+  log "apply-rules: moved=$MOVED_TOTAL skipped=$SKIPPED_TOTAL of $PLAN_COUNT planned"
+  rm -f "$PLAN" "$EXISTING_MBOX"
+}
+
 cmd_all() {
   cmd_integrity_check
   cmd_integrity_fix
@@ -375,6 +510,7 @@ case "$SUBCMD" in
   integrity-fix)      cmd_integrity_fix ;;
   dedupe)             cmd_dedupe ;;
   cleanup-mailboxes)  cmd_cleanup_mailboxes ;;
+  apply-rules)        cmd_apply_rules ;;
   all)                cmd_all ;;
   *)                  fail "unknown subcommand: $SUBCMD (run --help)" ;;
 esac
