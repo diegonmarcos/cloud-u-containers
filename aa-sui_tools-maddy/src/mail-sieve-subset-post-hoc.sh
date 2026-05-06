@@ -491,9 +491,16 @@ cmd_apply_rules() {
   EXISTING_MBOX="$(mktemp)"
   sq "SELECT name FROM mboxes WHERE uid = $USER_ID" | sort -u > "$EXISTING_MBOX"
 
+  # Per-target list rendered to a temp file so the moves loop can run via
+  # input redirection (NOT a pipe) — same set-e + subshell-loses-vars
+  # pitfall as the scan loop. Without this, MOVED_TOTAL increments inside
+  # the subshell are discarded and the summary always reports moved=0.
+  TARGETS="$(mktemp)"
+  awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS"
+
   MOVED_TOTAL=0
   SKIPPED_TOTAL=0
-  awk -F'\t' '{ print $1 }' "$PLAN" | sort -u | while IFS= read -r folder; do
+  while IFS= read -r folder; do
     [ -z "$folder" ] && continue
     if ! grep -qxF "$folder" "$EXISTING_MBOX"; then
       n="$(awk -F'\t' -v f="$folder" '$1 == f { c++ } END { print c+0 }' "$PLAN")"
@@ -510,10 +517,24 @@ cmd_apply_rules() {
     else
       err "    move FAILED for folder '$folder' — leaving msgs in INBOX"
     fi
-  done
+    : # body must exit 0 — same pitfall as the scan loop
+  done < "$TARGETS"
+
+  # Maddy maintains mboxes.msgsCount lazily; SQL-direct + CLI-driven moves
+  # bypass the cache update path, leaving stale per-mailbox totals (IMAP
+  # clients see wrong counts until next sync). Recompute from the canonical
+  # msgs table — idempotent, sub-second on 30k rows.
+  log "  recomputing mboxes.msgsCount counters from msgs (cache resync)…"
+  sqlite3 "$DB" <<SQL
+BEGIN IMMEDIATE TRANSACTION;
+UPDATE mboxes SET msgsCount = (
+  SELECT COUNT(*) FROM msgs WHERE msgs.mboxId = mboxes.id
+) WHERE uid = $USER_ID;
+COMMIT;
+SQL
 
   log "apply-rules: moved=$MOVED_TOTAL skipped=$SKIPPED_TOTAL of $PLAN_COUNT planned"
-  rm -f "$PLAN" "$EXISTING_MBOX"
+  rm -f "$PLAN" "$EXISTING_MBOX" "$TARGETS"
 }
 
 cmd_all() {
