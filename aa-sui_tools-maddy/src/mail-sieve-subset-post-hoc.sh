@@ -36,17 +36,19 @@
 # ║                      msgId (oldest), DELETE the rest.            ║
 # ║   cleanup-mailboxes drop mailboxes matching                       ║
 # ║                      mail-rules.json#cleanup.drop_name_regex.    ║
-# ║   apply-rules       re-route every INBOX msg through the same    ║
-# ║                      rule engine the delivery-time filter uses.  ║
-# ║                      For each msg: feed cachedHeader to          ║
-# ║                      mail-sieve-subset-delivery-time; group by   ║
-# ║                      target folder; batch-MOVE via               ║
-# ║                      `maddy imap-msgs move -u`. Use after a      ║
-# ║                      delivery-time outage to redistribute the    ║
-# ║                      INBOX backlog. Rule evaluation goes through ║
-# ║                      delivery-time.sh (single SoT) and the move  ║
-# ║                      uses maddy's CLI (correct IMAP UID + uid-   ║
-# ║                      validity semantics, no SQL-direct rewrites).║
+# ║   apply-rules       walk INBOX (skipping rows tagged \$distributed);║
+# ║                      pipe each cachedHeader through delivery-time║
+# ║                      with MAIL_SIEVE_STRATEGY=split → recover    ║
+# ║                      routing decision (folder + flags); SQL-     ║
+# ║                      direct COPY (NOT move) into the matched     ║
+# ║                      category folder with rule keywords + no     ║
+# ║                      \\Seen; tag the INBOX original \\Seen+        ║
+# ║                      \$distributed. Idempotent — Dagu-friendly.   ║
+# ║   reseed-inbox-archive  one-shot: COPY every msg from non-system  ║
+# ║                      mailboxes into INBOX as \\Seen + \$distributed║
+# ║                      (Message-Id deduped). Backfills the         ║
+# ║                      chronological archive after enabling the    ║
+# ║                      unified-inbox model.                        ║
 # ║   all               integrity-check → integrity-fix → dedupe →   ║
 # ║                      cleanup-mailboxes (--dry-run respected).    ║
 # ║                      apply-rules is intentionally NOT in `all` — ║
@@ -77,19 +79,25 @@ usage() {
 Usage: mail-sieve-subset-post-hoc <subcommand> [--dry-run]
 
 Subcommands:
-  integrity-check      Report orphan rows + dangling blobs + bad refs (read-only).
-  integrity-fix        Drop msgs rows whose extBodyKey has no on-disk blob,
-                       then drop extKeys with refs<=0, then unlink dangling blobs.
-  dedupe               GROUP BY (mboxId, Message-Id from cachedHeader),
-                       keep smallest msgId, DELETE the rest.
-  cleanup-mailboxes    Drop mailboxes matching mail-rules.json#cleanup.drop_name_regex.
-  apply-rules          Re-route every INBOX message through the delivery-time
-                       rule engine; batch-MOVE via maddy imap-msgs. Use after a
-                       delivery-time outage to redistribute the INBOX backlog.
-                       Sources rule eval from mail-sieve-subset-delivery-time
-                       (single SoT) and uses maddy's CLI for the actual move.
-  all                  integrity-check → integrity-fix → dedupe → cleanup-mailboxes.
-                       (apply-rules NOT included — corrective, not maintenance.)
+  integrity-check        Report orphan rows + dangling blobs + bad refs (read-only).
+  integrity-fix          Drop msgs rows whose extBodyKey has no on-disk blob,
+                         then drop extKeys with refs<=0, then unlink dangling blobs.
+  dedupe                 GROUP BY (mboxId, Message-Id from cachedHeader),
+                         keep smallest msgId, DELETE the rest.
+  cleanup-mailboxes      Drop mailboxes matching mail-rules.json#cleanup.drop_name_regex.
+  apply-rules            Walk INBOX (skipping rows already tagged \$distributed);
+                         pipe each cachedHeader through delivery-time in split
+                         mode to recover the routing decision; SQL-direct COPY
+                         (NOT MOVE) into the matched category folder with
+                         rule-derived keyword flags but no \\Seen. INBOX
+                         retains every original (marked \\Seen + \$distributed).
+  reseed-inbox-archive   One-shot history backfill: COPY every msg from non-
+                         system folders (Sent/Drafts/Trash/Junk excluded) into
+                         INBOX as \\Seen + \$distributed, deduped by Message-Id.
+                         Idempotent — safe to re-run.
+  all                    integrity-check → integrity-fix → dedupe → cleanup-mailboxes.
+                         (apply-rules + reseed-inbox-archive NOT included —
+                         they are corrective/one-shot, not maintenance.)
 
 Flags:
   --dry-run            Report intended changes, write nothing.
@@ -382,26 +390,46 @@ cmd_cleanup_mailboxes() {
 }
 
 cmd_apply_rules() {
-  # Re-route every INBOX message through the same rule engine the
-  # delivery-time filter uses. Single SoT for evaluation:
-  # /usr/local/bin/mail-sieve-subset-delivery-time. Single SoT for the
-  # move: maddy's CLI (correct IMAP UID + uidvalidity semantics —
-  # SQL-direct mboxId rewrites would corrupt UIDs).
+  # Apply the delivery-time rule engine to undistributed INBOX messages
+  # and place an UNREAD COPY (not MOVE) into each matched category folder.
+  # INBOX retains every original (marked \Seen + $distributed); category
+  # folders host the unread working set. The model:
+  #
+  #   delivery-time → drops every msg into INBOX (+\Seen), per
+  #                   "delivery_strategy: unified-inbox" in rules JSON.
+  #   apply-rules    → walks INBOX, calls delivery-time with
+  #                    MAIL_SIEVE_STRATEGY=split to recover the routing
+  #                    decision (folder + flags), then SQL-direct COPIES
+  #                    the row into the target mailbox with rule-derived
+  #                    keyword flags but WITHOUT \Seen, and tags the
+  #                    INBOX original with \Seen + $distributed.
+  #
+  # Idempotency: $distributed keyword on the INBOX row excludes already-
+  # processed messages from the next scan. Safe to run on a Dagu cron.
+  #
+  # SQL-direct (one BEGIN IMMEDIATE TRANSACTION per run) is the
+  # established pattern in this script (cf. cleanup-mailboxes,
+  # integrity-fix). maddy imap-msgs copy can't be used for the unread-
+  # copy semantic because it preserves source flags and doesn't return
+  # the new target UIDs — so post-copy flag manipulation would need a
+  # second SQL pass anyway. One SQL pass is cleaner.
   #
   # Pipeline:
-  #   1. Resolve account from rules JSON; resolve INBOX mboxId via SQL.
-  #   2. Stream every INBOX row's (msgId, hex(cachedHeader)).
-  #   3. xxd -r -p the headers, terminate with a blank line, pipe to
-  #      mail-sieve-subset-delivery-time → first stdout line = target.
-  #   4. Group plan rows (target → list of msgIds).
-  #   5. For each target ≠ INBOX, build an IMAP SEQSET (`u1,u2,…`) and
-  #      run `maddy imap-msgs move -u <user> INBOX <SEQSET> <target>`.
-  #   6. Empty target → skip; missing target mailbox → warn + skip
-  #      (operator's job to ensure rules-defined folders exist).
+  #   1. Resolve INBOX_ID, USER_ID; bail if no undistributed msgs.
+  #   2. Per candidate row: convert cachedHeader JSON → RFC822 → pipe
+  #      through delivery-time (MAIL_SIEVE_STRATEGY=split). Capture
+  #      target folder + comma-separated flag list.
+  #   3. Generate one SQL script:
+  #        INSERT INTO msgs (target row, fresh msgId from uidnext)
+  #        UPDATE extKeys.refs += 1   (blob shared across copies)
+  #        INSERT INTO flags (rule-derived keywords on copy, no \Seen)
+  #        INSERT INTO flags (\Seen + $distributed on INBOX original)
+  #        UPDATE msgs.seen=1 on INBOX original
+  #        UPDATE mboxes (uidnext + msgsCount += N per target)
+  #   4. Execute. Resync msgsCount sanity (cleans up any drift).
   #
-  # Trade-off: per-message subprocess to delivery-time = ~30ms each.
-  # On 2.7k messages = ~90s. Acceptable for a corrective one-shot;
-  # a future optimization can JSONL-batch into a single jq call.
+  # Trade-off: per-message subprocess to delivery-time ≈ 30ms each.
+  # 2k messages ≈ 60s. Acceptable for a Dagu run every 2 min.
   FILTER_BIN_DEFAULT=/usr/local/bin/mail-sieve-subset-delivery-time
   FILTER_BIN="${FILTER_BIN:-$FILTER_BIN_DEFAULT}"
   [ -x "$FILTER_BIN" ] || fail "filter binary not found/executable: $FILTER_BIN"
@@ -417,131 +445,281 @@ cmd_apply_rules() {
   INBOX_ID="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = 'INBOX'")"
   [ -n "$INBOX_ID" ] || fail "INBOX not found for user $ACCT (uid=$USER_ID)"
 
-  TOTAL="$(sq "SELECT COUNT(*) FROM msgs WHERE mboxId = $INBOX_ID")"
-  log "apply-rules: INBOX has $TOTAL messages (user=$ACCT, mboxId=$INBOX_ID)"
-  [ "$TOTAL" -eq 0 ] && { log "  nothing to do"; return 0; }
+  # Candidates: INBOX rows WITHOUT $distributed keyword.
+  TOTAL="$(sq "SELECT COUNT(*) FROM msgs m
+              WHERE m.mboxId = $INBOX_ID
+                AND NOT EXISTS (
+                  SELECT 1 FROM flags f
+                  WHERE f.mboxId = m.mboxId AND f.msgId = m.msgId
+                    AND f.flag = '\$distributed'
+                )")"
+  log "apply-rules: INBOX has $TOTAL undistributed messages (user=$ACCT)"
+  if [ "$TOTAL" -eq 0 ]; then
+    log "  nothing to do"
+    _resync_msgs_count "$USER_ID"
+    return 0
+  fi
 
   ensure_writable
 
-  PLAN="$(mktemp)"   # cols: target_folder \t msgId
-  SCAN="$(mktemp)"   # raw sqlite output — read via redirection (NOT pipe)
-                     # so the loop runs in the parent shell: SCANNED
-                     # propagates AND the loop's exit status is the parent
-                     # shell's, which we control explicitly with `:`.
+  PLAN="$(mktemp)"   # cols: target_folder \t msgId \t comma-separated-flags
+  SCAN="$(mktemp)"   # SQLite output — read via redirection so SCANNED
+                     # propagates and loop body's exit status is the
+                     # parent shell's (controlled with trailing `:`).
   SCANNED=0
 
-  # SQLite default '|' separator + hex() output → safe line-by-line read.
-  sq "SELECT msgId, hex(cachedHeader) FROM msgs WHERE mboxId = $INBOX_ID" > "$SCAN"
+  sq "SELECT m.msgId, hex(m.cachedHeader)
+      FROM msgs m
+      WHERE m.mboxId = $INBOX_ID
+        AND NOT EXISTS (
+          SELECT 1 FROM flags f
+          WHERE f.mboxId = m.mboxId AND f.msgId = m.msgId
+            AND f.flag = '\$distributed'
+        )" > "$SCAN"
 
   while IFS='|' read -r msgid hex; do
     [ -z "$msgid" ] && continue
-    target="$(
+    # MAIL_SIEVE_STRATEGY=split → delivery-time emits the routing
+    # decision (matched folder, or routing_default) instead of "INBOX".
+    # cachedHeader is JSON ({"From":["…"], …}); flatten to RFC822 first.
+    output="$(
       {
-        # go-imap-sql stores cachedHeader as a JSON object:
-        #   { "From": ["…"], "To": ["…"], "Subject": ["…"], … }
-        # delivery-time's awk get_header expects raw RFC822
-        #   ("Field: value\n"). Convert here. Multi-valued fields
-        # join on ", " (RFC 5322 §3.6.3 valid for address-lists, and
-        # benign for the predicates we actually evaluate).
         printf '%s' "$hex" | xxd -r -p \
           | jq -r 'to_entries[] | "\(.key): \(.value | join(", "))"'
-        # Terminate the header block with a blank line — delivery-time's
-        # awk paragraph-mode (RS="") needs it to detect end-of-headers.
         printf '\n\n'
-      } | "$FILTER_BIN" "$ACCT" "" "" "" 2>/dev/null | head -1
+      } | MAIL_SIEVE_STRATEGY=split "$FILTER_BIN" "$ACCT" "" "" "" 2>/dev/null
     )"
+    target="$(printf '%s' "$output" | awk 'NR==1')"
+    flags="$(printf '%s' "$output" | awk 'NR>1 && NF' | paste -sd, -)"
     if [ -n "$target" ] && [ "$target" != "INBOX" ]; then
-      printf '%s\t%s\n' "$target" "$msgid" >> "$PLAN"
+      printf '%s\t%s\t%s\n' "$target" "$msgid" "$flags" >> "$PLAN"
     fi
     SCANNED=$((SCANNED + 1))
     if [ $((SCANNED % 200)) -eq 0 ]; then
       log "  scanned $SCANNED / $TOTAL…"
     fi
-    # Body MUST exit 0. Without this, `set -e` aborts the script when
-    # the modulo `[ ] &&` short-circuits to false on rows where
-    # SCANNED % 200 != 0 — the very last row before EOF.
-    :
+    : # body must exit 0 (set -e + modulo short-circuit pitfall)
   done < "$SCAN"
   rm -f "$SCAN"
 
   PLAN_COUNT="$(wc -l < "$PLAN" 2>/dev/null || echo 0)"
-  log "  scan complete — scanned $SCANNED rows, $PLAN_COUNT route out of INBOX"
-
-  if [ "$PLAN_COUNT" -eq 0 ]; then
-    log "  no moves planned"
-    # Don't early-return: the msgsCount resync at the end is idempotent
-    # and cheap, and prior runs (or maddy itself) may have left the
-    # cache stale. Skip the moves block via PLAN_COUNT == 0 check below.
-  fi
-
-  MOVED_TOTAL=0
-  SKIPPED_TOTAL=0
-  EXISTING_MBOX=""
-  TARGETS=""
+  log "  scan complete — scanned $SCANNED rows, $PLAN_COUNT route to category folders"
 
   if [ "$PLAN_COUNT" -gt 0 ]; then
-    # Per-target summary — sorted, count desc.
     log "  plan by destination folder:"
+    PLAN_SUMMARY="$(mktemp)"
     awk -F'\t' '{ c[$1]++ } END { for (k in c) print c[k] "\t" k }' "$PLAN" \
-      | sort -rn \
-      | while IFS=$(printf '\t') read -r n folder; do
-          log "    $n  →  $folder"
-        done
+      | sort -rn > "$PLAN_SUMMARY"
+    while IFS=$(printf '\t') read -r nrows folder; do
+      log "    $nrows  →  $folder"
+    done < "$PLAN_SUMMARY"
+    rm -f "$PLAN_SUMMARY"
 
     if [ "$DRY_RUN" = "1" ]; then
-      log "  [dry-run] no moves performed — re-run without --dry-run to apply"
+      log "  [dry-run] no copies performed — re-run without --dry-run to apply"
       rm -f "$PLAN"
       return 0
     fi
 
-    # Resolve which planned target folders actually exist for this user.
-    EXISTING_MBOX="$(mktemp)"
-    sq "SELECT name FROM mboxes WHERE uid = $USER_ID" | sort -u > "$EXISTING_MBOX"
+    # Build SQL transaction in a temp file. Per target: pre-allocate UIDs
+    # in shell starting from mboxes.uidnext, increment per row, bump
+    # uidnext + msgsCount by N at the end. Each per-msg block:
+    #   - INSERT msgs (copy of source row, fresh msgId, seen=0 recent=1)
+    #   - UPDATE extKeys.refs += 1 (blob shared, no on-disk duplication)
+    #   - INSERT flags for rule-derived keywords on the copy (no \Seen)
+    #   - INSERT \Seen + $distributed on INBOX original
+    #   - UPDATE msgs.seen=1 on INBOX original
+    SQLF="$(mktemp)"
+    echo "BEGIN IMMEDIATE TRANSACTION;" > "$SQLF"
 
-    # Per-target list rendered to a temp file so the moves loop can run via
-    # input redirection (NOT a pipe) — same set-e + subshell-loses-vars
-    # pitfall as the scan loop. Without this, MOVED_TOTAL increments inside
-    # the subshell are discarded and the summary always reports moved=0.
-    TARGETS="$(mktemp)"
-    awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS"
+    TARGETS_FILE="$(mktemp)"
+    awk -F'\t' '{ print $1 }' "$PLAN" | sort -u > "$TARGETS_FILE"
+    COPIED_TOTAL=0
+    SKIPPED_TOTAL=0
 
-    while IFS= read -r folder; do
-      [ -z "$folder" ] && continue
-      if ! grep -qxF "$folder" "$EXISTING_MBOX"; then
-        n="$(awk -F'\t' -v f="$folder" '$1 == f { c++ } END { print c+0 }' "$PLAN")"
-        err "target mailbox missing — skipping $n msgs → '$folder'"
-        SKIPPED_TOTAL=$((SKIPPED_TOTAL + n))
-        continue
+    while IFS= read -r target; do
+      [ -z "$target" ] && continue
+      target_esc="$(printf '%s' "$target" | sed "s/'/''/g")"
+      target_mboxId="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = '$target_esc'")"
+      if [ -z "$target_mboxId" ]; then
+        nmissing="$(awk -F'\t' -v t="$target" '$1==t { c++ } END { print c+0 }' "$PLAN")"
+        err "target mailbox missing — skipping $nmissing msgs → '$target'"
+        SKIPPED_TOTAL=$((SKIPPED_TOTAL + nmissing))
+        : ; continue
       fi
-      # SEQSET: comma-separated UIDs (each msgId is the IMAP UID in this schema).
-      SEQSET="$(awk -F'\t' -v f="$folder" '$1 == f { print $2 }' "$PLAN" | paste -sd, -)"
-      n="$(printf '%s\n' "$SEQSET" | awk -F, '{ print NF }')"
-      log "  moving $n msgs → '$folder' (maddy imap-msgs move -u)"
-      if maddy imap-msgs move -u "$ACCT" INBOX "$SEQSET" "$folder" >/dev/null 2>&1; then
-        MOVED_TOTAL=$((MOVED_TOTAL + n))
-      else
-        err "    move FAILED for folder '$folder' — leaving msgs in INBOX"
-      fi
-      : # body must exit 0 — same pitfall as the scan loop
-    done < "$TARGETS"
+      start_uid="$(sq "SELECT uidnext FROM mboxes WHERE id = $target_mboxId")"
+
+      PER_TGT="$(mktemp)"
+      awk -F'\t' -v t="$target" '$1==t { print $2 "\t" $3 }' "$PLAN" > "$PER_TGT"
+
+      n=0
+      while IFS=$(printf '\t') read -r src_msgid src_flags; do
+        new_uid=$((start_uid + n))
+        n=$((n + 1))
+
+        cat <<SQL
+INSERT INTO msgs (mboxId, msgId, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, seen, recent, compressAlgo)
+SELECT $target_mboxId, $new_uid, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, 0, 1, compressAlgo
+  FROM msgs WHERE mboxId = $INBOX_ID AND msgId = $src_msgid;
+UPDATE extKeys SET refs = refs + 1
+ WHERE id = (SELECT extBodyKey FROM msgs
+              WHERE mboxId = $INBOX_ID AND msgId = $src_msgid AND extBodyKey IS NOT NULL);
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $src_msgid, '\Seen');
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $src_msgid, '\$distributed');
+UPDATE msgs SET seen = 1 WHERE mboxId = $INBOX_ID AND msgId = $src_msgid;
+SQL
+
+        if [ -n "$src_flags" ]; then
+          # Per-flag inserts on the COPY (one row per keyword, no \Seen).
+          printf '%s\n' "$src_flags" | tr ',' '\n' | while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            f_esc="$(printf '%s' "$f" | sed "s/'/''/g")"
+            printf "INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES (%s, %s, '%s');\n" \
+              "$target_mboxId" "$new_uid" "$f_esc"
+          done
+        fi
+      done >> "$SQLF" < "$PER_TGT"
+      rm -f "$PER_TGT"
+
+      printf 'UPDATE mboxes SET uidnext = uidnext + %d, msgsCount = msgsCount + %d WHERE id = %s;\n' \
+        "$n" "$n" "$target_mboxId" >> "$SQLF"
+      COPIED_TOTAL=$((COPIED_TOTAL + n))
+      :
+    done < "$TARGETS_FILE"
+
+    echo "COMMIT;" >> "$SQLF"
+    log "  applying SQL transaction ($COPIED_TOTAL copy ops)…"
+    sqlite3 "$DB" < "$SQLF"
+    rm -f "$SQLF" "$TARGETS_FILE"
+
+    log "apply-rules: copied=$COPIED_TOTAL skipped=$SKIPPED_TOTAL of $PLAN_COUNT planned"
   fi
 
-  # Maddy maintains mboxes.msgsCount lazily; SQL-direct + CLI-driven moves
-  # bypass the cache update path, leaving stale per-mailbox totals (IMAP
-  # clients see wrong counts until next sync). Recompute from the canonical
-  # msgs table — idempotent, sub-second on 30k rows. Runs unconditionally
-  # because prior runs (or maddy itself) may have left the cache stale.
+  _resync_msgs_count "$USER_ID"
+  rm -f "$PLAN"
+}
+
+# Recompute mboxes.msgsCount from canonical msgs (idempotent, sub-second).
+# Maddy maintains the cache lazily on its own write paths; any SQL-direct
+# write (here, dedupe, cleanup-mailboxes, integrity-fix) bypasses that
+# path and leaves the per-mailbox counter stale until next sync.
+_resync_msgs_count() {
+  uid="$1"
   log "  recomputing mboxes.msgsCount counters from msgs (cache resync)…"
   sqlite3 "$DB" <<SQL
 BEGIN IMMEDIATE TRANSACTION;
 UPDATE mboxes SET msgsCount = (
   SELECT COUNT(*) FROM msgs WHERE msgs.mboxId = mboxes.id
-) WHERE uid = $USER_ID;
+) WHERE uid = $uid;
 COMMIT;
 SQL
+}
 
-  log "apply-rules: moved=$MOVED_TOTAL skipped=$SKIPPED_TOTAL of $PLAN_COUNT planned"
-  rm -f "$PLAN" "$EXISTING_MBOX" "$TARGETS"
+cmd_reseed_inbox_archive() {
+  # One-shot history backfill. Walks every non-system mailbox of the
+  # configured account; for each msg whose Message-Id (extracted from
+  # cachedHeader JSON) is NOT already present in INBOX, COPIES the row
+  # into INBOX with \Seen + $distributed. After this runs, INBOX truly
+  # is the chronological archive of every message the user ever
+  # received. Runs idempotent — re-running is a no-op.
+  #
+  # System mailboxes excluded: INBOX itself, Sent, Drafts, Trash, Junk.
+  # (configurable via --include-system, future.)
+  log "reseed-inbox-archive: backfill INBOX with copies of every non-system mailbox msg"
+
+  ACCT="$(jq -r '.account // empty' "$RULES")"
+  [ -n "$ACCT" ] || fail "rules missing .account"
+  USER_ID="$(sq "SELECT id FROM users WHERE username = '$ACCT'")"
+  [ -n "$USER_ID" ] || fail "user not in DB: $ACCT"
+  INBOX_ID="$(sq "SELECT id FROM mboxes WHERE uid = $USER_ID AND name = 'INBOX'")"
+  [ -n "$INBOX_ID" ] || fail "INBOX not found"
+
+  ensure_writable
+
+  # Build a set of Message-Ids already in INBOX (the dedup key).
+  EXISTING="$(mktemp)"
+  sq "SELECT json_extract(cachedHeader, '\$.\"Message-Id\"[0]')
+      FROM msgs WHERE mboxId = $INBOX_ID
+        AND json_extract(cachedHeader, '\$.\"Message-Id\"[0]') IS NOT NULL" \
+    | sort -u > "$EXISTING"
+  log "  INBOX already contains $(wc -l < "$EXISTING") distinct Message-Ids"
+
+  # Source set: all non-system mailbox msgs.
+  SRC="$(mktemp)"
+  sq "SELECT m.id || '|' || msg.msgId || '|' ||
+             COALESCE(json_extract(msg.cachedHeader, '\$.\"Message-Id\"[0]'), '')
+      FROM msgs msg
+      JOIN mboxes m ON m.id = msg.mboxId
+      WHERE m.uid = $USER_ID
+        AND m.name NOT IN ('INBOX','Sent','Drafts','Trash','Junk')" > "$SRC"
+  TOTAL_SRC="$(wc -l < "$SRC")"
+  log "  candidate rows from non-system folders: $TOTAL_SRC"
+
+  if [ "$TOTAL_SRC" -eq 0 ]; then
+    rm -f "$EXISTING" "$SRC"
+    log "  nothing to reseed"
+    _resync_msgs_count "$USER_ID"
+    return 0
+  fi
+
+  if [ "$DRY_RUN" = "1" ]; then
+    NEW="$(awk -F'|' 'NF==3 && $3 != ""' "$SRC" \
+            | sort -t'|' -k3,3 -u \
+            | awk -F'|' -v existing="$EXISTING" 'BEGIN { while ((getline l < existing) > 0) seen[l]=1 } !($3 in seen)' \
+            | wc -l)"
+    log "  [dry-run] would copy $NEW unique-Message-Id rows into INBOX"
+    rm -f "$EXISTING" "$SRC"
+    return 0
+  fi
+
+  # Pre-allocate INBOX UIDs in shell starting from current uidnext.
+  start_uid="$(sq "SELECT uidnext FROM mboxes WHERE id = $INBOX_ID")"
+
+  # Walk SRC; emit one COPY-into-INBOX SQL block per unique Message-Id
+  # not already in INBOX. dedupe-key = Message-Id (RFC 5322 globally
+  # unique). Empty Message-Id → skip (can't dedup safely).
+  SQLF="$(mktemp)"
+  echo "BEGIN IMMEDIATE TRANSACTION;" > "$SQLF"
+
+  awk -F'|' 'NF==3 && $3 != ""' "$SRC" \
+    | sort -t'|' -k3,3 -u > "$SRC.uniq"
+
+  COPIED=0
+  while IFS='|' read -r src_mboxId src_msgid msgid_hdr; do
+    [ -z "$msgid_hdr" ] && continue
+    if grep -qxF "$msgid_hdr" "$EXISTING"; then
+      continue
+    fi
+    new_uid=$((start_uid + COPIED))
+    COPIED=$((COPIED + 1))
+
+    cat <<SQL
+INSERT INTO msgs (mboxId, msgId, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, seen, recent, compressAlgo)
+SELECT $INBOX_ID, $new_uid, date, bodyLen, mark, bodyStructure, cachedHeader, extBodyKey, 1, 0, compressAlgo
+  FROM msgs WHERE mboxId = $src_mboxId AND msgId = $src_msgid;
+UPDATE extKeys SET refs = refs + 1
+ WHERE id = (SELECT extBodyKey FROM msgs
+              WHERE mboxId = $src_mboxId AND msgId = $src_msgid AND extBodyKey IS NOT NULL);
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $new_uid, '\Seen');
+INSERT OR IGNORE INTO flags (mboxId, msgId, flag) VALUES ($INBOX_ID, $new_uid, '\$distributed');
+SQL
+    :
+  done >> "$SQLF" < "$SRC.uniq"
+  rm -f "$SRC.uniq"
+
+  if [ "$COPIED" -gt 0 ]; then
+    cat >> "$SQLF" <<SQL
+UPDATE mboxes SET uidnext = uidnext + $COPIED, msgsCount = msgsCount + $COPIED WHERE id = $INBOX_ID;
+SQL
+  fi
+
+  echo "COMMIT;" >> "$SQLF"
+  log "  applying SQL transaction ($COPIED copy ops)…"
+  sqlite3 "$DB" < "$SQLF"
+  rm -f "$SQLF" "$EXISTING" "$SRC"
+
+  log "reseed-inbox-archive: backfilled $COPIED messages into INBOX"
+  _resync_msgs_count "$USER_ID"
 }
 
 cmd_all() {
@@ -554,11 +732,12 @@ cmd_all() {
 
 # ── Dispatch ────────────────────────────────────────────────────────
 case "$SUBCMD" in
-  integrity-check)    cmd_integrity_check ;;
-  integrity-fix)      cmd_integrity_fix ;;
-  dedupe)             cmd_dedupe ;;
-  cleanup-mailboxes)  cmd_cleanup_mailboxes ;;
-  apply-rules)        cmd_apply_rules ;;
-  all)                cmd_all ;;
-  *)                  fail "unknown subcommand: $SUBCMD (run --help)" ;;
+  integrity-check)        cmd_integrity_check ;;
+  integrity-fix)          cmd_integrity_fix ;;
+  dedupe)                 cmd_dedupe ;;
+  cleanup-mailboxes)      cmd_cleanup_mailboxes ;;
+  apply-rules)            cmd_apply_rules ;;
+  reseed-inbox-archive)   cmd_reseed_inbox_archive ;;
+  all)                    cmd_all ;;
+  *)                      fail "unknown subcommand: $SUBCMD (run --help)" ;;
 esac

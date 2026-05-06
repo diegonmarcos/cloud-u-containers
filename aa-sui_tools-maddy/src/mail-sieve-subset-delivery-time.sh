@@ -274,13 +274,37 @@ OUT="$(jq -n -r \
          else atom_match
          end;
 
+  # Output is data-driven via mail-rules.json#delivery_strategy:
+  #
+  #   "unified-inbox" (default for maddy live delivery):
+  #       always emit "INBOX" + inbox_copy_flags (e.g. \Seen) + rule_flags.
+  #       INBOX is the chronological archive; per-rule copies into
+  #       category folders are produced post-delivery by
+  #       mail-sieve-subset-post-hoc.sh apply-rules (COPY not MOVE).
+  #
+  #   "split" (legacy / used by apply-rules to get the routing decision):
+  #       emit the matched rule''s folder (or routing_default) + rule_flags.
+  #
+  # Env override: MAIL_SIEVE_STRATEGY=split|unified-inbox wins over the
+  # JSON-declared default — used by apply-rules to ask "which folder
+  # WOULD this go to?" without flipping the global strategy.
   ($rf[0].rules // []) as $rules
   | ($rules | map(select(.when | match_when))) as $matched
   | ($matched | map(select(.folder != null and .folder != "")) | .[0].folder // "") as $folder
-  | ($matched | map(.flags // []) | add // []) as $flags
+  | ($matched | map(.flags // []) | add // []) as $rule_flags
   | ($rf[0].routing_default // "") as $default
-  | ((if $folder == "" then $default else $folder end) + "\n" +
-     (($flags | unique) | join("\n")))
+  | ($rf[0].delivery_strategy // "unified-inbox") as $json_strategy
+  | (env.MAIL_SIEVE_STRATEGY // $json_strategy) as $strategy
+  | ($rf[0].inbox_copy_flags // ["\\Seen"]) as $inbox_flags
+  | (if $strategy == "split"
+     then ((if $folder == "" then $default else $folder end))
+     else "INBOX"
+     end) as $dest
+  | (if $strategy == "split"
+     then $rule_flags
+     else ($inbox_flags + $rule_flags)
+     end) as $out_flags
+  | ($dest + "\n" + (($out_flags | unique) | join("\n")))
 ')"
 
 printf '%s' "$OUT"
