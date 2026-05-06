@@ -85,19 +85,50 @@ HEADERS="$(awk 'BEGIN{RS="";ORS=""} NR==1{print;exit}')"
 
 # RFC 2047 encoded-word decoder (best-effort).
 # Decodes =?charset?B?base64?= and =?charset?Q?quoted-printable?= forms.
-# busybox awk doesn't have base64, but `coreutils base64` is in the maddy image.
+#
+# IMPORTANT: this runs inside the maddy alpine container, which ships
+# BUSYBOX awk — NOT gawk. busybox awk has NO `strtonum()`. Calling it
+# aborts the awk process with "Call to undefined function" → `set -e`
+# kills the whole filter → maddy logs `imap_filter failed: exit status 2`
+# → message lands in INBOX. ALL real mail with RFC 2047 subjects (every
+# GitHub notification, every CI mail, anything non-ASCII) hit this path.
+#
+# Fix: avoid strtonum entirely. We:
+#   - decode quoted-printable bytes with a hand-rolled hex2num lookup
+#     (busybox awk has only index/substr — no number-base parsers)
+#   - wrap the awk + base64 invocations in `|| true` so any unexpected
+#     decode failure degrades gracefully (raw subject passes through),
+#     never aborting the filter
+#
+# Both decode paths handle errors silently: if base64 fails, the raw
+# (encoded) subject is still usable for `subject_contains` predicates
+# matching ASCII keywords. The previous behavior was strictly worse —
+# total filter failure for the entire message.
 decode_2047() {
   printf '%s' "$1" | awk '
-    function b64dec(s) {
+    function hex2num(s,    n, i, c, lookup) {
+      # busybox awk has no strtonum() — build a portable hex parser.
+      lookup = "0123456789ABCDEF"
+      s = toupper(s)
+      n = 0
+      for (i = 1; i <= length(s); i++) {
+        c = index(lookup, substr(s, i, 1)) - 1
+        if (c < 0) return 0   # unparseable → byte 0 (best-effort)
+        n = n * 16 + c
+      }
+      return n
+    }
+    function b64dec(s,    cmd, r) {
       cmd = "printf %s \"" s "\" | base64 -d 2>/dev/null"
+      r = ""
       cmd | getline r
       close(cmd)
       return r
     }
-    function qpdec(s,    out, i, c) {
+    function qpdec(s,    out) {
       gsub(/_/, " ", s)
       while (match(s, /=[0-9A-Fa-f][0-9A-Fa-f]/)) {
-        out = out substr(s, 1, RSTART-1) sprintf("%c", strtonum("0x" substr(s, RSTART+1, 2)))
+        out = out substr(s, 1, RSTART-1) sprintf("%c", hex2num(substr(s, RSTART+1, 2)))
         s = substr(s, RSTART+RLENGTH)
       }
       return out s
@@ -115,7 +146,7 @@ decode_2047() {
       }
       print
     }
-  '
+  ' || printf '%s' "$1"
 }
 
 # Case-insensitive header extraction. Handles folded continuation lines.
