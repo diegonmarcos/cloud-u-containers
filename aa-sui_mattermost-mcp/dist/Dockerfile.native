@@ -1,0 +1,11 @@
+FROM node:22-slim
+
+WORKDIR /app
+COPY code /app
+RUN npm ci --omit=dev
+RUN id -u appuser >/dev/null 2>&1 || useradd -r -m -u 10001 appuser
+USER appuser
+ENV HOME=/home/appuser
+
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+CMD ["npx","tsx","index.ts","--http"]

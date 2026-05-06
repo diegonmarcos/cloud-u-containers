@@ -83,7 +83,7 @@
   "containers": {
     "app": {
       "container_name": "stalwart",
-      "image": "stalwartlabs/stalwart:latest",
+      "image": "stalwartlabs/stalwart:v0.14.1",
       "port": 2443,
       "extra_ports": [
         { "port": 2025, "protocol": "starttls", "bind": "127.0.0.1", "service": "smtp_shadow",   "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)" },
@@ -138,7 +138,7 @@
       }
     }
   },
-  "upstream_image": "stalwartlabs/stalwart:latest",
+  "upstream_image": "stalwartlabs/stalwart:v0.14.1",
   "timezone": "Europe/Madrid",
   "users": {
     "admin": {

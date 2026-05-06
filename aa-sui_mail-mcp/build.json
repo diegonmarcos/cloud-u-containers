@@ -13,7 +13,7 @@
     "registry": "ghcr.io/diegonmarcos",
     "arch": "arm64",
     "native_build": {
-      "type": "app",
+      "type": "image-wrapper",
       "cmd": "npm ci --omit=dev",
       "entrypoint": "node /app/node_modules/tsx/dist/cli.mjs mcp/index.ts --http",
       "base_image": "node:22-slim",

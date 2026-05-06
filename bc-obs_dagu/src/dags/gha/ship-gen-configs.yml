@@ -8,7 +8,7 @@ on:
       - "config.json"
       - "c_vps/ba-clo_cloudflare/src/main.tf"
       - "c_vps/vps_*/src/main.tf"
-      - "b_infra/home-manager/**/src/*.nix"
+      - "b_infra/**/src/*.nix"
       - "a_solutions/bb-sec_caddy/src/**"
       - "a_solutions/bb-sec_authelia/src/**"
       - "a_solutions/ba-clo_hickory-dns/src/**"

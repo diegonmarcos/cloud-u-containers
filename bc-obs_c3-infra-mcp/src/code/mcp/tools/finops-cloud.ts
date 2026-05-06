@@ -66,6 +66,26 @@ export function registerFinOpsCloudTools(server: McpServer) {
   );
 
   server.tool(
+    "obs.finops.gcp_costs_history",
+    "Get GCP usage costs across multiple months from BigQuery billing export — per-month per-service breakdown with credits subtracted (real billing data, not estimates).",
+    { months: z.number().min(1).max(24).default(6).describe("Number of months to query (default 6, max 24).") },
+    async ({ months }: { months: number }) => {
+      const m = Math.min(Math.max(months ?? 6, 1), 24);
+      return jsonText("GCP cost history", gcp.getCostsHistory(m));
+    },
+  );
+
+  server.tool(
+    "obs.finops.gcp_costs_by_vm",
+    "Get GCP per-VM cost breakdown from BigQuery billing export — groups Compute Engine line items by resource_name so each VM gets its own row.",
+    { months: z.number().min(1).max(24).default(6).describe("Number of months to query (default 6, max 24).") },
+    async ({ months }: { months: number }) => {
+      const m = Math.min(Math.max(months ?? 6, 1), 24);
+      return jsonText("GCP costs per VM", gcp.getCostsByVm(m));
+    },
+  );
+
+  server.tool(
     "obs.finops.aws_instances",
     "List all AWS EC2 instances",
     {},

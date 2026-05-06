@@ -14,9 +14,9 @@
     "registry": "ghcr.io/diegonmarcos",
     "arch": "arm64",
     "native_build": {
-      "type": "app",
+      "type": "image-wrapper",
       "cmd": "npm ci --omit=dev",
-      "entrypoint": "npx tsx src/index.ts --http",
+      "entrypoint": "npx tsx index.ts --http",
       "base_image": "node:22-slim",
       "app_dir": "code"
     }

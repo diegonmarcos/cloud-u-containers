@@ -12,7 +12,7 @@ VMS="${VM:-gcp-proxy gcp-t4 oci-mail oci-analytics oci-apps}"
 OK=0; FAIL=0
 
 for vm in $VMS; do
-  HM_DIR="b_infra/home-manager/${vm}"
+  HM_DIR="b_infra/${vm}"
   if [ ! -d "$HM_DIR" ]; then
     echo "SKIP $vm (no home-manager dir)"
     continue
