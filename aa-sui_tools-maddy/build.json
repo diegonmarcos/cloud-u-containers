@@ -14,7 +14,7 @@
     "pre_hook": "configs/init.sh"
   },
   "lifecycle": {
-    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema (msgs.extBodyKey ↔ extKeys.id, cachedHeader carries headers). Sub-second on 30k rows. Pre-SQL scripts archived in src/z-archive/ during transition. recover-headers and apply-rules are intentionally NOT subcommands: cachedHeader is already populated by maddy at delivery; if the body blob is missing the BODY is unrecoverable and integrity-fix is the right action.",
+    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema (msgs.extBodyKey ↔ extKeys.id, cachedHeader carries headers). Sub-second on 30k rows. Pre-SQL scripts archived in src/z-archive/ during transition. recover-headers stays intentionally NOT a subcommand: if the body blob is missing the BODY is unrecoverable and integrity-fix is the right action. apply-rules IS a subcommand — it pipes each INBOX row's cachedHeader through mail-sieve-subset-delivery-time (single SoT for evaluation) and batches the moves via maddy imap-msgs (correct IMAP UID + uidvalidity). Use it after a delivery-time outage to redistribute the INBOX backlog into the rule-defined folders.",
     "post-hoc-integrity-check": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
@@ -30,6 +30,14 @@
     "post-hoc-cleanup-mailboxes": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc cleanup-mailboxes" }
+    ],
+    "post-hoc-apply-rules-dry-run": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules --dry-run" }
+    ],
+    "post-hoc-apply-rules": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules" }
     ],
     "post-hoc-all": [
       { "action": "ssh_run", "vm": "oci-mail",
