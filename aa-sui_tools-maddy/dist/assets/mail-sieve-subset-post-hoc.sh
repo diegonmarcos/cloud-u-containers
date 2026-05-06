@@ -424,28 +424,41 @@ cmd_apply_rules() {
   ensure_writable
 
   PLAN="$(mktemp)"   # cols: target_folder \t msgId
+  SCAN="$(mktemp)"   # raw sqlite output — read via redirection (NOT pipe)
+                     # so the loop runs in the parent shell: SCANNED
+                     # propagates AND the loop's exit status is the parent
+                     # shell's, which we control explicitly with `:`.
   SCANNED=0
 
   # SQLite default '|' separator + hex() output → safe line-by-line read.
-  sq "SELECT msgId, hex(cachedHeader) FROM msgs WHERE mboxId = $INBOX_ID" \
-  | while IFS='|' read -r msgid hex; do
-      [ -z "$msgid" ] && continue
-      target="$(
-        {
-          printf '%s' "$hex" | xxd -r -p
-          # Terminate the header block with a blank line — delivery-time's
-          # awk paragraph-mode (RS="") needs it to detect end-of-headers.
-          printf '\n\n'
-        } | "$FILTER_BIN" "$ACCT" "" "" "" 2>/dev/null | head -1
-      )"
-      [ -n "$target" ] && [ "$target" != "INBOX" ] && \
-          printf '%s\t%s\n' "$target" "$msgid" >> "$PLAN"
-      SCANNED=$((SCANNED + 1))
-      [ $((SCANNED % 200)) -eq 0 ] && log "  scanned $SCANNED / $TOTAL…"
-    done
+  sq "SELECT msgId, hex(cachedHeader) FROM msgs WHERE mboxId = $INBOX_ID" > "$SCAN"
+
+  while IFS='|' read -r msgid hex; do
+    [ -z "$msgid" ] && continue
+    target="$(
+      {
+        printf '%s' "$hex" | xxd -r -p
+        # Terminate the header block with a blank line — delivery-time's
+        # awk paragraph-mode (RS="") needs it to detect end-of-headers.
+        printf '\n\n'
+      } | "$FILTER_BIN" "$ACCT" "" "" "" 2>/dev/null | head -1
+    )"
+    if [ -n "$target" ] && [ "$target" != "INBOX" ]; then
+      printf '%s\t%s\n' "$target" "$msgid" >> "$PLAN"
+    fi
+    SCANNED=$((SCANNED + 1))
+    if [ $((SCANNED % 200)) -eq 0 ]; then
+      log "  scanned $SCANNED / $TOTAL…"
+    fi
+    # Body MUST exit 0. Without this, `set -e` aborts the script when
+    # the modulo `[ ] &&` short-circuits to false on rows where
+    # SCANNED % 200 != 0 — the very last row before EOF.
+    :
+  done < "$SCAN"
+  rm -f "$SCAN"
 
   PLAN_COUNT="$(wc -l < "$PLAN" 2>/dev/null || echo 0)"
-  log "  scan complete — $PLAN_COUNT messages route out of INBOX"
+  log "  scan complete — scanned $SCANNED rows, $PLAN_COUNT route out of INBOX"
 
   if [ "$PLAN_COUNT" -eq 0 ]; then
     rm -f "$PLAN"
