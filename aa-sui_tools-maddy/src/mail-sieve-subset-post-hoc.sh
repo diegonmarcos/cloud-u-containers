@@ -437,7 +437,14 @@ cmd_apply_rules() {
     [ -z "$msgid" ] && continue
     target="$(
       {
-        printf '%s' "$hex" | xxd -r -p
+        # go-imap-sql stores cachedHeader as a JSON object:
+        #   { "From": ["…"], "To": ["…"], "Subject": ["…"], … }
+        # delivery-time's awk get_header expects raw RFC822
+        #   ("Field: value\n"). Convert here. Multi-valued fields
+        # join on ", " (RFC 5322 §3.6.3 valid for address-lists, and
+        # benign for the predicates we actually evaluate).
+        printf '%s' "$hex" | xxd -r -p \
+          | jq -r 'to_entries[] | "\(.key): \(.value | join(", "))"'
         # Terminate the header block with a blank line — delivery-time's
         # awk paragraph-mode (RS="") needs it to detect end-of-headers.
         printf '\n\n'
