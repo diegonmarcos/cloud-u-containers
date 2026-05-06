@@ -195,21 +195,24 @@ OUT="$(jq -n -r \
   } as $ctx
 
   # ── helpers ────────────────────────────────────────────────────
-  | def lc($s): ($s // "") | ascii_downcase
+  # NB: jq function definitions terminate with `;`, NOT `|` —
+  #     `def NAME: BODY | def NEXT` is parsed as a single body that
+  #     never finds a terminator and fails to compile at EOF.
+  | def lc($s): ($s // "") | ascii_downcase;
 
-  | def get_hdr($name):
+    def get_hdr($name):
       ($ctx.headers // "")
       | split("\n")
       | map(select(test("^" + $name + ":"; "i")))
       | if length == 0 then ""
-        else .[0] | sub("^[^:]+:\\s*"; "") end
+        else .[0] | sub("^[^:]+:\\s*"; "") end;
 
-  | def header_contains($name; $vals):
+    def header_contains($name; $vals):
       lc(get_hdr($name)) as $lv
-      | any($vals[]; lc(.) as $needle | $lv | contains($needle))
+      | any($vals[]; lc(.) as $needle | $lv | contains($needle));
 
-  # Atom predicates. UNKNOWN type → emit debug marker AND treat as no-match.
-  | def atom_match:
+    # Atom predicates. UNKNOWN type → emit debug marker AND treat as no-match.
+    def atom_match:
       . as $p
       | ($p.type // "") as $t
       |  if   $t == "from_domain"         then any($p.values[]; lc(.) == $ctx.from_domain)
@@ -230,17 +233,17 @@ OUT="$(jq -n -r \
            "UNKNOWN_PRED: " + $t | debug
            | false
          )
-         end
+         end;
 
-  | def match_when:
+    def match_when:
       . as $w
       |  if   $w | has("any_of") then any($w.any_of[]; match_when)
          elif $w | has("all_of") then all($w.all_of[]; match_when)
          elif $w | has("not")    then ($w["not"] | match_when | not)
          else atom_match
-         end
+         end;
 
-  | ($rf[0].rules // []) as $rules
+  ($rf[0].rules // []) as $rules
   | ($rules | map(select(.when | match_when))) as $matched
   | ($matched | map(select(.folder != null and .folder != "")) | .[0].folder // "") as $folder
   | ($matched | map(.flags // []) | add // []) as $flags
