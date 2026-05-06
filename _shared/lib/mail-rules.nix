@@ -258,13 +258,25 @@ let
       sorted     = sortByPriority merged.rules;
       rules      = filter (x: x != null) (map (maddyRule folders predicates) sorted);
       defFolder  = folders.${merged.routing_default} or merged.routing_default;
+      # delivery_strategy derives from inbox_copy.enabled so the script
+      # has a single boolean to read. Cases:
+      #   enabled = true  → "unified-inbox": maddy delivery-time always
+      #     places the message in INBOX (with inbox_copy_flags applied);
+      #     per-rule placement into category folders is done by
+      #     post-hoc apply-rules as COPY (INBOX retains the original).
+      #   enabled = false → "split": maddy delivery-time places the
+      #     message directly in the matched rule''s folder. INBOX only
+      #     gets messages that don''t match any routing rule.
+      strategy = if (merged.inbox_copy.enabled or false)
+                 then "unified-inbox" else "split";
     in {
-      schema_version   = 2;
-      generated_by     = "_shared/lib/mail-rules.nix";
-      account          = merged.account;
-      routing_default  = defFolder;
-      inbox_copy_flags = merged.inbox_copy.flags or [];
-      rules            = rules;
+      schema_version    = 2;
+      generated_by      = "_shared/lib/mail-rules.nix";
+      account           = merged.account;
+      routing_default   = defFolder;
+      delivery_strategy = strategy;
+      inbox_copy_flags  = merged.inbox_copy.flags or [];
+      rules             = rules;
     };
 
   # ── Legacy schema (for jmap-sorter.py during transition) ─────────

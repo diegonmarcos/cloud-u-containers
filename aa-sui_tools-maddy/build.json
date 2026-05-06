@@ -14,7 +14,7 @@
     "pre_hook": "configs/init.sh"
   },
   "lifecycle": {
-    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema (msgs.extBodyKey ↔ extKeys.id, cachedHeader carries headers). Sub-second on 30k rows. Pre-SQL scripts archived in src/z-archive/ during transition. recover-headers stays intentionally NOT a subcommand: if the body blob is missing the BODY is unrecoverable and integrity-fix is the right action. apply-rules IS a subcommand — it pipes each INBOX row's cachedHeader through mail-sieve-subset-delivery-time (single SoT for evaluation) and batches the moves via maddy imap-msgs (correct IMAP UID + uidvalidity). Use it after a delivery-time outage to redistribute the INBOX backlog into the rule-defined folders.",
+    "_doc": "Operator-triggered post-hoc maintenance via mail-sieve-subset-post-hoc.sh. SQL-direct on /data/imapsql.db using the actual go-imap-sql schema. UNIFIED-INBOX delivery model: maddy delivery-time always places mail in INBOX (with \\Seen via inbox_copy_flags from mail-rules.json); apply-rules then SQL-direct COPIES (NOT moves) into matched category folders with rule-derived keywords (no \\Seen — copies are unread). INBOX is the chronological archive; category folders are the unread working set. apply-rules is idempotent via the $distributed keyword on the INBOX original — Dagu can run it on a 2-min cron without duplicating work. reseed-inbox-archive is a one-shot history backfill that COPIES every existing non-system folder msg back into INBOX as \\Seen + $distributed (Message-Id deduped). recover-headers stays intentionally NOT a subcommand: missing-blob bodies are unrecoverable, integrity-fix is the right action.",
     "post-hoc-integrity-check": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc integrity-check" }
@@ -38,6 +38,14 @@
     "post-hoc-apply-rules": [
       { "action": "ssh_run", "vm": "oci-mail",
         "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc apply-rules" }
+    ],
+    "post-hoc-reseed-inbox-archive-dry-run": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc reseed-inbox-archive --dry-run" }
+    ],
+    "post-hoc-reseed-inbox-archive": [
+      { "action": "ssh_run", "vm": "oci-mail",
+        "script": "docker exec maddy /usr/local/bin/mail-sieve-subset-post-hoc reseed-inbox-archive" }
     ],
     "post-hoc-all": [
       { "action": "ssh_run", "vm": "oci-mail",
