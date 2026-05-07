@@ -1,0 +1,55 @@
+{
+  "name": "photos-webhook",
+  "description": "PhotoPrism Webhook + S3 Processor",
+  "port": 5002,
+  "dns": "photos-webhook.app",
+  "category": "app",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "photos-webhook",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64",
+    "native_build": {
+      "type": "app",
+      "app_dir": "code",
+      "cmd": "pip install --target=.deps -r requirements.txt",
+      "entrypoint": "./entrypoint.sh",
+      "base_image": "python:3.12-slim",
+      "apt": "postgresql-client curl",
+      "env": "PYTHONPATH=/app/.deps"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/photos-webhook",
+    "compose_flags": "--build"
+  },
+  "backup": {
+    "enabled": true
+  },
+  "ports": {
+    "app": 5002
+  },
+  "s3": {
+    "region": "eu-marseille-1",
+    "bucket": "photos"
+  },
+  "containers": {
+    "app": {
+      "container_name": "photos-webhook",
+      "image": "ghcr.io/diegonmarcos/photos-webhook:latest",
+      "port": 5002,
+      "port_env": "WEBHOOK_PORT",
+      "protocol": "http"
+    },
+    "db": {
+      "container_name": "photos-db",
+      "image": "postgres:16-alpine",
+      "db_name": "photos",
+      "db_user": "photos_user"
+    }
+  },
+  "build": {
+    "headers_enforced": true
+  }
+}
