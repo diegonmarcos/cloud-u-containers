@@ -34,5 +34,40 @@
   "data_path": "/opt/data/surrealdb",
   "build": {
     "headers_enforced": true
+  },
+  "kg": {
+    "namespace": "infra",
+    "database": "production",
+    "embedder": {
+      "enabled": false,
+      "model": "nomic-embed-text",
+      "dim": 768,
+      "index_type": "MTREE",
+      "vector_dtype": "F32"
+    },
+    "ingest": {
+      "endpoint": "/import",
+      "idempotent": true,
+      "stale_strategy": "mark"
+    },
+    "node_tables": [
+      { "table": "vm",            "key_source": "ssh_alias" },
+      { "table": "service",       "key_source": "name" },
+      { "table": "container",     "key_source": "container_name" },
+      { "table": "domain",        "key_source": "fqdn" },
+      { "table": "log",           "key_source": "auto" },
+      { "table": "documentation", "key_source": "path" },
+      { "table": "audit_log",     "key_source": "auto" }
+    ],
+    "edge_tables": [
+      { "table": "hosted_on",        "in": "service", "out": "vm" },
+      { "table": "runs_container",   "in": "service", "out": "container" },
+      { "table": "depends_on",       "in": "service", "out": "service" },
+      { "table": "proxied_by",       "in": "service", "out": "service" },
+      { "table": "authenticated_by", "in": "service", "out": "service" },
+      { "table": "connected_to",     "in": "vm",      "out": "vm"      },
+      { "table": "routes_to",        "in": "domain",  "out": "service" },
+      { "table": "caused_by",        "in": "log",     "out": "any"     }
+    ]
   }
 }

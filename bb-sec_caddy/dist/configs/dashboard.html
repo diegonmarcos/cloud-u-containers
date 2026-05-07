@@ -338,7 +338,6 @@ tr:hover td{background:#0d0d15}
 <tr><td><code>app.diegonmarcos.com/filebrowser/</code></td><td><strong>FileBrowser</strong></td><td>oci-apps-1</td><td>3015</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/hedgedoc/</code></td><td><strong>HedgeDoc</strong></td><td>oci-apps-1</td><td>3010</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 <tr><td><code>app.diegonmarcos.com/revealmd/</code></td><td><strong>Reveal.md</strong></td><td>oci-apps-1</td><td>3014</td><td>Authelia + Bearer</td><td>Wake</td></tr>
-<tr><td><code>app.diegonmarcos.com/dozzle/</code></td><td><strong>Dozzle</strong></td><td>gcp-proxy</td><td>9999</td><td>Authelia + Bearer</td><td>24/7</td></tr>
 <tr><td><code>grafana.diegonmarcos.com</code></td><td><strong>OpenObserve</strong></td><td>oci-apps</td><td>5080</td><td>Authelia + Bearer</td><td>24/7</td></tr>
 <tr><td><code>app.diegonmarcos.com/gitea/</code></td><td><strong>Gitea</strong></td><td>oci-apps-1</td><td>3000</td><td>Authelia + Bearer</td><td>Wake</td></tr>
 </tbody></table>
@@ -485,7 +484,6 @@ Bearer?  Cookie?
 <tr><td><strong>gcp-proxy</strong></td><td>introspect-proxy</td><td>4182</td><td><code>docker</code></td><td>4182</td><td>internal only</td></tr>
 <tr><td><strong>gcp-proxy</strong></td><td>vaultwarden</td><td>—</td><td><code>docker</code></td><td>80</td><td>via Caddy</td></tr>
 <tr><td><strong>gcp-proxy</strong></td><td>ntfy</td><td>8090</td><td><code>127.0.0.1</code></td><td>80</td><td>via Caddy</td></tr>
-<tr><td><strong>gcp-proxy</strong></td><td>dozzle</td><td>9999</td><td><code>127.0.0.1</code></td><td>8080</td><td>via Caddy</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>photoprism</td><td>3013</td><td><code>10.0.0.2</code></td><td>2342</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>nocodb</td><td>8085</td><td><code>10.0.0.2</code></td><td>8080</td><td>WG only</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>code-server</td><td>8443</td><td><code>10.0.0.2</code></td><td>8443</td><td>WG only</td></tr>
@@ -542,7 +540,7 @@ Bearer?  Cookie?
 <h2>Declared Containers</h2>
 <table><thead><tr><th>VM</th><th>Count</th><th>Containers</th></tr></thead><tbody>
 <tr><td><strong>gcp-ollama</strong></td><td>1</td><td>ollama</td></tr>
-<tr><td><strong>gcp-proxy</strong></td><td>8</td><td>authelia, caddy, dozzle, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden</td></tr>
+<tr><td><strong>gcp-proxy</strong></td><td>7</td><td>authelia, caddy, flask-api, introspect-proxy, ntfy, rust-api, vaultwarden</td></tr>
 <tr><td><strong>oci-analytics</strong></td><td>1</td><td>matomo</td></tr>
 <tr><td><strong>oci-apps</strong></td><td>10</td><td>crawlee_api, crawlee_dashboard, crawlee_db, crawlee_minio, crawlee_redis, nautilus_engine, quant_analytics, quant_db, quant_research, rust-api</td></tr>
 <tr><td><strong>oci-apps-1</strong></td><td>11</td><td>code-server, etherpad, filebrowser, gitea, gitea-ssh, grist, hedgedoc, nocodb, openobserve, photoprism, revealmd</td></tr>

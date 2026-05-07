@@ -17,7 +17,7 @@
     }
 
     layer4 {
-# IMAPS -- TLS passthrough to maddy
+# IMAPS
 :993 {
   route {
     proxy {
@@ -25,7 +25,7 @@
     }
   }
 }
-# SMTPS -- TLS passthrough to maddy
+# SMTPS
 :465 {
   route {
     proxy {
@@ -33,7 +33,7 @@
     }
   }
 }
-# SMTP Submission -- TLS passthrough to maddy
+# SMTP Submission
 :587 {
   route {
     proxy {
@@ -41,15 +41,15 @@
     }
   }
 }
-# HTTPS -- TLS passthrough to stalwart (JMAP/webadmin)
-:2443 {
+# IMAPS (Stalwart)
+:2993 {
   route {
     proxy {
-      upstream 10.0.0.3:2443
+      upstream 10.0.0.3:2993
     }
   }
 }
-# SMTPS -- TLS passthrough to stalwart
+# SMTPS (Stalwart)
 :2465 {
   route {
     proxy {
@@ -57,19 +57,11 @@
     }
   }
 }
-# SMTP Submission -- TLS passthrough to stalwart
+# SMTP Submission (Stalwart)
 :2587 {
   route {
     proxy {
       upstream 10.0.0.3:2587
-    }
-  }
-}
-# IMAPS -- TLS passthrough to stalwart
-:2993 {
-  route {
-    proxy {
-      upstream 10.0.0.3:2993
     }
   }
 }
@@ -563,40 +555,6 @@ forward_auth 10.0.0.1:9091 {
 }
   }
 
-  # Self-hosted Git service
-  git.diegonmarcos.com {
-  bind 0.0.0.0 10.0.0.1
-import security
-import request_limits
-
-
-      @bearer header Authorization Bearer*
-  handle @bearer {
-forward_auth 10.0.0.1:4182 {
-  method GET
-  uri /auth
-  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-}
-    reverse_proxy 10.0.0.6:3002
-  }
-  handle {
-forward_auth 10.0.0.1:9091 {
-  uri /api/authz/forward-auth
-  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-}
-    reverse_proxy 10.0.0.6:3002
-  }
-
-    handle_errors {
-  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-  handle @backend_error {
-    root * /srv
-    rewrite * /error.html
-    file_server
-  }
-}
-  }
-
 
   # ════════════════════════════════════════════════════════════
   # GITHUB PAGES PROXIES (from github_pages_proxies[])
@@ -781,7 +739,7 @@ forward_auth 10.0.0.1:9091 {
 
 }
 
-handle_path /dozzle/* {
+handle_path /gitea/* {
     @bearer header Authorization Bearer*
   handle @bearer {
 forward_auth 10.0.0.1:4182 {
@@ -789,14 +747,14 @@ forward_auth 10.0.0.1:4182 {
   uri /auth
   copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
 }
-    reverse_proxy 10.0.0.4:9999
+    reverse_proxy 10.0.0.6:3002
   }
   handle {
 forward_auth 10.0.0.1:9091 {
   uri /api/authz/forward-auth
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
-    reverse_proxy 10.0.0.4:9999
+    reverse_proxy 10.0.0.6:3002
   }
 
 }
@@ -1425,12 +1383,6 @@ dbgate.app {
   reverse_proxy 10.0.0.6:8086
 }
 
-dozzle.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:9999
-}
-
 matomo.app {
   bind 10.0.0.1
   tls internal
@@ -1471,36 +1423,6 @@ redis.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.1:6379
-}
-
-oci-mail.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.3:7680
-}
-
-oci-analytics.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.4:7680
-}
-
-oci-apps.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:7680
-}
-
-gcp-t4.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.8:7680
-}
-
-gcp-proxy.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.1:7680
 }
 
 
@@ -1772,14 +1694,6 @@ dbgate-http-8086.app {
   reverse_proxy 10.0.0.6:8086
 }
 
-dozzle-http-9999.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.4:9999
-}
-
 matomo-hybrid-http-8084.app {
   bind 10.0.0.1
   tls internal {
@@ -1998,6 +1912,9 @@ s3-photos.app {
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}
+      resolvers 1.1.1.1 8.8.8.8
+      propagation_delay 30s
+      propagation_timeout 5m
     }
     handle /.well-known/mta-sts.txt {
       header Content-Type "text/plain"
@@ -2021,6 +1938,9 @@ max_age: 604800
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}
+      resolvers 1.1.1.1 8.8.8.8
+      propagation_delay 30s
+      propagation_timeout 5m
     }
     root * /srv
     rewrite * /error.html

@@ -77,6 +77,8 @@ async function deliverToMaddy(rawEmail, to, env) {
 }
 
 // ── Google Workspace delivery via Gmail API + Service Account JWT ────
+// Uses multipart upload so we can set labelIds. Without explicit INBOX,
+// messages.import drops into All Mail only — invisible from a normal inbox view.
 async function deliverToGoogle(rawEmail, env) {
   try {
     const accessToken = await getGoogleAccessToken(env);
@@ -85,20 +87,28 @@ async function deliverToGoogle(rawEmail, env) {
       return false;
     }
 
-    // base64url-encode the raw email for Gmail API
-    const rawB64 = base64urlEncode(new TextEncoder().encode(rawEmail));
+    const boundary = `boundary_${crypto.randomUUID()}`;
+    const metadata = JSON.stringify({ labelIds: ['INBOX', 'UNREAD'] });
+    const body =
+      `--${boundary}\r\n` +
+      `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+      `${metadata}\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: message/rfc822\r\n\r\n` +
+      `${rawEmail}\r\n` +
+      `--${boundary}--`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const resp = await fetch(
-      `https://gmail.googleapis.com/upload/gmail/v1/users/${env.GOOGLE_EMAIL}/messages/import?uploadType=media`,
+      `https://gmail.googleapis.com/upload/gmail/v1/users/${env.GOOGLE_EMAIL}/messages/import?uploadType=multipart&internalDateSource=dateHeader`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'message/rfc822',
+          'Content-Type': `multipart/related; boundary="${boundary}"`,
         },
-        body: rawEmail,
+        body: body,
         signal: controller.signal,
       }
     );
@@ -110,7 +120,7 @@ async function deliverToGoogle(rawEmail, env) {
       return false;
     }
     const result = await resp.json();
-    console.log(`Google: injected via Gmail API, id=${result.id}`);
+    console.log(`Google: injected via Gmail API, id=${result.id}, labels=INBOX,UNREAD`);
     return true;
   } catch (e) {
     console.error(`Google Gmail API failed: ${e.message}`);

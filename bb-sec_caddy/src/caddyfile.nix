@@ -812,6 +812,9 @@ ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
 ${secNoLimit}
     tls {
       dns cloudflare {env.CF_API_TOKEN}
+      resolvers 1.1.1.1 8.8.8.8
+      propagation_delay 30s
+      propagation_timeout 5m
     }
     handle ${(caddyRoutes.mta_sts or {}).policy_path} {
       header Content-Type "text/plain"
@@ -833,6 +836,9 @@ max_age: ${toString ((caddyRoutes.mta_sts or {}).max_age or 604800)}
 ${secNoLimit}
     tls {
       dns cloudflare {env.CF_API_TOKEN}
+      resolvers 1.1.1.1 8.8.8.8
+      propagation_delay 30s
+      propagation_timeout 5m
     }
     root * ${lib.removeSuffix ("/" + baseNameOf ((caddyRoutes.catch_all or {}).page or "")) ((caddyRoutes.catch_all or {}).page or "/srv/error.html")}
     rewrite * /${baseNameOf ((caddyRoutes.catch_all or {}).page or "error.html")}
