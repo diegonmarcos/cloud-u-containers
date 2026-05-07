@@ -39,7 +39,7 @@ const SELF_SERVICES: Set<string> = new Set([
 const INFRA_NO_API: Set<string> = new Set([
   "caddy", "caddy-l4-image", "hickory-dns", "introspect-proxy",
   "cloudflare", "cloudflare-worker", "redis", "postlite",
-  "fluent-bit", "sauron-central", "sauron-forwarder", "sauron-lite",
+  "fluent-bit", "sauron-central", "sauron-lite",
   "syslog-forwarder", "alerts-api", "cloud-spec",
   "backup-borg", "backup-bup",
   "photos-webhook", "orchestrator", "kg-graph",
