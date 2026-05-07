@@ -97,5 +97,15 @@
     "display_name": "C3 Cloud Control Center API",
     "description": "REST API for cloud infrastructure operations, lifecycle control, and observability across inventory, operations, security, and FinOps.",
     "auth": "bearer"
+  },
+  "ssh": {
+    "uid": 0,
+    "ssh_dir": "/root/.ssh",
+    "keys": [
+      "vault_id_rsa",
+      "vault_id_rsa.pub",
+      "google_compute_engine",
+      "google_compute_engine.pub"
+    ]
   }
 }
