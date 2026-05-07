@@ -53,7 +53,7 @@
 
     mkClientYaml = c:
       "          - client_id: ${c.client_id}\n"
-      + "${i12}client_secret: '{{ secret \"/tmp/.secrets.d/${c.secret_var}\" }}'\n"
+      + "${i12}client_secret: '{{ secret \"/run/secrets/${c.secret_var}\" }}'\n"
       + optLine "consent_mode"          (c.consent_mode          or null)
       + optLine "client_name"           (c.client_name           or null)
       + optBool "public"                (c.public                or null)

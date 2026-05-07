@@ -36,8 +36,8 @@ identity_providers:
         key: |
 JWKSEOF
 # Indent each line of the PEM by 14 spaces so it nests under `key: |`.
-# Source: /run/secrets/AUTHELIA_OIDC_JWKS_PRIVATE_KEY (engine-mounted, mode 0600).
-awk '{ print "              " $0 }' /run/secrets/AUTHELIA_OIDC_JWKS_PRIVATE_KEY >> /tmp/jwks-overlay.yml
+# Source: /run/secrets/AUTHELIA_OIDC_JWKS_KEY (engine-mounted, mode 0600).
+awk '{ print "              " $0 }' /run/secrets/AUTHELIA_OIDC_JWKS_KEY >> /tmp/jwks-overlay.yml
 
 echo "[init] Starting Authelia..."
 exec authelia \

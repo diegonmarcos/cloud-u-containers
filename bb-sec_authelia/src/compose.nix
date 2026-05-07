@@ -23,6 +23,7 @@ in
       };
       volumes = [
         "authelia_data:/data"
+        "./configs:/config:ro"
       ];
       # NOTE: .secrets, .secrets.d/, .secrets.json are auto-mounted by
       # _shared/engine.nix when src/secrets.yaml exists. Authelia's

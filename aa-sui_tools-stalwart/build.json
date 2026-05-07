@@ -31,19 +31,19 @@
       "l4_ports": [
         {
           "port": 2993,
-          "upstream": "130.110.251.193:2993",
+          "upstream": "oci-mail:2993",
           "comment": "IMAPS (Stalwart)",
           "protocol": "tls"
         },
         {
           "port": 2465,
-          "upstream": "130.110.251.193:2465",
+          "upstream": "oci-mail:2465",
           "comment": "SMTPS (Stalwart)",
           "protocol": "tls"
         },
         {
           "port": 2587,
-          "upstream": "130.110.251.193:2587",
+          "upstream": "oci-mail:2587",
           "comment": "SMTP Submission (Stalwart)",
           "protocol": "starttls"
         }

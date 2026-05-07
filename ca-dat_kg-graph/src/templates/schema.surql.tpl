@@ -130,19 +130,13 @@ DEFINE TABLE caused_by TYPE RELATION;
 DEFINE FIELD created_at ON caused_by TYPE datetime DEFAULT time::now();
 
 -- ============================================================
--- VECTOR INDEXES (for hybrid search)
--- Dimension 768 = nomic-embed-text
--- Added later when embeddings are populated (Phase 3)
+-- VECTOR INDEXES (data-driven from build-kg-graph_schema.json)
+-- Embedder model:     @EMBEDDER_MODEL@
+-- Embedder dimension: @EMBEDDER_DIM@
+-- Embedder enabled:   @EMBEDDER_ENABLED@
 -- ============================================================
 
--- DEFINE INDEX idx_vm_embedding ON vm FIELDS embedding MTREE DIMENSION 768 TYPE F32;
--- DEFINE INDEX idx_service_embedding ON service FIELDS embedding MTREE DIMENSION 768 TYPE F32;
--- DEFINE INDEX idx_log_embedding ON log FIELDS embedding MTREE DIMENSION 768 TYPE F32;
--- DEFINE INDEX idx_doc_embedding ON documentation FIELDS embedding MTREE DIMENSION 768 TYPE F32;
-
--- Note: MTREE indexes are commented out until Phase 3 (embeddings).
--- Uncomment and run when vast.ai is available and embeddings are populated.
--- Creating MTREE on empty fields is fine but wastes init time.
+@VECTOR_INDEXES_DDL@
 
 -- ============================================================
 -- HELPER QUERIES (for reference, not executed on schema load)
