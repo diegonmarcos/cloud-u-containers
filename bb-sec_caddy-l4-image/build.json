@@ -6,7 +6,7 @@
   "docker": {
     "registry": "ghcr.io",
     "image": "diegonmarcos/caddy-l4",
-    "dockerfile": "code/Dockerfile",
+    "dockerfile": "Dockerfile",
     "arch": "amd64"
   },
   "build": {
