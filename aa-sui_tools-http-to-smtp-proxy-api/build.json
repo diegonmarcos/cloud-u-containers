@@ -15,6 +15,7 @@
     "arch": "amd64",
     "native_build": {
       "cmd": "cargo build --release",
+      "app_dir": "code",
       "binary": "target/release/http-to-smtp-proxy-api",
       "base_image": "debian:bookworm-slim",
       "apt": "ca-certificates"
