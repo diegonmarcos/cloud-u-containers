@@ -12,59 +12,71 @@
     admin localhost:2019
     order respond before handle
     auto_https disable_redirects
+    # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
+    # and supports wildcard certs for *.diegonmarcos.com. Token sourced
+    # from .secrets (env_file in compose.nix). Phase 2a of public-surface
+    # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
+    acme_dns cloudflare {env.CF_API_TOKEN}
+    # caddy-l4 owns :443 (Phase 3 of collapse plan): SNI matchers route
+    # IMAPS/SMTPS to mail upstreams, unmatched TLS falls through to Caddy's
+    # internal HTTPS handler on 127.0.0.1:8443. https_port shifts every
+    # auto-bound HTTPS listener to 8443 so they don't fight :443.
+    https_port 8443
+    # Disable HTTP/3 / QUIC — UDP/443 is reserved for WireGuard fallback
+    # (firewall.nix on hub redirects udp/443 → udp/51820 for peers behind
+    # networks that block 51820/udp). Phase 4 of collapse plan.
+    servers {
+      protocols h1 h2
+    }
     on_demand_tls {
       ask http://127.0.0.1:2020
     }
 
     layer4 {
-# IMAPS
-:993 {
-  route {
-    proxy {
-      upstream 10.0.0.3:993
-    }
+        :25 {
+# SMTP MX plain TCP — design-complete listener; GCP firewall currently blocks public, CF Worker is the active inbound bridge
+route {
+  proxy {
+    upstream 10.0.0.3:25
   }
 }
-# SMTPS
-:465 {
-  route {
-    proxy {
-      upstream 10.0.0.3:465
-    }
+        }
+        :443 {
+# IMAPS via SNI on :443 (Maddy) (SNI: imap.diegonmarcos.com)
+@sni_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
+route @sni_imap_diegonmarcos_com {
+  proxy {
+    upstream 10.0.0.3:993
   }
 }
-# SMTP Submission
-:587 {
-  route {
-    proxy {
-      upstream 10.0.0.3:587
-    }
+# SMTPS via SNI on :443 (Maddy) (SNI: smtps.diegonmarcos.com)
+@sni_smtps_diegonmarcos_com tls sni smtps.diegonmarcos.com
+route @sni_smtps_diegonmarcos_com {
+  proxy {
+    upstream 10.0.0.3:465
   }
 }
-# IMAPS (Stalwart)
-:2993 {
-  route {
-    proxy {
-      upstream 10.0.0.3:2993
-    }
+# IMAPS via SNI on :443 (Stalwart) (SNI: imap-stalwart.diegonmarcos.com)
+@sni_imap_stalwart_diegonmarcos_com tls sni imap-stalwart.diegonmarcos.com
+route @sni_imap_stalwart_diegonmarcos_com {
+  proxy {
+    upstream 10.0.0.3:2993
   }
 }
-# SMTPS (Stalwart)
-:2465 {
-  route {
-    proxy {
-      upstream 10.0.0.3:2465
-    }
+# SMTPS via SNI on :443 (Stalwart) (SNI: smtps-stalwart.diegonmarcos.com)
+@sni_smtps_stalwart_diegonmarcos_com tls sni smtps-stalwart.diegonmarcos.com
+route @sni_smtps_stalwart_diegonmarcos_com {
+  proxy {
+    upstream 10.0.0.3:2465
   }
 }
-# SMTP Submission (Stalwart)
-:2587 {
-  route {
-    proxy {
-      upstream 10.0.0.3:2587
-    }
+# Default: unmatched TLS → Caddy HTTPS handler on internal port
+route {
+  proxy {
+    upstream 127.0.0.1:8443
   }
 }
+        }
     }
 
   }
@@ -409,6 +421,58 @@ import request_limits
 
 
         reverse_proxy 10.0.0.6:8880
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.
+  mesh.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+      @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.6:8080
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.6:8080
+  }
+
+    handle_errors {
+  @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+  handle @backend_error {
+    root * /srv
+    rewrite * /error.html
+    file_server
+  }
+}
+  }
+
+  # WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.
+  vpn.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+        reverse_proxy 10.0.0.1:8080
     handle_errors {
   @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
   handle @backend_error {
@@ -821,6 +885,26 @@ forward_auth 10.0.0.1:9091 {
   copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
 }
     reverse_proxy 10.0.0.6:8340
+  }
+
+}
+
+handle_path /c3a/* {
+    @bearer header Authorization Bearer*
+  handle @bearer {
+forward_auth 10.0.0.1:4182 {
+  method GET
+  uri /auth
+  copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+}
+    reverse_proxy 10.0.0.1:8085
+  }
+  handle {
+forward_auth 10.0.0.1:9091 {
+  uri /api/authz/forward-auth
+  copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+}
+    reverse_proxy 10.0.0.1:8085
   }
 
 }
@@ -1245,12 +1329,6 @@ photoprism.app {
   reverse_proxy 10.0.0.6:3013
 }
 
-photos-webhook.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:5002
-}
-
 radicale.app {
   bind 10.0.0.1
   tls internal
@@ -1293,18 +1371,6 @@ fin-api.app {
   reverse_proxy 10.0.0.6:8340
 }
 
-ollama.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.8:11434
-}
-
-ollama-hai.app {
-  bind 10.0.0.1
-  tls internal
-  reverse_proxy 10.0.0.6:11435
-}
-
 rig-agentic-sonn-14bq8.app {
   bind 10.0.0.1
   tls internal
@@ -1315,6 +1381,18 @@ hickory-dns.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.1:53
+}
+
+wireguard-mesh.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.6:8080
+}
+
+wireguard-mesh-ws-tunnel.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:8080
 }
 
 authelia.app {
@@ -1333,6 +1411,12 @@ introspect-proxy.app {
   bind 10.0.0.1
   tls internal
   reverse_proxy 10.0.0.1:4182
+}
+
+c3-analytics-api.app {
+  bind 10.0.0.1
+  tls internal
+  reverse_proxy 10.0.0.1:8085
 }
 
 c3-infra-api.app {
@@ -1526,14 +1610,6 @@ photoprism_app-http-3013.app {
   reverse_proxy 10.0.0.6:3013
 }
 
-photos-webhook-http-5002.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.6:5002
-}
-
 radicale-http-5232.app {
   bind 10.0.0.1
   tls internal {
@@ -1598,6 +1674,14 @@ rig-agentic-sonn-14bq8-http-8091.app {
   reverse_proxy 10.0.0.6:8091
 }
 
+wireguard-mesh-http-8080.app {
+  bind 10.0.0.1
+  tls internal {
+    on_demand
+  }
+  reverse_proxy 10.0.0.6:8080
+}
+
 authelia-http-9091.app {
   bind 10.0.0.1
   tls internal {
@@ -1614,20 +1698,12 @@ caddy-https-443.app {
   reverse_proxy 10.0.0.1:443
 }
 
-caddy-http-80.app {
+c3-analytics-api-http-8085.app {
   bind 10.0.0.1
   tls internal {
     on_demand
   }
-  reverse_proxy 10.0.0.1:80
-}
-
-caddy-http-2019.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  reverse_proxy 10.0.0.1:2019
+  reverse_proxy 10.0.0.1:8085
 }
 
 c3-infra-api-http-8081.app {
@@ -1734,14 +1810,6 @@ gitea-http-3002.app {
   reverse_proxy 10.0.0.6:3002
 }
 
-
-photos-db-null.app {
-  bind 10.0.0.1
-  tls internal {
-    on_demand
-  }
-  respond "Portless worker/sidecar — no HTTP endpoint" 204
-}
 
 stalwart-sorter-null.app {
   bind 10.0.0.1
