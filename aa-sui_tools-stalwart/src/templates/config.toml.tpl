@@ -9,10 +9,6 @@ url = "https://@DOMAIN@"
 bind = "[::]:2025"
 protocol = "smtp"
 
-[server.listener.submission]
-bind = "[::]:2587"
-protocol = "smtp"
-
 [server.listener.submissions]
 bind = "[::]:2465"
 protocol = "smtp"
@@ -81,12 +77,8 @@ loiter         = "0/0"
 #    suffix as the IP/CIDR; the value is unused.
 server.allowed-ip = ["10.0.0.0/24"]
 
-# ── STARTTLS on submission (port 2587) ───────────────────────────────
-# Without this the listener accepts plaintext but never advertises
-# STARTTLS, so the mail-puller can't upgrade the connection. We bind on
-# WG only — the cert is wildcard *.diegonmarcos.com via Caddy renewal.
-[server.listener.submission.tls]
-implicit = false
+# 2587/STARTTLS submission listener retired 2026-05-08 — implicit-TLS
+# only via [server.listener.submissions] on 2465.
 
 [tracer.log]
 type = "stdout"
