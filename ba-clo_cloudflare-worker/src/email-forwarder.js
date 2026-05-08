@@ -45,6 +45,12 @@ async function deliverToMaddy(rawEmail, to, env) {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
+        // Bearer auth gates Caddy's forward_auth (api.diegonmarcos.com/smtp-proxy-api
+        // is auth=bearer; introspect-proxy validates against Authelia JWKS).
+        'Authorization': `Bearer ${env.C3_BEARER_TOKEN}`,
+        // X-API-Key kept as defence-in-depth: smtp-proxy Rust binary validates it
+        // even after Caddy passes through. Will be retired when the binary is
+        // updated to trust upstream auth-only.
         'X-API-Key': env.SMTP_PROXY_KEY,
         'X-Original-To': to,
       },
