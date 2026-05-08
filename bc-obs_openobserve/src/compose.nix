@@ -39,6 +39,12 @@ in
         ZO_MEM_TABLE_MAX_SIZE            = "8";       # MiB ingest buffer
         ZO_FILE_PUSH_INTERVAL            = "10";      # seconds
         ZO_DATAFUSION_MIN_PARTITION_NUM  = "1";       # was auto = NUM_CPU
+        # DataFusion pool size = ratio × available_mem. Default 0.5 → 252 MiB
+        # on a 512 MiB cgroup. We never run queries (write-only ingest), so
+        # this pool is wasted. Drop to 5% of mem (≈26 MiB) — DataFusion is
+        # still used internally during parquet writes for sort/aggregate
+        # within a single batch, hence not zero.
+        ZO_MEM_DATAFUSION_RATIO          = "0.05";
         ZO_HTTP_WORKER_NUM               = "1";       # actix HTTP workers
         ZO_GRPC_WORKER_NUM               = "1";       # grpc unused locally
         ZO_QUERY_THREAD_NUM              = "1";       # no queries
