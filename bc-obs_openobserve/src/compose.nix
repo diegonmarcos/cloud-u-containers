@@ -36,7 +36,12 @@ in
         ZO_MEMORY_CACHE_MAX_SIZE         = "8";       # MiB — was 128
         ZO_DISK_CACHE_ENABLED            = "false";
         ZO_MEM_TABLE_BUCKET_NUM          = "1";
-        ZO_MEM_TABLE_MAX_SIZE            = "8";       # MiB ingest buffer
+        # ZO_MEM_TABLE_MAX_SIZE NOT set — leave at openobserve default.
+        # We tried 8 MiB; that rejected fluent-bit batches with
+        # MemoryTableOverflowError because the memtable can buffer
+        # multiple in-flight ingest batches. Default is 50% of free mem,
+        # which is fine — the actual committed memory is bounded by
+        # ingest rate × ZO_FILE_PUSH_INTERVAL anyway.
         ZO_FILE_PUSH_INTERVAL            = "10";      # seconds
         ZO_DATAFUSION_MIN_PARTITION_NUM  = "1";       # was auto = NUM_CPU
         # DataFusion pool size = ratio × available_mem. Default 0.5 → 252 MiB
