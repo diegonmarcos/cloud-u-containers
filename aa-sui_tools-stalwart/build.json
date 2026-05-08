@@ -30,15 +30,17 @@
       "tls_skip_verify": true,
       "l4_ports": [
         {
-          "port": 2993,
+          "port": 443,
+          "sni": "imap-stalwart.diegonmarcos.com",
           "upstream": "oci-mail:2993",
-          "comment": "IMAPS (Stalwart)",
+          "comment": "IMAPS via SNI on :443 (Stalwart)",
           "protocol": "tls"
         },
         {
-          "port": 2465,
+          "port": 443,
+          "sni": "smtps-stalwart.diegonmarcos.com",
           "upstream": "oci-mail:2465",
-          "comment": "SMTPS (Stalwart)",
+          "comment": "SMTPS via SNI on :443 (Stalwart)",
           "protocol": "tls"
         }
       ]
