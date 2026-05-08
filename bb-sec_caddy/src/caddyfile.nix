@@ -193,13 +193,14 @@ let
     let
       pp = route.proxy_protocol or false;
       ppLine = if pp then "\n                proxy_protocol v2" else "";
-      sniLine = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni} tls sni ${route.sni}" else "";
-      matcher = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni}" else "";
+      matcherName = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni}" else "";
     in
       if (route ? sni && route.sni != null) then ''
             # ${route.comment or ""} (SNI: ${route.sni})
-            ${sniLine}
-            route ${matcher} {
+            ${matcherName} tls {
+              sni ${route.sni}
+            }
+            route ${matcherName} {
               proxy {
                 upstream ${route.upstream}${ppLine}
               }
@@ -224,9 +225,13 @@ let
   # internal HTTPS handler (127.0.0.1:8443, set by https_port in global).
   # This is what lets HTTPS to *.diegonmarcos.com keep working even though
   # caddy-l4 is binding :443. Phase 3 of public-surface collapse plan.
+  # caddy-l4 routes need explicit matchers (not bare `route { ... }`).
+  # @any_tls matches any TLS handshake — used as the default catch-all so
+  # unmatched SNI traffic flows to Caddy's internal HTTPS handler.
   l4FallthroughHttps = ''
             # Default: unmatched TLS → Caddy HTTPS handler on internal port
-            route {
+            @any_tls tls
+            route @any_tls {
               proxy {
                 upstream 127.0.0.1:8443
               }
