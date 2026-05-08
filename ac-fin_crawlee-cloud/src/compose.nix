@@ -146,7 +146,7 @@ in
       environment = {
         NODE_ENV            = runtime.node_env;
         PORT                = dashboardPort;
-        HOSTNAME            = "0.0.0.0";
+        HOSTNAME            = runtime.dashboard_hostname;
         NEXT_PUBLIC_API_URL = "http://localhost:${apiPort}";
       };
       depends_on.api = { condition = "service_healthy"; };

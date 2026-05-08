@@ -29,6 +29,7 @@
     "endpoint_check": true
   },
   "ssh_port": 2222,
+  "ssh_listen_host": "10.0.0.6",
   "gitea": {
     "org": "diego",
     "mirrors": {

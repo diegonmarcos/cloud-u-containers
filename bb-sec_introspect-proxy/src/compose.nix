@@ -18,15 +18,13 @@ in
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
-      # Explicit command override: ensures gunicorn binds to 0.0.0.0 even
-      # if the cached/published GHCR image's CMD still has the older
-      # 127.0.0.1 hardcode (current binary build does 0.0.0.0). Caddy
-      # forward_auth calls `<gcp-proxy WG IP>:4182` per
-      # cloud-data-config-derive.ts (auth_upstreams = `${vm.wg_ip}:${port}`),
-      # so the listener MUST be reachable from a non-loopback interface.
+      # Bind to deploy host's WireGuard IP (data-driven from build.json bind_host).
+      # Caddy forward_auth on gcp-proxy reaches us via WG (auth_upstreams =
+      # `${vm.wg_ip}:${port}` per cloud-data-config-derive.ts). 0.0.0.0 is
+      # forbidden by wg0-only policy; 127.0.0.1 unreachable from Caddy.
       command = [
         "gunicorn"
-        "--bind" "0.0.0.0:${toString buildJson.ports.app}"
+        "--bind" "${buildJson.bind_host}:${toString buildJson.ports.app}"
         "--workers" "1" "--threads" "1" "--timeout" "120"
         "main:app"
       ];

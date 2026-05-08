@@ -57,7 +57,7 @@
         "host": {
           "type": "string",
           "description": "SSH alias of the target VM, 'local' for local-only, or 'all' for multi-VM deployment",
-          "examples": ["gcp-proxy", "oci-apps", "oci-apps-2", "oci-mail", "oci-analytics", "gcp-t4", "local", "all"]
+          "examples": ["gcp-proxy", "oci-apps", "oci-apps-2", "oci-mail", "oci-analytics", "local", "all"]
         },
         "remote_path": {
           "type": "string",
