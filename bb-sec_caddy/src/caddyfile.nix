@@ -2,15 +2,26 @@
 # caddyfile.nix — pure-Nix Caddyfile generator (v2 engine)
 #
 # Reads build-caddy.json (data-driven from 2_configs/dist/) and
-# returns the fully-rendered Caddyfile string. Split out of
-# flake.nix so the orchestrator stays thin.
+# returns the fully-rendered Caddyfile string. Pure-syntax fragments
+# live as `.caddy.tpl` files in `./snippets/`; this file only does
+# orchestration: read → substitute @PLACEHOLDER@ → assemble.
 #
-# Last meaningful change: 2026-05-08 Phase 3 (caddy-l4 SNI mux + https_port
-# 8443 + DNS-01 + WG-fallback HTTP/3 disable).
+# Last meaningful change: 2026-05-08 split snippets out of Nix string
+# literals into ./snippets/*.caddy.tpl (orchestration vs data).
 # ══════════════════════════════════════════════════════════════════
 { lib, caddyRoutes }:
 
 let
+  # ── Snippet loader: read .caddy.tpl + apply @KEY@ substitutions ──
+  readTpl = name: builtins.readFile (./snippets + "/${name}");
+
+  # subst :: { "@KEY@" = "value"; ... } -> string -> string
+  subst = subs: text:
+    lib.replaceStrings (lib.attrNames subs) (lib.attrValues subs) text;
+
+  # Drop trailing newline (templates end with `\n`; for inline use we strip it)
+  stripTrail = s: lib.removeSuffix "\n" s;
+
   # ── Dual-bind public *.diegonmarcos.com routes to BOTH the public socket
   # and the WG-internal IP. Hickory wildcards *.diegonmarcos.com → wgBindIp
   # for the WG fast-path (skips Cloudflare); without dual-binding here,
@@ -23,87 +34,56 @@ let
   # ── Security snippets (data-driven from caddyRoutes.security_snippets) ──
   ss = caddyRoutes.security_snippets or {};
 
-  securityHeaders = let h = ss.security_headers; in ''
-    (security_headers) {
-      header {
-        Strict-Transport-Security "max-age=${toString h.hsts_max_age}; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "${h.frame_options}"
-        Referrer-Policy "${h.referrer_policy}"
-        Permissions-Policy "${h.permissions_policy}"
-        Access-Control-Allow-Origin "${h.cors_origin}"
-        Access-Control-Allow-Methods "${h.cors_methods}"
-        Access-Control-Allow-Headers "${h.cors_headers}"
-        ${lib.concatMapStringsSep "\n        " (x: "-${x}") (h.hide_headers or [])}
-      }
-    }
-  '';
+  securityHeaders = let h = ss.security_headers; in
+    subst {
+      "@HSTS_MAX_AGE@"      = toString h.hsts_max_age;
+      "@FRAME_OPTIONS@"     = h.frame_options;
+      "@REFERRER_POLICY@"   = h.referrer_policy;
+      "@PERMISSIONS_POLICY@" = h.permissions_policy;
+      "@CORS_ORIGIN@"       = h.cors_origin;
+      "@CORS_METHODS@"      = h.cors_methods;
+      "@CORS_HEADERS@"      = h.cors_headers;
+      "@HIDE_HEADERS@"      = lib.concatMapStringsSep "\n        " (x: "-${x}") (h.hide_headers or []);
+    } (readTpl "10-security-headers.caddy.tpl");
 
-  rateLimiting = let r = ss.rate_limit; in ''
-    (rate_limiting) {
-      rate_limit {
-        zone ${r.zone} {
-          key    ${r.key}
-          events ${toString r.events}
-          window ${r.window}
-        }
-      }
-    }
-  '';
+  rateLimiting = let r = ss.rate_limit; in
+    subst {
+      "@RL_ZONE@"   = r.zone;
+      "@RL_KEY@"    = r.key;
+      "@RL_EVENTS@" = toString r.events;
+      "@RL_WINDOW@" = r.window;
+    } (readTpl "11-rate-limiting.caddy.tpl");
 
-  blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in ''
-    (block_bots) {
-      @bad_bots header_regexp User-Agent "(?i)(${uas})"
-      respond @bad_bots 403
-    }
-  '';
+  blockBots = let uas = lib.concatStringsSep "|" ss.bot_blocker.user_agents; in
+    subst { "@BOT_UAS@" = uas; } (readTpl "12-block-bots.caddy.tpl");
 
-  blockScanners = let paths = lib.concatStringsSep " " ss.scanner_blocker.paths; in ''
-    (block_scanners) {
-      @blocked_paths path ${paths}
-      respond @blocked_paths 404
-    }
-  '';
+  blockScanners = let paths = lib.concatStringsSep " " ss.scanner_blocker.paths; in
+    subst { "@SCANNER_PATHS@" = paths; } (readTpl "13-block-scanners.caddy.tpl");
 
-  requestLimits = let r = ss.request_limits; in ''
-    (request_limits) {
-      request_body {
-        max_size ${r.max_body}
-      }
-    }
-  '';
+  requestLimits = let r = ss.request_limits; in
+    subst { "@REQ_MAX_BODY@" = r.max_body; } (readTpl "14-request-limits.caddy.tpl");
 
-  ipBlock = let cidrs = ss.ip_block.cidrs or []; in ''
-    (ip_block) {
-      ${if cidrs == [] then "# no blocked CIDRs" else ''
-      @blocked_ips remote_ip ${lib.concatStringsSep " " cidrs}
-      respond @blocked_ips 403''}
-    }
-  '';
+  ipBlock = let
+    cidrs = ss.ip_block.cidrs or [];
+    body = if cidrs == []
+      then "# no blocked CIDRs"
+      else ''@blocked_ips remote_ip ${lib.concatStringsSep " " cidrs}
+    respond @blocked_ips 403'';
+  in subst { "@IP_BLOCK_BODY@" = body; } (readTpl "15-ip-block.caddy.tpl");
 
-  accessLog = let a = ss.access_log; in ''
-    (access_log) {
-      log {
-        output file ${a.path} {
-          roll_size ${a.roll_size}
-          roll_keep ${toString a.roll_keep}
-        }
-        format ${a.format}
-      }
-    }
-  '';
+  accessLog = let a = ss.access_log; in
+    subst {
+      "@LOG_PATH@"      = a.path;
+      "@LOG_ROLL_SIZE@" = a.roll_size;
+      "@LOG_ROLL_KEEP@" = toString a.roll_keep;
+      "@LOG_FORMAT@"    = a.format;
+    } (readTpl "16-access-log.caddy.tpl");
 
-  securitySnippet = ''
-    (security) {
-      import security_headers
-      import block_bots
-      import block_scanners
-      import rate_limiting
-      import ip_block
-      import access_log
-    }
-  '';
+  securitySnippet = readTpl "17-security-snippet.caddy.tpl";
 
+  # `sec` and `secNoLimit` are used inline as `import` lines inside site
+  # blocks. Indentation is non-trivial here — we keep the original
+  # whitespace exactly to preserve output formatting.
   sec = ''
       import security
       import request_limits'';
@@ -116,63 +96,48 @@ let
   autheliaUpstream   = caddyRoutes.auth_upstreams.authelia or "10.0.0.1:9091";
   introspectUpstream = caddyRoutes.auth_upstreams.introspect_proxy or "10.0.0.1:4182";
 
-  authelia = ''
-      forward_auth ${autheliaUpstream} {
-        uri ${auth.authelia_uri}
-        copy_headers ${lib.concatStringsSep " " auth.authelia_copy}
-      }'';
+  authelia = stripTrail (subst {
+    "@AUTHELIA_UPSTREAM@" = autheliaUpstream;
+    "@AUTHELIA_URI@"      = auth.authelia_uri;
+    "@AUTHELIA_COPY@"     = lib.concatStringsSep " " auth.authelia_copy;
+  } (readTpl "20-authelia.caddy.tpl"));
 
-  bearer = ''
-      forward_auth ${introspectUpstream} {
-        method GET
-        uri ${auth.introspect_uri}
-        copy_headers ${lib.concatStringsSep " " auth.introspect_copy}
-      }'';
+  bearer = stripTrail (subst {
+    "@INTROSPECT_UPSTREAM@" = introspectUpstream;
+    "@INTROSPECT_URI@"      = auth.introspect_uri;
+    "@INTROSPECT_COPY@"     = lib.concatStringsSep " " auth.introspect_copy;
+  } (readTpl "21-bearer.caddy.tpl"));
 
-  handleErrors = let eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
-                     codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
-                     errPath = eh.error_html; in ''
-    handle_errors {
-      @backend_error expression `${codesExpr}`
-      handle @backend_error {
-        root * ${lib.removeSuffix "/error.html" errPath}
-        rewrite * /${baseNameOf errPath}
-        file_server
-      }
-    }'';
+  handleErrors = let
+    eh = caddyRoutes.error_handler or { status_codes = [502 503 504]; error_html = "/srv/error.html"; };
+    codesExpr = lib.concatMapStringsSep " || " (c: "{err.status_code} == ${toString c}") eh.status_codes;
+    errPath = eh.error_html;
+  in stripTrail (subst {
+    "@CODES_EXPR@" = codesExpr;
+    "@ERR_ROOT@"   = lib.removeSuffix "/error.html" errPath;
+    "@ERR_FILE@"   = baseNameOf errPath;
+  } (readTpl "22-handle-errors.caddy.tpl"));
 
-  mkProtected = upstream: ''
-    @bearer header Authorization Bearer*
-    handle @bearer {
-  ${bearer}
-      reverse_proxy ${upstream}
-    }
-    handle {
-  ${authelia}
-      reverse_proxy ${upstream}
-    }
-  '';
+  protectedTpl       = readTpl "23-protected.caddy.tpl";
+  protectedCustomTpl = readTpl "24-protected-custom.caddy.tpl";
+
+  mkProtected = upstream: subst {
+    "@BEARER_BLOCK@"   = bearer;
+    "@AUTHELIA_BLOCK@" = authelia;
+    "@UPSTREAM@"       = upstream;
+  } protectedTpl;
+
+  mkProtectedCustom = upstreamUrl: transportBlock: subst {
+    "@BEARER_BLOCK@"    = bearer;
+    "@AUTHELIA_BLOCK@"  = authelia;
+    "@UPSTREAM@"        = upstreamUrl;
+    "@TRANSPORT_BLOCK@" = transportBlock;
+  } protectedCustomTpl;
 
   mkGithubProxy = path: ''
     rewrite * /${path}{uri}
     reverse_proxy https://diegonmarcos.github.io {
       header_up Host diegonmarcos.github.io
-    }
-  '';
-
-  mkProtectedCustom = upstreamUrl: transportBlock: ''
-    @bearer header Authorization Bearer*
-    handle @bearer {
-  ${bearer}
-      reverse_proxy ${upstreamUrl} {
-        ${transportBlock}
-      }
-    }
-    handle {
-  ${authelia}
-      reverse_proxy ${upstreamUrl} {
-        ${transportBlock}
-      }
     }
   '';
 
@@ -189,29 +154,35 @@ let
   # SNI hostname routing.
   routeListenSpec = route: route.listen or ":${toString route.port}";
 
-  mkL4SubRoute = route:
+  # Slugify hostname for caddy-l4 named matcher (dots/hyphens → underscores)
+  sniSlug = host: lib.replaceStrings ["." "-"] ["_" "_"] host;
+
+  l4PlainTpl = readTpl "50-l4-plain-route.caddy.tpl";
+  l4SniTpl   = readTpl "51-l4-sni-route.caddy.tpl";
+
+  # Plain (non-SNI) route — direct TCP proxy, used for ports like :25
+  mkPlainRoute = route:
     let
       pp = route.proxy_protocol or false;
       ppLine = if pp then "\n                proxy_protocol v2" else "";
-      matcherName = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni}" else "";
-    in
-      if (route ? sni && route.sni != null) then ''
-            # ${route.comment or ""} (SNI: ${route.sni})
-            ${matcherName} tls {
-              sni ${route.sni}
-            }
-            route ${matcherName} {
-              proxy {
-                upstream ${route.upstream}${ppLine}
-              }
-            }''
-      else ''
-            # ${route.comment or ""}
-            route {
-              proxy {
-                upstream ${route.upstream}${ppLine}
-              }
-            }'';
+    in subst {
+      "@COMMENT@"  = route.comment or "";
+      "@UPSTREAM@" = route.upstream;
+      "@PP_LINE@"  = ppLine;
+    } l4PlainTpl;
+
+  # Per-SNI inner dispatch route (used inside the outer @mail gate)
+  mkSniInnerRoute = route:
+    let
+      pp = route.proxy_protocol or false;
+      ppLine = if pp then "\n                  proxy_protocol v2" else "";
+    in subst {
+      "@COMMENT@"     = route.comment or "";
+      "@SNI@"         = route.sni;
+      "@SNI_MATCHER@" = "@sni_${sniSlug route.sni}";
+      "@UPSTREAM@"    = route.upstream;
+      "@PP_LINE@"     = ppLine;
+    } l4SniTpl;
 
   # Group routes by listenSpec → one listener block per spec.
   groupRoutesByListen = routes:
@@ -220,30 +191,50 @@ let
       acc // { ${k} = (acc.${k} or []) ++ [ r ]; }
     ) {} routes;
 
-  # On the public :443 listener, caddy-l4 owns the socket. After SNI matchers
-  # for mail subdomains, append a default fall-through proxy to Caddy's
-  # internal HTTPS handler (127.0.0.1:8443, set by https_port in global).
-  # This is what lets HTTPS to *.diegonmarcos.com keep working even though
-  # caddy-l4 is binding :443. Phase 3 of public-surface collapse plan.
-  # caddy-l4 routes need explicit matchers (not bare `route { ... }`).
-  # @any_tls matches any TLS handshake — used as the default catch-all so
-  # unmatched SNI traffic flows to Caddy's internal HTTPS handler.
-  l4FallthroughHttps = ''
-            # Default: unmatched TLS → Caddy HTTPS handler on internal port
-            @any_tls tls
-            route @any_tls {
-              proxy {
-                upstream 127.0.0.1:8443
-              }
-            }'';
-
+  # caddy-l4 SNI mux pattern (per upstream issue #294 + tls.md docs):
+  #   1. Outer @<gate> tls { sni <hostA> <hostB> ... } gates ALL mail SNIs in
+  #      one matcher, forcing a single ClientHello parse before any nested
+  #      matchers run. Avoids the prefetch-race where a bare `tls` matcher
+  #      wins against not-yet-parsed SNI matchers.
+  #   2. Inner per-SNI sub-routes dispatch to the right upstream after the
+  #      outer matcher already accepted the connection.
+  #   3. Default fall-through uses `not { tls { sni <hostA> ... } }` instead
+  #      of bare `@any_tls tls` — bare `tls` matches on first 5 bytes (TLS
+  #      record header) before SNI parse and would always win the race.
+  # Source: https://github.com/mholt/caddy-l4/issues/294
   mkL4ListenerBlock = listenSpec: routes:
     let
-      routesOut = lib.concatMapStringsSep "\n" mkL4SubRoute routes;
-      fallthrough = if listenSpec == ":443" then "\n" + l4FallthroughHttps else "";
+      sniRoutes    = lib.filter (r: (r ? sni) && r.sni != null) routes;
+      plainRoutes  = lib.filter (r: !((r ? sni) && r.sni != null)) routes;
+      sniHostList  = map (r: r.sni) sniRoutes;
+      sniArgs      = lib.concatStringsSep " " sniHostList;
+      hasSni       = sniHostList != [];
+
+      plainOut     = lib.concatMapStringsSep "\n" mkPlainRoute plainRoutes;
+
+      # SNI mux block: flat per-SNI matchers + `not` fall-through.
+      # Nested matchers inside a `route` block are NOT valid Caddyfile syntax
+      # (parser treats `@name` as handler-directive). #294 pattern works flat.
+      sniMuxBlock = if !hasSni then "" else ''
+
+          # ── SNI mux (issue #294 pattern, flat) ─────────────────────────
+${lib.concatMapStringsSep "\n" mkSniInnerRoute sniRoutes}
+          # Fall-through: TLS that does NOT match any mail SNI → internal HTTPS
+          # `not { tls { sni ... } }` forces ClientHello parse, avoiding the
+          # bare-`tls` race condition (issue #294).
+          @notmail not {
+            tls {
+              sni ${sniArgs}
+            }
+          }
+          route @notmail {
+            proxy {
+              upstream 127.0.0.1:8443
+            }
+          }'';
     in ''
         ${listenSpec} {
-${routesOut}${fallthrough}
+${plainOut}${sniMuxBlock}
         }'';
 
   mkL4Section =
@@ -682,45 +673,35 @@ ${routesOut}${fallthrough}
     }
   '';
 
-  mkInternalRoute = route: ''
-    ${route.service} {
-      bind 10.0.0.1
-      tls internal
-      reverse_proxy ${route.upstream}
-    }
-  '';
+  # ── Internal / canonical / portless / S3 / DB-placeholder routes ──
+  internalTpl   = readTpl "30-internal-route.caddy.tpl";
+  canonicalTpl  = readTpl "31-canonical-app.caddy.tpl";
+  portlessTpl   = readTpl "32-portless-app.caddy.tpl";
+  dbTpl         = readTpl "33-db-placeholder.caddy.tpl";
+  s3Tpl         = readTpl "34-s3-route.caddy.tpl";
 
-  mkS3Route = route: ''
-    ${route.service} {
-      bind 10.0.0.1
-      tls internal
-      rewrite * /${route.bucket}{uri}
-      reverse_proxy ${route.s3_endpoint} {
-        header_up Host ${route.s3_host}
-      }
-    }
-  '';
+  mkInternalRoute = route: subst {
+    "@SERVICE@"  = route.service;
+    "@UPSTREAM@" = route.upstream;
+  } internalTpl;
 
-  mkCanonicalAppRoute = entry: ''
-    ${entry.service} {
-      bind 10.0.0.1
-      tls internal {
-        on_demand
-      }
-      reverse_proxy ${entry.upstream}
-    }
-  '';
+  mkS3Route = route: subst {
+    "@SERVICE@"     = route.service;
+    "@BUCKET@"      = route.bucket;
+    "@S3_ENDPOINT@" = route.s3_endpoint;
+    "@S3_HOST@"     = route.s3_host;
+  } s3Tpl;
+
+  mkCanonicalAppRoute = entry: subst {
+    "@SERVICE@"  = entry.service;
+    "@UPSTREAM@" = entry.upstream;
+  } canonicalTpl;
 
   msgs = caddyRoutes.messages or {};
-  mkPortlessAppRoute = entry: ''
-    ${entry.service} {
-      bind 10.0.0.1
-      tls internal {
-        on_demand
-      }
-      respond "${msgs.portless_placeholder}" 204
-    }
-  '';
+  mkPortlessAppRoute = entry: subst {
+    "@SERVICE@"         = entry.service;
+    "@PLACEHOLDER_MSG@" = msgs.portless_placeholder;
+  } portlessTpl;
 
   canonicalHttpEntries = lib.filter
     (e: e.kind == "canonical" && (e.protocol == "http" || e.protocol == "https"))
@@ -744,52 +725,62 @@ ${routesOut}${fallthrough}
 
   dbCatalogEntries = caddyRoutes.all_db_urls or [];
 
-  mkDbPlaceholderRoute = e: ''
-    ${e.service} {
-      bind 10.0.0.1
-      tls internal {
-        on_demand
-      }
-      respond "DB catalog — container=${e.container or "?"} engine=${e.engine or "?"} port=${toString (e.port or 0)} upstream=${e.upstream or "(embedded)"} path=${e.path or "-"} vm=${e.vm or "-"}" 200
-    }
-  '';
+  mkDbPlaceholderRoute = e: subst {
+    "@SERVICE@"   = e.service;
+    "@CONTAINER@" = e.container or "?";
+    "@ENGINE@"    = e.engine or "?";
+    "@PORT@"      = toString (e.port or 0);
+    "@UPSTREAM@"  = e.upstream or "(embedded)";
+    "@DB_PATH@"   = e.path or "-";
+    "@VM@"        = e.vm or "-";
+  } dbTpl;
 
   global = caddyRoutes.global or {};
   odt    = caddyRoutes.on_demand_tls or {};
 
-in ''
-  {
-    # Upstreams use raw WG IPs (not DNS) — Caddy is the *.app target
-    ${if (global.debug or false) then "debug" else ""}
-    admin ${global.admin_bind}
-    order ${global.order}
-    auto_https ${global.auto_https}
-    # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
-    # and supports wildcard certs for *.diegonmarcos.com. Token sourced
-    # from .secrets (env_file in compose.nix). Phase 2a of public-surface
-    # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
-    acme_dns cloudflare {env.CF_API_TOKEN}
-    # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
-    # the public socket so caddy-l4 SNI mux + fall-through can run.
-    https_port 8443
-    # Disable HTTP/3 / QUIC — UDP/443 is reserved for WireGuard fallback
-    # (firewall.nix on hub redirects udp/443 → udp/51820 for peers behind
-    # networks that block 51820/udp). Phase 4 of collapse plan.
-    servers {
-      protocols h1 h2
-    }
-    on_demand_tls {
-      ask ${odt.ask_url}
-    }
-${mkL4Section}
-  }
+  # ── Globals block (assembled from 00-globals.caddy.tpl) ──
+  globalsBlock = subst {
+    "@DEBUG_LINE@"  = if (global.debug or false) then "debug" else "";
+    "@ADMIN_BIND@"  = global.admin_bind;
+    "@ORDER@"       = global.order;
+    "@AUTO_HTTPS@"  = global.auto_https;
+    "@ODT_ASK_URL@" = odt.ask_url;
+    "@L4_SECTION@"  = mkL4Section;
+  } (readTpl "00-globals.caddy.tpl");
 
   # ── On-demand TLS ask endpoint ──
-  :${lib.elemAt (lib.splitString ":" odt.ask_bind) 1} {
-    bind ${lib.elemAt (lib.splitString ":" odt.ask_bind) 0}
-    respond 200
-  }
+  odtAskBlock = subst {
+    "@ODT_ASK_PORT@"    = lib.elemAt (lib.splitString ":" odt.ask_bind) 1;
+    "@ODT_ASK_BIND_IP@" = lib.elemAt (lib.splitString ":" odt.ask_bind) 0;
+  } (readTpl "05-odt-ask.caddy.tpl");
 
+  # ── MTA-STS ──
+  mta = caddyRoutes.mta_sts or {};
+  mtaMxLines = lib.concatMapStringsSep "\n" (m: "mx: ${m}") (mta.mx or []);
+  mtaStsBlock = subst {
+    "@MTA_DOMAIN@"      = mta.domain or "";
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
+    "@SEC_NO_LIMIT@"    = secNoLimit;
+    "@MTA_POLICY_PATH@" = mta.policy_path or "";
+    "@MTA_MODE@"        = mta.mode or "";
+    "@MTA_MX_LINES@"    = mtaMxLines;
+    "@MTA_MAX_AGE@"     = toString (mta.max_age or 604800);
+  } (readTpl "90-mta-sts.caddy.tpl");
+
+  # ── Catch-all ──
+  catch = caddyRoutes.catch_all or {};
+  catchPage = catch.page or "/srv/error.html";
+  catchAllBlock = subst {
+    "@CATCH_DOMAIN@"     = catch.domain or "";
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
+    "@SEC_NO_LIMIT@"     = secNoLimit;
+    "@CATCH_ROOT@"       = lib.removeSuffix ("/" + baseNameOf catchPage) catchPage;
+    "@CATCH_FILE@"       = baseNameOf catchPage;
+  } (readTpl "99-catch-all.caddy.tpl");
+
+in ''
+${globalsBlock}
+${odtAskBlock}
   # ════════════════════════════════════════════════════════════
   # SECURITY SNIPPETS
   # ════════════════════════════════════════════════════════════
@@ -875,42 +866,11 @@ ${lib.concatMapStringsSep "\n" mkS3Route (caddyRoutes.s3_routes or [])}
   # MTA-STS — enforce TLS for inbound email delivery
   # ════════════════════════════════════════════════════════════
 
-  ${(caddyRoutes.mta_sts or {}).domain} {
-  ${publicBindLine}
-${secNoLimit}
-    tls {
-      dns cloudflare {env.CF_API_TOKEN}
-      resolvers 1.1.1.1 8.8.8.8
-      propagation_delay 30s
-      propagation_timeout 5m
-    }
-    handle ${(caddyRoutes.mta_sts or {}).policy_path} {
-      header Content-Type "text/plain"
-      respond "version: STSv1
-mode: ${(caddyRoutes.mta_sts or {}).mode}
-${lib.concatMapStringsSep "\n" (m: "mx: ${m}") ((caddyRoutes.mta_sts or {}).mx or [])}
-max_age: ${toString ((caddyRoutes.mta_sts or {}).max_age or 604800)}
-" 200
-    }
-    respond 404
-  }
+${mtaStsBlock}
 
   # ════════════════════════════════════════════════════════════
   # CATCH-ALL — data-driven from caddyRoutes.catch_all
   # ════════════════════════════════════════════════════════════
 
-  ${(caddyRoutes.catch_all or {}).domain} {
-  ${publicBindLine}
-${secNoLimit}
-    tls {
-      dns cloudflare {env.CF_API_TOKEN}
-      resolvers 1.1.1.1 8.8.8.8
-      propagation_delay 30s
-      propagation_timeout 5m
-    }
-    root * ${lib.removeSuffix ("/" + baseNameOf ((caddyRoutes.catch_all or {}).page or "")) ((caddyRoutes.catch_all or {}).page or "/srv/error.html")}
-    rewrite * /${baseNameOf ((caddyRoutes.catch_all or {}).page or "error.html")}
-    file_server
-  }
-
+${catchAllBlock}
 ''
