@@ -17,7 +17,7 @@
 - [Radicale](../services/aa-sui_radicale/index.html)
 - [RevealMD](../services/aa-sui_revealmd/index.html)
 - [Mailu Mail](../services/aa-sui_tools-mailu/index.html)
-- [SMTP Proxy](../services/aa-sui_tools-smtp-proxy/index.html)
+- [HTTP-to-SMTP Proxy API](../services/aa-sui_tools-http-to-smtp-proxy-api/index.html)
 
 # Microservices (ab-mic)
 

@@ -57,12 +57,12 @@ private-key = "%{file:/opt/stalwart-mail/tls/privkey.pem}%"
 user = "admin"
 secret = "@ADMIN_HASH@"
 
-# ── Inbound SMTP (port 2025): no auth required (shadow delivery from smtp-proxy) ──
+# ── Inbound SMTP (port 2025): no auth required (shadow delivery from http-to-smtp-proxy-api) ──
 [session.auth]
 require = [{if = "local_port != 2025", then = true}, {else = false}]
 
 # ── Security: WG mesh is fully trusted ───────────────────────────────
-# All Stalwart listeners bind WG-only (or to gcp-proxy / smtp-proxy via WG),
+# All Stalwart listeners bind WG-only (or to gcp-proxy / http-to-smtp-proxy-api via WG),
 # so IP-based fail2ban / auto-blocking is redundant and actively harmful
 # (it bans the puller after a single auth misconfig retry storm).
 #

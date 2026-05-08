@@ -1,5 +1,5 @@
 {
-  description = "SMTP Proxy — dist layout v2 (Type A, own code)";
+  description = "HTTP-to-SMTP Proxy API — dist layout v2 (Type A, own code)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-smtp-proxy.json);
+    container = builtins.fromJSON (builtins.readFile ./build-http-to-smtp-proxy-api.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
@@ -27,7 +27,7 @@
           baseImage = nb.base_image;
           apt       = nb.apt or "";
         };
-        title = "SMTP Proxy (v2)";
+        title = "HTTP-to-SMTP Proxy API (v2)";
       };
     });
   };

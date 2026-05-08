@@ -1,10 +1,10 @@
 [package]
-name = "smtp-proxy"
+name = "http-to-smtp-proxy-api"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "smtp-proxy"
+name = "http-to-smtp-proxy-api"
 path = "main.rs"
 
 [dependencies]
