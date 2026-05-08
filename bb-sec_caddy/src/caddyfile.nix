@@ -769,10 +769,8 @@ in ''
     # from .secrets (env_file in compose.nix). Phase 2a of public-surface
     # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
     acme_dns cloudflare {env.CF_API_TOKEN}
-    # caddy-l4 owns :443 (Phase 3 of collapse plan): SNI matchers route
-    # IMAPS/SMTPS to mail upstreams, unmatched TLS falls through to Caddy's
-    # internal HTTPS handler on 127.0.0.1:8443. https_port shifts every
-    # auto-bound HTTPS listener to 8443 so they don't fight :443.
+    # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
+    # the public socket so caddy-l4 SNI mux + fall-through can run.
     https_port 8443
     # Disable HTTP/3 / QUIC — UDP/443 is reserved for WireGuard fallback
     # (firewall.nix on hub redirects udp/443 → udp/51820 for peers behind
