@@ -59,6 +59,12 @@
       "tls_skip_verify": true,
       "l4_ports": [
         {
+          "port": 25,
+          "upstream": "oci-mail:25",
+          "comment": "SMTP MX plain TCP — design-complete listener; GCP firewall currently blocks public, CF Worker is the active inbound bridge",
+          "protocol": "tcp"
+        },
+        {
           "port": 443,
           "sni": "imap.diegonmarcos.com",
           "upstream": "oci-mail:993",

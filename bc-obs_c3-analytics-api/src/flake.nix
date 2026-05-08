@@ -1,5 +1,5 @@
 {
-  description = "Photos Webhook — PhotoPrism S3 processor + Postgres (v2, Type A own-code)";
+  description = "C3 Analytics API — public first-party collector (passthrough to matomo/umami/openobserve)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-photos-webhook.json);
+    container = builtins.fromJSON (builtins.readFile ./build-c3-analytics-api.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
@@ -21,12 +21,9 @@
         srcDir = ./.;
         templates = [];
         composeSpec = import ./compose.nix { inherit buildJson container; };
-        # schema.sql rides along as an asset — mounted by the db container
-        # into /docker-entrypoint-initdb.d/ via the compose spec.
-        extraAssets = [ ./schema.sql ];
         nativeBuild = {
           cmd       = nb.cmd;
-          binary    = nb.entrypoint;   # ./entrypoint.sh — engine basenames this
+          binary    = nb.entrypoint or "";
           baseImage = nb.base_image;
           apt       = nb.apt or "";
         };

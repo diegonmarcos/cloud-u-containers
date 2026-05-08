@@ -260,11 +260,15 @@
       "extra_ports": [
         {
           "port": 80,
-          "protocol": "http"
+          "protocol": "http",
+          "monitor": false,
+          "_comment": "Caddy is TLS-only on :443 — no plain :80 listener. Suppress canonical URL probe."
         },
         {
           "port": 2019,
-          "protocol": "http"
+          "protocol": "http",
+          "monitor": false,
+          "_comment": "Admin API bound to localhost:2019 only — local-only by design."
         }
       ],
       "port_env": null,
