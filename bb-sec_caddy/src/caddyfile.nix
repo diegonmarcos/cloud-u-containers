@@ -710,6 +710,11 @@ in ''
     admin ${global.admin_bind}
     order ${global.order}
     auto_https ${global.auto_https}
+    # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
+    # and supports wildcard certs for *.diegonmarcos.com. Token sourced
+    # from .secrets (env_file in compose.nix). Phase 2a/5 of public-surface
+    # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
+    acme_dns cloudflare {env.CF_API_TOKEN}
     on_demand_tls {
       ask ${odt.ask_url}
     }
