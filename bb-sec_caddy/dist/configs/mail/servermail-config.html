@@ -121,7 +121,7 @@
 
 <span class="keyword">hostname</span> <span class="variable">$(hostname)</span>
 
-<span class="comment"># ── SMTP (port 25) — inbound from smtp-proxy / CF Worker</span>
+<span class="comment"># ── SMTP (port 25) — inbound from http-to-smtp-proxy-api / CF Worker</span>
 <span class="section">smtp</span> tcp://0.0.0.0:25 {
     limits { all rate 20 1s; all concurrency 10 }
     dmarc no

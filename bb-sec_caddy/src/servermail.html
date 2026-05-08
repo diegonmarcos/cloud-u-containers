@@ -53,7 +53,7 @@
             <div class="row"><span class="label">IMAP (receive)</span><span class="value ok">:993 (IMAPS / TLS)</span></div>
             <div class="row"><span class="label">SMTP (send)</span><span class="value ok">:465 (SMTPS / Implicit TLS)</span></div>
             <div class="row"><span class="label">SMTP Submission</span><span class="value ok">:587 (STARTTLS)</span></div>
-            <div class="row"><span class="label">SMTP Relay</span><span class="value ok">:25 (inbound from smtp-proxy)</span></div>
+            <div class="row"><span class="label">SMTP Relay</span><span class="value ok">:25 (inbound from http-to-smtp-proxy-api)</span></div>
         </div>
 
         <div class="card">
@@ -67,7 +67,7 @@
 
         <div class="card">
             <h2>Architecture</h2>
-            <div class="row"><span class="label">Inbound</span><span class="value">Gmail &rarr; MX &rarr; CF Worker &rarr; smtp-proxy &rarr; Maddy</span></div>
+            <div class="row"><span class="label">Inbound</span><span class="value">Gmail &rarr; MX &rarr; CF Worker &rarr; http-to-smtp-proxy-api &rarr; Maddy</span></div>
             <div class="row"><span class="label">Outbound</span><span class="value">Maddy &rarr; OCI SMTP relay &rarr; destination</span></div>
             <div class="row"><span class="label">Client</span><span class="value">Caddy L4 passthrough &rarr; Maddy IMAPS/SMTPS</span></div>
             <div class="row"><span class="label">Webmail</span><span class="value"><a href="/webmail/">SnappyMail</a></span></div>

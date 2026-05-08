@@ -82,7 +82,7 @@
       "image": "stalwartlabs/stalwart:v0.14.1",
       "port": 2443,
       "extra_ports": [
-        { "port": 2025, "protocol": "starttls", "bind": "127.0.0.1", "service": "smtp_shadow",   "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)" },
+        { "port": 2025, "protocol": "starttls", "bind": "10.0.0.3", "service": "smtp_shadow",   "desc": "SMTP shadow (http-to-smtp-proxy-api on gcp-proxy → WG → :2025)" },
         { "port": 2443, "protocol": "tls",      "bind": "10.0.0.3",  "service": "jmap_tls",      "desc": "HTTPS admin/JMAP — wg0 bind, reached via Caddy L4" },
         { "port": 2465, "protocol": "tls",      "bind": "10.0.0.3",  "service": "smtp_ssl",      "desc": "SMTPS — wg0 bind, reached via Caddy L4" },
         { "port": 2993, "protocol": "tls",      "bind": "10.0.0.3",  "service": "imap_ssl",      "desc": "IMAPS — wg0 bind, reached via Caddy L4" },

@@ -1,5 +1,5 @@
 // Cloudflare Email Worker - Triple-delivery inbound email
-// Copy 1: ALWAYS → Maddy via smtp-proxy (self-hosted primary)
+// Copy 1: ALWAYS → Maddy via http-to-smtp-proxy-api (self-hosted primary)
 // Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
 // Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
 
@@ -36,22 +36,22 @@ export default {
   }
 };
 
-// ── Maddy delivery via smtp-proxy ────────────────────────────────
+// ── Maddy delivery via http-to-smtp-proxy-api ────────────────────────────────
 async function deliverToMaddy(rawEmail, to, env) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
-    const response = await fetch(env.SMTP_PROXY_URL, {
+    const response = await fetch(env.HTTP_TO_SMTP_PROXY_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
-        // Bearer auth gates Caddy's forward_auth (api.diegonmarcos.com/smtp-proxy-api
+        // Bearer auth gates Caddy's forward_auth (api.diegonmarcos.com/http-to-smtp-proxy-api
         // is auth=bearer; introspect-proxy validates against Authelia JWKS).
         'Authorization': `Bearer ${env.C3_BEARER_TOKEN}`,
-        // X-API-Key kept as defence-in-depth: smtp-proxy Rust binary validates it
+        // X-API-Key kept as defence-in-depth: http-to-smtp-proxy-api Rust binary validates it
         // even after Caddy passes through. Will be retired when the binary is
         // updated to trust upstream auth-only.
-        'X-API-Key': env.SMTP_PROXY_KEY,
+        'X-API-Key': env.HTTP_TO_SMTP_PROXY_API_KEY,
         'X-Original-To': to,
       },
       body: rawEmail,
@@ -59,13 +59,13 @@ async function deliverToMaddy(rawEmail, to, env) {
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      console.error(`Maddy smtp-proxy error: ${response.status} ${await response.text()}`);
+      console.error(`Maddy http-to-smtp-proxy-api error: ${response.status} ${await response.text()}`);
       return false;
     }
-    console.log(`Maddy: delivered via smtp-proxy`);
+    console.log(`Maddy: delivered via http-to-smtp-proxy-api`);
     return true;
   } catch (e) {
-    console.error(`Maddy smtp-proxy failed: ${e.message}`);
+    console.error(`Maddy http-to-smtp-proxy-api failed: ${e.message}`);
     return false;
   }
 }

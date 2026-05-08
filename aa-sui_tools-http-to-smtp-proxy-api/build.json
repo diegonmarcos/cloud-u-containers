@@ -1,28 +1,28 @@
 {
-  "name": "smtp-proxy",
-  "description": "HTTP-to-SMTP bridge — receives JSON email payloads from CF Worker and translates to SMTP. Public path: api.diegonmarcos.com/smtp-proxy-api/",
-  "dns": "smtp-proxy.app",
+  "name": "http-to-smtp-proxy-api",
+  "description": "HTTP-to-SMTP bridge sidecar of Caddy on gcp-proxy. CF Worker POSTs JSON email payloads to this container (because GCP blocks outbound TCP/25); container speaks SMTP over WG to maddy:25 + stalwart:2025 on oci-mail. Public path: api.diegonmarcos.com/http-to-smtp-proxy-api/",
+  "dns": "http-to-smtp-proxy-api.app",
   "category": "app",
   "build": {
     "include_cloud_data": "true",
     "headers_enforced": true
   },
-  "domain": "api.diegonmarcos.com/smtp-proxy-api",
+  "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "smtp-proxy",
+    "image": "http-to-smtp-proxy-api",
     "dockerfile": "Dockerfile",
     "arch": "amd64",
     "native_build": {
       "cmd": "cargo build --release",
-      "binary": "target/release/smtp-proxy",
+      "binary": "target/release/http-to-smtp-proxy-api",
       "base_image": "debian:bookworm-slim",
       "apt": "ca-certificates"
     }
   },
   "deploy": {
-    "host": "oci-mail",
-    "remote_path": "/opt/containers/smtp-proxy",
+    "host": "gcp-proxy",
+    "remote_path": "/opt/containers/http-to-smtp-proxy-api",
     "compose_flags": "--build"
   },
   "compose": {
@@ -32,7 +32,7 @@
     "primary": {
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
-      "base_path": "/smtp-proxy-api",
+      "base_path": "/http-to-smtp-proxy-api",
       "auth": "bearer"
     },
     "app_hub": false
@@ -42,15 +42,15 @@
   },
   "containers": {
     "app": {
-      "container_name": "smtp-proxy",
+      "container_name": "http-to-smtp-proxy-api",
       "port": 8080,
       "port_env": "LISTEN_PORT",
-      "dns": "smtp-proxy.app",
+      "dns": "http-to-smtp-proxy-api.app",
       "public": true,
       "proxy": {
         "type": "path",
         "parent_domain": "api.diegonmarcos.com",
-        "base_path": "/smtp-proxy-api",
+        "base_path": "/http-to-smtp-proxy-api",
         "auth": "bearer"
       },
       "protocol": "http"
@@ -58,9 +58,9 @@
   },
   "api": {
     "type": "custom-rest",
-    "base_path": "/smtp-proxy-api",
+    "base_path": "/http-to-smtp-proxy-api",
     "endpoint_count": 1,
-    "display_name": "SMTP-Proxy HTTP-to-SMTP Bridge API",
+    "display_name": "HTTP-to-SMTP Proxy API",
     "description": "POST raw RFC 5322 email body. Translates to SMTP and dual-delivers to maddy:25 + Stalwart:2025 over WG. Used by CF email-forwarder Worker for inbound mail (because CF Workers cannot make outbound TCP/25 connections — port 25 is GCP-blocked end-to-end).",
     "auth": "bearer"
   }

@@ -75,8 +75,8 @@ export function registerDebugTools(server: McpServer): void {
         sshExec(srv.sshAlias, [
           `echo "===SERVER_LOGS==="`,
           `docker logs ${srv.container} --since ${m}m 2>&1 | grep -iE "queue|relay|delivery|bounce|reject|error|fail|next-hop|remote|connect" | tail -30`,
-          `echo "===SMTP_PROXY_LOGS==="`,
-          `docker logs smtp-proxy --since ${m}m 2>&1 | tail -20`,
+          `echo "===HTTP_TO_SMTP_PROXY_API_LOGS==="`,
+          `docker logs http-to-smtp-proxy-api --since ${m}m 2>&1 | tail -20`,
           `echo "===OCI_RELAY==="`,
           `echo QUIT | timeout 5 openssl s_client -starttls smtp -connect smtp.email.eu-marseille-1.oci.oraclecloud.com:587 -quiet 2>&1 | head -3`,
           `echo "===AWS_RELAY==="`,
@@ -115,10 +115,10 @@ export function registerDebugTools(server: McpServer): void {
         serverLogs || "(no matching log lines)",
       ].join("\n"));
 
-      // -- Section 3: SMTP-Proxy Logs
-      const proxyLogs = isFail(sshBatchResult) ? sshBatchResult : (sshSections["SMTP_PROXY_LOGS"] || "(no log lines)");
+      // -- Section 3: HTTP-to-SMTP Proxy API Logs
+      const proxyLogs = isFail(sshBatchResult) ? sshBatchResult : (sshSections["HTTP_TO_SMTP_PROXY_API_LOGS"] || "(no log lines)");
       sections.push([
-        `== 3. SMTP-Proxy Logs (${m}m) ${status(!isFail(sshBatchResult))} ==`,
+        `== 3. HTTP-to-SMTP Proxy API Logs (${m}m) ${status(!isFail(sshBatchResult))} ==`,
         proxyLogs || "(no log lines)",
       ].join("\n"));
 
@@ -243,7 +243,7 @@ export function registerDebugTools(server: McpServer): void {
         })(),
 
         // Shadow delivery check
-        sshExec(srv.sshAlias, `docker logs smtp-proxy --since ${m}m 2>&1 | grep -iE 'shadow|dual|stalwart|forward' | tail -10`, 15000),
+        sshExec(srv.sshAlias, `docker logs http-to-smtp-proxy-api --since ${m}m 2>&1 | grep -iE 'shadow|dual|stalwart|forward' | tail -10`, 15000),
       ]);
 
       const ociSections: Record<string, string> = {};
@@ -320,7 +320,7 @@ export function registerDebugTools(server: McpServer): void {
       // -- Section 9: Shadow Delivery
       const shadowHasData = shadowResult && !isFail(shadowResult) && shadowResult.trim().length > 0;
       sections.push([
-        `== 9. Shadow Delivery (smtp-proxy) ${shadowHasData ? "[ACTIVE]" : "[NONE]"} ==`,
+        `== 9. Shadow Delivery (http-to-smtp-proxy-api) ${shadowHasData ? "[ACTIVE]" : "[NONE]"} ==`,
         shadowHasData ? shadowResult : "  (no shadow delivery logs in window)",
       ].join("\n"));
 
@@ -343,7 +343,7 @@ export function registerDebugTools(server: McpServer): void {
   // ══════════════════════════════════════════════════════════════════
   server.tool(
     "debug_trace",
-    "Trace a message across the full mail pipeline — correlates logs from Cloudflare Worker, Caddy L4, smtp-proxy, mail server, and OCI relay. Use message_id for a specific message or minutes for a time window.",
+    "Trace a message across the full mail pipeline — correlates logs from Cloudflare Worker, Caddy L4, http-to-smtp-proxy-api, mail server, and OCI relay. Use message_id for a specific message or minutes for a time window.",
     {
       server: serverSchema,
       message_id: z.string().optional().describe("Message-ID header value to trace (without angle brackets)"),
@@ -370,7 +370,7 @@ export function registerDebugTools(server: McpServer): void {
 
         (direction === "outbound" ? Promise.resolve("") :
           sshExec(srv.sshAlias,
-            `docker logs smtp-proxy --since ${m}m 2>&1${grepFilter || " | tail -30"}`,
+            `docker logs http-to-smtp-proxy-api --since ${m}m 2>&1${grepFilter || " | tail -30"}`,
             15000)),
 
         (direction === "outbound" ? Promise.resolve("") :
@@ -420,7 +420,7 @@ export function registerDebugTools(server: McpServer): void {
         sections.push([
           "── Inbound Flow ──────────────────────────────────────",
           "  Internet → CF Email Routing → CF Worker (email-forwarder)",
-          "    → smtp-proxy.diegonmarcos.com (CF Tunnel → HTTP:8080)",
+          "    → api.diegonmarcos.com/http-to-smtp-proxy-api (CF → Caddy on gcp-proxy → HTTP:8080)",
           `      → ${srvName} :25 (XCLIENT + SPF/DKIM/DMARC/DNSBL)`,
           "        → IMAP store (imapsql)",
         ].join("\n"));
@@ -451,7 +451,7 @@ export function registerDebugTools(server: McpServer): void {
           : deliverOk ? "[PASS]"
           : "[INFO]";
         sections.push([
-          `── 2. smtp-proxy (${srv.sshAlias}:8080) ${badge} ──`,
+          `── 2. http-to-smtp-proxy-api (gcp-proxy:8080) ${badge} ──`,
           hasData ? smtpProxyLogs : "  (no logs in window)",
         ].join("\n"));
       }
