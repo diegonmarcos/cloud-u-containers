@@ -44,10 +44,11 @@
       "container_name": "wireguard-mesh-ws-tunnel",
       "image": "ghcr.io/erebe/wstunnel:latest",
       "command": [
+        "/home/app/wstunnel",
         "server",
-        "ws://127.0.0.1:8080",
+        "ws://0.0.0.0:8080",
         "--restrict-to", "127.0.0.1:51820",
-        "--http-upgrade-path-prefix", "${WSTUNNEL_PATH_PREFIX}"
+        "--restrict-http-upgrade-path-prefix", "${WSTUNNEL_PATH_PREFIX}"
       ],
       "port": 8080,
       "port_format": "colon",
