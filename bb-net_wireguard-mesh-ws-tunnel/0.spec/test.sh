@@ -17,7 +17,7 @@ echo "▶ wireguard-mesh-ws-tunnel tester  ($PROJ_DIR)"
 echo "▶ Phase 1 · structural"
 [ -f "$BUILD_JSON" ]                              && ok "build.json present"          || nope "build.json missing"
 [ -L "$PROJ_DIR/build.sh" ]                       && ok "build.sh symlinked to engine" || nope "build.sh symlink missing"
-[ -f "$PROJ_DIR/secrets.yaml" ]                   && ok "secrets.yaml present"         || nope "secrets.yaml missing"
+[ -f "$PROJ_DIR/src/secrets.yaml" ]               && ok "src/secrets.yaml present (sops convention)" || nope "src/secrets.yaml missing"
 [ -f "$PROJ_DIR/0.spec/README.md" ]               && ok "0.spec/README.md present"     || nope "0.spec missing"
 for f in src/compose.nix src/flake.nix; do
   [ -f "$PROJ_DIR/$f" ] && ok "$f" || nope "$f missing"
@@ -53,9 +53,18 @@ img=$(jq -r '.containers.app.image' "$BUILD_JSON")
 restrict_ok=$(jq -e '.containers.app.command | index("--restrict-to") and (index("127.0.0.1:51820"))' "$BUILD_JSON" >/dev/null 2>&1 && echo y || echo n)
 [ "$restrict_ok" = "y" ] && ok "wstunnel --restrict-to 127.0.0.1:51820 (security pin)" || nope "wstunnel server is missing --restrict-to gate"
 
-# Command must include --http-upgrade-path-prefix ${WSTUNNEL_PATH_PREFIX}
-prefix_ok=$(jq -e '.containers.app.command | index("--http-upgrade-path-prefix")' "$BUILD_JSON" >/dev/null 2>&1 && echo y || echo n)
-[ "$prefix_ok" = "y" ] && ok "wstunnel --http-upgrade-path-prefix wired (scanner defence)" || nope "no --http-upgrade-path-prefix flag"
+# Command must include --restrict-http-upgrade-path-prefix ${WSTUNNEL_PATH_PREFIX}
+# (wstunnel v10.5.4+ renamed from --http-upgrade-path-prefix)
+prefix_ok=$(jq -e '.containers.app.command | index("--restrict-http-upgrade-path-prefix")' "$BUILD_JSON" >/dev/null 2>&1 && echo y || echo n)
+[ "$prefix_ok" = "y" ] && ok "wstunnel --restrict-http-upgrade-path-prefix wired (scanner defence)" || nope "no --restrict-http-upgrade-path-prefix flag"
+# Command must start with /home/app/wstunnel (image ENTRYPOINT is dumb-init -- ARGV)
+binary_ok=$(jq -e '.containers.app.command[0] == "/home/app/wstunnel"' "$BUILD_JSON" >/dev/null 2>&1 && echo y || echo n)
+[ "$binary_ok" = "y" ] && ok "command starts with /home/app/wstunnel (dumb-init ENTRYPOINT compatible)" \
+                       || nope "command must start with /home/app/wstunnel"
+# Bind on all interfaces (Caddy in container can't reach host-localhost)
+bind_ok=$(jq -e '.containers.app.command | index("ws://0.0.0.0:8080")' "$BUILD_JSON" >/dev/null 2>&1 && echo y || echo n)
+[ "$bind_ok" = "y" ] && ok "wstunnel binds 0.0.0.0:8080 (reachable from Caddy via WG IP)" \
+                     || nope "wstunnel must bind ws://0.0.0.0:8080 (not 127.0.0.1)"
 
 # ── Phase 3 · transports declaration (the SoT for the whole VPN) ─────────
 echo "▶ Phase 3 · transports SoT"
@@ -77,8 +86,8 @@ secret_ref=$(jq -r '.transports."wg0-tcp".wstunnel_path_prefix_secret' "$BUILD_J
 echo "▶ Phase 4 · secrets contract"
 required=$(jq -r '.secrets.required[]' "$BUILD_JSON" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')
 [ "$required" = "WSTUNNEL_PATH_PREFIX" ] && ok "secrets.required = $required" || nope "secrets.required mismatch: '$required'"
-grep -q '^WSTUNNEL_PATH_PREFIX:' "$PROJ_DIR/secrets.yaml" \
-  && ok "secrets.yaml declares WSTUNNEL_PATH_PREFIX key" \
+grep -q '^WSTUNNEL_PATH_PREFIX:' "$PROJ_DIR/src/secrets.yaml" \
+  && ok "src/secrets.yaml declares WSTUNNEL_PATH_PREFIX key" \
   || nope "secrets.yaml missing WSTUNNEL_PATH_PREFIX key"
 
 # ── Phase 5 · cross-references ───────────────────────────────────────────
