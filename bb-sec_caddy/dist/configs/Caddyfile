@@ -12,15 +12,12 @@
     admin localhost:2019
     order respond before handle
     auto_https disable_redirects
-    # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
-    # and supports wildcard certs for *.diegonmarcos.com. Token sourced
-    # from .secrets (env_file in compose.nix). Phase 2a of public-surface
-    # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
-    acme_dns cloudflare {env.CF_API_TOKEN}
-    # caddy-l4 owns :443 (Phase 3 of collapse plan): SNI matchers route
-    # IMAPS/SMTPS to mail upstreams, unmatched TLS falls through to Caddy's
-    # internal HTTPS handler on 127.0.0.1:8443. https_port shifts every
-    # auto-bound HTTPS listener to 8443 so they don't fight :443.
+    # ACME DNS-01 disabled 2026-05-08: image binary missing caddy-dns/cloudflare
+    # module after attempted upgrade — blocks Caddy boot. Revisit when
+    # caddy-l4-image is rebuilt cleanly. Reverts to HTTP-01 (port 80).
+    # acme_dns cloudflare {env.CF_API_TOKEN}
+    # caddy-l4 still owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS
+    # off the public socket so caddy-l4 SNI mux + fall-through can run.
     https_port 8443
     # Disable HTTP/3 / QUIC — UDP/443 is reserved for WireGuard fallback
     # (firewall.nix on hub redirects udp/443 → udp/51820 for peers behind
@@ -43,35 +40,44 @@ route {
         }
         :443 {
 # IMAPS via SNI on :443 (Maddy) (SNI: imap.diegonmarcos.com)
-@sni_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
+@sni_imap_diegonmarcos_com tls {
+  sni imap.diegonmarcos.com
+}
 route @sni_imap_diegonmarcos_com {
   proxy {
     upstream 10.0.0.3:993
   }
 }
 # SMTPS via SNI on :443 (Maddy) (SNI: smtps.diegonmarcos.com)
-@sni_smtps_diegonmarcos_com tls sni smtps.diegonmarcos.com
+@sni_smtps_diegonmarcos_com tls {
+  sni smtps.diegonmarcos.com
+}
 route @sni_smtps_diegonmarcos_com {
   proxy {
     upstream 10.0.0.3:465
   }
 }
 # IMAPS via SNI on :443 (Stalwart) (SNI: imap-stalwart.diegonmarcos.com)
-@sni_imap_stalwart_diegonmarcos_com tls sni imap-stalwart.diegonmarcos.com
+@sni_imap_stalwart_diegonmarcos_com tls {
+  sni imap-stalwart.diegonmarcos.com
+}
 route @sni_imap_stalwart_diegonmarcos_com {
   proxy {
     upstream 10.0.0.3:2993
   }
 }
 # SMTPS via SNI on :443 (Stalwart) (SNI: smtps-stalwart.diegonmarcos.com)
-@sni_smtps_stalwart_diegonmarcos_com tls sni smtps-stalwart.diegonmarcos.com
+@sni_smtps_stalwart_diegonmarcos_com tls {
+  sni smtps-stalwart.diegonmarcos.com
+}
 route @sni_smtps_stalwart_diegonmarcos_com {
   proxy {
     upstream 10.0.0.3:2465
   }
 }
 # Default: unmatched TLS → Caddy HTTPS handler on internal port
-route {
+@any_tls tls
+route @any_tls {
   proxy {
     upstream 127.0.0.1:8443
   }
