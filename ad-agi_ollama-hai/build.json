@@ -1,5 +1,6 @@
 {
   "name": "ollama-hai",
+  "enabled": false,
   "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
   "category": "agi",
   "timezone": "America/Chicago",
