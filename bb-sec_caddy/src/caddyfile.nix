@@ -4,6 +4,9 @@
 # Reads build-caddy.json (data-driven from 2_configs/dist/) and
 # returns the fully-rendered Caddyfile string. Split out of
 # flake.nix so the orchestrator stays thin.
+#
+# Last meaningful change: 2026-05-08 Phase 3 (caddy-l4 SNI mux + https_port
+# 8443 + DNS-01 + WG-fallback HTTP/3 disable).
 # ══════════════════════════════════════════════════════════════════
 { lib, caddyRoutes }:
 
