@@ -178,27 +178,73 @@ let
   # for listen_scope=wg), Caddy binds only on that IP:port. Absent → :<port> =
   # all interfaces = current public behavior. One data-driven knob flips public
   # vs WG-only per entry in config.json → vms[gcp-proxy].public_ports[].
-  mkL4Block = route:
+  #
+  # sni: optional — when present, the route is matched by TLS SNI inside a
+  # shared listener block. Multiple routes with the same listenSpec get
+  # collapsed into one listener with per-SNI sub-routes. Phase 3 of the
+  # public-surface collapse: lets IMAPS, SMTPS, JMAP, … all share :443 via
+  # SNI hostname routing.
+  routeListenSpec = route: route.listen or ":${toString route.port}";
+
+  mkL4SubRoute = route:
     let
       pp = route.proxy_protocol or false;
       ppLine = if pp then "\n                proxy_protocol v2" else "";
-      listenSpec = route.listen or ":${toString route.port}";
+      sniLine = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni} tls sni ${route.sni}" else "";
+      matcher = if (route ? sni && route.sni != null) then "@sni_${lib.replaceStrings ["." "-"] ["_" "_"] route.sni}" else "";
+    in
+      if (route ? sni && route.sni != null) then ''
+            # ${route.comment or ""} (SNI: ${route.sni})
+            ${sniLine}
+            route ${matcher} {
+              proxy {
+                upstream ${route.upstream}${ppLine}
+              }
+            }''
+      else ''
+            # ${route.comment or ""}
+            route {
+              proxy {
+                upstream ${route.upstream}${ppLine}
+              }
+            }'';
+
+  # Group routes by listenSpec → one listener block per spec.
+  groupRoutesByListen = routes:
+    lib.foldl' (acc: r:
+      let k = routeListenSpec r; in
+      acc // { ${k} = (acc.${k} or []) ++ [ r ]; }
+    ) {} routes;
+
+  # On the public :443 listener, caddy-l4 owns the socket. After SNI matchers
+  # for mail subdomains, append a default fall-through proxy to Caddy's
+  # internal HTTPS handler (127.0.0.1:8443, set by https_port in global).
+  # This is what lets HTTPS to *.diegonmarcos.com keep working even though
+  # caddy-l4 is binding :443. Phase 3 of public-surface collapse plan.
+  l4FallthroughHttps = ''
+            # Default: unmatched TLS → Caddy HTTPS handler on internal port
+            route {
+              proxy {
+                upstream 127.0.0.1:8443
+              }
+            }'';
+
+  mkL4ListenerBlock = listenSpec: routes:
+    let
+      routesOut = lib.concatMapStringsSep "\n" mkL4SubRoute routes;
+      fallthrough = if listenSpec == ":443" then "\n" + l4FallthroughHttps else "";
     in ''
-        # ${route.comment or ""}
         ${listenSpec} {
-          route {
-            proxy {
-              upstream ${route.upstream}${ppLine}
-            }
-          }
+${routesOut}${fallthrough}
         }'';
 
   mkL4Section =
     if (caddyRoutes.l4_routes or []) == [] then ""
-    else ''
+    else
+      let grouped = groupRoutesByListen caddyRoutes.l4_routes; in ''
 
       layer4 {
-  ${lib.concatMapStringsSep "\n" mkL4Block caddyRoutes.l4_routes}
+  ${lib.concatStringsSep "\n" (lib.mapAttrsToList mkL4ListenerBlock grouped)}
       }
   '';
 
@@ -715,6 +761,11 @@ in ''
     # from .secrets (env_file in compose.nix). Phase 2a of public-surface
     # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
     acme_dns cloudflare {env.CF_API_TOKEN}
+    # caddy-l4 owns :443 (Phase 3 of collapse plan): SNI matchers route
+    # IMAPS/SMTPS to mail upstreams, unmatched TLS falls through to Caddy's
+    # internal HTTPS handler on 127.0.0.1:8443. https_port shifts every
+    # auto-bound HTTPS listener to 8443 so they don't fight :443.
+    https_port 8443
     # Disable HTTP/3 / QUIC — UDP/443 is reserved for WireGuard fallback
     # (firewall.nix on hub redirects udp/443 → udp/51820 for peers behind
     # networks that block 51820/udp). Phase 4 of collapse plan.
