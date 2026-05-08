@@ -1,0 +1,41 @@
+# compose.nix — pure attrset describing docker-compose.yml for wireguard-mesh-ws-tunnel.
+# engine.nix serialises it via lib.generators.toYAML, merging compose-defaults.json.
+#
+# wstunnel-server runs on gcp-proxy in network_mode: host so it can reach the
+# kernel WG listener at 127.0.0.1:51820 without docker-network NAT.
+{ buildJson, container, base_domain ? null }:
+
+let
+  app = buildJson.containers.app;
+in
+{
+  services = {
+    wireguard-mesh-ws-tunnel = {
+      image          = app.image;
+      container_name = app.container_name;
+      command        = app.command;
+      network_mode   = app.network_mode;
+      read_only      = app.read_only;
+      tmpfs          = app.tmpfs;
+      env_file       = [ ".secrets" ];
+      environment = {
+        TZ = buildJson.timezone or "Europe/Madrid";
+      };
+      restart = "unless-stopped";
+      deploy = {
+        resources = {
+          limits = {
+            memory = app.resources.mem_limit;
+          };
+        };
+      };
+      logging = {
+        driver = "json-file";
+        options = {
+          max-size = "1m";
+          max-file = "3";
+        };
+      };
+    };
+  };
+}

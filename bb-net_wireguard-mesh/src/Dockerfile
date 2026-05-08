@@ -1,0 +1,49 @@
+# wireguard-mesh — multi-stage build
+#
+# Stage 1: build static assets (TS+SCSS+HTML+data wrapper) with node + esbuild + sass
+# Stage 2: serve via nginx-alpine. read-only, no writable filesystem.
+#
+# Build context:    a_solutions/bb-net_wireguard-mesh/
+# Output volume:    none — entirely static
+# Image size:       ~6 MB (alpine + nginx-only)
+# Memory at runtime ~5–10 MB
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Stage 1 · build static bundle                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+FROM node:20-alpine AS build
+WORKDIR /build
+
+# Install deps (cached layer)
+COPY package.json ./
+RUN npm install --no-audit --no-fund --omit=optional
+
+# Bring in sources
+COPY tsconfig.json ./
+COPY src/ ./src/
+
+# Build (emits dist/{index.html, style.css, script.js, data-mesh.json.js})
+RUN npm run build
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  Stage 2 · serve                                                 ║
+# ╚══════════════════════════════════════════════════════════════════╝
+FROM nginx:1.27-alpine
+
+# Replace default nginx config with our minimal one
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built static assets into nginx's serve dir
+COPY --from=build /build/dist/ /usr/share/nginx/html/
+
+# Drop privileges where possible (nginx-alpine runs as root by default; we restrict)
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1
+
+# Run as non-root nginx user, master writes no PID file (read-only fs friendly)
+USER nginx
+CMD ["nginx", "-g", "daemon off;"]

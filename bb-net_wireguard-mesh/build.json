@@ -1,0 +1,74 @@
+{
+  "name": "wireguard-mesh",
+  "description": "Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.",
+  "category": "tools",
+  "subcategory": "net",
+  "domain": "mesh.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/wireguard-mesh",
+    "compose_flags": "--build"
+  },
+  "compose": {
+    "custom": true
+  },
+  "ports": {
+    "app": 8080
+  },
+  "containers": {
+    "app": {
+      "container_name": "wireguard-mesh",
+      "port": 8080,
+      "port_format": "colon",
+      "protocol": "http",
+      "public": true,
+      "read_only": true,
+      "tmpfs": [
+        "/var/cache/nginx",
+        "/var/run"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "32m"
+      },
+      "healthcheck": {
+        "test": ["CMD", "wget", "-qO-", "http://localhost:8080/"],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3
+      },
+      "monitoring": {
+        "tls_check": true
+      }
+    }
+  },
+  "proxy": {
+    "primary": {
+      "domain": "mesh.diegonmarcos.com",
+      "auth": "two_factor",
+      "_doc": "Authelia 2FA — ops-only observability panel."
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "build": {
+    "include_cloud_data": true,
+    "headers_enforced": true
+  },
+  "data_sources": {
+    "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",
+    "consolidated": "2_configs/dist/_cloud-data-consolidated.json",
+    "ws_tunnel":    "a_solutions/bb-net_wireguard-mesh-ws-tunnel/build.json"
+  },
+  "data_outputs": {
+    "snapshot": "2_configs/dist/mesh-snapshot.json",
+    "_consumer_hint": "Symlinked into src/data/mesh.json at build-prep time; PORTAL_DATA[\"mesh\"] hydration. Bare name (not cloud-data-*) so it stays at dist/ root per cloud-data-config-derive.ts L26 archival rule."
+  }
+}
