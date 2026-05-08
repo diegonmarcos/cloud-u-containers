@@ -25,7 +25,7 @@ in
         GITEA__server__HTTP_PORT                     = toString portHttp;
         GITEA__server__SSH_PORT                      = toString portSsh;
         GITEA__server__SSH_LISTEN_PORT               = toString portSsh;
-        GITEA__server__SSH_LISTEN_HOST               = "0.0.0.0";
+        GITEA__server__SSH_LISTEN_HOST               = buildJson.ssh_listen_host;
         GITEA__server__DISABLE_SSH                   = "false";
         GITEA__server__ROOT_URL                      = "https://${domain}";
         GITEA__server__SSH_DOMAIN                    = domain;

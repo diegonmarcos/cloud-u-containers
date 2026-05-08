@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       vm:
-        description: "Target VM (gcp-proxy, gcp-t4, oci-mail, oci-analytics, oci-apps, oci-apps-2, or empty for all)"
+        description: "Target VM (gcp-proxy, oci-mail, oci-analytics, oci-apps, oci-apps-2, or empty for all)"
         required: false
         type: string
 
@@ -26,11 +26,6 @@ jobs:
             host_secret: GCP_PROXY_HOST
             user_secret: GCP_PROXY_USER
             key_secret: GCP_PROXY_SSH_KEY
-          - vm: gcp-t4
-            host_secret: GCP_T4_HOST
-            user_secret: GCP_T4_USER
-            key_secret: GCP_T4_SSH_KEY
-            optional: true
           - vm: oci-mail
             host: "130.110.251.193"
             user: "ubuntu"

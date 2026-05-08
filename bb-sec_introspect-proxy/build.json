@@ -5,6 +5,7 @@
   "ports": {
     "app": 4182
   },
+  "bind_host": "10.0.0.1",
   "category": "sec",
   "deploy": {
     "host": "gcp-proxy",
