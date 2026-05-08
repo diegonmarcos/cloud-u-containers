@@ -23,9 +23,12 @@ head_sampling_rate = 1
 GOOGLE_EMAIL = "me@diegonmarcos.com"
 GOOGLE_SA_EMAIL = "diego-cli@diegonmarcos-infra-prod.iam.gserviceaccount.com"
 C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-api/reach/smtp-proxy"
-SMTP_PROXY_URL = "https://smtp.diegonmarcos.com/"
+SMTP_PROXY_URL = "https://api.diegonmarcos.com/smtp-proxy-api/"
 BACKUP_EMAIL = "diegonmarcos@live.com"
 # Secrets — set via: wrangler secret put <NAME>
-# C3_BEARER_TOKEN  — Authelia OIDC bearer token (cloudflare-health-c3-api client)
-# SMTP_PROXY_KEY   — API key for smtp-proxy authentication
-# GOOGLE_SA_KEY    — GCP service account private key (PEM, for Gmail API JWT)
+# C3_BEARER_TOKEN     — Authelia OIDC bearer token (cloudflare-health-c3-api client)
+#                       Reused for SMTP_PROXY auth — Caddy forward_auth introspect-proxy validates.
+# SMTP_PROXY_KEY      — App-layer API key validated by smtp-proxy Rust binary (defence-in-depth
+#                       alongside Caddy bearer auth). To be retired once Caddy bearer is the
+#                       sole gate; for now both are sent on each request.
+# GOOGLE_SA_KEY       — GCP service account private key (PEM, for Gmail API JWT)
