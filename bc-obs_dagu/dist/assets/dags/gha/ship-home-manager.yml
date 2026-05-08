@@ -3,7 +3,7 @@ name: "Ship → home-manager"
 on:
   push:
     paths:
-      - "b_infra/home-manager/**"
+      - "b_infra/**"
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -114,7 +114,7 @@ jobs:
       - name: Ship home-manager
         id: ship
         if: steps.gate.outputs.skip != 'true' && steps.reachable.outputs.skip != 'true'
-        run: bash b_infra/home-manager/${{ matrix.vm }}/build.sh ship
+        run: bash b_infra/${{ matrix.vm }}/build.sh ship
 
       - name: Report failure
         if: failure() && steps.ship.outcome == 'failure'
