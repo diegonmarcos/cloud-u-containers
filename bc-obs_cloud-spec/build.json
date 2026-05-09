@@ -52,7 +52,8 @@
     "from_image": "busybox:latest"
   },
   "runtime": {
-    "command": "busybox httpd -f -p %PORT% -h /srv"
+    "_doc_command": "busybox httpd -p HOST:PORT — %WG_IP% substituted by compose.nix from container.bind_host (data-driven from cloud-data resolveBindHost). Keeps host-net listener off 0.0.0.0.",
+    "command": "busybox httpd -f -p %WG_IP%:%PORT% -h /srv"
   },
   "build": {
     "headers_enforced": true

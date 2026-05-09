@@ -6,8 +6,19 @@
 let
   svc = container.services;
   app = buildJson.containers.app;
-  # ollama-arm VM (oci-apps-2) not yet in cloud-data; fall back to 0.0.0.0
-  wg_ip = (svc."ollama-arm" or { ip = "0.0.0.0"; }).ip;
+  # WG-bind from cloud-data — engine-resolved (resolveBindHost in
+  # 2_configs/src/engines/cloud-data-config-derive.ts). For ollama-arm the
+  # deploy-target VM (oci-apps-2) must exist in cloud-data; otherwise the
+  # engine returns the "vm.wg_ip" sentinel — fail loud (no silent 0.0.0.0).
+  wg_ip =
+    if container.bind_host == null || container.bind_host == "vm.wg_ip"
+    then throw ''
+      ollama-arm: container.bind_host is unresolved — VM '${container.vm}' is
+      missing a WG mesh entry in cloud-data. Add the VM to
+      I_cloud-data/cloud-data-* + re-run 2_configs/build.sh all to populate
+      bind_host; refusing to bind to 0.0.0.0 on a public surface.
+    ''
+    else container.bind_host;
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {

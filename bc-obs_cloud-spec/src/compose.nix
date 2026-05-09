@@ -14,9 +14,17 @@ let
 
   port = toString app.port;
 
-  # Static-serve command — %PORT% substituted with the declared port
+  # WG-bind from cloud-data — engine-resolved (resolveBindHost in
+  # 2_configs/src/engines/cloud-data-config-derive.ts).
+  bindHost = container.bind_host;
+
+  # Static-serve command — %PORT% + %WG_IP% substituted from declared port
+  # and container.bind_host; keeps busybox httpd off 0.0.0.0.
   runtimeCmd =
-    builtins.replaceStrings [ "%PORT%" ] [ port ] buildJson.runtime.command;
+    builtins.replaceStrings
+      [ "%PORT%" "%WG_IP%" ]
+      [ port bindHost ]
+      buildJson.runtime.command;
 in
 {
   services = {

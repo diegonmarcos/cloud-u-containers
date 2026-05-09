@@ -23,7 +23,9 @@
           {
             name = "init.sh";
             vars = {
-              SSH_PORT = toString buildJson.ports.app;
+              SSH_PORT       = toString buildJson.ports.app;
+              # WG-bind from cloud-data — engine-resolved (resolveBindHost).
+              LISTEN_ADDRESS = container.bind_host;
             };
           }
         ];

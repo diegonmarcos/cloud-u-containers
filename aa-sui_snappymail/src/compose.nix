@@ -34,6 +34,9 @@ in
         # Pre-seed data + PHP executor for additional accounts.
         "./assets/seed-accounts.json:/opt/snappymail-config/seed-accounts.json:ro"
         "./assets/seed-accounts.php:/opt/snappymail-config/seed-accounts.php:ro"
+        # Apache `Listen` override — pins to WG IP (container.bind_host),
+        # keeping host-net listener off 0.0.0.0.
+        "./configs/ports.conf:/etc/apache2/ports.conf:ro"
       ];
       env_file = [ ".secrets" ];
       # NB: `$$` is compose-file escape for a literal `$`. Without it,
