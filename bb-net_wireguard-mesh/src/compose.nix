@@ -3,6 +3,7 @@
 { buildJson, container, base_domain ? null }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
 
   # Built locally on the deploy host (REMOTE_BUILD path) — small static bundle,
@@ -20,8 +21,10 @@ in
       container_name = app.container_name;
       read_only = true;
       tmpfs = app.tmpfs or [ "/var/cache/nginx" "/var/run" ];
+      # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip
+      # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
       ports = [
-        "${toString buildJson.ports.app}:${toString app.port}"
+        "${svc.wireguard-mesh.ip}:${toString buildJson.ports.app}:${toString app.port}"
       ];
       environment = {
         TZ = buildJson.timezone or "Europe/Madrid";

@@ -3,6 +3,7 @@
 { buildJson, container }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
@@ -21,7 +22,9 @@ in
         GRIST_LOG_LEVEL      = "info";
       };
       ports = [
-        "${toString buildJson.ports.app}:${toString buildJson.ports.app}"
+        # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip
+        # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
+        "${svc.grist.ip}:${toString buildJson.ports.app}:${toString buildJson.ports.app}"
       ];
       volumes = [
         "grist_data:/persist"
