@@ -100,14 +100,15 @@ smtp tcp://0.0.0.0:25 {
     }
 }
 
-# ── Submission (ports 465/587) — authenticated outbound ───────────
+# ── Submission (port 465) — authenticated outbound ───────────────
 # WG-bind (10.0.0.3) primary path — co-located services reach Maddy via
 # mail.diegonmarcos.com → Hickory (10.0.0.1) → Caddy L4 forwarder → 10.0.0.3.
 # Loopback bind retained UNTIL vm-pilot/network/etc-hosts-clean.nix ships to
 # oci-mail (HM workflow currently blocked). Once /etc/hosts hijack is gone,
 # the loopback duplicates are no longer needed and can be dropped. Tracker:
 # pair-removal with etc-hosts-clean activation (see commits 8048d87da/ffce1b537).
-submission tls://10.0.0.3:465 tls://127.0.0.1:465 tcp://10.0.0.3:587 tcp://127.0.0.1:587 {
+# 587/STARTTLS retired 2026-05-08 — implicit-TLS only.
+submission tls://10.0.0.3:465 tls://127.0.0.1:465 {
     limits {
         all rate 50 1s
     }
