@@ -44,6 +44,12 @@ in
       environment = {
         NODE_ENV      = "production";
         MCP_HTTP_PORT = port;
+        # bindHost() reads MCP_HTTP_HOST. Defaults to 127.0.0.1 in source
+        # (defensive, never expose by default). Bridge-mode containers must
+        # accept on the container's own private net namespace, so 0.0.0.0
+        # is scoped to the container — docker maps from WG IP via the
+        # `ports = [ "${vmIp}:${port}:${port}" ]` rule above.
+        MCP_HTTP_HOST = "0.0.0.0";
         NODE_OPTIONS  = "--max-old-space-size=1536";
         PROXIED_MCPS  = proxiedMcpsJson;
       };

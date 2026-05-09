@@ -2,6 +2,7 @@ use std::env;
 
 #[derive(Clone, Debug)]
 pub struct AppConfig {
+    pub host: String,
     pub port: u16,
     pub ollama_url: String,
     pub ollama_model: String,
@@ -26,6 +27,11 @@ impl AppConfig {
             .unwrap_or_else(|_| "http://c3-infra-mcp-api:3100".into());
 
         Self {
+            // Defensive default: 127.0.0.1 (loopback). NEVER 0.0.0.0 — a misconfigured
+            // deploy must not silently expose the service on every interface.
+            // compose.nix passes RIG_HOST = WG IP from cloud-data.
+            host: env::var("RIG_HOST")
+                .unwrap_or_else(|_| "127.0.0.1".into()),
             port: env::var("RIG_PORT")
                 .ok()
                 .and_then(|v| v.parse().ok())
