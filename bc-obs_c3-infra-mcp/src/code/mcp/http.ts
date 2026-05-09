@@ -8,6 +8,7 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { bindHost } from "../shared/libs/binds.js";
 
 // A) Observability
 import { registerHealthCloudTools } from "./tools/health_cloud.js";
@@ -161,8 +162,9 @@ export function startMcpHttpServer(port: number = 3100): Promise<void> {
       }
     });
 
-    httpServer.listen(port, "0.0.0.0", async () => {
-      log(`MCP Streamable HTTP server listening on 0.0.0.0:${port}`);
+    const host = bindHost();
+    httpServer.listen(port, host, async () => {
+      log(`MCP Streamable HTTP server listening on ${host}:${port}`);
       await initSession(port);
       resolve();
     });

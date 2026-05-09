@@ -11,6 +11,7 @@ import { registerSkillTools } from "./tools/a-knowledge/skills.js";
 import { registerOctocodeTools } from "./tools/b-code-graph-context/octocode.js";
 import { registerCodegraphTools } from "./tools/b-code-graph-context/codegraph.js";
 import { buildContextSummary } from "./context.js";
+import { bindHost } from "./shared/libs/binds.js";
 
 const log = (msg: string) => process.stderr.write(`[cloud-cgc-mcp] ${msg}\n`);
 
@@ -113,8 +114,9 @@ async function startHttp(): Promise<void> {
     }
   });
 
-  httpServer.listen(HTTP_PORT, "0.0.0.0", () => {
-    log(`MCP HTTP server listening on 0.0.0.0:${HTTP_PORT}`);
+  const host = bindHost();
+  httpServer.listen(HTTP_PORT, host, () => {
+    log(`MCP HTTP server listening on ${host}:${HTTP_PORT}`);
   });
 }
 

@@ -86,7 +86,7 @@ async fn main() {
         .route("/agent/tasks/{id}", get(agent_get))
         .with_state(state);
 
-    let addr = format!("0.0.0.0:{}", config.port);
+    let addr = format!("{}:{}", config.host, config.port);
     info!("Listening on {addr}");
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
