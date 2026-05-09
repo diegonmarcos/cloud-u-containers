@@ -1,11 +1,11 @@
 {
   "name": "caddy",
-  "description": "Caddy reverse proxy + security dashboard (gcp-proxy)",
+  "description": "Caddy reverse proxy + security dashboard (oci-analytics, wg-public hub)",
   "dns": "caddy.app",
   "category": "sec",
   "domain": "proxy.diegonmarcos.com",
   "deploy": {
-    "host": "gcp-proxy",
+    "host": "oci-analytics",
     "remote_path": "/opt/containers/caddy",
     "excludes": [
       "logs/"
@@ -27,8 +27,8 @@
       "admin_bind": "localhost:2019",
       "order": "respond before handle",
       "auto_https": "disable_redirects",
-      "_doc_wg_bind_ip": "Caddy's WG IP — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip) so Hickory's *.diegonmarcos.com → 10.0.0.1 fast-path lands on the same routing table the public listener uses. Without this, WG-internal traffic hits the *:443 listener that's shadowed by the more-specific 10.0.0.1:443 listener (created by *.app blocks), and unmatched hosts get an empty 200 response.",
-      "wg_bind_ip": "10.0.0.1"
+      "_doc_wg_bind_ip": "Caddy's wg-public hub IP (oci-analytics = 10.1.0.1) — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Phase 4 of the wg-public migration: Caddy lives on oci-analytics which is the hub of the public-trust WG mesh; reverse-proxy upstreams to wg-public peers (gcp-proxy/oci-mail/oci-apps) cross via 10.1.0.x rather than the internal wg0 (10.0.0.x). Source-of-truth: 2_configs/dist/_cloud-data-consolidated.json wireguard_public.peers[] (oci-analytics → 10.1.0.1).",
+      "wg_bind_ip": "10.1.0.1"
     },
     "on_demand_tls": {
       "ask_bind": "127.0.0.1:2020",

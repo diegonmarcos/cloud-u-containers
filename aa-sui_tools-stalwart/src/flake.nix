@@ -92,7 +92,7 @@
           ./code/jmap-sorter.py
           { name = "mail-rules.json"; src = mailRulesDerived; }
         ];
-        composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
+        composeSpec = import ./compose.nix { inherit buildJson container base_domain lib; };
         title = "Stalwart Mail Server (Shadow)";
       };
     });
