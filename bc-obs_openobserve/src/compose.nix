@@ -22,7 +22,9 @@ in
         ZO_DATA_DIR   = "/data";
         ZO_LOCAL_MODE = "true";
         ZO_TELEMETRY  = "false";
-        ZO_BASE_URI   = "";
+        # Mounted under analytics.diegonmarcos.com/openobserve — SPA must
+        # generate links/assets relative to this prefix instead of root.
+        ZO_BASE_URI   = "/openobserve";
         # Memory diet — write-only ingest endpoint (fluent-bit POSTs from
         # 4 VMs, ~10 KB/s). No queries, no dashboards, no alerts. Default
         # config wastes ~300 MiB on unused query infrastructure:
