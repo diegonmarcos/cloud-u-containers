@@ -39,12 +39,12 @@
     "app_hub": false
   },
   "ports": {
-    "app": 8080
+    "app": 8090
   },
   "containers": {
     "app": {
       "container_name": "http-to-smtp-proxy-api",
-      "port": 8080,
+      "port": 8090,
       "port_env": "LISTEN_PORT",
       "dns": "http-to-smtp-proxy-api.app",
       "public": true,
