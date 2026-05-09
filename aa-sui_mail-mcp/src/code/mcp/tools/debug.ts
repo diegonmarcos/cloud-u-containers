@@ -420,7 +420,7 @@ export function registerDebugTools(server: McpServer): void {
         sections.push([
           "── Inbound Flow ──────────────────────────────────────",
           "  Internet → CF Email Routing → CF Worker (email-forwarder)",
-          "    → api.diegonmarcos.com/http-to-smtp-proxy-api (CF → Caddy on gcp-proxy → HTTP:8080)",
+          "    → api.diegonmarcos.com/http-to-smtp-proxy-api (CF → Caddy on gcp-proxy → HTTP:8090)",
           `      → ${srvName} :25 (XCLIENT + SPF/DKIM/DMARC/DNSBL)`,
           "        → IMAP store (imapsql)",
         ].join("\n"));
@@ -451,7 +451,7 @@ export function registerDebugTools(server: McpServer): void {
           : deliverOk ? "[PASS]"
           : "[INFO]";
         sections.push([
-          `── 2. http-to-smtp-proxy-api (gcp-proxy:8080) ${badge} ──`,
+          `── 2. http-to-smtp-proxy-api (gcp-proxy:8090) ${badge} ──`,
           hasData ? smtpProxyLogs : "  (no logs in window)",
         ].join("\n"));
       }

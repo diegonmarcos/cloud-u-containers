@@ -43,7 +43,7 @@ impl Config {
             smtp_pass: env::var("SMTP_PASS").unwrap_or_default(),
             api_key: env::var("API_KEY").unwrap_or_default(),
             listen_host: env::var("LISTEN_HOST").unwrap_or_else(|_| "127.0.0.1".into()),
-            listen_port: env::var("LISTEN_PORT").unwrap_or_else(|_| "8080".into()).parse().unwrap_or(8080),
+            listen_port: env::var("LISTEN_PORT").unwrap_or_else(|_| "8090".into()).parse().unwrap_or(8090),
             helo_domain: "http-to-smtp-proxy-api.diegonmarcos.com".into(),
             shadow_host: env::var("SMTP_SHADOW_HOST").ok().filter(|s| !s.is_empty()),
             shadow_port: env::var("SMTP_SHADOW_PORT").unwrap_or_else(|_| "2025".into()).parse().unwrap_or(2025),
