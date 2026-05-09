@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { registry } from "../../registry/index.js";
+import { rawHttpRequest } from "../../shared/http.js";
 
 export async function registerRegistryRoutes(app: FastifyInstance) {
   app.get("/health", {
@@ -66,6 +67,51 @@ export async function registerRegistryRoutes(app: FastifyInstance) {
       return { error: `Service '${req.params.service}' not found` };
     }
     return svc;
+  });
+
+  // Reachability probe for health-check callers (CF Worker, monitoring).
+  // Hits the service's WG-mesh /health endpoint with a short timeout and
+  // returns a tiny JSON envelope. Avoids leaking upstream payload shape.
+  app.get<{ Params: { service: string } }>("/:service/reach", {
+    schema: {
+      tags: ["Registry"],
+      summary: "Probe service reachability via its WG-mesh /health endpoint",
+      params: {
+        type: "object",
+        properties: { service: { type: "string" } },
+        required: ["service"],
+      },
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            service:   { type: "string" },
+            reachable: { type: "boolean" },
+            status:    { type: "number" },
+          },
+        },
+        404: {
+          type: "object",
+          properties: {
+            error:     { type: "string" },
+            reachable: { type: "boolean" },
+          },
+        },
+      },
+    },
+  }, async (req, reply) => {
+    const svc = registry.get(req.params.service);
+    if (!svc) {
+      reply.code(404);
+      return { error: `Service '${req.params.service}' not found`, reachable: false };
+    }
+    const baseUrl = registry.getBaseUrl(req.params.service);
+    if (!baseUrl) {
+      reply.code(404);
+      return { error: `Service '${req.params.service}' has no baseUrl`, reachable: false };
+    }
+    const result = rawHttpRequest("GET", `${baseUrl}/health`, undefined, 5_000);
+    return { service: req.params.service, reachable: result.ok, status: result.status };
   });
 
   app.get<{ Params: { service: string } }>("/:service/spec", {
