@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { bindHost } from "../shared/libs/binds.js";
 
 // ── Meta ────────────────────────────────────────
 import { registerRegistryTools } from "./tools/registry.js";
@@ -161,8 +162,9 @@ export function startMcpHttpServer(port: number = 3101): Promise<void> {
       try { await handleMcpRequest(req, res); }
       catch (err) { log(`Error: ${err}`); if (!res.headersSent) { res.writeHead(500); res.end(JSON.stringify({ error: "Internal Server Error" })); } }
     });
-    httpServer.listen(port, "0.0.0.0", async () => {
-      log(`MCP Streamable HTTP server listening on 0.0.0.0:${port}`);
+    const host = bindHost();
+    httpServer.listen(port, host, async () => {
+      log(`MCP Streamable HTTP server listening on ${host}:${port}`);
       await initSession(port);
       resolve();
     });
