@@ -8,103 +8,69 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
+    # Data-driven from build.json: bind_host (WG IP), ports, image, name.
+    # Tier-3 fix: ALL listeners bound to bind_host (WG-only), never bare ":PORT".
+    buildJson = builtins.fromJSON (builtins.readFile ./build.json);
+    image     = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
+    bindHost  = buildJson.bind_host;
+    p         = buildJson.ports;
+
+    # postlite binary CLI: -addr <host:port> -data-dir <dir>
+    # NOTE: legacy `-port` / `-db` flags do not exist on benbjohnson/postlite;
+    # the 4 sqlite-* services were latently broken. They now use the only valid
+    # binary flag (-addr), bound to bind_host:port from build.json.
+    sqliteServices = [
+      { name = "sqlite-npm";          port = p.npm_rest;         dataDir = "/home/diego/npm/data"; }
+      { name = "sqlite-vaultwarden";  port = p.vaultwarden_rest; dataDir = "/home/diego/vaultwarden/data"; }
+      { name = "sqlite-ntfy";         port = p.ntfy_rest;        dataDir = "/home/diego/ntfy/cache"; }
+      { name = "sqlite-authelia";     port = p.authelia_rest;    dataDir = "/home/diego/authelia/config"; }
+    ];
+
+    postliteServices = [
+      { name = "postlite-npm";         port = p.npm_pg;         dataDir = "/home/diego/npm/data"; }
+      { name = "postlite-vaultwarden"; port = p.vaultwarden_pg; dataDir = "/home/diego/vaultwarden/data"; }
+      { name = "postlite-ntfy";        port = p.ntfy_pg;        dataDir = "/home/diego/ntfy/cache"; }
+      { name = "postlite-authelia";    port = p.authelia_pg;    dataDir = "/home/diego/authelia/config"; }
+    ];
+
+    inherit (nixpkgs.lib) concatMapStrings;
+
+    # YAML rendered as plain string with explicit indentation.
+    # 2 spaces = service name (child of `services:`); 4 spaces = service body.
+    renderService = svc:
+      "  ${svc.name}:\n"
+      + "    image: ${image}\n"
+      + "    container_name: ${svc.name}\n"
+      + "    restart: \"no\"  # container-init handles startup\n"
+      + "    network_mode: host\n"
+      + "    volumes:\n"
+      + "      - ${svc.dataDir}:/data\n"
+      + "    command: [\"-addr\", \"${bindHost}:${toString svc.port}\", \"-data-dir\", \"/data\"]\n"
+      + "\n";
+
+    servicesBlock = concatMapStrings renderService (sqliteServices ++ postliteServices);
+
+    composeHeader =
+      "# DO NOT EDIT - DECLARATIVE ENVIRONMENT - NIX FLAKES WAY\n"
+    + "# AUTO-GENERATED - DONT USE IMPERATIVE SOLUTIONS!!!\n"
+    + "# Source : ~/git/cloud/a_solutions/ca-dat_postlite/src/flake.nix\n"
+    + "# Rebuild: ~/git/cloud/a_solutions/ca-dat_postlite/build.sh ship\n"
+    + "# SQLite PostgreSQL wire-protocol proxies (postlite)\n"
+    + "# Deployed on: gcp-E2-f_0 - bind_host=${bindHost} (WireGuard only)\n"
+    + "# Tier-3: NO bare \":PORT\" listeners; all bound to ${bindHost}.\n"
+    + "\n"
+    + "services:\n";
+
     config = {};
 
     title = "PostLite";
 
-    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" ''
-      # ╔══════════════════════════════════════════════════════════════════╗
-      # ║ DO NOT EDIT — DECLARATIVE ENVIRONMENT — NIX FLAKES WAY         ║
-      # ║ AUTO-GENERATED — DONT USE IMPERATIVE SOLUTIONS!!!              ║
-      # ╠══════════════════════════════════════════════════════════════════╣
-      # ║ Source: ~/git/cloud/a_solutions/ca-dat_postlite/src/flake.nix   ║
-      # ║ Rebuild: ~/git/cloud/a_solutions/ca-dat_postlite/build.sh ship  ║
-      # ╚══════════════════════════════════════════════════════════════════╝
-      # SQLite REST API servers (ws4sqlite + postlite)
-      # Deployed on: gcp-E2-f_0 (35.226.147.64)
-      # Access via WireGuard only (10.0.0.1:8890-8893, 5433-5436)
-
-      services:
-        sqlite-npm:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-npm
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/npm/data:/data
-          command: ["-port", "8890", "-db", "/data/database.sqlite?mode=ro"]
-
-        sqlite-vaultwarden:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-vaultwarden
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/vaultwarden/data:/data
-          command: ["-port", "8891", "-db", "/data/db.sqlite3?mode=ro"]
-
-        sqlite-ntfy:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-ntfy
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/ntfy/cache:/data
-          command: ["-port", "8892", "-db", "/data/cache.db?mode=ro"]
-
-        sqlite-authelia:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: sqlite-authelia
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/authelia/config:/data
-          command: ["-port", "8893", "-db", "/data/db.sqlite3?mode=ro"]
-
-        postlite-npm:
-          build:
-            context: .
-            dockerfile: Dockerfile
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: postlite-npm
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/npm/data:/data
-          command: ["-addr", ":5433", "-data-dir", "/data"]
-
-        postlite-vaultwarden:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: postlite-vaultwarden
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/vaultwarden/data:/data
-          command: ["-addr", ":5434", "-data-dir", "/data"]
-
-        postlite-ntfy:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: postlite-ntfy
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/ntfy/cache:/data
-          command: ["-addr", ":5435", "-data-dir", "/data"]
-
-        postlite-authelia:
-          image: ghcr.io/diegonmarcos/postlite:latest
-          container_name: postlite-authelia
-          restart: "no"  # container-init handles startup
-          network_mode: host
-          volumes:
-            - /home/diego/authelia/config:/data
-          command: ["-addr", ":5436", "-data-dir", "/data"]
-    '';
+    mkDockerCompose = pkgs: pkgs.writeText "docker-compose.yml" (composeHeader + servicesBlock);
 
 
-    # ── Documentation ────────────────────────────────────────────────────
+    # -- Documentation -----------------------------------------------------
     mkDocs = pkgs: defaultPkg: let
-      inherit (pkgs.lib) concatMapStrings hasSuffix optionalString filter subtractLists removeSuffix;
+      inherit (pkgs.lib) hasSuffix optionalString filter subtractLists removeSuffix;
       inherit (builtins) attrNames readDir pathExists;
 
       portKeys = filter (k: hasSuffix "_port" k || k == "port") (attrNames config);
@@ -160,7 +126,6 @@
       cp ${specMd} build/src/spec.md
       ${optionalString hasNarrative "cp ${./docs}/*.md build/src/ 2>/dev/null || true"}
 
-      # Generate configs.md from packages.default output
       echo "# Generated Configuration Files" > build/src/configs.md
       echo "" >> build/src/configs.md
       echo 'These files are produced by nix build and deployed to the VM.' >> build/src/configs.md
