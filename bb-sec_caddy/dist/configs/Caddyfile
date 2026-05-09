@@ -812,14 +812,14 @@ handle_path /http-to-smtp-proxy-api/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.1:8080
+      reverse_proxy 10.0.0.1:8090
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.1:8080
+      reverse_proxy 10.0.0.1:8090
     }
 
 }
@@ -1395,7 +1395,7 @@ import request_limits
   http-to-smtp-proxy-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.0.0.1:8080
+    reverse_proxy 10.0.0.1:8090
   }
 
   stalwart.app {
@@ -1677,12 +1677,12 @@ import request_limits
     reverse_proxy 10.0.0.3:8888
   }
 
-  http-to-smtp-proxy-api-http-8080.app {
+  http-to-smtp-proxy-api-http-8090.app {
     bind 10.0.0.1
     tls internal {
       on_demand
     }
-    reverse_proxy 10.0.0.1:8080
+    reverse_proxy 10.0.0.1:8090
   }
 
   stalwart-https-2443.app {

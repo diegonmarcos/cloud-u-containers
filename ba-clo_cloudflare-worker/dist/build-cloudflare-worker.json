@@ -3,7 +3,7 @@
   "_meta": {
     "description": "cloudflare-worker container config (service=cloudflare-worker, role=app)",
     "format_version": 1,
-    "generated_at": "2026-05-06T14:27:43.335Z",
+    "generated_at": "2026-05-08T18:39:03.430Z",
     "generated_by": "2_configs/src/engines/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
@@ -25,7 +25,7 @@
       "rebuild_command": "bash 2_configs/build.sh all"
     }
   },
-  "_generated": "2026-05-06T14:27:43.206Z",
+  "_generated": "2026-05-08T18:39:03.284Z",
   "_source": "_cloud-data-consolidated.json via cloud-data-config-derive.ts/container-configs",
   "container": {
     "container_name": "cloudflare-worker",
@@ -483,21 +483,6 @@
         "auth": "bearer"
       }
     },
-    "photos-webhook": {
-      "ip": "10.0.0.6",
-      "ports": {
-        "app": 5002
-      },
-      "vm": "oci-apps",
-      "description": "PhotoPrism Webhook + S3 Processor",
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      }
-    },
     "radicale": {
       "ip": "10.0.0.6",
       "ports": {
@@ -554,6 +539,28 @@
         ]
       }
     },
+    "http-to-smtp-proxy-api": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 8080
+      },
+      "vm": "gcp-proxy",
+      "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
+      "description": "HTTP-to-SMTP bridge sidecar of Caddy on gcp-proxy. CF Worker POSTs JSON email payloads to this container (because GCP blocks outbound TCP/25); container speaks SMTP over WG to maddy:25 + stalwart:2025 on oci-mail. Public path: api.diegonmarcos.com/http-to-smtp-proxy-api/",
+      "api": {
+        "has_api": true,
+        "has_web_ui": false,
+        "api_path": "/http-to-smtp-proxy-api",
+        "api_url": "https://api.diegonmarcos.com/http-to-smtp-proxy-api/http-to-smtp-proxy-api",
+        "healthcheck_paths": [],
+        "type": "custom-rest",
+        "base_path": "/http-to-smtp-proxy-api",
+        "endpoint_count": 1,
+        "display_name": "HTTP-to-SMTP Proxy API",
+        "description": "POST raw RFC 5322 email body. Translates to SMTP and dual-delivers to maddy:25 + Stalwart:2025 over WG. Used by CF email-forwarder Worker for inbound mail (because CF Workers cannot make outbound TCP/25 connections — port 25 is GCP-blocked end-to-end).",
+        "auth": "bearer"
+      }
+    },
     "maddy": {
       "ip": "10.0.0.3",
       "ports": {
@@ -587,8 +594,8 @@
       "extra_ports": {
         "25": {
           "protocol": "tcp",
-          "bind": "0.0.0.0",
-          "desc": "MX (inbound — must be public)",
+          "bind": "10.0.0.3",
+          "desc": "MX delivery endpoint — wg0-only bind; CF Worker → Caddy → http-to-smtp-proxy-api → SMTP over WG is the public bridge (Phase 5)",
           "service": "smtp_mx",
           "role": "app"
         },
@@ -606,13 +613,6 @@
           "service": "smtp_ssl",
           "role": "app"
         },
-        "587": {
-          "protocol": "starttls",
-          "bind": "10.0.0.3",
-          "desc": "Submission — wg0 bind, reached via Caddy L4 from gcp-proxy",
-          "service": "smtp_starttls",
-          "role": "app"
-        },
         "993": {
           "protocol": "tls",
           "bind": "10.0.0.3",
@@ -620,22 +620,6 @@
           "service": "imap_ssl",
           "role": "app"
         }
-      }
-    },
-    "smtp-proxy": {
-      "ip": "10.0.0.3",
-      "ports": {
-        "app": 8080
-      },
-      "vm": "oci-mail",
-      "domain": "smtp.diegonmarcos.com",
-      "description": "HTTP-to-SMTP bridge for CF Email Routing (smtp.diegonmarcos.com)",
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
       }
     },
     "stalwart": {
@@ -671,8 +655,8 @@
       "extra_ports": {
         "2025": {
           "protocol": "starttls",
-          "bind": "127.0.0.1",
-          "desc": "SMTP shadow (smtp-proxy → localhost, loopback-only)",
+          "bind": "10.0.0.3",
+          "desc": "SMTP shadow (http-to-smtp-proxy-api on gcp-proxy → WG → :2025)",
           "service": "smtp_shadow",
           "role": "app"
         },
@@ -688,13 +672,6 @@
           "bind": "10.0.0.3",
           "desc": "SMTPS — wg0 bind, reached via Caddy L4",
           "service": "smtp_ssl",
-          "role": "app"
-        },
-        "2587": {
-          "protocol": "starttls",
-          "bind": "10.0.0.3",
-          "desc": "Submission — wg0 bind, reached via Caddy L4",
-          "service": "smtp_starttls",
           "role": "app"
         },
         "2993": {
@@ -787,27 +764,6 @@
         "auth": "bearer"
       }
     },
-    "ollama": {
-      "ip": "10.0.0.8",
-      "ports": {
-        "app": 11434
-      },
-      "vm": "gcp-t4",
-      "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
-      "api": {
-        "has_api": true,
-        "has_web_ui": false,
-        "api_path": "/api",
-        "api_url": null,
-        "healthcheck_paths": [],
-        "type": "custom-rest",
-        "base_path": "/api",
-        "endpoint_count": 16,
-        "display_name": "Ollama LLM API (gcp-t4)",
-        "description": "REST API for LLM inference, embeddings, model management, and version information.",
-        "auth": "none"
-      }
-    },
     "ollama-hai": {
       "ip": "10.0.0.6",
       "ports": {
@@ -871,6 +827,39 @@
       "api": {
         "has_api": false,
         "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
+    "wireguard-mesh": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8080
+      },
+      "vm": "oci-apps",
+      "domain": "mesh.diegonmarcos.com",
+      "description": "Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.",
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
+    "wireguard-mesh-ws-tunnel": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "ws": 8080,
+        "app": 8080
+      },
+      "vm": "gcp-proxy",
+      "domain": "vpn.diegonmarcos.com",
+      "description": "WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.",
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
@@ -953,17 +942,28 @@
         "auth": "bearer"
       }
     },
-    "sauron-central": {
-      "ip": "10.0.0.6",
-      "ports": {},
-      "vm": "oci-apps",
-      "description": "Central Syslog Collector + SIEM API",
+    "c3-analytics-api": {
+      "ip": "10.0.0.1",
+      "ports": {
+        "app": 8085
+      },
+      "vm": "gcp-proxy",
+      "domain": "api.diegonmarcos.com/c3a",
+      "description": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve",
       "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/c3a/docs/json",
+        "api_url": "https://api.diegonmarcos.com/c3a/c3a/docs/json",
+        "healthcheck_paths": [
+          "/healthz"
+        ],
+        "type": "openapi",
+        "spec_path": "/c3a/docs/json",
+        "base_path": "/c3a",
+        "display_name": "C3 Analytics Public Collector",
+        "description": "Public passthrough analytics collector. Browsers/sites POST to /c3a/{e|s|l}, file ingest /c3a/f, tracker /c3a/t.js.",
+        "auth": "none"
       }
     },
     "c3-infra-api": {
@@ -1163,35 +1163,19 @@
         ]
       }
     },
-    "dozzle": {
-      "ip": "10.0.0.4",
-      "ports": {
-        "app": 9999
-      },
-      "vm": "oci-analytics",
-      "domain": "logs.diegonmarcos.com",
-      "description": "Dozzle - Real-time Docker log viewer",
-      "api": {
-        "has_api": false,
-        "has_web_ui": true,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      }
-    },
     "matomo": {
       "ip": "10.0.0.6",
       "ports": {
         "app": 8084
       },
       "vm": "oci-apps",
-      "domain": "analytics.diegonmarcos.com",
+      "domain": "analytics.diegonmarcos.com/matomo",
       "description": "Matomo hybrid analytics (oci-apps)",
       "api": {
         "has_api": true,
         "has_web_ui": true,
         "api_path": "/?module=API",
-        "api_url": "https://analytics.diegonmarcos.com/?module=API",
+        "api_url": "https://analytics.diegonmarcos.com/matomo/?module=API",
         "healthcheck_paths": [
           "/"
         ],
@@ -1246,13 +1230,13 @@
         "app": 5080
       },
       "vm": "oci-apps",
-      "domain": "grafana.diegonmarcos.com",
+      "domain": "analytics.diegonmarcos.com/openobserve",
       "description": "OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack.",
       "api": {
         "has_api": true,
         "has_web_ui": true,
         "api_path": "/swagger/index.html",
-        "api_url": "https://grafana.diegonmarcos.com/swagger/index.html",
+        "api_url": "https://analytics.diegonmarcos.com/openobserve/swagger/index.html",
         "healthcheck_paths": [],
         "type": "openapi",
         "spec_path": "/swagger/index.html",
@@ -1260,19 +1244,6 @@
         "display_name": "OpenObserve HTTP API",
         "description": "Logs/metrics/traces/RUM ingest + SQL query API. OTLP-compatible. Auth via Bearer tokens (issued by OO admin).",
         "auth": "bearer"
-      }
-    },
-    "sauron-forwarder": {
-      "ip": "10.0.0.4",
-      "ports": {},
-      "vm": "oci-analytics",
-      "description": "Alert forwarding to central sauron",
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
       }
     },
     "umami": {
