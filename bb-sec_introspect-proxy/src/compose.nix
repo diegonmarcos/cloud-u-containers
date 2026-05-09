@@ -35,9 +35,11 @@ in
         PORT           = toString buildJson.ports.app;
       };
       healthcheck = {
+        # Hit the actual bind address (host network + wg0-only bind = no localhost
+        # listener). bind_host is data-driven from build.json (10.0.0.1 on gcp-proxy).
         test = [
           "CMD" "python3" "-c"
-          "import urllib.request; urllib.request.urlopen('http://localhost:${toString buildJson.ports.app}/health')"
+          "import urllib.request; urllib.request.urlopen('http://${buildJson.bind_host}:${toString buildJson.ports.app}/health')"
         ];
         interval = "30s";
         timeout  = "10s";
