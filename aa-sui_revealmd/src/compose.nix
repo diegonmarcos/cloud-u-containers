@@ -4,6 +4,7 @@
 { buildJson, container }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
   port = toString buildJson.ports.app;
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
@@ -13,7 +14,9 @@ in
     revealmd = {
       image = binariesImage;
       container_name = app.container_name;
-      ports = [ "${port}:${port}" ];
+      # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip
+      # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
+      ports = [ "${svc.revealmd.ip}:${port}:${port}" ];
       volumes = [ "slides_data:/slides" ];
       command = "/slides --watch --port ${port}";
       healthcheck = {

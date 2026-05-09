@@ -8,7 +8,8 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson   = builtins.fromJSON (builtins.readFile ../build.json);
-    cNtfy       = (builtins.fromJSON (builtins.readFile ./build-ntfy.json)).container;
+    ntfyJson    = builtins.fromJSON (builtins.readFile ./build-ntfy.json);
+    cNtfy       = ntfyJson.container;
     cSyslog     = (builtins.fromJSON (builtins.readFile ./build-syslog-bridge.json)).container;
     cGithubRss  = (builtins.fromJSON (builtins.readFile ./build-github-rss.json)).container;
     usersJson   = (builtins.fromJSON (builtins.readFile ./users.json)).users;
@@ -53,6 +54,9 @@
         ];
         composeSpec = import ./compose.nix {
           inherit buildJson cNtfy cSyslog cGithubRss;
+          # Pass full ntfy container JSON so compose can read svc.<name>.ip
+          # for the Tier-3 wg-only bind (cloud-data-driven; never hardcoded).
+          containerNtfy = ntfyJson;
         };
         extraAssets = [
           ./code/syslog-to-ntfy.py
