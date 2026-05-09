@@ -26,6 +26,16 @@
     "remote_path": "/opt/containers/http-to-smtp-proxy-api",
     "compose_flags": "--build"
   },
+  "lifecycle": {
+    "_doc": "purge_orphan_oci_mail decommissions the legacy `smtp-proxy` container left on oci-mail after the rename + relocation to gcp-proxy. Engine pipes the local script via ssh stdin (sudo bash -s) so the script does NOT need to be pre-deployed on the target VM. Idempotent.",
+    "purge_orphan_oci_mail": [
+      {
+        "action": "ssh_run",
+        "vm": "oci-mail",
+        "local_script": "src/scripts/purge-orphan-smtp-proxy.sh"
+      }
+    ]
+  },
   "compose": {
     "custom": true
   },

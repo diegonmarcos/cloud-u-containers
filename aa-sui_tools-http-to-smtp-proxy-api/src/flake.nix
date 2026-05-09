@@ -20,6 +20,11 @@
         inherit pkgs buildJson container;
         srcDir = ./.;
         templates = [];
+        # Operator scripts shipped to /opt/containers/<svc>/assets/<name>.
+        # Invoked by lifecycle.* actions in build.json (ssh_run on VM host).
+        extraAssets = [
+          ./scripts/purge-orphan-smtp-proxy.sh
+        ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         nativeBuild = {
           cmd       = nb.cmd;
