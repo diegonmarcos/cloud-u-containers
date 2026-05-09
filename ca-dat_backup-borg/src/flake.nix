@@ -20,7 +20,14 @@
         inherit pkgs buildJson container;
         srcDir = ./.;
         templates = [
-          { name = "entrypoint.sh";    vars = { SSH_PORT = toString buildJson.ports.app; }; }
+          {
+            name = "entrypoint.sh";
+            vars = {
+              SSH_PORT       = toString buildJson.ports.app;
+              # WG-bind from cloud-data — engine-resolved (resolveBindHost).
+              LISTEN_ADDRESS = container.bind_host;
+            };
+          }
           { name = "authorized_keys";  vars = {}; }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container; };

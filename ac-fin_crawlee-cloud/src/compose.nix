@@ -84,6 +84,10 @@ in
       environment = {
         NODE_ENV            = runtime.node_env;
         PORT                = apiPort;
+        # Bind Fastify HTTP listener to WG IP (from container.bind_host
+        # via cloud-data resolver) — keeps host-net off 0.0.0.0.
+        HOST                = container.bind_host;
+        HOSTNAME            = container.bind_host;
         REDIS_URL           = "redis://localhost:${redisPort}";
         S3_ENDPOINT         = "http://localhost:${minioPort}";
         S3_BUCKET           = runtime.s3_bucket;
@@ -146,7 +150,9 @@ in
       environment = {
         NODE_ENV            = runtime.node_env;
         PORT                = dashboardPort;
-        HOSTNAME            = runtime.dashboard_hostname;
+        # Bind Next.js dashboard to WG IP (from container.bind_host via
+        # cloud-data resolver) — keeps host-net off 0.0.0.0.
+        HOSTNAME            = container.bind_host;
         NEXT_PUBLIC_API_URL = "http://localhost:${apiPort}";
       };
       depends_on.api = { condition = "service_healthy"; };
@@ -183,6 +189,9 @@ in
       network_mode   = "host";
       env_file       = [ ".secrets" ];
       environment.PGPORT = dbPort;
+      # Bind postgres to loopback only — crawlee api+runner+scheduler reach
+      # DB via localhost on host-net. Keeps host-net listener off 0.0.0.0.
+      command = [ "postgres" "-c" "listen_addresses=127.0.0.1" ];
       volumes = [ "crawlee_postgres:/var/lib/postgresql/data" ];
       healthcheck = {
         test     = [ "CMD-SHELL" "pg_isready -U $$POSTGRES_USER" ];
@@ -196,7 +205,8 @@ in
       image = redis.image;
       container_name = redis.container_name;
       network_mode   = "host";
-      command = "redis-server --appendonly yes --port ${redisPort}";
+      # Bind redis to loopback only — peers reach via localhost on host-net.
+      command = "redis-server --appendonly yes --port ${redisPort} --bind 127.0.0.1";
       volumes = [ "crawlee_redis:/data" ];
       healthcheck = {
         test     = [ "CMD" "redis-cli" "-p" redisPort "ping" ];
@@ -212,8 +222,10 @@ in
       network_mode   = "host";
       env_file       = [ ".secrets" ];
       entrypoint     = [ "sh" "-c" ];
+      # Bind minio S3 + console to loopback only — crawlee api reaches via
+      # localhost on host-net. Keeps host-net listener off 0.0.0.0.
       command = [
-        ''export MINIO_ROOT_USER="$$MINIO_USER" && export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD" && exec minio server /data --address ":${minioPort}" --console-address ":${minioConsolePort}"''
+        ''export MINIO_ROOT_USER="$$MINIO_USER" && export MINIO_ROOT_PASSWORD="$$MINIO_PASSWORD" && exec minio server /data --address "127.0.0.1:${minioPort}" --console-address "127.0.0.1:${minioConsolePort}"''
       ];
       volumes = [ "crawlee_minio:/data" ];
       healthcheck = {

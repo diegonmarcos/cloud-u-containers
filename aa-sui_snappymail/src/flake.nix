@@ -45,6 +45,15 @@
           { name = "live.com.ini";                        vars = {}; }
           { name = "gmail.com.ini";                       vars = {}; }
           { name = "mail-stalwart.diegonmarcos.com.ini";  vars = {}; }
+          # Apache `Listen` override — binds to WG IP (container.bind_host
+          # via cloud-data resolveBindHost). Mounted into /etc/apache2/ports.conf.
+          {
+            name = "ports.conf";
+            vars = {
+              LISTEN_ADDRESS = container.bind_host;
+              PORT           = toString buildJson.ports.app;
+            };
+          }
         ];
         # Pre-seed data + PHP executor for SnappyMail's additional accounts.
         # Mounted into the container by compose.nix; invoked by init.sh at
