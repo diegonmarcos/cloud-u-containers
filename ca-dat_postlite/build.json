@@ -25,5 +25,15 @@
   },
   "compose": {
     "custom": true
+  },
+  "containers": {
+    "postlite-npm": { "container_name": "postlite-npm" },
+    "postlite-vaultwarden": { "container_name": "postlite-vaultwarden" },
+    "postlite-ntfy": { "container_name": "postlite-ntfy" },
+    "postlite-authelia": { "container_name": "postlite-authelia" },
+    "sqlite-npm": { "container_name": "sqlite-npm" },
+    "sqlite-vaultwarden": { "container_name": "sqlite-vaultwarden" },
+    "sqlite-ntfy": { "container_name": "sqlite-ntfy" },
+    "sqlite-authelia": { "container_name": "sqlite-authelia" }
   }
 }
