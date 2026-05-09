@@ -22,7 +22,7 @@ head_sampling_rate = 1
 # Non-secret configuration
 GOOGLE_EMAIL = "me@diegonmarcos.com"
 GOOGLE_SA_EMAIL = "diego-cli@diegonmarcos-infra-prod.iam.gserviceaccount.com"
-C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-api/reach/http-to-smtp-proxy-api"
+C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-services-api/http-to-smtp-proxy-api/reach"
 HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/http-to-smtp-proxy-api/"
 BACKUP_EMAIL = "diegonmarcos@live.com"
 # Secrets — set via: wrangler secret put <NAME>
