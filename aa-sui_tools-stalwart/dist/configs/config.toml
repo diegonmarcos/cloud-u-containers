@@ -17,10 +17,6 @@ url = "https://mail-stalwart.diegonmarcos.com"
 bind = "[::]:2025"
 protocol = "smtp"
 
-[server.listener.submission]
-bind = "[::]:2587"
-protocol = "smtp"
-
 [server.listener.submissions]
 bind = "[::]:2465"
 protocol = "smtp"
@@ -69,12 +65,12 @@ private-key = "%{file:/opt/stalwart-mail/tls/privkey.pem}%"
 user = "admin"
 secret = "$6$StalwartShadow$TnGwCZsckFjb/S6BcJV5UL8Gxf25mlA4eO2WI1G7jDYCwdMTfeSQUAUcR2H6mujyRMTjAWMHf3SyRNW/3.r7a/"
 
-# ── Inbound SMTP (port 2025): no auth required (shadow delivery from smtp-proxy) ──
+# ── Inbound SMTP (port 2025): no auth required (shadow delivery from http-to-smtp-proxy-api) ──
 [session.auth]
 require = [{if = "local_port != 2025", then = true}, {else = false}]
 
 # ── Security: WG mesh is fully trusted ───────────────────────────────
-# All Stalwart listeners bind WG-only (or to gcp-proxy / smtp-proxy via WG),
+# All Stalwart listeners bind WG-only (or to gcp-proxy / http-to-smtp-proxy-api via WG),
 # so IP-based fail2ban / auto-blocking is redundant and actively harmful
 # (it bans the puller after a single auth misconfig retry storm).
 #
@@ -89,12 +85,8 @@ loiter         = "0/0"
 #    suffix as the IP/CIDR; the value is unused.
 server.allowed-ip = ["10.0.0.0/24"]
 
-# ── STARTTLS on submission (port 2587) ───────────────────────────────
-# Without this the listener accepts plaintext but never advertises
-# STARTTLS, so the mail-puller can't upgrade the connection. We bind on
-# WG only — the cert is wildcard *.diegonmarcos.com via Caddy renewal.
-[server.listener.submission.tls]
-implicit = false
+# 2587/STARTTLS submission listener retired 2026-05-08 — implicit-TLS
+# only via [server.listener.submissions] on 2465.
 
 [tracer.log]
 type = "stdout"

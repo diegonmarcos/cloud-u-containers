@@ -56,7 +56,9 @@ msgpipeline local_routing {
 }
 
 # ── Inbound SMTP (port 25) — from http-to-smtp-proxy-api / CF Worker ──────────
-smtp tcp://0.0.0.0:25 {
+# Phase 4 dual-bind: `@LISTEN_25@` expands to one `tcp://<ip>:25` per bind in
+# build.json extra_ports[port=25].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
+smtp @LISTEN_25@ {
     limits {
         all rate 20 1s
         all concurrency 10
@@ -94,14 +96,14 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (port 465) — authenticated outbound ───────────────
-# WG-bind (10.0.0.3) primary path — co-located services reach Maddy via
-# mail.diegonmarcos.com → Hickory (10.0.0.1) → Caddy L4 forwarder → 10.0.0.3.
+# Phase 4 dual-bind via `@LISTEN_465@` — one `tls://<ip>:465` per bind in
+# build.json extra_ports[port=465].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
 # Loopback bind retained UNTIL vm-pilot/network/etc-hosts-clean.nix ships to
 # oci-mail (HM workflow currently blocked). Once /etc/hosts hijack is gone,
 # the loopback duplicates are no longer needed and can be dropped. Tracker:
 # pair-removal with etc-hosts-clean activation (see commits 8048d87da/ffce1b537).
 # 587/STARTTLS retired 2026-05-08 — implicit-TLS only.
-submission tls://@BIND_465@:465 tls://127.0.0.1:465 {
+submission @LISTEN_465@ tls://127.0.0.1:465 {
     limits {
         all rate 50 1s
     }
@@ -161,9 +163,9 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-# Same dual-bind pattern as submission (loopback temporarily retained
-# pending etc-hosts-clean.nix activation on oci-mail).
-imap tls://@BIND_993@:993 tls://127.0.0.1:993 tcp://@BIND_143@:143 tcp://127.0.0.1:143 {
+# Phase 4 dual-bind via `@LISTEN_993@` and `@LISTEN_143@` (wg0 + wg-public).
+# Loopback bind temporarily retained pending etc-hosts-clean.nix activation.
+imap @LISTEN_993@ tls://127.0.0.1:993 @LISTEN_143@ tcp://127.0.0.1:143 {
     auth &local_authdb
     storage &local_mailboxes
 }

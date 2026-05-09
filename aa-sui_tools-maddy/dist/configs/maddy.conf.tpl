@@ -63,15 +63,17 @@ msgpipeline local_routing {
     }
 }
 
-# ── Inbound SMTP (port 25) — from smtp-proxy / CF Worker ──────────
-smtp tcp://0.0.0.0:25 {
+# ── Inbound SMTP (port 25) — from http-to-smtp-proxy-api / CF Worker ──────────
+# Phase 4 dual-bind: `tcp://10.0.0.3:25 tcp://10.1.0.3:25` expands to one `tcp://<ip>:25` per bind in
+# build.json extra_ports[port=25].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
+smtp tcp://10.0.0.3:25 tcp://10.1.0.3:25 {
     limits {
         all rate 20 1s
         all concurrency 10
     }
 
     # ── Security: two-tier architecture ────────────────────────────────
-    # Tier 1 (IP-based) — handled by smtp-proxy (has real sender IP via CF-Connecting-IP):
+    # Tier 1 (IP-based) — handled by http-to-smtp-proxy-api (has real sender IP via CF-Connecting-IP):
     #   require_matching_rdns   — PTR record must exist for sender IP
     #   dnsbl {                 — reject IPs listed in spam blocklists
     #       zen.spamhaus.org
@@ -79,9 +81,10 @@ smtp tcp://0.0.0.0:25 {
     #   }
     #   spf (IP check)          — verify sender IP is authorized by domain's SPF record
     #
-    # These checks CANNOT run in Maddy because smtp-proxy connects from localhost
-    # (127.0.0.1). Maddy doesn't support XCLIENT or Proxy Protocol to receive
-    # the real sender IP. smtp-proxy does all IP checks before forwarding.
+    # These checks CANNOT run in Maddy because http-to-smtp-proxy-api connects from
+    # gcp-proxy via WG (10.0.0.1). Maddy doesn't support XCLIENT or Proxy Protocol
+    # to receive the real sender IP. http-to-smtp-proxy-api does all IP checks
+    # before forwarding.
     #
     # Tier 2 (signature-based) — handled by Maddy (no IP needed):
     check {
@@ -101,14 +104,14 @@ smtp tcp://0.0.0.0:25 {
 }
 
 # ── Submission (port 465) — authenticated outbound ───────────────
-# WG-bind (10.0.0.3) primary path — co-located services reach Maddy via
-# mail.diegonmarcos.com → Hickory (10.0.0.1) → Caddy L4 forwarder → 10.0.0.3.
+# Phase 4 dual-bind via `tls://10.0.0.3:465 tls://10.1.0.3:465` — one `tls://<ip>:465` per bind in
+# build.json extra_ports[port=465].bind (wg0 10.0.0.3 + wg-public 10.1.0.3).
 # Loopback bind retained UNTIL vm-pilot/network/etc-hosts-clean.nix ships to
 # oci-mail (HM workflow currently blocked). Once /etc/hosts hijack is gone,
 # the loopback duplicates are no longer needed and can be dropped. Tracker:
 # pair-removal with etc-hosts-clean activation (see commits 8048d87da/ffce1b537).
 # 587/STARTTLS retired 2026-05-08 — implicit-TLS only.
-submission tls://10.0.0.3:465 tls://127.0.0.1:465 {
+submission tls://10.0.0.3:465 tls://10.1.0.3:465 tls://127.0.0.1:465 {
     limits {
         all rate 50 1s
     }
@@ -168,9 +171,9 @@ target.queue remote_queue {
 }
 
 # ── IMAP access ───────────────────────────────────────────────────
-# Same dual-bind pattern as submission (loopback temporarily retained
-# pending etc-hosts-clean.nix activation on oci-mail).
-imap tls://10.0.0.3:993 tls://127.0.0.1:993 tcp://10.0.0.3:143 tcp://127.0.0.1:143 {
+# Phase 4 dual-bind via `tls://10.0.0.3:993 tls://10.1.0.3:993` and `tcp://10.0.0.3:143 tcp://10.1.0.3:143` (wg0 + wg-public).
+# Loopback bind temporarily retained pending etc-hosts-clean.nix activation.
+imap tls://10.0.0.3:993 tls://10.1.0.3:993 tls://127.0.0.1:993 tcp://10.0.0.3:143 tcp://10.1.0.3:143 tcp://127.0.0.1:143 {
     auth &local_authdb
     storage &local_mailboxes
 }
