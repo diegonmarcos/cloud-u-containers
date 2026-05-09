@@ -35,7 +35,7 @@
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/c3a",
-      "auth": "public"
+      "auth": "none"
     }
   },
   "health": {
@@ -58,7 +58,7 @@
         "type": "path",
         "parent_domain": "api.diegonmarcos.com",
         "base_path": "/c3a",
-        "auth": "public"
+        "auth": "none"
       },
       "healthcheck": "/healthz",
       "monitoring": {

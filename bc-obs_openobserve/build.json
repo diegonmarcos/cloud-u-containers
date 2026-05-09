@@ -10,7 +10,7 @@
     "include_cloud_data": "true",
     "headers_enforced": true
   },
-  "domain": "grafana.diegonmarcos.com",
+  "domain": "analytics.diegonmarcos.com/openobserve",
   "deploy": {
     "host": "oci-apps",
     "remote_path": "/opt/containers/openobserve",
@@ -31,8 +31,9 @@
   },
   "proxy": {
     "primary": {
-      "type": "domain",
-      "domain": "grafana.diegonmarcos.com",
+      "type": "path",
+      "parent_domain": "analytics.diegonmarcos.com",
+      "base_path": "/openobserve",
       "auth": "two_factor"
     }
   },
@@ -53,8 +54,9 @@
       "dns": "openobserve.app",
       "public": true,
       "proxy": {
-        "type": "domain",
-        "domain": "grafana.diegonmarcos.com",
+        "type": "path",
+        "parent_domain": "analytics.diegonmarcos.com",
+        "base_path": "/openobserve",
         "auth": "two_factor"
       },
       "healthcheck": null,
