@@ -1,8 +1,9 @@
 {
   "name": "postlite",
   "enabled": false,
-  "description": "SQLite REST API (WireGuard only)",
+  "description": "SQLite PostgreSQL wire-protocol proxies (WireGuard only)",
   "category": "data",
+  "bind_host": "10.0.0.1",
   "ports": {
     "npm_rest": 8890,
     "vaultwarden_rest": 8891,
