@@ -18,6 +18,11 @@ in
       environment = {
         PORT = port;
         MCP_HTTP_PORT = port;
+        # Bind MCP HTTP listener to WG IP (from container.bind_host via
+        # cloud-data resolver) — keeps host-net listener off 0.0.0.0.
+        # google-personal-mcp's mcp/index.ts must read MCP_HTTP_HOST.
+        MCP_HTTP_HOST = container.bind_host;
+        HOST = container.bind_host;
         IMAP_HOST = buildJson.auth.imap_host;
         IMAP_PORT = toString buildJson.auth.imap_port;
         SMTP_HOST = buildJson.auth.smtp_host;
