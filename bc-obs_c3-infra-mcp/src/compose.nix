@@ -9,6 +9,10 @@ let
   healthPath = buildJson.health.path;
   mattermostUrl = buildJson.env_config.mattermost_url;
   daguUrl = "http://${svc.dagu.ip}:${toString svc.dagu.ports.app}";
+  # WG IP from cloud-data — passed to bindHost() so the listener does NOT
+  # default to 0.0.0.0 (which would expose every interface). host network
+  # mode means binding to the WG IP keeps the service on the WG mesh only.
+  vmIp = svc."c3-infra-mcp".ip or "10.0.0.6";
 in
 {
   services = {
@@ -27,6 +31,9 @@ in
         MM_URL = mattermostUrl;
         DAGU_API = daguUrl;
         MCP_HTTP_PORT = port;
+        # bindHost() reads MCP_HTTP_HOST. Defaults to 127.0.0.1 in source.
+        # WG IP keeps the listener confined to the WG mesh on host network.
+        MCP_HTTP_HOST = vmIp;
         PATH = "/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
         # entrypoint.sh sets HOME=/tmp/c3-home for SSH, which makes gcloud
         # look at /tmp/c3-home/.config/gcloud (empty) and fail with

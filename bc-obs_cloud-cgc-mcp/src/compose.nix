@@ -8,8 +8,12 @@
 { buildJson, container }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
-
+  # WG IP from cloud-data — passed to bindHost() so the listener is confined
+  # to the WG mesh on host-network mode. Defensive default in source is
+  # 127.0.0.1; we explicitly override to the WG IP here.
+  vmIp = svc."cloud-cgc-mcp".ip or "10.0.0.6";
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {
@@ -21,6 +25,7 @@ in
       environment = {
         MCP_TRANSPORT  = "http";
         MCP_HTTP_PORT  = toString buildJson.ports.app;
+        MCP_HTTP_HOST  = vmIp;
         CONFIG_PATH    = "${buildJson.runtime.data_path}/config.json";
         GIT_ROOT       = buildJson.runtime.git_root;
       };
