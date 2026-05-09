@@ -1,6 +1,6 @@
 # compose.nix — pure attrset describing docker-compose.yml for stalwart.
 # engine.nix serialises it via lib.generators.toYAML, merging compose-defaults.json.
-{ buildJson, container, base_domain }:
+{ buildJson, container, base_domain, lib }:
 
 let
   app    = buildJson.containers.app;
@@ -13,13 +13,19 @@ let
   binariesImage = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
   appPort       = toString app.port;
 
-  # Port mappings driven by extra_ports[].bind in build.json.
-  # Format: "BIND_IP:HOST_PORT:CONTAINER_PORT" — controls which host interface
-  # each port is published on. WG-only ports use 10.0.0.3; loopback-only use
-  # 127.0.0.1; public ports use 0.0.0.0. Container-internal listener stays [::].
-  portMappings = map (ep:
-    "${ep.bind or "0.0.0.0"}:${toString ep.port}:${toString ep.port}"
-  ) (app.extra_ports or []);
+  # Port mappings driven by extra_ports[].bind in build.json. The `bind` field
+  # accepts either a single string ("10.0.0.3") or a list of strings
+  # (["10.0.0.3" "10.1.0.3"]) — Phase 4 of the wg-public migration adds the
+  # second wg-public bind so Caddy on oci-analytics can reach mail ports via
+  # the public-trust mesh (10.1.0.x) without traversing wg0 (10.0.0.x).
+  # Format per emitted line: "BIND_IP:HOST_PORT:CONTAINER_PORT".
+  bindList = ep:
+    let raw = ep.bind or "0.0.0.0"; in
+    if builtins.isList raw then raw else [ raw ];
+
+  portMappings = lib.flatten (map (ep:
+    map (ip: "${ip}:${toString ep.port}:${toString ep.port}") (bindList ep)
+  ) (app.extra_ports or []));
 in
 {
   services = {
