@@ -20,6 +20,11 @@ let
   dbPort  = toString buildJson.ports.db;
   dbUser  = db.db_user;
   dbName  = db.db_name;
+
+  # WG-bind from cloud-data — engine-resolved (resolveBindHost in
+  # 2_configs/src/engines/cloud-data-config-derive.ts). Same VM hosts both.
+  bindHost   = container.bind_host;
+  dbBindHost = containerDb.bind_host;
 in
 {
   services = {
@@ -40,6 +45,8 @@ in
         TRUST_PROXY       = "true";
         LOGLEVEL          = "INFO";
         PORT              = appPort;
+        # Bind etherpad to WG IP — keeps host-net listener off 0.0.0.0.
+        SETTINGS_IP       = bindHost;
       };
       volumes = [ "etherpad_data:/opt/etherpad-lite/var" ];
       healthcheck = {
@@ -59,10 +66,12 @@ in
       image = db.image;
       container_name = db.container_name;
       network_mode = "host";
-      # Fix UID mismatch (Debian postgres=999 vs Alpine postgres=70)
+      # Fix UID mismatch (Debian postgres=999 vs Alpine postgres=70).
+      # Bind postgres to WG IP + loopback only via `listen_addresses` —
+      # data-driven from containerDb.bind_host (no public 0.0.0.0 listener).
       entrypoint = [
         "sh" "-c"
-        "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres"
+        "chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null; exec docker-entrypoint.sh postgres -c listen_addresses=${dbBindHost},127.0.0.1"
       ];
       environment = {
         POSTGRES_USER     = dbUser;
