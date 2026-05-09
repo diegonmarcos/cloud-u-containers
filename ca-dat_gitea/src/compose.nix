@@ -23,9 +23,14 @@ in
         SSH_PORT                                     = toString portSsh;
         SSH_LISTEN_PORT                              = toString portSsh;
         GITEA__server__HTTP_PORT                     = toString portHttp;
+        # Bind HTTP listener to WG IP (from container.bind_host via cloud-data
+        # resolver) — fixes the bug where ssh_listen_host was set in
+        # build.json but emitted compose still showed 0.0.0.0 because gitea
+        # also needs HTTP_ADDR for the HTTP listener.
+        GITEA__server__HTTP_ADDR                     = container.bind_host;
         GITEA__server__SSH_PORT                      = toString portSsh;
         GITEA__server__SSH_LISTEN_PORT               = toString portSsh;
-        GITEA__server__SSH_LISTEN_HOST               = buildJson.ssh_listen_host;
+        GITEA__server__SSH_LISTEN_HOST               = container.bind_host;
         GITEA__server__DISABLE_SSH                   = "false";
         GITEA__server__ROOT_URL                      = "https://${domain}";
         GITEA__server__SSH_DOMAIN                    = domain;

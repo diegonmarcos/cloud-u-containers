@@ -104,6 +104,9 @@ in
         PHOTOPRISM_DATABASE_DRIVER      = "mysql";
         PHOTOPRISM_DATABASE_SERVER      = "localhost:3306";
         PHOTOPRISM_HTTP_PORT            = toString buildJson.ports.app;
+        # Bind PhotoPrism HTTP to WG IP (from container.bind_host via
+        # cloud-data resolver) — keeps host-net listener off 0.0.0.0.
+        PHOTOPRISM_HTTP_HOST            = container.bind_host;
       };
       volumes = [
         "photoprism_storage:/photoprism/storage"

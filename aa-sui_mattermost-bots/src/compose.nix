@@ -60,7 +60,9 @@ in
         MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE          = "en";
         MM_DISPLAYSETTINGS_CLOCKFORMAT                       = "24h";
         MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS = "localhost";
-        MM_SERVICESETTINGS_LISTENADDRESS                     = ":${toString appPort}";
+        # Bind mattermost HTTP listener to WG IP (from container.bind_host
+        # via cloud-data resolver) — keeps host-net off 0.0.0.0.
+        MM_SERVICESETTINGS_LISTENADDRESS                     = "${container.bind_host}:${toString appPort}";
       };
       volumes = [
         "mattermost_config:/mattermost/config"
@@ -86,6 +88,9 @@ in
         POSTGRES_USER = dbUser;
         PGPORT        = toString dbPort;
       };
+      # Bind postgres to WG IP + loopback only — declarative WG-bind via
+      # container.bind_host (mattermost reaches DB via localhost on host-net).
+      command = [ "postgres" "-c" "listen_addresses=${container.bind_host},127.0.0.1" ];
       volumes = [ "mattermost_postgres:/var/lib/postgresql/data" ];
       healthcheck = {
         test     = [ "CMD-SHELL" "pg_isready -U ${dbUser} -d ${dbName}" ];

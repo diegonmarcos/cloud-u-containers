@@ -71,6 +71,10 @@ let
     PORT        = toString buildJson.ports.app;
     TZ          = buildJson.timezone;
     CONNECTIONS = connectionsStr;
+    # Bind dbgate web UI to WG IP (from container.bind_host via cloud-data
+    # resolver) — keeps host-net listener off 0.0.0.0.
+    WEB_HOST    = container.bind_host;
+    BIND_HOST   = container.bind_host;
   };
 
 in
