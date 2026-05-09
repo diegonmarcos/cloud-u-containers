@@ -7,7 +7,7 @@
     "include_cloud_data": "true",
     "headers_enforced": true
   },
-  "domain": "analytics.diegonmarcos.com",
+  "domain": "analytics.diegonmarcos.com/matomo",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "matomo-hybrid",
@@ -33,7 +33,9 @@
   "lifecycle": {},
   "proxy": {
     "primary": {
-      "domain": "analytics.diegonmarcos.com",
+      "type": "path",
+      "parent_domain": "analytics.diegonmarcos.com",
+      "base_path": "/matomo",
       "auth": "two_factor",
       "paths": {
         "/matomo.js": {
@@ -87,7 +89,9 @@
       "dns": "matomo.app",
       "public": true,
       "proxy": {
-        "domain": "analytics.diegonmarcos.com",
+        "type": "path",
+        "parent_domain": "analytics.diegonmarcos.com",
+        "base_path": "/matomo",
         "auth": "two_factor"
       },
       "healthcheck": "/",
