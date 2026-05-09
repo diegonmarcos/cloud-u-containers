@@ -2,9 +2,10 @@
 # engine.nix serialises this via lib.generators.toYAML and merges
 # compose-defaults.json into every service. Paths are relative to dist/
 # (docker-compose project-directory at deploy time).
-{ buildJson, cNtfy, cSyslog, cGithubRss }:
+{ buildJson, cNtfy, cSyslog, cGithubRss, containerNtfy }:
 
 let
+  svc        = containerNtfy.services;
   appC       = buildJson.containers.app;
   syslogC    = buildJson.containers."syslog-bridge";
   githubRssC = buildJson.containers."github-rss";
@@ -32,7 +33,9 @@ in
         "./configs/init.sh:/init.sh:ro"
         "ntfy_cache:/var/cache/ntfy"
       ];
-      ports = [ "${toString buildJson.ports.app}:${toString buildJson.ports.app}" ];
+      # Tier-3 wg-only bind: data-driven IP from containerNtfy.services.<self>.ip
+      # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
+      ports = [ "${svc.ntfy.ip}:${toString buildJson.ports.app}:${toString buildJson.ports.app}" ];
       deploy.resources = {
         limits       = { memory = appC.resources.limits.memory;       cpus = "1.0"; };
         reservations = { memory = appC.resources.reservations.memory; };

@@ -4,6 +4,7 @@
 { buildJson, container, containerDb }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
   db  = buildJson.containers.db;
 
@@ -21,6 +22,11 @@ in
     hedgedoc = {
       image = appImage;
       container_name = app.container_name;
+      # Tier-3 wg-only bind: data-driven IP from container.services.<self>.ip
+      # (cloud-data-config-derive emits svc.<name>.ip per VM WG address).
+      ports = [
+        "${svc.hedgedoc.ip}:${appPort}:${appPort}"
+      ];
       volumes = [
         "hedgedoc_uploads:/hedgedoc/public/uploads"
       ];
