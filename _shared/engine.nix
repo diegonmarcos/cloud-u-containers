@@ -81,6 +81,50 @@ let
   mergeSvc = svc: lib.recursiveUpdate composeDefaults svc;
 
   # ──────────────────────────────────────────────────────────────
+  # Tier-3 WG-only bind policy (engine-side enforcement)
+  #
+  # Every service carries a `bind_host` (resolved by the deriver — see
+  # 2_configs/src/engines/cloud-data-config-derive.ts:resolveBindHost).
+  # When a service declares a Compose `ports:` mapping as bare
+  # "host_port:container_port" (no IP prefix), the engine prefixes it
+  # with the resolved bind_host. Bindings that already carry an explicit
+  # prefix ("0.0.0.0:...", "127.0.0.1:...", "10.0.0.1:...") are left
+  # untouched — the deriver's allowlist check has already validated them.
+  #
+  # bind_host = "vm.wg_ip" is the engine-side fallback when the deriver
+  # has NOT injected a concrete IP (rare — only the v2 dist layout does)
+  # and is left as-is; the lint-pipeline test_bind_host_policy.sh catches
+  # any escape and fails CI.
+  #
+  # Allowed-public list lives in 2_configs/build.json#policy.public_bindings_allowlist.
+  # ──────────────────────────────────────────────────────────────
+  bindHostFor = svc:
+    let
+      declared = svc.bind_host or null;
+    in
+      if declared == null || declared == "" then "vm.wg_ip"
+      else declared;
+
+  hasIpPrefix = p:
+    builtins.match "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+:.*" p != null;
+
+  # Bare "h:c" or "h:c/proto" → prefix with bind_host. With prefix → leave alone.
+  prefixPort = bindHost: p:
+    if !(builtins.isString p) then p
+    else if hasIpPrefix p then p
+    else "${bindHost}:${p}";
+
+  applyBindHostToPorts = svc:
+    let
+      bindHost = bindHostFor svc;
+      ports = svc.ports or [];
+    in
+      if ports == [] then svc
+      else svc // {
+        ports = map (p: prefixPort bindHost p) ports;
+      };
+
+  # ──────────────────────────────────────────────────────────────
   # Conditional secrets auto-mount.
   #
   # Whenever src/secrets.yaml exists, the engine-side
@@ -112,7 +156,7 @@ let
   applyDefaults = spec:
     spec // {
       services = lib.mapAttrs
-        (_: svc: mergeSecretsInto (mergeSvc svc))
+        (_: svc: applyBindHostToPorts (mergeSecretsInto (mergeSvc svc)))
         (spec.services or {});
     };
 
