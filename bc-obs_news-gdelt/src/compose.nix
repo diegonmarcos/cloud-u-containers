@@ -23,6 +23,9 @@ in
         TZ = buildJson.timezone;
         BASE_PATH = "/news";
         PORT = port;
+        # bindHost() reads MCP_HTTP_HOST. Source defaults to 127.0.0.1.
+        # WG IP keeps the listener confined to the WG mesh on host network.
+        MCP_HTTP_HOST = vmIp;
       };
       volumes = [
         "news_gdelt_cache:/app/cache"

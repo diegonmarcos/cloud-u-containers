@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import * as gdelt from "./gdelt.js";
+import { bindHost } from "./binds.js";
 const PORT = parseInt(process.env.PORT ?? "3019", 10);
 const BASE_PATH = process.env.BASE_PATH ?? "/news";
 const startTime = Date.now();
@@ -57,8 +58,9 @@ app.options("*", async (_req, reply) => {
 async function main() {
     gdelt.start();
     try {
-        await app.listen({ port: PORT, host: "0.0.0.0" });
-        console.log(`[news-gdelt] Listening on :${PORT}, base path: ${BASE_PATH}`);
+        const host = bindHost();
+        await app.listen({ port: PORT, host });
+        console.log(`[news-gdelt] Listening on ${host}:${PORT}, base path: ${BASE_PATH}`);
     }
     catch (err) {
         app.log.error(err);
