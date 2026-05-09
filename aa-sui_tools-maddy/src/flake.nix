@@ -28,11 +28,25 @@
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 
-    # Per-port bind addresses: reads extra_ports[].bind from build.json and
-    # generates BIND_465, BIND_587, BIND_993, BIND_143 etc. for template substitution.
-    # Fallback to 0.0.0.0 if a port has no bind (backward-compatible).
+    # Per-port listener prefixes: reads extra_ports[].bind from build.json and
+    # generates LISTEN_25, LISTEN_465, LISTEN_993, LISTEN_143 etc. for template
+    # substitution. Each LISTEN_<port> expands to a SCHEME://IP:PORT line — or
+    # space-separated multi-listener line when bind is a list (Phase 4 dual-bind
+    # on wg0 + wg-public, e.g. `tls://10.0.0.3:993 tls://10.1.0.3:993`).
+    # Backward compat: bind as string still works (single entry).
+    schemeFor = ep:
+      if (ep.protocol or "") == "tls" then "tls://" else "tcp://";
+    bindIpsFor = ep:
+      let raw = ep.bind or "0.0.0.0"; in
+      if builtins.isList raw then raw else [ raw ];
+    listenLineFor = ep:
+      let
+        scheme = schemeFor ep;
+        port   = toString ep.port;
+        ips    = bindIpsFor ep;
+      in lib.concatStringsSep " " (map (ip: "${scheme}${ip}:${port}") ips);
     bindVars = builtins.listToAttrs (
-      map (ep: { name = "BIND_${toString ep.port}"; value = ep.bind or "0.0.0.0"; })
+      map (ep: { name = "LISTEN_${toString ep.port}"; value = listenLineFor ep; })
           (buildJson.containers.app.extra_ports or [])
     );
 
