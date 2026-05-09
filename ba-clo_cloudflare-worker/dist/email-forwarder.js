@@ -14,6 +14,8 @@
 // Copy 1: ALWAYS → Maddy via http-to-smtp-proxy-api (self-hosted primary)
 // Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
 // Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
+// NOTE: 2026-05-09 — reverted Phase 5 cf-worker-bridge change: new Caddy route on
+// gcp-proxy hadn't shipped (Phase 4 pending), worker was 404'ing → mail down.
 
 export default {
   async email(message, env, ctx) {

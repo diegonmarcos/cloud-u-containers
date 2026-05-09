@@ -22,6 +22,10 @@ account_id = "e5cb0a0c6f448e54f217de484259f0ae"
 #       Copy 1: ALWAYS → Stalwart via http-to-smtp-proxy-api (self-hosted primary)
 #       Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
 #       Copy 3: ONLY if C3 health unhealthy → live.com (disaster backup)
+# NOTE: Phase 5 (cf-worker-bridge on oci-analytics) reverted on 2026-05-09 —
+#       the new /cf-worker-bridge Caddy route on gcp-proxy hadn't shipped (Phase 4
+#       pending) so the worker was POSTing to a 404 and mail was failing. Restore
+#       once Phase 4 lands and /cf-worker-bridge returns 200/401.
 
 # Persistent logging — Workers Logs (queryable in CF dashboard + API)
 [observability]
@@ -34,7 +38,7 @@ head_sampling_rate = 1
 # Non-secret configuration
 GOOGLE_EMAIL = "me@diegonmarcos.com"
 GOOGLE_SA_EMAIL = "diego-cli@diegonmarcos-infra-prod.iam.gserviceaccount.com"
-C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-api/reach/http-to-smtp-proxy-api"
+C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-services-api/http-to-smtp-proxy-api/reach"
 HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/http-to-smtp-proxy-api/"
 BACKUP_EMAIL = "diegonmarcos@live.com"
 # Secrets — set via: wrangler secret put <NAME>
