@@ -1,8 +1,9 @@
 // Cloudflare Email Worker - Triple-delivery inbound email
-// Copy 1: ALWAYS → Maddy via cf-worker-bridge on oci-analytics (wg-public ingress;
-//                  Phase 5 of the wg-public plan, replaces gcp-proxy http-to-smtp-proxy-api)
+// Copy 1: ALWAYS → Maddy via http-to-smtp-proxy-api (self-hosted primary)
 // Copy 2: ALWAYS → Google Workspace via Gmail API (service account JWT)
 // Copy 3: ONLY if C3 health check says mail unhealthy → live.com (disaster backup)
+// NOTE: 2026-05-09 — reverted Phase 5 cf-worker-bridge change: new Caddy route on
+// gcp-proxy hadn't shipped (Phase 4 pending), worker was 404'ing → mail down.
 
 export default {
   async email(message, env, ctx) {
@@ -37,10 +38,7 @@ export default {
   }
 };
 
-// ── Maddy delivery via cf-worker-http-to-wg-public-bridge ─────────────────────
-// HTTP_TO_SMTP_PROXY_API_URL points at api.diegonmarcos.com/cf-worker-bridge/
-// (Caddy on oci-analytics reverse-proxies to the bridge container at 10.1.0.1:8092
-// which then speaks SMTP over wg-public to maddy at 10.1.0.3:25).
+// ── Maddy delivery via http-to-smtp-proxy-api ────────────────────────────────
 async function deliverToMaddy(rawEmail, to, env) {
   try {
     const controller = new AbortController();
@@ -49,12 +47,12 @@ async function deliverToMaddy(rawEmail, to, env) {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain',
-        // Bearer auth gates Caddy's forward_auth (api.diegonmarcos.com/cf-worker-bridge
+        // Bearer auth gates Caddy's forward_auth (api.diegonmarcos.com/http-to-smtp-proxy-api
         // is auth=bearer; introspect-proxy validates against Authelia JWKS).
         'Authorization': `Bearer ${env.C3_BEARER_TOKEN}`,
-        // X-API-Key kept as defence-in-depth: cf-worker-http-to-wg-public-bridge Rust
-        // binary validates it even after Caddy passes through. Will be retired when the
-        // binary is updated to trust upstream auth-only.
+        // X-API-Key kept as defence-in-depth: http-to-smtp-proxy-api Rust binary validates it
+        // even after Caddy passes through. Will be retired when the binary is
+        // updated to trust upstream auth-only.
         'X-API-Key': env.HTTP_TO_SMTP_PROXY_API_KEY,
         'X-Original-To': to,
       },
@@ -63,13 +61,13 @@ async function deliverToMaddy(rawEmail, to, env) {
     });
     clearTimeout(timeoutId);
     if (!response.ok) {
-      console.error(`Maddy cf-worker-bridge error: ${response.status} ${await response.text()}`);
+      console.error(`Maddy http-to-smtp-proxy-api error: ${response.status} ${await response.text()}`);
       return false;
     }
-    console.log(`Maddy: delivered via cf-worker-bridge`);
+    console.log(`Maddy: delivered via http-to-smtp-proxy-api`);
     return true;
   } catch (e) {
-    console.error(`Maddy cf-worker-bridge failed: ${e.message}`);
+    console.error(`Maddy http-to-smtp-proxy-api failed: ${e.message}`);
     return false;
   }
 }
