@@ -6,6 +6,10 @@
 let
   app = buildJson.containers.app;
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # WG-bind from cloud-data — engine-resolved (resolveBindHost in
+  # 2_configs/src/engines/cloud-data-config-derive.ts).
+  bindHost = container.bind_host;
+  appPort = toString buildJson.ports.app;
 in
 {
   services = {
@@ -13,6 +17,8 @@ in
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
+      # Bind code-server to WG IP only — no public 0.0.0.0 listener.
+      command = [ "--bind-addr" "${bindHost}:${appPort}" ];
       environment = {
         TZ = buildJson.timezone;
         PUID = "1000";
