@@ -60,7 +60,8 @@
         "tls_check": true
       },
       "volumes": [
-        "./config:/config"
+        "authelia_data:/data",
+        "./configs:/config:ro"
       ],
       "env_file": true,
       "depends_on": [
@@ -68,12 +69,12 @@
       ],
       "resources": null,
       "read_only": false,
-      "db_path": "/config/db.sqlite3",
+      "db_path": "/data/db.sqlite3",
       "protocol": "http",
       "embedded_dbs": [
         {
           "engine": "sqlite",
-          "path": "/var/lib/authelia/db.sqlite3"
+          "path": "/data/db.sqlite3"
         }
       ]
     },
