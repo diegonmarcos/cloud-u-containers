@@ -39,6 +39,31 @@ JWKSEOF
 # Source: /run/secrets/AUTHELIA_OIDC_JWKS_KEY (engine-mounted, mode 0600).
 awk '{ print "              " $0 }' /run/secrets/AUTHELIA_OIDC_JWKS_KEY >> /tmp/jwks-overlay.yml
 
+# ── Declarative 2FA factors — re-asserted on every boot ────────────────
+# Lost-DB tolerance: if /data/db.sqlite3 is wiped (volume reset), the user
+# would otherwise lose all 2FA factors and need UI re-registration. We
+# instead source factor seeds from sops secrets and re-import them
+# idempotently here. Once init succeeds, the user can authenticate with
+# their Aegis app (TOTP) immediately, no UI dance required.
+#
+# Source-of-truth: vault/aegis-export-plain-*.json → injected into
+# bb-sec_authelia/src/secrets.yaml::AUTHELIA_USER_ME_TOTP_SECRET.
+TOTP_SEED_FILE=/run/secrets/AUTHELIA_USER_ME_TOTP_SECRET
+if [ -s "$TOTP_SEED_FILE" ]; then
+  echo "[init] Re-asserting TOTP factor for me@@BASE_DOMAIN@..."
+  TOTP_SECRET=$(cat "$TOTP_SEED_FILE")
+  # --force: overwrite any existing row → idempotent
+  # algorithm/digits/period match the Aegis export (SHA1/6/30 = RFC6238 default)
+  authelia storage user totp generate "me@@BASE_DOMAIN@" \
+    --secret "$TOTP_SECRET" \
+    --algorithm SHA1 --digits 6 --period 30 \
+    --force \
+    --config /config/configuration.yml \
+    && echo "[init]   TOTP imported OK" \
+    || echo "[init]   WARNING: TOTP import failed (non-fatal)"
+  unset TOTP_SECRET
+fi
+
 echo "[init] Starting Authelia..."
 exec authelia \
   --config /config/configuration.yml \
