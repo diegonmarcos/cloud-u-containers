@@ -52,19 +52,33 @@
         addr   = "${u.name}@${base_domain}";
         emails = [ addr ] ++ (lib.optionals (u ? aliases) (map (a: "${a}@${base_domain}") u.aliases));
         emailsJson = "[" + lib.concatStringsSep "," (map (e: "\"${e}\"") emails) + "]";
+        emailsJsonEsc = lib.replaceStrings ["\""] ["\\\""] emailsJson;
         role   = if key == "admin" then "admin" else "user";
+        pwVar = (lib.toUpper key) + "_PW";
+        # Shell-level var reference; rendered into the final script as $ADMIN_PW etc.
+        pwRef = "$" + pwVar;
         passShell = "\"$" + u.pass_env + "\"";
       in lib.concatStringsSep "\n" [
-        "${lib.toUpper key}_PW=$(cat /opt/containers/stalwart/.secrets.d/${u.pass_env} 2>/dev/null || echo ${passShell})"
-        "curl -sk -u \"admin:$PW\" -X POST \"$URL\" -H \"Content-Type: application/json\" \\"
-        "  -d '{\"type\":\"individual\",\"name\":\"${addr}\",\"secrets\":[\"'\"\$${lib.toUpper key}_PW\"'\"],\"emails\":${emailsJson},\"roles\":[\"${role}\"]}' 2>/dev/null || true"
+        "${pwVar}=$(cat /opt/containers/stalwart/.secrets.d/${u.pass_env} 2>/dev/null || echo ${passShell})"
+        "_post \"user ${addr}\" \"{\\\"type\\\":\\\"individual\\\",\\\"name\\\":\\\"${addr}\\\",\\\"secrets\\\":[\\\"${pwRef}\\\"],\\\"emails\\\":${emailsJsonEsc},\\\"roles\\\":[\\\"${role}\\\"]}\""
       ];
 
     userBlock = lib.concatStringsSep "\n\n" (lib.mapAttrsToList mkUserLines (buildJson.users or {}));
 
+    # Bind IP for the admin API listener — activate.sh runs on the host (post-hook
+    # via SSH), so it must hit the Docker-bound host IP, not localhost. Pull the
+    # first bind from extra_ports[service==jmap_tls] in build.json.
+    activateBindIp =
+      let
+        ports = buildJson.containers.app.extra_ports or [];
+        jmap  = lib.findFirst (p: (p.service or "") == "jmap_tls") (builtins.head ports) ports;
+        bind  = jmap.bind or "127.0.0.1";
+      in if builtins.isList bind then builtins.head bind else bind;
+
     activateShVars = {
       BASE_DOMAIN          = base_domain;
       APP_PORT             = appPort;
+      BIND_IP              = activateBindIp;
       USER_CREATION_BLOCK  = userBlock;
     };
 
