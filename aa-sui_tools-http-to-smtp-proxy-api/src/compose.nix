@@ -16,7 +16,7 @@ in
       env_file = [ ".secrets" ];
       environment = {
         SMTP_HOST = "10.0.0.3";
-        SMTP_PORT = "25";
+        SMTP_PORT = "2025";
         LISTEN_HOST = svc."http-to-smtp-proxy-api".ip;
         LISTEN_PORT = toString buildJson.ports.app;
         SMTP_SHADOW_HOST = "10.0.0.3";

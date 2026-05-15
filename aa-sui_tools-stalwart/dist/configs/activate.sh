@@ -10,21 +10,42 @@
 # ── Activation script: ensure accounts + upload Sieve ─────────────
 # Runs after compose-up. Idempotent — fieldAlreadyExists is fine.
 # Reads ADMIN_PASSWORD from .secrets to authenticate.
+# BIND_IP is the Docker-bound host IP (NOT localhost — admin listener is
+# bound to a specific WG IP per build.json extra_ports[].bind).
 set -e
-BASE="https://localhost:2443"
+BASE="https://10.0.0.3:2443"
 URL="$BASE/api/principal"
 PW=$(cat /opt/containers/stalwart/.secrets.d/ADMIN_PASSWORD 2>/dev/null)
 [ -z "$PW" ] && echo "[activate] No ADMIN_PASSWORD found, skipping" && exit 0
 
-echo "[activate] Waiting for Stalwart to start..."
-for i in $(seq 1 30); do
-  curl -sk -u "admin:$PW" "$URL" -o /dev/null 2>/dev/null && break
+echo "[activate] Waiting for Stalwart admin API on $BASE ..."
+_ready=0
+for i in $(seq 1 60); do
+  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "admin:$PW" "$URL" 2>/dev/null || echo 000)
+  case "$_code" in
+    2*|4*) _ready=1; break ;;
+  esac
   sleep 2
 done
+if [ "$_ready" != 1 ]; then
+  echo "[activate] ERROR: Stalwart admin API never became ready (last HTTP $_code)" >&2
+  exit 1
+fi
+
+# Idempotent POST helper: treat 200/201/204/409 as success; anything else fails loud.
+_post() {
+  _label="$1"; _body="$2"
+  _resp=$(curl -sk -o /tmp/_act.body -w '%{http_code}' -u "admin:$PW" \
+            -X POST "$URL" -H "Content-Type: application/json" -d "$_body" 2>/dev/null)
+  case "$_resp" in
+    2*|409) echo "[activate]   $_label → HTTP $_resp ok" ;;
+    *) echo "[activate]   $_label → HTTP $_resp FAIL: $(head -c 200 /tmp/_act.body)" >&2; rm -f /tmp/_act.body; return 1 ;;
+  esac
+  rm -f /tmp/_act.body
+}
 
 echo "[activate] Ensuring domain + accounts..."
-curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"domain","name":"diegonmarcos.com"}' 2>/dev/null || true
+_post "domain diegonmarcos.com" '{"type":"domain","name":"diegonmarcos.com"}'
 
 # USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
 # Each user gets a Stalwart "individual" principal POST. pass_env values are
@@ -32,12 +53,10 @@ curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
 # Each user's password is NEVER conflated with $PW (=ADMIN_PASSWORD) — rotation
 # of ADMIN_PASSWORD must not break IMAP/JMAP for mail users.
 ADMIN_PW=$(cat /opt/containers/stalwart/.secrets.d/ME_PASSWORD 2>/dev/null || echo "$ME_PASSWORD")
-curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"me@diegonmarcos.com","secrets":["'"$ADMIN_PW"'"],"emails":["me@diegonmarcos.com"],"roles":["admin"]}' 2>/dev/null || true
+_post "user me@diegonmarcos.com" "{\"type\":\"individual\",\"name\":\"me@diegonmarcos.com\",\"secrets\":[\"$ADMIN_PW\"],\"emails\":[\"me@diegonmarcos.com\"],\"roles\":[\"admin\"]}"
 
 NOREPLY_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "$NOREPLY_PASSWORD")
-curl -sk -u "admin:$PW" -X POST "$URL" -H "Content-Type: application/json" \
-  -d '{"type":"individual","name":"no-reply@diegonmarcos.com","secrets":["'"$NOREPLY_PW"'"],"emails":["no-reply@diegonmarcos.com","noreply@diegonmarcos.com"],"roles":["user"]}' 2>/dev/null || true
+_post "user no-reply@diegonmarcos.com" "{\"type\":\"individual\",\"name\":\"no-reply@diegonmarcos.com\",\"secrets\":[\"$NOREPLY_PW\"],\"emails\":[\"no-reply@diegonmarcos.com\",\"noreply@diegonmarcos.com\"],\"roles\":[\"user\"]}"
 
 # ── Upload Sieve script via JMAP ────────────────────────────────
 SIEVE_FILE="/opt/containers/stalwart/default.sieve"

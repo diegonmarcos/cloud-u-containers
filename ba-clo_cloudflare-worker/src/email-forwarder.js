@@ -167,11 +167,17 @@ async function getGoogleAccessToken(env) {
   return data.access_token;
 }
 
-// Import a PEM RSA private key for Web Crypto API
+// Import a PEM RSA private key for Web Crypto API.
+// Accepts: raw PEM, PEM with literal "\n" escapes, or full GCP SA JSON.
 async function importPrivateKey(pem) {
-  const pemBody = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
+  let raw = pem.trim();
+  if (raw.startsWith('{')) {
+    try { raw = JSON.parse(raw).private_key || raw; } catch {}
+  }
+  const pemBody = raw
+    .replace(/\\n/g, '\n')
+    .replace(/-----BEGIN [^-]+-----/g, '')
+    .replace(/-----END [^-]+-----/g, '')
     .replace(/\s/g, '');
   const binaryDer = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
   return crypto.subtle.importKey(
