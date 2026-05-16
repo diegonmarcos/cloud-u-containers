@@ -35,7 +35,7 @@ in
       healthcheck = {
         test = [
           "CMD" "node" "-e"
-          "fetch('http://localhost:${toString buildJson.ports.app}${app.healthcheck}').catch(()=>process.exit(1))"
+          "fetch('http://${vmIp}:${toString buildJson.ports.app}${app.healthcheck}').catch(()=>process.exit(1))"
         ];
         interval     = "30s";
         timeout      = "10s";

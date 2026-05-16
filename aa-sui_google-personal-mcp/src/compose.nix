@@ -4,9 +4,13 @@
 { buildJson, container }:
 
 let
+  svc = container.services;
   app = buildJson.containers.app;
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
   port = toString buildJson.ports.app;
+  # WG IP from cloud-data — host-network mode binds the MCP listener to the
+  # WG mesh only, never 0.0.0.0. Pattern matches sibling MCP composes.
+  vmIp = svc."google-personal-mcp".ip or "10.0.0.6";
 in
 {
   services = {
@@ -18,11 +22,8 @@ in
       environment = {
         PORT = port;
         MCP_HTTP_PORT = port;
-        # Bind MCP HTTP listener to WG IP (from container.bind_host via
-        # cloud-data resolver) — keeps host-net listener off 0.0.0.0.
-        # google-personal-mcp's mcp/index.ts must read MCP_HTTP_HOST.
-        MCP_HTTP_HOST = container.bind_host;
-        HOST = container.bind_host;
+        MCP_HTTP_HOST = vmIp;
+        HOST = vmIp;
         IMAP_HOST = buildJson.auth.imap_host;
         IMAP_PORT = toString buildJson.auth.imap_port;
         SMTP_HOST = buildJson.auth.smtp_host;
@@ -30,10 +31,8 @@ in
       };
       healthcheck = {
         test = [
-          "CMD"
-          "curl"
-          "-f"
-          "http://localhost:${port}/health"
+          "CMD" "node" "-e"
+          "fetch('http://${vmIp}:${port}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
         ];
         interval = "30s";
         timeout = "10s";
