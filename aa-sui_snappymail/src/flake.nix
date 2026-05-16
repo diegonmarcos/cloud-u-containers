@@ -44,7 +44,7 @@
           { name = "domain.ini";                          vars = domainConfigVars; }
           { name = "live.com.ini";                        vars = {}; }
           { name = "gmail.com.ini";                       vars = {}; }
-          { name = "mail-stalwart.diegonmarcos.com.ini";  vars = {}; }
+          { name = "jmap.diegonmarcos.com.ini";           vars = {}; }
         ];
         # Pre-seed data + PHP executor for SnappyMail's additional accounts.
         # Mounted into the container by compose.nix; invoked by init.sh at

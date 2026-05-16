@@ -24,7 +24,7 @@
     sieveScript = mailRules.toSieve merged;
     legacyJson  = builtins.toJSON (mailRules.toLegacyJson merged);
 
-    # base_domain derived from service domain: "mail-stalwart.example.com" → "example.com"
+    # base_domain derived from service domain: "jmap.example.com" → "example.com"
     base_domain =
       lib.concatStringsSep "." (lib.drop 1 (lib.splitString "." buildJson.domain));
 

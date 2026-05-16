@@ -6,11 +6,12 @@
   },
   "extras": [
     {
-      "email": "me@mail-stalwart.diegonmarcos.com",
+      "_comment": "Stalwart-backed mailbox for me@. Snappymail uses classical IMAP/SMTPS to Stalwart's container-local ports (host network on oci-mail). The hostname doubles as JMAP endpoint (jmap.diegonmarcos.com:443 → Stalwart :2443) but Snappymail only speaks IMAP/SMTP. JMAP-native clients should use jmap.diegonmarcos.com:443 over HTTPS.",
+      "email": "me@jmap.diegonmarcos.com",
       "login": "me@diegonmarcos.com",
       "pass_env": "ME_PASSWORD_STALWART",
-      "imap": { "host": "mail-stalwart.diegonmarcos.com", "port": 2993, "secure": "SSL" },
-      "smtp": { "host": "mail-stalwart.diegonmarcos.com", "port": 2465, "secure": "SSL" }
+      "imap": { "host": "jmap.diegonmarcos.com", "port": 2993, "secure": "SSL" },
+      "smtp": { "host": "jmap.diegonmarcos.com", "port": 2465, "secure": "SSL" }
     },
     {
       "email": "no-reply@diegonmarcos.com",

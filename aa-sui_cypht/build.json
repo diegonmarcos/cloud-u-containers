@@ -115,7 +115,7 @@
     },
     "via_internal": [
       {
-        "_doc": "JMAP via Stalwart. Cypht runs network_mode=host on oci-mail (same VM as Stalwart). Engine resolves service=stalwart, via=jmap_tls → host=mail-stalwart.diegonmarcos.com:2443 — reachable inside-VM (Stalwart listens on 10.0.0.3:2443). External clients should NOT use this entry; for those, use the imap-stalwart/smtps-stalwart Caddy-routed via_external entries below.",
+        "_doc": "JMAP via Stalwart. Cypht runs network_mode=host on oci-mail (same VM as Stalwart). Engine resolves service=stalwart, via=jmap_tls → host=jmap.diegonmarcos.com:2443 — reachable inside-VM (Stalwart listens on 10.0.0.3:2443) and externally via Caddy L4 reverse_proxy on jmap.diegonmarcos.com:443.",
         "label_template": "{addr_short} | JMAP-Stalwart",
         "user_ref":    "stalwart.users.admin",
         "receive_via": { "service": "stalwart", "via": "jmap_tls"      },
@@ -124,22 +124,6 @@
       }
     ],
     "via_external": [
-      {
-        "_doc": "Stalwart IMAPS for me@ via Caddy public route (imap-stalwart.diegonmarcos.com:443 SNI → 10.1.0.3:2993). Replaces former IMAP-Maddy entry (Maddy decommissioned 2026-05).",
-        "label": "me@dnm.com | IMAPS-Stalwart",
-        "email": "me@diegonmarcos.com",
-        "pass_env": "ME_PASSWORD",
-        "imap": { "host": "imap-stalwart.diegonmarcos.com",  "port": 443, "secure": "SSL" },
-        "smtp": { "host": "smtps-stalwart.diegonmarcos.com", "port": 443, "secure": "SSL" }
-      },
-      {
-        "_doc": "Stalwart IMAPS for no-reply@ via the same Caddy public route. Replaces former IMAP-Maddy entry.",
-        "label": "no-reply@dnm.com | IMAPS-Stalwart",
-        "email": "no-reply@diegonmarcos.com",
-        "pass_env": "NOREPLY_PASSWORD",
-        "imap": { "host": "imap-stalwart.diegonmarcos.com",  "port": 443, "secure": "SSL" },
-        "smtp": { "host": "smtps-stalwart.diegonmarcos.com", "port": 443, "secure": "SSL" }
-      },
       {
         "_doc": "External providers (no internal SoT exists). Hosts/ports declared inline because no peer service owns them.",
         "label": "diegonmarcos@livecom | IMAP-outlook",

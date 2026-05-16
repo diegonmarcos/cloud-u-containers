@@ -35,7 +35,7 @@
         # SMTP MX plain TCP — design-complete listener; GCP firewall currently blocks public, CF Worker is the active inbound bridge
         route {
           proxy {
-            upstream 10.1.0.3:25
+            upstream 10.0.0.3:25
           }
         }
         }
@@ -46,28 +46,14 @@
           @sni_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
           route @sni_imap_diegonmarcos_com {
             proxy {
-              upstream 10.1.0.3:993
+              upstream 10.0.0.3:993
             }
           }
           # SMTPS via SNI on :443 (Maddy) (SNI: smtps.diegonmarcos.com)
           @sni_smtps_diegonmarcos_com tls sni smtps.diegonmarcos.com
           route @sni_smtps_diegonmarcos_com {
             proxy {
-              upstream 10.1.0.3:465
-            }
-          }
-          # IMAPS via SNI on :443 (Stalwart) (SNI: imap-stalwart.diegonmarcos.com)
-          @sni_imap_stalwart_diegonmarcos_com tls sni imap-stalwart.diegonmarcos.com
-          route @sni_imap_stalwart_diegonmarcos_com {
-            proxy {
-              upstream 10.1.0.3:2993
-            }
-          }
-          # SMTPS via SNI on :443 (Stalwart) (SNI: smtps-stalwart.diegonmarcos.com)
-          @sni_smtps_stalwart_diegonmarcos_com tls sni smtps-stalwart.diegonmarcos.com
-          route @sni_smtps_stalwart_diegonmarcos_com {
-            proxy {
-              upstream 10.1.0.3:2465
+              upstream 10.0.0.3:465
             }
           }
           # Fall-through: TLS that does NOT match any mail SNI → internal HTTPS
@@ -75,7 +61,7 @@
           # bare-`tls` race condition (issue #294).
           @notmail not {
             tls {
-              sni imap.diegonmarcos.com smtps.diegonmarcos.com imap-stalwart.diegonmarcos.com smtps-stalwart.diegonmarcos.com
+              sni imap.diegonmarcos.com smtps.diegonmarcos.com
             }
           }
           route @notmail {
@@ -168,26 +154,26 @@
 
   # VS Code IDE (ide.diegonmarcos.com)
   ide.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8443
+      reverse_proxy 10.0.0.6:8443
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8443
+      reverse_proxy 10.0.0.6:8443
     }
 
       handle_errors {
@@ -202,26 +188,26 @@ import request_limits
 
   # Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com
   webmail.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.3:8889
+      reverse_proxy 10.0.0.3:8889
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.3:8889
+      reverse_proxy 10.0.0.3:8889
     }
 
       handle_errors {
@@ -236,26 +222,26 @@ import request_limits
 
   # Grist spreadsheet/database (sheets.diegonmarcos.com)
   sheets.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3011
+      reverse_proxy 10.0.0.6:3011
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3011
+      reverse_proxy 10.0.0.6:3011
     }
 
       handle_errors {
@@ -270,26 +256,26 @@ import request_limits
 
   # Mattermost team chat with ntfy bridge and C3 command bot
   chat.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8065
+      reverse_proxy 10.0.0.6:8065
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8065
+      reverse_proxy 10.0.0.6:8065
     }
 
       handle_errors {
@@ -304,7 +290,7 @@ import request_limits
 
   # PhotoPrism AI-powered photo management (oci-flex-1)
   photos.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
@@ -321,19 +307,19 @@ reverse_proxy https://diegonmarcos.github.io {
 # All other paths → auth + upstream
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3013
+      reverse_proxy 10.0.0.6:3013
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3013
+      reverse_proxy 10.0.0.6:3013
     }
 
       handle_errors {
@@ -348,26 +334,26 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)
   cal.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:5232
+      reverse_proxy 10.0.0.6:5232
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:5232
+      reverse_proxy 10.0.0.6:5232
     }
 
       handle_errors {
@@ -380,14 +366,14 @@ import request_limits
     }
   }
 
-  # Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)
-  mail-stalwart.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  # Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)
+  jmap.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
-    reverse_proxy https://10.1.0.3:2443 {
+    reverse_proxy https://10.0.0.3:2443 {
     transport http {
   tls_insecure_skip_verify
 }
@@ -404,12 +390,12 @@ import request_limits
 
   # Bitwarden password manager
   vault.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
-        reverse_proxy 10.1.0.4:8880
+        reverse_proxy 10.0.0.6:8880
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -422,26 +408,26 @@ import request_limits
 
   # Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.
   mesh.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8080
+      reverse_proxy 10.0.0.6:8080
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8080
+      reverse_proxy 10.0.0.6:8080
     }
 
       handle_errors {
@@ -456,12 +442,12 @@ import request_limits
 
   # WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP.
   vpn.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
-        reverse_proxy 10.1.0.2:8080
+        reverse_proxy 10.0.0.1:8080
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -474,26 +460,26 @@ import request_limits
 
   # SSO and 2FA authentication portal
   auth.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.2:9091
+      reverse_proxy 10.0.0.1:9091
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.2:9091
+      reverse_proxy 10.0.0.1:9091
     }
 
       handle_errors {
@@ -508,26 +494,26 @@ import request_limits
 
   # Dagu - Lightweight DAG-based workflow scheduler
   workflows.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.1:8070
+      reverse_proxy 10.0.0.4:8070
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.1:8070
+      reverse_proxy 10.0.0.4:8070
     }
 
       handle_errors {
@@ -542,26 +528,26 @@ import request_limits
 
   # DBGate - Universal database manager for all cloud databases
   db.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8086
+      reverse_proxy 10.0.0.6:8086
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8086
+      reverse_proxy 10.0.0.6:8086
     }
 
       handle_errors {
@@ -581,7 +567,7 @@ import request_limits
 
   # Landing page + WKD (Web Key Directory for PGP)
   diegonmarcos.com, www.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     # WKD — PGP public key discovery (no auth — must be public per spec)
@@ -589,7 +575,14 @@ import request_limits
       root * /srv/wkd
       file_server
     }
-
+    # JMAP auto-discovery (RFC 8620) — proxies to Stalwart (well-known — public per spec)
+    handle /.well-known/jmap {
+reverse_proxy https://10.0.0.3:2443 {
+  transport http {
+    tls_insecure_skip_verify
+  }
+}
+    }
     handle {
       rewrite * /landpage{uri}
 reverse_proxy https://diegonmarcos.github.io {
@@ -609,7 +602,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # linktree.diegonmarcos.com
   linktree.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /linktree{uri}
@@ -629,7 +622,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # nexus.diegonmarcos.com
   nexus.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /nexus{uri}
@@ -649,7 +642,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # suite.diegonmarcos.com
   suite.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /suite{uri}
@@ -669,7 +662,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # maps.diegonmarcos.com
   maps.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     rewrite * /mymaps{uri}
@@ -694,26 +687,26 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # App hub -- path-based routing
   app.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 handle_path /etherpad/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3012
+      reverse_proxy 10.0.0.6:3012
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3012
+      reverse_proxy 10.0.0.6:3012
     }
 
 }
@@ -721,19 +714,19 @@ handle_path /etherpad/* {
 handle_path /filebrowser/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3015
+      reverse_proxy 10.0.0.6:3015
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3015
+      reverse_proxy 10.0.0.6:3015
     }
 
 }
@@ -741,19 +734,19 @@ handle_path /filebrowser/* {
 handle_path /hedgedoc/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3018
+      reverse_proxy 10.0.0.6:3018
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3018
+      reverse_proxy 10.0.0.6:3018
     }
 
 }
@@ -761,19 +754,19 @@ handle_path /hedgedoc/* {
 handle_path /gitea/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3002
+      reverse_proxy 10.0.0.6:3002
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3002
+      reverse_proxy 10.0.0.6:3002
     }
 
 }
@@ -792,7 +785,7 @@ handle {
 
   # API hub -- path-based routing to backend APIs
   api.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 @root path /
@@ -804,22 +797,42 @@ reverse_proxy https://diegonmarcos.github.io {
 
 }
 
-handle_path /http-to-smtp-proxy-api/* {
+handle_path /cf-worker-bridge/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.2:8090
+      reverse_proxy 10.0.0.4:8092
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.2:8090
+      reverse_proxy 10.0.0.4:8092
+    }
+
+}
+
+handle_path /http-to-smtp-proxy-api/* {
+      @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.1:8090
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.1:8090
     }
 
 }
@@ -827,19 +840,19 @@ handle_path /http-to-smtp-proxy-api/* {
 handle_path /crawlee/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3000
+      reverse_proxy 10.0.0.6:3000
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3000
+      reverse_proxy 10.0.0.6:3000
     }
 
 }
@@ -847,19 +860,19 @@ handle_path /crawlee/* {
 handle_path /fin-api/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8340
+      reverse_proxy 10.0.0.6:8340
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8340
+      reverse_proxy 10.0.0.6:8340
     }
 
 }
@@ -867,19 +880,19 @@ handle_path /fin-api/* {
 handle_path /c3a/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.2:8085
+      reverse_proxy 10.0.0.1:8085
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.2:8085
+      reverse_proxy 10.0.0.1:8085
     }
 
 }
@@ -887,19 +900,19 @@ handle_path /c3a/* {
 handle_path /c3-infra-api/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8081
+      reverse_proxy 10.0.0.6:8081
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8081
+      reverse_proxy 10.0.0.6:8081
     }
 
 }
@@ -907,19 +920,19 @@ handle_path /c3-infra-api/* {
 handle_path /c3-services-api/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8082
+      reverse_proxy 10.0.0.6:8082
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8082
+      reverse_proxy 10.0.0.6:8082
     }
 
 }
@@ -942,7 +955,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # Cloud dashboard + spec viewer
   cloud.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 @root path /
@@ -957,19 +970,19 @@ reverse_proxy https://diegonmarcos.github.io {
 handle_path /spec/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3080
+      reverse_proxy 10.0.0.6:3080
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3080
+      reverse_proxy 10.0.0.6:3080
     }
 
 }
@@ -992,26 +1005,26 @@ reverse_proxy https://diegonmarcos.github.io {
 
   # 
   analytics.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 
 handle_path /matomo/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
 
 }
@@ -1019,19 +1032,19 @@ handle_path /matomo/* {
 handle_path /openobserve/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:5080
+      reverse_proxy 10.0.0.6:5080
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:5080
+      reverse_proxy 10.0.0.6:5080
     }
 
 }
@@ -1039,19 +1052,19 @@ handle_path /openobserve/* {
 handle_path /umami/* {
       @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:3006
+      reverse_proxy 10.0.0.6:3006
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:3006
+      reverse_proxy 10.0.0.6:3006
     }
 
 }
@@ -1073,41 +1086,41 @@ handle_path /umami/* {
 
   # MCP -- Streamable HTTP endpoints for Claude Code MCP clients
   mcp.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
 handle_path /g-personal/* {
-  reverse_proxy 10.1.0.4:3106 {
+  reverse_proxy 10.0.0.6:3106 {
     flush_interval -1
   }
 }
 handle_path /g-workspace/* {
-  reverse_proxy 10.1.0.4:3104 {
+  reverse_proxy 10.0.0.6:3104 {
     flush_interval -1
   }
 }
 handle_path /mail-mcp/* {
-  reverse_proxy 10.1.0.4:3103 {
+  reverse_proxy 10.0.0.6:3103 {
     flush_interval -1
   }
 }
 handle_path /mattermost-mcp/* {
-  reverse_proxy 10.1.0.4:3102 {
+  reverse_proxy 10.0.0.6:3102 {
     flush_interval -1
   }
 }
 handle_path /c3-infra-mcp/* {
-  reverse_proxy 10.1.0.4:3100 {
+  reverse_proxy 10.0.0.6:3100 {
     flush_interval -1
   }
 }
 handle_path /c3-services-mcp/* {
-  reverse_proxy 10.1.0.4:3101 {
+  reverse_proxy 10.0.0.6:3101 {
     flush_interval -1
   }
 }
 handle_path /cloud-cgc-mcp/* {
-  reverse_proxy 10.1.0.4:3105 {
+  reverse_proxy 10.0.0.6:3105 {
     flush_interval -1
   }
 }
@@ -1131,7 +1144,7 @@ handle_path /cloud-cgc-mcp/* {
 
   # mail → webmail redirect
   mail.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     redir https://webmail.diegonmarcos.com{uri} permanent
@@ -1154,14 +1167,14 @@ import request_limits
 
   # Matomo (public tracking + protected admin) + Umami (path-based)
   analytics.diegonmarcos.com/matomo {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     @tracking {
       path /matomo.js /matomo.php /piwik.js /piwik.php /collect.php /api.php /track.php /js/*
     }
     handle @tracking {
-      reverse_proxy 10.1.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
 
     @umami_public {
@@ -1169,24 +1182,24 @@ import request_limits
     }
     handle @umami_public {
       uri strip_prefix /umami
-      reverse_proxy 10.1.0.4:3006
+      reverse_proxy 10.0.0.6:3006
     }
     handle_path /umami/* {
       @umami_bearer header Authorization Bearer*
       handle @umami_bearer {
-    forward_auth 10.1.0.2:4182 {
+    forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-        reverse_proxy 10.1.0.4:3006
+        reverse_proxy 10.0.0.6:3006
       }
       handle {
-    forward_auth 10.1.0.2:9091 {
+    forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-        reverse_proxy 10.1.0.4:3006
+        reverse_proxy 10.0.0.6:3006
       }
     }
     @umami_root path /umami
@@ -1196,19 +1209,19 @@ import request_limits
 
         @bearer header Authorization Bearer*
     handle @bearer {
-      forward_auth 10.1.0.2:4182 {
+      forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
     handle {
-      forward_auth 10.1.0.2:9091 {
+      forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8084
+      reverse_proxy 10.0.0.6:8084
     }
 
 
@@ -1225,11 +1238,11 @@ import request_limits
 
   # ntfy notifications -- 3-tier auth: JWT bearer, tk_ bearer, cookie
   rss.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     handle /setup {
-    forward_auth 10.1.0.2:9091 {
+    forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1239,23 +1252,23 @@ import request_limits
     }
     @authelia_jwt header_regexp Authorization "^Bearer eyJ"
     handle @authelia_jwt {
-    forward_auth 10.1.0.2:4182 {
+    forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.1.0.4:8090
+      reverse_proxy 10.0.0.6:8090
     }
     @ntfy_token header_regexp Authorization "^Bearer tk_"
     handle @ntfy_token {
-      reverse_proxy 10.1.0.4:8090
+      reverse_proxy 10.0.0.6:8090
     }
     handle {
-    forward_auth 10.1.0.2:9091 {
+    forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.1.0.4:8090
+      reverse_proxy 10.0.0.6:8090
     }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -1270,12 +1283,12 @@ import request_limits
 
   # Infrastructure dashboard (static HTML)
   proxy.diegonmarcos.com {
-  bind 0.0.0.0 10.1.0.1
+  bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
     @bearer header Authorization Bearer*
     handle @bearer {
-    forward_auth 10.1.0.2:4182 {
+    forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
@@ -1285,7 +1298,7 @@ import request_limits
       file_server
     }
     handle {
-    forward_auth 10.1.0.2:9091 {
+    forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
@@ -1311,253 +1324,259 @@ import request_limits
   code-server.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8443
+    reverse_proxy 10.0.0.6:8443
   }
 
   cypht.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.3:8889
+    reverse_proxy 10.0.0.3:8889
   }
 
   etherpad.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3012
+    reverse_proxy 10.0.0.6:3012
   }
 
   filebrowser.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3015
+    reverse_proxy 10.0.0.6:3015
   }
 
   g-personal-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3106
+    reverse_proxy 10.0.0.6:3106
   }
 
   g-workspace-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3104
+    reverse_proxy 10.0.0.6:3104
   }
 
   grist.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3011
+    reverse_proxy 10.0.0.6:3011
   }
 
   hedgedoc.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3018
+    reverse_proxy 10.0.0.6:3018
   }
 
   mail-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3103
+    reverse_proxy 10.0.0.6:3103
   }
 
   mattermost.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8065
+    reverse_proxy 10.0.0.6:8065
   }
 
   mattermost-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3102
+    reverse_proxy 10.0.0.6:3102
   }
 
   photoprism.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3013
+    reverse_proxy 10.0.0.6:3013
   }
 
   radicale.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:5232
+    reverse_proxy 10.0.0.6:5232
   }
 
   snappymail.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.3:8888
+    reverse_proxy 10.0.0.3:8888
+  }
+
+  cf-worker-http-to-wg-public-bridge.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.4:8092
   }
 
   http-to-smtp-proxy-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:8090
+    reverse_proxy 10.0.0.1:8090
   }
 
   stalwart.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.3:2443
+    reverse_proxy 10.0.0.3:2443
   }
 
   vaultwarden.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8880
+    reverse_proxy 10.0.0.6:8880
   }
 
   crawlee.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3000
+    reverse_proxy 10.0.0.6:3000
   }
 
   fin-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8340
+    reverse_proxy 10.0.0.6:8340
   }
 
   rig-agentic-sonn-14bq8.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8091
+    reverse_proxy 10.0.0.6:8091
   }
 
   hickory-dns.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:53
+    reverse_proxy 10.0.0.1:53
   }
 
   wireguard-mesh.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8080
+    reverse_proxy 10.0.0.6:8080
   }
 
   wireguard-mesh-ws-tunnel.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:8080
+    reverse_proxy 10.0.0.1:8080
   }
 
   authelia.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:9091
+    reverse_proxy 10.0.0.1:9091
   }
 
   caddy.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.1:443
+    reverse_proxy 10.0.0.1:443
   }
 
   introspect-proxy.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:4182
+    reverse_proxy 10.0.0.1:4182
   }
 
   c3-analytics-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:8085
+    reverse_proxy 10.0.0.1:8085
   }
 
   c3-infra-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8081
+    reverse_proxy 10.0.0.6:8081
   }
 
   c3-infra-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3100
+    reverse_proxy 10.0.0.6:3100
   }
 
   c3-services-api.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8082
+    reverse_proxy 10.0.0.6:8082
   }
 
   c3-services-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3101
+    reverse_proxy 10.0.0.6:3101
   }
 
   cloud-cgc-mcp.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3105
+    reverse_proxy 10.0.0.6:3105
   }
 
   c3-spec.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3080
+    reverse_proxy 10.0.0.6:3080
   }
 
   dagu.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.1:8070
+    reverse_proxy 10.0.0.4:8070
   }
 
   dbgate.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8086
+    reverse_proxy 10.0.0.6:8086
   }
 
   matomo.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8084
+    reverse_proxy 10.0.0.6:8084
   }
 
   news-gdelt.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3019
+    reverse_proxy 10.0.0.6:3019
   }
 
   ntfy.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:8090
+    reverse_proxy 10.0.0.6:8090
   }
 
   openobserve.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:5080
+    reverse_proxy 10.0.0.6:5080
   }
 
   umami.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3006
+    reverse_proxy 10.0.0.6:3006
   }
 
   gitea.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.4:3002
+    reverse_proxy 10.0.0.6:3002
   }
 
   redis.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.1.0.2:6379
+    reverse_proxy 10.0.0.1:6379
   }
 
 
@@ -1570,7 +1589,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8443
+    reverse_proxy 10.0.0.6:8443
   }
 
   cypht-http-8889.app {
@@ -1578,7 +1597,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.3:8889
+    reverse_proxy 10.0.0.3:8889
   }
 
   etherpad_app-http-3012.app {
@@ -1586,7 +1605,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3012
+    reverse_proxy 10.0.0.6:3012
   }
 
   filebrowser_app-http-3015.app {
@@ -1594,7 +1613,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3015
+    reverse_proxy 10.0.0.6:3015
   }
 
   google-personal-mcp-http-3106.app {
@@ -1602,7 +1621,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3106
+    reverse_proxy 10.0.0.6:3106
   }
 
   google-workspace-mcp-http-3104.app {
@@ -1610,7 +1629,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3104
+    reverse_proxy 10.0.0.6:3104
   }
 
   grist_app-http-3011.app {
@@ -1618,7 +1637,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3011
+    reverse_proxy 10.0.0.6:3011
   }
 
   hedgedoc_app-http-3018.app {
@@ -1626,7 +1645,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3018
+    reverse_proxy 10.0.0.6:3018
   }
 
   mail-mcp-http-3103.app {
@@ -1634,7 +1653,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3103
+    reverse_proxy 10.0.0.6:3103
   }
 
   mattermost-http-8065.app {
@@ -1642,7 +1661,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8065
+    reverse_proxy 10.0.0.6:8065
   }
 
   mattermost-mcp-http-3102.app {
@@ -1650,7 +1669,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3102
+    reverse_proxy 10.0.0.6:3102
   }
 
   photoprism_app-http-3013.app {
@@ -1658,7 +1677,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3013
+    reverse_proxy 10.0.0.6:3013
   }
 
   radicale-http-5232.app {
@@ -1666,7 +1685,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:5232
+    reverse_proxy 10.0.0.6:5232
   }
 
   snappymail-http-8888.app {
@@ -1674,7 +1693,15 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.3:8888
+    reverse_proxy 10.0.0.3:8888
+  }
+
+  cf-worker-http-to-wg-public-bridge-http-8092.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.4:8092
   }
 
   http-to-smtp-proxy-api-http-8090.app {
@@ -1682,7 +1709,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.2:8090
+    reverse_proxy 10.0.0.1:8090
   }
 
   stalwart-https-2443.app {
@@ -1690,7 +1717,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.3:2443
+    reverse_proxy 10.0.0.3:2443
   }
 
   vaultwarden-http-8880.app {
@@ -1698,7 +1725,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8880
+    reverse_proxy 10.0.0.6:8880
   }
 
   crawlee_api-http-3000.app {
@@ -1706,7 +1733,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3000
+    reverse_proxy 10.0.0.6:3000
   }
 
   fin-api-http-8340.app {
@@ -1714,7 +1741,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8340
+    reverse_proxy 10.0.0.6:8340
   }
 
   rig-agentic-sonn-14bq8-http-8091.app {
@@ -1722,7 +1749,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8091
+    reverse_proxy 10.0.0.6:8091
   }
 
   wireguard-mesh-http-8080.app {
@@ -1730,7 +1757,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8080
+    reverse_proxy 10.0.0.6:8080
   }
 
   authelia-http-9091.app {
@@ -1738,7 +1765,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.2:9091
+    reverse_proxy 10.0.0.1:9091
   }
 
   caddy-https-443.app {
@@ -1746,7 +1773,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.1:443
+    reverse_proxy 10.0.0.1:443
   }
 
   c3-analytics-api-http-8085.app {
@@ -1754,7 +1781,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.2:8085
+    reverse_proxy 10.0.0.1:8085
   }
 
   c3-infra-api-http-8081.app {
@@ -1762,7 +1789,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8081
+    reverse_proxy 10.0.0.6:8081
   }
 
   c3-infra-mcp-http-3100.app {
@@ -1770,7 +1797,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3100
+    reverse_proxy 10.0.0.6:3100
   }
 
   c3-services-api-http-8082.app {
@@ -1778,7 +1805,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8082
+    reverse_proxy 10.0.0.6:8082
   }
 
   c3-services-mcp-http-3101.app {
@@ -1786,7 +1813,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3101
+    reverse_proxy 10.0.0.6:3101
   }
 
   cloud-cgc-mcp-http-3105.app {
@@ -1794,7 +1821,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3105
+    reverse_proxy 10.0.0.6:3105
   }
 
   cloud-spec-http-3080.app {
@@ -1802,7 +1829,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3080
+    reverse_proxy 10.0.0.6:3080
   }
 
   dagu-http-8070.app {
@@ -1810,7 +1837,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.1:8070
+    reverse_proxy 10.0.0.4:8070
   }
 
   dbgate-http-8086.app {
@@ -1818,7 +1845,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8086
+    reverse_proxy 10.0.0.6:8086
   }
 
   matomo-hybrid-http-8084.app {
@@ -1826,7 +1853,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8084
+    reverse_proxy 10.0.0.6:8084
   }
 
   ntfy-http-8090.app {
@@ -1834,7 +1861,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:8090
+    reverse_proxy 10.0.0.6:8090
   }
 
   openobserve-http-5080.app {
@@ -1842,7 +1869,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:5080
+    reverse_proxy 10.0.0.6:5080
   }
 
   umami-http-3006.app {
@@ -1850,7 +1877,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3006
+    reverse_proxy 10.0.0.6:3006
   }
 
   gitea-http-3002.app {
@@ -1858,7 +1885,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.1.0.4:3002
+    reverse_proxy 10.0.0.6:3002
   }
 
 
@@ -1928,7 +1955,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    respond "DB catalog — container=authelia engine=sqlite port= upstream=(embedded) path=/var/lib/authelia/db.sqlite3 vm=gcp-E2-f_0" 200
+    respond "DB catalog — container=authelia engine=sqlite port= upstream=(embedded) path=/data/db.sqlite3 vm=gcp-E2-f_0" 200
   }
 
   dagu-sqlite-null.db {
@@ -1944,7 +1971,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    respond "DB catalog — container=matomo-hybrid engine=mariadb port=3306 upstream=10.1.0.4:3306 path=/var/lib/mysql vm=oci-A1-f_0" 200
+    respond "DB catalog — container=matomo-hybrid engine=mariadb port=3306 upstream=10.0.0.6:3306 path=/var/lib/mysql vm=oci-A1-f_0" 200
   }
 
   ntfy-sqlite-null.db {
@@ -2027,7 +2054,7 @@ import request_limits
   # ════════════════════════════════════════════════════════════
 
   mta-sts.diegonmarcos.com {
-    bind 0.0.0.0 10.1.0.1
+    bind 0.0.0.0 10.0.0.1
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}
@@ -2054,7 +2081,7 @@ max_age: 604800
   # ════════════════════════════════════════════════════════════
 
   *.diegonmarcos.com {
-    bind 0.0.0.0 10.1.0.1
+    bind 0.0.0.0 10.0.0.1
 import security
     tls {
       dns cloudflare {env.CF_API_TOKEN}

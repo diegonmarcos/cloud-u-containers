@@ -56,7 +56,7 @@
   },
   "mail_hosts": {
     "maddy": "mail.diegonmarcos.com",
-    "stalwart": "mail-stalwart.diegonmarcos.com"
+    "stalwart": "jmap.diegonmarcos.com"
   },
   "mail_ports": {
     "maddy_imap": 993,

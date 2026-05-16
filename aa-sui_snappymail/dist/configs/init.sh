@@ -19,12 +19,12 @@ ENV_VARS='$SNAPPYMAIL_ADMIN_PASSWORD $MAIL_STALWART_HOST $MAIL_STALWART_IMAP_POR
 echo "[init] Substituting runtime secrets into application.ini + domain configs..."
 set -a
 . ../.secrets
-: "${MAIL_STALWART_HOST:=mail-stalwart.diegonmarcos.com}"
+: "${MAIL_STALWART_HOST:=jmap.diegonmarcos.com}"
 : "${MAIL_STALWART_IMAP_PORT:=2993}"
 : "${MAIL_STALWART_SMTP_PORT:=2465}"
 set +a
 
-for f in application.ini mail-stalwart.diegonmarcos.com.ini; do
+for f in application.ini jmap.diegonmarcos.com.ini; do
     [ -f "$f" ] || continue
     envsubst "$ENV_VARS" < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 done

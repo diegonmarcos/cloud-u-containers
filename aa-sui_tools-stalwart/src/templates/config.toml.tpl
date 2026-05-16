@@ -5,6 +5,16 @@
 hostname = "@DOMAIN@"
 url = "https://@DOMAIN@"
 
+# NOTE on JMAP URL port leak:
+# Stalwart's session resource (apiUrl/downloadUrl/uploadUrl) embeds the
+# listener's bind port (:2443) because it cannot deduce the public port
+# from incoming requests. [server.proxy].trusted-networks would enable
+# HAProxy PROXY-protocol parsing — NOT X-Forwarded-* trust — and Caddy
+# doesn't send PROXY protocol to this upstream, so configuring it here
+# breaks all connections with "invalid proxy header". Leaving URLs with
+# the :2443 suffix is the lesser evil until Stalwart adds explicit
+# advertise-url config (tracked upstream).
+
 [server.listener.smtp]
 bind = "[::]:2025"
 protocol = "smtp"
@@ -26,6 +36,9 @@ protocol = "managesieve"
 [server.listener.https]
 protocol = "http"
 bind = "[::]:@APP_PORT@"
+# Public URL is via Caddy reverse_proxy on :443 — clients should never see
+# the internal :@APP_PORT@. JMAP session-resource URLs are built from this.
+url = "https://@DOMAIN@"
 tls.implicit = true
 
 [server.listener.http]

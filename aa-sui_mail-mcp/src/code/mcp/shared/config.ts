@@ -26,10 +26,10 @@ const SERVERS: Record<string, ServerConfig> = {
     container: "maddy",
   },
   stalwart: {
-    host: process.env.STALWART_HOST ?? "mail-stalwart.diegonmarcos.com",
+    host: process.env.STALWART_HOST ?? "jmap.diegonmarcos.com",
     imap: parseInt(process.env.STALWART_IMAP_PORT ?? "2993"),
     smtp: parseInt(process.env.STALWART_SMTP_PORT ?? "2465"),
-    jmap: process.env.STALWART_JMAP_URL ?? "https://mail-stalwart.diegonmarcos.com:2443",
+    jmap: process.env.STALWART_JMAP_URL ?? "https://jmap.diegonmarcos.com:2443",
     adminUrl: process.env.STALWART_ADMIN_URL,
     sshAlias: "oci-mail",
     container: "stalwart",

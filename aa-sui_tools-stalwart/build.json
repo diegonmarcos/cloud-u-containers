@@ -1,9 +1,9 @@
 {
   "name": "stalwart",
-  "description": "Stalwart Mail Server — shadow mode (mail-stalwart.diegonmarcos.com)",
+  "description": "Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)",
   "dns": "stalwart.app",
   "category": "app",
-  "domain": "mail-stalwart.diegonmarcos.com",
+  "domain": "jmap.diegonmarcos.com",
   "deploy": {
     "host": "oci-mail",
     "remote_path": "/opt/containers/stalwart",
@@ -25,25 +25,11 @@
   },
   "proxy": {
     "primary": {
-      "domain": "mail-stalwart.diegonmarcos.com",
+      "domain": "jmap.diegonmarcos.com",
       "auth": "none",
       "tls_skip_verify": true,
-      "l4_ports": [
-        {
-          "port": 443,
-          "sni": "imap-stalwart.diegonmarcos.com",
-          "upstream": "oci-mail:2993",
-          "comment": "IMAPS via SNI on :443 (Stalwart)",
-          "protocol": "tls"
-        },
-        {
-          "port": 443,
-          "sni": "smtps-stalwart.diegonmarcos.com",
-          "upstream": "oci-mail:2465",
-          "comment": "SMTPS via SNI on :443 (Stalwart)",
-          "protocol": "tls"
-        }
-      ]
+      "_doc_l4_ports": "Stalwart is JMAP-only from the client side — clients reach it via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). Classical IMAPS (:2993) and SMTPS (:2465) listeners still exist inside the container for legacy-tooling (mail-puller, sorter) but are NOT exposed publicly — those Caddy SNI subhostnames were removed. If you later retire maddy and want Stalwart to take over imap.* / smtps.*, flip the upstream in those maddy-side declarations instead of re-adding -stalwart suffix hostnames.",
+      "l4_ports": []
     },
     "app_hub": false,
     "mail_hub": {
@@ -93,7 +79,7 @@
       "dns": "stalwart.app",
       "public": true,
       "proxy": {
-        "domain": "mail-stalwart.diegonmarcos.com",
+        "domain": "jmap.diegonmarcos.com",
         "auth": "none",
         "tls_skip_verify": true
       },
