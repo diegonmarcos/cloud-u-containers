@@ -51,7 +51,7 @@ in
       healthcheck = {
         test = [
           "CMD-SHELL"
-          "curl -so /dev/null -w '%{http_code}' http://localhost:${port}${healthPath} | grep -qE '^[2-4]' || exit 1"
+          "curl -so /dev/null -w '%{http_code}' http://${vmIp}:${port}${healthPath} | grep -qE '^[2-4]' || exit 1"
         ];
         interval = "30s";
         timeout = "10s";
