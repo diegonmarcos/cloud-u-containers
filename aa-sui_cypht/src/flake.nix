@@ -22,10 +22,10 @@
     # shortcut — Caddy is the sole route owner per cypht-mail-derive-refactor.
     mail_domain = "mail.${base_domain}";
 
-    # Stalwart hostname for the JMAP + IMAP secondary backend.
-    # External clients hit this via Caddy L4 forwarders on gcp-proxy:2443/2993/2465.
-    # On oci-mail (host network), it resolves through the same Caddy chain.
-    stalwart_domain = "mail-stalwart.${base_domain}";
+    # Stalwart JMAP hostname. External clients hit this via Caddy reverse_proxy
+    # on jmap.${base_domain}:443 → 10.0.0.3:2443. On oci-mail (host network),
+    # cypht resolves through the same Caddy chain.
+    stalwart_domain = "jmap.${base_domain}";
 
     # WG IP for oci-mail (where cypht runs). Binding nginx here enforces
     # WG-only access at the socket level — same pattern as Maddy/Stalwart.

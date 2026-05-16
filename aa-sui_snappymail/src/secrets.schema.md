@@ -12,7 +12,7 @@ The actual values live encrypted in `secrets.yaml` (sops/age).
 | `NOREPLY_PASSWORD`         | `seed-accounts.php` → extras[1].pass  | `no-reply@diegonmarcos.com` Maddy pw      |
 | `LIVE_APP_PASSWORD`        | `seed-accounts.php` → extras[2].pass  | Outlook app-password for `diegonmarcos@live.com` |
 | `GMAIL_APP_PASSWORD`       | `seed-accounts.php` → extras[3].pass  | Gmail app-password for `diegonmarcos1@gmail.com` |
-| `MAIL_STALWART_HOST`       | `mail-stalwart.diegonmarcos.com.ini` (envsubst) | Override if Stalwart hostname differs. Default: `mail-stalwart.diegonmarcos.com` |
+| `MAIL_STALWART_HOST`       | `jmap.diegonmarcos.com.ini` (envsubst) | Override if Stalwart hostname differs. Default: `jmap.diegonmarcos.com` |
 | `MAIL_STALWART_IMAP_PORT`  | same                                  | Default: `2993` |
 | `MAIL_STALWART_SMTP_PORT`  | same                                  | Default: `2465` |
 

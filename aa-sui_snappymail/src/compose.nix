@@ -30,7 +30,7 @@ in
         "./configs/domain.ini:/opt/snappymail-config/domain.ini:ro"
         "./configs/live.com.ini:/opt/snappymail-config/live.com.ini:ro"
         "./configs/gmail.com.ini:/opt/snappymail-config/gmail.com.ini:ro"
-        "./configs/mail-stalwart.diegonmarcos.com.ini:/opt/snappymail-config/mail-stalwart.diegonmarcos.com.ini:ro"
+        "./configs/jmap.diegonmarcos.com.ini:/opt/snappymail-config/jmap.diegonmarcos.com.ini:ro"
         # Pre-seed data + PHP executor for additional accounts.
         "./assets/seed-accounts.json:/opt/snappymail-config/seed-accounts.json:ro"
         "./assets/seed-accounts.php:/opt/snappymail-config/seed-accounts.php:ro"
@@ -45,7 +45,7 @@ in
          + " /var/lib/snappymail/_data_/_default_/configs;"
          + " cp -f /opt/snappymail-config/application.ini"
          + " /var/lib/snappymail/_data_/_default_/configs/application.ini 2>/dev/null || true;"
-         + " for d in domain live.com gmail.com mail-stalwart.diegonmarcos.com; do"
+         + " for d in domain live.com gmail.com jmap.diegonmarcos.com; do"
          + "   src=/opt/snappymail-config/$$d.ini;"
          + "   case $$d in domain) dest=/var/lib/snappymail/_data_/_default_/domains/${base_domain}.ini ;;"
          + "     *) dest=/var/lib/snappymail/_data_/_default_/domains/$$d.ini ;;"
