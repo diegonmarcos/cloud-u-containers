@@ -15,10 +15,17 @@ in
       network_mode = "host";
       env_file = [ ".secrets" ];
       environment = {
+        # Primary delivery: Maddy on the standard :25 (host network on
+        # oci-mail). Maddy stays fully operational — receives + serves
+        # IMAP/SMTPS for legacy clients and historical mail.
         SMTP_HOST = "10.0.0.3";
-        SMTP_PORT = "2025";
+        SMTP_PORT = "25";
         LISTEN_HOST = svc."http-to-smtp-proxy-api".ip;
         LISTEN_PORT = toString buildJson.ports.app;
+        # Shadow (parallel) delivery: Stalwart on :2025. Stalwart is the
+        # JMAP backend — receives the same email in parallel so JMAP
+        # clients (LTT.rs, cypht) see it too. Sieve rules run there
+        # independent of Maddy's filtering.
         SMTP_SHADOW_HOST = "10.0.0.3";
         SMTP_SHADOW_PORT = "2025";
       };

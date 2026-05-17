@@ -331,6 +331,23 @@ ${plainOut}${sniMuxBlock}
       @not_wg not remote_ip 10.0.0.0/24
       respond @not_wg "Forbidden" 403'' else "";
 
+      # Static JSON at GET / — used when the upstream's runtime response
+      # leaks internal details (e.g. Stalwart JMAP Session baking :2443 into
+      # apiUrl). We declare the override in service build.json under
+      # proxy.primary.root_response_json; Caddy emits `handle /` with the
+      # JSON serialised verbatim via Caddy's backtick `respond` body form.
+      # All other paths still hit the reverse_proxy upstream.
+      hasRootJson = (route.root_response_json or null) != null;
+      rootJsonBlock = if hasRootJson then ''
+      @root_get_only method GET HEAD
+      handle @root_get_only {
+        @root_path path /
+        handle @root_path {
+          header Content-Type application/json
+          respond `${builtins.toJSON route.root_response_json}` 200
+        }
+      }'' else "";
+
     in ''
     # ${route.comment or route.domain}
     ${route.domain} {
@@ -338,6 +355,7 @@ ${plainOut}${sniMuxBlock}
   ${secLine}${uploadBlock}
   ${wgBlock}
   ${bypassBlock}${landingBlock}
+  ${rootJsonBlock}
       ${proxyBlock}
       ${handleErrors}
     }
@@ -347,8 +365,14 @@ ${plainOut}${sniMuxBlock}
 
   mkWellKnownBlock = wk:
     let
+      hasRedirect = (wk.redirect_to or null) != null;
       hasTlsSkipVerify = wk.tls_skip_verify or false;
-      proxyDirective = if hasTlsSkipVerify then ''
+      proxyDirective =
+        if hasRedirect then
+          # Permanent 308 — preserves method + body, avoids client surprise
+          # on POST/PUT. Spec-friendly for /.well-known autoconfig.
+          "        redir ${wk.redirect_to} 308"
+        else if hasTlsSkipVerify then ''
           reverse_proxy https://${wk.upstream} {
             transport http {
               tls_insecure_skip_verify

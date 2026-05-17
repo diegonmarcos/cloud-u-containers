@@ -15,8 +15,11 @@
   },
   "compose": {
     "custom": true,
-    "post_hook": "configs/activate.sh"
+    "post_hook": "configs/activate.sh",
+    "_doc_post_hook": "v0.16 activate.sh: ensures per-user mailbox hierarchy (4 parents + 10 leaves from mail-rules-general.json::folders+folders_ui) + uploads + activates default.sieve. Idempotent. Domain + Account creation are owned by stalwart-cli apply (manual recovery-mode bootstrap)."
   },
+  "_doc_recovery_mode": "First-boot v0.16 bootstrap toggle. Set true to inject STALWART_RECOVERY_MODE=1 + STALWART_RECOVERY_ADMIN=admin:${ADMIN_PASSWORD} into the container's env so v0.16 wipes settings + accepts admin login. After running `stalwart-cli apply --file export.json` + recreating listeners, flip back to false and redeploy. The container reads JMAP-object state from RocksDB on production boot.",
+  "recovery_mode": false,
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "stalwart",
@@ -77,12 +80,13 @@
       "image": "stalwartlabs/stalwart:v0.14.1",
       "port": 2443,
       "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Caddy on oci-analytics reaches mail ports via wg-public mesh; legacy clients on wg0 keep working unchanged. compose.nix expands `bind` arrays into one host-port mapping per IP.",
+      "_doc_container_port": "v0.16 binds protocols on STANDARD ports inside the container (SMTP:25, IMAPS:993, SMTPS:465, HTTPS:443, Sieve:4190) — listeners are not configurable in v0.16 schema. We map host_offset → container_standard so external clients keep using offset ports (maddy owns the standard ones on the host network until decommissioned).",
       "extra_ports": [
-        { "port": 2025, "protocol": "starttls", "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_shadow",   "desc": "SMTP shadow (http-to-smtp-proxy-api on gcp-proxy → WG → :2025)" },
-        { "port": 2443, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "jmap_tls",      "desc": "HTTPS admin/JMAP — dual-bind wg0+wg-public, reached via Caddy L4" },
-        { "port": 2465, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_ssl",      "desc": "SMTPS — dual-bind wg0+wg-public, reached via Caddy L4" },
-        { "port": 2993, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_ssl",      "desc": "IMAPS — dual-bind wg0+wg-public, reached via Caddy L4" },
-        { "port": 6190, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "manage_sieve",  "desc": "ManageSieve — dual-bind wg0+wg-public, reached via Caddy L4" }
+        { "port": 2025, "container_port":   25, "protocol": "starttls", "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_shadow",   "desc": "SMTP shadow (host:2025 → stalwart:25)" },
+        { "port": 2443, "container_port":  443, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "jmap_tls",      "desc": "HTTPS admin/JMAP (host:2443 → stalwart:443)" },
+        { "port": 2465, "container_port":  465, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "smtp_ssl",      "desc": "SMTPS (host:2465 → stalwart:465)" },
+        { "port": 2993, "container_port":  993, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "imap_ssl",      "desc": "IMAPS (host:2993 → stalwart:993)" },
+        { "port": 6190, "container_port": 4190, "protocol": "tls",      "bind": ["10.0.0.3", "10.1.0.3"], "service": "manage_sieve",  "desc": "ManageSieve (host:6190 → stalwart:4190)" }
       ],
       "port_env": null,
       "dns": "stalwart.app",

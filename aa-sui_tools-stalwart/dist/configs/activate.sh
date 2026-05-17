@@ -7,21 +7,35 @@
 # ║ Rebuild: a_solutions/aa-sui_tools-stalwart/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 #!/bin/sh
-# ── Activation script: ensure accounts + upload Sieve ─────────────
-# Runs after compose-up. Idempotent — fieldAlreadyExists is fine.
-# Reads ADMIN_PASSWORD from .secrets to authenticate.
-# BIND_IP is the Docker-bound host IP (NOT localhost — admin listener is
-# bound to a specific WG IP per build.json extra_ports[].bind).
+# ── Stalwart v0.16 activation hook ─────────────────────────────────────
+# Runs after compose-up. Idempotent.
+#
+# Per user in build.json#users:
+#   1. Wait for admin API.
+#   2. Discover JMAP accountId from /jmap/session.
+#   3. Create mailbox hierarchy (4 parents + 10 leaves) declared in
+#      mail-rules-general.json::folders + folders_ui. Skips existing.
+#   4. Upload + activate dist/configs/default.sieve via JMAP Sieve API.
+#
+# Domain + Account creation are owned by stalwart-cli apply (manual
+# recovery-mode bootstrap), NOT this hook.
+#
+# Folder list and user/pass-env pairs are injected by the flake from
+# mail-rules-general.json + build.json#users. They appear below inside
+# single-quoted strings; NEVER reference the @VAR@ tokens in comments
+# (engine substitutes everywhere — multi-line values break shell parsing).
 set -e
 BASE="https://10.0.0.3:2443"
-URL="$BASE/api/principal"
-PW=$(cat /opt/containers/stalwart/.secrets.d/ADMIN_PASSWORD 2>/dev/null)
+SECRETS_DIR="/opt/containers/stalwart/.secrets.d"
+SIEVE_FILE="/opt/containers/stalwart/configs/default.sieve"
+
+PW=$(cat "$SECRETS_DIR/ADMIN_PASSWORD" 2>/dev/null || echo)
 [ -z "$PW" ] && echo "[activate] No ADMIN_PASSWORD found, skipping" && exit 0
 
 echo "[activate] Waiting for Stalwart admin API on $BASE ..."
 _ready=0
 for i in $(seq 1 60); do
-  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "admin:$PW" "$URL" 2>/dev/null || echo 000)
+  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "admin:$PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
   case "$_code" in
     2*|4*) _ready=1; break ;;
   esac
@@ -32,129 +46,138 @@ if [ "$_ready" != 1 ]; then
   exit 1
 fi
 
-# Idempotent POST helper: treat 200/201/204/409 as success; anything else fails loud.
-_post() {
-  _label="$1"; _body="$2"
-  _resp=$(curl -sk -o /tmp/_act.body -w '%{http_code}' -u "admin:$PW" \
-            -X POST "$URL" -H "Content-Type: application/json" -d "$_body" 2>/dev/null)
-  case "$_resp" in
-    2*|409) echo "[activate]   $_label → HTTP $_resp ok" ;;
-    *) echo "[activate]   $_label → HTTP $_resp FAIL: $(head -c 200 /tmp/_act.body)" >&2; rm -f /tmp/_act.body; return 1 ;;
-  esac
-  rm -f /tmp/_act.body
+# Resolve a mailbox id by name from current Mailbox/get response (JSON in $1).
+# Outputs the id (no quotes) or empty string.
+mailbox_id_for() {
+  printf '%s' "$1" | python3 -c "
+import sys, json, re
+data = sys.stdin.read()
+name = '''$2'''
+# Find the most-recent Mailbox/get 'list' array.
+m = re.search(r'\"list\":\\s*(\\[.*?\\])\\s*,\\s*\"notFound\"', data, re.DOTALL)
+if not m:
+    sys.exit()
+try:
+    for box in json.loads(m.group(1)):
+        if box.get('name') == name:
+            print(box['id'])
+            break
+except Exception:
+    pass
+"
 }
 
-echo "[activate] Ensuring domain + accounts..."
-_post "domain diegonmarcos.com" '{"type":"domain","name":"diegonmarcos.com"}'
-
-# USER_CREATION_BLOCK below — generated from build.json#users at flake build time.
-# Each user gets a Stalwart "individual" principal POST. pass_env values are
-# read from .secrets.d/. Source: aa-sui_tools-stalwart/build.json#users.
-# Each user's password is NEVER conflated with $PW (=ADMIN_PASSWORD) — rotation
-# of ADMIN_PASSWORD must not break IMAP/JMAP for mail users.
-ADMIN_PW=$(cat /opt/containers/stalwart/.secrets.d/ME_PASSWORD 2>/dev/null || echo "$ME_PASSWORD")
-_post "user me@diegonmarcos.com" "{\"type\":\"individual\",\"name\":\"me@diegonmarcos.com\",\"secrets\":[\"$ADMIN_PW\"],\"emails\":[\"me@diegonmarcos.com\"],\"roles\":[\"admin\"]}"
-
-NOREPLY_PW=$(cat /opt/containers/stalwart/.secrets.d/NOREPLY_PASSWORD 2>/dev/null || echo "$NOREPLY_PASSWORD")
-_post "user no-reply@diegonmarcos.com" "{\"type\":\"individual\",\"name\":\"no-reply@diegonmarcos.com\",\"secrets\":[\"$NOREPLY_PW\"],\"emails\":[\"no-reply@diegonmarcos.com\",\"noreply@diegonmarcos.com\"],\"roles\":[\"user\"]}"
-
-# ── Upload Sieve script via JMAP ────────────────────────────────
-SIEVE_FILE="/opt/containers/stalwart/default.sieve"
-USER="me@diegonmarcos.com"
-JMAP_URL="$BASE/jmap/"
-
-if [ ! -f "$SIEVE_FILE" ]; then
-  echo "[activate] No default.sieve found, skipping sieve upload"
-  echo "[activate] Done — accounts ensured"
-  exit 0
-fi
-
-echo "[activate] Uploading Sieve script for $USER..."
-
-# Step 0: Discover JMAP accountId from session (Stalwart uses short IDs, not emails)
-SESSION=$(curl -sk -L -u "$USER:$PW" "$BASE/jmap/session" 2>/dev/null)
-ACCOUNT_ID=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:sieve":"[^"]*"' | head -1 | cut -d'"' -f4)
-if [ -z "$ACCOUNT_ID" ]; then
-  echo "[activate] WARNING: Could not discover JMAP accountId"
-  echo "[activate] Done — accounts ensured (sieve skipped)"
-  exit 0
-fi
-echo "[activate] JMAP accountId: $ACCOUNT_ID"
-
-# Step 1: Upload .sieve as blob
-UPLOAD_RESP=$(curl -sk -u "$USER:$PW" \
-  -X POST "$BASE/jmap/upload/$ACCOUNT_ID/" \
-  -H "Content-Type: application/sieve" \
-  --data-binary @"$SIEVE_FILE" 2>/dev/null)
-
-BLOB_ID=$(printf '%s' "$UPLOAD_RESP" | grep -o '"blobId":"[^"]*"' | head -1 | cut -d'"' -f4)
-if [ -z "$BLOB_ID" ]; then
-  echo "[activate] WARNING: Sieve blob upload failed: $UPLOAD_RESP"
-  echo "[activate] Done — accounts ensured (sieve skipped)"
-  exit 0
-fi
-echo "[activate] Blob uploaded: $BLOB_ID"
-
-# Step 2: Create + activate SieveScript via JMAP
-JMAP_RESP=$(curl -sk -u "$USER:$PW" \
-  -X POST "$JMAP_URL" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
-    "methodCalls": [
-      ["SieveScript/set", {
-        "accountId": "'"$ACCOUNT_ID"'",
-        "create": {
-          "inbox-rules": {
-            "name": "inbox-rules",
-            "blobId": "'"$BLOB_ID"'"
-          }
-        },
-        "onSuccessActivateScript": "#inbox-rules"
-      }, "0"]
-    ]
-  }' 2>/dev/null)
-
-if printf '%s' "$JMAP_RESP" | grep -q '"created"'; then
-  echo "[activate] Sieve script created and activated for $USER"
-else
-  # Script may already exist — update it
-  echo "[activate] Script exists, attempting update..."
-  LIST_RESP=$(curl -sk -u "$USER:$PW" \
-    -X POST "$JMAP_URL" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
-      "methodCalls": [
-        ["SieveScript/get", {
-          "accountId": "'"$ACCOUNT_ID"'"
-        }, "0"]
-      ]
-    }' 2>/dev/null)
-
-  SCRIPT_ID=$(printf '%s' "$LIST_RESP" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-  if [ -n "$SCRIPT_ID" ]; then
-    curl -sk -u "$USER:$PW" \
-      -X POST "$JMAP_URL" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:sieve"],
-        "methodCalls": [
-          ["SieveScript/set", {
-            "accountId": "'"$ACCOUNT_ID"'",
-            "update": {
-              "'"$SCRIPT_ID"'": {
-                "blobId": "'"$BLOB_ID"'"
-              }
-            },
-            "onSuccessActivateScript": "'"$SCRIPT_ID"'"
-          }, "0"]
-        ]
-      }' 2>/dev/null
-    echo "[activate] Sieve script updated and activated"
-  else
-    echo "[activate] WARNING: Could not find existing script to update"
+# ── Per-user setup ────────────────────────────────────────────────────
+for PAIR in me=ME_PASSWORD no-reply=NOREPLY_PASSWORD; do
+  U=${PAIR%%=*}
+  PASS_ENV=${PAIR#*=}
+  USER="$U@diegonmarcos.com"
+  USER_PW=$(cat "$SECRETS_DIR/$PASS_ENV" 2>/dev/null || echo)
+  if [ -z "$USER_PW" ]; then
+    echo "[activate]   $USER: no password ($PASS_ENV), skipping"
+    continue
   fi
-fi
 
-echo "[activate] Done — accounts + sieve ensured"
+  echo "[activate] Setup $USER..."
+
+  SESSION=$(curl -sk -u "$USER:$USER_PW" "$BASE/jmap/session" 2>/dev/null)
+  ACCOUNT_ID=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:mail":"[^"]*"' | head -1 | cut -d'"' -f4)
+  if [ -z "$ACCOUNT_ID" ]; then
+    echo "[activate]   $USER: could not discover accountId, skipping"
+    continue
+  fi
+
+  # ── Step B: create missing mailboxes ─────────────────────────────
+  refresh_existing() {
+    EXISTING=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:mail\"],\"methodCalls\":[[\"Mailbox/get\",{\"accountId\":\"$ACCOUNT_ID\",\"ids\":null,\"properties\":[\"id\",\"name\",\"parentId\"]},\"0\"]]}" 2>/dev/null)
+  }
+  refresh_existing
+
+  printf '%s\n' '10 _ ADMIN|
+20 _ INFORMS|
+30 _ DEV|
+AA _ OTHERS|
+11    🛡️ Admin & Finance|10 _ ADMIN
+Ab    📥 Archive|AA _ OTHERS
+21    💼 Career & Network|20 _ INFORMS
+13    ☁️ Cloud - General & Reports|10 _ ADMIN
+14    ☁️ Cloud - Workflows|10 _ ADMIN
+31    🎓 Development & Tech|30 _ DEV
+23    🧻 Goverment|20 _ INFORMS
+Ac    🚫 Junk|AA _ OTHERS
+12    ✈️ Logistics|10 _ ADMIN
+Aa    📬 Others (fallback)|AA _ OTHERS
+22    📰 Social & General|20 _ INFORMS' | while IFS='|' read -r FNAME FPARENT; do
+    [ -z "$FNAME" ] && continue
+
+    # Skip if already exists.
+    EXISTING_ID=$(mailbox_id_for "$EXISTING" "$FNAME")
+    if [ -n "$EXISTING_ID" ]; then
+      continue
+    fi
+
+    # Resolve parentId (null for top-level, otherwise lookup parent's id).
+    PARENT_JSON="null"
+    if [ -n "$FPARENT" ]; then
+      PARENT_ID=$(mailbox_id_for "$EXISTING" "$FPARENT")
+      if [ -z "$PARENT_ID" ]; then
+        echo "[activate]   skip '$FNAME' — parent '$FPARENT' not yet created"
+        continue
+      fi
+      PARENT_JSON="\"$PARENT_ID\""
+    fi
+
+    RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:mail\"],\"methodCalls\":[[\"Mailbox/set\",{\"accountId\":\"$ACCOUNT_ID\",\"create\":{\"new\":{\"name\":\"$FNAME\",\"parentId\":$PARENT_JSON}}},\"0\"]]}" 2>/dev/null)
+
+    if printf '%s' "$RESP" | grep -q '"created":{[^}]*"id"'; then
+      echo "[activate]   created mailbox '$FNAME'"
+      refresh_existing
+    else
+      echo "[activate]   FAIL create '$FNAME': $(printf '%s' "$RESP" | head -c 200)"
+    fi
+  done
+
+  # ── Step C: upload + activate sieve script ─────────────────────────
+  if [ ! -f "$SIEVE_FILE" ]; then
+    echo "[activate]   no $SIEVE_FILE, sieve skipped"
+    continue
+  fi
+
+  SIEVE_ACCT=$(printf '%s' "$SESSION" | grep -o '"urn:ietf:params:jmap:sieve":"[^"]*"' | head -1 | cut -d'"' -f4)
+  [ -z "$SIEVE_ACCT" ] && SIEVE_ACCT="$ACCOUNT_ID"
+
+  UPLOAD_RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/upload/$SIEVE_ACCT/" \
+    -H "Content-Type: application/sieve" --data-binary @"$SIEVE_FILE" 2>/dev/null)
+  BLOB_ID=$(printf '%s' "$UPLOAD_RESP" | grep -o '"blobId":"[^"]*"' | head -1 | cut -d'"' -f4)
+  if [ -z "$BLOB_ID" ]; then
+    echo "[activate]   sieve blob upload failed: $UPLOAD_RESP"
+    continue
+  fi
+
+  JMAP_RESP=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+    -H "Content-Type: application/json" \
+    -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/set\",{\"accountId\":\"$SIEVE_ACCT\",\"create\":{\"default\":{\"name\":\"default\",\"blobId\":\"$BLOB_ID\"}},\"onSuccessActivateScript\":\"#default\"},\"0\"]]}" 2>/dev/null)
+
+  if printf '%s' "$JMAP_RESP" | grep -q '"created":{[^}]*"id"'; then
+    echo "[activate]   sieve created + activated for $USER"
+  else
+    LIST=$(curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+      -H "Content-Type: application/json" \
+      -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/get\",{\"accountId\":\"$SIEVE_ACCT\"},\"0\"]]}" 2>/dev/null)
+    SID=$(printf '%s' "$LIST" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [ -n "$SID" ]; then
+      curl -sk -u "$USER:$USER_PW" -X POST "$BASE/jmap/" \
+        -H "Content-Type: application/json" \
+        -d "{\"using\":[\"urn:ietf:params:jmap:core\",\"urn:ietf:params:jmap:sieve\"],\"methodCalls\":[[\"SieveScript/set\",{\"accountId\":\"$SIEVE_ACCT\",\"update\":{\"$SID\":{\"blobId\":\"$BLOB_ID\"}},\"onSuccessActivateScript\":\"$SID\"},\"0\"]]}" >/dev/null 2>&1
+      echo "[activate]   sieve updated + activated for $USER"
+    else
+      echo "[activate]   sieve create+update both failed: $JMAP_RESP"
+    fi
+  fi
+done
+
+echo "[activate] Done — folders + sieve ensured"
