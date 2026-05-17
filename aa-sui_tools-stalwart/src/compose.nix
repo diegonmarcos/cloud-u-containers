@@ -36,6 +36,14 @@ in
       ports          = portMappings;
       environment = {
         TZ = buildJson.timezone;
+        # Public-facing URL clients reach Caddy on. Without this, Stalwart
+        # auto-derives URLs from its listener bind (:2443) and leaks the
+        # internal port into JMAP session resource fields (apiUrl,
+        # downloadUrl, uploadUrl, eventSourceUrl, websocket.url). With this
+        # set, all those advertised URLs use the public hostname on :443
+        # — Caddy reverse-proxies them through. Source: Stalwart Caddy
+        # reverse-proxy docs (STALWART_PUBLIC_URL env var).
+        STALWART_PUBLIC_URL = "https://${buildJson.domain}";
       };
       volumes = [
         "stalwart_data:/opt/stalwart-mail/data"
