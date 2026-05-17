@@ -28,6 +28,7 @@
       "domain": "jmap.diegonmarcos.com",
       "auth": "none",
       "tls_skip_verify": true,
+      "_doc_root_response_json_removed": "Initially tried serving a STATIC session JSON at jmap.diegonmarcos.com/ to bypass Stalwart's :2443 port leak in apiUrl/downloadUrl/etc. BROKE LTT.rs because the static JSON has empty accounts: {} — JMAP clients NEED the authenticated per-user response which only Stalwart can generate (it includes the user's account ID, capabilities per account, etc.). The :2443 leak is a real Stalwart limitation but reverting to runtime session is the lesser evil. Static-JSON approach is preserved in caddyfile.nix root_response_json schema for non-stateful endpoints (where applicable).",
       "_doc_l4_ports": "Stalwart is JMAP-only from the client side — clients reach it via jmap.diegonmarcos.com (HTTPS reverse_proxy to :2443). Classical IMAPS (:2993) and SMTPS (:2465) listeners still exist inside the container for legacy-tooling (mail-puller, sorter) but are NOT exposed publicly — those Caddy SNI subhostnames were removed. If you later retire maddy and want Stalwart to take over imap.* / smtps.*, flip the upstream in those maddy-side declarations instead of re-adding -stalwart suffix hostnames.",
       "l4_ports": []
     },
@@ -41,10 +42,18 @@
     },
     "well_known": [
       {
+        "_doc": "JMAP autoconfig per RFC 8620: clients enter me@diegonmarcos.com and look up the apex /.well-known/jmap. Caddy proxies to Stalwart (passes the Authorization header through), Stalwart issues a relative 307 → /jmap/session, client re-issues to apex which Caddy proxies for /jmap/* (well_known sibling below). The PER-USER session JSON returned by Stalwart includes the user's accounts list (which LTT.rs and others require). The static JSON at jmap.diegonmarcos.com/ is for clients that bypass autoconfig and probe the discoverable hostname directly — but autoconfig clients NEED the authenticated Stalwart session.",
         "path": "/.well-known/jmap",
         "target_domain": "diegonmarcos.com",
         "tls_skip_verify": true,
-        "comment": "JMAP auto-discovery (RFC 8620) — proxies to Stalwart"
+        "comment": "JMAP autoconfig — proxies to Stalwart (preserves per-user session)"
+      },
+      {
+        "_doc": "Follow-through for Stalwart's relative redirect from /.well-known/jmap → /jmap/session. Path wildcard.",
+        "path": "/jmap/*",
+        "target_domain": "diegonmarcos.com",
+        "tls_skip_verify": true,
+        "comment": "JMAP API follow-through (matches relative redirect from /.well-known/jmap)"
       }
     ]
   },
@@ -65,7 +74,7 @@
   "containers": {
     "app": {
       "container_name": "stalwart",
-      "image": "stalwartlabs/stalwart:v0.14.1",
+      "image": "stalwartlabs/stalwart:v0.16.5",
       "port": 2443,
       "_doc_dual_bind": "Phase 4 of public-surface collapse: each port dual-binds on wg0 (10.0.0.3) AND wg-public (10.1.0.3). Caddy on oci-analytics reaches mail ports via wg-public mesh; legacy clients on wg0 keep working unchanged. compose.nix expands `bind` arrays into one host-port mapping per IP.",
       "extra_ports": [
@@ -120,7 +129,7 @@
       }
     }
   },
-  "upstream_image": "stalwartlabs/stalwart:v0.14.1",
+  "upstream_image": "stalwartlabs/stalwart:v0.16.5",
   "timezone": "Europe/Madrid",
   "users": {
     "admin": {
