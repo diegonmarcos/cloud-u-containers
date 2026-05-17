@@ -159,6 +159,7 @@ import security
 import request_limits
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -191,6 +192,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -227,6 +229,7 @@ import security
 import request_limits
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -259,6 +262,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -305,6 +309,7 @@ reverse_proxy https://diegonmarcos.github.io {
 }
 
 # All other paths → auth + upstream
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -337,6 +342,7 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -373,6 +379,7 @@ import security
 import request_limits
 
 
+
     reverse_proxy https://10.0.0.3:2443 {
     transport http {
   tls_insecure_skip_verify
@@ -395,6 +402,7 @@ import security
 import request_limits
 
 
+
         reverse_proxy 10.0.0.6:8880
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -411,6 +419,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -447,6 +456,7 @@ import security
 import request_limits
 
 
+
         reverse_proxy 10.0.0.1:8080
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -463,6 +473,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -499,6 +510,7 @@ import security
 import request_limits
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -531,6 +543,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
         @bearer header Authorization Bearer*
@@ -575,8 +588,16 @@ import request_limits
       root * /srv/wkd
       file_server
     }
-    # JMAP auto-discovery (RFC 8620) — proxies to Stalwart (well-known — public per spec)
+    # JMAP autoconfig — proxies to Stalwart (preserves per-user session) (well-known — public per spec)
     handle /.well-known/jmap {
+reverse_proxy https://10.0.0.3:2443 {
+  transport http {
+    tls_insecure_skip_verify
+  }
+}
+    }
+    # JMAP API follow-through (matches relative redirect from /.well-known/jmap) (well-known — public per spec)
+    handle /jmap/* {
 reverse_proxy https://10.0.0.3:2443 {
   transport http {
     tls_insecure_skip_verify

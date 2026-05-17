@@ -23,33 +23,48 @@ let
     let raw = ep.bind or "0.0.0.0"; in
     if builtins.isList raw then raw else [ raw ];
 
+  # extra_ports[].container_port (v0.16 maps offset host port → standard
+  # container port; v0.14/v0.15 omitted the field so host == container).
   portMappings = lib.flatten (map (ep:
-    map (ip: "${ip}:${toString ep.port}:${toString ep.port}") (bindList ep)
+    let containerPort = ep.container_port or ep.port; in
+    map (ip: "${ip}:${toString ep.port}:${toString containerPort}") (bindList ep)
   ) (app.extra_ports or []));
 in
 {
   services = {
     stalwart = {
-      image          = binariesImage;
+      # v0.16.5 migrated bootstrap (data-store-only config.json + JMAP-object
+      # settings in RocksDB). config.toml is no longer used in v0.16+.
+      # recovery_mode flag in build.json gates STALWART_RECOVERY_{MODE,ADMIN}
+      # env vars; flip true for first bootstrap, false for production.
+      image          = "stalwartlabs/stalwart:v0.16.5";
       container_name = app.container_name;
-      entrypoint     = [ "stalwart" "--config" "/opt/stalwart-mail/etc/config.toml" ];
+      entrypoint     = [ "stalwart" "--config" "/opt/stalwart-mail/etc/config.json" ];
       ports          = portMappings;
+      env_file       = [ ".secrets" ];
       environment = {
         TZ = buildJson.timezone;
-        # Public-facing URL clients reach Caddy on. Without this, Stalwart
-        # auto-derives URLs from its listener bind (:2443) and leaks the
-        # internal port into JMAP session resource fields (apiUrl,
-        # downloadUrl, uploadUrl, eventSourceUrl, websocket.url). With this
-        # set, all those advertised URLs use the public hostname on :443
-        # — Caddy reverse-proxies them through. Source: Stalwart Caddy
-        # reverse-proxy docs (STALWART_PUBLIC_URL env var).
+        # Tells Stalwart what URL clients reach Caddy on so JMAP Session
+        # apiUrl/downloadUrl/uploadUrl/eventSourceUrl don't leak the
+        # container's internal listener bind port (:2443).
         STALWART_PUBLIC_URL = "https://${buildJson.domain}";
-      };
+        STALWART_HOSTNAME   = buildJson.domain;
+      } // (lib.optionalAttrs (buildJson.recovery_mode or false) {
+        # ── RECOVERY-MODE BOOTSTRAP ONLY ──────────────────────────────
+        # Set buildJson.recovery_mode = true on FIRST v0.16 boot to wipe
+        # settings/quotas/reports/directory and accept admin via the env
+        # admin credential below. Then run `stalwart-cli apply` against
+        # this container to seed Domain + Account + Listener etc. AFTER
+        # successful apply, flip back to false and redeploy — Stalwart
+        # boots into production mode with the persisted JMAP-object state.
+        STALWART_RECOVERY_MODE  = "1";
+        STALWART_RECOVERY_ADMIN = "admin:\${ADMIN_PASSWORD}";
+      });
       volumes = [
         "stalwart_data:/opt/stalwart-mail/data"
         # TLS provisioned out-of-band by Caddy (shared with maddy's /opt/containers/maddy/tls)
         "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
-        "./configs/config.toml:/opt/stalwart-mail/etc/config.toml:ro"
+        "./configs/config.json:/opt/stalwart-mail/etc/config.json:ro"
       ];
       deploy.resources = {
         limits       = { memory = app.resources.limits.memory;       cpus = "1.0"; };
