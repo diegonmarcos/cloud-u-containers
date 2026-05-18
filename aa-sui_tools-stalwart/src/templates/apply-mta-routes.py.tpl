@@ -101,7 +101,10 @@ for route in routes:
 
     if name in by_name:
         rid = by_name[name]
-        rr = jmap([["x:MtaRoute/set", {"accountId": acct, "update": {rid: payload}}, "0"]])
+        # `name` + `@type` are set-once on create; sending them in an update
+        # patch trips "invalidPatch: Cannot modify read-only property".
+        patch = {k: v for k, v in payload.items() if k not in ("name", "@type")}
+        rr = jmap([["x:MtaRoute/set", {"accountId": acct, "update": {rid: patch}}, "0"]])
         u = (rr.get("methodResponses") or [[None,{}]])[0][1]
         if u.get("updated"):
             print(f"  updated route '{name}' (id={rid})")
@@ -121,28 +124,20 @@ for route in routes:
         default_route_name = name
 
 # Wire MtaOutboundStrategy.route.else → '<default-route-name>' (singleton).
+# Singletons have a fixed id of literally "singleton" (Id::singleton() ==
+# 20080258862541, which base32-encodes to "singleton" — see
+# crates/types/src/id.rs::as_string + base32_custom alphabet). We update by
+# that id directly instead of guessing via create/get races.
 if default_route_name:
+    SINGLETON_ID = "singleton"
     strat_route = {"match": [], "else": "'" + default_route_name + "'"}
-    rr = jmap([["x:MtaOutboundStrategy/set", {"accountId": acct,
-        "create": {"new": {"route": strat_route}}}, "0"]])
-    s = (rr.get("methodResponses") or [[None,{}]])[0][1]
-    if s.get("created"):
+    rr = jmap([["x:MtaOutboundStrategy/set",
+        {"accountId": acct, "update": {SINGLETON_ID: {"route": strat_route}}}, "0"]])
+    u = (rr.get("methodResponses") or [[None,{}]])[0][1]
+    if u.get("updated"):
         print(f"  MtaOutboundStrategy.route.else = '{default_route_name}'")
     else:
-        rr = jmap([["x:MtaOutboundStrategy/get", {"accountId": acct, "ids": None}, "0"]])
-        items = ((rr.get("methodResponses") or [[None,{}]])[0][1].get("list") or [])
-        if items:
-            sid = items[0]["id"]
-            rr = jmap([["x:MtaOutboundStrategy/set", {"accountId": acct,
-                "update": {sid: {"route": strat_route}}}, "0"]])
-            u = (rr.get("methodResponses") or [[None,{}]])[0][1]
-            if u.get("updated"):
-                print(f"  updated MtaOutboundStrategy → '{default_route_name}'")
-            else:
-                print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
-                exit_code = 1
-        else:
-            print(f"  FAIL: strategy not created and not found")
-            exit_code = 1
+        print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
+        exit_code = 1
 
 sys.exit(exit_code)
