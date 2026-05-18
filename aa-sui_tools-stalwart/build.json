@@ -146,6 +146,21 @@
       "aliases": ["noreply"]
     }
   },
+  "_doc_mta_routes": "Outbound SMTP routes for Stalwart's MTA. OCI Free Tier blocks outbound :25/:465/:587 from VMs, so direct MX delivery fails — every route must be a Relay to a paid SMTP service (OCI Email Delivery, AWS SES, etc.). activate.sh maps these into JMAP MtaRoute objects via /jmap/ + the urn:stalwart:jmap capability. Credentials are referenced by env-var NAME only (auth_username_env / auth_secret_env); actual values live in secrets.yaml.",
+  "mta_routes": [
+    {
+      "name": "oci-relay",
+      "description": "OCI Email Delivery (Ashburn) — primary outbound relay",
+      "address": "smtp.email.us-ashburn-1.oci.oraclecloud.com",
+      "port": 587,
+      "protocol": "smtp",
+      "implicit_tls": false,
+      "allow_invalid_certs": false,
+      "auth_username_env": "OCI_RELAYUSER",
+      "auth_secret_env": "OCI_RELAYPASSWORD",
+      "default_outbound": true
+    }
+  ],
   "build": {
     "headers_enforced": true
   }
