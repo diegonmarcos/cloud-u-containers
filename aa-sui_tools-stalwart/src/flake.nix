@@ -101,6 +101,16 @@
       map (u: "${u.name}=${u.pass_env}") (lib.attrValues (buildJson.users or {}))
     );
 
+    # Admin-role user — used by activate.sh for any admin-scope JMAP calls
+    # (readiness probe, MtaRoute/MtaOutboundStrategy upserts). Sourced from
+    # build.json#users.admin (the role mapping is owned by mkUserLines:
+    # key=="admin" → role="admin"). The pre-v0.16 magic "admin:$ADMIN_PASSWORD"
+    # only exists in recovery_mode; in normal operation we must auth as the
+    # actual bootstrap-created admin principal.
+    adminUser    = buildJson.users.admin or { name = "admin"; pass_env = "ADMIN_PASSWORD"; };
+    adminEmail   = "${adminUser.name}@${base_domain}";
+    adminPassEnv = adminUser.pass_env;
+
     activateShVars = {
       BASE_DOMAIN          = base_domain;
       APP_PORT             = appPort;
@@ -108,6 +118,8 @@
       USER_CREATION_BLOCK  = userBlock;  # unused by new template, kept for back-compat
       USERS_LIST           = usersList;
       FOLDERS_LINES        = foldersLines;
+      ADMIN_EMAIL          = adminEmail;
+      ADMIN_PASS_ENV       = adminPassEnv;
     };
 
     # Outbound MTA routes — declared in build.json#mta_routes, emitted as
@@ -140,6 +152,8 @@
           { name = "default.sieve"; text = sieveScript; }
           # Outbound relay routes — data-only JSON consumed by activate.sh.
           { name = "mta-routes.json"; text = mtaRoutesJson; }
+          # Python helper (data-driven JMAP MtaRoute/MtaOutboundStrategy upsert).
+          { name = "apply-mta-routes.py"; vars = {}; }
         ];
         # jmap-sorter.py + mail-rules.json bind-mounted from dist/assets/.
         # mail-rules.json is DERIVED from general + profile-diego canonicals.
