@@ -83,7 +83,7 @@ if not acct:
     sys.exit(1)
 
 # Snapshot existing MtaRoute objects keyed by name.
-r = jmap([["MtaRoute/get", {"accountId": acct, "ids": None}, "0"]])
+r = jmap([["x:MtaRoute/get", {"accountId": acct, "ids": None}, "0"]])
 mr = r.get("methodResponses") or []
 existing = (mr[0][1].get("list") if mr else []) or []
 by_name = {x.get("name"): x.get("id") for x in existing if x.get("name")}
@@ -109,7 +109,7 @@ for route in routes:
 
     if name in by_name:
         rid = by_name[name]
-        rr = jmap([["MtaRoute/set", {"accountId": acct, "update": {rid: payload}}, "0"]])
+        rr = jmap([["x:MtaRoute/set", {"accountId": acct, "update": {rid: payload}}, "0"]])
         u = (rr.get("methodResponses") or [[None,{}]])[0][1]
         if u.get("updated"):
             print(f"  updated route '{name}' (id={rid})")
@@ -117,7 +117,7 @@ for route in routes:
             print(f"  FAIL update '{name}': {u.get('notUpdated') or rr}")
             exit_code = 1
     else:
-        rr = jmap([["MtaRoute/set", {"accountId": acct, "create": {"new": payload}}, "0"]])
+        rr = jmap([["x:MtaRoute/set", {"accountId": acct, "create": {"new": payload}}, "0"]])
         c = (rr.get("methodResponses") or [[None,{}]])[0][1]
         if c.get("created"):
             print(f"  created route '{name}'")
@@ -131,17 +131,17 @@ for route in routes:
 # Wire MtaOutboundStrategy.route.else → '<default-route-name>' (singleton).
 if default_route_name:
     strat_route = {"match": [], "else": "'" + default_route_name + "'"}
-    rr = jmap([["MtaOutboundStrategy/set", {"accountId": acct,
+    rr = jmap([["x:MtaOutboundStrategy/set", {"accountId": acct,
         "create": {"new": {"route": strat_route}}}, "0"]])
     s = (rr.get("methodResponses") or [[None,{}]])[0][1]
     if s.get("created"):
         print(f"  MtaOutboundStrategy.route.else = '{default_route_name}'")
     else:
-        rr = jmap([["MtaOutboundStrategy/get", {"accountId": acct, "ids": None}, "0"]])
+        rr = jmap([["x:MtaOutboundStrategy/get", {"accountId": acct, "ids": None}, "0"]])
         items = ((rr.get("methodResponses") or [[None,{}]])[0][1].get("list") or [])
         if items:
             sid = items[0]["id"]
-            rr = jmap([["MtaOutboundStrategy/set", {"accountId": acct,
+            rr = jmap([["x:MtaOutboundStrategy/set", {"accountId": acct,
                 "update": {sid: {"route": strat_route}}}, "0"]])
             u = (rr.get("methodResponses") or [[None,{}]])[0][1]
             if u.get("updated"):
