@@ -131,19 +131,29 @@ for route in routes:
     if route.get("default_outbound"):
         default_route_name = name
 
-# Wire MtaOutboundStrategy.route.else → '<default-route-name>' (singleton).
+# Wire MtaOutboundStrategy.route → relay everything via <default-route-name>
+# EXCEPT local-domain mail, which must still hit Stalwart's own "local"
+# route. The schema-default `route.match` is:
+#   [{"if": "is_local_domain(rcpt_domain)", "then": "'local'"}]
+# (confirmed via GET /api/schema → fields.x:MtaOutboundStrategy.defaults.route).
+# Discarding that match would route me→no-reply through OCI Email Delivery
+# instead of delivering locally — silent breakage of internal mail. Always
+# preserve it; only swap `else`.
+#
 # Singletons have a fixed id of literally "singleton" (Id::singleton() ==
-# 20080258862541, which base32-encodes to "singleton" — see
-# crates/types/src/id.rs::as_string + base32_custom alphabet). We update by
-# that id directly instead of guessing via create/get races.
+# 20080258862541, base32-encoded via the custom alphabet — see
+# crates/types/src/id.rs::as_string). Update by that id directly.
 if default_route_name:
     SINGLETON_ID = "singleton"
-    strat_route = {"match": [], "else": "'" + default_route_name + "'"}
+    strat_route = {
+        "match": [{"if": "is_local_domain(rcpt_domain)", "then": "'local'"}],
+        "else": "'" + default_route_name + "'",
+    }
     rr = jmap([["x:MtaOutboundStrategy/set",
         {"accountId": acct, "update": {SINGLETON_ID: {"route": strat_route}}}, "0"]])
     u = (rr.get("methodResponses") or [[None,{}]])[0][1]
     if u.get("updated"):
-        print(f"  MtaOutboundStrategy.route.else = '{default_route_name}'")
+        print(f"  MtaOutboundStrategy.route: local→'local', else→'{default_route_name}'")
     else:
         print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
         exit_code = 1
