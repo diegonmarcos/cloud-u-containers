@@ -1,0 +1,1 @@
+[{"address":"smtp.email.us-ashburn-1.oci.oraclecloud.com","allow_invalid_certs":false,"auth_secret_env":"OCI_RELAYPASSWORD","auth_username_env":"OCI_RELAYUSER","default_outbound":true,"description":"OCI Email Delivery (Ashburn) — primary outbound relay","implicit_tls":false,"name":"oci-relay","port":587,"protocol":"smtp"}]
