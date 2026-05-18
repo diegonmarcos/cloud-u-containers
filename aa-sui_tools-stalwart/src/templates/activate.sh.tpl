@@ -27,21 +27,33 @@ SECRETS_DIR="/opt/containers/stalwart/.secrets.d"
 CONFIGS_DIR="/opt/containers/stalwart/configs"
 SIEVE_FILE="$CONFIGS_DIR/default.sieve"
 MTA_ROUTES_FILE="$CONFIGS_DIR/mta-routes.json"
+APPLY_ROUTES_PY="$CONFIGS_DIR/apply-mta-routes.py"
 
-PW=$(cat "$SECRETS_DIR/ADMIN_PASSWORD" 2>/dev/null || echo)
-[ -z "$PW" ] && echo "[activate] No ADMIN_PASSWORD found, skipping" && exit 0
+# Admin identity sourced from build.json#users.admin (data-driven). The
+# pre-v0.16 "admin:$ADMIN_PASSWORD" magic principal only exists in
+# recovery_mode; post-bootstrap, JMAP requires a real principal — the
+# user with role=admin (mkUserLines in flake.nix gates this on key=="admin").
+ADMIN_EMAIL="@ADMIN_EMAIL@"
+ADMIN_PW=$(cat "$SECRETS_DIR/@ADMIN_PASS_ENV@" 2>/dev/null || echo)
+[ -z "$ADMIN_PW" ] && echo "[activate] No @ADMIN_PASS_ENV@ found, skipping" && exit 0
 
-echo "[activate] Waiting for Stalwart admin API on $BASE ..."
+# Keep legacy $PW for any reader that still expects it (per-user sieve loop
+# below uses its own $USER_PW, so this is only documentary).
+PW="$ADMIN_PW"
+
+echo "[activate] Waiting for Stalwart JMAP on $BASE (probe: $ADMIN_EMAIL) ..."
 _ready=0
 for i in $(seq 1 60); do
-  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "admin:$PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+  _code=$(curl -sk -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
   case "$_code" in
-    2*|4*) _ready=1; break ;;
+    2*) _ready=1; break ;;
+    4*) echo "[activate] WARN: $ADMIN_EMAIL auth returned $_code — Stalwart up but admin principal not yet bootstrapped?" >&2
+        _ready=2; break ;;
   esac
   sleep 2
 done
-if [ "$_ready" != 1 ]; then
-  echo "[activate] ERROR: Stalwart admin API never became ready (last HTTP $_code)" >&2
+if [ "$_ready" = 0 ]; then
+  echo "[activate] ERROR: Stalwart JMAP never became ready (last HTTP $_code)" >&2
   exit 1
 fi
 
@@ -166,131 +178,17 @@ for PAIR in @USERS_LIST@; do
 done
 
 # ── Step D: outbound MTA routes (admin scope) ──────────────────────────
-# Driven entirely by configs/mta-routes.json + $SECRETS_DIR. Idempotent:
-# routes are matched by `name`; existing → update, new → create. Routes
-# flagged `default_outbound:true` are wired into the (singleton)
-# MtaOutboundStrategy.route expression so all non-local mail is relayed
-# through them. Empty file or empty array = no-op.
-if [ -s "$MTA_ROUTES_FILE" ] && [ "$(cat "$MTA_ROUTES_FILE")" != "[]" ]; then
-  echo "[activate] Applying MTA routes from $MTA_ROUTES_FILE ..."
-  python3 - "$MTA_ROUTES_FILE" "$BASE" "admin:$PW" "$SECRETS_DIR" <<'PYEOF'
-import sys, json, ssl, os, base64
-from urllib import request as ur, error as ue
-
-routes_path, base, auth, secrets_dir = sys.argv[1:5]
-with open(routes_path) as f:
-    routes = json.load(f)
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
-def jmap(calls):
-    body = json.dumps({
-        "using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"],
-        "methodCalls": calls,
-    }).encode()
-    req = ur.Request(base + "/jmap/", data=body, method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": "Basic " + base64.b64encode(auth.encode()).decode(),
-        })
-    try:
-        return json.loads(ur.urlopen(req, context=ctx, timeout=15).read())
-    except ue.HTTPError as e:
-        return {"error": e.code, "body": e.read().decode(errors='replace')[:400]}
-
-def read_secret(var):
-    if not var: return None
-    p = os.path.join(secrets_dir, var)
-    try:
-        with open(p) as f: return f.read().strip()
-    except FileNotFoundError:
-        print("  [warn] missing secret file:", p)
-        return None
-
-def discover_admin_account():
-    body = ur.Request(base + "/jmap/session", method="GET",
-        headers={"Authorization": "Basic " + base64.b64encode(auth.encode()).decode()})
-    s = json.loads(ur.urlopen(body, context=ctx, timeout=10).read())
-    # Prefer urn:stalwart:jmap from primaryAccounts; fall back to any account.
-    pa = s.get("primaryAccounts", {})
-    return pa.get("urn:stalwart:jmap") or pa.get("urn:ietf:params:jmap:mail") \
-        or next(iter(s.get("accounts", {})), None)
-
-acct = discover_admin_account()
-if not acct:
-    print("  [FAIL] could not discover admin accountId")
-    sys.exit(0)
-
-# List existing routes by name.
-r = jmap([["MtaRoute/get", {"accountId": acct, "ids": None}, "0"]])
-mr = r.get("methodResponses") or []
-existing = (mr[0][1].get("list") if mr else []) or []
-by_name = {x.get("name"): x.get("id") for x in existing if x.get("name")}
-
-default_route_name = None
-for route in routes:
-    name = route["name"]
-    user = read_secret(route.get("auth_username_env"))
-    pw   = read_secret(route.get("auth_secret_env"))
-    payload = {
-        "@type": "Relay",
-        "address": route["address"],
-        "port": int(route["port"]),
-        "name": name,
-        "protocol": route.get("protocol", "smtp"),
-        "implicitTls": bool(route.get("implicit_tls", False)),
-        "allowInvalidCerts": bool(route.get("allow_invalid_certs", False)),
-    }
-    if route.get("description"): payload["description"] = route["description"]
-    if user: payload["authUsername"] = user
-    if pw:   payload["authSecret"] = {"@type": "Value", "secret": pw}
-
-    if name in by_name:
-        rid = by_name[name]
-        rr = jmap([["MtaRoute/set", {"accountId": acct, "update": {rid: payload}}, "0"]])
-        u = (rr.get("methodResponses") or [[None,{}]])[0][1]
-        if u.get("updated"):
-            print(f"  updated route '{name}' (id={rid})")
-        else:
-            print(f"  FAIL update '{name}': {u.get('notUpdated') or rr}")
-    else:
-        rr = jmap([["MtaRoute/set", {"accountId": acct, "create": {"new": payload}}, "0"]])
-        c = (rr.get("methodResponses") or [[None,{}]])[0][1]
-        if c.get("created"):
-            print(f"  created route '{name}'")
-        else:
-            print(f"  FAIL create '{name}': {c.get('notCreated') or rr}")
-
-    if route.get("default_outbound"):
-        default_route_name = name
-
-# Wire MtaOutboundStrategy.route.else → '<default-route-name>' (singleton).
-if default_route_name:
-    strat_route = {"match": [], "else": "'" + default_route_name + "'"}
-    # Try singleton-upsert via create first.
-    rr = jmap([["MtaOutboundStrategy/set", {"accountId": acct,
-        "create": {"new": {"route": strat_route}}}, "0"]])
-    s = (rr.get("methodResponses") or [[None,{}]])[0][1]
-    if s.get("created"):
-        print(f"  MtaOutboundStrategy.route.else = '{default_route_name}'")
-    else:
-        # Singleton already exists — update by id.
-        rr = jmap([["MtaOutboundStrategy/get", {"accountId": acct, "ids": None}, "0"]])
-        items = ((rr.get("methodResponses") or [[None,{}]])[0][1].get("list") or [])
-        if items:
-            sid = items[0]["id"]
-            rr = jmap([["MtaOutboundStrategy/set", {"accountId": acct,
-                "update": {sid: {"route": strat_route}}}, "0"]])
-            u = (rr.get("methodResponses") or [[None,{}]])[0][1]
-            if u.get("updated"):
-                print(f"  updated MtaOutboundStrategy → '{default_route_name}'")
-            else:
-                print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
-        else:
-            print(f"  FAIL: strategy not created and not found")
-PYEOF
+# Orchestration only. All data + JMAP logic lives in:
+#   $MTA_ROUTES_FILE   — data, emitted from build.json#mta_routes by flake
+#   $APPLY_ROUTES_PY   — engine, applies the data via JMAP
+# Empty file or empty array = no-op (handled by the python helper).
+if [ -s "$MTA_ROUTES_FILE" ] && [ -x "$APPLY_ROUTES_PY" -o -f "$APPLY_ROUTES_PY" ]; then
+  echo "[activate] Applying MTA routes from $MTA_ROUTES_FILE (admin: $ADMIN_EMAIL)..."
+  if python3 "$APPLY_ROUTES_PY" "$MTA_ROUTES_FILE" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" "$SECRETS_DIR"; then
+    :
+  else
+    echo "[activate]   apply-mta-routes.py exit $?"
+  fi
 fi
 
 echo "[activate] Done — folders + sieve + mta routes ensured"
