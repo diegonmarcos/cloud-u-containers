@@ -145,8 +145,15 @@ for route in routes:
 # crates/types/src/id.rs::as_string). Update by that id directly.
 if default_route_name:
     SINGLETON_ID = "singleton"
+    # Stalwart serializes its `List<T>` properties as index-keyed maps,
+    # NOT JSON arrays. Confirmed by GET on the singleton:
+    #   "match": {"0": {"if":..,"then":..}, "1": {...}}
+    # Sending `match: [...]` here yields:
+    #   invalidPatch — Invalid value for object property — [route/match]
+    # The schema lists the type as `list of x:ExpressionMatch` but the
+    # JSON wire format is map<stringIndex, ExpressionMatch>.
     strat_route = {
-        "match": [{"if": "is_local_domain(rcpt_domain)", "then": "'local'"}],
+        "match": {"0": {"if": "is_local_domain(rcpt_domain)", "then": "'local'"}},
         "else": "'" + default_route_name + "'",
     }
     rr = jmap([["x:MtaOutboundStrategy/set",
