@@ -19,8 +19,12 @@ export function registerThreadTools(server: McpServer): void {
           const uids = await client.search({ gmthrid: thread_id } as any, { uid: true });
           const sliced = (uids ?? []).slice(0, 200);
           const messages: any[] = [];
+          // imapflow API: options.uid=true must be the THIRD arg, not in
+          // the fetch-query object. Mixing it in makes imapflow treat
+          // `sliced` as sequence numbers — silently returns nothing for
+          // UIDs > current message count. See gmail_search.ts for the
+          // root-cause analysis (same bug, same fix).
           for await (const msg of client.fetch(sliced, {
-            uid: true,
             envelope: true,
             internalDate: true,
             flags: true,
@@ -28,7 +32,7 @@ export function registerThreadTools(server: McpServer): void {
             "x-gm-msgid": true,
             // @ts-expect-error
             "x-gm-labels": true,
-          } as any)) {
+          } as any, { uid: true })) {
             messages.push({
               uid: msg.uid,
               subject: msg.envelope?.subject,

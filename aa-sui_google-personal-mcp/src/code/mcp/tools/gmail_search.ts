@@ -21,8 +21,11 @@ export function registerSearchTools(server: McpServer): void {
           const uids = await client.search({ gmraw: query } as any, { uid: true });
           const sliced = (uids ?? []).slice(-limit).reverse();
           const results: any[] = [];
+          // imapflow API: fetch(range, query, options). `options.uid:true`
+          // MUST be the THIRD arg — placing it in the query object makes
+          // imapflow treat the range as SEQUENCE numbers, which silently
+          // returns nothing whenever a UID > current message count.
           for await (const msg of client.fetch(sliced, {
-            uid: true,
             envelope: true,
             flags: true,
             internalDate: true,
@@ -33,7 +36,7 @@ export function registerSearchTools(server: McpServer): void {
             "x-gm-msgid": true,
             // @ts-expect-error gmail extensions
             "x-gm-labels": true,
-          } as any)) {
+          } as any, { uid: true })) {
             results.push({
               uid: msg.uid,
               subject: msg.envelope?.subject,
