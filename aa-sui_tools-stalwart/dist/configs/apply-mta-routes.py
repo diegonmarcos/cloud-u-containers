@@ -165,4 +165,19 @@ if default_route_name:
         print(f"  FAIL update strategy: {u.get('notUpdated') or rr}")
         exit_code = 1
 
+# Propagate registry changes to live workers. WITHOUT these, the SMTP
+# queue keeps using the in-memory strategy snapshot from container
+# startup — even though writes to RocksDB succeed. Empirically:
+#   - ReloadSettings rebuilds expression evaluators
+#   - InvalidateCaches drops the route/strategy cache the queue reads
+# Both go through the same x:Action/set entry point (schema-confirmed).
+for variant in ("ReloadSettings", "InvalidateCaches"):
+    rr = jmap([["x:Action/set",
+        {"accountId": acct, "create": {"a": {"@type": variant}}}, "0"]])
+    c = (rr.get("methodResponses") or [[None,{}]])[0][1]
+    if c.get("created"):
+        print(f"  {variant}: dispatched")
+    else:
+        print(f"  WARN {variant} not dispatched: {c.get('notCreated') or rr}")
+
 sys.exit(exit_code)
