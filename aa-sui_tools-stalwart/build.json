@@ -150,8 +150,8 @@
   "mta_routes": [
     {
       "name": "oci-relay",
-      "description": "OCI Email Delivery (Ashburn) — primary outbound relay",
-      "address": "smtp.email.us-ashburn-1.oci.oraclecloud.com",
+      "description": "OCI Email Delivery (eu-marseille-1) — primary outbound relay; SMTP creds shared with maddy (same vault user/pass, region-bound)",
+      "address": "smtp.email.eu-marseille-1.oci.oraclecloud.com",
       "port": 587,
       "protocol": "smtp",
       "implicit_tls": false,
