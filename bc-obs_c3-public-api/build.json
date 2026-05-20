@@ -32,17 +32,17 @@
     "compose_flags": "--build"
   },
   "proxy": {
-    "_doc": "Mixed-auth service. Default = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /analytics/* and /health, /ready sub-paths are public — declared via paths.{} carve-outs so Caddy's forward_auth skips them. Mirrors the c3-infra-api primary.paths pattern (which carves out /docs/json as auth=public).",
+    "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (2_configs/src/engines/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
     "primary": {
       "auth": "two_factor",
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/c3-public-api",
-      "paths": {
-        "/health": { "auth": "public" },
-        "/ready": { "auth": "public" },
-        "/analytics/": { "auth": "public" }
-      }
+      "public_paths": [
+        "/c3-public-api/health",
+        "/c3-public-api/ready",
+        "/c3-public-api/analytics/*"
+      ]
     }
   },
   "health": {
@@ -66,11 +66,11 @@
         "type": "path",
         "parent_domain": "api.diegonmarcos.com",
         "base_path": "/c3-public-api",
-        "paths": {
-          "/health": { "auth": "public" },
-          "/ready": { "auth": "public" },
-          "/analytics/": { "auth": "public" }
-        }
+        "public_paths": [
+          "/c3-public-api/health",
+          "/c3-public-api/ready",
+          "/c3-public-api/analytics/*"
+        ]
       },
       "healthcheck": "/health",
       "monitoring": {
