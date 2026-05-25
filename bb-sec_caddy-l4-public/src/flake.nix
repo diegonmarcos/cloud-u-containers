@@ -18,15 +18,24 @@
 
     engine = import ../../_shared/engine.nix;
 
+    # Engine emits dist/configs/<name> from `templates`. Even static literals
+    # MUST go through `templates` — there's no implicit "copy src/configs/"
+    # path. Without this, the compose volume-mount `./configs/Caddyfile`
+    # points at a missing file and Docker creates an empty *directory* in
+    # its place, then runc fails with "Are you trying to mount a directory
+    # onto a file (or vice-versa)" at container init.
+    # Pattern follows bb-sec_caddy: name + text via builtins.readFile.
+    templates = [
+      { name = "Caddyfile"; text = builtins.readFile ./configs/Caddyfile; }
+    ];
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = engine {
-        inherit pkgs buildJson container;
+        inherit pkgs buildJson container templates;
         srcDir = ./.;
-        # No templates — Caddyfile is a static literal (literally one route).
-        templates = [];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         # Type B: wrap upstream image (ghcr.io/diegonmarcos/caddy-l4).
         # No nativeBuild block — engine produces compose + configs only.
