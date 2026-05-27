@@ -12,6 +12,9 @@
 
     "subnet": "10.1.0.0/24",
     "port": 51821,
+    "port_fallback": 443,
+    "port_fallback_proto": "udp",
+    "_port_fallback_doc": "Hotel-WiFi/airport-network resistance: hub also accepts handshake on udp/443 (PREROUTING REDIRECT → udp/51821). Same mechanism wg0 uses. The two meshes' fallbacks coexist because their hubs are on different VMs (wg0 hub gcp-proxy 35.226.147.64 / wg-public hub oci-analytics 129.151.228.66) — each REDIRECT is local to its own host.",
     "hub": "oci-E2-f_1",
 
     "peers": [
