@@ -26,8 +26,8 @@ head_sampling_rate = 1
 # Non-secret configuration
 GOOGLE_EMAIL = "me@diegonmarcos.com"
 GOOGLE_SA_EMAIL = "diego-cli@diegonmarcos-infra-prod.iam.gserviceaccount.com"
-C3_HEALTH_URL = "https://api.diegonmarcos.com/c3-public-api/health"
-HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/c3-public-api/mail/http-to-smtp"
+C3_HEALTH_URL = "https://api.diegonmarcos.com/pub/health"
+HTTP_TO_SMTP_PROXY_API_URL = "https://api.diegonmarcos.com/pub/mail/http-to-smtp"
 BACKUP_EMAIL = "diegonmarcos@live.com"
 # Secrets — set via: wrangler secret put <NAME>
 # C3_BEARER_TOKEN              — Authelia OIDC bearer token (cloudflare-health-c3-api client)

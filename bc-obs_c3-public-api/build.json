@@ -7,7 +7,8 @@
     "app": 8087
   },
   "category": "obs",
-  "domain": "api.diegonmarcos.com/c3-public-api",
+  "domain": "api.diegonmarcos.com/pub",
+  "_domain_doc": "PUB ROUTING (operator decision 2026-05-27): public-facing routes live under api.diegonmarcos.com/pub/* (high precedence, public ingress via oci-analytics). All other api.* paths remain wg-cloud-only (gcp-proxy edge over wg0). Renamed from /c3-public-api → /pub for clean separation of concerns.",
   "build": {
     "include_cloud_data": "true",
     "headers_enforced": true
@@ -37,16 +38,16 @@
       "auth": "two_factor",
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
-      "base_path": "/c3-public-api",
+      "base_path": "/pub",
       "public_paths": [
-        "/c3-public-api/health",
-        "/c3-public-api/ready",
-        "/c3-public-api/analytics/*"
+        "/pub/health",
+        "/pub/ready",
+        "/pub/analytics/*"
       ]
     }
   },
   "health": {
-    "path": "/c3-public-api/health"
+    "path": "/pub/health"
   },
   "monitoring": {
     "tls_check": true,
@@ -65,11 +66,11 @@
         "auth": "two_factor",
         "type": "path",
         "parent_domain": "api.diegonmarcos.com",
-        "base_path": "/c3-public-api",
+        "base_path": "/pub",
         "public_paths": [
-          "/c3-public-api/health",
-          "/c3-public-api/ready",
-          "/c3-public-api/analytics/*"
+          "/pub/health",
+          "/pub/ready",
+          "/pub/analytics/*"
         ]
       },
       "healthcheck": "/health",
@@ -130,7 +131,7 @@
   },
   "api": {
     "type": "custom-rest",
-    "base_path": "/c3-public-api",
+    "base_path": "/pub",
     "endpoint_count": 5,
     "display_name": "C3 Public API",
     "description": "Single public-edge API on oci-analytics. /mail/http-to-smtp (Bearer) bridges CF Worker -> Maddy + Stalwart over WG. /analytics/{matomo|umami|openobserve}/* (public) passes through to first-party analytics backends.",
