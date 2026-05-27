@@ -1,0 +1,33 @@
+{
+  "name": "wireguard-public",
+  "description": "Owner of the wg-public mesh topology + client list. Data-only entry (enabled=false → no container/compose). Replaces the previous wireguard_public block that lived in config.json (root global), so adding/rotating/sharing a wg-public client is a one-file edit here instead of touching the global config.",
+  "category": "net",
+  "subcategory": "network",
+  "enabled": false,
+
+  "_doc": "Engine contract: cloud-data-config-consolidated.ts reads .wireguard_public from THIS build.json (preferred) before falling back to config.json::native.wireguard_public during the migration window. Final state after migration is to remove the config.json copy entirely.",
+
+  "wireguard_public": {
+    "_doc": "Public-trust WG mesh. VM members: oci-analytics (hub — the only fully-public VM), gcp-proxy, oci-mail, oci-apps. Compromise blast radius bounded — wg-public peers reach only public-facing services, not internal wg0 services. Operator policy (2026-05-23): wg0 is the private admin mesh; wg-public is open-enrollment.",
+
+    "subnet": "10.1.0.0/24",
+    "port": 51821,
+    "hub": "oci-E2-f_1",
+
+    "peers": [
+      { "name": "oci-analytics", "wg_ip": "10.1.0.1", "role": "hub" },
+      { "name": "gcp-proxy",     "wg_ip": "10.1.0.2", "role": "spoke" },
+      { "name": "oci-mail",      "wg_ip": "10.1.0.3", "role": "spoke" },
+      { "name": "oci-apps",      "wg_ip": "10.1.0.4", "role": "spoke" }
+    ],
+
+    "clients": {
+      "surface":      { "wg_ip": "10.1.0.5",  "role": "client",
+                        "_doc": "Diego's laptop. wg-public access only." },
+      "termux":       { "wg_ip": "10.1.0.9",  "role": "client",
+                        "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/." },
+      "termux-share": { "wg_ip": "10.1.0.10", "role": "client",
+                        "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0." }
+    }
+  }
+}
