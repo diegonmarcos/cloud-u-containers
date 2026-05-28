@@ -160,6 +160,7 @@ import request_limits
 
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -192,6 +193,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -230,6 +232,7 @@ import request_limits
 
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -262,6 +265,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -310,6 +314,7 @@ reverse_proxy https://diegonmarcos.github.io {
 
 # All other paths → auth + upstream
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -342,6 +347,7 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -380,6 +386,10 @@ import request_limits
 
 
 
+    # Bare host → JMAP discovery URL (308 redirect) (well-known — public per spec)
+    handle / {
+        redir /.well-known/jmap 308
+    }
     reverse_proxy https://10.0.0.3:2443 {
     transport http {
   tls_insecure_skip_verify
@@ -403,6 +413,7 @@ import request_limits
 
 
 
+
         reverse_proxy 10.0.0.6:8880
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -419,6 +430,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -457,6 +469,7 @@ import request_limits
 
 
 
+
         reverse_proxy 10.0.0.1:8080
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -473,6 +486,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -511,6 +525,7 @@ import request_limits
 
 
 
+
         @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
@@ -543,6 +558,7 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+
 
 
 
@@ -838,26 +854,6 @@ handle_path /cf-worker-bridge/* {
 
 }
 
-handle_path /http-to-smtp-proxy-api/* {
-      @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.1:8090
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.1:8090
-    }
-
-}
-
 handle_path /crawlee/* {
       @bearer header Authorization Bearer*
     handle @bearer {
@@ -917,7 +913,10 @@ handle_path /c3a/* {
     }
 
 }
-
+handle /c3-infra-api/docs/json {
+  uri strip_prefix /c3-infra-api
+  reverse_proxy 10.0.0.6:8081
+}
 handle_path /c3-infra-api/* {
       @bearer header Authorization Bearer*
     handle @bearer {
@@ -934,6 +933,37 @@ handle_path /c3-infra-api/* {
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
       reverse_proxy 10.0.0.6:8081
+    }
+
+}
+handle /pub/health {
+  uri strip_prefix /pub
+  reverse_proxy 10.0.0.4:8087
+}
+handle /pub/ready {
+  uri strip_prefix /pub
+  reverse_proxy 10.0.0.4:8087
+}
+handle /pub/analytics/* {
+  uri strip_prefix /pub
+  reverse_proxy 10.0.0.4:8087
+}
+handle_path /pub/* {
+      @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.4:8087
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.4:8087
     }
 
 }
@@ -1432,12 +1462,6 @@ import request_limits
     reverse_proxy 10.0.0.4:8092
   }
 
-  http-to-smtp-proxy-api.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.1:8090
-  }
-
   stalwart.app {
     bind 10.0.0.1
     tls internal
@@ -1498,6 +1522,12 @@ import request_limits
     reverse_proxy 10.0.0.1:443
   }
 
+  caddy-l4-public.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.4:443
+  }
+
   introspect-proxy.app {
     bind 10.0.0.1
     tls internal
@@ -1520,6 +1550,12 @@ import request_limits
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.6:3100
+  }
+
+  c3-public-api.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.4:8087
   }
 
   c3-services-api.app {
@@ -1725,14 +1761,6 @@ import request_limits
     reverse_proxy 10.0.0.4:8092
   }
 
-  http-to-smtp-proxy-api-http-8090.app {
-    bind 10.0.0.1
-    tls internal {
-      on_demand
-    }
-    reverse_proxy 10.0.0.1:8090
-  }
-
   stalwart-https-2443.app {
     bind 10.0.0.1
     tls internal {
@@ -1819,6 +1847,14 @@ import request_limits
       on_demand
     }
     reverse_proxy 10.0.0.6:3100
+  }
+
+  c3-public-api-http-8087.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.4:8087
   }
 
   c3-services-api-http-8082.app {
