@@ -46,6 +46,9 @@ let
       account          = p.account or general.account or "";
       sieve_require    = lib.unique ((general.sieve_require or []) ++ (p.sieve_require or []));
       folders          = (general.folders or {}) // (p.folders_extend or {}) // (p.folders or {});
+      # Visual section-header siblings (flat ROOT mailboxes, NOT parents).
+      # Carried through merge so toLegacyJson can hand them to jmap-sorter.
+      folders_ui       = lib.unique ((general.folders_ui or []) ++ (p.folders_ui or []));
       routing_default  = p.routing_default or general.routing_default or "others";
       inbox_copy       = p.inbox_copy or general.inbox_copy or { enabled = false; flags = []; };
       cleanup          = p.cleanup or general.cleanup or {};
@@ -384,6 +387,10 @@ let
       account        = merged.account;
       sieve_require  = merged.sieve_require;
       folders        = merged.folders;
+      # Visual section-header siblings (flat ROOT mailboxes, NOT parents).
+      # Consumed by jmap-sorter's ensure_mailboxes + cleanup_stale to
+      # mirror Maddy's IMAP layout. Optional — defaults to [].
+      folders_ui     = merged.folders_ui or [];
       routing_default = defFolder;
       tags           = orderedBuckets;
       inherit routing;

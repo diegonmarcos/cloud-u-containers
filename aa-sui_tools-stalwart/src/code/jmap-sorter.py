@@ -232,6 +232,15 @@ def ensure_mailboxes(client, rules):
         pick_or_create(folder, None, "inbox", i + 1)
         create_counter += 1
 
+    # Visual section-header folders (flat ROOT siblings, NOT parents) —
+    # `mail-rules-general.json::folders_ui`. They sort alphabetically
+    # just before each numeric block (10 _ ADMIN < 11 ..., etc) so
+    # users get the same grouped layout Maddy ships. Not routing
+    # targets; not referenced by any sieve rule.
+    for j, label in enumerate(rules.get("folders_ui") or []):
+        pick_or_create(label, None, "section", 100 + j)
+        create_counter += 1
+
     # Tag group parents (ROOT) + their subfolders.
     for gi, group in enumerate(rules["tags"]):
         group_name = group["name"]
@@ -346,6 +355,9 @@ def cleanup_stale(client, rules, name_to_id, mailboxes):
     valid_names = set()
     # Inbox folders
     for f in rules["folders"].values():
+        valid_names.add(f)
+    # Visual section headers (folders_ui — flat siblings, Maddy-equivalent)
+    for f in rules.get("folders_ui") or []:
         valid_names.add(f)
     # Tag groups + subfolders
     for group in rules["tags"]:
