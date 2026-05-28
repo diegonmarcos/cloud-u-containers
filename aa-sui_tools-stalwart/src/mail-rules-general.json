@@ -26,6 +26,13 @@
     "archive": "Ab    📥 Archive",
     "junk": "Ac    🚫 Junk"
   },
+  "_folders_ui_doc": "Visual section-headers — flat sibling mailboxes (NOT actual parents) that alphabetically sort just before each numeric block (10_ before 11/12/..., 20_ before 21/..., etc). Maddy creates these via the legacy `folders_ui` schema (see flake.nix line 82) and Stalwart's jmap-sorter now mirrors them so the two engines have identical mailbox listings. They are not routing targets — no rule.copy_to references them.",
+  "folders_ui": [
+    "10 _ ADMIN",
+    "20 _ INFORMS",
+    "30 _ DEV",
+    "AA _ OTHERS"
+  ],
   "routing_default": "others",
   "inbox_copy": {
     "enabled": true,
