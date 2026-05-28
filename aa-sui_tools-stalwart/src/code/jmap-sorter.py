@@ -357,9 +357,23 @@ def cleanup_stale(client, rules, name_to_id, mailboxes):
     valid_names.update({"INBOX", "Sent", "Drafts", "Trash", "Junk", "Archive",
                         "Sent Items", "Deleted Items", "Junk Mail", "Outbox", "Templates"})
 
+    # Pass 1: mailboxes whose name isn't a current valid one (true orphans).
     stale = []
     for mb in mailboxes:
         if mb["name"] not in valid_names and mb.get("role") is None:
+            stale.append(mb)
+
+    # Pass 2: valid-name DUPLICATES. ensure_mailboxes returned
+    # name_to_id keyed by name — that's the *canonical* mailbox id (the
+    # one at the expected parent). Any other mailbox sharing the name is
+    # a duplicate (e.g. the post-rename leftover sitting under a legacy
+    # parent), which keeps the legacy parent un-destroyable via
+    # `mailboxHasChild`. Mark them stale so they get moved-and-destroyed
+    # in the same pass — that unblocks the legacy parent next poll.
+    for mb in mailboxes:
+        if (mb["name"] in valid_names
+                and mb.get("role") is None
+                and name_to_id.get(mb["name"]) != mb["id"]):
             stale.append(mb)
 
     if not stale:
