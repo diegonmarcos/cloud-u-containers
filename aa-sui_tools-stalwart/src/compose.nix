@@ -13,6 +13,21 @@ let
   binariesImage = "${buildJson.docker.registry}/${buildJson.docker.image}:latest";
   appPort       = toString app.port;
 
+  # Internal JMAP listener port (= what Stalwart binds INSIDE its container).
+  # SoT: extra_ports entry where service == "jmap_tls" — already declared
+  # in build.json with container_port = 443 (v0.16 standard binding).
+  # Used by the sorter sidecar which is on the docker bridge network and
+  # must reach Stalwart via container DNS + internal port, not host port.
+  jmapInternalEntry = lib.findFirst
+    (ep: (ep.service or null) == "jmap_tls")
+    null
+    (app.extra_ports or []);
+  appJmapInternalPort = toString (
+    if jmapInternalEntry == null
+    then throw "stalwart compose.nix: no extra_ports entry with service=\"jmap_tls\" — sorter cannot derive JMAP_URL. Fix: declare jmap_tls in build.json::containers.app.extra_ports."
+    else jmapInternalEntry.container_port
+  );
+
   # Port mappings driven by extra_ports[].bind in build.json. The `bind` field
   # accepts either a single string ("10.0.0.3") or a list of strings
   # (["10.0.0.3" "10.1.0.3"]) — Phase 4 of the wg-public migration adds the
@@ -77,7 +92,15 @@ in
       entrypoint     = [ "python3" "/app/jmap-sorter.py" ];
       env_file       = [ ".secrets" ];
       environment = {
-        JMAP_URL       = "https://localhost:${appPort}";
+        # Container-to-container: use the bridge-network DNS name (matches
+        # app.container_name) + the INTERNAL JMAP port. Previous value
+        # `https://localhost:${appPort}` was a long-standing bug — the sorter
+        # is on `stalwart_default` bridge so `localhost` = sorter's own
+        # loopback (nothing listening), and `appPort` is the HOST mapping
+        # (2443), not the internal one (443). Result: Connection refused
+        # every 120s → cleanup_stale() never runs → renamed/old folders
+        # accumulate as duplicates in Stalwart's mailbox list.
+        JMAP_URL       = "https://${app.container_name}:${appJmapInternalPort}";
         RULES_PATH     = "/data/mail-rules.json";
         STARTUP_DELAY  = "20";
       };
