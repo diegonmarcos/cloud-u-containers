@@ -302,7 +302,15 @@ let
       # Legacy jmap-sorter only understands simple atoms. Skip combinators.
       usable = !(hasAttr "any_of" atom) && !(hasAttr "all_of" atom) && !(hasAttr "not" atom);
     in
-    if mode == "drop" || flags == [] || !usable then []
+    # `route_only` means "this engine should only execute the copy_to action,
+    # skip the tag/keyword action entirely" — symmetric with Maddy's
+    # routingFromRule above at line ~245 (`hasFlags = mode == "full" ||
+    # "tag_only"`). Without this check the sorter created the full
+    # B1..B9 tag bucket hierarchy + ~30 subfolders even when the operator
+    # had set every rule's stalwart-mode to `route_only` to match Maddy's
+    # "route, don't tag" behaviour. Result: Stalwart and Maddy ended up
+    # with wildly different mailbox shapes for the same SoT.
+    if mode == "drop" || mode == "route_only" || flags == [] || !usable then []
     else
       map (flag:
         { type = atom.type; flag = flag; }

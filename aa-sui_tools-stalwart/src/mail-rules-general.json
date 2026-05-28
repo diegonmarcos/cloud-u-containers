@@ -131,7 +131,7 @@
         "copy_to": "junk"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       },
       "comment": "Route anything flagged by upstream spam engines (Stalwart internal, Gmail/Outlook via mail-puller, SA-style headers) into the unified Junk folder. Runs before all other routes so spam never pollutes category folders."
@@ -163,7 +163,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -187,7 +187,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -207,7 +207,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -234,7 +234,7 @@
         "copy_to": "development"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -251,7 +251,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -271,7 +271,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -294,7 +294,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -320,7 +320,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -342,7 +342,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -364,7 +364,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -388,7 +388,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -410,7 +410,7 @@
         "copy_to": "career"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -432,7 +432,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -452,7 +452,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -472,7 +472,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -494,7 +494,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -516,7 +516,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -541,7 +541,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -569,7 +569,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -594,7 +594,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -614,7 +614,7 @@
         "copy_to": "logistics"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -634,7 +634,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -654,7 +654,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -680,7 +680,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -706,7 +706,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -729,7 +729,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -754,7 +754,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -778,7 +778,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -800,7 +800,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -821,7 +821,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -845,7 +845,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -867,7 +867,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -890,7 +890,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -917,7 +917,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -940,7 +940,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -963,7 +963,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -986,7 +986,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1009,7 +1009,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1033,7 +1033,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1057,7 +1057,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1081,7 +1081,7 @@
         "copy_to": "social"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1107,7 +1107,7 @@
         "copy_to": "social"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1134,7 +1134,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1158,7 +1158,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1179,7 +1179,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1203,7 +1203,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1227,7 +1227,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1253,7 +1253,7 @@
         ]
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1272,7 +1272,7 @@
         "copy_to": "cloud_reports"
       },
       "engines": {
-        "stalwart": "full",
+        "stalwart": "route_only",
         "maddy": "route_only"
       }
     },
@@ -1296,7 +1296,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1319,7 +1319,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1343,7 +1343,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1366,7 +1366,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1390,7 +1390,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1408,7 +1408,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       },
       "comment": "Maddy filter sees headers only — dropping to avoid reading full body stream."
@@ -1429,7 +1429,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1451,7 +1451,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1473,7 +1473,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1495,7 +1495,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1518,7 +1518,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1541,7 +1541,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1558,7 +1558,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1575,7 +1575,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1592,7 +1592,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     },
@@ -1609,7 +1609,7 @@
         ]
       },
       "engines": {
-        "stalwart": "tag_only",
+        "stalwart": "drop",
         "maddy": "drop"
       }
     }
