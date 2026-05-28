@@ -80,7 +80,8 @@ class JMAPClient:
         resp = self.call([["Mailbox/get", {"accountId": self.account_id}, "0"]])
         return resp[0][1]["list"]
 
-    def mailbox_set(self, create=None, update=None, destroy=None):
+    def mailbox_set(self, create=None, update=None, destroy=None,
+                    on_destroy_remove_emails=False):
         args = {"accountId": self.account_id}
         if create:
             args["create"] = create
@@ -88,6 +89,12 @@ class JMAPClient:
             args["update"] = update
         if destroy:
             args["destroy"] = destroy
+        # JMAP: when False (default), destroying a non-empty Mailbox fails
+        # with `mailboxHasEmail`. cleanup_stale moves emails to INBOX before
+        # destroying — but stragglers (and any email visible only by the
+        # mailbox's child) need the explicit override.
+        if on_destroy_remove_emails:
+            args["onDestroyRemoveEmails"] = True
         resp = self.call([["Mailbox/set", args, "0"]])
         return resp[0][1]
 
@@ -172,76 +179,89 @@ def match_tags(from_addr, from_domain, subject, size, rules):
 
 
 def ensure_mailboxes(client, rules):
-    """Create all required mailboxes, return name→id map."""
+    """Reconcile mailbox state with rules.
+
+    Two-step:
+      1. For each (expected_name, expected_parent_id) declared by the rules,
+         look up the existing mailbox by NAME. If multiple mailboxes share
+         the name, prefer the one already at expected_parent_id; otherwise
+         pick the first and queue a parent-reassignment so the others get
+         deduplicated by cleanup_stale next pass.
+      2. Create the missing ones in a single Mailbox/set batch.
+
+    Returns (name_to_id_at_correct_parent, full_mailbox_list).
+    """
     existing = client.mailbox_get()
-    name_to_id = {}
-    id_to_name = {}
+
+    # name → list of {id, parentId} so we can prefer the correctly-parented one.
+    by_name = {}
     for mb in existing:
-        name_to_id[mb["name"]] = mb["id"]
-        id_to_name[mb["id"]] = mb["name"]
+        by_name.setdefault(mb["name"], []).append(
+            {"id": mb["id"], "parentId": mb.get("parentId")}
+        )
 
     creates = {}
+    updates = {}
     create_counter = 0
 
-    # 7 inbox folders
+    def pick_or_create(expected_name, expected_parent_id, ref_prefix, sort_order):
+        """Return mailbox id for (name, parent). Move stragglers if any."""
+        candidates = by_name.get(expected_name, [])
+        # Prefer one already at the expected parent.
+        for c in candidates:
+            if c["parentId"] == expected_parent_id:
+                return c["id"]
+        # Otherwise reparent the first candidate (cheap fix for the
+        # legacy-parent-with-valid-child layout). Don't create a duplicate.
+        if candidates:
+            stray = candidates[0]
+            updates[stray["id"]] = {"parentId": expected_parent_id}
+            return stray["id"]
+        # Truly missing — queue create.
+        ref = f"{ref_prefix}_{create_counter}"
+        creates[ref] = {
+            "name": expected_name,
+            "parentId": expected_parent_id,
+            "sortOrder": sort_order,
+        }
+        return f"#{ref}"
+
+    # Inbox folders — all at ROOT (parentId=None).
     inbox_folders = list(rules["folders"].values())
     for i, folder in enumerate(inbox_folders):
-        if folder not in name_to_id:
-            ref = f"inbox_{create_counter}"
-            creates[ref] = {"name": folder, "parentId": None, "sortOrder": i + 1}
-            create_counter += 1
+        pick_or_create(folder, None, "inbox", i + 1)
+        create_counter += 1
 
-    # 8 tag group parent folders + subfolders
+    # Tag group parents (ROOT) + their subfolders.
     for gi, group in enumerate(rules["tags"]):
         group_name = group["name"]
-        if group_name not in name_to_id:
-            ref = f"group_{gi}"
-            creates[ref] = {"name": group_name, "parentId": None, "sortOrder": 10 + gi}
+        parent_ref_or_id = pick_or_create(group_name, None, "group", 10 + gi)
+        create_counter += 1
+        for ri, rule in enumerate(group["rules"]):
+            group_num = group_name.split("-")[0]
+            sub_name = f"{group_num}-{ri} {rule['flag']}"
+            pick_or_create(sub_name, parent_ref_or_id, f"sub_{gi}", ri)
             create_counter += 1
 
-            # Create subfolders with reference to parent
-            for ri, rule in enumerate(group["rules"]):
-                group_num = group_name.split("-")[0]
-                sub_name = f"{group_num}-{ri} {rule['flag']}"
-                sub_ref = f"sub_{gi}_{ri}"
-                creates[sub_ref] = {
-                    "name": sub_name,
-                    "parentId": f"#{ref}",
-                    "sortOrder": ri,
-                }
-                create_counter += 1
-        else:
-            # Parent exists, check subfolders
-            parent_id = name_to_id[group_name]
-            for ri, rule in enumerate(group["rules"]):
-                group_num = group_name.split("-")[0]
-                sub_name = f"{group_num}-{ri} {rule['flag']}"
-                if sub_name not in name_to_id:
-                    sub_ref = f"sub_{gi}_{ri}"
-                    creates[sub_ref] = {
-                        "name": sub_name,
-                        "parentId": parent_id,
-                        "sortOrder": ri,
-                    }
-                    create_counter += 1
-
-    if creates:
-        logging.info("Creating %d mailboxes...", len(creates))
-        result = client.mailbox_set(create=creates)
-        created = result.get("created", {})
-        for ref, mb_data in created.items():
-            # Re-fetch to get names
-            pass
+    if creates or updates:
+        if creates:
+            logging.info("Creating %d mailboxes...", len(creates))
+        if updates:
+            logging.info("Reparenting %d misparented mailboxes...", len(updates))
+        result = client.mailbox_set(create=creates or None,
+                                    update=updates or None)
         if result.get("notCreated"):
             for ref, err in result["notCreated"].items():
                 logging.warning("Failed to create %s: %s", ref, err)
+        if result.get("notUpdated"):
+            for mid, err in result["notUpdated"].items():
+                logging.warning("Failed to reparent %s: %s", mid, err)
 
-        # Re-fetch all mailboxes after creation
-        existing = client.mailbox_get()
-        name_to_id = {}
-        for mb in existing:
-            full_name = mb["name"]
-            name_to_id[full_name] = mb["id"]
+    # Always re-fetch — pick_or_create returned create-refs (`#ref_N`) for
+    # missing ones; after the set call those refs resolve to real ids only
+    # via a fresh Mailbox/get.
+    existing = client.mailbox_get()
+    name_to_id = {mb["name"]: mb["id"] for mb in existing}
 
     return name_to_id, existing
 
@@ -372,15 +392,69 @@ def cleanup_stale(client, rules, name_to_id, mailboxes):
         except Exception as e:
             logging.warning("Error moving emails from %s: %s", mb["name"], e)
 
-    # Delete stale folders (deepest first by checking parentId)
-    children = [mb for mb in stale if mb.get("parentId")]
-    parents = [mb for mb in stale if not mb.get("parentId")]
-    for mb in children + parents:
+    # Build child-of map from the FULL mailbox list so we can deepest-first
+    # delete and inherit stale-ness up the tree. A stale parent that still
+    # has non-stale children (the legacy-parent-with-valid-emoji-child case
+    # in oci-mail's Stalwart store) won't destroy until those children are
+    # reparented to ROOT — `ensure_mailboxes` does that in the same poll
+    # via the `pick_or_create` reparent path, so this loop just needs to
+    # retry across polls until the children move.
+    by_parent = {}
+    for mb in mailboxes:
+        by_parent.setdefault(mb.get("parentId"), []).append(mb["id"])
+
+    def depth(mb_id, seen=None):
+        if seen is None:
+            seen = set()
+        if mb_id in seen:
+            return 0
+        seen.add(mb_id)
+        kids = by_parent.get(mb_id, [])
+        return 1 + (max((depth(k, seen) for k in kids), default=0))
+
+    # Deepest first — deletes leaves before parents within the same batch.
+    for mb in sorted(stale, key=lambda m: -depth(m["id"])):
+        # Two-phase: first try the polite destroy; on failure (typically
+        # `mailboxHasEmail` or `mailboxHasChild`) retry with
+        # onDestroyRemoveEmails=true. Only the email-flag is JMAP-standard;
+        # if the child relationship is the blocker, we surface the error so
+        # next poll picks it up after `ensure_mailboxes` reparents.
         try:
-            client.mailbox_set(destroy=[mb["id"]])
-            logging.info("Deleted stale: %s", mb["name"])
+            result = client.mailbox_set(destroy=[mb["id"]])
         except Exception as e:
-            logging.warning("Failed to delete %s: %s", mb["name"], e)
+            logging.warning("Destroy call failed for %s: %s", mb["name"], e)
+            continue
+
+        if mb["id"] in (result.get("destroyed") or []):
+            logging.info("Deleted stale: %s", mb["name"])
+            continue
+
+        not_destroyed = (result.get("notDestroyed") or {}).get(mb["id"])
+        if not not_destroyed:
+            # No success entry AND no failure entry — surface oddly-shaped
+            # response rather than silently dropping it (the prior bug).
+            logging.warning("Destroy returned no status for %s: %s",
+                            mb["name"], result)
+            continue
+
+        reason = not_destroyed.get("type") or str(not_destroyed)
+        if reason in ("mailboxHasEmail", "tooManyEmails"):
+            try:
+                retry = client.mailbox_set(destroy=[mb["id"]],
+                                           on_destroy_remove_emails=True)
+                if mb["id"] in (retry.get("destroyed") or []):
+                    logging.info("Deleted stale (force-empty): %s", mb["name"])
+                    continue
+                logging.warning("Force-destroy failed for %s: %s",
+                                mb["name"], retry.get("notDestroyed"))
+            except Exception as e:
+                logging.warning("Force-destroy call failed for %s: %s",
+                                mb["name"], e)
+        else:
+            # `mailboxHasChild` / unknown — leave for next poll once
+            # ensure_mailboxes has reparented the valid children to ROOT.
+            logging.info("Skipping %s for now: %s (will retry next poll)",
+                         mb["name"], reason)
 
 
 def main():
@@ -398,7 +472,6 @@ def main():
     client = JMAPClient(JMAP_URL, user, password)
 
     reconnect_delay = 5
-    first_run = True
     while True:
         try:
             client.discover()
@@ -408,11 +481,11 @@ def main():
             while True:
                 try:
                     name_to_id, mailboxes = ensure_mailboxes(client, rules)
-
-                    if first_run:
-                        cleanup_stale(client, rules, name_to_id, mailboxes)
-                        first_run = False
-
+                    # Run on every poll — cleanup is idempotent (no stale →
+                    # no-op) and self-healing. Previously this was gated by
+                    # `first_run`, so a single bad first poll permanently
+                    # left orphans until the container restarted.
+                    cleanup_stale(client, rules, name_to_id, mailboxes)
                     sort_emails(client, rules, name_to_id, mailboxes)
                 except urllib.error.URLError as e:
                     logging.warning("Connection lost: %s, reconnecting...", e)
