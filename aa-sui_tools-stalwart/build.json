@@ -57,6 +57,13 @@
         "target_domain": "diegonmarcos.com",
         "tls_skip_verify": true,
         "comment": "JMAP API follow-through (matches relative redirect from /.well-known/jmap)"
+      },
+      {
+        "_doc": "Bare-host shortcut: clients that hit https://jmap.diegonmarcos.com/ (no path) get a 308 to /.well-known/jmap so the JMAP session JSON is reachable at any of three equivalent URLs — bare host, /.well-known/jmap, apex /.well-known/jmap. Relies on the proxy-route well_known graft (caddyfile.nix mkProxyRoute filtering wellKnownRoutes by target_domain). Mailtemi and similar clients that probe the bare subdomain hostname work without manual URL entry.",
+        "path": "/",
+        "target_domain": "jmap.diegonmarcos.com",
+        "redirect_to": "/.well-known/jmap",
+        "comment": "Bare host → JMAP discovery URL (308 redirect)"
       }
     ]
   },

@@ -348,6 +348,18 @@ ${plainOut}${sniMuxBlock}
         }
       }'' else "";
 
+      # well_known graft — any service may declare `proxy.well_known[]` with
+      # `target_domain` matching this proxy route's domain. The aggregator in
+      # cloud-data-config-derive.ts collects them into `well_known_routes`; we
+      # filter by target_domain and emit per-path handlers BEFORE the catch-all
+      # reverse_proxy. Mirrors mkGithubPagesRoute's existing behaviour so the
+      # mechanism is symmetric across every Caddy route flavour.
+      proxyDomains = lib.splitString ", " route.domain;
+      matchingWellKnown = builtins.filter
+        (wk: builtins.elem wk.target_domain proxyDomains)
+        wellKnownRoutes;
+      wellKnownBlock = lib.concatMapStringsSep "\n" mkWellKnownBlock matchingWellKnown;
+
     in ''
     # ${route.comment or route.domain}
     ${route.domain} {
@@ -356,6 +368,7 @@ ${plainOut}${sniMuxBlock}
   ${wgBlock}
   ${bypassBlock}${landingBlock}
   ${rootJsonBlock}
+  ${wellKnownBlock}
       ${proxyBlock}
       ${handleErrors}
     }

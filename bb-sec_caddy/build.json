@@ -189,30 +189,6 @@
       "domain": "proxy.diegonmarcos.com",
       "comment": "Infrastructure dashboard (static HTML)"
     },
-    "github_pages_proxies": [
-      {
-        "domain": "diegonmarcos.com, www.diegonmarcos.com",
-        "github_path": "landpage",
-        "wkd": true,
-        "comment": "Landing page + WKD (Web Key Directory for PGP)"
-      },
-      {
-        "domain": "linktree.diegonmarcos.com",
-        "github_path": "linktree"
-      },
-      {
-        "domain": "nexus.diegonmarcos.com",
-        "github_path": "nexus"
-      },
-      {
-        "domain": "suite.diegonmarcos.com",
-        "github_path": "suite"
-      },
-      {
-        "domain": "maps.diegonmarcos.com",
-        "github_path": "mymaps"
-      }
-    ],
     "parent_domain_meta": {
       "api.diegonmarcos.com": {
         "landing_page": "api",
