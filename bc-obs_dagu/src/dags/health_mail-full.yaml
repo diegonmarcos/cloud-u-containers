@@ -11,9 +11,12 @@ steps:
     command: |
       # Run the Rust cloud-mail-health-full derive (replaces old TypeScript
       # health_mail.ts, retired 2026-04-23). Writes cloud_mail_full.{md,json}
-      # into the dagu_data volume.
+      # into the dagu_dagu_data volume (Docker Compose prefixes named
+      # volumes with the project name → bare `dagu_data` resolves to a
+      # different, empty auto-created volume so cloud-data/reports/
+      # build.sh isn't visible inside the spawned container).
       docker run --rm --network host \
-        -v dagu_data:/var/lib/dagu/data \
+        -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh:ro \
         -w /var/lib/dagu/data/cloud-data/reports \
         "$REPORT_IMAGE" mail
