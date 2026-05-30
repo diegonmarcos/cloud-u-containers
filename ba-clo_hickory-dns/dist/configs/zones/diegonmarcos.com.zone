@@ -6,9 +6,17 @@
 ; ║ Source:  a_solutions/ba-clo_hickory-dns/src/flake.nix
 ; ║ Rebuild: a_solutions/ba-clo_hickory-dns/build.sh ship
 ; ╚══════════════════════════════════════════════════════════════════╝
-$ORIGIN diegonmarcos.com.
-$TTL 60
-@    IN SOA  hickory-dns.diegonmarcos.com. admin.diegonmarcos.com. 1 3600 900 604800 60
-@    IN NS   hickory-dns.diegonmarcos.com.
-@    IN A    10.0.0.1
-*    IN A    10.0.0.1
+      $ORIGIN diegonmarcos.com.
+      $TTL 60
+      @    IN SOA  hickory-dns.diegonmarcos.com. admin.diegonmarcos.com. 1 3600 900 604800 60
+      @    IN NS   hickory-dns.diegonmarcos.com.
+      @    IN A    10.0.0.1
+      mail    IN A    10.0.0.3
+      imap    IN A    10.0.0.3
+      smtps    IN A    10.0.0.3
+      smtp    IN A    10.0.0.3
+      imap-stalwart    IN A    10.0.0.3
+      smtps-stalwart    IN A    10.0.0.3
+      mail-stalwart    IN A    10.0.0.3
+      jmap    IN A    10.0.0.3
+      *    IN A    10.0.0.1
