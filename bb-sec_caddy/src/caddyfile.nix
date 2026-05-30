@@ -360,6 +360,21 @@ ${plainOut}${sniMuxBlock}
         wellKnownRoutes;
       wellKnownBlock = lib.concatMapStringsSep "\n" mkWellKnownBlock matchingWellKnown;
 
+      # When well_known handlers are emitted, the catch-all proxyBlock
+      # MUST be wrapped in a `handle { }` block. In Caddy v2, mixing
+      # bare directives (`reverse_proxy …`) with `handle` blocks at the
+      # same site-block level lets the bare directive win for the
+      # catch-all match — including the exact `/` path the well_known
+      # `handle / { redir 308 }` is supposed to intercept. Symptom:
+      # https://jmap.diegonmarcos.com/ returned Stalwart's JSON 404
+      # instead of the declared 308 redirect to /.well-known/jmap.
+      # Mirrors the existing mkGithubPagesRoute behaviour (lines 414-419)
+      # so the wrap is symmetric across every Caddy route flavour.
+      wrappedProxyBlock = if wellKnownBlock != "" then ''
+      handle {
+        ${proxyBlock}
+      }'' else proxyBlock;
+
     in ''
     # ${route.comment or route.domain}
     ${route.domain} {
@@ -369,7 +384,7 @@ ${plainOut}${sniMuxBlock}
   ${bypassBlock}${landingBlock}
   ${rootJsonBlock}
   ${wellKnownBlock}
-      ${proxyBlock}
+      ${wrappedProxyBlock}
       ${handleErrors}
     }
   '';
