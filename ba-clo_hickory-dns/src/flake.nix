@@ -16,6 +16,10 @@
     zones       = buildJson.dns.zones;
     forwarders  = buildJson.dns.forwarders;
     dns_port    = buildJson.ports.dns;
+    # Per-zone specific records (e.g. mail/maddy → oci-mail WG IP) emitted
+    # before the wildcard so they override the catch-all. Empty default
+    # keeps zones with no overrides as pure wildcard.
+    records     = buildJson.dns.records or {};
 
     # Generated config fragments
     zoneBlocks = lib.concatMapStringsSep "\n\n" (suffix: ''
@@ -53,12 +57,22 @@
       ${forwarderBlocks}
     '';
 
+    # Render per-zone specific records ahead of the wildcard so they take
+    # precedence over the catch-all. Each record is a {name, type, value}
+    # attrset; output line format: `<name> IN <type> <value>`.
+    mkRecordLines = suffix:
+      let zoneRecords = records.${suffix} or []; in
+      lib.concatMapStringsSep "\n" (r:
+        "      ${r.name}    IN ${r.type}    ${r.value}"
+      ) zoneRecords;
+
     mkZoneText = suffix: ''
       $ORIGIN ${suffix}.
       $TTL 60
       @    IN SOA  hickory-dns.${suffix}. admin.${suffix}. 1 3600 900 604800 60
       @    IN NS   hickory-dns.${suffix}.
       @    IN A    ${caddy_wg_ip}
+${mkRecordLines suffix}
       *    IN A    ${caddy_wg_ip}
     '';
 
