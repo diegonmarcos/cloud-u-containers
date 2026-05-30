@@ -388,13 +388,15 @@ import request_limits
 
     # Bare host → JMAP discovery URL (308 redirect) (well-known — public per spec)
     handle / {
-        redir /.well-known/jmap 308
+        redir / /.well-known/jmap 308
     }
-    reverse_proxy https://10.0.0.3:2443 {
+    handle {
+  reverse_proxy https://10.0.0.3:2443 {
     transport http {
   tls_insecure_skip_verify
 }
   }
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
