@@ -399,7 +399,14 @@ ${plainOut}${sniMuxBlock}
         if hasRedirect then
           # Permanent 308 — preserves method + body, avoids client surprise
           # on POST/PUT. Spec-friendly for /.well-known autoconfig.
-          "        redir ${wk.redirect_to} 308"
+          # Explicit `${wk.path}` matcher disambiguates Caddy's parser: the
+          # 2-arg form `redir /.well-known/jmap 308` is parsed as
+          # `<matcher=/.well-known/jmap> <to=308>` (because the first arg
+          # starts with `/`), so the matcher never fires on `/` and the
+          # directive is a no-op (empty 200). The 3-arg form
+          # `redir / /.well-known/jmap 308` parses unambiguously as
+          # `<matcher=/> <to=/.well-known/jmap> <code=308>`.
+          "        redir ${wk.path} ${wk.redirect_to} 308"
         else if hasTlsSkipVerify then ''
           reverse_proxy https://${wk.upstream} {
             transport http {
