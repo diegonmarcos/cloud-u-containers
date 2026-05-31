@@ -57,24 +57,28 @@
       ${forwarderBlocks}
     '';
 
-    # Render per-zone specific records ahead of the wildcard so they take
-    # precedence over the catch-all. Each record is a {name, type, value}
-    # attrset; output line format: `<name> IN <type> <value>`.
-    mkRecordLines = suffix:
-      let zoneRecords = records.${suffix} or []; in
-      lib.concatMapStringsSep "\n" (r:
-        "      ${r.name}    IN ${r.type}    ${r.value}"
-      ) zoneRecords;
-
-    mkZoneText = suffix: ''
-      $ORIGIN ${suffix}.
-      $TTL 60
-      @    IN SOA  hickory-dns.${suffix}. admin.${suffix}. 1 3600 900 604800 60
-      @    IN NS   hickory-dns.${suffix}.
-      @    IN A    ${caddy_wg_ip}
-${mkRecordLines suffix}
-      *    IN A    ${caddy_wg_ip}
-    '';
+    # Build the zone file via explicit string concatenation rather than a
+    # Nix `''` multi-line string. The `''` syntax's common-leading-
+    # whitespace stripping interacts badly with `${...}` interpolations
+    # that emit embedded newlines — leaving stray indent in front of the
+    # `$ORIGIN` / `$TTL` directives, which Hickory rejects with
+    # `UnexpectedToken(Origin)` (zone directives must start at column 0).
+    # Plain "..." + "..." gives us exact control over every byte of
+    # output regardless of source indentation.
+    mkZoneText = suffix:
+      let
+        zoneRecords = records.${suffix} or [];
+        recordBlock = lib.concatMapStrings (r:
+          "${r.name}  IN ${r.type}  ${r.value}\n"
+        ) zoneRecords;
+      in
+        "$ORIGIN ${suffix}.\n"
+        + "$TTL 60\n"
+        + "@    IN SOA  hickory-dns.${suffix}. admin.${suffix}. 1 3600 900 604800 60\n"
+        + "@    IN NS   hickory-dns.${suffix}.\n"
+        + "@    IN A    ${caddy_wg_ip}\n"
+        + recordBlock
+        + "*    IN A    ${caddy_wg_ip}\n";
 
     # Template list: named.toml + one zone file per declared suffix under zones/
     templates =

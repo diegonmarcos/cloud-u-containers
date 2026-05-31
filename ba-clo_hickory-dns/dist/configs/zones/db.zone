@@ -6,10 +6,9 @@
 ; ║ Source:  a_solutions/ba-clo_hickory-dns/src/flake.nix
 ; ║ Rebuild: a_solutions/ba-clo_hickory-dns/build.sh ship
 ; ╚══════════════════════════════════════════════════════════════════╝
-      $ORIGIN db.
-      $TTL 60
-      @    IN SOA  hickory-dns.db. admin.db. 1 3600 900 604800 60
-      @    IN NS   hickory-dns.db.
-      @    IN A    10.0.0.1
-
-      *    IN A    10.0.0.1
+$ORIGIN db.
+$TTL 60
+@    IN SOA  hickory-dns.db. admin.db. 1 3600 900 604800 60
+@    IN NS   hickory-dns.db.
+@    IN A    10.0.0.1
+*    IN A    10.0.0.1
