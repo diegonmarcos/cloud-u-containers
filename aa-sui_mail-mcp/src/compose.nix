@@ -35,6 +35,18 @@ let
     retry    = proxyCfg.retry;
   };
   proxiedMcpsJson = builtins.toJSON proxiedMcps;
+  # Pin mail/jmap hostnames to the oci-mail WG IP via /etc/hosts so the
+  # TCP connect lands on the correct backend over the mesh while TLS SNI
+  # keeps using the public hostname (cert verification stays green).
+  #
+  # Background: Hickory DNS at 10.0.0.1:53 (the WG-mesh resolver this
+  # container uses via compose `dns:`) resolves `mail.diegonmarcos.com`
+  # via the catch-all wildcard → 10.0.0.1, which is the wrong VM in the
+  # Phase-4 split-edge topology. We can't fix it in Hickory directly
+  # because the REPORT container (also on the WG mesh) needs the same
+  # hostname to keep resolving to the public Caddy edge for its HTTPS
+  # probes — so we override per-container with `extra_hosts` instead.
+  mailWgIp = "10.0.0.3";
 in
 {
   services = {
@@ -43,6 +55,10 @@ in
       container_name = app.container_name;
       ports          = [ "${vmIp}:${port}:${port}" ];
       env_file       = [ ".secrets" ];
+      extra_hosts    = [
+        "${mh.maddy}:${mailWgIp}"
+        "${mh.stalwart}:${mailWgIp}"
+      ];
       environment = {
         PORT                = port;
         MAIL_HOST           = mailHost;

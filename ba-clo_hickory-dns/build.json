@@ -11,18 +11,8 @@
       "1.1.1.1",
       "8.8.8.8"
     ],
-    "_records_doc": "Per-zone specific A records emitted BEFORE the wildcard so they win over the catch-all `* IN A <caddy_wg_ip>`. Points WG-mesh clients at the right backend VM in the Phase-4 split-edge topology — Caddy L4 on oci-analytics (10.0.0.4) only handles external TLS termination; internal mesh clients (mail-mcp, reports) want Maddy/Stalwart directly on oci-mail (10.0.0.3).",
+    "_records_doc": "Per-zone specific A records emitted BEFORE the wildcard so they win over the catch-all `* IN A <caddy_wg_ip>`. NOTE: do NOT override `mail.diegonmarcos.com` / `jmap.diegonmarcos.com` / `imap.diegonmarcos.com` here — those hostnames must still resolve to the public Caddy edge (oci-analytics) for HTTPS probes; the wildcard already covers that. The `app` zone is purely internal so its records can point straight at the backend VMs.",
     "records": {
-      "diegonmarcos.com": [
-        { "name": "mail",          "type": "A", "value": "10.0.0.3" },
-        { "name": "imap",          "type": "A", "value": "10.0.0.3" },
-        { "name": "smtps",         "type": "A", "value": "10.0.0.3" },
-        { "name": "smtp",          "type": "A", "value": "10.0.0.3" },
-        { "name": "imap-stalwart", "type": "A", "value": "10.0.0.3" },
-        { "name": "smtps-stalwart","type": "A", "value": "10.0.0.3" },
-        { "name": "mail-stalwart", "type": "A", "value": "10.0.0.3" },
-        { "name": "jmap",          "type": "A", "value": "10.0.0.3" }
-      ],
       "app": [
         { "name": "maddy",         "type": "A", "value": "10.0.0.3" },
         { "name": "stalwart",      "type": "A", "value": "10.0.0.3" }
