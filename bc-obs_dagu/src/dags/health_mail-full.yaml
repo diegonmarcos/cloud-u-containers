@@ -18,6 +18,7 @@ steps:
       docker run --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh:ro \
+        -e AUTHELIA_BEARER_TOKEN \
         -w /var/lib/dagu/data/cloud-data/reports \
         "$REPORT_IMAGE" mail
 
