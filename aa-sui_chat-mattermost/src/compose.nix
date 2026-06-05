@@ -100,6 +100,20 @@ in
         #   PluginSettings.PluginStates["mattermost-ai"].Enable
         MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE = "true";
 
+        # Disable plugin signature verification. We ship the upstream Agents
+        # plugin tarball verbatim at /mattermost/prepackaged_plugins/ (baked
+        # into the image — see code/arm64/Dockerfile). Mattermost auto-installs
+        # prepackaged plugins on startup but normally requires a Mattermost-
+        # signed signature file (.sig). We don't have access to Mattermost's
+        # signing key, so signature verification has to be off for the
+        # auto-install to succeed. Without this, startup logs:
+        #   "plugin signature verification failed" → plugin not installed.
+        # Trade-off is real: any future locally-uploaded plugin also runs
+        # without signature check. Acceptable here because plugin uploads are
+        # gated by Authelia 2FA at the proxy and the System Console is admin-
+        # only behind that.
+        MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE = "false";
+
         # MCP server registration via env-var override of:
         #   PluginSettings.Plugins["mattermost-ai"].mcpservers
         # The plugin's settings_schema declares a `Config` field of type

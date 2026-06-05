@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/aa-sui_chat-mattermost/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/smdpr1f2xwyfkflsvlq9hgrwra0gpwj3-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
+# Source: /nix/store/i3wjqanfcvyq8p64820v8zlydamig0p1-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  VENDORED — copy of upstream Mattermost server/build/Dockerfile  ║
 # ║                                                                  ║
@@ -68,23 +68,24 @@ RUN mkdir -p /mattermost/.postgresql \
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║ LOCAL ADDITION (not in upstream Dockerfile) — Agents plugin       ║
 # ║                                                                  ║
-# ║ Mattermost Team Edition ships ZERO plugins by default; the        ║
-# ║ Agents plugin (com.mattermost.agents) we want for the LLM +       ║
-# ║ MCP workflow has to be baked in or installed via System Console.  ║
-# ║ We bake it during the builder stage so the final image is         ║
-# ║ self-contained and reproducible: the plugin URL is pinned via     ║
-# ║ build.json#docker.build_args.MM_PLUGIN_AGENTS_URL.                ║
+# ║ Bake the Agents plugin as a PREPACKAGED PLUGIN. Mattermost's      ║
+# ║ startup scans /mattermost/prepackaged_plugins/ for *.tar.gz       ║
+# ║ bundles and auto-installs them on first boot — exactly the path   ║
+# ║ Mattermost is designed for vendor-shipped plugins (app/plugin.go: ║
+# ║ "Processing prepackaged plugin").                                 ║
 # ║                                                                  ║
-# ║ Tarball structure (standard mattermost plugin):                   ║
-# ║   <plugin-id>/                                                    ║
-# ║     plugin.json                                                   ║
-# ║     server/linux-arm64/plugin                                     ║
-# ║     webapp/dist/main.js                                           ║
+# ║ Why NOT extract into /mattermost/plugins/ directly: the plugin    ║
+# ║ "sync from file store" logic runs first on startup; when env      ║
+# ║ var MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE=true marks the     ║
+# ║ plugin as "managed" but the file store is empty, the server      ║
+# ║ REMOVES the locally-extracted plugin before activating it        ║
+# ║ ("Removing local installation of managed plugin before sync",    ║
+# ║ app/plugin.go:288). The prepackaged path bypasses that sync.     ║
 # ║                                                                  ║
-# ║ Extracting into /mattermost/plugins/ creates the                  ║
-# ║ com.mattermost.agents/ subdir; Mattermost server scans the dir    ║
-# ║ on startup and activates plugins whose PluginStates.<id>.Enable   ║
-# ║ is true (set via MM_PLUGINSETTINGS_PLUGINSTATES_..._ENABLE env).  ║
+# ║ Signature check (MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE) must  ║
+# ║ be set to false at runtime — we ship the upstream tarball         ║
+# ║ verbatim and have no access to Mattermost's signing key. Set      ║
+# ║ via compose.nix env, not here in the Dockerfile.                  ║
 # ║                                                                  ║
 # ║ ARG defaults to empty so existing TE-without-plugin deployments   ║
 # ║ keep working unchanged; only services that pass the build_arg     ║
@@ -92,9 +93,10 @@ RUN mkdir -p /mattermost/.postgresql \
 # ╚══════════════════════════════════════════════════════════════════╝
 ARG MM_PLUGIN_AGENTS_URL=""
 RUN if [ -n "$MM_PLUGIN_AGENTS_URL" ]; then \
-      cd /mattermost/plugins \
-      && curl -L "$MM_PLUGIN_AGENTS_URL" | tar -xz \
-      && chown -R mattermost:mattermost /mattermost/plugins ; \
+      mkdir -p /mattermost/prepackaged_plugins \
+      && curl -L "$MM_PLUGIN_AGENTS_URL" \
+           -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz \
+      && chown -R mattermost:mattermost /mattermost/prepackaged_plugins ; \
     fi
 
 # Final stage using distroless for minimal attack surface
