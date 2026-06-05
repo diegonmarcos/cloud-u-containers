@@ -62,8 +62,13 @@ in
         MM_DISPLAYSETTINGS_EXPERIMENTALTIMEZONE              = "true";
         MM_LOCALIZATIONSETTINGS_DEFAULTCLIENTLOCALE          = "en";
         MM_DISPLAYSETTINGS_CLOCKFORMAT                       = "24h";
-        MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS = "localhost";
-        MM_SERVICESETTINGS_LISTENADDRESS                     = ":${toString appPort}";
+        MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS = "localhost,${selfWgIp}";
+        # WG-bind ONLY: explicit interface binding to the wg0 mesh IP for this
+        # service. Was `:${appPort}` (all interfaces — including the oci-apps
+        # public IP). Now only the WG mesh can reach the chat container; public
+        # traffic must come through Caddy on gcp-proxy → WG tunnel → here.
+        # Per feedback `feedback_ssh_wg_only.md` extended to app-port binds.
+        MM_SERVICESETTINGS_LISTENADDRESS                     = "${selfWgIp}:${toString appPort}";
 
         # ── Stage 3: SMTP / email notifications via Stalwart ────────────────
         # FROM address is me@diegonmarcos.com (Stalwart-hosted mailbox).
@@ -84,17 +89,33 @@ in
         MM_EMAILSETTINGS_ENABLESMTPAUTH                      = "true";
 
         # ── Stage 4: Agents plugin (bundled in TE 10.3+; v2 in TE 11.7) ─────
-        # Enabling the plugin via env var. After deploy, configure LLM
-        # providers + register the 6 HTTP MCP servers in System Console →
-        # Plugins → Agents. MCP URLs to register (each requires an Authelia
-        # bearer token in the Header config since they sit behind 2FA):
-        #   cloud-infra      https://mcp.diegonmarcos.com/c3-infra-mcp/mcp
-        #   cloud-services   https://mcp.diegonmarcos.com/c3-services-mcp/mcp
-        #   mattermost       https://mcp.diegonmarcos.com/mattermost-mcp/mcp
-        #   mail-mcp         https://mcp.diegonmarcos.com/mail-mcp/mcp
-        #   google-workspace https://mcp.diegonmarcos.com/g-workspace/mcp
-        #   google-personal  https://mcp.diegonmarcos.com/g-personal/mcp
+        # Plugin enable via env-var override of config.json:
+        #   PluginSettings.PluginStates["com.mattermost.agents"].Enable
         MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_AGENTS_ENABLE = "true";
+
+        # MCP server registration via env-var override of:
+        #   PluginSettings.Plugins["com.mattermost.agents"].mcpservers
+        # Mattermost accepts JSON-encoded strings for nested plugin
+        # config values. Each server entry carries the Authelia bearer
+        # token as an Authorization header — token comes from .secrets
+        # via docker compose's ${VAR} interpolation at compose-up time
+        # (BEARER_TOKEN is in src/secrets.yaml under sops).
+        #
+        # If Mattermost's env-var → plugin-config mapping doesn't pick up
+        # this nested key on TE 11.7 (the docs are ambiguous about
+        # plugin-specific overrides), the same six servers can be added
+        # in System Console → Plugins → Agents — the URLs match.
+        MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_AGENTS_MCPSERVERS = builtins.toJSON [
+          { name = "cloud-infra";      url = "https://mcp.${base_domain}/c3-infra-mcp/mcp";    headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "cloud-services";   url = "https://mcp.${base_domain}/c3-services-mcp/mcp"; headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "mattermost";       url = "https://mcp.${base_domain}/mattermost-mcp/mcp";  headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "mail-mcp";         url = "https://mcp.${base_domain}/mail-mcp/mcp";        headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "google-workspace"; url = "https://mcp.${base_domain}/g-workspace/mcp";     headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "google-personal";  url = "https://mcp.${base_domain}/g-personal/mcp";      headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+        ];
+        # Enable the MCP subsystem of the Agents plugin (off by default
+        # pre-11.7; on by default in 11.7+).
+        MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_AGENTS_MCPENABLED = "true";
       };
       volumes = [
         "mattermost_config:/mattermost/config"
@@ -151,7 +172,10 @@ in
       environment = {
         NTFY_URL                        = ntfyUrl;
         TOPICS                          = topicsCsv;
-        MM_URL                          = "http://localhost:${toString appPort}";
+        # Mattermost now listens on ${selfWgIp}:${appPort} (WG-bind ONLY), so
+        # the bots service must reach it via the WG IP too — localhost no
+        # longer carries an mm listener.
+        MM_URL                          = "http://${selfWgIp}:${toString appPort}";
         C3_API_URL                      = c3ApiUrl;
         C3_BIND_IP                      = selfWgIp;
         C3_PORT                         = toString c3Port;
