@@ -26,9 +26,7 @@
     "remote_path": "/opt/containers/chat-mattermost",
     "compose_flags": "--build"
   },
-  "compose": {
-    "pre_hook": "init-dirs.sh"
-  },
+  "compose": {},
   "proxy": {
     "primary": {
       "domain": "chat.diegonmarcos.com",
