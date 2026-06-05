@@ -33,11 +33,9 @@
     "primary": {
       "domain": "chat.diegonmarcos.com",
       "auth": "two_factor",
-      "paths": {
-        "/api/v4/*": {
-          "auth": "bypass"
-        }
-      }
+      "bypass_paths": [
+        "/api/v4/*"
+      ]
     }
   },
   "health": {
