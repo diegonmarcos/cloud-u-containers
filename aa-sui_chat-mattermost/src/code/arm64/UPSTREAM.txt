@@ -8,8 +8,29 @@ commit_at:  2026-06-05T08:29:45Z
 fetched_at: 2026-06-05
 
 Files vendored (verbatim) from server/build/ of upstream:
-  - Dockerfile  (this directory)
+  - Dockerfile  (this directory) — with a LOCAL ADDITION at the bottom of
+                                   the builder stage to bake the Agents
+                                   plugin (banner-marked, additive only)
   - passwd      (this directory)
+
+Plugin pin (Agents — not part of upstream Mattermost-Team)
+---------------------------------------------------------
+repo:    github.com/mattermost/mattermost-plugin-agents
+release: v2.3.0
+arch:    linux-arm64
+url:     https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz
+fetched: 2026-06-05
+
+Why baked into image: TE binary ships with ZERO plugins; volume-mounting
+/mattermost/plugins over the image dir shadows the baked plugin. So both
+plugin volumes (/mattermost/plugins + /mattermost/client/plugins) are
+NOT mounted on chat-mattermost — the image IS the source of truth for
+which plugins are installed.
+
+Update procedure for the plugin:
+  1. Bump v2.3.0 → new release in this file.
+  2. Update build.json#docker.build_args.MM_PLUGIN_AGENTS_URL.
+  3. Push → Ship → new image carries the new plugin version.
 
 The Dockerfile takes `--build-arg MM_PACKAGE=<tarball-URL>` to control which
 Mattermost binary tarball is installed. We override at build time to point at

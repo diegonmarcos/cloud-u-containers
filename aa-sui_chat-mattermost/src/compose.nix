@@ -121,8 +121,16 @@ in
         "mattermost_config:/mattermost/config"
         "mattermost_data:/mattermost/data"
         "mattermost_logs:/mattermost/logs"
-        "mattermost_plugins:/mattermost/plugins"
-        "mattermost_client_plugins:/mattermost/client/plugins"
+        # /mattermost/plugins + /mattermost/client/plugins are NOT volume-
+        # mounted. They live inside the image (baked at build time from
+        # build.json#docker.build_args.MM_PLUGIN_AGENTS_URL). Volume-mounting
+        # an empty named volume over them would shadow the baked plugin, so
+        # Mattermost would see /api/v4/plugins → [active:[], inactive:[]]
+        # (verified empirically on commit cf9cb0f5c — the env-var enable
+        # was silently dropped because no plugin was installed under it).
+        # Trade-off: System Console "Install Plugin" uploads can't persist
+        # across restarts. To add another plugin, append a build_arg with
+        # its tarball URL and bump the image.
       ];
       depends_on.postgres = { condition = "service_healthy"; };
       deploy.resources = {
@@ -200,8 +208,8 @@ in
     mattermost_config         = {};
     mattermost_data           = {};
     mattermost_logs           = {};
-    mattermost_plugins        = {};
-    mattermost_client_plugins = {};
+    # mattermost_plugins / mattermost_client_plugins intentionally removed —
+    # the agents plugin is baked into the image (see app.volumes comment).
     mattermost_postgres       = {};
   };
 }
