@@ -36,7 +36,13 @@ The Dockerfile takes `--build-arg MM_PACKAGE=<tarball-URL>` to control which
 Mattermost binary tarball is installed. We override at build time to point at
 the arm64 tarball:
 
-  https://releases.mattermost.com/11.7.2/mattermost-team-11.7.2-linux-arm64.tar.gz
+  https://releases.mattermost.com/11.8.0-rc5/mattermost-team-11.8.0-rc5-linux-arm64.tar.gz
+
+Why a release candidate: the Agents plugin v2.3.0 (released 2026-06-05)
+bumped its `min_server_version` from 6.2.1 (v2.2.0 and prior) to 11.8.0.
+We need that floor to load v2.3.0; 11.8.0 stable hasn't shipped yet
+(11.8.0-rc5 is the latest available at releases.mattermost.com). When
+11.8.0 stable lands, bump MM_PACKAGE accordingly.
 
 Updating the version
 --------------------

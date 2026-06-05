@@ -88,24 +88,36 @@ in
         MM_EMAILSETTINGS_SKIPSERVERCERTIFICATEVERIFICATION   = "false";
         MM_EMAILSETTINGS_ENABLESMTPAUTH                      = "true";
 
-        # ── Stage 4: Agents plugin (bundled in TE 10.3+; v2 in TE 11.7) ─────
+        # ── Stage 4: Agents plugin (from mattermost/mattermost-plugin-agents) ─
+        # Plugin ID is `mattermost-ai` (verified from v2.3.0 plugin.json).
+        # Mattermost converts dots/hyphens in plugin IDs to underscores and
+        # uppercases for env-var lookup. The env-var keys below are the
+        # cleaned-up versions of the original com.mattermost.agents naming
+        # I used by mistake in earlier commits (those env vars were silent
+        # no-ops because the plugin ID didn't match).
+        #
         # Plugin enable via env-var override of config.json:
-        #   PluginSettings.PluginStates["com.mattermost.agents"].Enable
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_AGENTS_ENABLE = "true";
+        #   PluginSettings.PluginStates["mattermost-ai"].Enable
+        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE = "true";
 
         # MCP server registration via env-var override of:
-        #   PluginSettings.Plugins["com.mattermost.agents"].mcpservers
-        # Mattermost accepts JSON-encoded strings for nested plugin
-        # config values. Each server entry carries the Authelia bearer
-        # token as an Authorization header — token comes from .secrets
-        # via docker compose's ${VAR} interpolation at compose-up time
-        # (BEARER_TOKEN is in src/secrets.yaml under sops).
+        #   PluginSettings.Plugins["mattermost-ai"].mcpservers
+        # The plugin's settings_schema declares a `Config` field of type
+        # "custom" — meaning the System Console UI is a React panel rather
+        # than standard form fields. Whether Mattermost's env-var → nested
+        # plugin-config mapping accepts a JSON-encoded array here is
+        # unverified on v2.3.0 + TE 11.8-rc5. If it doesn't bind, the same
+        # six entries can be added in System Console → Plugins → Agents.
+        # Either way the data is declared in source.
         #
-        # If Mattermost's env-var → plugin-config mapping doesn't pick up
-        # this nested key on TE 11.7 (the docs are ambiguous about
-        # plugin-specific overrides), the same six servers can be added
-        # in System Console → Plugins → Agents — the URLs match.
-        MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_AGENTS_MCPSERVERS = builtins.toJSON [
+        # Bearer token interpolation: docker compose substitutes ${VAR}
+        # from the project shell env / a .env file in the project dir at
+        # compose-up time. .secrets (env_file) is NOT visible to this
+        # substitution — it's runtime-only inside the container. The
+        # current shape will resolve to literal "Bearer " (empty) until
+        # BEARER_TOKEN is exposed at compose-parse time. Tracked as a
+        # follow-up; the env-var path may not even take effect first.
+        MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_MCPSERVERS = builtins.toJSON [
           { name = "cloud-infra";      url = "https://mcp.${base_domain}/c3-infra-mcp/mcp";    headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "cloud-services";   url = "https://mcp.${base_domain}/c3-services-mcp/mcp"; headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "mattermost";       url = "https://mcp.${base_domain}/mattermost-mcp/mcp";  headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
@@ -113,9 +125,7 @@ in
           { name = "google-workspace"; url = "https://mcp.${base_domain}/g-workspace/mcp";     headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "google-personal";  url = "https://mcp.${base_domain}/g-personal/mcp";      headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
         ];
-        # Enable the MCP subsystem of the Agents plugin (off by default
-        # pre-11.7; on by default in 11.7+).
-        MM_PLUGINSETTINGS_PLUGINS_COM_MATTERMOST_AGENTS_MCPENABLED = "true";
+        MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_MCPENABLED = "true";
       };
       volumes = [
         "mattermost_config:/mattermost/config"
