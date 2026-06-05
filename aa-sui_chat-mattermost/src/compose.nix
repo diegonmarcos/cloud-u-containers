@@ -64,6 +64,37 @@ in
         MM_DISPLAYSETTINGS_CLOCKFORMAT                       = "24h";
         MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS = "localhost";
         MM_SERVICESETTINGS_LISTENADDRESS                     = ":${toString appPort}";
+
+        # ── Stage 3: SMTP / email notifications via Stalwart ────────────────
+        # FROM address is me@diegonmarcos.com (Stalwart-hosted mailbox).
+        # Server is the Stalwart SMTPS endpoint on oci-mail (port 2465 is
+        # the host-mapped form of container port 465 — implicit TLS).
+        # MM_EMAILSETTINGS_SMTPPASSWORD lives in src/secrets.yaml (sops);
+        # provision the me@ account password in Stalwart admin first, then
+        # `sops src/secrets.yaml` and add the encrypted value.
+        MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS              = "true";
+        MM_EMAILSETTINGS_FEEDBACKEMAIL                       = "me@diegonmarcos.com";
+        MM_EMAILSETTINGS_FEEDBACKNAME                        = "Mattermost";
+        MM_EMAILSETTINGS_REPLYTOADDRESS                      = "me@diegonmarcos.com";
+        MM_EMAILSETTINGS_SMTPSERVER                          = "smtp.diegonmarcos.com";
+        MM_EMAILSETTINGS_SMTPPORT                            = "2465";
+        MM_EMAILSETTINGS_CONNECTIONSECURITY                  = "TLS";
+        MM_EMAILSETTINGS_SMTPUSERNAME                        = "me@diegonmarcos.com";
+        MM_EMAILSETTINGS_SKIPSERVERCERTIFICATEVERIFICATION   = "false";
+        MM_EMAILSETTINGS_ENABLESMTPAUTH                      = "true";
+
+        # ── Stage 4: Agents plugin (bundled in TE 10.3+; v2 in TE 11.7) ─────
+        # Enabling the plugin via env var. After deploy, configure LLM
+        # providers + register the 6 HTTP MCP servers in System Console →
+        # Plugins → Agents. MCP URLs to register (each requires an Authelia
+        # bearer token in the Header config since they sit behind 2FA):
+        #   cloud-infra      https://mcp.diegonmarcos.com/c3-infra-mcp/mcp
+        #   cloud-services   https://mcp.diegonmarcos.com/c3-services-mcp/mcp
+        #   mattermost       https://mcp.diegonmarcos.com/mattermost-mcp/mcp
+        #   mail-mcp         https://mcp.diegonmarcos.com/mail-mcp/mcp
+        #   google-workspace https://mcp.diegonmarcos.com/g-workspace/mcp
+        #   google-personal  https://mcp.diegonmarcos.com/g-personal/mcp
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_AGENTS_ENABLE = "true";
       };
       volumes = [
         "mattermost_config:/mattermost/config"
