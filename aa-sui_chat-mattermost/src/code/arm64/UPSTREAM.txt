@@ -59,5 +59,21 @@ Updating the version
 
 Drift policy
 ------------
-Keep the Dockerfile byte-identical to upstream below the vendored banner.
-Any local drift hides upstream security patches.
+Keep the Dockerfile byte-identical to upstream below the vendored banner,
+EXCEPT for two intentional local divergences (both banner-marked, additive
+or removal only — never silent edits to upstream logic):
+
+  1. Builder stage: ARG MM_PLUGIN_AGENTS_URL + RUN block that extracts the
+     plugin tarball into /mattermost/plugins. Banner-marked.
+
+  2. Final stage VOLUME directive: /mattermost/plugins and
+     /mattermost/client/plugins are REMOVED from the VOLUME list. Reason:
+     newer Docker + buildkit do NOT auto-populate VOLUME-declared paths
+     from image content when the container starts. The container would
+     mount an empty volume on top of the image's /mattermost/plugins/
+     dir, shadowing the baked plugin. Banner-marked. Without VOLUME,
+     docker mounts nothing at that path and the image's content stays
+     visible.
+
+When bumping upstream branches, re-apply both divergences and audit the
+upstream diff for new security patches against the regions we modified.
