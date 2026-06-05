@@ -33,9 +33,12 @@ let
   dbPort     = buildJson.ports.db;
   c3Port     = buildJson.c3.port;
   c3ApiUrl   = buildJson.c3.api_url;
-  ollamaUrl  = "http://${svc.ollama.ip}:${toString svc.ollama.ports.app}";
+  # Ollama service was renamed: cluster cloud-data now exposes "ollama-hai"
+  # (the Haiku-tier Ollama runner on oci-apps-2) instead of plain "ollama".
+  # Quoted lookup because hyphens aren't valid Nix attr-path bare identifiers.
+  ollamaUrl  = "http://${svc."ollama-hai".ip}:${toString svc."ollama-hai".ports.app}";
   ollamaModel = buildJson.ollama.model;
-  ollamaVm    = svc.ollama.vm;
+  ollamaVm    = svc."ollama-hai".vm;
   ntfyUrl    = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
   topicsCsv  = builtins.concatStringsSep "," ntfyTopics;
 in
