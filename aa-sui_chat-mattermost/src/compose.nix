@@ -131,18 +131,17 @@ in
         "mattermost_config:/mattermost/config"
         "mattermost_data:/mattermost/data"
         "mattermost_logs:/mattermost/logs"
-        # Plugin volumes are mounted (so System Console "Install Plugin"
-        # uploads persist across restarts). The agents plugin is baked
-        # into the image at /mattermost/plugins/mattermost-ai/; docker
-        # auto-populates a named volume from the image ONLY on first
-        # creation. Empty pre-existing volumes (from the Stage 2
-        # migration that cp -a'd empty plugin dirs over) shadow the
-        # image content, so the migration pre_hook now also drops the
-        # empty plugin volumes once → next compose-up auto-populates
-        # them from the image. See migrate-from-mattermost-bots.sh:
-        # section 4 + marker .plugin-volumes-seeded.
-        "mattermost_plugins:/mattermost/plugins"
-        "mattermost_client_plugins:/mattermost/client/plugins"
+        # Plugin dirs are intentionally NOT volume-mounted. The image is
+        # the source of truth for installed plugins (see code/arm64/
+        # UPSTREAM.txt — "Why baked into image"). Mounting a named volume
+        # over /mattermost/plugins shadows the baked plugin: docker only
+        # auto-populates a named volume from the image when the volume is
+        # created IMPLICITLY by the container start; compose creates
+        # named volumes EXPLICITLY ahead of time, so the auto-populate
+        # never fires and the empty volume shadows the image content.
+        # Trade-off: plugin uploads via Mattermost System Console don't
+        # survive a container restart; install plugins by rebuilding the
+        # image instead (build_args.MM_PLUGIN_*_URL in build.json).
       ];
       depends_on.postgres = { condition = "service_healthy"; };
       deploy.resources = {
@@ -220,8 +219,6 @@ in
     mattermost_config         = {};
     mattermost_data           = {};
     mattermost_logs           = {};
-    mattermost_plugins        = {};
-    mattermost_client_plugins = {};
     mattermost_postgres       = {};
   };
 }
