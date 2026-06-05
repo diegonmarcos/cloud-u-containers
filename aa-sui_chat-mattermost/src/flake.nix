@@ -37,6 +37,15 @@
           ./code/ntfy-bridge.py
           ./code/requirements-bridge.txt
         ];
+        # Type-A "service-shipped Dockerfile" — vendored Mattermost upstream
+        # release-11.7/server/build/Dockerfile (see ./code/arm64/UPSTREAM.txt
+        # for pin SHA + bump procedure). The build script reads
+        # build.json#docker.build_args to set --build-arg MM_PACKAGE pointing
+        # at the arm64 tarball at build time.
+        nativeBuild = {
+          dockerfile = ./code/arm64/Dockerfile;
+          extraFiles = [ ./code/arm64/passwd ];
+        };
         title = "Mattermost Team Chat (v2)";
       };
     });

@@ -1,4 +1,4 @@
-# compose.nix — docker-compose spec for mattermost-bots.
+# compose.nix — docker-compose spec for chat-mattermost.
 # engine.nix serialises this attrset via lib.generators.toYAML and deep-merges
 # _shared/compose-defaults.json into every service.
 #
@@ -28,7 +28,7 @@ let
   dbUser = db.db_user;
 
   # Runtime WG addressing (from cloud-data via container.services) and ports
-  selfWgIp   = svc."mattermost-bots".ip;          # VM WG IP for this service
+  selfWgIp   = svc."chat-mattermost".ip;          # VM WG IP for this service
   appPort    = buildJson.ports.app;
   dbPort     = buildJson.ports.db;
   c3Port     = buildJson.c3.port;
