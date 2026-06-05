@@ -55,6 +55,38 @@ RUN mkdir -p /mattermost/data /mattermost/plugins /mattermost/client/plugins \
 RUN mkdir -p /mattermost/.postgresql \
   && chmod 700 /mattermost/.postgresql
 
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ LOCAL ADDITION (not in upstream Dockerfile) — Agents plugin       ║
+# ║                                                                  ║
+# ║ Mattermost Team Edition ships ZERO plugins by default; the        ║
+# ║ Agents plugin (com.mattermost.agents) we want for the LLM +       ║
+# ║ MCP workflow has to be baked in or installed via System Console.  ║
+# ║ We bake it during the builder stage so the final image is         ║
+# ║ self-contained and reproducible: the plugin URL is pinned via     ║
+# ║ build.json#docker.build_args.MM_PLUGIN_AGENTS_URL.                ║
+# ║                                                                  ║
+# ║ Tarball structure (standard mattermost plugin):                   ║
+# ║   <plugin-id>/                                                    ║
+# ║     plugin.json                                                   ║
+# ║     server/linux-arm64/plugin                                     ║
+# ║     webapp/dist/main.js                                           ║
+# ║                                                                  ║
+# ║ Extracting into /mattermost/plugins/ creates the                  ║
+# ║ com.mattermost.agents/ subdir; Mattermost server scans the dir    ║
+# ║ on startup and activates plugins whose PluginStates.<id>.Enable   ║
+# ║ is true (set via MM_PLUGINSETTINGS_PLUGINSTATES_..._ENABLE env).  ║
+# ║                                                                  ║
+# ║ ARG defaults to empty so existing TE-without-plugin deployments   ║
+# ║ keep working unchanged; only services that pass the build_arg     ║
+# ║ get the plugin baked in.                                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+ARG MM_PLUGIN_AGENTS_URL=""
+RUN if [ -n "$MM_PLUGIN_AGENTS_URL" ]; then \
+      cd /mattermost/plugins \
+      && curl -L "$MM_PLUGIN_AGENTS_URL" | tar -xz \
+      && chown -R mattermost:mattermost /mattermost/plugins ; \
+    fi
+
 # Final stage using distroless for minimal attack surface
 FROM gcr.io/distroless/base-debian12
 

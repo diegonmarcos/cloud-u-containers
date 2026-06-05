@@ -72,9 +72,7 @@
       "volumes": [
         "./data/mattermost/config:/mattermost/config",
         "./data/mattermost/data:/mattermost/data",
-        "./data/mattermost/logs:/mattermost/logs",
-        "./data/mattermost/plugins:/mattermost/plugins",
-        "./data/mattermost/client-plugins:/mattermost/client/plugins"
+        "./data/mattermost/logs:/mattermost/logs"
       ],
       "env_file": true,
       "depends_on": [
@@ -130,7 +128,8 @@
     "dockerfile": "Dockerfile",
     "arch": "arm64",
     "build_args": {
-      "MM_PACKAGE": "https://releases.mattermost.com/11.7.2/mattermost-team-11.7.2-linux-arm64.tar.gz"
+      "MM_PACKAGE": "https://releases.mattermost.com/11.7.2/mattermost-team-11.7.2-linux-arm64.tar.gz",
+      "MM_PLUGIN_AGENTS_URL": "https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz"
     }
   },
   "api": {
