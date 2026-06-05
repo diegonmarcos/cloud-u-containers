@@ -72,7 +72,9 @@
       "volumes": [
         "./data/mattermost/config:/mattermost/config",
         "./data/mattermost/data:/mattermost/data",
-        "./data/mattermost/logs:/mattermost/logs"
+        "./data/mattermost/logs:/mattermost/logs",
+        "./data/mattermost/plugins:/mattermost/plugins",
+        "./data/mattermost/client-plugins:/mattermost/client/plugins"
       ],
       "env_file": true,
       "depends_on": [

@@ -131,16 +131,18 @@ in
         "mattermost_config:/mattermost/config"
         "mattermost_data:/mattermost/data"
         "mattermost_logs:/mattermost/logs"
-        # /mattermost/plugins + /mattermost/client/plugins are NOT volume-
-        # mounted. They live inside the image (baked at build time from
-        # build.json#docker.build_args.MM_PLUGIN_AGENTS_URL). Volume-mounting
-        # an empty named volume over them would shadow the baked plugin, so
-        # Mattermost would see /api/v4/plugins → [active:[], inactive:[]]
-        # (verified empirically on commit cf9cb0f5c — the env-var enable
-        # was silently dropped because no plugin was installed under it).
-        # Trade-off: System Console "Install Plugin" uploads can't persist
-        # across restarts. To add another plugin, append a build_arg with
-        # its tarball URL and bump the image.
+        # Plugin volumes are mounted (so System Console "Install Plugin"
+        # uploads persist across restarts). The agents plugin is baked
+        # into the image at /mattermost/plugins/mattermost-ai/; docker
+        # auto-populates a named volume from the image ONLY on first
+        # creation. Empty pre-existing volumes (from the Stage 2
+        # migration that cp -a'd empty plugin dirs over) shadow the
+        # image content, so the migration pre_hook now also drops the
+        # empty plugin volumes once → next compose-up auto-populates
+        # them from the image. See migrate-from-mattermost-bots.sh:
+        # section 4 + marker .plugin-volumes-seeded.
+        "mattermost_plugins:/mattermost/plugins"
+        "mattermost_client_plugins:/mattermost/client/plugins"
       ];
       depends_on.postgres = { condition = "service_healthy"; };
       deploy.resources = {
@@ -218,8 +220,8 @@ in
     mattermost_config         = {};
     mattermost_data           = {};
     mattermost_logs           = {};
-    # mattermost_plugins / mattermost_client_plugins intentionally removed —
-    # the agents plugin is baked into the image (see app.volumes comment).
+    mattermost_plugins        = {};
+    mattermost_client_plugins = {};
     mattermost_postgres       = {};
   };
 }
