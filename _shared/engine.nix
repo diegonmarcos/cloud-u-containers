@@ -184,15 +184,31 @@ let
   # ──────────────────────────────────────────────────────────────
   mkCodeDockerfile = arch:
     if nativeBuild != null then
-      pkgs.writeText "Dockerfile" ''
-        ${mkBanner "#"}# Type A — own code, arch=${arch}
-        FROM ${nativeBuild.baseImage or "debian:bookworm-slim"}
-        ${lib.optionalString (nativeBuild.apt or "" != "")
-          "RUN apt-get update && apt-get install -y --no-install-recommends ${nativeBuild.apt} && rm -rf /var/lib/apt/lists/*"}
-        COPY ${baseNameOf nativeBuild.binary} /usr/local/bin/${baseNameOf nativeBuild.binary}
-        LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-        CMD ["${baseNameOf nativeBuild.binary}"]
-      ''
+      # Two Type-A flavors:
+      #   (a) nativeBuild.dockerfile set → vendor a service-shipped Dockerfile
+      #       (multi-stage upstream Dockerfile, e.g. Mattermost release-11.7).
+      #       Engine prepends a banner and copies the file verbatim; the service
+      #       owns the build recipe. Pair with `nativeBuild.extraFiles` for any
+      #       sibling files the Dockerfile expects in the build context (e.g.
+      #       a `passwd` file COPY'd into a distroless stage).
+      #   (b) no dockerfile → engine generates the legacy single-binary recipe
+      #       (FROM base + COPY binary + CMD).
+      if (nativeBuild.dockerfile or null) != null then
+        pkgs.writeText "Dockerfile" ''
+          ${mkBanner "#"}# Type A — service-shipped Dockerfile, arch=${arch}
+          # Source: ${toString nativeBuild.dockerfile}
+          ${builtins.readFile nativeBuild.dockerfile}
+        ''
+      else
+        pkgs.writeText "Dockerfile" ''
+          ${mkBanner "#"}# Type A — own code, arch=${arch}
+          FROM ${nativeBuild.baseImage or "debian:bookworm-slim"}
+          ${lib.optionalString (nativeBuild.apt or "" != "")
+            "RUN apt-get update && apt-get install -y --no-install-recommends ${nativeBuild.apt} && rm -rf /var/lib/apt/lists/*"}
+          COPY ${baseNameOf nativeBuild.binary} /usr/local/bin/${baseNameOf nativeBuild.binary}
+          LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+          CMD ["${baseNameOf nativeBuild.binary}"]
+        ''
     else
       let
         upstream = buildJson.upstream_image or (container.container.image or "alpine:latest");
@@ -274,11 +290,18 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
   cp ${manifestJson} $out/manifest.json
 
   # ── code/<arch>/ — Dockerfile per arch, .skip marker for others ──
+  # extraFiles (Type A vendored multi-file build context, e.g. the `passwd`
+  # file Mattermost's distroless final stage COPYs) land next to the
+  # Dockerfile so the docker build context is complete.
   ${lib.concatMapStringsSep "\n" (arch:
     let df = mkCodeDockerfile arch; in
     if lib.elem arch declaredArchs then ''
       mkdir -p $out/code/${arch}
       cp ${df} $out/code/${arch}/Dockerfile
+      ${lib.optionalString (nativeBuild != null && (nativeBuild.extraFiles or []) != [])
+        (lib.concatMapStringsSep "\n" (f:
+          "cp ${f} $out/code/${arch}/${baseNameOf (toString f)}"
+        ) (nativeBuild.extraFiles or []))}
     '' else ''
       mkdir -p $out/code/${arch}
       touch $out/code/${arch}/.skip

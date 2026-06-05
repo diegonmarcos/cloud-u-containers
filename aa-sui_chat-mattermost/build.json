@@ -1,6 +1,6 @@
 {
-  "name": "mattermost-bots",
-  "description": "Mattermost team chat with ntfy bridge and C3 command bot",
+  "name": "chat-mattermost",
+  "description": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot",
   "port": 8065,
   "dns": "mattermost.app",
   "timezone": "America/Chicago",
@@ -23,7 +23,7 @@
   "domain": "chat.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/mattermost-bots",
+    "remote_path": "/opt/containers/chat-mattermost",
     "compose_flags": "--build"
   },
   "compose": {
@@ -58,7 +58,7 @@
   "containers": {
     "app": {
       "container_name": "mattermost",
-      "image": "mattermost/mattermost-team-edition:10.11",
+      "image": "ghcr.io/diegonmarcos/chat-mattermost-binaries:latest",
       "port": 8065,
       "port_env": "MM_SERVICESETTINGS_LISTENADDRESS",
       "dns": "mattermost.app",
@@ -128,9 +128,12 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "mattermost-bots",
+    "image": "chat-mattermost",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "build_args": {
+      "MM_PACKAGE": "https://releases.mattermost.com/11.7.2/mattermost-team-11.7.2-linux-arm64.tar.gz"
+    }
   },
   "api": {
     "type": "custom-rest",
