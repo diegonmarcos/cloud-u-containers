@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/aa-sui_chat-mattermost/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/2qvibsdk3cwsq07zrqrch162mmf3dk5x-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
+# Source: /nix/store/smdpr1f2xwyfkflsvlq9hgrwra0gpwj3-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  VENDORED — copy of upstream Mattermost server/build/Dockerfile  ║
 # ║                                                                  ║
@@ -146,6 +146,18 @@ CMD ["/mattermost/bin/mattermost"]
 
 EXPOSE 8065 8067 8074 8075
 
-# Declare volumes for mount point directories
-VOLUME ["/mattermost/data", "/mattermost/logs", "/mattermost/config", "/mattermost/plugins", "/mattermost/client/plugins"]
+# Declare volumes for mount point directories.
+# LOCAL DIVERGENCE from upstream: /mattermost/plugins + /mattermost/client/plugins
+# REMOVED from this list. Upstream ships the binary with ZERO plugins and expects
+# the operator to install at runtime via System Console (which writes into the
+# named volume). We bake the Agents plugin into the image and want the running
+# container to SEE the baked content. With newer Docker + buildkit, VOLUME-declared
+# paths do NOT reliably auto-populate from the image's directory content when the
+# container starts — auto-populate was deprecated for buildkit-built images and
+# stopped firing for both named AND anonymous volumes (verified empirically on
+# oci-apps 2026-06-05 — empty 4KB anon volume mounted on top of image's 60+MB
+# plugin tree). Without the VOLUME directive, docker mounts nothing at this path
+# and the image's /mattermost/plugins/mattermost-ai/ stays visible to the runtime.
+# Plugin updates ship via image rebuild (build.json#docker.build_args.MM_PLUGIN_*_URL).
+VOLUME ["/mattermost/data", "/mattermost/logs", "/mattermost/config"]
 
