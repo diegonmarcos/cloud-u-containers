@@ -33,9 +33,15 @@
           inherit buildJson container base_domain ntfyTopics;
         };
         # ntfy-bridge.py + requirements are mounted from dist/assets/ by compose.
+        # migrate-from-mattermost-bots.sh ships alongside them and is the
+        # compose.pre_hook target — one-time migration of named volumes from
+        # the old project's prefix (mattermost-bots_*) to the new one
+        # (chat-mattermost_*) after the Stage 1 service-identity rename.
+        # Marker-gated → no-op after first successful run.
         extraAssets = [
           ./code/ntfy-bridge.py
           ./code/requirements-bridge.txt
+          ./code/migrate-from-mattermost-bots.sh
         ];
         # Type-A "service-shipped Dockerfile" — vendored Mattermost upstream
         # release-11.7/server/build/Dockerfile (see ./code/arm64/UPSTREAM.txt

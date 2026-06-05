@@ -26,7 +26,9 @@
     "remote_path": "/opt/containers/chat-mattermost",
     "compose_flags": "--build"
   },
-  "compose": {},
+  "compose": {
+    "pre_hook": "assets/migrate-from-mattermost-bots.sh"
+  },
   "proxy": {
     "primary": {
       "domain": "chat.diegonmarcos.com",
