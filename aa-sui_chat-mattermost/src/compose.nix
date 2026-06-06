@@ -195,9 +195,22 @@ in
         # current shape will resolve to literal "Bearer " (empty) until
         # BEARER_TOKEN is exposed at compose-parse time. Tracked as a
         # follow-up; the env-var path may not even take effect first.
+        # Remote/HTTP MCP servers the Agents plugin can call. Mirrors the
+        # remote-callable subset of ~/.mcp.json (the 5 local stdio servers —
+        # cloud-infra-local, diego-personal-data, dtk, unix, plus cloud-cgc-
+        # mcp's stdio mode — only work from a local terminal, not Mattermost).
+        #
+        # ${BEARER_TOKEN} is substituted at compose-up time by docker compose
+        # from --env-file .secrets (engine's ENV_FILE_FLAG default). NB the
+        # current src/secrets.yaml#BEARER_TOKEN value is the placeholder
+        # "CHANGE_ME_*" string — until that's replaced with a real auth token
+        # (Authelia OIDC client-credentials grant token / introspect-proxy
+        # shared secret / long-lived JWT), every MCP call from Mattermost
+        # will 401 at the proxy. Edit via: sops edit src/secrets.yaml
         MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_MCPSERVERS = builtins.toJSON [
           { name = "cloud-infra";      url = "https://mcp.${base_domain}/c3-infra-mcp/mcp";    headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "cloud-services";   url = "https://mcp.${base_domain}/c3-services-mcp/mcp"; headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
+          { name = "cloud-cgc-mcp";    url = "https://mcp.${base_domain}/cloud-cgc-mcp/mcp";   headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "mattermost";       url = "https://mcp.${base_domain}/mattermost-mcp/mcp";  headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "mail-mcp";         url = "https://mcp.${base_domain}/mail-mcp/mcp";        headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
           { name = "google-workspace"; url = "https://mcp.${base_domain}/g-workspace/mcp";     headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
