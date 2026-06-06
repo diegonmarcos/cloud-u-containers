@@ -50,7 +50,7 @@
         # at the arm64 tarball at build time.
         nativeBuild = {
           dockerfile = ./code/arm64/Dockerfile;
-          extraFiles = [ ./code/arm64/passwd ];
+          extraFiles = [ ./code/arm64/passwd ./code/arm64/plugins.json ];
         };
         title = "Mattermost Team Chat (v2)";
       };

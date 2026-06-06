@@ -30,7 +30,9 @@ ARG PGID=2000
 # e.g. https://releases.mattermost.com/9.7.1/mattermost-9.7.1-linux-amd64.tar.gz
 ARG MM_PACKAGE="https://latest.mattermost.com/mattermost-enterprise-linux"
 
-# Install needed packages and indirect dependencies
+# Install needed packages and indirect dependencies.
+# LOCAL ADDITIONS: jq + xz-utils for the prepackaged-plugin loader below
+# (jq parses plugins.json, xz extracts the static ffmpeg tarball).
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
   ca-certificates \
@@ -42,6 +44,8 @@ RUN apt-get update \
   poppler-utils \
   tidy \
   tzdata \
+  jq \
+  xz-utils \
   && rm -rf /var/lib/apt/lists/*
 
 # Set mattermost group/user and download Mattermost
@@ -56,41 +60,63 @@ RUN mkdir -p /mattermost/.postgresql \
   && chmod 700 /mattermost/.postgresql
 
 # ╔══════════════════════════════════════════════════════════════════╗
-# ║ LOCAL ADDITION (not in upstream Dockerfile) — Agents plugin       ║
+# ║ LOCAL ADDITION (not in upstream Dockerfile) — Prepackaged plugins ║
 # ║                                                                  ║
-# ║ Bake the Agents plugin as a PREPACKAGED PLUGIN. Mattermost's      ║
-# ║ startup scans /mattermost/prepackaged_plugins/ for *.tar.gz       ║
-# ║ bundles and auto-installs them on first boot — exactly the path   ║
-# ║ Mattermost is designed for vendor-shipped plugins (app/plugin.go: ║
-# ║ "Processing prepackaged plugin").                                 ║
+# ║ Bake plugins as PREPACKAGED PLUGINS. Mattermost's startup scans   ║
+# ║ /mattermost/prepackaged_plugins/ for *.tar.gz bundles and auto-   ║
+# ║ installs them on first boot (app/plugin.go: "Processing           ║
+# ║ prepackaged plugin"). Both bundle AND signature file MUST be      ║
+# ║ present — the file-existence check is hardcoded, separate from    ║
+# ║ verification.                                                     ║
 # ║                                                                  ║
 # ║ Why NOT extract into /mattermost/plugins/ directly: the plugin    ║
-# ║ "sync from file store" logic runs first on startup; when env      ║
-# ║ var MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE=true marks the     ║
-# ║ plugin as "managed" but the file store is empty, the server      ║
-# ║ REMOVES the locally-extracted plugin before activating it        ║
+# ║ "sync from file store" runs first; when env var                  ║
+# ║ MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE=true marks the plugin ║
+# ║ as "managed" but the file store is empty, the server REMOVES     ║
+# ║ the locally-extracted plugin before activating it                ║
 # ║ ("Removing local installation of managed plugin before sync",    ║
 # ║ app/plugin.go:288). The prepackaged path bypasses that sync.     ║
 # ║                                                                  ║
-# ║ Signature check (MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE) must  ║
-# ║ be set to false at runtime — we ship the upstream tarball         ║
-# ║ verbatim and have no access to Mattermost's signing key. Set      ║
-# ║ via compose.nix env, not here in the Dockerfile.                  ║
+# ║ Signature verification: MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE  ║
+# ║ must be false at runtime (set in compose.nix); we ship upstream   ║
+# ║ tarballs verbatim and have no access to Mattermost's signing key. ║
 # ║                                                                  ║
-# ║ ARG defaults to empty so existing TE-without-plugin deployments   ║
-# ║ keep working unchanged; only services that pass the build_arg     ║
-# ║ get the plugin baked in.                                          ║
+# ║ Data-driven: plugin URLs + sigs live in plugins.json (FIRE RULE   ║
+# ║ 4). Adding a plugin = edit plugins.json + rebuild image. No       ║
+# ║ Dockerfile change needed.                                         ║
 # ╚══════════════════════════════════════════════════════════════════╝
-ARG MM_PLUGIN_AGENTS_URL=""
-ARG MM_PLUGIN_AGENTS_SIG_URL=""
-RUN if [ -n "$MM_PLUGIN_AGENTS_URL" ]; then \
-      mkdir -p /mattermost/prepackaged_plugins \
-      && curl -L "$MM_PLUGIN_AGENTS_URL" \
-           -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz \
-      && curl -L "$MM_PLUGIN_AGENTS_SIG_URL" \
-           -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz.sig \
-      && chown -R mattermost:mattermost /mattermost/prepackaged_plugins ; \
-    fi
+COPY plugins.json /tmp/plugins.json
+RUN mkdir -p /mattermost/prepackaged_plugins \
+  && jq -r '.plugins[] | "\(.name) \(.url) \(.sig)"' /tmp/plugins.json \
+     | while read -r name url sig; do \
+         echo "[plugins] downloading $name -> /mattermost/prepackaged_plugins/$name.tar.gz" ; \
+         curl -fSL "$url" -o "/mattermost/prepackaged_plugins/$name.tar.gz" ; \
+         curl -fSL "$sig" -o "/mattermost/prepackaged_plugins/$name.tar.gz.sig" ; \
+       done \
+  && rm /tmp/plugins.json \
+  && chown -R mattermost:mattermost /mattermost/prepackaged_plugins
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║ LOCAL ADDITION — ffmpeg static binary (arm64)                     ║
+# ║                                                                  ║
+# ║ The Agents plugin's meeting-transcription feature requires        ║
+# ║ ffmpeg on PATH (logs "ffmpeg not installed, transcriptions will   ║
+# ║ be disabled" on startup without it). The final stage is           ║
+# ║ distroless so apt-installed ffmpeg can't be COPYd cleanly — too   ║
+# ║ many shared library deps. Solution: download BtbN's static arm64  ║
+# ║ build (single binary, no shared deps) in the builder stage and    ║
+# ║ COPY it into the distroless final stage below.                    ║
+# ║                                                                  ║
+# ║ Pinned to `latest` tag (BtbN updates rolling). For stricter       ║
+# ║ pinning, replace with a dated tag from BtbN/FFmpeg-Builds.        ║
+# ╚══════════════════════════════════════════════════════════════════╝
+RUN curl -fSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz \
+       -o /tmp/ffmpeg.tar.xz \
+  && tar -xJf /tmp/ffmpeg.tar.xz -C /tmp \
+  && mv /tmp/ffmpeg-master-latest-linuxarm64-gpl/bin/ffmpeg /usr/local/bin/ffmpeg \
+  && mv /tmp/ffmpeg-master-latest-linuxarm64-gpl/bin/ffprobe /usr/local/bin/ffprobe \
+  && chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe \
+  && rm -rf /tmp/ffmpeg.tar.xz /tmp/ffmpeg-master-latest-linuxarm64-gpl
 
 # Final stage using distroless for minimal attack surface
 FROM gcr.io/distroless/base-debian12
@@ -113,6 +139,11 @@ COPY --from=builder /usr/bin/wvWare /usr/bin/wvWare
 COPY --from=builder /usr/bin/unrtf /usr/bin/unrtf
 COPY --from=builder /usr/bin/tidy /usr/bin/tidy
 COPY --from=builder /usr/share/wv /usr/share/wv
+
+# LOCAL ADDITION — ffmpeg static binary for Agents plugin transcription.
+# Statically linked, no shared library deps to copy.
+COPY --from=builder /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 # Copy necessary libraries for document processing utilities
 COPY --from=builder /usr/lib/libpoppler.so* /usr/lib/

@@ -96,17 +96,31 @@ in
         # I used by mistake in earlier commits (those env vars were silent
         # no-ops because the plugin ID didn't match).
         #
-        # Plugin enable via env-var override of config.json:
-        #   PluginSettings.PluginStates["mattermost-ai"].Enable
-        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE = "true";
+        # Plugin auto-enable via env-var overrides of config.json:
+        #   PluginSettings.PluginStates["<plugin-id>"].Enable
+        # Each plugin's id comes from its plugin.json. Underscores in env-var
+        # path map to nested keys; hyphens/dots in plugin IDs map to
+        # underscores in the env-var path. Source-of-truth for available
+        # plugins: src/code/arm64/plugins.json. Plugins that REQUIRE OAuth
+        # or a server URL to function (github, gitlab, jira, zoom, msteams,
+        # matrix-bridge) are intentionally NOT auto-enabled — they appear as
+        # inactive in the System Console and the operator enables them once
+        # the per-plugin credentials are configured (avoids noisy startup
+        # errors / unauthenticated webhook spam in the meantime).
+        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE                       = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_CALLS_ENABLE                = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_PLAYBOOKS_ENABLE                           = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_CHANNEL_EXPORT_ENABLE = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_FOCALBOARD_ENABLE                          = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_TODO_ENABLE          = "true";
 
-        # Disable plugin signature verification. We ship the upstream Agents
-        # plugin tarball verbatim at /mattermost/prepackaged_plugins/ (baked
-        # into the image — see code/arm64/Dockerfile). Mattermost auto-installs
-        # prepackaged plugins on startup but normally requires a Mattermost-
-        # signed signature file (.sig). We don't have access to Mattermost's
-        # signing key, so signature verification has to be off for the
-        # auto-install to succeed. Without this, startup logs:
+        # Disable plugin signature verification. We ship upstream plugin
+        # tarballs verbatim at /mattermost/prepackaged_plugins/ (baked into
+        # the image — see code/arm64/Dockerfile + plugins.json). Mattermost
+        # auto-installs prepackaged plugins on startup but normally requires
+        # a Mattermost-signed signature file (.sig). We don't have access to
+        # Mattermost's signing key, so signature verification has to be off
+        # for the auto-install to succeed. Without this, startup logs:
         #   "plugin signature verification failed" → plugin not installed.
         # Trade-off is real: any future locally-uploaded plugin also runs
         # without signature check. Acceptable here because plugin uploads are

@@ -1,0 +1,89 @@
+{
+  "_comment": "Mattermost plugins baked into the image as prepackaged_plugins. Each entry is downloaded into /mattermost/prepackaged_plugins/ as both .tar.gz and .tar.gz.sig. Mattermost auto-installs prepackaged plugins on startup (signature verification disabled at runtime via MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE=false in compose.nix). Auto-enable per plugin is handled in compose.nix via MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE env vars. Pinned versions for reproducibility; update by bumping url+sig together. Mattermost plugin tarballs are multi-arch (binaries for linux-amd64/linux-arm64/darwin-*/windows-* all bundled); the server picks the right arch at runtime.",
+  "plugins": [
+    {
+      "name": "agents",
+      "id": "mattermost-ai",
+      "version": "v2.3.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "calls",
+      "id": "com.mattermost.calls",
+      "version": "v1.11.5",
+      "url": "https://github.com/mattermost/mattermost-plugin-calls/releases/download/v1.11.5/mattermost-plugin-calls-v1.11.5-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-calls/releases/download/v1.11.5/mattermost-plugin-calls-v1.11.5-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "playbooks",
+      "id": "playbooks",
+      "version": "v2.9.1",
+      "url": "https://github.com/mattermost/mattermost-plugin-playbooks/releases/download/v2.9.1/mattermost-plugin-playbooks-v2.9.1-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-playbooks/releases/download/v2.9.1/mattermost-plugin-playbooks-v2.9.1-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "github",
+      "id": "github",
+      "version": "v2.7.1",
+      "url": "https://github.com/mattermost/mattermost-plugin-github/releases/download/v2.7.1/mattermost-plugin-github-v2.7.1-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-github/releases/download/v2.7.1/mattermost-plugin-github-v2.7.1-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "channel-export",
+      "id": "com.mattermost.plugin-channel-export",
+      "version": "v1.3.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-channel-export/releases/download/v1.3.0/mattermost-plugin-channel-export-v1.3.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-channel-export/releases/download/v1.3.0/mattermost-plugin-channel-export-v1.3.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "boards",
+      "id": "focalboard",
+      "version": "v9.2.5",
+      "url": "https://github.com/mattermost/mattermost-plugin-boards/releases/download/v9.2.5/mattermost-plugin-boards-v9.2.5-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-boards/releases/download/v9.2.5/mattermost-plugin-boards-v9.2.5-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "jira",
+      "id": "jira",
+      "version": "v4.7.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-jira/releases/download/v4.7.0/mattermost-plugin-jira-v4.7.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-jira/releases/download/v4.7.0/mattermost-plugin-jira-v4.7.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "zoom",
+      "id": "zoom",
+      "version": "v1.13.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-zoom/releases/download/v1.13.0/mattermost-plugin-zoom-v1.13.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-zoom/releases/download/v1.13.0/mattermost-plugin-zoom-v1.13.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "msteams",
+      "id": "com.mattermost.msteams",
+      "version": "v2.3.2",
+      "url": "https://github.com/mattermost/mattermost-plugin-msteams/releases/download/v2.3.2/mattermost-plugin-msteams-v2.3.2-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-msteams/releases/download/v2.3.2/mattermost-plugin-msteams-v2.3.2-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "gitlab",
+      "id": "com.github.manland.mattermost-plugin-gitlab",
+      "version": "v1.12.2",
+      "url": "https://github.com/mattermost/mattermost-plugin-gitlab/releases/download/v1.12.2/mattermost-plugin-gitlab-v1.12.2-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-gitlab/releases/download/v1.12.2/mattermost-plugin-gitlab-v1.12.2-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "todo",
+      "id": "com.mattermost.plugin-todo",
+      "version": "v0.7.1",
+      "url": "https://github.com/mattermost/mattermost-plugin-todo/releases/download/v0.7.1/com.mattermost.plugin-todo-0.7.1.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-todo/releases/download/v0.7.1/com.mattermost.plugin-todo-0.7.1.tar.gz.sig"
+    },
+    {
+      "name": "matrix-bridge",
+      "id": "mattermost-plugin-matrix-bridge",
+      "version": "v0.1.12",
+      "url": "https://github.com/mattermost/mattermost-plugin-matrix-bridge/releases/download/v0.1.12/mattermost-plugin-matrix-bridge-v0.1.12-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-matrix-bridge/releases/download/v0.1.12/mattermost-plugin-matrix-bridge-v0.1.12-linux-arm64.tar.gz.sig"
+    }
+  ]
+}
