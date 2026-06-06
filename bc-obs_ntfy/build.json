@@ -33,6 +33,26 @@
     "app": 8090
   },
   "timezone": "Europe/Paris",
+  "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json so chat-mattermost reads them via its src/build-mattermost.json symlink). Adding a topic = edit this array + rebuild; no separate sync-topics.sh or ntfy-topics.nix to chase.",
+  "topics": [
+    { "name": "all",                 "category": "universal", "desc": "Every message from every channel" },
+    { "name": "dev_commits",         "category": "dev",       "desc": "Push/commit events" },
+    { "name": "dev_pull-requests",   "category": "dev",       "desc": "PR open/close/merge events" },
+    { "name": "dev_releases",        "category": "dev",       "desc": "Issues, releases, tags, forks" },
+    { "name": "deploy_ship",         "category": "deploy",    "desc": "build.sh ship / GHA deploys" },
+    { "name": "deploy_containers",   "category": "deploy",    "desc": "Container restarts, image pulls" },
+    { "name": "health_mesh",         "category": "health",    "desc": "WireGuard mesh connectivity" },
+    { "name": "health_endpoints",    "category": "health",    "desc": "HTTP service endpoint checks" },
+    { "name": "health_dns",          "category": "health",    "desc": "DNS resolution checks" },
+    { "name": "health_resources",    "category": "health",    "desc": "VM disk/memory/CPU usage" },
+    { "name": "health_containers",   "category": "health",    "desc": "Docker container health" },
+    { "name": "ops_backups",         "category": "ops",       "desc": "Backup freshness status" },
+    { "name": "ops_reports",         "category": "ops",       "desc": "Daily/weekly summaries" },
+    { "name": "sec_audit",           "category": "sec",       "desc": "Auth log analysis & brute-force detection" },
+    { "name": "sec_tls",             "category": "sec",       "desc": "TLS certificate expiry warnings" },
+    { "name": "sec_connections",     "category": "sec",       "desc": "SSH/sudo/connection events across VMs" },
+    { "name": "sec_yara",            "category": "sec",       "desc": "YARA malware scanner alerts & status" }
+  ],
   "backup": {
     "enabled": true
   },

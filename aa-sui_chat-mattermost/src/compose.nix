@@ -8,8 +8,16 @@
 #   mattermost-bots    — ntfy bridge + C3 slash-command bot (python upstream
 #                        + assets/ntfy-bridge.py mounted from dist/assets/)
 #
-# ntfy-topics are read verbatim from ./ntfy-topics.nix (declarative list).
-{ buildJson, container, base_domain, ntfyTopics }:
+# ntfy_topics flow into the bots service from container.ntfy_topics, which is
+# emitted into 2_configs/dist/build-mattermost.json by cloud-data-config-
+# derive.ts (FIRE RULE 4 — data-driven, single source of truth). The list is
+# declared in bc-obs_ntfy/build.json#.topics; parseNtfy lifts it into
+# _cloud-data-consolidated.json#.configs.ntfy.topics; derive forwards it as
+# the ntfy_topics field on every container of the chat-mattermost service
+# (build-mattermost.json + build-mattermost-bots.json + build-mattermost-
+# postgres.json all carry it for consistency). Adding a topic = edit
+# bc-obs_ntfy/build.json + rebuild; no sync-topics.sh, no ntfy-topics.nix.
+{ buildJson, container, base_domain }:
 
 let
   app   = buildJson.containers.app;    # mattermost
@@ -40,7 +48,7 @@ let
   ollamaModel = buildJson.ollama.model;
   ollamaVm    = svc."ollama-hai".vm;
   ntfyUrl    = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
-  topicsCsv  = builtins.concatStringsSep "," ntfyTopics;
+  topicsCsv  = builtins.concatStringsSep "," (container.ntfy_topics or []);
 in
 {
   services = {
