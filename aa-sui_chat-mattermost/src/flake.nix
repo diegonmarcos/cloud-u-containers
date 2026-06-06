@@ -6,13 +6,14 @@
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
-    # ── Data sources (declarative JSON + ntfy-topics list) ──────────
+    # ── Data sources (all declarative JSON) ─────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Primary container (mattermost itself) — engine wraps its image into
-    # ghcr.io/diegonmarcos/<name>-binaries:latest (used by the mattermost
-    # service in compose.nix).
+    # Primary container (mattermost itself). build-mattermost.json is the
+    # symlink to 2_configs/dist/build-mattermost.json, derived from
+    # _cloud-data-consolidated.json — carries the per-container cloud-data
+    # slice including ntfy_topics propagated from bc-obs_ntfy/build.json
+    # (FIRE RULE 4 — single SoT, no separate ntfy-topics.nix to chase).
     container = builtins.fromJSON (builtins.readFile ./build-mattermost.json);
-    ntfyTopics = import ./ntfy-topics.nix;
 
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
@@ -30,7 +31,7 @@
         srcDir = ./.;
         templates = [];
         composeSpec = import ./compose.nix {
-          inherit buildJson container base_domain ntfyTopics;
+          inherit buildJson container base_domain;
         };
         # ntfy-bridge.py + requirements are mounted from dist/assets/ by compose.
         # migrate-from-mattermost-bots.sh ships alongside them and is the

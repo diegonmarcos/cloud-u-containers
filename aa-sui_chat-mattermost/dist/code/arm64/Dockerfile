@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/aa-sui_chat-mattermost/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/5nr7891clyc6w0vvfkraki96xyxmm5fg-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
+# Source: /nix/store/2hc0cgb50sih9md8raryf4ncam3v242w-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  VENDORED — copy of upstream Mattermost server/build/Dockerfile  ║
 # ║                                                                  ║
