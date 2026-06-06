@@ -107,9 +107,18 @@ in
         # inactive in the System Console and the operator enables them once
         # the per-plugin credentials are configured (avoids noisy startup
         # errors / unauthenticated webhook spam in the meantime).
+        # NOTE: Mattermost's prepackaged-plugin loader checks the DB-persisted
+        # state (not env-vars) when deciding to install on a fresh bundle —
+        # observed in app/plugin.go:1026 "Not installing prepackaged plugin:
+        # not previously enabled". So these env-vars take effect on RE-deploys
+        # (after a plugin has been enabled once via System Console UI and the
+        # state lives in the postgres volume), not on first install. First
+        # install workflow: System Console > Plugin Management > Install per
+        # plugin. After that, these env-vars are the source of truth and the
+        # plugin will auto-load on every container start. Playbooks dropped —
+        # v2.9.1 requires Mattermost Pro license, fails on TE.
         MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE                       = "true";
         MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_CALLS_ENABLE                = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_PLAYBOOKS_ENABLE                           = "true";
         MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_CHANNEL_EXPORT_ENABLE = "true";
         MM_PLUGINSETTINGS_PLUGINSTATES_FOCALBOARD_ENABLE                          = "true";
         MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_TODO_ENABLE          = "true";

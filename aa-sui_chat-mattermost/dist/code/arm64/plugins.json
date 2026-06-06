@@ -1,5 +1,5 @@
 {
-  "_comment": "Mattermost plugins baked into the image as prepackaged_plugins. Each entry is downloaded into /mattermost/prepackaged_plugins/ as both .tar.gz and .tar.gz.sig. Mattermost auto-installs prepackaged plugins on startup (signature verification disabled at runtime via MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE=false in compose.nix). Auto-enable per plugin is handled in compose.nix via MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE env vars. Pinned versions for reproducibility; update by bumping url+sig together. Mattermost plugin tarballs are multi-arch (binaries for linux-amd64/linux-arm64/darwin-*/windows-* all bundled); the server picks the right arch at runtime.",
+  "_comment": "Mattermost plugins baked into the image as prepackaged_plugins. Each entry is downloaded into /mattermost/prepackaged_plugins/ as both .tar.gz and .tar.gz.sig. Mattermost auto-installs prepackaged plugins on startup (signature verification disabled at runtime via MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE=false in compose.nix). Auto-enable per plugin is handled in compose.nix via MM_PLUGINSETTINGS_PLUGINSTATES_<id>_ENABLE env vars. Pinned versions for reproducibility; update by bumping url+sig together. Mattermost plugin tarballs are multi-arch (binaries for linux-amd64/linux-arm64/darwin-*/windows-* all bundled); the server picks the right arch at runtime. Playbooks REMOVED — v2.9.1 requires Mattermost Professional Edition or higher; on Team Edition the loader errors with 'this plugin requires a professional license or higher' and the bundle is rejected.",
   "plugins": [
     {
       "name": "agents",
@@ -14,13 +14,6 @@
       "version": "v1.11.5",
       "url": "https://github.com/mattermost/mattermost-plugin-calls/releases/download/v1.11.5/mattermost-plugin-calls-v1.11.5-linux-arm64.tar.gz",
       "sig": "https://github.com/mattermost/mattermost-plugin-calls/releases/download/v1.11.5/mattermost-plugin-calls-v1.11.5-linux-arm64.tar.gz.sig"
-    },
-    {
-      "name": "playbooks",
-      "id": "playbooks",
-      "version": "v2.9.1",
-      "url": "https://github.com/mattermost/mattermost-plugin-playbooks/releases/download/v2.9.1/mattermost-plugin-playbooks-v2.9.1-linux-arm64.tar.gz",
-      "sig": "https://github.com/mattermost/mattermost-plugin-playbooks/releases/download/v2.9.1/mattermost-plugin-playbooks-v2.9.1-linux-arm64.tar.gz.sig"
     },
     {
       "name": "github",
@@ -59,10 +52,17 @@
     },
     {
       "name": "msteams",
-      "id": "com.mattermost.msteams",
+      "id": "com.mattermost.msteams-sync",
       "version": "v2.3.2",
       "url": "https://github.com/mattermost/mattermost-plugin-msteams/releases/download/v2.3.2/mattermost-plugin-msteams-v2.3.2-linux-arm64.tar.gz",
       "sig": "https://github.com/mattermost/mattermost-plugin-msteams/releases/download/v2.3.2/mattermost-plugin-msteams-v2.3.2-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "msteams-meetings",
+      "id": "com.mattermost.msteamsmeetings",
+      "version": "v2.4.1",
+      "url": "https://github.com/mattermost/mattermost-plugin-msteams-meetings/releases/download/v2.4.1/mattermost-plugin-msteams-meetings-v2.4.1-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-msteams-meetings/releases/download/v2.4.1/mattermost-plugin-msteams-meetings-v2.4.1-linux-arm64.tar.gz.sig"
     },
     {
       "name": "gitlab",
@@ -80,10 +80,66 @@
     },
     {
       "name": "matrix-bridge",
-      "id": "mattermost-plugin-matrix-bridge",
+      "id": "com.mattermost.plugin-matrix-bridge",
       "version": "v0.1.12",
       "url": "https://github.com/mattermost/mattermost-plugin-matrix-bridge/releases/download/v0.1.12/mattermost-plugin-matrix-bridge-v0.1.12-linux-arm64.tar.gz",
       "sig": "https://github.com/mattermost/mattermost-plugin-matrix-bridge/releases/download/v0.1.12/mattermost-plugin-matrix-bridge-v0.1.12-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "confluence",
+      "id": "confluence",
+      "version": "v1.8.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-confluence/releases/download/v1.8.0/mattermost-plugin-confluence-v1.8.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-confluence/releases/download/v1.8.0/mattermost-plugin-confluence-v1.8.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "google-calendar",
+      "id": "com.mattermost.gcal",
+      "version": "v1.5.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-google-calendar/releases/download/v1.5.0/mattermost-plugin-google-calendar-v1.5.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-google-calendar/releases/download/v1.5.0/mattermost-plugin-google-calendar-v1.5.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "google-meet",
+      "id": "com.mattermost.google-meet",
+      "version": "v1.0.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-google-meet/releases/download/v1.0.0/mattermost-plugin-google-meet-v1.0.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-google-meet/releases/download/v1.0.0/mattermost-plugin-google-meet-v1.0.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "dataminr",
+      "id": "com.mattermost.dataminr",
+      "version": "v1.0.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-dataminr/releases/download/v1.0.0/mattermost-plugin-dataminr-v1.0.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-dataminr/releases/download/v1.0.0/mattermost-plugin-dataminr-v1.0.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "metrics",
+      "id": "com.mattermost.plugin-metrics",
+      "version": "v0.7.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-metrics/releases/download/v0.7.0/mattermost-plugin-metrics-v0.7.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-metrics/releases/download/v0.7.0/mattermost-plugin-metrics-v0.7.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "mscalendar",
+      "id": "com.mattermost.mscalendar",
+      "version": "v1.6.1",
+      "url": "https://github.com/mattermost/mattermost-plugin-mscalendar/releases/download/v1.6.1/mattermost-plugin-mscalendar-v1.6.1-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-mscalendar/releases/download/v1.6.1/mattermost-plugin-mscalendar-v1.6.1-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "servicenow",
+      "id": "mattermost-plugin-servicenow",
+      "version": "v2.4.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-servicenow/releases/download/v2.4.0/mattermost-plugin-servicenow-v2.4.0-linux-arm64.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-servicenow/releases/download/v2.4.0/mattermost-plugin-servicenow-v2.4.0-linux-arm64.tar.gz.sig"
+    },
+    {
+      "name": "wrangler",
+      "id": "com.github.gabrieljackson.mattermost-plugin-wrangler",
+      "version": "v1.0.0",
+      "url": "https://github.com/mattermost/mattermost-plugin-wrangler/releases/download/v1.0.0/mattermost-plugin-wrangler-v1.0.0.tar.gz",
+      "sig": "https://github.com/mattermost/mattermost-plugin-wrangler/releases/download/v1.0.0/mattermost-plugin-wrangler-v1.0.0.tar.gz.sig"
     }
   ]
 }
