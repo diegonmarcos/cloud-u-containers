@@ -128,10 +128,9 @@
     "dockerfile": "Dockerfile",
     "arch": "arm64",
     "build_args": {
-      "MM_PACKAGE": "https://releases.mattermost.com/11.8.0-rc5/mattermost-team-11.8.0-rc5-linux-arm64.tar.gz",
-      "MM_PLUGIN_AGENTS_URL": "https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz",
-      "MM_PLUGIN_AGENTS_SIG_URL": "https://github.com/mattermost/mattermost-plugin-agents/releases/download/v2.3.0/mattermost-plugin-agents-v2.3.0-linux-arm64.tar.gz.sig"
-    }
+      "MM_PACKAGE": "https://releases.mattermost.com/11.8.0-rc5/mattermost-team-11.8.0-rc5-linux-arm64.tar.gz"
+    },
+    "_plugin_note": "Plugin list moved to src/code/arm64/plugins.json (data-driven, FIRE RULE 4). Add plugins by editing that file — no build.json or Dockerfile changes required. Auto-enable per plugin: env vars in compose.nix."
   },
   "api": {
     "type": "custom-rest",
