@@ -107,21 +107,41 @@ in
         # inactive in the System Console and the operator enables them once
         # the per-plugin credentials are configured (avoids noisy startup
         # errors / unauthenticated webhook spam in the meantime).
-        # NOTE: Mattermost's prepackaged-plugin loader checks the DB-persisted
-        # state (not env-vars) when deciding to install on a fresh bundle —
-        # observed in app/plugin.go:1026 "Not installing prepackaged plugin:
-        # not previously enabled". So these env-vars take effect on RE-deploys
-        # (after a plugin has been enabled once via System Console UI and the
-        # state lives in the postgres volume), not on first install. First
-        # install workflow: System Console > Plugin Management > Install per
-        # plugin. After that, these env-vars are the source of truth and the
-        # plugin will auto-load on every container start. Playbooks dropped —
-        # v2.9.1 requires Mattermost Pro license, fails on TE.
-        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE                       = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_CALLS_ENABLE                = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_CHANNEL_EXPORT_ENABLE = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_FOCALBOARD_ENABLE                          = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_TODO_ENABLE          = "true";
+        # All 20 baked plugins are pre-enabled. Mattermost's prepackaged
+        # loader at app/plugin.go:1026 checks DB-persisted state (not env
+        # vars) when deciding to install on first encounter ("Not installing
+        # prepackaged plugin: not previously enabled"), so first install on
+        # a brand-new postgres volume still requires admin to click Install
+        # once per plugin in System Console > Plugin Management. After that
+        # first activation the state lives in postgres and these env vars
+        # are the source of truth — every subsequent container restart
+        # auto-loads the plugin without any UI step.
+        # OAuth-requiring plugins (github, gitlab, jira, zoom, msteams,
+        # matrix-bridge, confluence, servicenow, calendars, etc.) will load
+        # but log config warnings until per-plugin credentials are configured
+        # via System Console — acceptable trade-off for declarative bake-in.
+        # Plugin IDs come from plugins.json; env-var-path = upcased ID with
+        # hyphens/dots collapsed to underscores.
+        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE                                   = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_CALLS_ENABLE                            = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_GITHUB_ENABLE                                          = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_CHANNEL_EXPORT_ENABLE             = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_FOCALBOARD_ENABLE                                      = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_JIRA_ENABLE                                            = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_ZOOM_ENABLE                                            = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSTEAMS_SYNC_ENABLE                     = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSTEAMSMEETINGS_ENABLE                  = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_GITHUB_MANLAND_MATTERMOST_PLUGIN_GITLAB_ENABLE     = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_TODO_ENABLE                      = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_MATRIX_BRIDGE_ENABLE             = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_CONFLUENCE_ENABLE                                      = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_GCAL_ENABLE                             = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_GOOGLE_MEET_ENABLE                      = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_DATAMINR_ENABLE                         = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_METRICS_ENABLE                   = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSCALENDAR_ENABLE                       = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_PLUGIN_SERVICENOW_ENABLE                    = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES_COM_GITHUB_GABRIELJACKSON_MATTERMOST_PLUGIN_WRANGLER_ENABLE = "true";
 
         # Disable plugin signature verification. We ship upstream plugin
         # tarballs verbatim at /mattermost/prepackaged_plugins/ (baked into
