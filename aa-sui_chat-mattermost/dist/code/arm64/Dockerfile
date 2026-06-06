@@ -7,7 +7,7 @@
 # ║ Rebuild: a_solutions/aa-sui_chat-mattermost/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — service-shipped Dockerfile, arch=arm64
-# Source: /nix/store/i3wjqanfcvyq8p64820v8zlydamig0p1-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
+# Source: /nix/store/bqq206im9vggynsf527lasy703l91xl9-source/a_solutions/aa-sui_chat-mattermost/src/code/arm64/Dockerfile
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  VENDORED — copy of upstream Mattermost server/build/Dockerfile  ║
 # ║                                                                  ║
@@ -92,10 +92,13 @@ RUN mkdir -p /mattermost/.postgresql \
 # ║ get the plugin baked in.                                          ║
 # ╚══════════════════════════════════════════════════════════════════╝
 ARG MM_PLUGIN_AGENTS_URL=""
+ARG MM_PLUGIN_AGENTS_SIG_URL=""
 RUN if [ -n "$MM_PLUGIN_AGENTS_URL" ]; then \
       mkdir -p /mattermost/prepackaged_plugins \
       && curl -L "$MM_PLUGIN_AGENTS_URL" \
            -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz \
+      && curl -L "$MM_PLUGIN_AGENTS_SIG_URL" \
+           -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz.sig \
       && chown -R mattermost:mattermost /mattermost/prepackaged_plugins ; \
     fi
 
