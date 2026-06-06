@@ -146,14 +146,14 @@ in
           "com.github.manland.mattermost-plugin-gitlab"      = { Enable = true; };
           "com.mattermost.plugin-todo"                       = { Enable = true; };
           "com.mattermost.plugin-matrix-bridge"              = { Enable = true; };
-          "confluence"                                       = { Enable = true; };
+          "com.mattermost.confluence"                        = { Enable = true; };
           "com.mattermost.gcal"                              = { Enable = true; };
           "com.mattermost.google-meet"                       = { Enable = true; };
-          "com.mattermost.dataminr"                          = { Enable = true; };
-          "com.mattermost.plugin-metrics"                    = { Enable = true; };
+          "com.mattermost.plugin-dataminr"                   = { Enable = true; };
+          "com.mattermost.mattermost-plugin-metrics"         = { Enable = true; };
           "com.mattermost.mscalendar"                        = { Enable = true; };
           "mattermost-plugin-servicenow"                     = { Enable = true; };
-          "com.github.gabrieljackson.mattermost-plugin-wrangler" = { Enable = true; };
+          "com.mattermost.wrangler"                          = { Enable = true; };
         };
 
         # Disable plugin signature verification. We ship upstream plugin
