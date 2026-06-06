@@ -82,10 +82,13 @@ RUN mkdir -p /mattermost/.postgresql \
 # ║ get the plugin baked in.                                          ║
 # ╚══════════════════════════════════════════════════════════════════╝
 ARG MM_PLUGIN_AGENTS_URL=""
+ARG MM_PLUGIN_AGENTS_SIG_URL=""
 RUN if [ -n "$MM_PLUGIN_AGENTS_URL" ]; then \
       mkdir -p /mattermost/prepackaged_plugins \
       && curl -L "$MM_PLUGIN_AGENTS_URL" \
            -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz \
+      && curl -L "$MM_PLUGIN_AGENTS_SIG_URL" \
+           -o /mattermost/prepackaged_plugins/mattermost-plugin-agents.tar.gz.sig \
       && chown -R mattermost:mattermost /mattermost/prepackaged_plugins ; \
     fi
 
