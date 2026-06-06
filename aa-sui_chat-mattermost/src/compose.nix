@@ -107,41 +107,54 @@ in
         # inactive in the System Console and the operator enables them once
         # the per-plugin credentials are configured (avoids noisy startup
         # errors / unauthenticated webhook spam in the meantime).
-        # All 20 baked plugins are pre-enabled. Mattermost's prepackaged
-        # loader at app/plugin.go:1026 checks DB-persisted state (not env
-        # vars) when deciding to install on first encounter ("Not installing
-        # prepackaged plugin: not previously enabled"), so first install on
-        # a brand-new postgres volume still requires admin to click Install
-        # once per plugin in System Console > Plugin Management. After that
-        # first activation the state lives in postgres and these env vars
-        # are the source of truth — every subsequent container restart
-        # auto-loads the plugin without any UI step.
-        # OAuth-requiring plugins (github, gitlab, jira, zoom, msteams,
-        # matrix-bridge, confluence, servicenow, calendars, etc.) will load
-        # but log config warnings until per-plugin credentials are configured
-        # via System Console — acceptable trade-off for declarative bake-in.
-        # Plugin IDs come from plugins.json; env-var-path = upcased ID with
-        # hyphens/dots collapsed to underscores.
-        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_AI_ENABLE                                   = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_CALLS_ENABLE                            = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_GITHUB_ENABLE                                          = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_CHANNEL_EXPORT_ENABLE             = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_FOCALBOARD_ENABLE                                      = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_JIRA_ENABLE                                            = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_ZOOM_ENABLE                                            = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSTEAMS_SYNC_ENABLE                     = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSTEAMSMEETINGS_ENABLE                  = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_GITHUB_MANLAND_MATTERMOST_PLUGIN_GITLAB_ENABLE     = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_TODO_ENABLE                      = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_MATRIX_BRIDGE_ENABLE             = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_CONFLUENCE_ENABLE                                      = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_GCAL_ENABLE                             = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_GOOGLE_MEET_ENABLE                      = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_DATAMINR_ENABLE                         = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_PLUGIN_METRICS_ENABLE                   = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_MATTERMOST_MSCALENDAR_ENABLE                       = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_MATTERMOST_PLUGIN_SERVICENOW_ENABLE                    = "true";
-        MM_PLUGINSETTINGS_PLUGINSTATES_COM_GITHUB_GABRIELJACKSON_MATTERMOST_PLUGIN_WRANGLER_ENABLE = "true";
+        # First-boot auto-install + auto-enable of all 20 baked plugins.
+        # Two gates in Mattermost's prepackaged loader (server/channels/app/
+        # plugin.go: processPrepackagedPlugin):
+        #
+        #   1. PluginSettings.AutomaticPrepackagedPlugins MUST be true,
+        #      otherwise: "Not installing prepackaged plugin: automatic
+        #      prepackaged plugins disabled".
+        #
+        #   2. PluginSettings.PluginStates[plugin.Manifest.Id].Enable MUST
+        #      be true, otherwise: "Not installing prepackaged plugin: not
+        #      previously enabled".
+        #
+        # The flat env-var path approach
+        # (MM_PLUGINSETTINGS_PLUGINSTATES_<UPPERCASE_ID>_ENABLE=true)
+        # CANNOT reach plugin IDs containing dots or hyphens because
+        # Mattermost's parser collapses both to underscores in the resulting
+        # map key — so `MM_..._COM_MATTERMOST_CALLS_ENABLE` builds key
+        # `com_mattermost_calls`, which fails the lookup against the
+        # plugin's actual manifest ID `com.mattermost.calls`. Verified empi-
+        # rically 2026-06-06 — startup log shows the "not previously
+        # enabled" branch for all 19 dot/hyphen-bearing IDs.
+        #
+        # Fix: pass PluginStates as a single JSON-valued env var. Mattermost
+        # accepts JSON for complex/map config keys and the JSON string keys
+        # preserve dots/hyphens exactly (no parser normalization).
+        MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS = "true";
+        MM_PLUGINSETTINGS_PLUGINSTATES = builtins.toJSON {
+          "mattermost-ai"                                    = { Enable = true; };
+          "com.mattermost.calls"                             = { Enable = true; };
+          "github"                                           = { Enable = true; };
+          "com.mattermost.plugin-channel-export"             = { Enable = true; };
+          "focalboard"                                       = { Enable = true; };
+          "jira"                                             = { Enable = true; };
+          "zoom"                                             = { Enable = true; };
+          "com.mattermost.msteams-sync"                      = { Enable = true; };
+          "com.mattermost.msteamsmeetings"                   = { Enable = true; };
+          "com.github.manland.mattermost-plugin-gitlab"      = { Enable = true; };
+          "com.mattermost.plugin-todo"                       = { Enable = true; };
+          "com.mattermost.plugin-matrix-bridge"              = { Enable = true; };
+          "confluence"                                       = { Enable = true; };
+          "com.mattermost.gcal"                              = { Enable = true; };
+          "com.mattermost.google-meet"                       = { Enable = true; };
+          "com.mattermost.dataminr"                          = { Enable = true; };
+          "com.mattermost.plugin-metrics"                    = { Enable = true; };
+          "com.mattermost.mscalendar"                        = { Enable = true; };
+          "mattermost-plugin-servicenow"                     = { Enable = true; };
+          "com.github.gabrieljackson.mattermost-plugin-wrangler" = { Enable = true; };
+        };
 
         # Disable plugin signature verification. We ship upstream plugin
         # tarballs verbatim at /mattermost/prepackaged_plugins/ (baked into
