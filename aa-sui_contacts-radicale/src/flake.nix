@@ -1,5 +1,5 @@
 {
-  description = "Radicale CalDAV/CardDAV — dist layout v2 (flake as orchestrator)";
+  description = "Radicale CardDAV (contacts only) — dist layout v2 (flake as orchestrator)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -8,7 +8,7 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-radicale.json);
+    container = builtins.fromJSON (builtins.readFile ./build-contacts-radicale.json);
 
     engine = import ../../_shared/engine.nix;
 
@@ -31,7 +31,7 @@
           { name = "config"; vars = configVars; }
         ];
         composeSpec = import ./compose.nix { inherit buildJson container; };
-        title = "Radicale CalDAV/CardDAV";
+        title = "Radicale CardDAV (Contacts)";
       };
     });
   };

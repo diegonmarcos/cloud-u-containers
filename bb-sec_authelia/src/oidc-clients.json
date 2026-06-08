@@ -253,7 +253,8 @@
       "access_token_signed_response_alg": "RS256",
       "audience": [
         "https://api.@BASE_DOMAIN@/",
-        "https://rss.@BASE_DOMAIN@/"
+        "https://rss.@BASE_DOMAIN@/",
+        "https://mcp.@BASE_DOMAIN@/"
       ]
     },
     {
