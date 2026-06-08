@@ -1,25 +1,25 @@
 {
-  "name": "radicale",
-  "description": "Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)",
-  "dns": "radicale.app",
+  "name": "contacts-radicale",
+  "description": "Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com",
+  "dns": "contacts.app",
   "upstream_image": "tomsquest/docker-radicale:latest",
   "ports": {
-    "app": 5232
+    "app": 5233
   },
   "category": "app",
   "build": {
     "include_cloud_data": "true",
     "headers_enforced": true
   },
-  "domain": "cal.diegonmarcos.com",
+  "domain": "contacts.diegonmarcos.com",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/radicale",
+    "remote_path": "/opt/containers/contacts-radicale",
     "compose_flags": "--build"
   },
   "proxy": {
     "primary": {
-      "domain": "cal.diegonmarcos.com",
+      "domain": "contacts.diegonmarcos.com",
       "auth": "two_factor"
     }
   },
@@ -33,14 +33,14 @@
   },
   "containers": {
     "app": {
-      "container_name": "radicale",
+      "container_name": "contacts-radicale",
       "image": "tomsquest/docker-radicale:latest",
-      "port": 5232,
+      "port": 5233,
       "port_env": null,
-      "dns": "radicale.app",
+      "dns": "contacts.app",
       "public": true,
       "proxy": {
-        "domain": "cal.diegonmarcos.com",
+        "domain": "contacts.diegonmarcos.com",
         "auth": "two_factor"
       },
       "healthcheck": "/.web/",
@@ -51,7 +51,7 @@
       },
       "volumes": [
         "./data:/data",
-        "./config:/config:ro"
+        "./configs/config:/config/config:ro"
       ],
       "env_file": false,
       "depends_on": [],
@@ -68,15 +68,15 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "radicale",
+    "image": "contacts-radicale",
     "dockerfile": "Dockerfile",
     "arch": "arm64"
   },
   "api": {
     "type": "custom-protocol",
-    "base_path": "/.well-known/caldav",
-    "display_name": "Radicale CalDAV/CardDAV Server",
-    "description": "WebDAV-based CalDAV/CardDAV server for calendar and contact synchronization.",
+    "base_path": "/.well-known/carddav",
+    "display_name": "Radicale CardDAV Server (Contacts)",
+    "description": "WebDAV-based CardDAV server for contact / address-book synchronization.",
     "auth": "basic"
   }
 }

@@ -1,0 +1,3 @@
+contacts.diegonmarcos.com {
+    reverse_proxy contacts-radicale:5233
+}

@@ -141,9 +141,9 @@
       }
     ],
     "carddav": {
-      "_doc": "CardDAV providers. Engine resolves service_ref → services.radicale.domain at derive time.",
-      "radicale": {
-        "service_ref": "radicale",
+      "_doc": "CardDAV providers. Engine resolves service_ref → services.{name}.domain at derive time.",
+      "contacts-radicale": {
+        "service_ref": "contacts-radicale",
         "path_template": "/{user_url_encoded}/",
         "user_ref": "stalwart.users.admin",
         "pass_env": "ME_PASSWORD"

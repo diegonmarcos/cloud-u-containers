@@ -27,7 +27,7 @@
     "compose_flags": "--build"
   },
   "compose": {
-    "pre_hook": "assets/migrate-from-mattermost-bots.sh"
+    "pre_hook": "assets/compose-pre-hook.sh"
   },
   "proxy": {
     "primary": {

@@ -43,6 +43,8 @@
           ./code/ntfy-bridge.py
           ./code/requirements-bridge.txt
           ./code/migrate-from-mattermost-bots.sh
+          ./code/fetch-mcp-bearer.sh
+          ./code/compose-pre-hook.sh
         ];
         # Type-A "service-shipped Dockerfile" — vendored Mattermost upstream
         # release-11.7/server/build/Dockerfile (see ./code/arm64/UPSTREAM.txt
