@@ -39,7 +39,12 @@ in
         CMD_DOMAIN                = buildJson.domain;
         CMD_URL_ADDPORT           = "false";
         CMD_PROTOCOL_USESSL       = "true";
-        CMD_DB_URL                = "postgres://${dbUser}:${dbUser}@localhost:${dbPort}/${dbName}";
+        # Service-name resolution on the default compose network. Was
+        # `localhost` (assumed host networking), but the compose uses bridge
+        # mode → localhost = app container's own loopback → ECONNREFUSED on
+        # every retry → "Cannot reach database! Exiting." Service name
+        # `postgres` resolves to the sibling container.
+        CMD_DB_URL                = "postgres://${dbUser}:${dbUser}@postgres:${dbPort}/${dbName}";
         CMD_ALLOW_EMAIL_REGISTER  = "true";
         CMD_EMAIL                 = "true";
         CMD_ALLOW_FREEURL         = "true";
