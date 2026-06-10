@@ -85,7 +85,10 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "vaultwarden",
     "dockerfile": "Dockerfile",
-    "arch": "arm64"
+    "arch": "arm64",
+    "runtime_packages": {
+      "apt": "sqlite3"
+    }
   },
   "upstream_image": "vaultwarden/server:latest",
   "timezone": "Europe/Madrid",
