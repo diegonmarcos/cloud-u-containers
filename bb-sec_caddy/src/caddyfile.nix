@@ -370,7 +370,12 @@ ${plainOut}${sniMuxBlock}
       # instead of the declared 308 redirect to /.well-known/jmap.
       # Mirrors the existing mkGithubPagesRoute behaviour (lines 414-419)
       # so the wrap is symmetric across every Caddy route flavour.
-      wrappedProxyBlock = if wellKnownBlock != "" then ''
+      # WG-only routes must ALSO handle-wrap the proxy. The `@not_wg respond
+      # 403` guard (wgBlock) relies on the global `order respond before handle`
+      # so it pre-empts `handle` blocks — but NOT a bare `reverse_proxy` (the
+      # auth:none branch, e.g. vault). Wrapping guarantees the guard fires
+      # before the proxy for non-WG clients regardless of auth mode.
+      wrappedProxyBlock = if (wellKnownBlock != "" || isWgOnly) then ''
       handle {
         ${proxyBlock}
       }'' else proxyBlock;
@@ -522,11 +527,25 @@ ${plainOut}${sniMuxBlock}
 
   mkMcpRouteGroup = group:
     let
-      mkEndpoint = ep: ''
-      handle_path ${ep.base_path}/* {
-        reverse_proxy ${ep.upstream} {
+      mkEndpoint = ep:
+        let
+          proxyBody = ''reverse_proxy ${ep.upstream} {
           flush_interval -1
+        }'';
+          # Per-endpoint WG-only gate (ep.wg_only from build.json proxy.primary.wg_only).
+          # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
+          # Invert to a `handle @wg` / `handle` pair so the deny is order-independent
+          # (both are `handle` blocks → source-order, first-match-wins).
+          inner = if (ep.wg_only or false) then ''@wg remote_ip 10.0.0.0/24
+        handle @wg {
+          ${proxyBody}
         }
+        handle {
+          respond "Forbidden" 403
+        }'' else proxyBody;
+        in ''
+      handle_path ${ep.base_path}/* {
+        ${inner}
       }'';
       endpointBlocks = lib.concatMapStringsSep "\n" mkEndpoint group.endpoints;
       fallbackMsg = group.fallback_message or "MCP Hub";
