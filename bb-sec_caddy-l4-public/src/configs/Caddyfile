@@ -46,16 +46,32 @@
         # 2026-06-10: was missing entirely — external clients hit RST on
         # every mail protocol despite Stalwart being up and healthy.
         :25 {
-            proxy 10.1.0.3:2025
+            route {
+                proxy {
+                    upstream 10.1.0.3:2025
+                }
+            }
         }
         :465 {
-            proxy 10.1.0.3:2465
+            route {
+                proxy {
+                    upstream 10.1.0.3:2465
+                }
+            }
         }
         :993 {
-            proxy 10.1.0.3:2993
+            route {
+                proxy {
+                    upstream 10.1.0.3:2993
+                }
+            }
         }
         :4190 {
-            proxy 10.1.0.3:6190
+            route {
+                proxy {
+                    upstream 10.1.0.3:6190
+                }
+            }
         }
     }
 }
