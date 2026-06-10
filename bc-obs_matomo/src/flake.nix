@@ -31,6 +31,15 @@
           # code/Dockerfile' → ship skipped → matomo-binaries:latest never
           # pushed to GHCR → arm64 VM compose pull 'manifest unknown'.
           dockerfile = ./code/Dockerfile;
+          # Sibling directories the Dockerfile COPYs from (scripts/, config/,
+          # receiver/). Engine puts them next to the Dockerfile via cp -rL,
+          # so the build context matches what the multi-stage RUN+COPY
+          # statements expect.
+          extraFiles = [
+            ./code/scripts
+            ./code/config
+            ./code/receiver
+          ];
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";
           baseImage = nb.base_image;
