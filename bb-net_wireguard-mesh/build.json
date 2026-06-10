@@ -62,6 +62,9 @@
     "include_cloud_data": true,
     "headers_enforced": true
   },
+  "docker": {
+    "arch": "arm64"
+  },
   "data_sources": {
     "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",
     "consolidated": "2_configs/dist/_cloud-data-consolidated.json",

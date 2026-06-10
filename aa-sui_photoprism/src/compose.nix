@@ -102,7 +102,11 @@ in
         PHOTOPRISM_DETECT_NSFW          = "false";
         PHOTOPRISM_UPLOAD_NSFW          = "true";
         PHOTOPRISM_DATABASE_DRIVER      = "mysql";
-        PHOTOPRISM_DATABASE_SERVER      = "localhost:3306";
+        # Service-name resolution on the default compose network (was
+        # `localhost`, which resolves to app's own loopback under bridge
+        # networking → ECONNREFUSED → exit 100). `mariadb` matches the
+        # sibling service name declared at line 19.
+        PHOTOPRISM_DATABASE_SERVER      = "mariadb:3306";
         PHOTOPRISM_HTTP_PORT            = toString buildJson.ports.app;
       };
       volumes = [
