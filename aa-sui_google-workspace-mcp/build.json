@@ -36,7 +36,8 @@
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/g-workspace"
+      "base_path": "/g-workspace",
+      "wg_only": true
     },
     "app_hub": false
   },
