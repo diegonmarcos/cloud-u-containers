@@ -1,0 +1,75 @@
+{
+  "name": "matrix-element",
+  "description": "Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.",
+  "dns": "matrix-element.app",
+  "category": "app",
+  "timezone": "Europe/Madrid",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "domain": "messenger.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/matrix-element",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "messenger.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "ports": {
+    "app": 8082
+  },
+  "containers": {
+    "app": {
+      "container_name": "matrix-element",
+      "image": "ghcr.io/diegonmarcos/matrix-element-binaries:latest",
+      "port": 8082,
+      "port_env": null,
+      "dns": "matrix-element.app",
+      "public": true,
+      "proxy": {
+        "domain": "messenger.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": "/",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "./configs/config.json:/app/config.json:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "matrix-element",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "upstream_image": "vectorim/element-web:latest",
+  "resources": {
+    "mem_limit": "128M",
+    "mem_reservation": "16M"
+  },
+  "api": {
+    "type": "no-api"
+  }
+}
