@@ -67,15 +67,15 @@
         {
           "port": 443,
           "sni": "imap.diegonmarcos.com",
-          "upstream": "oci-mail:993",
-          "comment": "IMAPS via SNI on :443 (Maddy)",
+          "upstream": "oci-mail:2993",
+          "comment": "IMAPS via SNI on :443 — upstream flipped from Maddy:993 to Stalwart:2993 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
           "protocol": "tls"
         },
         {
           "port": 443,
           "sni": "smtps.diegonmarcos.com",
-          "upstream": "oci-mail:465",
-          "comment": "SMTPS via SNI on :443 (Maddy)",
+          "upstream": "oci-mail:2465",
+          "comment": "SMTPS via SNI on :443 — upstream flipped from Maddy:465 to Stalwart:2465 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
           "protocol": "tls"
         }
       ]
