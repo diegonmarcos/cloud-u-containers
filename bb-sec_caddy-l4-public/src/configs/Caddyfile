@@ -47,15 +47,11 @@
         # every mail protocol despite Stalwart being up and healthy.
         :25 {
             # SMTP MX inbound (RFC 5321). Stalwart binds :2025 internally.
-            proxy {
-                upstream 10.1.0.3:2025
-            }
+            proxy 10.1.0.3:2025
         }
         :465 {
             # SMTPS (implicit TLS). Stalwart binds :2465 internally.
-            proxy {
-                upstream 10.1.0.3:2465
-            }
+            proxy 10.1.0.3:2465
         }
         # :587 (SMTP Submission/STARTTLS) intentionally omitted — Stalwart
         # does not bind an internal 2587, since clients are steered to :465
@@ -64,15 +60,11 @@
         # 465 is the modern default.
         :993 {
             # IMAPS (implicit TLS). Stalwart binds :2993 internally.
-            proxy {
-                upstream 10.1.0.3:2993
-            }
+            proxy 10.1.0.3:2993
         }
         :4190 {
             # ManageSieve. Stalwart binds :6190 internally.
-            proxy {
-                upstream 10.1.0.3:6190
-            }
+            proxy 10.1.0.3:6190
         }
     }
 }
