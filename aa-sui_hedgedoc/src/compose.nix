@@ -10,7 +10,11 @@ let
 
   # Published binaries image produced by the ship engine from code/<arch>/Dockerfile
   appImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
-  dbImage  = "ghcr.io/diegonmarcos/${buildJson.name}-db-binaries:latest";
+  # Upstream postgres directly (multi-arch, no custom build). Etherpad/Mattermost
+  # use the same pattern. The prior ${name}-db-binaries reference assumed a
+  # second ship-engine build path that never existed for hedgedoc — compose
+  # pulled a non-existent image → "manifest unknown" → exit 18 on arm64.
+  dbImage  = "postgres:16-alpine";
 
   dbUser = containerDb.container.db_user;
   dbName = containerDb.container.db_name;
