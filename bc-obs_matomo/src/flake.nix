@@ -23,6 +23,14 @@
         templates = [];
         composeSpec = import ./compose.nix { inherit buildJson container; };
         nativeBuild = {
+          # dockerfile points the shared engine at the service-vendored
+          # multi-stage Dockerfile (matomo:fpm-alpine → debian:bookworm-slim
+          # wrapper). Without it the engine falls back to Type A flavor (b)
+          # which assumes a single-binary COPY — and matomo's Dockerfile
+          # is multi-stage. Result was 'No Dockerfile at dist/code/arm64/
+          # code/Dockerfile' → ship skipped → matomo-binaries:latest never
+          # pushed to GHCR → arm64 VM compose pull 'manifest unknown'.
+          dockerfile = ./code/Dockerfile;
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";
           baseImage = nb.base_image;
