@@ -36,5 +36,43 @@
             }
             # No fallback. Unmatched SNI = TCP closed.
         }
+
+        # ─── Mail protocols: public ingress for Stalwart on oci-mail ───
+        # Stalwart listens on non-standard internal ports (2025/2465/2587/
+        # 2993/6190 over wg-public 10.1.0.3) so the host's :25/:465/etc.
+        # stay free for the public L4 relay. mail.diegonmarcos.com DNS →
+        # oci-analytics (this VM); we proxy each well-known mail port to
+        # Stalwart's bound port on the wg-public mesh.
+        # 2026-06-10: was missing entirely — external clients hit RST on
+        # every mail protocol despite Stalwart being up and healthy.
+        :25 {
+            # SMTP MX inbound (RFC 5321). Stalwart binds :2025 internally.
+            proxy {
+                upstream 10.1.0.3:2025
+            }
+        }
+        :465 {
+            # SMTPS (implicit TLS). Stalwart binds :2465 internally.
+            proxy {
+                upstream 10.1.0.3:2465
+            }
+        }
+        # :587 (SMTP Submission/STARTTLS) intentionally omitted — Stalwart
+        # does not bind an internal 2587, since clients are steered to :465
+        # (implicit TLS) for submission. Aligns with the Mailu-era decision
+        # (cloud-data: feedback_no_autorestart) that 587 is legacy and
+        # 465 is the modern default.
+        :993 {
+            # IMAPS (implicit TLS). Stalwart binds :2993 internally.
+            proxy {
+                upstream 10.1.0.3:2993
+            }
+        }
+        :4190 {
+            # ManageSieve. Stalwart binds :6190 internally.
+            proxy {
+                upstream 10.1.0.3:6190
+            }
+        }
     }
 }
