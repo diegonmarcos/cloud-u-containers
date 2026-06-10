@@ -25,7 +25,8 @@
   "proxy": {
     "primary": {
       "domain": "vault.diegonmarcos.com",
-      "auth": "none"
+      "auth": "none",
+      "wg_only": true
     }
   },
   "health": {
