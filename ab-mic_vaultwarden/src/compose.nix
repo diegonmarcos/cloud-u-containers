@@ -15,9 +15,17 @@ in
     vaultwarden = {
       image = binariesImage;
       container_name = app.container_name;
+      # Run the rendered init.sh (configs/init.sh) as the entrypoint: it asserts
+      # the operator's verified_at in /data/db.sqlite3 then `exec /start.sh`
+      # (vaultwarden/server's own CMD). Mirrors bb-sec_authelia. Failsafe — the
+      # script always hands off to /start.sh, so the vault never fails to start.
+      entrypoint = [ "sh" "/config/init.sh" ];
       network_mode = "host";
       read_only = true;
       tmpfs = [ "/tmp" ];
+      # DAC_OVERRIDE: lets the init write verified_at into the data volume
+      # regardless of file ownership (same rationale as bb-sec_authelia).
+      cap_add = [ "DAC_OVERRIDE" ];
       env_file = [ ".secrets" ];
       environment = {
         TZ                  = buildJson.timezone;
@@ -37,7 +45,10 @@ in
         SMTP_PASSWORD       = "\${SMTP_PASSWORD}";
         ADMIN_TOKEN         = "\${ADMIN_TOKEN}";
       };
-      volumes = [ "vaultwarden_data:/data" ];
+      volumes = [
+        "vaultwarden_data:/data"
+        "./configs:/config:ro"   # rendered init.sh (read-only)
+      ];
       deploy.resources = {
         limits       = { memory = buildJson.resources.mem_limit;       cpus = "1.0"; };
         reservations = { memory = buildJson.resources.mem_reservation; };

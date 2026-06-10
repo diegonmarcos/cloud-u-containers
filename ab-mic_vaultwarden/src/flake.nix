@@ -24,7 +24,13 @@
       default = engine {
         inherit pkgs buildJson container;
         srcDir = ./.;
-        templates = [];
+        templates = [
+          # Renders dist/configs/init.sh from templates/init.sh.tpl with
+          # @BASE_DOMAIN@ substituted. Mounted at /config/init.sh and run as the
+          # container entrypoint (see compose.nix) to assert the operator's
+          # verified_at on every boot — mirrors bb-sec_authelia.
+          { name = "init.sh"; vars = { BASE_DOMAIN = base_domain; }; }
+        ];
         composeSpec = import ./compose.nix { inherit buildJson container base_domain; };
         title = "Vaultwarden Password Manager";
       };
