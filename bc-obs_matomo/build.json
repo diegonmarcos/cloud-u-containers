@@ -10,7 +10,7 @@
   "domain": "analytics.diegonmarcos.com/matomo",
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "matomo-hybrid",
+    "image": "matomo",
     "dockerfile": "code/Dockerfile",
     "arch": "arm64",
     "native_build": {
