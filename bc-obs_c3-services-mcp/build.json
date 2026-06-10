@@ -34,7 +34,8 @@
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/c3-services-mcp"
+      "base_path": "/c3-services-mcp",
+      "wg_only": true
     },
     "app_hub": false
   },

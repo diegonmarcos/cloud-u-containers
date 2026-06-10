@@ -31,7 +31,8 @@
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/mail-mcp"
+      "base_path": "/mail-mcp",
+      "wg_only": true
     },
     "app_hub": false
   },
