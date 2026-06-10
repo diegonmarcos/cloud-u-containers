@@ -1,0 +1,91 @@
+{
+  "name": "matrix-continuwuity",
+  "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
+  "dns": "matrix-continuwuity.app",
+  "category": "app",
+  "timezone": "Europe/Madrid",
+  "build": {
+    "include_cloud_data": "true"
+  },
+  "domain": "matrix.diegonmarcos.com",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/matrix-continuwuity",
+    "excludes": [
+      "data"
+    ],
+    "compose_flags": "--build"
+  },
+  "secrets": {
+    "escape_dollars": true
+  },
+  "proxy": {
+    "primary": {
+      "domain": "matrix.diegonmarcos.com",
+      "auth": "none"
+    }
+  },
+  "health": {
+    "path": "/_matrix/client/versions"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "continuwuity_data"
+    ]
+  },
+  "ports": {
+    "app": 8008
+  },
+  "containers": {
+    "app": {
+      "container_name": "continuwuity",
+      "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
+      "port": 8008,
+      "port_env": "CONTINUWUITY_PORT",
+      "dns": "matrix-continuwuity.app",
+      "public": true,
+      "proxy": {
+        "domain": "matrix.diegonmarcos.com",
+        "auth": "none"
+      },
+      "healthcheck": "/_matrix/client/versions",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "continuwuity_data:/var/lib/continuwuity"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "matrix-continuwuity",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
+  "resources": {
+    "mem_limit": "768M",
+    "mem_reservation": "128M"
+  },
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/_matrix",
+    "display_name": "Matrix (Continuwuity)",
+    "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
+    "auth": "bearer"
+  }
+}
