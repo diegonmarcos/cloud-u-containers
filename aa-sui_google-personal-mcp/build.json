@@ -48,7 +48,8 @@
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/g-personal"
+      "base_path": "/g-personal",
+      "wg_only": true
     },
     "app_hub": false
   },
