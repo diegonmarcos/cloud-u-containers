@@ -78,6 +78,11 @@ in
       image = appImage;
       container_name = app.container_name;
       network_mode = "host";
+      # photoprism's image bakes s6-overlay which MUST be PID 1. The shared
+      # compose template sets init: true (tini as PID 1) → s6-overlay then
+      # errors with 's6-overlay-suexec: fatal: can only run as pid 1' and
+      # the container exits 100. Disable docker-init for this service.
+      init = false;
       env_file = [ ".secrets" ];
       environment = {
         TZ                              = buildJson.timezone;
