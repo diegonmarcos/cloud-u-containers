@@ -300,7 +300,12 @@ pkgs.runCommand "${buildJson.name}-dist-v2" {
       cp ${df} $out/code/${arch}/Dockerfile
       ${lib.optionalString (nativeBuild != null && (nativeBuild.extraFiles or []) != [])
         (lib.concatMapStringsSep "\n" (f:
-          "cp ${f} $out/code/${arch}/${baseNameOf (toString f)}"
+          # cp -rL: recursive + follow symlinks. Enables directories in
+          # extraFiles (e.g. ./code/scripts) so multi-file builds like
+          # matomo can land their COPY tree under code/<arch>/<dir>/
+          # without enumerating every file. Regular files still work
+          # the same — cp -rL on a single file behaves like cp.
+          "cp -rL ${f} $out/code/${arch}/${baseNameOf (toString f)}"
         ) (nativeBuild.extraFiles or []))}
     '' else ''
       mkdir -p $out/code/${arch}
