@@ -11,7 +11,7 @@
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
     "image": "matomo",
-    "dockerfile": "code/Dockerfile",
+    "dockerfile": "Dockerfile",
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
