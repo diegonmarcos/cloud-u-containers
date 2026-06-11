@@ -13,6 +13,11 @@ in
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
+      # compose-defaults.json sets init: true (tini as PID 1), but the
+      # linuxserver.io code-server image runs s6-overlay, which fatals with
+      # "s6-overlay-suexec: fatal: can only run as pid 1" when tini owns PID 1
+      # → container exits 100. Disable docker-init so s6 is PID 1.
+      init = false;
       environment = {
         TZ = buildJson.timezone;
         PUID = "1000";

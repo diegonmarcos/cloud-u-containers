@@ -32,7 +32,13 @@ in
         CONTINUWUITY_DATABASE_BACKEND   = "rocksdb";
         CONTINUWUITY_ALLOW_FEDERATION   = "true";
         CONTINUWUITY_ALLOW_REGISTRATION = "true";
-        CONTINUWUITY_REGISTRATION_TOKEN = "\${CONTINUWUITY_REGISTRATION_TOKEN}";
+        # CONTINUWUITY_REGISTRATION_TOKEN comes from the .secrets env_file
+        # (env_file above). Do NOT redeclare it here as "${CONTINUWUITY_REGISTRATION_TOKEN}":
+        # an `environment:` entry overrides `env_file:`, and compose interpolates
+        # ${...} from the shell/.env at parse time (not from env_file), which is
+        # empty → the container saw an empty token and refused to start with
+        # "Registration token was specified but is empty". Omitting it lets the
+        # decrypted env_file value flow through.
         CONTINUWUITY_WELL_KNOWN         = "{ client=https://${delegated}, server=${delegated}:443 }";
         CONTINUWUITY_ALLOW_PUBLIC_ROOM_DIRECTORY_OVER_FEDERATION = "false";
         CONTINUWUITY_TRUSTED_SERVERS    = "[\"matrix.org\"]";
