@@ -30,7 +30,9 @@
       "termux":       { "wg_ip": "10.1.0.9",  "role": "client",
                         "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/." },
       "termux-share": { "wg_ip": "10.1.0.10", "role": "client",
-                        "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0." }
+                        "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0." },
+      "health-runner": { "wg_ip": "10.1.0.11", "role": "client",
+                        "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block." }
     }
   }
 }
