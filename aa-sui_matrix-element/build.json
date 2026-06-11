@@ -28,13 +28,13 @@
     "endpoint_check": true
   },
   "ports": {
-    "app": 8082
+    "app": 8083
   },
   "containers": {
     "app": {
       "container_name": "matrix-element",
       "image": "ghcr.io/diegonmarcos/matrix-element-binaries:latest",
-      "port": 8082,
+      "port": 8083,
       "port_env": null,
       "dns": "matrix-element.app",
       "public": true,
