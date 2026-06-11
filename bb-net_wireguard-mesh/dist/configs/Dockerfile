@@ -6,4 +6,8 @@
 # ║ Source:  a_solutions/bb-net_wireguard-mesh/src/flake.nix
 # ║ Rebuild: a_solutions/bb-net_wireguard-mesh/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-{"services":{"wireguard-mesh":{"container_name":"wireguard-mesh","deploy":{"resources":{"limits":{"memory":"32m","pids":256}}},"dns":["10.0.0.1","1.1.1.1"],"environment":{"TZ":"Europe/Madrid"},"healthcheck":{"interval":"30s","retries":3,"test":["CMD","wget","-qO-","http://localhost:8080/"],"timeout":"5s"},"image":"ghcr.io/diegonmarcos/wireguard-mesh-binaries:latest","init":true,"logging":{"driver":"json-file","options":{"max-file":"3","max-size":"1m"}},"ports":["10.0.0.6:8080:8080"],"read_only":true,"restart":"no","security_opt":["no-new-privileges:true"],"stop_grace_period":"30s","tmpfs":["/var/cache/nginx","/var/run"],"ulimits":{"nofile":{"hard":65536,"soft":65536}}}}}
+# configs image — FROM scratch
+FROM scratch
+COPY . /configs
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL cloud.diegonmarcos.image-type="configs"

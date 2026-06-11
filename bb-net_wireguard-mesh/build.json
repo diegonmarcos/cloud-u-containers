@@ -63,7 +63,18 @@
     "headers_enforced": true
   },
   "docker": {
-    "arch": "arm64"
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "wireguard-mesh",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "",
+      "entrypoint": "",
+      "base_image": "nginx:1.27-alpine",
+      "apt": "",
+      "app_dir": "./code"
+    }
   },
   "data_sources": {
     "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",

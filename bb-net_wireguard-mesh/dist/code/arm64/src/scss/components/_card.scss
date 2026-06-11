@@ -1,0 +1,33 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.kpi-grid { @include grid-auto-fit(180px, $sp-4); margin-bottom:$sp-6; }
+
+.kpi {
+  @include card-surface; padding:$sp-5;
+  &__label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:$text-3; margin-bottom:$sp-2; }
+  &__value { font-size:28px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  &__sub   { font-size:12px; color:$text-3; margin-top:$sp-2; @include truncate; }
+  &.is-hub    .kpi__value { color:$role-hub; }
+  &.is-spoke  .kpi__value { color:$role-spoke; }
+  &.is-client .kpi__value { color:$role-client; }
+  &.is-udp    .kpi__value { color:$transport-udp; }
+  &.is-tcp    .kpi__value { color:$transport-tcp; }
+}
+
+.section { margin-bottom:$sp-7; }
+.section__head { @include flex-row(space-between, baseline, $sp-3); margin-bottom:$sp-4; }
+.section__title { font-size:16px; font-weight:600; }
+.section__count { font-size:12px; color:$text-3; }
+
+.pill {
+  display:inline-flex; align-items:center; font-size:10px; padding:2px 8px;
+  border-radius:999px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+  &.is-hub    { background:rgba($role-hub,0.14);    color:$role-hub; }
+  &.is-spoke  { background:rgba($role-spoke,0.14);  color:$role-spoke; }
+  &.is-client { background:rgba($role-client,0.14); color:$role-client; }
+  &.is-udp    { background:rgba($transport-udp,0.14); color:$transport-udp; }
+  &.is-tcp    { background:rgba($transport-tcp,0.14); color:$transport-tcp; }
+  &.is-primary  { background:rgba($success,0.14); color:$success; }
+  &.is-fallback { background:rgba($warn,0.14);    color:$warn; }
+}

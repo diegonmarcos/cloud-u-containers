@@ -15,9 +15,6 @@
 { buildJson, container }:
 
 let
-  registry      = buildJson.docker.registry;
-  svcImageFor   = sub: "${registry}/crawlee-cloud-${sub}:latest";
-
   c             = buildJson.containers;
   app           = c.app;
   runnerC       = c.runner;
@@ -27,9 +24,16 @@ let
   redis         = c.redis;
   minio         = c.minio;
 
-  apiImage       = svcImageFor "api";
-  runnerImage    = svcImageFor "runner";
-  dashboardImage = svcImageFor "dashboard";
+  # Image names come from build.json containers.<x>.image — the declared
+  # `:local` tags. These are VM-built images (compose `build:` blocks +
+  # deploy.compose_flags="--build" rebuild them natively on the arm64 VM
+  # from the shipped dist/assets/repo). NEVER invent GHCR-style names here:
+  # a registry-named tag lets a stale amd64 pull shadow the local build →
+  # "Exec format error" under arm64 tini.
+  apiImage       = app.image;
+  runnerImage    = runnerC.image;
+  dashboardImage = dashboardC.image;
+  schedulerImage = schedulerC.image;
 
   apiPort          = toString buildJson.ports.app;
   dashboardPort    = toString buildJson.ports.dashboard;
@@ -160,7 +164,7 @@ in
     };
 
     scheduler = {
-      image = apiImage;
+      image = schedulerImage;
       build = {
         context    = repoContext;
         dockerfile = "docker/Dockerfile.api";

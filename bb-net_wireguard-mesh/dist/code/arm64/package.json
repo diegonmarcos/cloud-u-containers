@@ -1,0 +1,19 @@
+{
+  "name": "wireguard-mesh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only data-driven control panel for the WG mesh + wstunnel TCP/443 fallback. Static SPA, served by nginx-alpine inside the container.",
+  "scripts": {
+    "build:css":  "sass src/scss/main.scss dist/style.css --style=compressed --no-source-map",
+    "build:js":   "esbuild src/typescript/main.ts --bundle --format=iife --target=es2020 --minify --outfile=dist/script.js",
+    "build:html": "cp src/index.html dist/index.html",
+    "build:data": "node -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync('src/data/mesh.json','utf8'));fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/data-mesh.json.js','(function(){var g=(typeof globalThis!==\\u0027undefined\\u0027)?globalThis:(typeof window!==\\u0027undefined\\u0027?window:this);g.PORTAL_DATA=g.PORTAL_DATA||{};g.PORTAL_DATA[\\u0027mesh\\u0027]='+JSON.stringify(j)+';})();');\"",
+    "build":      "rm -rf dist && mkdir -p dist && npm run build:css && npm run build:js && npm run build:html && npm run build:data",
+    "test":       "bash 0.spec/test.sh"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "sass":    "^1.77.0",
+    "typescript": "^5.3.0"
+  }
+}
