@@ -1,0 +1,23 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.sidebar {
+  background:$bg-surface; border-right:1px solid $border-1; padding:$sp-4 $sp-3;
+  overflow-y:auto; @include scrollbar;
+}
+.nav-section { margin-bottom:$sp-5;
+  &__head { @include flex-row(flex-start, center, $sp-2); padding:$sp-2 $sp-3; user-select:none; }
+  &__id { font-family:$ff-mono; font-size:10px; color:$text-4; }
+  &__label { flex:1; font-size:12px; font-weight:600; color:$text-3; text-transform:uppercase; letter-spacing:0.06em; }
+}
+.nav-link {
+  @include flex-row(flex-start, center, $sp-3);
+  padding:$sp-2 $sp-3; border-radius:$radius-sm; color:$text-2; margin-bottom:2px; cursor:pointer;
+  &:hover { background:$bg-surface-2; color:$text-1; }
+  &.is-active { background:rgba($accent,0.14); color:$text-1; box-shadow: inset 2px 0 0 0 $accent; }
+  &__icon  { width:18px; height:18px; color:$text-3; @include flex-center; }
+  &__label { flex:1; font-size:13px; @include truncate; }
+  &.is-active &__icon { color:$accent; }
+}
+.nav-divider { border:0; border-top:1px solid $border-1; margin:$sp-4 0; }
+.nav-footer  { margin-top:$sp-5; padding:$sp-3; border-top:1px solid $border-1; font-size:11px; color:$text-3; }

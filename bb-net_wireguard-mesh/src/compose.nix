@@ -6,18 +6,18 @@ let
   svc = container.services;
   app = buildJson.containers.app;
 
-  # Built locally on the deploy host (REMOTE_BUILD path) — small static bundle,
-  # no need for cross-arch GHCR push for this service.
-  imageRef = "wireguard-mesh:local";
+  # Published binaries image produced by the ship engine from
+  # dist/code/<arch>/Dockerfile (flake nativeBuild block) on the
+  # arch-matching runner (arm64 → oci-apps cloud-builder). The VM only
+  # pulls. The previous `build: context "." / src/Dockerfile` referenced
+  # paths that are never rsync'd to the VM (only dist/ ships), so compose
+  # could not build and the service never deployed.
+  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {
   services = {
     wireguard-mesh = {
-      build = {
-        context    = ".";
-        dockerfile = "src/Dockerfile";
-      };
-      image = imageRef;
+      image = binariesImage;
       container_name = app.container_name;
       read_only = true;
       tmpfs = app.tmpfs or [ "/var/cache/nginx" "/var/run" ];
@@ -29,7 +29,8 @@ in
       environment = {
         TZ = buildJson.timezone or "Europe/Madrid";
       };
-      restart = "unless-stopped";
+      # No restart policy — fleet rule: containers are manual-only, recovery
+      # is `build.sh ship`. compose-defaults.json sets restart: "no".
       healthcheck = {
         test     = app.healthcheck.test;
         interval = app.healthcheck.interval;
