@@ -26,8 +26,7 @@
   "domain": "api.diegonmarcos.com/crawlee/",
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/crawlee-cloud",
-    "compose_flags": "--build"
+    "remote_path": "/opt/containers/crawlee-cloud"
   },
   "proxy": {
     "primary": {
@@ -56,7 +55,7 @@
   "containers": {
     "app": {
       "container_name": "crawlee_api",
-      "image": "crawlee-cloud-api:local",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
       "port": 3000,
       "port_env": "PORT",
       "dns": "crawlee.app",
@@ -83,7 +82,7 @@
     },
     "runner": {
       "container_name": "crawlee_runner",
-      "image": "crawlee-cloud-runner:local",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-runner:latest",
       "port": null,
       "port_env": null,
       "dns": "crawlee-runner.app",
@@ -101,7 +100,7 @@
     },
     "dashboard": {
       "container_name": "crawlee_dashboard",
-      "image": "crawlee-cloud-dashboard:local",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest",
       "port": 3001,
       "port_env": "PORT",
       "dns": "crawlee-dashboard.app",
@@ -118,7 +117,7 @@
     },
     "scheduler": {
       "container_name": "crawlee_scheduler",
-      "image": "crawlee-cloud-api:local",
+      "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
       "port": null,
       "port_env": null,
       "dns": "crawlee-scheduler.app",
