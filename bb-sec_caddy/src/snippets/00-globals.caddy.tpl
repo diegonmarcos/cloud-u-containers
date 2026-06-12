@@ -17,6 +17,21 @@
   # networks that block 51820/udp). Phase 4 of collapse plan.
   servers {
     protocols h1 h2
+    # PROXY protocol unwrap for the local caddy-l4 → :8443 hop. caddy-l4
+    # owns :443 and pipes TLS to 127.0.0.1:8443 with `proxy_protocol v2`
+    # prepended (caddyfile.nix @notmail fall-through). Without this wrapper
+    # the HTTP layer saw remote_ip=127.0.0.1 for EVERY request, so the
+    # wg-only tier gate (`@not_wg not remote_ip 10.0.0.0/24`) returned
+    # Forbidden to legitimate WG clients (vault.diegonmarcos.com regression,
+    # 2026-06-12). Order matters: proxy_protocol BEFORE tls — the PP header
+    # arrives ahead of the TLS ClientHello. `allow 127.0.0.1/32` restricts
+    # PP trust to the local hop; anything else cannot spoof a client IP.
+    listener_wrappers {
+      proxy_protocol {
+        allow 127.0.0.1/32
+      }
+      tls
+    }
   }
   on_demand_tls {
     ask @ODT_ASK_URL@
