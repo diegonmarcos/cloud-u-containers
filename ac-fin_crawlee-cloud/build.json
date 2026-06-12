@@ -19,6 +19,7 @@
     "actor_default_memory_mb": 512,
     "actor_timeout_secs": 3600,
     "s3_bucket": "crawlee-cloud",
+    "s3_region": "us-east-1",
     "s3_force_path_style": true,
     "dashboard_hostname": "10.0.0.6"
   },

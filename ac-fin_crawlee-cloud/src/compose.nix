@@ -91,6 +91,9 @@ in
         REDIS_URL           = "redis://localhost:${redisPort}";
         S3_ENDPOINT         = "http://localhost:${minioPort}";
         S3_BUCKET           = runtime.s3_bucket;
+        # MinIO ignores the region but the api config.js hard-requires it
+        # (throws 'Missing required environment variable: S3_REGION').
+        S3_REGION           = runtime.s3_region;
         S3_FORCE_PATH_STYLE = if runtime.s3_force_path_style then "true" else "false";
         RATE_LIMIT_MAX      = toString runtime.rate_limit_max;
         LOG_LEVEL           = runtime.log_level;
