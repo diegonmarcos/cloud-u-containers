@@ -229,6 +229,13 @@ ${lib.concatMapStringsSep "\n" mkSniInnerRoute sniRoutes}
           }
           route @notmail {
             proxy {
+              # Carry the real client address across the local hop. The
+              # :8443 HTTP server unwraps it via listener_wrappers
+              # proxy_protocol (00-globals.caddy.tpl), so remote_ip
+              # matchers (wg-only tier gate) see the true client instead
+              # of 127.0.0.1 — which had every request, including genuine
+              # WG clients, answered "Forbidden" (vault regression).
+              proxy_protocol v2
               upstream 127.0.0.1:8443
             }
           }'';

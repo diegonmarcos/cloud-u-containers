@@ -25,6 +25,21 @@
   # networks that block 51820/udp). Phase 4 of collapse plan.
   servers {
     protocols h1 h2
+    # PROXY protocol unwrap for the local caddy-l4 → :8443 hop. caddy-l4
+    # owns :443 and pipes TLS to 127.0.0.1:8443 with `proxy_protocol v2`
+    # prepended (caddyfile.nix @notmail fall-through). Without this wrapper
+    # the HTTP layer saw remote_ip=127.0.0.1 for EVERY request, so the
+    # wg-only tier gate (`@not_wg not remote_ip 10.0.0.0/24`) returned
+    # Forbidden to legitimate WG clients (vault.diegonmarcos.com regression,
+    # 2026-06-12). Order matters: proxy_protocol BEFORE tls — the PP header
+    # arrives ahead of the TLS ClientHello. `allow 127.0.0.1/32` restricts
+    # PP trust to the local hop; anything else cannot spoof a client IP.
+    listener_wrappers {
+      proxy_protocol {
+        allow 127.0.0.1/32
+      }
+      tls
+    }
   }
   on_demand_tls {
     ask http://127.0.0.1:2020
@@ -42,18 +57,18 @@
         :443 {
 
           # ── SNI mux (issue #294 pattern, flat) ─────────────────────────
-          # IMAPS via SNI on :443 (Maddy) (SNI: imap.diegonmarcos.com)
+          # IMAPS via SNI on :443 — upstream flipped from Maddy:993 to Stalwart:2993 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired) (SNI: imap.diegonmarcos.com)
           @sni_imap_diegonmarcos_com tls sni imap.diegonmarcos.com
           route @sni_imap_diegonmarcos_com {
             proxy {
-              upstream 10.0.0.3:993
+              upstream 10.0.0.3:2993
             }
           }
-          # SMTPS via SNI on :443 (Maddy) (SNI: smtps.diegonmarcos.com)
+          # SMTPS via SNI on :443 — upstream flipped from Maddy:465 to Stalwart:2465 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired) (SNI: smtps.diegonmarcos.com)
           @sni_smtps_diegonmarcos_com tls sni smtps.diegonmarcos.com
           route @sni_smtps_diegonmarcos_com {
             proxy {
-              upstream 10.0.0.3:465
+              upstream 10.0.0.3:2465
             }
           }
           # Fall-through: TLS that does NOT match any mail SNI → internal HTTPS
@@ -66,6 +81,13 @@
           }
           route @notmail {
             proxy {
+              # Carry the real client address across the local hop. The
+              # :8443 HTTP server unwraps it via listener_wrappers
+              # proxy_protocol (00-globals.caddy.tpl), so remote_ip
+              # matchers (wg-only tier gate) see the true client instead
+              # of 127.0.0.1 — which had every request, including genuine
+              # WG clients, answered "Forbidden" (vault regression).
+              proxy_protocol v2
               upstream 127.0.0.1:8443
             }
           }
@@ -152,6 +174,80 @@
   # SUBDOMAIN ROUTES (from routes[])
   # ════════════════════════════════════════════════════════════
 
+  # Radicale CalDAV server (calendars only) — cal.diegonmarcos.com
+  cal.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+
+
+        @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:5232
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:5232
+    }
+
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
+  # Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot
+  chat.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+handle /api/v4/* {
+  reverse_proxy 10.0.0.6:8065
+}
+
+
+        @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:8065
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:8065
+    }
+
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
   # VS Code IDE (ide.diegonmarcos.com)
   ide.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
@@ -176,6 +272,42 @@ import request_limits
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
       reverse_proxy 10.0.0.6:8443
+    }
+
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
+  # Radicale CardDAV server (contacts / address books) — contacts.diegonmarcos.com
+  contacts.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+
+
+        @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:5233
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:5233
     }
 
       handle_errors {
@@ -260,8 +392,28 @@ import request_limits
     }
   }
 
-  # Mattermost team chat with ntfy bridge and C3 command bot
-  chat.diegonmarcos.com {
+  # Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.
+  matrix.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+
+
+        reverse_proxy 10.0.0.6:8008
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
+  # Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA.
+  messenger.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
@@ -276,14 +428,14 @@ import request_limits
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8065
+      reverse_proxy 10.0.0.6:8083
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8065
+      reverse_proxy 10.0.0.6:8083
     }
 
       handle_errors {
@@ -342,42 +494,6 @@ reverse_proxy https://diegonmarcos.github.io {
     }
   }
 
-  # Radicale CalDAV/CardDAV server (cal.diegonmarcos.com)
-  cal.diegonmarcos.com {
-  bind 0.0.0.0 10.0.0.1
-import security
-import request_limits
-
-
-
-
-        @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.6:5232
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.6:5232
-    }
-
-      handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        root * /srv
-        rewrite * /error.html
-        file_server
-      }
-    }
-  }
-
   # Stalwart Mail Server — JMAP webmail backend (jmap.diegonmarcos.com)
   jmap.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
@@ -412,11 +528,14 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        reverse_proxy 10.0.0.6:8880
+    handle {
+      reverse_proxy 10.0.0.6:8880
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -844,14 +963,14 @@ handle_path /cf-worker-bridge/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.4:8092
+      reverse_proxy 10.1.0.1:8092
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.4:8092
+      reverse_proxy 10.1.0.1:8092
     }
 
 }
@@ -1143,39 +1262,81 @@ handle_path /umami/* {
 import security
 import request_limits
 handle_path /g-personal/* {
-  reverse_proxy 10.0.0.6:3106 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3106 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /g-workspace/* {
-  reverse_proxy 10.0.0.6:3104 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3104 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /mail-mcp/* {
-  reverse_proxy 10.0.0.6:3103 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3103 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /mattermost-mcp/* {
-  reverse_proxy 10.0.0.6:3102 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3102 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /c3-infra-mcp/* {
-  reverse_proxy 10.0.0.6:3100 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3100 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /c3-services-mcp/* {
-  reverse_proxy 10.0.0.6:3101 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3101 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /cloud-cgc-mcp/* {
-  reverse_proxy 10.0.0.6:3105 {
-    flush_interval -1
-  }
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          reverse_proxy 10.0.0.6:3105 {
+          flush_interval -1
+        }
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
     handle {
       respond "MCP Hub -- use /g-personal/mcp, /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp" 200
@@ -1374,10 +1535,28 @@ import request_limits
   # INTERNAL ROUTES — portless *.app via HTTP:80 on WireGuard
   # ════════════════════════════════════════════════════════════
 
+  calendar.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.6:5232
+  }
+
+  mattermost.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.6:8065
+  }
+
   code-server.app {
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.6:8443
+  }
+
+  contacts.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.6:5233
   }
 
   cypht.app {
@@ -1428,10 +1607,16 @@ import request_limits
     reverse_proxy 10.0.0.6:3103
   }
 
-  mattermost.app {
+  matrix-continuwuity.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.0.0.6:8065
+    reverse_proxy 10.0.0.6:8008
+  }
+
+  matrix-element.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.6:8083
   }
 
   mattermost-mcp.app {
@@ -1446,12 +1631,6 @@ import request_limits
     reverse_proxy 10.0.0.6:3013
   }
 
-  radicale.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.6:5232
-  }
-
   snappymail.app {
     bind 10.0.0.1
     tls internal
@@ -1461,7 +1640,7 @@ import request_limits
   cf-worker-http-to-wg-public-bridge.app {
     bind 10.0.0.1
     tls internal
-    reverse_proxy 10.0.0.4:8092
+    reverse_proxy 10.1.0.1:8092
   }
 
   stalwart.app {
@@ -1494,22 +1673,10 @@ import request_limits
     reverse_proxy 10.0.0.6:8091
   }
 
-  hickory-dns.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.1:53
-  }
-
   wireguard-mesh.app {
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.6:8080
-  }
-
-  wireguard-mesh-ws-tunnel.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.1:8080
   }
 
   authelia.app {
@@ -1528,12 +1695,6 @@ import request_limits
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.4:443
-  }
-
-  introspect-proxy.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.1:4182
   }
 
   c3-analytics-api.app {
@@ -1632,16 +1793,26 @@ import request_limits
     reverse_proxy 10.0.0.6:3002
   }
 
-  redis.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.0.0.1:6379
-  }
-
 
   # ════════════════════════════════════════════════════════════
   # APP URL ALIASES — {container}-{protocol}-{port}.app canonical routes
   # ════════════════════════════════════════════════════════════
+
+  calendar-radicale-http-5232.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.6:5232
+  }
+
+  mattermost-http-8065.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.6:8065
+  }
 
   code-server-https-8443.app {
     bind 10.0.0.1
@@ -1649,6 +1820,14 @@ import request_limits
       on_demand
     }
     reverse_proxy 10.0.0.6:8443
+  }
+
+  contacts-radicale-http-5233.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.6:5233
   }
 
   cypht-http-8889.app {
@@ -1715,12 +1894,20 @@ import request_limits
     reverse_proxy 10.0.0.6:3103
   }
 
-  mattermost-http-8065.app {
+  continuwuity-http-8008.app {
     bind 10.0.0.1
     tls internal {
       on_demand
     }
-    reverse_proxy 10.0.0.6:8065
+    reverse_proxy 10.0.0.6:8008
+  }
+
+  matrix-element-http-8083.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.6:8083
   }
 
   mattermost-mcp-http-3102.app {
@@ -1739,14 +1926,6 @@ import request_limits
     reverse_proxy 10.0.0.6:3013
   }
 
-  radicale-http-5232.app {
-    bind 10.0.0.1
-    tls internal {
-      on_demand
-    }
-    reverse_proxy 10.0.0.6:5232
-  }
-
   snappymail-http-8888.app {
     bind 10.0.0.1
     tls internal {
@@ -1760,7 +1939,7 @@ import request_limits
     tls internal {
       on_demand
     }
-    reverse_proxy 10.0.0.4:8092
+    reverse_proxy 10.1.0.1:8092
   }
 
   stalwart-https-2443.app {
@@ -1969,20 +2148,28 @@ import request_limits
   # DB ZONE — {container}-{engine}-{port}.db HTTPS catalog endpoints
   # ════════════════════════════════════════════════════════════
 
+  calendar-radicale-files-null.db {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    respond "DB catalog — container=calendar-radicale engine=files port= upstream=(embedded) path=/data/collections vm=oci-A1-f_0" 200
+  }
+
+  contacts-radicale-files-null.db {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    respond "DB catalog — container=contacts-radicale engine=files port= upstream=(embedded) path=/data/collections vm=oci-A1-f_0" 200
+  }
+
   filebrowser_app-sqlite-null.db {
     bind 10.0.0.1
     tls internal {
       on_demand
     }
     respond "DB catalog — container=filebrowser_app engine=sqlite port= upstream=(embedded) path=/data/filebrowser.db vm=oci-A1-f_0" 200
-  }
-
-  radicale-files-null.db {
-    bind 10.0.0.1
-    tls internal {
-      on_demand
-    }
-    respond "DB catalog — container=radicale engine=files port= upstream=(embedded) path=/data/collections vm=oci-A1-f_0" 200
   }
 
   snappymail-files-null.db {
