@@ -46,11 +46,19 @@ let
 
   # Common command wrapper to compose DATABASE_URL from secrets env
   # (POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB come from .secrets).
+  # In production (NODE_ENV=production) the api's config.js env() helper
+  # IGNORES its dev-defaults and THROWS for any unset var. So every
+  # required var must be explicitly provided. Secrets come via the command
+  # wrapper (reusing .secrets env_file values); plain config comes via the
+  # environment block below. API_SECRET reuses the existing JWT_SECRET
+  # secret (same trust domain — the api's signing key) rather than minting
+  # a second credential.
   apiCmd = ''
     sh -c '
       export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
       export S3_ACCESS_KEY="$$MINIO_USER"
       export S3_SECRET_KEY="$$MINIO_PASSWORD"
+      export API_SECRET="$$JWT_SECRET"
       exec node packages/api/dist/index.js
     '
   '';
@@ -95,6 +103,8 @@ in
         # (throws 'Missing required environment variable: S3_REGION').
         S3_REGION           = runtime.s3_region;
         S3_FORCE_PATH_STYLE = if runtime.s3_force_path_style then "true" else "false";
+        # Required in production (no dev-default fallback). Data-driven.
+        CORS_ORIGINS        = runtime.cors_origins;
         RATE_LIMIT_MAX      = toString runtime.rate_limit_max;
         LOG_LEVEL           = runtime.log_level;
         DB_HOST             = "localhost";
