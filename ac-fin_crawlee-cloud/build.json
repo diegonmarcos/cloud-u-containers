@@ -21,6 +21,7 @@
     "s3_bucket": "crawlee-cloud",
     "s3_region": "us-east-1",
     "s3_force_path_style": true,
+    "cors_origins": "https://api.diegonmarcos.com,http://localhost:3001",
     "dashboard_hostname": "10.0.0.6"
   },
   "category": "fin",

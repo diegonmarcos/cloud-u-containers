@@ -7,8 +7,8 @@
 # ║ Rebuild: a_solutions/ac-fin_crawlee-cloud/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type B — wrap upstream, arch=arm64
-FROM crawlee-cloud-api:local
+FROM ghcr.io/diegonmarcos/crawlee-cloud-api:latest
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-LABEL cloud.diegonmarcos.from-image="crawlee-cloud-api:local"
+LABEL cloud.diegonmarcos.from-image="ghcr.io/diegonmarcos/crawlee-cloud-api:latest"
 
 
