@@ -55,7 +55,7 @@ let
   # a second credential.
   apiCmd = ''
     sh -c '
-      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB?sslmode=disable"
       export S3_ACCESS_KEY="$$MINIO_USER"
       export S3_SECRET_KEY="$$MINIO_PASSWORD"
       export API_SECRET="$$JWT_SECRET"
@@ -64,14 +64,14 @@ let
   '';
   runnerCmd = ''
     sh -c '
-      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB?sslmode=disable"
       export API_TOKEN="$$RUNNER_TOKEN"
       exec node dist/index.js
     '
   '';
   schedulerCmd = ''
     sh -c '
-      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB"
+      export DATABASE_URL="postgresql://$$POSTGRES_USER:$$POSTGRES_PASSWORD@$$DB_HOST:$$DB_PORT/$$POSTGRES_DB?sslmode=disable"
       exec sleep infinity
     '
   '';
