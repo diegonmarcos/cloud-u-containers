@@ -21,6 +21,7 @@
   },
   "proxy": {
     "primary": {
+      "wg_only": false,
       "domain": "matrix.diegonmarcos.com",
       "auth": "none"
     }

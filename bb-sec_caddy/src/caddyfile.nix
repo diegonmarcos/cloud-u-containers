@@ -134,6 +134,32 @@ let
     "@TRANSPORT_BLOCK@" = transportBlock;
   } protectedCustomTpl;
 
+  # ── WG-only gates (fail-closed posture; route.wg_only from build.json
+  #    proxy.primary, defaulted true unless wg_only:false — see derive engine) ──
+  # Two shapes for two scopes:
+  #  · wgGateBody — wraps a single handle's BODY in an order-independent
+  #    `handle @wg {…} handle { respond 403 }` pair. MUST be used INSIDE an
+  #    outer handle/handle_path so the 403 catch-all is scoped to that path and
+  #    never leaks to sibling routes in a shared site block. Mirrors the
+  #    mkMcpRouteGroup per-endpoint pattern. Used by mkPathEntry.
+  #  · wgSiteLine — a top-of-site `@not_wg not remote_ip … respond 403` guard
+  #    for whole-domain blocks (relies on the global `order respond before
+  #    handle`, same as mkSubdomainRoute's wgBlock). Used by mkNtfyBlock /
+  #    mkProxyDashboardBlock.
+  wgGateBody = isWg: body:
+    if isWg then ''@wg remote_ip 10.0.0.0/24
+        handle @wg {
+          ${body}
+        }
+        handle {
+          respond "Forbidden" 403
+        }''
+    else body;
+  wgSiteLine = isWg:
+    if isWg then ''@not_wg not remote_ip 10.0.0.0/24
+      respond @not_wg "Forbidden" 403''
+    else "";
+
   mkGithubProxy = path: ''
     rewrite * /${path}{uri}
     reverse_proxy https://diegonmarcos.github.io {
@@ -472,6 +498,11 @@ ${plainOut}${sniMuxBlock}
           isGithubPages = (path.type or null) == "github_pages";
           hasRedirectBare = path.redirect_bare or false;
           hasPublicPaths = (path.public_paths or null) != null;
+          # Fail-closed: WG-only unless build.json set wg_only:false (derive default).
+          # Gate is applied INSIDE each handle/handle_path so the 403 catch-all is
+          # path-scoped and never swallows sibling routes in the shared site block.
+          # public_paths are gated too (the "gate everything" decision).
+          isWg = path.wg_only or false;
 
           redirectBlock = if hasRedirectBare then ''
       @${builtins.replaceStrings ["/"] [""] path.base_path}_bare path ${path.base_path}
@@ -483,22 +514,22 @@ ${plainOut}${sniMuxBlock}
           publicPathsBlock = if hasPublicPaths then
             lib.concatMapStringsSep "\n" (pp: ''
       handle ${pp} {
-        uri strip_prefix ${path.base_path}
-        reverse_proxy ${path.upstream}
+        ${wgGateBody isWg ''uri strip_prefix ${path.base_path}
+        reverse_proxy ${path.upstream}''}
       }'') path.public_paths
           else "";
 
           mainBlock =
             if isGithubPages then ''
       handle_path ${path.base_path}/* {
-        rewrite * /${path.github_path}/{path}
+        ${wgGateBody isWg ''rewrite * /${path.github_path}/{path}
         reverse_proxy https://diegonmarcos.github.io {
           header_up Host diegonmarcos.github.io
-        }
+        }''}
       }''
             else ''
       handle_path ${path.base_path}/* {
-        ${mkProtected path.upstream}
+        ${wgGateBody isWg (mkProtected path.upstream)}
       }'';
 
         in "${redirectBlock}${publicPathsBlock}\n${mainBlock}";
@@ -663,6 +694,7 @@ ${plainOut}${sniMuxBlock}
     ${ntfy.domain} {
   ${publicBindLine}
   ${sec}
+      ${wgSiteLine (ntfy.wg_only or false)}
       handle /setup {
   ${authelia}
         root * /srv
@@ -741,6 +773,7 @@ ${plainOut}${sniMuxBlock}
     ${pd.domain} {
   ${publicBindLine}
   ${sec}
+      ${wgSiteLine (pd.wg_only or false)}
       @bearer header Authorization Bearer*
       handle @bearer {
   ${bearer}

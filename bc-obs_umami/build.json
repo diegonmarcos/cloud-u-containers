@@ -48,6 +48,7 @@
   },
   "proxy": {
     "primary": {
+      "wg_only": false,
       "type": "path",
       "parent_domain": "analytics.diegonmarcos.com",
       "base_path": "/umami",
