@@ -59,7 +59,7 @@ let
       export S3_ACCESS_KEY="$$MINIO_USER"
       export S3_SECRET_KEY="$$MINIO_PASSWORD"
       export API_SECRET="$$JWT_SECRET"
-      exec node packages/api/dist/index.js
+      node packages/api/dist/db/migrate.js && exec node packages/api/dist/index.js
     '
   '';
   runnerCmd = ''
