@@ -80,6 +80,17 @@ await app.register(swaggerUi, { routePrefix: '/docs' });" \
         #    (lockfile won't have new swagger deps, npm ci would fail)
         sed -i 's/npm ci /npm install /g' \
           $out/docker/Dockerfile.api
+
+        # 4. Patch db SSL determination to honour sslmode=disable.
+        #    Upstream forces SSL whenever NODE_ENV=production OR the URL
+        #    merely contains "sslmode=" — so the local SSL-less postgres
+        #    (postgres:16-alpine, host-network localhost) rejects every
+        #    connection with "The server does not support SSL connections",
+        #    and even sslmode=disable would (wrongly) flip SSL ON. Make the
+        #    logic correct: SSL only when explicitly sslmode=require, or in
+        #    production UNLESS sslmode=disable is present.
+        sed -i "s@const useSSL = config.databaseUrl.includes('sslmode=') || config.nodeEnv === 'production';@const useSSL = config.databaseUrl.includes('sslmode=require') || (config.nodeEnv === 'production' \&\& !config.databaseUrl.includes('sslmode=disable'));@" \
+          $out/packages/api/src/db/index.ts
       '';
 
       # ── Engine output (v2 dist layout) ───────────────────────────
