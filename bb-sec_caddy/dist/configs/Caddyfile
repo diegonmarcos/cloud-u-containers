@@ -179,11 +179,13 @@
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -200,6 +202,7 @@ import request_limits
       reverse_proxy 10.0.0.6:5232
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -215,13 +218,15 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 handle /api/v4/* {
   reverse_proxy 10.0.0.6:8065
 }
 
 
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -238,6 +243,7 @@ handle /api/v4/* {
       reverse_proxy 10.0.0.6:8065
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -253,11 +259,13 @@ handle /api/v4/* {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -274,6 +282,7 @@ import request_limits
       reverse_proxy 10.0.0.6:8443
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -289,11 +298,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -310,6 +321,7 @@ import request_limits
       reverse_proxy 10.0.0.6:5233
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -325,11 +337,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -346,6 +360,7 @@ import request_limits
       reverse_proxy 10.0.0.3:8889
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -361,11 +376,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -382,6 +399,7 @@ import request_limits
       reverse_proxy 10.0.0.6:3011
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -417,11 +435,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -438,6 +458,7 @@ import request_limits
       reverse_proxy 10.0.0.6:8083
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -453,7 +474,8 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 # Root path → landing page (proxied, keeps our domain)
 @root path /
 handle @root {
@@ -467,7 +489,8 @@ reverse_proxy https://diegonmarcos.github.io {
 # All other paths → auth + upstream
 
 
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -484,6 +507,7 @@ reverse_proxy https://diegonmarcos.github.io {
       reverse_proxy 10.0.0.6:3013
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -499,7 +523,8 @@ reverse_proxy https://diegonmarcos.github.io {
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
-
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
     # Bare host → JMAP discovery URL (308 redirect) (well-known — public per spec)
@@ -551,11 +576,13 @@ respond @not_wg "Forbidden" 403
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -572,6 +599,7 @@ import request_limits
       reverse_proxy 10.0.0.6:8080
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -607,11 +635,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -628,6 +658,7 @@ import request_limits
       reverse_proxy 10.0.0.1:9091
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -643,11 +674,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -664,6 +697,7 @@ import request_limits
       reverse_proxy 10.0.0.4:8070
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -679,11 +713,13 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
 
 
 
-
-        @bearer header Authorization Bearer*
+    handle {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -700,6 +736,7 @@ import request_limits
       reverse_proxy 10.0.0.6:8086
     }
 
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -850,7 +887,9 @@ import security
 import request_limits
 
 handle_path /etherpad/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -867,10 +906,16 @@ handle_path /etherpad/* {
       reverse_proxy 10.0.0.6:3012
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /filebrowser/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -887,10 +932,16 @@ handle_path /filebrowser/* {
       reverse_proxy 10.0.0.6:3015
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /hedgedoc/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -907,10 +958,16 @@ handle_path /hedgedoc/* {
       reverse_proxy 10.0.0.6:3018
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /gitea/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -927,6 +984,10 @@ handle_path /gitea/* {
       reverse_proxy 10.0.0.6:3002
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle {
   respond "Not Found" 404
@@ -976,7 +1037,9 @@ handle_path /cf-worker-bridge/* {
 }
 
 handle_path /crawlee/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -993,10 +1056,16 @@ handle_path /crawlee/* {
       reverse_proxy 10.0.0.6:3000
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /fin-api/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -1013,10 +1082,16 @@ handle_path /fin-api/* {
       reverse_proxy 10.0.0.6:8340
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 
 handle_path /c3a/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -1033,13 +1108,25 @@ handle_path /c3a/* {
       reverse_proxy 10.0.0.1:8085
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle /c3-infra-api/docs/json {
-  uri strip_prefix /c3-infra-api
-  reverse_proxy 10.0.0.6:8081
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+          uri strip_prefix /c3-infra-api
+        reverse_proxy 10.0.0.6:8081
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle_path /c3-infra-api/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -1056,18 +1143,22 @@ handle_path /c3-infra-api/* {
       reverse_proxy 10.0.0.6:8081
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle /pub/health {
   uri strip_prefix /pub
-  reverse_proxy 10.0.0.4:8087
+        reverse_proxy 10.0.0.4:8087
 }
 handle /pub/ready {
   uri strip_prefix /pub
-  reverse_proxy 10.0.0.4:8087
+        reverse_proxy 10.0.0.4:8087
 }
 handle /pub/analytics/* {
   uri strip_prefix /pub
-  reverse_proxy 10.0.0.4:8087
+        reverse_proxy 10.0.0.4:8087
 }
 handle_path /pub/* {
       @bearer header Authorization Bearer*
@@ -1090,7 +1181,9 @@ handle_path /pub/* {
 }
 
 handle_path /c3-services-api/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -1107,6 +1200,10 @@ handle_path /c3-services-api/* {
       reverse_proxy 10.0.0.6:8082
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle {
   rewrite * /api{uri}
@@ -1140,7 +1237,9 @@ reverse_proxy https://diegonmarcos.github.io {
 }
 
 handle_path /spec/* {
-      @bearer header Authorization Bearer*
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
@@ -1157,6 +1256,10 @@ handle_path /spec/* {
       reverse_proxy 10.0.0.6:3080
     }
 
+        }
+        handle {
+          respond "Forbidden" 403
+        }
 }
 handle {
   rewrite * /cloud{uri}
@@ -1455,6 +1558,8 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+    @not_wg not remote_ip 10.0.0.0/24
+      respond @not_wg "Forbidden" 403
     handle /setup {
     forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
@@ -1500,6 +1605,8 @@ import request_limits
   bind 0.0.0.0 10.0.0.1
 import security
 import request_limits
+    @not_wg not remote_ip 10.0.0.0/24
+      respond @not_wg "Forbidden" 403
     @bearer header Authorization Bearer*
     handle @bearer {
     forward_auth 10.0.0.1:4182 {

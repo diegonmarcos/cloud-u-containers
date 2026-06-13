@@ -35,6 +35,7 @@
   "proxy": {
     "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (2_configs/src/engines/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
     "primary": {
+      "wg_only": false,
       "auth": "two_factor",
       "type": "path",
       "parent_domain": "api.diegonmarcos.com",
