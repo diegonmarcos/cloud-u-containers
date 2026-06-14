@@ -1,0 +1,171 @@
+{
+  "name": "paca",
+  "description": "Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1).",
+  "category": "app",
+  "domain": "paca.diegonmarcos.com",
+  "ports": {
+    "gateway": 8095,
+    "api": 8080,
+    "realtime": 3001,
+    "db": 5432
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/paca",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "paca.diegonmarcos.com",
+      "auth": "two_factor"
+    }
+  },
+  "health": {
+    "path": "/api/healthz"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true,
+    "volumes": [
+      "paca_postgres",
+      "paca_valkey",
+      "paca_backend_plugins",
+      "paca_frontend_plugins",
+      "paca_mcp_plugins"
+    ]
+  },
+  "secrets": {
+    "escape_dollars": true
+  },
+  "containers": {
+    "gateway": {
+      "container_name": "paca-gateway",
+      "image": "nginx:1.27-alpine",
+      "port": 8095,
+      "port_env": null,
+      "dns": "paca.app",
+      "public": true,
+      "proxy": {
+        "domain": "paca.diegonmarcos.com",
+        "auth": "two_factor"
+      },
+      "healthcheck": null,
+      "volumes": [
+        "./nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "api",
+        "web",
+        "realtime"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "api": {
+      "container_name": "paca-api",
+      "image": "pacaai/paca-api:latest",
+      "port": 8080,
+      "port_env": "PORT",
+      "dns": "paca-api.app",
+      "public": false,
+      "healthcheck": "wget -q --spider http://localhost:8080/api/healthz || exit 1",
+      "volumes": [
+        "paca_backend_plugins:/plugins",
+        "paca_frontend_plugins:/plugins-frontend",
+        "paca_mcp_plugins:/plugins-mcp"
+      ],
+      "env_file": true,
+      "depends_on": [
+        "db",
+        "valkey"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "web": {
+      "container_name": "paca-web",
+      "image": "pacaai/paca-web:latest",
+      "port": null,
+      "port_env": null,
+      "dns": "paca-web.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": false,
+      "depends_on": [
+        "api"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "realtime": {
+      "container_name": "paca-realtime",
+      "image": "pacaai/paca-realtime:latest",
+      "port": 3001,
+      "port_env": "PORT",
+      "dns": "paca-realtime.app",
+      "public": false,
+      "healthcheck": null,
+      "volumes": [],
+      "env_file": true,
+      "depends_on": [
+        "api",
+        "valkey"
+      ],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    },
+    "valkey": {
+      "container_name": "paca-valkey",
+      "image": "valkey/valkey:8-alpine",
+      "port": 6379,
+      "port_env": null,
+      "dns": "paca-valkey.app",
+      "public": false,
+      "healthcheck": "valkey-cli ping",
+      "volumes": [
+        "paca_valkey:/data"
+      ],
+      "env_file": false,
+      "resources": null,
+      "read_only": false,
+      "protocol": "tcp"
+    },
+    "db": {
+      "container_name": "paca-postgres",
+      "image": "postgres:16-alpine",
+      "port": 5432,
+      "port_env": "PGPORT",
+      "dns": "paca-postgres.app",
+      "public": false,
+      "healthcheck": "pg_isready -U paca -d paca",
+      "volumes": [
+        "paca_postgres:/var/lib/postgresql/data"
+      ],
+      "env_file": true,
+      "resources": null,
+      "read_only": false,
+      "db_user": "paca",
+      "db_name": "paca",
+      "db_engine": "postgres",
+      "protocol": "tcp"
+    }
+  },
+  "_mirror_todo": "User chose GHCR mirroring. The engine's nativeBuild builds ONE image/service; Paca needs 3 app-image mirrors (pacaai/paca-{api,web,realtime}) + 3 base images. v1 references upstream images directly (pinned later). Full GHCR mirror needs a multi-image mirror step (engine enhancement) — tracked as follow-up.",
+  "api": {
+    "type": "custom-rest",
+    "base_path": "/api",
+    "display_name": "Paca",
+    "description": "AI-native project management REST API.",
+    "auth": "bearer"
+  }
+}
