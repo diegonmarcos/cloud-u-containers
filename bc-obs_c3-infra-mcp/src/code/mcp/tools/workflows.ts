@@ -4,7 +4,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { execAsync } from "../../shared/libs/exec.js";
-import { DAGU_API, daguHeaders } from "../../shared/libs/ops.js";
+import { DAGU_API, DAGU_API_PATH, daguHeaders } from "../../shared/libs/ops.js";
 
 const log = (msg: string) => process.stderr.write(`[workflows] ${msg}\n`);
 // Resolve GitHub repo from cloud-data topology owner
@@ -153,7 +153,7 @@ function mapV1Entry(d: any): DaguDag {
 }
 
 async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
-  const r = await daguFetch("/api/v2/dags");
+  const r = await daguFetch(`${DAGU_API_PATH}/dags`);
   if (!r.ok) return { dags: [], error: r.error };
   const data = r.data as any;
 
@@ -171,11 +171,11 @@ async function daguList(): Promise<{ dags: DaguDag[]; error?: string }> {
   // Unknown — surface the actual top-level keys + a preview so we can extend the parser
   const keys = data && typeof data === "object" ? Object.keys(data).slice(0, 20).join(",") : typeof data;
   const preview = JSON.stringify(data).slice(0, 200);
-  return { dags: [], error: `unexpected format from ${DAGU_API}/api/v2/dags (keys=[${keys}] preview=${preview})` };
+  return { dags: [], error: `unexpected format from ${DAGU_API}${DAGU_API_PATH}/dags (keys=[${keys}] preview=${preview})` };
 }
 
 async function daguHistory(dagName: string): Promise<unknown[]> {
-  const r = await daguFetch(`/api/v2/dags/${encodeURIComponent(dagName)}`);
+  const r = await daguFetch(`${DAGU_API_PATH}/dags/${encodeURIComponent(dagName)}`);
   if (!r.ok) return [];
   const data = r.data as { LogData?: unknown[]; RecentHistory?: unknown[] };
   return data?.RecentHistory ?? data?.LogData ?? [];
@@ -420,11 +420,11 @@ async function workflowsDaguTrigger(dagName?: string): Promise<string> {
     for (const d of dags) {
       const name = d.name;
       if (!name) continue;
-      const r = await daguFetch(`/api/v2/dags/${encodeURIComponent(name)}/start`, "POST", "{}");
+      const r = await daguFetch(`${DAGU_API_PATH}/dags/${encodeURIComponent(name)}/start`, "POST", "{}");
       sections.push(`  ${r.ok ? "✓" : "✗"} ${name}${r.ok ? "" : ` — ${r.error}`}`);
     }
   } else {
-    const r = await daguFetch(`/api/v2/dags/${encodeURIComponent(dagName)}/start`, "POST", "{}");
+    const r = await daguFetch(`${DAGU_API_PATH}/dags/${encodeURIComponent(dagName)}/start`, "POST", "{}");
     sections.push(r.ok ? `✓ Triggered: ${dagName}` : `✗ Failed: ${dagName} — ${r.error}`);
   }
 
