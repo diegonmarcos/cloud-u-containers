@@ -5,7 +5,11 @@ import { promisify } from "node:util";
 
 const exec = promisify(execFile);
 const OCTOCODE_BIN = process.env.OCTOCODE_BIN ?? "octocode";
-const GIT_ROOT = process.env.GIT_ROOT ?? "/home/diego/git";
+// Deployed container always sets GIT_ROOT explicitly (compose.nix → build.json.runtime.git_root,
+// e.g. /home/diego/Mounts/Git). The fallback is for local/dev only and MUST derive from $HOME —
+// the previous hardcoded "/home/diego/git" does not exist on any non-legacy host (e.g. Termux,
+// where HOME=/data/data/com.termux.nix/files/home), so octocode cwd'd into a missing dir and failed.
+const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
 const REPOS: Record<string, string> = {
   cloud: `${GIT_ROOT}/cloud`,
   "cloud-data": `${GIT_ROOT}/cloud-data`,
