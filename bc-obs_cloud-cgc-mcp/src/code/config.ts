@@ -81,7 +81,12 @@ export function getCloudDataPath(filename: string): string {
 export function getConfig(): InfraConfig {
   const now = Date.now();
   if (!_config || now - _configTimestamp > CONFIG_TTL) {
-    _config = JSON.parse(readFileSync(getConfigPath(), "utf-8")) as InfraConfig;
+    // Source of truth is the consolidated superset (vms + services + configs + deps + dns…),
+    // NOT the legacy config.json (which lacks `services`/`configs`). CONFIG_PATH is retained
+    // only as the repo-root anchor for getRepoRoot()/getCloudDataPath().
+    // 2026-04-27 migration completion: getConfig() now reads _cloud-data-consolidated.json.
+    const path = getCloudDataPath("_cloud-data-consolidated.json");
+    _config = JSON.parse(readFileSync(path, "utf-8")) as InfraConfig;
     _configTimestamp = now;
   }
   return _config;
