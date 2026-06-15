@@ -18,7 +18,23 @@ function resolveDaguApi(): string {
   } catch {}
   return "http://10.0.0.3:8070";
 }
+
+// Resolve the Dagu REST API base path from cloud-data (services.dagu.api.base_path).
+// Data-driven: the deployed dagu image serves its API at /api/v1 — hardcoding /api/v2
+// silently hit the SPA (HTTP 200 HTML), so triggers reported success but did nothing.
+function resolveDaguApiPath(): string {
+  if (process.env.DAGU_API_PATH) return process.env.DAGU_API_PATH;
+  try {
+    const { readFileSync } = require("fs");
+    const { getConfigPath } = require("./paths.js");
+    const topo = JSON.parse(readFileSync(getConfigPath(), "utf-8"));
+    const bp = topo.services?.dagu?.api?.base_path;
+    if (typeof bp === "string" && bp.startsWith("/")) return bp;
+  } catch {}
+  return "/api/v1";
+}
 const DAGU_API = resolveDaguApi();
+const DAGU_API_PATH = resolveDaguApiPath();
 const DAGU_USER = process.env.DAGU_USERNAME ?? "";
 const DAGU_PASS = process.env.DAGU_PASSWORD ?? "";
 
@@ -101,11 +117,11 @@ export function daguHeaders(): Record<string, string> {
 }
 
 /** Dagu API base URL */
-export { DAGU_API };
+export { DAGU_API, DAGU_API_PATH };
 
 async function triggerDag(name: string): Promise<{ ok: boolean; dagRunId?: string; error?: string }> {
-  // Try REST API first (Dagu <2.5)
-  const url = `${DAGU_API}/api/v2/dags/${name}/start`;
+  // Try REST API first (Dagu <2.5). Path is data-driven (services.dagu.api.base_path).
+  const url = `${DAGU_API}${DAGU_API_PATH}/dags/${name}/start`;
   try {
     const resp = await fetch(url, {
       method: "POST",

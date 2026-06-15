@@ -83,7 +83,7 @@
   },
   "api": {
     "type": "custom-rest",
-    "base_path": "/api/v2",
+    "base_path": "/api/v1",
     "display_name": "Dagu Workflow Scheduler",
     "description": "Lightweight DAG-based workflow scheduler for orchestrating cloud infrastructure automation.",
     "auth": "none"
