@@ -40,8 +40,14 @@
     "headers_enforced": true
   },
   "runtime": {
-    "git_root": "/home/diego/Mounts/Git",
-    "data_path": "/data"
+    "git_root": "/repos",
+    "data_path": "/data",
+    "octocode": {
+      "repos_volume": "octocode_repos",
+      "repos_path": "/repos",
+      "db_volume": "octocode_db",
+      "db_path": "/home/appuser/.local/share/octocode"
+    }
   },
   "containers": {
     "app": {
