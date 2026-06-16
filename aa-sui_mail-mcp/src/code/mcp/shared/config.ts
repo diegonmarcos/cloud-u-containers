@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export interface ServerConfig {
   host: string;
+  // Optional IP to connect SMTP to, bypassing DNS. nodemailer resolves `host`
+  // via dns.resolve() (querying the configured resolver — Hickory at 10.0.0.1,
+  // which wildcard-returns the public edge), ignoring /etc/hosts, so the
+  // compose `extra_hosts` pin cannot take effect. Connecting by IP avoids
+  // resolution entirely; TLS SNI/cert verification still uses `host`.
+  smtpHost?: string;
   imap: number;
   smtp: number;
   jmap?: string;
@@ -20,6 +26,7 @@ export const DOMAIN = "diegonmarcos.com";
 const SERVERS: Record<string, ServerConfig> = {
   maddy: {
     host: process.env.MADDY_HOST ?? "mail.diegonmarcos.com",
+    smtpHost: process.env.MADDY_SMTP_IP,
     imap: parseInt(process.env.MADDY_IMAP_PORT ?? "993"),
     smtp: parseInt(process.env.MADDY_SMTP_PORT ?? "465"),
     sshAlias: "oci-mail",
@@ -27,6 +34,7 @@ const SERVERS: Record<string, ServerConfig> = {
   },
   stalwart: {
     host: process.env.STALWART_HOST ?? "jmap.diegonmarcos.com",
+    smtpHost: process.env.STALWART_SMTP_IP,
     imap: parseInt(process.env.STALWART_IMAP_PORT ?? "2993"),
     smtp: parseInt(process.env.STALWART_SMTP_PORT ?? "2465"),
     jmap: process.env.STALWART_JMAP_URL ?? "https://jmap.diegonmarcos.com:2443",
