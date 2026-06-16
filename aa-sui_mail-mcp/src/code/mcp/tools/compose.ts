@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getTransport } from "../shared/smtp.js";
+import { sendViaJmap } from "../shared/jmap.js";
 import { withImap } from "../shared/imap.js";
 import { getAccount, serverSchema, accountSchema } from "../shared/config.js";
 import { simpleParser, type AddressObject } from "mailparser";
@@ -25,11 +26,16 @@ export function registerComposeTools(server: McpServer): void {
       cc: z.string().optional().describe("CC address(es), comma-separated"),
       bcc: z.string().optional().describe("BCC address(es), comma-separated"),
       html: z.string().optional().describe("HTML body (overrides plain text body for HTML part)"),
+      transport: z.enum(["smtp", "jmap"]).default("smtp").describe("Send transport. 'jmap' submits via Stalwart JMAP (HTTP); 'smtp' uses nodemailer (Maddy/Stalwart submission port)"),
     },
-    async ({ server: srv, account, to, subject, body, cc, bcc, html }) => {
-      const transport = getTransport(srv, account);
+    async ({ server: srv, account, to, subject, body, cc, bcc, html, transport }) => {
+      if (transport === "jmap") {
+        const id = await sendViaJmap(account, { to, subject, body, cc, bcc, html });
+        return { content: [{ type: "text", text: `Sent via Stalwart JMAP. Email ID: ${id}` }] };
+      }
+      const tx = getTransport(srv, account);
       const creds = getAccount(srv, account);
-      const info = await transport.sendMail({
+      const info = await tx.sendMail({
         from: creds.user,
         to,
         subject,
