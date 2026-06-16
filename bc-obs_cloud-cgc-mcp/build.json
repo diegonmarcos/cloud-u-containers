@@ -47,7 +47,15 @@
       "repos_volume": "octocode_repos",
       "repos_path": "/repos",
       "db_volume": "octocode_db",
-      "db_path": "/home/appuser/.local/share/octocode"
+      "db_path": "/home/appuser/.local/share/octocode",
+      "llm": {
+        "_comment": "octocode GraphRAG LLM → claude-openai-bridge (WG, same VM). openai provider honours OPENAI_BASE_URL; bridge ignores the model name and always serves Claude. api_key is a throwaway (bridge does not check it).",
+        "base_url": "http://10.0.0.6:3107/v1",
+        "api_key": "sk-dummy",
+        "model": "openai:gpt-4o-mini"
+      },
+      "index_repos": ["cloud", "unix", "front", "tools", "cloud-data", "front-data"],
+      "home": "/home/appuser"
     }
   },
   "containers": {
