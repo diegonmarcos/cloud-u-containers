@@ -22,10 +22,22 @@ import { join, dirname, resolve } from "node:path";
 // No hardcoded repo list, no per-repo wiring.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Resolution order for the graph data dir:
+//   1. CODEGRAPH_GRAPHS_DIR env (explicit override)
+//   2. ./graphs bundled inside the image (/app/code/graphs) — ships with the cgc
+//      build, so the graph is live WITHOUT depending on the octocode repos volume.
+//   3. repo layout fallback ($GIT_ROOT/cloud/{2_configs/dist, …/kg-graph/src}).
 const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
 const CLOUD = join(GIT_ROOT, "cloud");
-const DIST = join(CLOUD, "2_configs", "dist");
-const SEMANTIC_DIR = join(CLOUD, "a_solutions", "ca-dat_kg-graph", "src");
+const BUNDLED = join(import.meta.dirname!, "..", "..", "graphs");
+const useBundle = (): string | null => {
+  if (process.env.CODEGRAPH_GRAPHS_DIR && existsSync(process.env.CODEGRAPH_GRAPHS_DIR)) return process.env.CODEGRAPH_GRAPHS_DIR;
+  if (existsSync(join(BUNDLED, "build-kg-graph_delta.json"))) return BUNDLED;
+  return null;
+};
+const BUNDLE = useBundle();
+const DIST = BUNDLE ?? join(CLOUD, "2_configs", "dist");          // ① infra + ② code-signatures
+const SEMANTIC_DIR = BUNDLE ?? join(CLOUD, "a_solutions", "ca-dat_kg-graph", "src"); // ③ semantic
 const TTL_MS = 5 * 60 * 1000;
 
 interface GNode { table: string; id: string; key: string; properties: Record<string, unknown>; layer: string }
