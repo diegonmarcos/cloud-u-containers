@@ -77,7 +77,13 @@ export async function sendViaJmap(account: string, msg: JmapSendMsg): Promise<st
   const session = (await sres.json()) as JmapSession;
   const accountId = session.primaryAccounts?.["urn:ietf:params:jmap:mail"];
   if (!accountId) throw new Error("JMAP: no primary mail account in session");
-  const apiUrl = new URL(session.apiUrl, srv.jmap).toString();
+  // Stalwart advertises its PUBLIC apiUrl (port 443 via the Caddy edge), but we
+  // connect WG-direct to oci-mail where Stalwart serves on :2443. Rebase the
+  // advertised apiUrl PATH onto the configured STALWART_JMAP_URL origin so the
+  // POST hits the reachable backend port, not the public edge (→ ECONNREFUSED).
+  const base = new URL(srv.jmap);
+  const adv = new URL(session.apiUrl, base);
+  const apiUrl = base.origin + adv.pathname + adv.search;
 
   // 2. Resolve Drafts + Sent mailboxes and the submission identity.
   const lookup = await jmapPost(apiUrl, auth, [
