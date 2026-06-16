@@ -1,0 +1,52 @@
+{
+  "name": "claude-openai-bridge",
+  "description": "OpenAI-compatible shim over the Claude Code CLI (subscription OAuth) \u2014 serves octocode's GraphRAG LLM-extraction pass without a metered API key. Internal sidecar on oci-apps; never public.",
+  "dns": "claude-openai-bridge.app",
+  "ports": {
+    "app": 3107
+  },
+  "category": "net",
+  "docker": {
+    "image": "claude-openai-bridge",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "platform": "linux/arm64",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "apt": "curl ca-certificates git",
+      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install -g @anthropic-ai/claude-code && npm install --omit=dev",
+      "entrypoint": "node server.mjs",
+      "base_image": "debian:bookworm-slim",
+      "app_dir": "code"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/claude-openai-bridge",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "secrets": {
+    "escape_dollars": false
+  },
+  "containers": {
+    "app": {
+      "container_name": "claude-openai-bridge",
+      "image": "ghcr.io/diegonmarcos/claude-openai-bridge:latest",
+      "port": 3107,
+      "port_env": "BRIDGE_PORT",
+      "dns": "claude-openai-bridge.app",
+      "public": false,
+      "healthcheck": "/health",
+      "monitoring": null,
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  }
+}
