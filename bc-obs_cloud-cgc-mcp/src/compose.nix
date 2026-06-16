@@ -68,9 +68,13 @@ in
       environment = {
         HOME                = oct.home;
         OCTOCODE_HOME       = oct.home;
-        OPENAI_BASE_URL     = oct.llm.base_url;
+        # octocode reads *_API_URL (NOT *_BASE_URL) per provider — both point at the bridge.
+        OPENAI_API_URL      = oct.llm.openai_api_url;
         OPENAI_API_KEY      = oct.llm.api_key;
-        OCTOCODE_LLM_MODEL  = oct.llm.model;
+        OLLAMA_API_URL      = oct.llm.ollama_api_url;
+        OLLAMA_API_KEY      = oct.llm.api_key;
+        OCTOCODE_LLM_MODELS = oct.llm.models;   # ordered providers, fallback in reindex.sh
+        BRIDGE_HEALTH_URL   = oct.llm.health_url;
         OCTOCODE_REPOS      = toString oct.index_repos;
         OCTOCODE_REPOS_ROOT = oct.repos_path;
         OCTOCODE_PULL       = "0";

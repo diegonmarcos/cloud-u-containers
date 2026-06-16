@@ -49,10 +49,12 @@
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
       "llm": {
-        "_comment": "octocode GraphRAG LLM → claude-openai-bridge (WG, same VM). openai provider honours OPENAI_BASE_URL; bridge ignores the model name and always serves Claude. api_key is a throwaway (bridge does not check it).",
-        "base_url": "http://10.0.0.6:3107/v1",
+        "_comment": "octocode GraphRAG LLM → claude-openai-bridge, TWO providers with fallback. openai:* reads OPENAI_API_URL → bridge /v1; ollama:* reads OLLAMA_API_URL (localhost:11434) → bridge Ollama mimic. reindex.sh forces use_llm=true (the flag that was off → 0 LLM calls) and tries `models` in order, falling back if a provider makes 0 bridge calls. api_key is a throwaway.",
+        "openai_api_url": "http://10.0.0.6:3107/v1/chat/completions",
+        "ollama_api_url": "http://localhost:11434",
         "api_key": "sk-dummy",
-        "model": "openai:gpt-4o-mini"
+        "models": "openai:gpt-4o-mini ollama:claude-sonnet",
+        "health_url": "http://10.0.0.6:3107/health"
       },
       "index_repos": ["cloud", "unix", "front", "tools", "cloud-data", "front-data"],
       "home": "/home/appuser"
