@@ -20,10 +20,12 @@ REPOS="${OCTOCODE_REPOS:-cloud unix front tools cloud-data front-data}"
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
 HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3107/health}"
 PULL="${OCTOCODE_PULL:-0}"
-# octocode skips when the git HEAD is unchanged since last index ("No commit changes
-# since last index, skipping reindex") — which short-circuits before the GraphRAG LLM
-# pass. --no-git disables that optimization so the LLM graph actually gets (re)built.
-NO_GIT=""; [ "${OCTOCODE_NO_GIT:-1}" = "1" ] && NO_GIT="--no-git"
+# FORCE a fresh index: octocode skips when the git HEAD is unchanged ("No commit
+# changes since last index"), but --no-git ALSO skips the GraphRAG AI phase (the
+# description/relationship LLM calls). So instead we `octocode clear` the project
+# then index WITH git — a fresh full build that runs the AI phase → LLM calls.
+# OCTOCODE_CLEAR=1 → force/reindex; =0 → incremental (only changed files).
+CLEAR="${OCTOCODE_CLEAR:-1}"
 
 bridge_calls() { curl -s -m 5 "$HEALTH" 2>/dev/null | grep -oE '"calls":[0-9]+' | grep -oE '[0-9]+' | head -1 || echo 0; }
 
@@ -55,9 +57,10 @@ for repo in $REPOS; do
   for model in $MODELS; do
     echo "[reindex] === $repo ($nfiles files) · provider=$model ==="
     set_provider "$model"
+    [ "$CLEAR" = "1" ] && { echo "[reindex] $repo · clearing index (force fresh)"; ( cd "$d" && octocode clear --mode all ) >/dev/null 2>&1 || true; }
     before=$(bridge_calls)
     t0=$(date +%s 2>/dev/null || echo 0)
-    ( cd "$d" && octocode index $NO_GIT ) 2>&1 | tail -6 || echo "[reindex] index $repo ($model) FAILED"
+    ( cd "$d" && octocode index ) 2>&1 | tail -6 || echo "[reindex] index $repo ($model) FAILED"
     t1=$(date +%s 2>/dev/null || echo 0)
     after=$(bridge_calls)
     delta=$(( after - before ))
