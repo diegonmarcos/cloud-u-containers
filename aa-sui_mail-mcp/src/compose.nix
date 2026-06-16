@@ -63,6 +63,11 @@ in
         PORT                = port;
         MAIL_HOST           = mailHost;
         MADDY_HOST          = mh.maddy;
+        # SMTP connect-by-IP: nodemailer's dns.resolve() ignores the
+        # extra_hosts /etc/hosts pin, so SMTP submission must target the WG IP
+        # directly (TLS SNI stays on MADDY_HOST/STALWART_HOST for cert check).
+        MADDY_SMTP_IP       = mailWgIp;
+        STALWART_SMTP_IP    = mailWgIp;
         MADDY_IMAP_PORT     = toString mp.maddy_imap;
         MADDY_SMTP_PORT     = toString mp.maddy_smtp;
         STALWART_HOST       = mh.stalwart;
