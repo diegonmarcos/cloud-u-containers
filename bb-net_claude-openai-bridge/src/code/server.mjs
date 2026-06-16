@@ -47,8 +47,15 @@ const toPrompt = (messages = []) => {
   return { system: sys.join("\n\n"), prompt: turns.join("\n\n") };
 };
 
-// octocode sends "anthropic/claude-sonnet-4-6"; claude --model wants the bare id.
-const mapModel = (m) => (m ? String(m).replace(/^anthropic\//, "") : DEFAULT_MODEL);
+// The bridge ALWAYS serves Claude. Clients (octocode via its `openai` provider)
+// send arbitrary model names like "gpt-4o-mini" — those are NOT valid `claude
+// --model` ids and make claude -p exit 1. So: honor an explicit Claude request
+// (strip an "anthropic/" prefix), otherwise fall back to BRIDGE_DEFAULT_MODEL.
+const mapModel = (m) => {
+  if (!m) return DEFAULT_MODEL;
+  const s = String(m).replace(/^anthropic\//, "");
+  return /claude/i.test(s) ? s : DEFAULT_MODEL;
+};
 
 // ── one claude -p invocation ─────────────────────────────────────────────────
 const callClaude = ({ system, prompt, model }) =>
