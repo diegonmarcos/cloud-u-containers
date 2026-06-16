@@ -1,0 +1,107 @@
+{
+  "name": "kg-mcp",
+  "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "dns": "kg-mcp.app",
+  "ports": {
+    "app": 3105
+  },
+  "category": "obs",
+  "docker": {
+    "image": "kg-mcp",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "platform": "linux/arm64",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "apt": "curl ca-certificates",
+      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev",
+      "entrypoint": "npx tsx index.ts",
+      "base_image": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest",
+      "app_dir": "code"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/kg-mcp",
+    "compose_flags": "--build"
+  },
+  "proxy": {
+    "primary": {
+      "streaming": true,
+      "type": "path",
+      "parent_domain": "mcp.diegonmarcos.com",
+      "base_path": "/kg-mcp",
+      "wg_only": true
+    },
+    "app_hub": false
+  },
+  "build": {
+    "include_cloud_data": true,
+    "headers_enforced": true
+  },
+  "runtime": {
+    "git_root": "/repos",
+    "data_path": "/data",
+    "octocode": {
+      "repos_volume": "octocode_repos",
+      "repos_path": "/repos",
+      "db_volume": "octocode_db",
+      "db_path": "/home/appuser/.local/share/octocode",
+      "llm": {
+        "_comment": "octocode GraphRAG LLM \u2192 kg-bridge, TWO providers with fallback. openai:* reads OPENAI_API_URL \u2192 bridge /v1; ollama:* reads OLLAMA_API_URL (localhost:11434) \u2192 bridge Ollama mimic. reindex.sh forces use_llm=true (the flag that was off \u2192 0 LLM calls) and tries `models` in order, falling back if a provider makes 0 bridge calls. api_key is a throwaway.",
+        "openai_api_url": "http://10.0.0.6:3107/v1/chat/completions",
+        "ollama_api_url": "http://localhost:11434",
+        "api_key": "sk-dummy",
+        "models": "ollama:claude-sonnet openai:gpt-4o-mini",
+        "health_url": "http://10.0.0.6:3107/health"
+      },
+      "index_repos": [
+        "cloud",
+        "unix",
+        "front",
+        "tools",
+        "cloud-data",
+        "front-data"
+      ],
+      "home": "/home/appuser"
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "kg-mcp",
+      "image": "ghcr.io/diegonmarcos/kg-mcp:latest",
+      "port": 3105,
+      "port_env": "MCP_HTTP_PORT",
+      "dns": "kg-mcp.app",
+      "public": true,
+      "proxy": {
+        "streaming": true,
+        "type": "path",
+        "parent_domain": "mcp.diegonmarcos.com",
+        "base_path": "/kg-mcp"
+      },
+      "healthcheck": "/mcp",
+      "monitoring": null,
+      "volumes": [
+        "./data:/data:ro"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint_path": "/mcp",
+    "tools_count": 48,
+    "resources_count": 2,
+    "prompts_count": 0,
+    "display_name": "Cloud CGC MCP",
+    "description": "Code Graph Context: cloud specs, docs, inventory, configs, skills; Octocode semantic search; CodeGraph analysis (future).",
+    "auth": "none",
+    "sdk": "@modelcontextprotocol/sdk@^1.12.0"
+  }
+}

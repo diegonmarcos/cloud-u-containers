@@ -1,9 +1,0 @@
-{
-  "name": "claude-openai-bridge",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "description": "OpenAI-compatible shim over the Claude Code CLI (subscription) for octocode GraphRAG extraction",
-  "main": "server.mjs",
-  "scripts": { "start": "node server.mjs" }
-}
