@@ -17,6 +17,35 @@ let
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
+  # Shared body for the one-shot octocode jobs. Two profile-gated variants below
+  # differ ONLY in OCTOCODE_CLEAR: `index` = incremental (git-aware, changed files
+  # only), `reindex` = forced fresh build (octocode clear + index) that re-runs the
+  # GraphRAG AI phase (description/relationship LLM calls).
+  octocodeJob = {
+    image = binariesImage;
+    network_mode = "host";
+    user = "0:0";
+    command = [ "sh" "/app/reindex.sh" ];
+    restart = "no";
+    environment = {
+      HOME                = oct.home;
+      OCTOCODE_HOME       = oct.home;
+      # octocode reads *_API_URL (NOT *_BASE_URL) per provider — both point at the bridge.
+      OPENAI_API_URL      = oct.llm.openai_api_url;
+      OPENAI_API_KEY      = oct.llm.api_key;
+      OLLAMA_API_URL      = oct.llm.ollama_api_url;
+      OLLAMA_API_KEY      = oct.llm.api_key;
+      OCTOCODE_LLM_MODELS = oct.llm.models;   # ordered providers, fallback in reindex.sh
+      BRIDGE_HEALTH_URL   = oct.llm.health_url;
+      OCTOCODE_REPOS      = toString oct.index_repos;
+      OCTOCODE_REPOS_ROOT = oct.repos_path;
+      OCTOCODE_PULL       = "0";
+    };
+    volumes = [
+      "${oct.repos_volume}:${oct.repos_path}"
+      "${oct.db_volume}:${oct.db_path}"
+    ];
+  };
 in
 {
   services = {
@@ -51,38 +80,22 @@ in
       };
     };
 
-    # ── One-shot GraphRAG reindexer (profile-gated; never starts on `compose up`) ──
-    # Mounts the index + repos volumes RW (the live MCP mounts them :ro) and points
-    # octocode's LLM at the WG-only claude-openai-bridge. Runs as root so it can write
-    # the appuser-owned db volume and operate on the root-owned repos. Trigger:
-    #   docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
-    # Measure one repo: append `-e OCTOCODE_REPOS=tools`.
-    cloud-cgc-mcp-reindex = {
-      image = binariesImage;
+    # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
+    # Both mount index+repos RW (live MCP mounts them :ro) + run as root. Triggers:
+    #   FORCE rebuild (always re-runs GraphRAG LLM):
+    #     docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
+    #   INCREMENTAL (git-aware, only changed files):
+    #     docker compose --profile index run --rm cloud-cgc-mcp-index
+    #   Scope one repo: append `-e OCTOCODE_REPOS=tools`.
+    cloud-cgc-mcp-reindex = octocodeJob // {
       container_name = "cloud-cgc-mcp-reindex";
       profiles = [ "reindex" ];
-      network_mode = "host";
-      user = "0:0";
-      command = [ "sh" "/app/reindex.sh" ];
-      restart = "no";
-      environment = {
-        HOME                = oct.home;
-        OCTOCODE_HOME       = oct.home;
-        # octocode reads *_API_URL (NOT *_BASE_URL) per provider — both point at the bridge.
-        OPENAI_API_URL      = oct.llm.openai_api_url;
-        OPENAI_API_KEY      = oct.llm.api_key;
-        OLLAMA_API_URL      = oct.llm.ollama_api_url;
-        OLLAMA_API_KEY      = oct.llm.api_key;
-        OCTOCODE_LLM_MODELS = oct.llm.models;   # ordered providers, fallback in reindex.sh
-        BRIDGE_HEALTH_URL   = oct.llm.health_url;
-        OCTOCODE_REPOS      = toString oct.index_repos;
-        OCTOCODE_REPOS_ROOT = oct.repos_path;
-        OCTOCODE_PULL       = "0";
-      };
-      volumes = [
-        "${oct.repos_volume}:${oct.repos_path}"
-        "${oct.db_volume}:${oct.db_path}"
-      ];
+      environment = octocodeJob.environment // { OCTOCODE_CLEAR = "1"; };
+    };
+    cloud-cgc-mcp-index = octocodeJob // {
+      container_name = "cloud-cgc-mcp-index";
+      profiles = [ "index" ];
+      environment = octocodeJob.environment // { OCTOCODE_CLEAR = "0"; };
     };
   };
   # External named volumes owned by the Dagu DAG ops_octocode-reindex: it clones the
