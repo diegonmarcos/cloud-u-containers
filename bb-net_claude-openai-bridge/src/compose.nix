@@ -33,7 +33,7 @@ in
         BRIDGE_PORT           = toString buildJson.ports.app;
         BRIDGE_BIND           = wgIp;
         BRIDGE_DEFAULT_MODEL  = "claude-sonnet-4-6";
-        BRIDGE_MAX_CONCURRENCY = "3";
+        BRIDGE_MAX_CONCURRENCY = "12";
         BRIDGE_CALL_TIMEOUT_MS = "180000";
       };
       # Persist the whole home: captures ~/.claude/.credentials.json, ~/.claude.json
