@@ -32,6 +32,18 @@ function authHeader(user: string, pass: string): string {
   return "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
 }
 
+// fetch() throws an opaque "fetch failed" TypeError on transport errors
+// (TLS, ECONNREFUSED, DNS); the real reason lives in err.cause. Surface it.
+async function doFetch(url: string, init: RequestInit, what: string): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (e) {
+    const c: any = (e as any)?.cause;
+    const detail = c ? ` (cause: ${c.code ?? c.reason ?? c.message ?? JSON.stringify(c)})` : "";
+    throw new Error(`${what} (${url}): ${(e as Error).message}${detail}`);
+  }
+}
+
 function addrList(s?: string): { email: string }[] | undefined {
   if (!s) return undefined;
   const list = s.split(",").map((e) => ({ email: e.trim() })).filter((a) => a.email);
@@ -39,11 +51,11 @@ function addrList(s?: string): { email: string }[] | undefined {
 }
 
 async function jmapPost(apiUrl: string, auth: string, methodCalls: unknown[]): Promise<any> {
-  const res = await fetch(apiUrl, {
+  const res = await doFetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: auth },
     body: JSON.stringify({ using: CAPS, methodCalls }),
-  });
+  }, "JMAP POST");
   if (!res.ok) throw new Error(`JMAP POST ${res.status}: ${await res.text()}`);
   return res.json();
 }
@@ -56,9 +68,11 @@ export async function sendViaJmap(account: string, msg: JmapSendMsg): Promise<st
   if (!srv.jmap) throw new Error("STALWART_JMAP_URL not configured");
   const auth = authHeader(creds.user, creds.password);
 
-  // 1. Session discovery (.well-known/jmap returns the session object).
-  const sessionUrl = new URL("/.well-known/jmap", srv.jmap).toString();
-  const sres = await fetch(sessionUrl, { headers: { Authorization: auth } });
+  // 1. Session discovery. Stalwart's /.well-known/jmap is a 307 redirect to
+  //    /jmap/session; hit the session resource directly to avoid depending on
+  //    redirect-following (and any auth-header stripping across the hop).
+  const sessionUrl = new URL("/jmap/session", srv.jmap).toString();
+  const sres = await doFetch(sessionUrl, { headers: { Authorization: auth } }, "JMAP session");
   if (!sres.ok) throw new Error(`JMAP session ${sres.status}: ${await sres.text()}`);
   const session = (await sres.json()) as JmapSession;
   const accountId = session.primaryAccounts?.["urn:ietf:params:jmap:mail"];
