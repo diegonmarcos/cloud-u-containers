@@ -70,4 +70,15 @@ for repo in $REPOS; do
   done
   [ "$ok" = 0 ] && echo "[reindex] $repo ⚠ NO provider reached the bridge"
 done
-echo "[reindex] ALL DONE — final bridge calls=$(bridge_calls)"
+echo "[reindex] octocode code-graph DONE — final bridge calls=$(bridge_calls)"
+
+# ── Also (re)deploy the INFRA knowledge-graph into kg-store (SurrealDB) ────────
+# Unified job: after octocode builds the code graph, ingest the infra graph delta
+# into the SurrealDB. Env-gated/data-driven — no-ops cleanly if kg-store is not
+# configured (KG_STORE_URL / KG_STORE_PASS).
+if command -v node >/dev/null 2>&1; then
+  node /app/kg-ingest.mjs || echo "[reindex] kg-store ingest failed (continuing)"
+else
+  echo "[reindex] node not found — kg-store ingest skipped"
+fi
+echo "[reindex] ALL DONE"

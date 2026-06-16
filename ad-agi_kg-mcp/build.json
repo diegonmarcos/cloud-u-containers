@@ -64,7 +64,15 @@
         "cloud-data",
         "front-data"
       ],
-      "home": "/home/appuser"
+      "home": "/home/appuser",
+      "kg_store": {
+        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
+        "url": "http://127.0.0.1:8001",
+        "ns": "infra",
+        "db": "production",
+        "user": "root",
+        "delta": "/app/graphs/build-kg-graph_delta.json"
+      }
     }
   },
   "containers": {

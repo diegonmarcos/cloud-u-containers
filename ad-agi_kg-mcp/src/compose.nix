@@ -40,6 +40,14 @@ let
       OCTOCODE_REPOS      = toString oct.index_repos;
       OCTOCODE_REPOS_ROOT = oct.repos_path;
       OCTOCODE_PULL       = "0";
+      # kg-store (SurrealDB) ingest — reindex.sh loads the infra graph delta after the
+      # code graph. Data-driven; KG_STORE_PASS intentionally absent (gated) until the
+      # shared SurrealDB secret is wired — kg-ingest.mjs no-ops without it.
+      KG_STORE_URL        = oct.kg_store.url;
+      KG_STORE_NS         = oct.kg_store.ns;
+      KG_STORE_DB         = oct.kg_store.db;
+      KG_STORE_USER       = oct.kg_store.user;
+      KG_DELTA            = oct.kg_store.delta;
     };
     volumes = [
       "${oct.repos_volume}:${oct.repos_path}"
