@@ -14,9 +14,10 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
-      "cmd": "npm install --omit=dev",
+      "apt": "curl ca-certificates",
+      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev",
       "entrypoint": "npx tsx index.ts",
-      "base_image": "node:22-slim",
+      "base_image": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest",
       "app_dir": "code"
     }
   },
