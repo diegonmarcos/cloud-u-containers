@@ -53,7 +53,7 @@
         "openai_api_url": "http://10.0.0.6:3107/v1/chat/completions",
         "ollama_api_url": "http://localhost:11434",
         "api_key": "sk-dummy",
-        "models": "openai:gpt-4o-mini ollama:claude-sonnet",
+        "models": "ollama:claude-sonnet openai:gpt-4o-mini",
         "health_url": "http://10.0.0.6:3107/health"
       },
       "index_repos": ["cloud", "unix", "front", "tools", "cloud-data", "front-data"],
