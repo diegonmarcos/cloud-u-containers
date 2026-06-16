@@ -50,6 +50,36 @@ in
         start_period = "15s";
       };
     };
+
+    # ── One-shot GraphRAG reindexer (profile-gated; never starts on `compose up`) ──
+    # Mounts the index + repos volumes RW (the live MCP mounts them :ro) and points
+    # octocode's LLM at the WG-only claude-openai-bridge. Runs as root so it can write
+    # the appuser-owned db volume and operate on the root-owned repos. Trigger:
+    #   docker compose --profile reindex run --rm cloud-cgc-mcp-reindex
+    # Measure one repo: append `-e OCTOCODE_REPOS=tools`.
+    cloud-cgc-mcp-reindex = {
+      image = binariesImage;
+      container_name = "cloud-cgc-mcp-reindex";
+      profiles = [ "reindex" ];
+      network_mode = "host";
+      user = "0:0";
+      command = [ "sh" "/app/reindex.sh" ];
+      restart = "no";
+      environment = {
+        HOME                = oct.home;
+        OCTOCODE_HOME       = oct.home;
+        OPENAI_BASE_URL     = oct.llm.base_url;
+        OPENAI_API_KEY      = oct.llm.api_key;
+        OCTOCODE_LLM_MODEL  = oct.llm.model;
+        OCTOCODE_REPOS      = toString oct.index_repos;
+        OCTOCODE_REPOS_ROOT = oct.repos_path;
+        OCTOCODE_PULL       = "0";
+      };
+      volumes = [
+        "${oct.repos_volume}:${oct.repos_path}"
+        "${oct.db_volume}:${oct.db_path}"
+      ];
+    };
   };
   # External named volumes owned by the Dagu DAG ops_octocode-reindex: it clones the
   # repos into octocode_repos and writes the octocode index into octocode_db, then

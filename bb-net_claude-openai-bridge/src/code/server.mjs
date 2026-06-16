@@ -33,6 +33,9 @@ const acquire = () =>
     : new Promise((res) => waiters.push(res)).then(() => { active++; });
 const release = () => { active--; const w = waiters.shift(); if (w) w(); };
 
+// ── cumulative accounting (for measuring index/graphrag cost via /health) ─────
+const stats = { calls: 0, errors: 0, prompt_tokens: 0, completion_tokens: 0, since: Math.floor(Date.now() / 1000) };
+
 // ── OpenAI messages[] → (system prompt, user prompt) ─────────────────────────
 const toPrompt = (messages = []) => {
   const sys = [];
@@ -112,7 +115,7 @@ const server = http.createServer(async (req, res) => {
     res.end(typeof obj === "string" ? obj : JSON.stringify(obj));
   };
 
-  if (req.method === "GET" && (req.url === "/health" || req.url === "/")) return send(200, { status: "ok", active, max: MAX_CONC });
+  if (req.method === "GET" && (req.url === "/health" || req.url === "/")) return send(200, { status: "ok", active, max: MAX_CONC, stats });
   if (req.method === "GET" && req.url.startsWith("/v1/models"))
     return send(200, { object: "list", data: [{ id: DEFAULT_MODEL, object: "model", owned_by: "anthropic-subscription-bridge" }] });
 
@@ -125,6 +128,9 @@ const server = http.createServer(async (req, res) => {
     await acquire();
     try {
       const { text, usage } = await withRetry(() => callClaude({ system, prompt, model }));
+      stats.calls++;
+      stats.prompt_tokens += usage.input_tokens ?? 0;
+      stats.completion_tokens += usage.output_tokens ?? 0;
       if (payload.stream) {
         res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
         const base = { id: `chatcmpl-bridge-${Date.now() % 1e9}`, object: "chat.completion.chunk", created: Math.floor(Date.now() / 1000), model };
@@ -136,6 +142,7 @@ const server = http.createServer(async (req, res) => {
         send(200, envelope(model, text, usage));
       }
     } catch (e) {
+      stats.errors++;
       send(502, { error: { message: String(e.message || e), type: "bridge_claude_error" } });
     } finally { release(); }
     return;
