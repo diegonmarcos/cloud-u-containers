@@ -1,0 +1,11 @@
+{
+  "_warning": "OPUS-AUTHORED semantic GraphRAG of the `front-data` repo (III_front-data, signatures-level). Minimal: this repo is data + workflows (1 code file); deterministic coverage is code-signatures-front-data.json.",
+  "_meta": { "kind": "graphrag-semantic", "repo": "front-data", "authored_by": "claude-opus-4-8[1m]", "format_version": 1 },
+  "nodes": [
+    { "table": "subsystem", "id": "front_data_pipeline", "key": "subsystem:frontdata_pipeline", "properties": { "name": "front-data pipeline", "repo": "front-data", "root": "1_workflows/, data/", "description": "Data + GHA workflows backing the front-end projects. Produces the data-<key> payloads (PORTAL_DATA) the front projects consume at runtime (CORS-safe data-links). Mostly declarative data, not code." } },
+    { "table": "artifact", "id": "frontdata_payloads", "key": "artifact:frontdata_payloads", "properties": { "name": "front data payloads", "description": "data-<key>.json(.js) consumed by front projects via globalThis.PORTAL_DATA[key]." } }
+  ],
+  "edges": [
+    { "table": "emits", "from": "subsystem:frontdata_pipeline", "to": "artifact:frontdata_payloads", "key": "frontdata_pipeline->emits->payloads", "properties": { "rationale": "front-data builds the runtime data the front repo reads" } }
+  ]
+}

@@ -1,107 +1,79 @@
 {
-  "_warning": "OPUS-AUTHORED semantic GraphRAG of the `cloud` repo — NOT machine-derived. Regenerate by re-running the Opus signatures-level pass over dist/code-signatures-cloud.json. Complements (does not replace) the deterministic kg-graph delta (build-kg-graph_delta.json). This layer encodes INTENT/relationships (orchestrates, feeds, deploys, proxies, shields) that imports alone cannot.",
-  "_meta": {
-    "kind": "graphrag-semantic",
-    "repo": "cloud",
-    "authored_by": "claude-opus-4-8[1m]",
-    "altitude": "signatures-level (read dist/code-signatures-cloud.json ~244k tokens, not full bodies ~5.6M)",
-    "format_version": 1,
-    "node_tables_extra": [
-      { "table": "subsystem", "key_source": "name", "desc": "A cohesive architectural unit (engine group, pipeline stage, service cluster, protection layer)." }
-    ],
-    "edge_tables_extra": [
-      { "table": "orchestrates", "in": "subsystem", "out": "subsystem" },
-      { "table": "feeds",        "in": "subsystem", "out": "subsystem" },
-      { "table": "emits",        "in": "subsystem", "out": "artifact" },
-      { "table": "reads",        "in": "subsystem", "out": "artifact" },
-      { "table": "deploys",      "in": "subsystem", "out": "subsystem" },
-      { "table": "builds_on",    "in": "subsystem", "out": "subsystem" },
-      { "table": "proxies",      "in": "subsystem", "out": "subsystem" },
-      { "table": "shields",      "in": "subsystem", "out": "subsystem" },
-      { "table": "queries",      "in": "subsystem", "out": "artifact" }
-    ]
-  },
+  "_warning": "OPUS-AUTHORED semantic GraphRAG of the `cloud` repo — FULL (signatures-level). NOT machine-derived. Complements the deterministic kg-graph delta + code-signatures. Encodes INTENT/relationships imports can't: orchestrates/feeds/emits/reads/deploys/builds_on/proxies/shields/authenticates/queries/routes. Subsystems + services + engines + edge/auth + data/AI + observability. Regenerate by re-running the Opus signatures pass; Sonnet refines from here.",
+  "_meta": { "kind": "graphrag-semantic", "repo": "cloud", "authored_by": "claude-opus-4-8[1m]", "scope": "full", "format_version": 2 },
   "nodes": [
-    { "table": "subsystem", "id": "build_pipeline", "key": "subsystem:build_pipeline", "properties": {
-      "name": "2_configs build pipeline", "repo": "cloud", "root": "2_configs/",
-      "entrypoint": "2_configs/build.sh (link_builds → consolidate → derive)",
-      "description": "The single source of truth compiler. Scans every a_solutions/*/build.json + config.json + b_infra/*/build.json via typed parsers (build-json, compose, caddyfile, authelia, dns, wireguard, terraform), MERGES them into _cloud-data-consolidated.json (the master), then DERIVES per-consumer artifacts. SOLE emitter — every symlink in services/ resolves into 2_configs/dist/." } },
-    { "table": "subsystem", "id": "consolidator", "key": "subsystem:consolidator", "properties": {
-      "name": "cloud-data-config-consolidated", "repo": "cloud", "file": "2_configs/src/engines/cloud-data-config-consolidated.ts",
-      "description": "Stage 1: merges all declared sources (build.json per service, config.json topology, vault wg pubkeys, home-manager) into _cloud-data-consolidated.json. WireGuard public keys come from vault/A0_keys/providers/wireguard/<name>/publickey (SoT) — config.json values are a stale fallback being phased out." } },
-    { "table": "subsystem", "id": "deriver", "key": "subsystem:deriver", "properties": {
-      "name": "cloud-data-config-derive (+ derivers.json)", "repo": "cloud", "file": "2_configs/src/engines/cloud-data-config-derive.ts",
-      "description": "Stage 2: from the consolidated master, emits per-container build-*.json, Caddy routes (build-caddy.json), Authelia ACL, DNS, the kg-graph schema+delta, mesh-snapshot, build-workflows, external-consumers slices, and code-signatures. Ordered registry in derivers.json (data-driven; append a JSON entry to add one)." } },
-    { "table": "subsystem", "id": "ship_engine", "key": "subsystem:ship_engine", "properties": {
-      "name": "1_workflows ship engine", "repo": "cloud", "root": "1_workflows/src/scripts/",
-      "entrypoint": "cloud-ship-orchestrate-ship.sh / cloud-ship-container-engine.sh",
-      "description": "Universal deploy engine. Per service: build (nix) → secrets (sops→dist/.secrets) → deploy (rsync) → compose (up -d --no-build). Builds run on a RUNNER (oci-apps ARM via build-workflows.json .runners, or GHA) and push GHCR images; VMs only pull. step pipeline: build-nix, build-docker, build-compose, secrets-decrypt, deploy-rsync, deploy-compose, deploy-health, lifecycle." } },
-    { "table": "subsystem", "id": "hm_ship_engine", "key": "subsystem:hm_ship_engine", "properties": {
-      "name": "home-manager ship engine", "repo": "cloud", "root": "1_workflows/src/scripts/cloud-ship-nix-homemanager-*",
-      "description": "Delivers per-VM home-manager as a GHCR Docker image (1GB VMs can't `nix eval` — they OOM): build flake → push image → VM pulls + activates. Carries vm-pilot (protection layers) onto every VM." } },
-    { "table": "subsystem", "id": "vm_pilot", "key": "subsystem:vm_pilot", "properties": {
-      "name": "vm-pilot system protection", "repo": "cloud", "root": "b_infra/_shared/vm-pilot/src/modules/protection/",
-      "description": "Per-VM resilience, delivered by home-manager. scheduler.nix puts SSH/WG in connectivity.slice (CPUWeight=10000, OOMScoreAdjust=-900) and caps docker.slice; resource-bouncer (earlyoom + docker MemoryMax); load-shedder.nix (NEW) stops ALL docker on memory PSI pressure to keep WG/SSH alive — VM sheds load instead of freezing; rescue-ssh (dropbear, WG-bound); no-build-guardrails HARD-BLOCKS docker build on <2GB VMs." } },
-    { "table": "subsystem", "id": "cgc_mcp", "key": "subsystem:cgc_mcp", "properties": {
-      "name": "cloud-cgc-mcp (Code Graph Context)", "repo": "cloud", "root": "a_solutions/bc-obs_cloud-cgc-mcp/src/code/",
-      "description": "MCP server, 3 layers: (A) a-knowledge — reads _cloud-data-consolidated.json for topology/configs/specs/skills; (B) octocode — FastEmbed semantic search + GraphRAG over /repos (volumes octocode_db/octocode_repos, GIT_ROOT=/repos); (C) codegraph — stubs for the kg-graph. config.ts reads the consolidated superset (not retired config.json)." } },
-    { "table": "subsystem", "id": "kg_graph", "key": "subsystem:kg_graph", "properties": {
-      "name": "kg-graph (SurrealDB hybrid KG)", "repo": "cloud", "root": "a_solutions/ca-dat_kg-graph/",
-      "description": "SurrealDB graph+vector store. Schema + idempotent delta DERIVED from the consolidated master (vm/service/container/domain + repo/module/package nodes; hosted_on/proxied_by/belongs_to_repo/implements/declares_tool/consumes edges). enabled:false (planning). This semantic layer is its GraphRAG overlay." } },
-    { "table": "subsystem", "id": "c3_api", "key": "subsystem:c3_api", "properties": {
-      "name": "C3 API + MCP (infra/services)", "repo": "cloud", "root": "a_solutions/bc-obs_c3-infra-api / c3-infra-mcp / c3-services-*",
-      "description": "Control plane. c3-infra-api/mcp drives SSH/Docker/build/Dagu (DAGU_API base path data-driven from services.dagu.api.base_path = /api/v1). c3-services-api/mcp = consolidated service REST/MCP registry. shared/libs/ops.ts triggers DAGs + push events." } },
-    { "table": "subsystem", "id": "health_reports", "key": "subsystem:health_reports", "properties": {
-      "name": "health/security reports (Rust)", "repo": "cloud", "root": "1_reports/src/ (I_cloud-data)",
-      "description": "Rust crates (tokio/reqwest/trust-dns): cloud-health-full-daily, cloud-mail-health-full, cloud-sec-data-report. Probe endpoints/DNS/TLS/WG/containers via reports_common; render md/html/mermaid/d2. Read-only collectors over the WG mesh." } },
-    { "table": "subsystem", "id": "edge_security", "key": "subsystem:edge_security", "properties": {
-      "name": "edge + auth (Caddy/Authelia/WG)", "repo": "cloud", "root": "a_solutions/bb-sec_caddy, bb-sec_authelia, bb-net_wireguard-*",
-      "description": "Caddy is the single routing SoT: HTTP reverse_proxy + L4 SNI mux on :443 (incl. mail IMAPS/SMTPS), derived into build-caddy.json. Authelia = 2FA/OIDC; introspect-proxy validates bearer tokens. All inter-VM traffic over the WireGuard mesh (10.0.0.0/24); public edge = oci-analytics." } },
-    { "table": "subsystem", "id": "dagu", "key": "subsystem:dagu", "properties": {
-      "name": "dagu workflow scheduler", "repo": "cloud", "root": "a_solutions/bc-obs_dagu/",
-      "description": "DAG scheduler (moved oci-analytics→oci-apps to stop freezing the 1GB VM). Runs ops_octocode-reindex: clone repos (fresh git reset --hard) → octocode clear+index into octocode_db → restart cgc. API at /api/v1 (image is v1; the c3 tools' /api/v2 was the bug)." } },
-    { "table": "subsystem", "id": "services", "key": "subsystem:services", "properties": {
-      "name": "a_solutions services (60+)", "repo": "cloud", "root": "a_solutions/<prefix>_<name>/",
-      "description": "Every service = build.sh (universal engine symlink) + build.json (config) + src/{flake.nix→compose.nix}. flake builds the docker-compose.yml from compose.nix + _shared/engine.nix; the port-enforcement lib auto-injects port env from build.json. Prefixes: aa-sui app, ab-mic mic, ac-fin fin, ad-agi agi, ba-clo cloud, bb-sec/bb-net sec/net, bc-obs tools, ca-dat data." } },
+    { "table": "subsystem", "id": "build_pipeline", "key": "subsystem:build_pipeline", "properties": { "name": "2_configs build pipeline", "root": "2_configs/", "entrypoint": "build.sh (link_builds→consolidate→derive)", "description": "The source-of-truth compiler. Two stages: consolidate (merge all build.json/config.json via typed parsers) → derive (emit every per-consumer artifact). SOLE emitter — every service symlink resolves into 2_configs/dist/." } },
+    { "table": "engine", "id": "consolidator", "key": "engine:consolidator", "properties": { "name": "cloud-data-config-consolidated.ts", "description": "Stage 1: merges a_solutions/*/build.json + config.json + b_infra + vault WG pubkeys → _cloud-data-consolidated.json. WG public keys: vault/A0_keys/providers/wireguard/<name>/publickey is the SoT (config.json values are a removed stale fallback)." } },
+    { "table": "engine", "id": "deriver", "key": "engine:deriver", "properties": { "name": "cloud-data-config-derive.ts (+derivers.json)", "description": "Stage 2: emits build-{service}.json, build-caddy.json, Authelia ACL, DNS, kg-graph schema+delta, mesh-snapshot, build-workflows, external-consumers slices, code-signatures. Ordered registry in derivers.json (append-only, data-driven)." } },
+    { "table": "engine", "id": "parsers", "key": "engine:parsers", "properties": { "name": "2_configs parsers", "description": "Typed source parsers feeding the consolidator: build-json, compose, caddyfile, authelia, dns, wireguard, terraform, cloudflare, ntfy, mailu." } },
+    { "table": "engine", "id": "sig_extractor", "key": "engine:sig_extractor", "properties": { "name": "derive-code-signatures.ts", "description": "Deterministic per-file signature extractor (exports/imports/symbols) for any repo → code-signatures-<repo>.json. Feeds the kg-graph code layer + the Opus semantic pass." } },
 
-    { "table": "artifact", "id": "consolidated", "key": "artifact:consolidated", "properties": { "name": "_cloud-data-consolidated.json", "path": "2_configs/dist/", "description": "The master superset (vms, services, configs, dns, deps, wireguard). Single source of truth read by every consumer." } },
-    { "table": "artifact", "id": "build_caddy", "key": "artifact:build_caddy", "properties": { "name": "build-caddy.json", "path": "2_configs/dist/", "description": "Aggregated Caddy routes (reverse_proxy + L4 SNI), consumed by bb-sec_caddy/src/caddyfile.nix." } },
-    { "table": "artifact", "id": "kg_delta", "key": "artifact:kg_delta", "properties": { "name": "build-kg-graph_delta.json + _schema.json", "path": "2_configs/dist/", "description": "Deterministic kg-graph nodes/edges (infra + code-structure)." } },
-    { "table": "artifact", "id": "code_sigs", "key": "artifact:code_sigs", "properties": { "name": "code-signatures-cloud.json", "path": "2_configs/dist/", "description": "Per-file exports/imports/symbols (~244k tokens) — input to this semantic pass + the kg-graph code nodes." } },
-    { "table": "artifact", "id": "octocode_index", "key": "artifact:octocode_index", "properties": { "name": "octocode FastEmbed+GraphRAG index", "path": "volume octocode_db @ /home/appuser/.local/share/octocode", "description": "Per-repo LanceDB index keyed by /repos/<repo> path hash. Built by ops_octocode-reindex; queried by cgc octocode tools." } },
-    { "table": "artifact", "id": "build_workflows", "key": "artifact:build_workflows", "properties": { "name": "build-workflows.json", "path": "2_configs/dist/", "description": "Runner-image registry: .runners[arch].host routes a build to oci-apps(arm64)/GHA(amd64). Enforces builds-on-runner doctrine." } }
+    { "table": "subsystem", "id": "ship_engine", "key": "subsystem:ship_engine", "properties": { "name": "1_workflows ship engine", "root": "1_workflows/src/scripts/", "description": "Universal deploy: build(nix)→secrets(sops→dist/.secrets)→deploy(rsync)→compose(up -d --no-build). Builds on a RUNNER (oci-apps ARM via build-workflows.json, or GHA) → GHCR; VMs only pull. Steps: build-nix/docker/compose, secrets-decrypt, deploy-rsync/compose/health, lifecycle, terraform, wrangler." } },
+    { "table": "subsystem", "id": "hm_ship", "key": "subsystem:hm_ship", "properties": { "name": "home-manager ship", "description": "Delivers per-VM HM as a GHCR image (1GB VMs OOM on nix-eval): build flake→push→VM pull+activate. Carries vm-pilot onto every VM." } },
+    { "table": "subsystem", "id": "vm_pilot", "key": "subsystem:vm_pilot", "properties": { "name": "vm-pilot protection", "root": "b_infra/_shared/vm-pilot/", "description": "Per-VM resilience: scheduler.slice (SSH/WG CPUWeight=10000, OOM-immune) + docker.slice cap; resource-bouncer (earlyoom + docker MemoryMax); load-shedder (stop docker on memory PSI → keep WG alive, never freeze); rescue-ssh dropbear (WG-bound); no-build-guardrails HARD-BLOCK build on <2GB." } },
+
+    { "table": "subsystem", "id": "edge", "key": "subsystem:edge", "properties": { "name": "Caddy edge (routing SoT)", "description": "Caddy :443 = HTTP reverse_proxy + L4 SNI mux (incl. mail IMAPS/SMTPS), the single routing source of truth, derived into build-caddy.json. Public edge on oci-analytics; gcp-proxy is WG-only hub." } },
+    { "table": "service", "id": "caddy", "key": "service:caddy", "properties": { "name": "bb-sec_caddy", "vm": "gcp-proxy", "category": "sec", "description": "Reverse proxy + L4 mux; caddyfile.nix consumes build-caddy.json. wg_only fail-closed default; remote_ip gate for mcp/private." } },
+    { "table": "service", "id": "authelia", "key": "service:authelia", "properties": { "name": "bb-sec_authelia", "vm": "gcp-proxy", "category": "sec", "domain": "auth.diegonmarcos.com", "description": "2FA (TOTP/WebAuthn) + OIDC. client_secret = pbkdf2-sha512 digest. SMTP via Maddy. ACL derived into the kg-graph authenticated_by edges." } },
+    { "table": "service", "id": "introspect", "key": "service:introspect", "properties": { "name": "bb-sec_introspect-proxy", "vm": "gcp-proxy", "category": "sec", "description": "OIDC introspection sidecar — validates bearer tokens for CLI/API access behind Caddy." } },
+    { "table": "subsystem", "id": "wg_mesh", "key": "subsystem:wg_mesh", "properties": { "name": "WireGuard mesh", "description": "10.0.0.0/24 connects all VMs; gcp-proxy hub. wg-public for operator devices; wstunnel TCP/443 fallback. SSH is WG-only (ssh-firewall enforces). Pubkeys from vault SoT." } },
+
+    { "table": "subsystem", "id": "c3", "key": "subsystem:c3", "properties": { "name": "C3 control plane (API+MCP)", "description": "c3-infra-api/mcp (SSH/Docker/build/Dagu control; ops.ts triggerDag → DAGU_API/api/v1), c3-services-api/mcp (consolidated service REST/MCP registry), c3-public-api (single public edge), c3-analytics-api. shared/ independent (not symlinked)." } },
+    { "table": "service", "id": "cgc", "key": "service:cgc", "properties": { "name": "bc-obs_cloud-cgc-mcp", "vm": "oci-apps", "category": "obs", "domain": "mcp.diegonmarcos.com/c3-infra-mcp", "description": "Code Graph Context MCP. a-knowledge (reads consolidated: topology/configs/specs/skills); octocode (FastEmbed semantic search + GraphRAG over /repos, volumes octocode_db/repos, GIT_ROOT=/repos); codegraph (THIS unified kg-graph: infra+code+semantic, bundled at /app/code/graphs)." } },
+    { "table": "service", "id": "kg_graph", "key": "service:kg_graph", "properties": { "name": "ca-dat_kg-graph", "vm": "oci-apps", "category": "data", "description": "SurrealDB hybrid KG (graph+vector). Schema+delta derived from consolidated (vm/service/container/domain/repo/module/package + edges). enabled:false (planning). Hosts the graph-semantic-<repo>.json layer." } },
+    { "table": "service", "id": "dagu", "key": "service:dagu", "properties": { "name": "bc-obs_dagu", "vm": "oci-apps", "category": "tools", "domain": "workflows.diegonmarcos.com", "description": "DAG scheduler (moved oci-analytics→oci-apps to stop freezing the 1GB VM). ops_octocode-reindex: fresh-clone repos→octocode clear+index→restart cgc. API /api/v1." } },
+
+    { "table": "subsystem", "id": "mail", "key": "subsystem:mail", "properties": { "name": "mail stack (oci-mail)", "description": "Maddy (SMTP/IMAP) + Stalwart (JMAP) + mail-puller + cypht/snappymail webmail. Clients connect on :443 via Caddy L4 SNI (imap./smtps./jmap.). MX :25 via CF Worker bridge." } },
+    { "table": "subsystem", "id": "data_svcs", "key": "subsystem:data_svcs", "properties": { "name": "data + collab services (oci-apps)", "description": "gitea, vaultwarden, photoprism, grist, hedgedoc, etherpad, filebrowser, radicale (cal/contacts), matrix-continuwuity+element, mattermost, code-server, dbgate, nocodb, ntfy." } },
+    { "table": "subsystem", "id": "fin_ai", "key": "subsystem:fin_ai", "properties": { "name": "fin + AI services", "description": "crawlee-cloud (scraping), fin-api, news-gdelt; ollama-arm/hai + rig-agentic (LLM agents). paca (multi-container app)." } },
+    { "table": "subsystem", "id": "observability", "key": "subsystem:observability", "properties": { "name": "observability", "description": "matomo + umami (analytics), openobserve (logs/traces), health reports (1_reports Rust crates probing the mesh), ntfy alerts." } },
+
+    { "table": "artifact", "id": "consolidated", "key": "artifact:consolidated", "properties": { "name": "_cloud-data-consolidated.json", "description": "Master superset (vms/services/configs/dns/deps/wireguard). Read by every consumer." } },
+    { "table": "artifact", "id": "build_caddy", "key": "artifact:build_caddy", "properties": { "name": "build-caddy.json", "description": "Aggregated Caddy routes." } },
+    { "table": "artifact", "id": "kg_delta", "key": "artifact:kg_delta", "properties": { "name": "build-kg-graph_delta.json", "description": "Deterministic kg-graph nodes/edges (infra+code-structure)." } },
+    { "table": "artifact", "id": "code_sigs", "key": "artifact:code_sigs", "properties": { "name": "code-signatures-<repo>.json ×6", "description": "Per-repo file/export/import structure." } },
+    { "table": "artifact", "id": "octocode_index", "key": "artifact:octocode_index", "properties": { "name": "octocode FastEmbed+GraphRAG index", "description": "volume octocode_db @ /home/appuser/.local/share/octocode, /repos-keyed. DAG-built, cgc-queried." } },
+    { "table": "artifact", "id": "build_workflows", "key": "artifact:build_workflows", "properties": { "name": "build-workflows.json", "description": ".runners[arch].host — routes builds to oci-apps(arm64)/GHA(amd64)." } }
   ],
   "edges": [
-    { "table": "orchestrates", "from": "subsystem:build_pipeline", "to": "subsystem:consolidator", "key": "build_pipeline->orchestrates->consolidator", "properties": { "via": "build.sh consolidate", "rationale": "stage 1 of the two-stage compile" } },
-    { "table": "orchestrates", "from": "subsystem:build_pipeline", "to": "subsystem:deriver", "key": "build_pipeline->orchestrates->deriver", "properties": { "via": "build.sh derive", "rationale": "stage 2 runs every entry in derivers.json after consolidate" } },
-    { "table": "feeds", "from": "subsystem:consolidator", "to": "subsystem:deriver", "key": "consolidator->feeds->deriver", "properties": { "artifact": "_cloud-data-consolidated.json", "rationale": "derive reads the master the consolidator wrote" } },
-    { "table": "emits", "from": "subsystem:consolidator", "to": "artifact:consolidated", "key": "consolidator->emits->consolidated", "properties": {} },
-    { "table": "emits", "from": "subsystem:deriver", "to": "artifact:build_caddy", "key": "deriver->emits->build_caddy", "properties": {} },
-    { "table": "emits", "from": "subsystem:deriver", "to": "artifact:kg_delta", "key": "deriver->emits->kg_delta", "properties": { "rationale": "deriveKgSchema/deriveKgDelta" } },
-    { "table": "emits", "from": "subsystem:deriver", "to": "artifact:code_sigs", "key": "deriver->emits->code_sigs", "properties": { "rationale": "derive-code-signatures.ts" } },
-    { "table": "emits", "from": "subsystem:deriver", "to": "artifact:build_workflows", "key": "deriver->emits->build_workflows", "properties": {} },
-    { "table": "feeds", "from": "subsystem:deriver", "to": "subsystem:kg_graph", "key": "deriver->feeds->kg_graph", "properties": { "artifact": "build-kg-graph_delta.json", "rationale": "kg-graph ingests the derived delta" } },
-    { "table": "reads", "from": "subsystem:kg_graph", "to": "artifact:code_sigs", "key": "kg_graph->reads->code_sigs", "properties": { "rationale": "code structure nodes/edges" } },
+    { "table": "orchestrates", "from": "subsystem:build_pipeline", "to": "engine:consolidator", "key": "build_pipeline->orchestrates->consolidator", "properties": { "via": "build.sh consolidate" } },
+    { "table": "orchestrates", "from": "subsystem:build_pipeline", "to": "engine:deriver", "key": "build_pipeline->orchestrates->deriver", "properties": { "via": "build.sh derive (derivers.json)" } },
+    { "table": "feeds", "from": "engine:parsers", "to": "engine:consolidator", "key": "parsers->feeds->consolidator", "properties": { "rationale": "typed parse of each source" } },
+    { "table": "feeds", "from": "engine:consolidator", "to": "engine:deriver", "key": "consolidator->feeds->deriver", "properties": { "artifact": "_cloud-data-consolidated.json" } },
+    { "table": "emits", "from": "engine:consolidator", "to": "artifact:consolidated", "key": "consolidator->emits->consolidated", "properties": {} },
+    { "table": "emits", "from": "engine:deriver", "to": "artifact:build_caddy", "key": "deriver->emits->build_caddy", "properties": {} },
+    { "table": "emits", "from": "engine:deriver", "to": "artifact:kg_delta", "key": "deriver->emits->kg_delta", "properties": {} },
+    { "table": "emits", "from": "engine:deriver", "to": "artifact:build_workflows", "key": "deriver->emits->build_workflows", "properties": {} },
+    { "table": "emits", "from": "engine:sig_extractor", "to": "artifact:code_sigs", "key": "sig_extractor->emits->code_sigs", "properties": {} },
+    { "table": "feeds", "from": "engine:deriver", "to": "service:kg_graph", "key": "deriver->feeds->kg_graph", "properties": { "artifact": "build-kg-graph_delta.json" } },
 
-    { "table": "builds_on", "from": "subsystem:ship_engine", "to": "artifact:build_workflows", "key": "ship_engine->builds_on->build_workflows", "properties": { "rationale": "arch-routing: build on oci-apps ARM / GHA, never on the small target VM" } },
-    { "table": "reads", "from": "subsystem:ship_engine", "to": "artifact:consolidated", "key": "ship_engine->reads->consolidated", "properties": { "rationale": "detect_changes + per-service config" } },
-    { "table": "deploys", "from": "subsystem:ship_engine", "to": "subsystem:services", "key": "ship_engine->deploys->services", "properties": { "via": "build→secrets→deploy→compose (up -d --no-build)" } },
-    { "table": "deploys", "from": "subsystem:hm_ship_engine", "to": "subsystem:vm_pilot", "key": "hm_ship_engine->deploys->vm_pilot", "properties": { "via": "GHCR HM image → VM pull+activate", "rationale": "1GB VMs can't nix-eval" } },
-    { "table": "shields", "from": "subsystem:vm_pilot", "to": "subsystem:edge_security", "key": "vm_pilot->shields->edge_security", "properties": { "rationale": "connectivity.slice keeps WG/SSH alive; load-shedder stops docker before a freeze drops the mesh" } },
+    { "table": "builds_on", "from": "subsystem:ship_engine", "to": "artifact:build_workflows", "key": "ship_engine->builds_on->build_workflows", "properties": { "rationale": "build on a runner, never on the small target VM" } },
+    { "table": "reads", "from": "subsystem:ship_engine", "to": "artifact:consolidated", "key": "ship_engine->reads->consolidated", "properties": {} },
+    { "table": "deploys", "from": "subsystem:ship_engine", "to": "subsystem:data_svcs", "key": "ship_engine->deploys->data_svcs", "properties": {} },
+    { "table": "deploys", "from": "subsystem:ship_engine", "to": "service:cgc", "key": "ship_engine->deploys->cgc", "properties": {} },
+    { "table": "deploys", "from": "subsystem:ship_engine", "to": "service:dagu", "key": "ship_engine->deploys->dagu", "properties": {} },
+    { "table": "deploys", "from": "subsystem:hm_ship", "to": "subsystem:vm_pilot", "key": "hm_ship->deploys->vm_pilot", "properties": { "rationale": "HM as GHCR image" } },
+    { "table": "shields", "from": "subsystem:vm_pilot", "to": "subsystem:wg_mesh", "key": "vm_pilot->shields->wg_mesh", "properties": { "rationale": "load-shedder + connectivity.slice keep WG alive under pressure" } },
 
-    { "table": "reads", "from": "subsystem:cgc_mcp", "to": "artifact:consolidated", "key": "cgc_mcp->reads->consolidated", "properties": { "rationale": "a-knowledge layer (config.ts)" } },
-    { "table": "queries", "from": "subsystem:cgc_mcp", "to": "artifact:octocode_index", "key": "cgc_mcp->queries->octocode_index", "properties": { "rationale": "octocode search + graphrag tools shell `octocode` over /repos" } },
-    { "table": "reads", "from": "subsystem:cgc_mcp", "to": "subsystem:kg_graph", "key": "cgc_mcp->reads->kg_graph", "properties": { "rationale": "codegraph tools target the kg-graph (this semantic overlay + the deterministic delta)" } },
-    { "table": "emits", "from": "subsystem:dagu", "to": "artifact:octocode_index", "key": "dagu->emits->octocode_index", "properties": { "via": "ops_octocode-reindex: clone(fresh)→octocode clear+index→restart cgc" } },
-    { "table": "orchestrates", "from": "subsystem:c3_api", "to": "subsystem:dagu", "key": "c3_api->orchestrates->dagu", "properties": { "via": "ops.ts triggerDag → DAGU_API/api/v1/dags/<name>/start" } },
-    { "table": "orchestrates", "from": "subsystem:c3_api", "to": "subsystem:ship_engine", "key": "c3_api->orchestrates->ship_engine", "properties": { "via": "build_ship / docker tools over SSH" } },
+    { "table": "routes", "from": "subsystem:edge", "to": "subsystem:data_svcs", "key": "edge->routes->data_svcs", "properties": { "via": "Caddy :443 reverse_proxy" } },
+    { "table": "routes", "from": "subsystem:edge", "to": "subsystem:mail", "key": "edge->routes->mail", "properties": { "via": "L4 SNI (imap./smtps./jmap.)" } },
+    { "table": "implements", "from": "service:caddy", "to": "subsystem:edge", "key": "caddy->implements->edge", "properties": {} },
+    { "table": "reads", "from": "service:caddy", "to": "artifact:build_caddy", "key": "caddy->reads->build_caddy", "properties": {} },
+    { "table": "authenticates", "from": "service:authelia", "to": "subsystem:data_svcs", "key": "authelia->authenticates->data_svcs", "properties": { "via": "2FA/OIDC" } },
+    { "table": "authenticates", "from": "service:introspect", "to": "subsystem:c3", "key": "introspect->authenticates->c3", "properties": { "via": "bearer token introspection" } },
+    { "table": "shields", "from": "subsystem:wg_mesh", "to": "subsystem:c3", "key": "wg_mesh->shields->c3", "properties": { "rationale": "mcp/private are WG-only" } },
 
-    { "table": "proxies", "from": "subsystem:edge_security", "to": "subsystem:services", "key": "edge_security->proxies->services", "properties": { "via": "Caddy :443 reverse_proxy + L4 SNI (build-caddy.json)" } },
-    { "table": "shields", "from": "subsystem:edge_security", "to": "subsystem:services", "key": "edge_security->shields->services", "properties": { "via": "Authelia 2FA/OIDC + introspect-proxy bearer; WG-only for mcp/private" } },
-    { "table": "reads", "from": "subsystem:health_reports", "to": "artifact:consolidated", "key": "health_reports->reads->consolidated", "properties": { "rationale": "reports_common::context::find_cloud_data_file" } },
-    { "table": "reads", "from": "subsystem:health_reports", "to": "subsystem:edge_security", "key": "health_reports->reads->edge_security", "properties": { "rationale": "probes WG mesh + public URLs + Caddy/Authelia health" } },
-    { "table": "deploys", "from": "subsystem:ship_engine", "to": "subsystem:cgc_mcp", "key": "ship_engine->deploys->cgc_mcp", "properties": { "rationale": "cgc is itself an a_solutions service (image-wrapper, ARM runner)" } },
-    { "table": "deploys", "from": "subsystem:ship_engine", "to": "subsystem:dagu", "key": "ship_engine->deploys->dagu", "properties": { "rationale": "dagu deploy.host=oci-apps" } }
-  ],
-  "counts": { "_note": "filled at author time", "nodes": 20, "edges": 27, "subsystems": 13, "artifacts": 6 }
+    { "table": "orchestrates", "from": "subsystem:c3", "to": "service:dagu", "key": "c3->orchestrates->dagu", "properties": { "via": "ops.ts triggerDag → /api/v1/dags/<name>/start" } },
+    { "table": "orchestrates", "from": "subsystem:c3", "to": "subsystem:ship_engine", "key": "c3->orchestrates->ship_engine", "properties": { "via": "build_ship / docker tools over SSH" } },
+    { "table": "reads", "from": "service:cgc", "to": "artifact:consolidated", "key": "cgc->reads->consolidated", "properties": { "rationale": "a-knowledge layer" } },
+    { "table": "queries", "from": "service:cgc", "to": "artifact:octocode_index", "key": "cgc->queries->octocode_index", "properties": {} },
+    { "table": "reads", "from": "service:cgc", "to": "artifact:kg_delta", "key": "cgc->reads->kg_delta", "properties": { "rationale": "codegraph unified graph" } },
+    { "table": "reads", "from": "service:cgc", "to": "service:kg_graph", "key": "cgc->reads->kg_graph", "properties": { "rationale": "semantic + deterministic layers" } },
+    { "table": "emits", "from": "service:dagu", "to": "artifact:octocode_index", "key": "dagu->emits->octocode_index", "properties": { "via": "ops_octocode-reindex" } },
+
+    { "table": "routes", "from": "subsystem:edge", "to": "subsystem:fin_ai", "key": "edge->routes->fin_ai", "properties": {} },
+    { "table": "routes", "from": "subsystem:edge", "to": "subsystem:observability", "key": "edge->routes->observability", "properties": {} },
+    { "table": "reads", "from": "subsystem:observability", "to": "artifact:consolidated", "key": "observability->reads->consolidated", "properties": { "rationale": "health probes from cloud-data" } },
+    { "table": "reads", "from": "subsystem:observability", "to": "subsystem:wg_mesh", "key": "observability->reads->wg_mesh", "properties": { "rationale": "probe the mesh + public URLs" } }
+  ]
 }
