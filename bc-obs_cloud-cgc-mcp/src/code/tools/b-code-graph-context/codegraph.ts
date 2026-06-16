@@ -14,12 +14,11 @@ import { join, dirname, resolve } from "node:path";
 //   2. CODE STRUCTURE (deterministic, ALL repos)  2_configs/dist/code-signatures-*.json
 //      one file per repo (cloud, unix, front, tools, cloud-data, front-data).
 //      → file nodes + `imports` edges (local file→file, external file→package).
-//   3. SEMANTIC (Opus-authored, per repo)  ca-dat_kg-graph/src/graph-semantic-*.json
-//      subsystem / artifact nodes + intent edges (orchestrates/feeds/deploys/…).
+//   (SEMANTIC code intent: retired — octocode's LLM GraphRAG supersedes the old
+//    hand-authored graph-semantic-*.json. Infra-AI semantics: SurrealDB kg-graph.)
 //
-// Everything is data-driven: drop a new code-signatures-<repo>.json or
-// graph-semantic-<repo>.json into those dirs and it is picked up on next load.
-// No hardcoded repo list, no per-repo wiring.
+// Everything is data-driven: drop a new code-signatures-<repo>.json into the dist
+// dir and it is picked up on next load. No hardcoded repo list, no per-repo wiring.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Resolution order for the graph data dir:
@@ -37,7 +36,6 @@ const useBundle = (): string | null => {
 };
 const BUNDLE = useBundle();
 const DIST = BUNDLE ?? join(CLOUD, "2_configs", "dist");          // ① infra + ② code-signatures
-const SEMANTIC_DIR = BUNDLE ?? join(CLOUD, "a_solutions", "ca-dat_kg-graph", "src"); // ③ semantic
 const TTL_MS = 5 * 60 * 1000;
 
 interface GNode { table: string; id: string; key: string; properties: Record<string, unknown>; layer: string }
@@ -64,7 +62,7 @@ function addEdge(g: Graph, e: Omit<GEdge, "layer">, layer: string): void {
 
 // ── Layer loaders ────────────────────────────────────────────────────────────
 function loadExplicit(g: Graph, path: string, layer: string): void {
-  // build-kg-graph_delta.json + graph-semantic-*.json share {nodes[],edges[]}.
+  // build-kg-graph_delta.json (and any explicit {nodes[],edges[]} source).
   let d: { nodes?: GNode[]; edges?: GEdge[] };
   try { d = JSON.parse(readFileSync(path, "utf8")); } catch { return; }
   for (const n of d.nodes ?? []) if (n?.key) addNode(g, n, layer);
@@ -121,7 +119,9 @@ function loadGraph(): Graph {
   const delta = join(DIST, "build-kg-graph_delta.json");
   if (existsSync(delta)) loadExplicit(g, delta, "infra");
   for (const p of listJson(DIST, "code-signatures-")) loadSignatures(g, p);
-  for (const p of listJson(SEMANTIC_DIR, "graph-semantic-")) loadExplicit(g, p, "semantic");
+  // SEMANTIC layer retired: octocode's LLM GraphRAG (built on Claude via the bridge)
+  // now supersedes the hand-authored graph-semantic-*.json. Infra-AI semantics come
+  // from the SurrealDB kg-graph layer (wired separately).
   _cache = g; _ts = now;
   return g;
 }
@@ -140,7 +140,7 @@ const txt = (s: string) => ({ content: [{ type: "text" as const, text: s }] });
 export function registerCodegraphTools(server: McpServer): void {
   server.tool(
     "cgc.codegraph.overview",
-    "Overview of the unified code knowledge graph (infra + code-structure of ALL repos + Opus semantic layer): node/edge counts by table and layer, loaded sources.",
+    "Overview of the unified knowledge graph (infra topology + deterministic code-structure of ALL repos): node/edge counts by table and layer, loaded sources. Semantic relationships live in octocode's GraphRAG + the SurrealDB kg-graph.",
     {},
     async () => {
       const g = loadGraph();
