@@ -19,10 +19,10 @@ const MAX_CONC    = parseInt(process.env.BRIDGE_MAX_CONCURRENCY || "3", 10);
 const CALL_TIMEOUT= parseInt(process.env.BRIDGE_CALL_TIMEOUT_MS || "180000", 10);
 const DEFAULT_MODEL = process.env.BRIDGE_DEFAULT_MODEL || "claude-sonnet-4-6";
 
-if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
-  console.error("[bridge] FATAL: neither CLAUDE_CODE_OAUTH_TOKEN nor ANTHROPIC_API_KEY set — claude -p cannot authenticate");
-  process.exit(1);
-}
+// Auth is NOT taken from env/secret (public repo). It lives in the mounted
+// ~/.claude volume — log in once with `docker exec -it claude-openai-bridge claude`.
+// We don't hard-fail here: the server starts regardless, and /v1 calls return a
+// clear 502 until the volume holds a valid login.
 
 // ── concurrency semaphore ────────────────────────────────────────────────────
 let active = 0;

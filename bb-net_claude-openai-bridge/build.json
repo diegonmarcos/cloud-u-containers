@@ -14,8 +14,9 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
+      "user": "appuser",
       "apt": "curl ca-certificates git",
-      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install -g @anthropic-ai/claude-code && npm install --omit=dev",
+      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install -g @anthropic-ai/claude-code && npm install --omit=dev && useradd -r -m -u 10001 appuser && mkdir -p /home/appuser/.claude && chown -R appuser:appuser /home/appuser",
       "entrypoint": "node server.mjs",
       "base_image": "debian:bookworm-slim",
       "app_dir": "code"
@@ -29,9 +30,6 @@
   "proxy": {
     "app_hub": false
   },
-  "secrets": {
-    "escape_dollars": false
-  },
   "containers": {
     "app": {
       "container_name": "claude-openai-bridge",
@@ -42,7 +40,7 @@
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,
-      "env_file": true,
+      "env_file": false,
       "depends_on": [],
       "resources": null,
       "read_only": false,
