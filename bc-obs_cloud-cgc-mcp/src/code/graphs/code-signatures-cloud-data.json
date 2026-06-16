@@ -1,0 +1,2749 @@
+{
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 2_configs/src/engines/derive-code-signatures.ts",
+  "_meta": {
+    "description": "Per-file code signatures for repo 'cloud-data' — structure only (exports/imports/symbols), no bodies.",
+    "format_version": 1
+  },
+  "repo": "cloud-data",
+  "counts": {
+    "files": 106,
+    "by_lang": {
+      "sh": 21,
+      "rust": 85
+    },
+    "by_role": {
+      "script": 3,
+      "shell": 18,
+      "rust-module": 85
+    }
+  },
+  "files": [
+    {
+      "path": ".github/workflows/scripts/cloud-git-sync.sh",
+      "lang": "sh",
+      "role": "script",
+      "exports": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "warn()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ],
+      "imports": [],
+      "symbols": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "warn()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ]
+    },
+    {
+      "path": ".github/workflows/scripts/ship-reports.sh",
+      "lang": "sh",
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "/root/.nix-profile/etc/profile.d/hm-session-vars.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "1_workflows/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "log()",
+        "build()",
+        "test_stage()",
+        "deploy()"
+      ],
+      "imports": [],
+      "symbols": [
+        "log()",
+        "build()",
+        "test_stage()",
+        "deploy()"
+      ]
+    },
+    {
+      "path": "1_workflows/src/scripts/cloud-git-sync.sh",
+      "lang": "sh",
+      "role": "script",
+      "exports": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "warn()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ],
+      "imports": [],
+      "symbols": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "warn()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ]
+    },
+    {
+      "path": "fin-api/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ],
+      "imports": [],
+      "symbols": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ]
+    },
+    {
+      "path": "news-gdelt/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ],
+      "imports": [],
+      "symbols": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ]
+    },
+    {
+      "path": "ntfy-api/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ],
+      "imports": [],
+      "symbols": [
+        "log()",
+        "log_ok()",
+        "log_warn()",
+        "log_error()",
+        "slugify()",
+        "fetch_one()",
+        "resolve_q_values_from()"
+      ]
+    },
+    {
+      "path": "reports-logs/src/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "list_vms()",
+        "ensure_dist()",
+        "module_enabled()",
+        "run_module()",
+        "write_manifest()",
+        "test_debug()"
+      ],
+      "imports": [],
+      "symbols": [
+        "list_vms()",
+        "ensure_dist()",
+        "module_enabled()",
+        "run_module()",
+        "write_manifest()",
+        "test_debug()"
+      ]
+    },
+    {
+      "path": "reports-logs/src/modules/docker.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "collect_vm()"
+      ],
+      "imports": [],
+      "symbols": [
+        "collect_vm()"
+      ]
+    },
+    {
+      "path": "reports-logs/src/modules/index.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "tag_of_topology_service()",
+        "vm_of_container()"
+      ],
+      "imports": [],
+      "symbols": [
+        "tag_of_topology_service()",
+        "vm_of_container()"
+      ]
+    },
+    {
+      "path": "reports-logs/src/modules/test-ssh-multiplexer.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [],
+      "imports": [
+        "reports-logs/src/build.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/server-scanning/server-scanning.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "usage()",
+        "have()",
+        "grab_banner()"
+      ],
+      "imports": [],
+      "symbols": [
+        "usage()",
+        "have()",
+        "grab_banner()"
+      ]
+    },
+    {
+      "path": "reports/src/_crate_engine.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "engine_build()",
+        "engine_link()",
+        "engine_run()",
+        "engine_android()",
+        "engine_dispatch()"
+      ],
+      "imports": [],
+      "symbols": [
+        "engine_build()",
+        "engine_link()",
+        "engine_run()",
+        "engine_android()",
+        "engine_dispatch()"
+      ]
+    },
+    {
+      "path": "reports/src/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "list_crate_dirs()",
+        "short_name()",
+        "resolve_target()",
+        "cmd_list()",
+        "cmd_all()",
+        "cmd_one()",
+        "generate_manifest()",
+        "test_dists()",
+        "cmd_android()"
+      ],
+      "imports": [],
+      "symbols": [
+        "list_crate_dirs()",
+        "short_name()",
+        "resolve_target()",
+        "cmd_list()",
+        "cmd_all()",
+        "cmd_one()",
+        "generate_manifest()",
+        "test_dists()",
+        "cmd_android()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "send_html()"
+      ],
+      "imports": [
+        "$ROOT/../_crate_engine.sh"
+      ],
+      "symbols": [
+        "send_html()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/appendix.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "is_empty",
+        "summary",
+        "to_markdown",
+        "legacy_md",
+        "from_reports",
+        "from_markdown",
+        "load",
+        "ZSection",
+        "Appendix"
+      ],
+      "imports": [
+        "crate::health_full2::FullReport",
+        "crate::mail_full::MailReport",
+        "serde_json::Value",
+        "std::path::Path",
+        "super::"
+      ],
+      "symbols": [
+        "is_empty(&self)",
+        "summary(&self)",
+        "to_markdown(&self)",
+        "legacy_md(&self)",
+        "detect_header(line: &str)",
+        "split_markdown_into_sections(md: &str)",
+        "classify_full_source(title: &str)",
+        "classify_mail_source(title: &str)",
+        "build_zsections(full_md: &str, mail_md: &str)",
+        "from_reports(full: Option<&FullReport>, mail: Option<&MailReport>)",
+        "from_markdown(full_md: &str, mail_md: &str)",
+        "load()",
+        "detect_numbered_header()",
+        "detect_stack_sub_header()",
+        "detect_stack_mega_header()",
+        "detect_mail_tier_header()",
+        "non_header_lines_ignored()",
+        "splits_mixed_markdown()",
+        "consolidation_numbers_sequentially()",
+        "empty_inputs_produce_empty_appendix()",
+        "load_from_missing_cwd_files_yields_empty()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/collect.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "check_endpoint",
+        "check_cert",
+        "check_dns",
+        "fetch_gha",
+        "fetch_gha_workflows",
+        "fetch_ghcr",
+        "fetch_dags",
+        "fetch_bucket_sizes",
+        "fetch_cloud_costs",
+        "fetch_repos",
+        "fetch_matomo_analytics",
+        "fetch_umami_analytics"
+      ],
+      "imports": [
+        "crate::types::",
+        "chrono::",
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver",
+        "reports_common::context::find_cloud_data_file"
+      ],
+      "symbols": [
+        "http_client()",
+        "auth_client(token: &str)",
+        "check_endpoint(ep: &EndpointCheck)",
+        "check_cert(domain: &str)",
+        "check_dns()",
+        "workflows_config()",
+        "fetch_gha(github_token: &str)",
+        "fetch_gha_workflows(github_token: &str)",
+        "fetch_ghcr(github_token: &str)",
+        "fetch_dags()",
+        "fetch_bucket_sizes(buckets: &[CloudBucket])",
+        "fetch_cloud_costs()",
+        "fetch_repos()",
+        "fetch_matomo_analytics()",
+        "fetch_umami_analytics()",
+        "fetch_umami_stats(client: &Client, base_url: &str, site_id: &str, start_ms: i64, end_ms: i64)",
+        "fetch_umami_top_pages(client: &Client, base_url: &str, site_id: &str, start_ms: i64, end_ms: i64)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/context.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_context",
+        "Context"
+      ],
+      "imports": [
+        "crate::types::",
+        "anyhow::Result",
+        "reports_common::context::find_cloud_data_file",
+        "std::collections::HashMap",
+        "std::path::PathBuf"
+      ],
+      "symbols": [
+        "load_context()",
+        "pricing_for(model: &str)",
+        "normalize_model_name(raw: &str)",
+        "load_ai_summary()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/diagrams.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "wireguard_mesh_dot",
+        "security_layers_d2",
+        "data_flow_plantuml",
+        "dns_chain_pikchr",
+        "container_distribution_dot",
+        "cicd_pipeline_d2",
+        "provider_map_dot",
+        "auth_flow_plantuml",
+        "storage_map_d2",
+        "service_mesh_dot",
+        "vm_resource_d2",
+        "backup_flow_plantuml",
+        "generate_all"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::fmt::Write",
+        "std::process::Command",
+        "std::io::Write",
+        "as"
+      ],
+      "symbols": [
+        "render_svg(tool: &str, args: &[&str], input: &str)",
+        "dot_svg(input: &str)",
+        "d2_svg(input: &str)",
+        "plantuml_svg(input: &str)",
+        "pikchr_svg(input: &str)",
+        "gv_id(name: &str)",
+        "wireguard_mesh_dot(data: &ReportData)",
+        "security_layers_d2(data: &ReportData)",
+        "data_flow_plantuml(data: &ReportData)",
+        "dns_chain_pikchr(data: &ReportData)",
+        "container_distribution_dot(data: &ReportData)",
+        "cicd_pipeline_d2(data: &ReportData)",
+        "provider_map_dot(data: &ReportData)",
+        "auth_flow_plantuml(data: &ReportData)",
+        "storage_map_d2(data: &ReportData)",
+        "service_mesh_dot(data: &ReportData)",
+        "vm_resource_d2(data: &ReportData)",
+        "backup_flow_plantuml(data: &ReportData)",
+        "generate_all(data: &ReportData)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/evidence.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "write_vm_evidence",
+        "write_vm_evidence_from_rsync"
+      ],
+      "imports": [
+        "reports_common::context::find_cloud_data_file",
+        "serde_json::json",
+        "std::fs",
+        "std::path::PathBuf"
+      ],
+      "symbols": [
+        "evidence_root()",
+        "split_sections(raw: &str)",
+        "container_full_to_docker_ps(body: &str)",
+        "write_vm_evidence(vm_name: &str, raw: &str, reachable: bool)",
+        "write_vm_evidence_from_rsync(\n    vm_alias: &str,\n    raw_json: Option<&serde_json::Value>,\n    container_count: usize,\n    reachable: bool,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "tcp",
+        "http_get",
+        "hickory_resolver",
+        "public_resolver",
+        "dns_resolve",
+        "dns_txt",
+        "dns_mx",
+        "http_client",
+        "auth_client",
+        "tcp_scan",
+        "gcloud_status",
+        "oci_status",
+        "cloud_vm_status"
+      ],
+      "imports": [
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver"
+      ],
+      "symbols": [
+        "tcp(ip: &str, port: u16)",
+        "http_get(client: &Client, url: &str)",
+        "hickory_resolver()",
+        "public_resolver()",
+        "dns_resolve(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_txt(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_mx(resolver: &TokioAsyncResolver, name: &str)",
+        "http_client()",
+        "auth_client(token: &str)",
+        "tcp_scan(ip: &str, ports: &[u16])",
+        "gcloud_status(cloud_name: &str)",
+        "oci_status(display_name: &str)",
+        "cloud_vm_status(_vm_id: &str, cloud_name: &str, provider: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/context.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_context"
+      ],
+      "imports": [
+        "super::types::",
+        "anyhow::",
+        "reports_common::context::find_cloud_data_file",
+        "serde_json::Value",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "load_context()",
+        "scan_build_json_ports(base: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/layers.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "layer_self_check",
+        "layer_wg_mesh",
+        "layer_platform",
+        "layer_containers",
+        "layer_public_urls",
+        "layer_private_urls",
+        "layer_cross_checks",
+        "layer_external",
+        "layer_drift",
+        "layer_security",
+        "layer_email_e2e"
+      ],
+      "imports": [
+        "super::checks::",
+        "super::ssh",
+        "super::types::",
+        "std::collections::",
+        "std::time::Instant",
+        "explicit",
+        "reports_common::probe"
+      ],
+      "symbols": [
+        "layer_self_check(ctx: &Context)",
+        "layer_wg_mesh(\n    ctx: &Context,\n    fleet: Option<&reports_common::fleet::FleetState>,\n)",
+        "layer_platform(\n    ctx: &Context,\n    reachable_vms: &[String],\n)",
+        "layer_containers(ctx: &Context, vm_batch: &HashMap<String, VmBatchData>)",
+        "layer_public_urls(ctx: &Context)",
+        "layer_private_urls(ctx: &Context)",
+        "layer_cross_checks(\n    ctx: &Context,\n    _vm_batch: &HashMap<String, VmBatchData>,\n    public_checks: &[Check],\n    private_checks: &[Check],\n    container_checks: &[Check],\n)",
+        "layer_external(_ctx: &Context)",
+        "layer_drift(\n    ctx: &Context,\n    vm_batch: &HashMap<String, VmBatchData>,\n)",
+        "layer_security(ctx: &Context)",
+        "layer_email_e2e(_ctx: &Context, reachable_vms: &[String])",
+        "parse_openssl_date(s: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/mod.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "run",
+        "FullReport"
+      ],
+      "imports": [
+        "anyhow::Result",
+        "chrono::Utc",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "types::"
+      ],
+      "symbols": [
+        "run(\n    fleet: Option<&reports_common::fleet::FleetState>,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "format_checks",
+        "build_template_vars"
+      ],
+      "imports": [
+        "super::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "format_checks(checks: &[Check])",
+        "build_template_vars(results: &LayerResults)",
+        "tier_score(checks: &[Check], filter: impl Fn(&str)",
+        "tier_icon(passed: usize, total: usize)",
+        "build_tier_checks(results: &LayerResults)",
+        "build_issues_summary(results: &LayerResults)",
+        "build_performance(results: &LayerResults)",
+        "build_result_summary(results: &LayerResults)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/ssh.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "ssh_exec",
+        "rsync_health",
+        "ssh_echo_test",
+        "parse_section"
+      ],
+      "imports": [
+        "super::types::",
+        "anyhow::Result",
+        "std::time::Duration",
+        "tokio::time::timeout"
+      ],
+      "symbols": [
+        "ssh_exec(vm_alias: &str, command: &str, timeout_secs: u64)",
+        "rsync_health(vm_alias: &str)",
+        "ssh_echo_test(vm_alias: &str)",
+        "parse_section(output: &str, name: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "tcp",
+        "http_get",
+        "hickory_resolver",
+        "dns_resolve",
+        "dns_txt",
+        "dns_mx",
+        "http_client",
+        "auth_client",
+        "tcp_scan",
+        "gcloud_status"
+      ],
+      "imports": [
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver"
+      ],
+      "symbols": [
+        "tcp(ip: &str, port: u16)",
+        "http_get(client: &Client, url: &str)",
+        "hickory_resolver()",
+        "dns_resolve(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_txt(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_mx(resolver: &TokioAsyncResolver, name: &str)",
+        "http_client()",
+        "auth_client(token: &str)",
+        "tcp_scan(ip: &str, ports: &[u16])",
+        "gcloud_status(cloud_name: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/collectors.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "collect_all"
+      ],
+      "imports": [
+        "super::checks::",
+        "super::types::",
+        "chrono::Utc",
+        "reqwest::Client",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "for"
+      ],
+      "symbols": [
+        "collect_all(ctx: &Context)",
+        "collect_mesh(ctx: &Context)",
+        "collect_public_urls(ctx: &Context, client: &Client, aclient: &Client)",
+        "collect_private(ctx: &Context, client: &Client, resolver: &trust_dns_resolver::TokioAsyncResolver, hickory_up: bool, vm_data: &[VmLiveData])",
+        "is_container_up(vm_data: &[VmLiveData], vm: &str, container: &str)",
+        "collect_vms(ctx: &Context)",
+        "collect_mail_dns(resolver: &trust_dns_resolver::TokioAsyncResolver)",
+        "collect_port_scan(ctx: &Context)",
+        "collect_databases(ctx: &Context)",
+        "format_db_size(raw: &str)",
+        "collect_storage_live(ctx: &Context)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/mod.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "run"
+      ],
+      "imports": [
+        "anyhow::Result"
+      ],
+      "symbols": [
+        "run()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/parsers.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_context"
+      ],
+      "imports": [
+        "super::types::",
+        "anyhow::",
+        "reports_common::caddy",
+        "reports_common::context::find_cloud_data_file",
+        "serde_json::Value",
+        "std::collections::"
+      ],
+      "symbols": [
+        "load_context()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/sections.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "build_all_vars"
+      ],
+      "imports": [
+        "super::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "build_all_vars(ctx: &Context, live: &LiveData)",
+        "build_issues(live: &LiveData)",
+        "build_mesh(live: &LiveData)",
+        "build_public_urls(live: &LiveData)",
+        "build_private(_ctx: &Context, live: &LiveData)",
+        "build_containers(ctx: &Context, live: &LiveData)",
+        "build_container_drift(live: &LiveData)",
+        "build_mail_mx(live: &LiveData)",
+        "build_mail_spf(ctx: &Context, live: &LiveData)",
+        "build_mail_dkim(live: &LiveData)",
+        "build_mail_dmarc(live: &LiveData)",
+        "build_vps_specs(ctx: &Context)",
+        "build_resources(live: &LiveData)",
+        "build_port_scan(live: &LiveData)",
+        "build_network_audit(ctx: &Context, live: &LiveData)",
+        "build_database_section(live: &LiveData)",
+        "build_storage_section(live: &LiveData)",
+        "build_databases(ctx: &Context)",
+        "build_performance(live: &LiveData)",
+        "build_script_info(live: &LiveData)",
+        "build_mail_auth(ctx: &Context)",
+        "build_mail_flow(ctx: &Context, live: &LiveData)",
+        "build_api_mcp(_ctx: &Context)",
+        "build_repos_registries()",
+        "build_storage(ctx: &Context)",
+        "build_docker_networks(ctx: &Context)",
+        "build_vault_providers()",
+        "build_framework_paths(ctx: &Context)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render_string"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::"
+      ],
+      "symbols": [
+        "resolve_template_path()",
+        "render_string(vars: &HashMap<String, String>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/stack/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "Context",
+        "VmInfo",
+        "UrlInfo",
+        "DnsEntry",
+        "DbEntry",
+        "WgPeer",
+        "MailPort",
+        "L4Route",
+        "LiveData",
+        "MeshResult",
+        "UrlResult",
+        "PrivateResult",
+        "VmLiveData",
+        "ContainerState",
+        "MailDnsData",
+        "MxRecord",
+        "SpfEntry",
+        "DkimEntry",
+        "PortScanResult",
+        "DbHealthResult",
+        "StorageHealthResult"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::collections::HashMap"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render_string",
+        "output_path"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::"
+      ],
+      "symbols": [
+        "resolve_template_path()",
+        "render_string(vars: &HashMap<String, String>)",
+        "output_path()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/health_full2/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "Severity",
+        "Check",
+        "Context",
+        "VmInfo",
+        "PublicPort",
+        "ServiceInfo",
+        "ContainerDecl",
+        "CaddyRoute",
+        "VmBatchData",
+        "ContainerHealth",
+        "DiagContext",
+        "LayerResults",
+        "Summary"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "fmt(&self, f: &mut std::fmt::Formatter<'_>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/html.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render",
+        "OutputMode"
+      ],
+      "imports": [
+        "crate::types::",
+        "chrono::Datelike",
+        "std::fmt::Write",
+        "manifests"
+      ],
+      "symbols": [
+        "diagram_or_css(\n    h: &mut String,\n    mode: OutputMode,\n    title: &str,\n    diagram_fn: impl FnOnce()",
+        "topo_topic_header(h: &mut String, title: &str)",
+        "mermaid_to_div(mermaid_src: &str)",
+        "embed_diagram(h: &mut String, title: &str, tool: &str, svg: &str)",
+        "pct_color(pct: u32)",
+        "progress_bar(pct: u32)",
+        "status_badge(status: &VmStatus)",
+        "code_badge(code: u16)",
+        "label_badge(label: &str, color: &str)",
+        "render_latency_bar(latency_ms: u64)",
+        "section_title(h: &mut String, letter: &str, title: &str)",
+        "section_start(h: &mut String, title: &str, cols: u8)",
+        "section_end(h: &mut String)",
+        "th(label: &str, align: &str)",
+        "td(val: &str, color: &str, size: &str, align: &str)",
+        "render(data: &ReportData, mode: OutputMode)",
+        "render_exec_summary(h: &mut String, data: &ReportData)",
+        "render_stat_cards(h: &mut String, data: &ReportData)",
+        "render_fleet_dashboard(h: &mut String, data: &ReportData)",
+        "render_container_inventory(h: &mut String, data: &ReportData)",
+        "render_database_report(h: &mut String, data: &ReportData)",
+        "render_object_storage(h: &mut String, data: &ReportData)",
+        "render_backup_dags(h: &mut String, data: &ReportData)",
+        "render_backup_buckets(h: &mut String, data: &ReportData)",
+        "render_backup_status(h: &mut String, data: &ReportData)",
+        "render_endpoints(h: &mut String, data: &ReportData)",
+        "render_secrets_inventory(h: &mut String, data: &ReportData)",
+        "render_certs(h: &mut String, data: &ReportData)",
+        "render_dns(h: &mut String, data: &ReportData)",
+        "render_mail_health(h: &mut String, data: &ReportData)",
+        "render_check_group(h: &mut String, title: &str, checks: &[crate::types::MailCheck])",
+        "render_gha(h: &mut String, data: &ReportData)",
+        "render_gha_workflows(h: &mut String, data: &ReportData)",
+        "render_ghcr(h: &mut String, data: &ReportData)",
+        "render_dags(h: &mut String, data: &ReportData)",
+        "render_container_resources(h: &mut String, data: &ReportData)",
+        "render_log_errors(h: &mut String, data: &ReportData)",
+        "render_oom_kills(h: &mut String, data: &ReportData)",
+        "render_security(h: &mut String, data: &ReportData)",
+        "render_docker_disk(h: &mut String, data: &ReportData)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "tcp",
+        "http_get",
+        "hickory_resolver",
+        "public_resolver",
+        "dns_resolve",
+        "dns_txt",
+        "dns_mx",
+        "http_client",
+        "auth_client",
+        "openssl_connect",
+        "openssl_connect_wg",
+        "curl_status"
+      ],
+      "imports": [
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver",
+        "tokio::io::AsyncWriteExt"
+      ],
+      "symbols": [
+        "tcp(ip: &str, port: u16)",
+        "http_get(client: &Client, url: &str)",
+        "hickory_resolver()",
+        "public_resolver()",
+        "dns_resolve(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_txt(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_mx(resolver: &TokioAsyncResolver, name: &str)",
+        "http_client()",
+        "auth_client(token: &str)",
+        "openssl_connect(host: &str, port: u16, starttls: Option<&str>)",
+        "openssl_connect_wg(\n    addr: &str,\n    port: u16,\n    sni: &str,\n    starttls: Option<&str>,\n)",
+        "openssl_connect_inner(\n    addr: &str,\n    port: u16,\n    sni: &str,\n    starttls: Option<&str>,\n)",
+        "curl_status(url: &str, timeout_secs: u64)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/mod.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "run",
+        "MailReport"
+      ],
+      "imports": [
+        "anyhow::Result",
+        "chrono::Utc",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "types::"
+      ],
+      "symbols": [
+        "load_bearer_token()",
+        "run()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "format_checks",
+        "build_template_vars"
+      ],
+      "imports": [
+        "super::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "format_checks(checks: &[Check])",
+        "build_template_vars(results: &MailHealthResult)",
+        "build_issues_summary(results: &MailHealthResult)",
+        "build_performance(results: &MailHealthResult)",
+        "build_result_summary(results: &MailHealthResult)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/phases.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "path_checker",
+        "phase0_instant_kpis",
+        "preflight",
+        "container_health",
+        "network_checks",
+        "dns_auth",
+        "mail_internals",
+        "config_drift",
+        "e2e_delivery"
+      ],
+      "imports": [
+        "super::checks::",
+        "super::constants::",
+        "super::ssh",
+        "super::types::",
+        "std::time::Instant",
+        "dist",
+        "std::io::Read"
+      ],
+      "symbols": [
+        "path_checker()",
+        "phase0_instant_kpis()",
+        "tls_wg_check(port: u16, name: &str, starttls: Option<&str>)",
+        "preflight()",
+        "container_health(\n    mail_data: &Option<RemoteData>,\n    apps_data: &Option<RemoteDataApps>,\n)",
+        "network_checks(\n    mail_data: &Option<RemoteData>,\n    apps_data: &Option<RemoteDataApps>,\n    proxy_data: &Option<RemoteDataProxy>,\n    bearer_token: &Option<String>,\n)",
+        "dns_auth()",
+        "mail_internals(mail_data: &Option<RemoteData>)",
+        "config_drift(mail_data: &mut Option<RemoteData>)",
+        "file_md5(path: &str)",
+        "e2e_delivery(mail_data: &Option<RemoteData>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/ssh.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "ssh_exec",
+        "cloud_vm_status",
+        "ssh_echo_test",
+        "parse_section",
+        "ssh_batch_mail",
+        "ssh_batch_apps",
+        "ssh_batch_proxy"
+      ],
+      "imports": [
+        "super::constants::",
+        "super::types::",
+        "anyhow::Result",
+        "std::time::Duration",
+        "tokio::time::timeout"
+      ],
+      "symbols": [
+        "ssh_args(alias: &str, cmd: &str)",
+        "ssh_exec(vm_alias: &str, command: &str, timeout_secs: u64)",
+        "ssh_failure_diagnostic(vm_alias: &str, initial_error: &str)",
+        "cloud_vm_status(vm_alias: &str)",
+        "dropbear_alive(vm_alias: &str)",
+        "cloud_serial_diagnostic(vm_alias: &str)",
+        "ssh_echo_test(vm_alias: &str)",
+        "parse_section(output: &str, name: &str)",
+        "ssh_batch_mail()",
+        "ssh_batch_apps()",
+        "ssh_batch_proxy()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render_string",
+        "output_path"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::"
+      ],
+      "symbols": [
+        "resolve_template_path()",
+        "render_string(vars: &HashMap<String, String>)",
+        "output_path()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail_full/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "Severity",
+        "Check",
+        "RemoteData",
+        "RemoteDataApps",
+        "RemoteDataProxy",
+        "MailHealthResult",
+        "Summary"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "fmt(&self, f: &mut std::fmt::Formatter<'_>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mail.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "collect_mail_network",
+        "fill_from_vmdata"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::net::SocketAddr",
+        "std::time::",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver"
+      ],
+      "symbols": [
+        "collect_mail_network()",
+        "fill_from_vmdata(health: &mut MailHealthData, vms: &[VmData])",
+        "check_outbound_path()",
+        "check_inbound_path()",
+        "check_dns_auth()",
+        "check_tls_ports()",
+        "tcp_check(name: &str, host: &str, port: u16, severity: &str)",
+        "check_mx_dns()",
+        "check_smtp_https()",
+        "check_hickory_dns()",
+        "check_dns_mx()",
+        "check_dns_dkim()",
+        "check_dns_spf()",
+        "check_dns_dmarc()",
+        "check_stalwart()",
+        "check_jmap_wellknown()",
+        "check_jmap_webadmin()",
+        "openssl_check(name: &str, domain: &str, port: u16, starttls: bool)",
+        "public_resolver()",
+        "recompute_summary(health: &mut MailHealthData)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/main.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "anyhow::Result",
+        "chrono::Utc",
+        "reports_common::perf::PerfTracker",
+        "std::collections::HashSet",
+        "std::sync::Arc",
+        "std::time::Instant",
+        "types::",
+        "reports_common::run_state::"
+      ],
+      "symbols": [
+        "main()",
+        "parse_running_for(s: &str)",
+        "parse_mem_mib(s: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/md.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "output_path",
+        "render"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::collections::HashMap",
+        "std::path::",
+        "super::"
+      ],
+      "symbols": [
+        "output_path()",
+        "resolve_template_path()",
+        "render(data: &ReportData)",
+        "substitute(template: &str, vars: &HashMap<String, String>)",
+        "build_vars(d: &ReportData)",
+        "tb(header: &[&str])",
+        "render_issues(d: &ReportData)",
+        "render_vms(d: &ReportData)",
+        "render_endpoints(d: &ReportData)",
+        "render_certs(d: &ReportData)",
+        "render_dns(d: &ReportData)",
+        "render_databases(d: &ReportData)",
+        "render_buckets(d: &ReportData)",
+        "render_dags(d: &ReportData)",
+        "render_gha(d: &ReportData)",
+        "render_ghcr(d: &ReportData)",
+        "render_drift(d: &ReportData)",
+        "render_firewall(d: &ReportData)",
+        "render_finops(d: &ReportData)",
+        "render_mail(d: &ReportData)",
+        "render_appendix(d: &ReportData)",
+        "substitute_replaces_longest_keys_first()",
+        "substitute_leaves_unknown_vars()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/mermaid.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "containers",
+        "data_storage",
+        "security_layers",
+        "cicd_pipeline",
+        "service_routing",
+        "vm_resources",
+        "ai_models",
+        "wireguard_mesh",
+        "traffic_flow",
+        "service_categories",
+        "storage_overview",
+        "network_zones",
+        "provider_map"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::fmt::Write"
+      ],
+      "symbols": [
+        "node_id(name: &str)",
+        "containers(data: &ReportData)",
+        "data_storage(data: &ReportData)",
+        "security_layers(data: &ReportData)",
+        "cicd_pipeline(data: &ReportData)",
+        "service_routing(data: &ReportData)",
+        "vm_resources(data: &ReportData)",
+        "ai_models(data: &ReportData)",
+        "wireguard_mesh(data: &ReportData)",
+        "traffic_flow(data: &ReportData)",
+        "service_categories(data: &ReportData)",
+        "storage_overview(data: &ReportData)",
+        "network_zones(data: &ReportData)",
+        "provider_map(data: &ReportData)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/render_only.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "run"
+      ],
+      "imports": [
+        "crate::appendix::",
+        "crate::types::ReportData",
+        "crate::",
+        "anyhow::",
+        "reports_common::run_state::",
+        "std::path::Path"
+      ],
+      "symbols": [
+        "run()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/ssh.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "collect_vm"
+      ],
+      "imports": [
+        "crate::types::",
+        "anyhow::Result",
+        "std::time::Duration",
+        "tokio::time::timeout",
+        "tokio::io::AsyncWriteExt"
+      ],
+      "symbols": [
+        "ssh_exec(alias: &str, user: &str, ip: &str, command: &str)",
+        "section(raw: &str, start: &str, end: &str)",
+        "build_db_commands(ip: &str, databases: &[DatabaseEntry])",
+        "collect_vm(vm: &VmTarget, databases: &[DatabaseEntry])"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-health-full-daily/src/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "MonitoringTargets",
+        "EndpointCheck",
+        "TlsCheck",
+        "VmTarget",
+        "DatabasesJson",
+        "DatabaseEntry",
+        "CloudBucket",
+        "FirewallRule",
+        "VmFirewall",
+        "GlobalFirewall",
+        "ConsolidatedJson",
+        "ServiceEntry",
+        "McpServer",
+        "CloudCost",
+        "WgTransfer",
+        "VmData",
+        "VmStatus",
+        "ContainerInfo",
+        "ContainerStat",
+        "BackupEntry",
+        "DockerDfEntry",
+        "EndpointResult",
+        "CertResult",
+        "DnsResult",
+        "GhaRun",
+        "GhaWorkflow",
+        "GhcrPackage",
+        "DagStatus",
+        "GithubRepo",
+        "VpsProvider"
+      ],
+      "imports": [
+        "serde::"
+      ],
+      "symbols": [
+        "from(i: TlsCheckInput)",
+        "default_true()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [],
+      "imports": [
+        "$ROOT/../_crate_engine.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "tcp",
+        "http_get",
+        "hickory_resolver",
+        "public_resolver",
+        "dns_resolve",
+        "dns_txt",
+        "dns_mx",
+        "http_client",
+        "auth_client",
+        "openssl_connect",
+        "openssl_connect_wg",
+        "curl_status"
+      ],
+      "imports": [
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver",
+        "tokio::io::AsyncWriteExt"
+      ],
+      "symbols": [
+        "tcp(ip: &str, port: u16)",
+        "http_get(client: &Client, url: &str)",
+        "hickory_resolver()",
+        "public_resolver()",
+        "dns_resolve(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_txt(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_mx(resolver: &TokioAsyncResolver, name: &str)",
+        "http_client()",
+        "auth_client(token: &str)",
+        "openssl_connect(host: &str, port: u16, starttls: Option<&str>)",
+        "openssl_connect_wg(\n    addr: &str,\n    port: u16,\n    sni: &str,\n    starttls: Option<&str>,\n)",
+        "openssl_connect_inner(\n    addr: &str,\n    port: u16,\n    sni: &str,\n    starttls: Option<&str>,\n)",
+        "curl_status(url: &str, timeout_secs: u64)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/constants.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "the"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/main.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "anyhow::Result",
+        "chrono::Utc",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "types::",
+        "reports_common::run_state::"
+      ],
+      "symbols": [
+        "load_bearer_token()",
+        "main()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "format_checks",
+        "build_template_vars"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "format_checks(checks: &[Check])",
+        "build_template_vars(results: &MailHealthResult)",
+        "build_issues_summary(results: &MailHealthResult)",
+        "build_performance(results: &MailHealthResult)",
+        "build_result_summary(results: &MailHealthResult)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/phases.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "path_checker",
+        "phase0_instant_kpis",
+        "preflight",
+        "container_health",
+        "network_checks",
+        "dns_auth",
+        "mail_internals",
+        "config_drift",
+        "e2e_delivery"
+      ],
+      "imports": [
+        "crate::checks::",
+        "crate::constants::",
+        "crate::ssh",
+        "crate::types::",
+        "std::time::Instant",
+        "the",
+        "no",
+        "crate::checks::HTTP_TIMEOUT",
+        "tokio::time::timeout",
+        "reports_common::fleet::VmState",
+        "oci",
+        "dist",
+        "std::io::Read"
+      ],
+      "symbols": [
+        "path_checker()",
+        "probe_jmap_well_known(\n    _client: &reqwest::Client,\n    url: &str,\n)",
+        "phase0_instant_kpis()",
+        "tls_wg_check(port: u16, name: &str, starttls: Option<&str>)",
+        "preflight(\n    fleet: Option<&reports_common::fleet::FleetState>,\n)",
+        "container_health(\n    mail_data: &Option<RemoteData>,\n    apps_data: &Option<RemoteDataApps>,\n)",
+        "network_checks(\n    mail_data: &Option<RemoteData>,\n    apps_data: &Option<RemoteDataApps>,\n    proxy_data: &Option<RemoteDataProxy>,\n    bearer_token: &Option<String>,\n)",
+        "dns_auth()",
+        "mail_internals(mail_data: &Option<RemoteData>)",
+        "config_drift(mail_data: &mut Option<RemoteData>)",
+        "file_md5(path: &str)",
+        "e2e_delivery(mail_data: &Option<RemoteData>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/ssh.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "ssh_exec",
+        "cloud_vm_status",
+        "ssh_echo_test",
+        "parse_section",
+        "ssh_batch_mail",
+        "ssh_batch_apps",
+        "ssh_batch_proxy"
+      ],
+      "imports": [
+        "crate::constants::",
+        "crate::types::",
+        "anyhow::Result",
+        "std::time::Duration",
+        "tokio::time::timeout",
+        "ssh_batch_mail"
+      ],
+      "symbols": [
+        "ssh_args(alias: &str, cmd: &str)",
+        "ssh_exec(vm_alias: &str, command: &str, timeout_secs: u64)",
+        "ssh_failure_diagnostic(vm_alias: &str, initial_error: &str)",
+        "cloud_vm_status(vm_alias: &str)",
+        "dropbear_alive(vm_alias: &str)",
+        "cloud_serial_diagnostic(vm_alias: &str)",
+        "ssh_echo_test(vm_alias: &str)",
+        "parse_section(output: &str, name: &str)",
+        "ssh_batch_mail()",
+        "ssh_batch_apps()",
+        "ssh_batch_proxy()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::"
+      ],
+      "symbols": [
+        "resolve_template_path()",
+        "render(vars: &HashMap<String, String>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-mail-health-full/src/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "Severity",
+        "Check",
+        "RemoteData",
+        "RemoteDataApps",
+        "RemoteDataProxy",
+        "MailHealthResult",
+        "Summary"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "fmt(&self, f: &mut std::fmt::Formatter<'_>)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [],
+      "imports": [
+        "$ROOT/../_crate_engine.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/context.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_context",
+        "SecDataContext"
+      ],
+      "imports": [
+        "crate::scan_config::",
+        "anyhow::Result",
+        "reports_common::context",
+        "reports_common::types::VmInfo",
+        "serde_json::Value"
+      ],
+      "symbols": [
+        "load_context()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/correlate.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "correlate"
+      ],
+      "imports": [
+        "crate::types::",
+        "reports_common::types::",
+        "std::collections::"
+      ],
+      "symbols": [
+        "correlate(\n    yara_hits: &[YaraHit],\n    siem_alerts: &[SiemAlert],\n    ti_matches: &[ThreatIntelMatch],\n    journal_alerts: &[JournalAlert],\n    runtime_issues: &[RuntimeIssue],\n    diff_changes: &[DiffChange],\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/diff_analysis.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "analyze_diffs"
+      ],
+      "imports": [
+        "crate::types::DiffChange",
+        "reports_common::types::",
+        "std::path::Path",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "analyze_diffs(evidence_dirs: &[(String, String)",
+        "parse_diff(path: &Path, vm_alias: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/export.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "export_all",
+        "cleanup",
+        "cleanup_evidence"
+      ],
+      "imports": [
+        "crate::context::SecDataContext",
+        "crate::scan_config::ScanConfig",
+        "crate::types::ExportedContainer",
+        "futures::stream::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::ssh",
+        "reports_common::types::",
+        "std::time::Instant",
+        "tempfile::TempDir",
+        "walkdir::WalkDir"
+      ],
+      "symbols": [
+        "is_database(name: &str, patterns: &[String])",
+        "export_all(\n    ctx: &SecDataContext,\n    caps: &RuntimeCapabilities,\n)",
+        "process_vm(\n    vm_alias: &str,\n    today: &str,\n    cfg: &ScanConfig,\n)",
+        "try_evidence_vault(\n    vm_alias: &str,\n    today: &str,\n    evidence_files: &[String],\n)",
+        "export_vm(\n    vm_alias: &str,\n    cfg: &ScanConfig,\n)",
+        "export_container(\n    vm_alias: &str,\n    container: &str,\n    cfg: &ScanConfig,\n)",
+        "count_dir_stats(dir: &str)",
+        "cleanup(exports: &[ExportedContainer])",
+        "cleanup_evidence(evidence_dirs: &[(String, String)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/journal.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "analyze_journals"
+      ],
+      "imports": [
+        "crate::types::JournalAlert",
+        "flate2::read::GzDecoder",
+        "reports_common::types::",
+        "std::collections::HashMap",
+        "std::io::",
+        "std::path::Path",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "analyze_journals(\n    evidence_dirs: &[(String, String)",
+        "parse_journal_gz(path: &Path, vm_alias: &str)",
+        "extract_ip_from_ssh_message(message: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/main.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "anyhow::Result",
+        "std::collections::HashMap",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "main()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "build_template_vars"
+      ],
+      "imports": [
+        "reports_common::output",
+        "reports_common::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "build_template_vars(\n    export_checks: &[Check],\n    yara_checks: &[Check],\n    siem_checks: &[Check],\n    ti_checks: &[Check],\n    journal_checks: &[Check],\n    runtime_checks: &[Check],\n    diff_checks: &[Check],\n    repo_checks: &[Check],\n    corr_checks: &[Check],\n    all_checks: &[&Check],\n    summary: &Summary,\n    timers: &HashMap<String, u64>,\n    duration_ms: u64,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/repo_scan.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_config",
+        "run",
+        "RepoScanConfig",
+        "RepoSpec",
+        "Pattern"
+      ],
+      "imports": [
+        "anyhow::",
+        "reports_common::context::find_cloud_data_file",
+        "reports_common::types::",
+        "regex::RegexSet",
+        "serde::Deserialize",
+        "std::path::PathBuf",
+        "std::process::Stdio",
+        "std::time::",
+        "tokio::process::Command",
+        "tokio::time::timeout",
+        "tokio::io::",
+        "super::"
+      ],
+      "symbols": [
+        "default_history_commits()",
+        "default_history_budget()",
+        "yes()",
+        "load_config()",
+        "expand(p: &str)",
+        "sev(s: &str)",
+        "escalate(visibility: &str, declared: Severity)",
+        "run(cfg: &RepoScanConfig)",
+        "fail(name: &str, err: String)",
+        "shortname(p: &str)",
+        "scan_tree(\n    repo: &std::path::Path,\n    combined_content: &str,\n    content_compiled: &[(String, Severity, regex::Regex)",
+        "scan_history(\n    repo: &std::path::Path,\n    content_compiled: &[(String, Severity, regex::Regex)",
+        "repo_scan_git_calls_have_bounded_deadlines()",
+        "grep_respects_deadline_guard()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/runtime.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "analyze_runtime"
+      ],
+      "imports": [
+        "crate::types::RuntimeIssue",
+        "reports_common::types::",
+        "std::path::Path",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "analyze_runtime(\n    evidence_dirs: &[(String, String)",
+        "analyze_docker_inspect(path: &Path, vm_alias: &str)",
+        "analyze_connections(path: &Path, vm_alias: &str)",
+        "extract_ip(addr: &str)",
+        "is_private_or_loopback(ip: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/scan_config.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load",
+        "ScanConfig",
+        "Phases",
+        "Concurrency",
+        "Limits",
+        "Targets"
+      ],
+      "imports": [
+        "anyhow::",
+        "reports_common::context::find_cloud_data_file",
+        "serde::Deserialize"
+      ],
+      "symbols": [
+        "default()",
+        "default_true()",
+        "load()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/siem.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "fetch_all"
+      ],
+      "imports": [
+        "crate::context::SecDataContext",
+        "crate::types::SiemAlert",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::checks::auth_client",
+        "reports_common::types::",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "fetch_all(\n    ctx: &SecDataContext,\n    caps: &RuntimeCapabilities,\n)",
+        "parse_alerts(body: &serde_json::Value)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/threat_intel.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "fetch_all",
+        "cross_match"
+      ],
+      "imports": [
+        "crate::types::",
+        "reports_common::types::",
+        "std::collections::HashSet",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "fetch_all()",
+        "parse_urlhaus(body: &serde_json::Value)",
+        "cross_match(\n    yara_hits: &[YaraHit],\n    ti_matches: &[ThreatIntelMatch],\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "ExportedContainer",
+        "YaraHit",
+        "SiemAlert",
+        "ThreatIntelMatch",
+        "Correlation",
+        "JournalAlert",
+        "RuntimeIssue",
+        "DiffChange"
+      ],
+      "imports": [
+        "serde::Serialize"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-sec-data-report/src/yara_scan.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "scan_all"
+      ],
+      "imports": [
+        "crate::types::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::types::",
+        "sha2::",
+        "std::path::Path",
+        "std::time::Instant",
+        "walkdir::WalkDir"
+      ],
+      "symbols": [
+        "find_rules_path()",
+        "scan_all(\n    exports: &[ExportedContainer],\n    caps: &RuntimeCapabilities,\n    enabled: bool,\n)",
+        "run_yara(rule_file: &str, scan_dir: &str)",
+        "file_hash_and_size(path: &str)",
+        "classify_yara_severity(rule_name: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [],
+      "imports": [
+        "$ROOT/../_crate_engine.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/context.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_context",
+        "NetworkContext"
+      ],
+      "imports": [
+        "anyhow::Result",
+        "reports_common::context",
+        "reports_common::types::"
+      ],
+      "symbols": [
+        "load_context()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/dns_audit.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "validate_dns"
+      ],
+      "imports": [
+        "crate::context::NetworkContext",
+        "crate::types::DnsValidationResult",
+        "futures::stream::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::checks",
+        "reports_common::types::",
+        "std::collections::",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "validate_dns(\n    ctx: &NetworkContext,\n    caps: &RuntimeCapabilities,\n)",
+        "parent_domain(d: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/firewall.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "audit_firewalls"
+      ],
+      "imports": [
+        "crate::context::NetworkContext",
+        "crate::types::",
+        "futures::stream::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::ssh",
+        "reports_common::types::",
+        "std::time::Instant",
+        "reports_common::fleet::VmState"
+      ],
+      "symbols": [
+        "audit_firewalls(\n    ctx: &NetworkContext,\n    port_data: &[PortScanResult],\n    caps: &RuntimeCapabilities,\n    fleet: Option<&reports_common::fleet::FleetState>,\n)",
+        "parse_ss_output(output: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/main.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "anyhow::Result",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "reports_common::run_state::"
+      ],
+      "symbols": [
+        "main()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "build_template_vars"
+      ],
+      "imports": [
+        "reports_common::output",
+        "reports_common::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "build_template_vars(\n    port_checks: &[Check],\n    tls_checks: &[Check],\n    dns_checks: &[Check],\n    wg_checks: &[Check],\n    fw_checks: &[Check],\n    all_checks: &[&Check],\n    summary: &Summary,\n    timers: &HashMap<String, u64>,\n    duration_ms: u64,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/port_scan.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "scan_all_vms"
+      ],
+      "imports": [
+        "crate::context::NetworkContext",
+        "crate::types::PortScanResult",
+        "futures::stream::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::checks",
+        "reports_common::types::",
+        "std::time::Instant",
+        "reports_common::fleet::VmState"
+      ],
+      "symbols": [
+        "scan_all_vms(\n    ctx: &NetworkContext,\n    caps: &RuntimeCapabilities,\n    fleet: Option<&reports_common::fleet::FleetState>,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/tls_audit.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "audit_all_certs"
+      ],
+      "imports": [
+        "crate::context::NetworkContext",
+        "crate::types::TlsCertResult",
+        "futures::stream::",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::types::",
+        "std::collections::HashSet",
+        "std::time::Instant",
+        "std::time::Duration",
+        "tokio::time::timeout",
+        "tokio::io::AsyncWriteExt"
+      ],
+      "symbols": [
+        "audit_all_certs(\n    ctx: &NetworkContext,\n    caps: &RuntimeCapabilities,\n)",
+        "audit_single_cert(domain: &str, connect: &str, prefix: &str)",
+        "audit_single_cert_internal(domain: &str, upstream: &str)",
+        "extract_protocol(stdout: &str, stderr: &str)",
+        "parse_cert_details(cert_text: &str)",
+        "parse_openssl_date(date_str: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "PortScanResult",
+        "TlsCertResult",
+        "WgPeerStatus",
+        "DnsValidationResult",
+        "FirewallAuditResult"
+      ],
+      "imports": [
+        "serde::Serialize"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-sec-network-report/src/wireguard.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "check_wg"
+      ],
+      "imports": [
+        "crate::context::NetworkContext",
+        "crate::types::WgPeerStatus",
+        "reports_common::capabilities::RuntimeCapabilities",
+        "reports_common::ssh",
+        "reports_common::types::"
+      ],
+      "symbols": [
+        "check_wg(\n    ctx: &NetworkContext,\n    caps: &RuntimeCapabilities,\n)",
+        "format_bytes(bytes: u64)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/build.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [],
+      "imports": [
+        "$ROOT/../_crate_engine.sh"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/config.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load",
+        "UrlHealthConfig",
+        "Concurrency",
+        "Timeouts",
+        "Targets"
+      ],
+      "imports": [
+        "anyhow::",
+        "reports_common::context::find_cloud_data_file",
+        "reports_common::email_e2e::EmailE2EConfig",
+        "serde::Deserialize"
+      ],
+      "symbols": [
+        "default_tcp_secs()",
+        "load()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/email_e2e.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "run",
+        "EmailResult"
+      ],
+      "imports": [
+        "crate::config::EmailConfig",
+        "lettre::message::Message",
+        "lettre::transport::smtp::authentication::Credentials",
+        "lettre::transport::smtp::client::",
+        "lettre::",
+        "rustls::client::danger::",
+        "rustls::pki_types::",
+        "rustls::",
+        "serde::Serialize",
+        "std::sync::Arc",
+        "std::time::",
+        "tokio::io::",
+        "tokio_rustls::TlsConnector"
+      ],
+      "symbols": [
+        "run(cfg: &EmailConfig, token: &str)",
+        "send_smtp(\n    cfg: &EmailConfig,\n    noreply_pw: &str,\n    subject: &str,\n    token: &str,\n)",
+        "verify_server_cert(\n        &self,\n        _end: &CertificateDer<'_>,\n        _ints: &[CertificateDer<'_>],\n        _server_name: &ServerName<'_>,\n        _ocsp: &[u8],\n        _now: UnixTime,\n    )",
+        "verify_tls12_signature(\n        &self,\n        _msg: &[u8],\n        _cert: &CertificateDer<'_>,\n        _dss: &DigitallySignedStruct,\n    )",
+        "verify_tls13_signature(\n        &self,\n        _msg: &[u8],\n        _cert: &CertificateDer<'_>,\n        _dss: &DigitallySignedStruct,\n    )",
+        "supported_verify_schemes(&self)",
+        "poll_inbox(\n    host: &str,\n    port: u16,\n    username: &str,\n    password: &str,\n    subject_needle: &str,\n    total_timeout: Duration,\n    poll_interval: Duration,\n)",
+        "poll_once(\n    host: &str,\n    port: u16,\n    username: &str,\n    password: &str,\n    subject_needle: &str,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/main.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [],
+      "imports": [
+        "reports_common::email_e2e",
+        "anyhow::Result",
+        "chrono::Utc",
+        "serde::Serialize",
+        "std::collections::HashMap",
+        "std::time::Instant",
+        "reports_common::run_state::"
+      ],
+      "symbols": [
+        "main()",
+        "build_vars(r: &Report)",
+        "render_public_table(rows: &[public_checks::PublicResult])",
+        "render_private_table(rows: &[private_checks::PrivateResult])",
+        "render_email(e: &email_e2e::EmailResult)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/private_checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_private_targets",
+        "run",
+        "PrivateTarget",
+        "PrivateResult"
+      ],
+      "imports": [
+        "crate::config::Timeouts",
+        "futures::stream::",
+        "reports_common::caddy::",
+        "reports_common::context::find_cloud_data_file",
+        "reports_common::probe::",
+        "serde::Serialize",
+        "serde_json::Value",
+        "std::time::Duration",
+        "super::"
+      ],
+      "symbols": [
+        "protocol_for_caddy_target(t: &CaddyTarget, port: u16)",
+        "split_upstream(s: &str)",
+        "load_private_targets()",
+        "run(\n    targets: Vec<PrivateTarget>,\n    bearer: Option<&str>,\n    parallel: usize,\n    timeouts: &Timeouts,\n    tcp_only_ports: &[u16],\n)",
+        "loader_returns_caddy_and_vm_ports()"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/public_checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_public_targets",
+        "run",
+        "PublicResult"
+      ],
+      "imports": [
+        "crate::config::Timeouts",
+        "futures::stream::",
+        "reports_common::caddy::",
+        "serde::Serialize",
+        "std::time::"
+      ],
+      "symbols": [
+        "load_public_targets()",
+        "run(\n    targets: Vec<CaddyTarget>,\n    bearer: Option<&str>,\n    parallel: usize,\n    timeouts: &Timeouts,\n)",
+        "build_client(t: &Timeouts)",
+        "probe_one(\n    client: &reqwest::Client,\n    target: CaddyTarget,\n    bearer: Option<&str>,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/cloud-url-health-report/src/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render_string"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::"
+      ],
+      "symbols": [
+        "resolve_template_path()",
+        "render_string(vars: &HashMap<String, String>)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/caddy.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_build_caddy",
+        "load_public_targets",
+        "load_private_app_targets",
+        "load_private_db_targets",
+        "load_private_all_targets",
+        "CaddyTarget"
+      ],
+      "imports": [
+        "crate::context::find_cloud_data_file",
+        "serde::Serialize",
+        "serde_json::Value",
+        "the",
+        "super::"
+      ],
+      "symbols": [
+        "load_build_caddy()",
+        "compose_url(host: &str, path: Option<&str>, tls: &str)",
+        "split_hosts(host: &str)",
+        "parse_entry(v: &Value, category: &str)",
+        "parse_legacy_route(v: &Value)",
+        "load_public_targets()",
+        "load_private_app_targets()",
+        "load_private_db_targets()",
+        "load_private_all_targets()",
+        "dedup_targets(out: &mut Vec<CaddyTarget>)",
+        "loaders_return_non_trivial_sets()",
+        "compose_url_joins_host_and_path()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/capabilities.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "detect",
+        "RuntimeCapabilities"
+      ],
+      "imports": [
+        "crate::checks"
+      ],
+      "symbols": [
+        "detect()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/checks.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "tcp",
+        "http_get",
+        "hickory_resolver",
+        "public_resolver",
+        "google_resolver",
+        "dns_resolve",
+        "dns_resolve_retry",
+        "dns_txt",
+        "dns_mx",
+        "http_client",
+        "auth_client",
+        "tcp_scan",
+        "gcloud_status",
+        "oci_status",
+        "cloud_vm_status"
+      ],
+      "imports": [
+        "reqwest::Client",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "trust_dns_resolver::config::",
+        "trust_dns_resolver::TokioAsyncResolver"
+      ],
+      "symbols": [
+        "tcp(ip: &str, port: u16)",
+        "http_get(client: &Client, url: &str)",
+        "hickory_resolver()",
+        "public_resolver()",
+        "google_resolver()",
+        "dns_resolve(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_resolve_retry(\n    resolver: &TokioAsyncResolver,\n    name: &str,\n    retries: usize,\n    interval_ms: u64,\n)",
+        "dns_txt(resolver: &TokioAsyncResolver, name: &str)",
+        "dns_mx(resolver: &TokioAsyncResolver, name: &str)",
+        "http_client()",
+        "auth_client(token: &str)",
+        "tcp_scan(ip: &str, ports: &[u16])",
+        "gcloud_status(cloud_name: &str)",
+        "oci_status(display_name: &str)",
+        "cloud_vm_status(_vm_id: &str, cloud_name: &str, provider: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/context.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "find_cloud_data_file",
+        "load_consolidated",
+        "load_build_reports",
+        "load_build_reports_section",
+        "load_topology",
+        "load_caddy_routes",
+        "load_dns_services",
+        "load_bearer_token",
+        "parse_vms",
+        "parse_services",
+        "parse_caddy_routes",
+        "scan_build_json_ports"
+      ],
+      "imports": [
+        "crate::types::",
+        "anyhow::",
+        "serde_json::Value",
+        "std::collections::HashMap",
+        "std::path::PathBuf"
+      ],
+      "symbols": [
+        "find_cloud_data_file(name: &str)",
+        "load_consolidated()",
+        "load_build_reports()",
+        "load_build_reports_section(section: &str)",
+        "load_topology()",
+        "load_caddy_routes()",
+        "load_dns_services()",
+        "load_bearer_token()",
+        "parse_vms(consolidated: &Value)",
+        "parse_services(consolidated: &Value)",
+        "parse_caddy_routes(caddy_json: &Value)",
+        "scan_build_json_ports(base: &str)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/email_e2e.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "load_config",
+        "run",
+        "MailEndpoint",
+        "EmailE2EConfig",
+        "EmailResult"
+      ],
+      "imports": [
+        "crate::context::find_cloud_data_file",
+        "lettre::message::Message",
+        "lettre::transport::smtp::authentication::Credentials",
+        "lettre::transport::smtp::client::",
+        "lettre::",
+        "rustls::client::danger::",
+        "rustls::pki_types::",
+        "rustls::",
+        "serde::",
+        "std::sync::Arc",
+        "std::time::",
+        "tokio::io::",
+        "tokio_rustls::TlsConnector"
+      ],
+      "symbols": [
+        "load_config()",
+        "run(cfg: &EmailE2EConfig, token: &str)",
+        "send_smtp(\n    cfg: &EmailE2EConfig,\n    noreply_pw: &str,\n    subject: &str,\n    token: &str,\n)",
+        "verify_server_cert(\n        &self,\n        _end: &CertificateDer<'_>,\n        _ints: &[CertificateDer<'_>],\n        _server_name: &ServerName<'_>,\n        _ocsp: &[u8],\n        _now: UnixTime,\n    )",
+        "verify_tls12_signature(\n        &self,\n        _msg: &[u8],\n        _cert: &CertificateDer<'_>,\n        _dss: &DigitallySignedStruct,\n    )",
+        "verify_tls13_signature(\n        &self,\n        _msg: &[u8],\n        _cert: &CertificateDer<'_>,\n        _dss: &DigitallySignedStruct,\n    )",
+        "supported_verify_schemes(&self)",
+        "poll_inbox(\n    host: &str,\n    port: u16,\n    username: &str,\n    password: &str,\n    subject_needle: &str,\n    total_timeout: Duration,\n    poll_interval: Duration,\n)",
+        "poll_once(\n    host: &str,\n    port: u16,\n    username: &str,\n    password: &str,\n    subject_needle: &str,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/fleet.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "is_reachable",
+        "short_reason",
+        "classify",
+        "reachable",
+        "terminated",
+        "load",
+        "VmState",
+        "FleetState",
+        "FleetVm"
+      ],
+      "imports": [
+        "serde::",
+        "std::collections::HashMap",
+        "std::time::Duration",
+        "tokio::net::TcpStream",
+        "tokio::time::timeout",
+        "TCP",
+        "super::",
+        "std::time::Instant",
+        "tokio::net::TcpListener"
+      ],
+      "symbols": [
+        "is_reachable(&self)",
+        "short_reason(&self)",
+        "classify(&self, vm_id: &str)",
+        "reachable(&self)",
+        "terminated(&self)",
+        "load(vms: &[FleetVm])",
+        "classify_gcp(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<bool>)",
+        "classify_oci(cloud_name: &str, map: &HashMap<String, String>, tcp_up: Option<bool>)",
+        "gcloud_list()",
+        "oci_list()",
+        "tcp_liveness_batch(vms: &[FleetVm])",
+        "classify_gcp_terminated()",
+        "classify_gcp_running()",
+        "classify_oci_stopped()",
+        "classify_unknown_when_not_listed()",
+        "fleet_reachable_filters_terminated()",
+        "short_reason_includes_source()",
+        "tcp_liveness_classifies_listener_vs_closed()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/output.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "format_checks",
+        "build_issues_summary",
+        "build_performance",
+        "build_result_summary"
+      ],
+      "imports": [
+        "crate::types::",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "format_checks(checks: &[Check])",
+        "build_issues_summary(all_checks: &[&Check])",
+        "build_performance(timers: &HashMap<String, u64>, total_ms: u64)",
+        "build_result_summary(summary: &Summary)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/perf.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "to_markdown",
+        "new",
+        "record",
+        "time",
+        "time_async",
+        "time_result",
+        "finish",
+        "len",
+        "is_empty",
+        "PerfRecord",
+        "PerfReport",
+        "PerfTracker"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::sync::Mutex",
+        "std::time::Instant",
+        "super::",
+        "std::sync::Arc"
+      ],
+      "symbols": [
+        "to_markdown(&self)",
+        "default()",
+        "new()",
+        "record(&self, name: impl Into<String>, duration_ms: u64, ok: bool, error: Option<String>)",
+        "finish(&self)",
+        "len(&self)",
+        "is_empty(&self)",
+        "time_records_a_step()",
+        "time_async_records_a_step()",
+        "time_result_captures_failure()",
+        "markdown_sorts_by_duration_desc()",
+        "shared_across_threads_via_arc()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/probe.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "skipped",
+        "protocol_for_container",
+        "protocol_for_public_port",
+        "protocol_for_port",
+        "probe_endpoint",
+        "Protocol",
+        "ProbeResult"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "serde_json::Value",
+        "std::time::"
+      ],
+      "symbols": [
+        "skipped(reason: &str)",
+        "protocol_for_container(container_json: &Value, port: u16)",
+        "protocol_for_public_port(port: u16, proto_hint: Option<&str>)",
+        "protocol_for_port(port: u16, proto_hint: Option<&str>)",
+        "parse_proto_str(p: &str, port: u16)",
+        "probe_endpoint(\n    ip: &str,\n    port: u16,\n    protocol: Protocol,\n    bearer: Option<&str>,\n    http_client: &reqwest::Client,\n    tcp_timeout: Duration,\n)",
+        "tcp_probe(ip: &str, port: u16, timeout: Duration)",
+        "http_probe(\n    ip: &str,\n    port: u16,\n    proto: Protocol,\n    bearer: Option<&str>,\n    client: &reqwest::Client,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/run_state.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "new",
+        "load",
+        "write_atomic",
+        "merge_section",
+        "is_fresh",
+        "get_section",
+        "RunState"
+      ],
+      "imports": [
+        "anyhow::",
+        "fs2::FileExt",
+        "serde::",
+        "std::fs::OpenOptions",
+        "std::path::",
+        "std::time::Duration",
+        "crate::fleet::FleetState",
+        "super::",
+        "std::sync::Arc",
+        "std::thread"
+      ],
+      "symbols": [
+        "new()",
+        "load(path: &Path)",
+        "write_atomic(&self, path: &Path)",
+        "is_fresh(&self, max_age: Duration)",
+        "default()",
+        "tmp_path(label: &str)",
+        "round_trip_serialization()",
+        "merge_section_atomic_two_writers()",
+        "future_version_rejected()",
+        "merge_creates_when_absent()",
+        "is_fresh_within_window()",
+        "is_fresh_rejects_stale()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/ssh.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "ssh_exec",
+        "ssh_exec_raw",
+        "ssh_echo_test"
+      ],
+      "imports": [
+        "per",
+        "anyhow::Result",
+        "std::time::Duration",
+        "tokio::time::timeout",
+        "super::",
+        "std::time::Instant"
+      ],
+      "symbols": [
+        "ssh_exec(vm_alias: &str, command: &str, timeout_secs: u64)",
+        "ssh_exec_raw(vm_alias: &str, command: &str, timeout_secs: u64)",
+        "ssh_echo_test(vm_alias: &str)",
+        "ssh_opts_contain_fail_fast_keepalive()",
+        "build_args_contains_opts_plus_target()",
+        "dead_host_ssh_fails_within_deadline()"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/template.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "render"
+      ],
+      "imports": [
+        "std::collections::HashMap",
+        "std::path::",
+        "as"
+      ],
+      "symbols": [
+        "resolve_template_path(template_path: &str)",
+        "render(\n    template_path: &str,\n    output_path: &str,\n    vars: &HashMap<String, String>,\n)"
+      ]
+    },
+    {
+      "path": "reports/src/reports-common/src/types.rs",
+      "lang": "rust",
+      "role": "rust-module",
+      "exports": [
+        "from_checks",
+        "Severity",
+        "Check",
+        "Summary",
+        "VmInfo",
+        "PublicPort",
+        "ServiceInfo",
+        "ContainerDecl",
+        "CaddyRoute"
+      ],
+      "imports": [
+        "serde::Serialize",
+        "std::collections::HashMap"
+      ],
+      "symbols": [
+        "fmt(&self, f: &mut std::fmt::Formatter<'_>)",
+        "from_checks(checks: &[&Check])"
+      ]
+    },
+    {
+      "path": "reports/url-triage/url-triage.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "usage()",
+        "have()",
+        "worker_l3_dns()",
+        "worker_l3_whois()",
+        "worker_l3_path()",
+        "worker_l4_port()",
+        "worker_l56_tls()",
+        "worker_l7_app()",
+        "ml_pipe()",
+        "ml_http()",
+        "ml_server_first_text()",
+        "ml_smtp_cleartext()",
+        "ml_smtp_starttls()",
+        "ml_smtps()",
+        "ml_imap_cleartext()",
+        "ml_imaps()",
+        "ml_pop3_cleartext()",
+        "ml_pop3s()",
+        "ml_ssh()",
+        "ml_ftp()",
+        "ml_tcp_auto()",
+        "worker_messaging()",
+        "worker_caddy_l4()",
+        "read_or_empty()",
+        "color_of()",
+        "print_sec()"
+      ],
+      "imports": [
+        "server-scanning.sh"
+      ],
+      "symbols": [
+        "usage()",
+        "have()",
+        "worker_l3_dns()",
+        "worker_l3_whois()",
+        "worker_l3_path()",
+        "worker_l4_port()",
+        "worker_l56_tls()",
+        "worker_l7_app()",
+        "ml_pipe()",
+        "ml_http()",
+        "ml_server_first_text()",
+        "ml_smtp_cleartext()",
+        "ml_smtp_starttls()",
+        "ml_smtps()",
+        "ml_imap_cleartext()",
+        "ml_imaps()",
+        "ml_pop3_cleartext()",
+        "ml_pop3s()",
+        "ml_ssh()",
+        "ml_ftp()",
+        "ml_tcp_auto()",
+        "worker_messaging()",
+        "worker_caddy_l4()",
+        "read_or_empty()",
+        "color_of()",
+        "print_sec()"
+      ]
+    },
+    {
+      "path": "secrets/secrets.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "cmd_sync()",
+        "cmd_decrypt()"
+      ],
+      "imports": [],
+      "symbols": [
+        "cmd_sync()",
+        "cmd_decrypt()"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 2_configs/src/engines/derive-code-signatures.ts",
+  "_meta": {
+    "description": "Per-file code signatures for repo 'front-data' — structure only (exports/imports/symbols), no bodies.",
+    "format_version": 1
+  },
+  "repo": "front-data",
+  "counts": {
+    "files": 1,
+    "by_lang": {
+      "sh": 1
+    },
+    "by_role": {
+      "shell": 1
+    }
+  },
+  "files": [
+    {
+      "path": ".githooks/cloud-git-sync.sh",
+      "lang": "sh",
+      "role": "shell",
+      "exports": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ],
+      "imports": [],
+      "symbols": [
+        "hr()",
+        "section()",
+        "step()",
+        "ok()",
+        "err()",
+        "kv()",
+        "banner_err()"
+      ]
+    }
+  ]
+}

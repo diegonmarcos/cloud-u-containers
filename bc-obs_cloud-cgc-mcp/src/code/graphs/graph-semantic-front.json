@@ -1,0 +1,24 @@
+{
+  "_warning": "OPUS-AUTHORED semantic GraphRAG of the `front` repo (signatures-level). Complements code-signatures-front.json (915 files).",
+  "_meta": { "kind": "graphrag-semantic", "repo": "front", "authored_by": "claude-opus-4-8[1m]", "format_version": 1 },
+  "nodes": [
+    { "table": "subsystem", "id": "build_system", "key": "subsystem:front_build", "properties": { "name": "front build system", "repo": "front", "root": "2_configs/, 1_workflows/, e-Root/", "description": "Per-project build.sh (symlink → universal _engine) + build.json; 2_configs consolidates manifests/package-jsons/data-links. Vite/SvelteKit/Vue/Sass+esbuild/tsc per archetype. Deploy target: diegonmarcos.github.io (GitHub Pages). build.sh build (never dev) after source edits." } },
+    { "table": "subsystem", "id": "shared_scss", "key": "subsystem:front_scss", "properties": { "name": "shared SCSS system", "repo": "front", "root": "e-Root/src/scss/", "description": "ITCSS layers (settings/tools/generic/elements/objects/components/utilities) + mixins (mq, flex-center, flex-row, grid-auto-fit). NO inline CSS rule — all styling flows through this pipeline." } },
+    { "table": "subsystem", "id": "data_links", "key": "subsystem:front_data_links", "properties": { "name": "data-links convention", "repo": "front", "root": "*/src/data/", "description": "data-<key>.json.js wrappers expose globalThis.PORTAL_DATA[key] (CORS-safe, works under file://). NO fetch() for JSON. Matomo tracking required in every HTML head." } },
+    { "table": "subsystem", "id": "professional", "key": "subsystem:front_professional", "properties": { "name": "professional sites", "repo": "front", "root": "a-Companies/, a-Individual/, a-Portals/, b-Profiles/", "description": "leafy/nexus/stark (companies), cv_pdf/cv_web/landpage (individual), cloud/linktree/linktree_mindmap/linktree_pixel-world (portals), myprofile." } },
+    { "table": "subsystem", "id": "personal_data", "key": "subsystem:front_personal_data", "properties": { "name": "personal data apps", "repo": "front", "root": "b-Data/, b-MyData/, b-Media/", "description": "myAstro, myfeed; my-fin, myhealth-*, myid, mymaps-mytrips, myphotos; myMoments. Personal dashboards reading cloud data." } },
+    { "table": "subsystem", "id": "tools_circus", "key": "subsystem:front_tools_circus", "properties": { "name": "lab-tools + circus", "repo": "front", "root": "c-LabTools/, c-Circus/, c-Suite/, c-Cloud/", "description": "central_bank/fin-terminal/market_watch/news/sailytics (fin labs); carto/games/movies/music (circus); json-vision/mymail/mymaps-*/suite (suite); api/mcp-api-swagger/skills_mcp (cloud-facing front)." } },
+
+    { "table": "artifact", "id": "gh_pages", "key": "artifact:front_gh_pages", "properties": { "name": "diegonmarcos.github.io", "description": "GitHub Pages deploy target for all built projects." } },
+    { "table": "artifact", "id": "portal_data", "key": "artifact:front_portal_data", "properties": { "name": "PORTAL_DATA / front-data", "description": "data-<key>.json.js payloads consumed at runtime; some sourced from cloud-data." } }
+  ],
+  "edges": [
+    { "table": "builds", "from": "subsystem:front_build", "to": "subsystem:front_professional", "key": "front_build->builds->professional", "properties": {} },
+    { "table": "builds", "from": "subsystem:front_build", "to": "subsystem:front_personal_data", "key": "front_build->builds->personal_data", "properties": {} },
+    { "table": "builds", "from": "subsystem:front_build", "to": "subsystem:front_tools_circus", "key": "front_build->builds->tools_circus", "properties": {} },
+    { "table": "deploys", "from": "subsystem:front_build", "to": "artifact:front_gh_pages", "key": "front_build->deploys->gh_pages", "properties": {} },
+    { "table": "styles", "from": "subsystem:front_scss", "to": "subsystem:front_professional", "key": "front_scss->styles->professional", "properties": { "rationale": "shared SCSS pipeline, no inline CSS" } },
+    { "table": "feeds", "from": "subsystem:front_data_links", "to": "subsystem:front_personal_data", "key": "front_data_links->feeds->personal_data", "properties": { "via": "globalThis.PORTAL_DATA[key]" } },
+    { "table": "emits", "from": "subsystem:front_data_links", "to": "artifact:front_portal_data", "key": "front_data_links->emits->portal_data", "properties": {} }
+  ]
+}
