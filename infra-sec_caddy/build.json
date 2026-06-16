@@ -179,7 +179,7 @@
     "messages": {
       "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
       "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
-      "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp",
+      "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /kg-mcp/mcp",
       "app_hub_fallback": "Not Found"
     }
   },
