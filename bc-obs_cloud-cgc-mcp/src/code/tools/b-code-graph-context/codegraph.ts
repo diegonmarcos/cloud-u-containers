@@ -77,10 +77,20 @@ function loadSignatures(g: Graph, path: string): void {
   try { d = JSON.parse(readFileSync(path, "utf8")); } catch { return; }
   const repo = d.repo ?? "unknown";
   const byPath = new Map<string, string>(); // repo-rel path → node key
+  const symName = (s: string): string => s.replace(/\(.*$/, "").replace(/^class\s+/, "").replace(/^[^A-Za-z0-9_$].*/, "").trim();
   for (const f of d.files ?? []) {
     const key = `file:${repo}/${f.path}`;
     byPath.set(f.path, key);
     addNode(g, { table: "file", id: `${repo}:${f.path}`, key, properties: { repo, path: f.path, lang: f.lang, role: f.role, exports: f.exports.slice(0, 12), symbols: f.symbols.slice(0, 12) } }, "code");
+    // FULL entity graph: every exported function/class/type/symbol → node + defines edge.
+    const exp = new Set((f.exports ?? []).map(symName).filter(Boolean));
+    for (const sym of new Set([...(f.symbols ?? []), ...(f.exports ?? [])])) {
+      const name = symName(sym);
+      if (!name) continue;
+      const symKey = `symbol:${repo}/${f.path}#${name}`;
+      addNode(g, { table: "symbol", id: `${repo}:${f.path}#${name}`, key: symKey, properties: { repo, name, file: f.path, sig: sym.length > 80 ? sym.slice(0, 80) : sym, exported: exp.has(name) } }, "code");
+      addEdge(g, { table: "defines", from: key, to: symKey, key: `${key}->defines->${symKey}` }, "code");
+    }
   }
   // imports → edges. Local (./ ../) resolve to a sibling file node; external → package node.
   for (const f of d.files ?? []) {
