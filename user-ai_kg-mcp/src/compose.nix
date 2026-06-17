@@ -40,15 +40,19 @@ let
       OCTOCODE_REPOS      = toString oct.index_repos;
       OCTOCODE_REPOS_ROOT = oct.repos_path;
       OCTOCODE_PULL       = "0";
-      # kg-store (SurrealDB) ingest — reindex.sh loads the infra graph delta after the
-      # code graph. Data-driven; KG_STORE_PASS intentionally absent (gated) until the
-      # shared SurrealDB secret is wired — kg-ingest.mjs no-ops without it.
+      # kg-store (SurrealDB) ingest — reindex.sh mirrors octocode's full file-level
+      # code graph (octocode-export.py → kg-ingest.mjs) per repo, then loads the infra
+      # graph delta. Data-driven. KG_STORE_PASS is delivered via env_file ".secrets"
+      # below (sops src/secrets.yaml → build.sh secrets → .secrets); kg-ingest.mjs
+      # no-ops if it's unset, so this stays safe when secrets aren't decrypted.
       KG_STORE_URL        = oct.kg_store.url;
       KG_STORE_NS         = oct.kg_store.ns;
       KG_STORE_DB         = oct.kg_store.db;
       KG_STORE_USER       = oct.kg_store.user;
       KG_DELTA            = oct.kg_store.delta;
+      KG_GRAPHS_DIR       = "/app/graphs";
     };
+    env_file = [ ".secrets" ];
     volumes = [
       "${oct.repos_volume}:${oct.repos_path}"
       "${oct.db_volume}:${oct.db_path}"

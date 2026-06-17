@@ -16,6 +16,11 @@ in
       image          = binariesImage;
       container_name = app.container_name;
       network_mode   = "host";
+      # Run as root: the surrealdb image's default non-root user cannot create the
+      # RocksDB dir in the root-owned `${data_path}:/data` host bind mount
+      # ("PermissionDenied"). Single-tenant, 127.0.0.1-bound file store — same
+      # root pattern as the reindex job. Without this the container crash-loops.
+      user           = "0:0";
       env_file       = [ ".secrets" ];
       command =
         "start --log info --user root --pass \${SURREAL_ROOT_PASSWORD} "

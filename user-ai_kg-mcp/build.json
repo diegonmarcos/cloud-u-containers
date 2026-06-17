@@ -14,8 +14,9 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
-      "apt": "curl ca-certificates",
-      "cmd": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev",
+      "apt": "curl ca-certificates python3 python3-pip",
+      "_cmd_comment": "git config --system safe.directory '*' FIRST: octocode keys each GraphRAG project by its git-root. The repos volume is owned by root but the MCP runs as appuser — without this, git fails 'dubious ownership', octocode can't resolve the git-root, and the reader lands on a DIFFERENT project key than the root-built index (symptom: 'GraphRAG knowledge graph is empty' despite a populated DB). --system writes /etc/gitconfig as root during the RUN (before the USER appuser switch) so EVERY runtime user resolves the same key.",
+      "cmd": "git config --system --add safe.directory '*' && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev && pip3 install --break-system-packages --no-cache-dir pylance",
       "entrypoint": "npx tsx index.ts",
       "base_image": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest",
       "app_dir": "code"
@@ -26,12 +27,19 @@
     "remote_path": "/opt/containers/kg-mcp",
     "compose_flags": "--build"
   },
+  "db_publish": {
+    "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_workflows/src/scripts/cloud-kg-db-snapshot.sh.",
+    "image": "ghcr.io/diegonmarcos/kg-mcp-octocode-db",
+    "tag": "latest",
+    "volume": "octocode_db",
+    "host": "oci-apps"
+  },
   "proxy": {
     "primary": {
       "streaming": true,
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
-      "base_path": "/kg-mcp",
+      "base_path": "/cloud-cgc-mcp",
       "wg_only": true
     },
     "app_hub": false
@@ -87,7 +95,7 @@
         "streaming": true,
         "type": "path",
         "parent_domain": "mcp.diegonmarcos.com",
-        "base_path": "/kg-mcp"
+        "base_path": "/cloud-cgc-mcp"
       },
       "healthcheck": "/mcp",
       "monitoring": null,
