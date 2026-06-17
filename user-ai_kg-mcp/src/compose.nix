@@ -71,7 +71,15 @@ in
         MCP_HTTP_HOST  = vmIp;
         CONFIG_PATH    = "${buildJson.runtime.data_path}/config.json";
         GIT_ROOT       = buildJson.runtime.git_root;
+        # kg-store SurrealDB — exposed to MCP clients via the cgc.kgstore.* tools
+        # (read-only query of the unified code+infra graph). KG_STORE_PASS arrives
+        # via env_file ".secrets" below.
+        KG_STORE_URL   = oct.kg_store.url;
+        KG_STORE_NS    = oct.kg_store.ns;
+        KG_STORE_DB    = oct.kg_store.db;
+        KG_STORE_USER  = oct.kg_store.user;
       };
+      env_file = [ ".secrets" ];
       volumes = [
         "./data:${buildJson.runtime.data_path}:ro"
         # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu

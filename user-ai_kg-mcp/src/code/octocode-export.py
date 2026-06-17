@@ -42,20 +42,39 @@ def ident(s):
     """SurrealDB edge-table name must be a bare identifier (kg-ingest does ->T-> unquoted)."""
     return re.sub(r"[^a-zA-Z0-9_]", "_", str(s or "related")) or "related"
 
-def find_project_dir(commit):
+def find_project_dir(repo, commit):
+    # octocode keys a project by its git-root PATH, not the indexed commit — the
+    # commit drifts (a pull/submodule bump after indexing). So: (1) try an exact
+    # commit_hash match (fast/unambiguous); (2) fall back to matching the project
+    # dir whose sampled node paths actually exist under /repos/<repo> (path-keyed,
+    # drift-proof). Without the fallback, a drifted repo (e.g. front) is skipped.
     if not os.path.isdir(DBROOT):
         return None
+    cands = []
     for d in sorted(os.listdir(DBROOT)):
-        meta = os.path.join(DBROOT, d, "storage", "graphrag_git_metadata.lance")
-        if not os.path.isdir(meta):
+        sd = os.path.join(DBROOT, d, "storage")
+        nodes_t = os.path.join(sd, "graphrag_nodes.lance")
+        if not os.path.isdir(nodes_t):
             continue
+        meta = os.path.join(sd, "graphrag_git_metadata.lance")
         try:
             rows = lance.dataset(meta).to_table().to_pylist()
+            if rows and str(rows[0].get("commit_hash", "")) == commit:
+                return sd
+        except Exception:
+            pass
+        cands.append((sd, nodes_t))
+    repo_root = f"{REPOS_ROOT}/{repo}"
+    best, best_hits = None, 0
+    for sd, nodes_t in cands:
+        try:
+            sample = lance.dataset(nodes_t).to_table().to_pylist()[:25]
         except Exception:
             continue
-        if rows and str(rows[0].get("commit_hash", "")) == commit:
-            return os.path.join(DBROOT, d, "storage")
-    return None
+        hits = sum(1 for n in sample if n.get("path") and os.path.exists(os.path.join(repo_root, n["path"])))
+        if hits > best_hits:
+            best, best_hits = sd, hits
+    return best if best_hits >= 5 else None
 
 def export(repo):
     try:
@@ -65,7 +84,7 @@ def export(repo):
     except Exception as e:
         print(f"[export] {repo}: git rev-parse failed ({e})", file=sys.stderr)
         return None
-    sd = find_project_dir(commit)
+    sd = find_project_dir(repo, commit)
     if not sd:
         print(f"[export] {repo}: NO project dir for commit {commit[:8]} — skip", file=sys.stderr)
         return None

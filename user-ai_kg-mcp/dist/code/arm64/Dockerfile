@@ -8,7 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 # Type A — own code, arch=arm64
 FROM ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates python3 python3-pip && rm -rf /var/lib/apt/lists/*
 COPY npx tsx index.ts /usr/local/bin/npx tsx index.ts
 LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
 CMD ["npx tsx index.ts"]
