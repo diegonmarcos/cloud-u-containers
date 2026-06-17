@@ -26,6 +26,7 @@ PULL="${OCTOCODE_PULL:-0}"
 # then index WITH git — a fresh full build that runs the AI phase → LLM calls.
 # OCTOCODE_CLEAR=1 → force/reindex; =0 → incremental (only changed files).
 CLEAR="${OCTOCODE_CLEAR:-1}"
+KG_GRAPHS_DIR="${KG_GRAPHS_DIR:-/app/graphs}"; export KG_GRAPHS_DIR
 
 bridge_calls() { curl -s -m 5 "$HEALTH" 2>/dev/null | grep -oE '"calls":[0-9]+' | grep -oE '[0-9]+' | head -1 || echo 0; }
 
@@ -43,12 +44,32 @@ set_provider() {
   grep -q "use_llm = true" "$CFG" 2>/dev/null || printf '\n[graphrag]\nuse_llm = true\n' >> "$CFG"
 }
 
+# Exclude redundant submodule paths from octocode's walk. Each submodule is its
+# OWN repo (indexed separately), so descending into them is duplicate work — and
+# on large trees (e.g. unix's I_cloud-data / II_tools / III_front-data) octocode's
+# indexer DEADLOCKS recursing the nested submodules (hrtime-parked, 0 progress).
+# octocode honors .gitignore (the `ignore` crate also honors .ignore); the path
+# list is data-driven from the repo's own .gitmodules — never hardcoded. Writes
+# are idempotent into the ephemeral octocode_repos working copy.
+exclude_submodules() {
+  _d="$1"; _gm="$_d/.gitmodules"
+  [ -f "$_gm" ] || return 0
+  awk -F'=' '/^[[:space:]]*path[[:space:]]*=/ { gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2 }' "$_gm" | while IFS= read -r _p; do
+    [ -n "$_p" ] || continue
+    for _f in "$_d/.gitignore" "$_d/.ignore"; do
+      grep -qxF "/$_p/" "$_f" 2>/dev/null || printf '/%s/\n' "$_p" >> "$_f"
+    done
+    echo "[reindex] $_d · exclude submodule: $_p"
+  done
+}
+
 echo "[reindex] bridge=$HEALTH models=[$MODELS] repos=[$REPOS] use_llm=forced-true"
 command -v git >/dev/null 2>&1 && git config --global --add safe.directory '*' >/dev/null 2>&1 || true
 
 for repo in $REPOS; do
   d="$REPOS_ROOT/$repo"
   [ -d "$d" ] || { echo "[reindex] MISSING $d — skip"; continue; }
+  exclude_submodules "$d"
   if [ "$PULL" = "1" ] && [ -d "$d/.git" ] && command -v git >/dev/null 2>&1; then
     git -C "$d" pull --ff-only 2>&1 | tail -1 || echo "[reindex] pull $repo failed (continuing)"
   fi
@@ -69,6 +90,17 @@ for repo in $REPOS; do
     echo "[reindex] $repo ✗ 0 bridge calls with $model — falling back"
   done
   [ "$ok" = 0 ] && echo "[reindex] $repo ⚠ NO provider reached the bridge"
+  # ④ Full file-level mirror of octocode's code graph → kg-store (SurrealDB).
+  # Reads octocode's Lance tables for this repo and ingests every file node +
+  # relationship. Env-gated (kg-ingest no-ops if KG_STORE_PASS unset); cheap export.
+  if [ "$ok" = 1 ] && command -v python3 >/dev/null 2>&1; then
+    if python3 /app/octocode-export.py "$repo" 2>&1; then
+      KG_DELTA="$KG_GRAPHS_DIR/octocode-$repo.json" node /app/kg-ingest.mjs \
+        || echo "[reindex] $repo · code-graph ingest failed (continuing)"
+    else
+      echo "[reindex] $repo · octocode-export failed (continuing)"
+    fi
+  fi
 done
 echo "[reindex] octocode code-graph DONE — final bridge calls=$(bridge_calls)"
 

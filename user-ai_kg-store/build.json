@@ -90,6 +90,11 @@
       {
         "table": "package",
         "key_source": "name"
+      },
+      {
+        "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_kg-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
+        "table": "file",
+        "key_source": "path"
       }
     ],
     "edge_tables": [
@@ -152,6 +157,12 @@
         "table": "consumes",
         "in": "repo",
         "out": "repo"
+      },
+      {
+        "_comment": "octocode code-graph relationships (file→file), e.g. sibling_module. The exporter emits whatever relationship types octocode produced; SurrealDB RELATE auto-creates any not pre-defined here.",
+        "table": "sibling_module",
+        "in": "file",
+        "out": "file"
       }
     ]
   }
