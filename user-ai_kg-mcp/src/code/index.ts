@@ -10,6 +10,7 @@ import { registerInventoryTools } from "./tools/a-knowledge/inventory.js";
 import { registerSkillTools } from "./tools/a-knowledge/skills.js";
 import { registerOctocodeTools } from "./tools/b-code-graph-context/octocode.js";
 import { registerCodegraphTools } from "./tools/b-code-graph-context/codegraph.js";
+import { registerKgStoreTools } from "./tools/b-code-graph-context/kgstore.js";
 import { buildContextSummary } from "./context.js";
 import { bindHost } from "./shared/libs/binds.js";
 
@@ -56,8 +57,9 @@ function createMcpServer(): McpServer {
   registerSkillTools(server);             //  4: cloud_architect, frontend_developer, debug_ops, crawlee_scraping
 
   // ── Section B: Code Graph Context ──────────────────────────────────
-  registerOctocodeTools(server);          //  3: search, memory, index
+  registerOctocodeTools(server);          //  3: search, memory, index (octocode Lance DB)
   registerCodegraphTools(server);         //  3: stubs (future)
+  registerKgStoreTools(server);           //  2: query, overview (kg-store SurrealDB unified graph)
 
   return server;
 }
