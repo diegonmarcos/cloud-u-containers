@@ -93,8 +93,8 @@
   "upstream_image": "vaultwarden/server:latest",
   "timezone": "Europe/Madrid",
   "resources": {
-    "mem_limit": "128M",
-    "mem_reservation": "32M"
+    "mem_limit": "512M",
+    "mem_reservation": "64M"
   },
   "api": {
     "type": "custom-rest",
