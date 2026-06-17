@@ -8,6 +8,13 @@ import { z } from "zod";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join, basename } from "path";
 import { getVaultPath } from "../config.js";
+import {
+  getVaultItems,
+  getTotpCode,
+  itemTypeLabel,
+  getCredentialsPath,
+  VaultwardenNotConfiguredError,
+} from "../vaultwarden.js";
 
 function listDirSafe(path: string): string[] {
   if (!existsSync(path)) return [];
@@ -109,23 +116,35 @@ export function registerVaultTools(server: McpServer) {
   // ── Passwords Summary ─────────────────────────────────────────────
   server.tool(
     "vault_passwords_summary",
-    "Get a summary of stored passwords — service names and categories only, NEVER actual passwords.",
+    "Get a summary of stored passwords from Vaultwarden — service names grouped by item type only, NEVER actual passwords.",
     {},
     async () => {
-      const pwDir = join(getVaultPath(), "B0_Passwords");
-      if (!existsSync(pwDir)) {
-        return { content: [{ type: "text" as const, text: "Passwords directory not found" }] };
+      let items;
+      try {
+        items = await getVaultItems();
+      } catch (e) {
+        return { content: [{ type: "text" as const, text: vaultwardenError(e) }] };
       }
 
-      const files = readdirSync(pwDir)
-        .filter(f => !f.startsWith("."))
-        .map(f => `- ${basename(f, ".txt").replace(/_/g, " ")}`)
-        .join("\n");
+      // Group decrypted item names by type (Login / Note / Card / Identity).
+      const byType = new Map<number, string[]>();
+      for (const it of items) {
+        if (!byType.has(it.type)) byType.set(it.type, []);
+        byType.get(it.type)!.push(it.name);
+      }
+
+      const sections = [...byType.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([type, names]) => {
+          const list = names.sort((a, b) => a.localeCompare(b)).map(n => `- ${n}`).join("\n");
+          return `## ${itemTypeLabel(type)} (${names.length})\n${list}`;
+        })
+        .join("\n\n");
 
       return {
         content: [{
           type: "text" as const,
-          text: `# Stored Passwords (${readdirSync(pwDir).filter(f => !f.startsWith(".")).length} entries)\n\n${files}\n\n_Actual passwords are NEVER exposed._`,
+          text: `# Stored Passwords — Vaultwarden (${items.length} entries)\n\n${sections}\n\n_Actual passwords are NEVER exposed._`,
         }],
       };
     }
@@ -134,25 +153,73 @@ export function registerVaultTools(server: McpServer) {
   // ── 2FA Status ────────────────────────────────────────────────────
   server.tool(
     "vault_2fa_status",
-    "List services with 2FA configured — names only, no TOTP seeds or recovery codes.",
+    "List services with 2FA (TOTP) configured in Vaultwarden — names only, no TOTP seeds or recovery codes.",
     {},
     async () => {
-      const tfaDir = join(getVaultPath(), "B1_2fa");
-      if (!existsSync(tfaDir)) {
-        return { content: [{ type: "text" as const, text: "2FA directory not found" }] };
+      let items;
+      try {
+        items = await getVaultItems();
+      } catch (e) {
+        return { content: [{ type: "text" as const, text: vaultwardenError(e) }] };
       }
 
-      const entries = readdirSync(tfaDir)
-        .filter(f => !f.startsWith("."))
-        .map(f => `- ${basename(f).replace(/\.(txt|json|yaml)$/, "").replace(/_/g, " ")}`)
-        .join("\n");
+      const withTotp = items.filter(it => it.hasTotp).map(it => it.name).sort((a, b) => a.localeCompare(b));
+      const entries = withTotp.length
+        ? withTotp.map(n => `- ${n}`).join("\n")
+        : "_No items with TOTP found._";
 
       return {
         content: [{
           type: "text" as const,
-          text: `# 2FA Configured Services\n\n${entries}\n\n_TOTP seeds and recovery codes are NEVER exposed._`,
+          text: `# 2FA Configured Services (${withTotp.length})\n\n${entries}\n\n_TOTP seeds and recovery codes are NEVER exposed._`,
         }],
       };
     }
   );
+
+  // ── TOTP Code (per-item, current code only) ────────────────────────
+  server.tool(
+    "vault_totp_code",
+    "Get the CURRENT one-time TOTP code for a SINGLE vault item by name. Returns only the live code + seconds remaining — never the TOTP seed/secret.",
+    { service: z.string().describe("Service/item name as listed by vault_2fa_status (case-insensitive; exact match preferred)") },
+    async ({ service }) => {
+      try {
+        const r = await getTotpCode(service);
+        return {
+          content: [{
+            type: "text" as const,
+            text: `# ${r.service}\n\n**${r.code}**  — valid ${r.secondsRemaining}s\n\n_Seed is never exposed._`,
+          }],
+        };
+      } catch (e) {
+        // Config-missing gets the full setup hint; match/sync errors are already user-readable.
+        const text = e instanceof VaultwardenNotConfiguredError
+          ? vaultwardenError(e)
+          : (e instanceof Error ? e.message : String(e));
+        return { content: [{ type: "text" as const, text }] };
+      }
+    }
+  );
+}
+
+/** Render a vault/Vaultwarden error as an operator-readable message (never throws to the SDK). */
+function vaultwardenError(e: unknown): string {
+  if (e instanceof VaultwardenNotConfiguredError) {
+    return [
+      "Vaultwarden is not configured for this MCP.",
+      "",
+      `Create credentials at: ${e.path}`,
+      "",
+      "```json",
+      JSON.stringify({
+        server: "http://10.0.0.1:8880",
+        email: "me@diegonmarcos.com",
+        password: "<master-password>",
+        kdfIterations: 600000,
+      }, null, 2),
+      "```",
+    ].join("\n");
+  }
+  const msg = e instanceof Error ? e.message : String(e);
+  return `Failed to read Vaultwarden: ${msg}\n\nServer must be reachable (WireGuard up) and credentials at ${getCredentialsPath()} must be valid.`;
 }
