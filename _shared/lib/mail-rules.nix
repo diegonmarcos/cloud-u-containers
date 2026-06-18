@@ -52,6 +52,13 @@ let
       routing_default  = p.routing_default or general.routing_default or "others";
       inbox_copy       = p.inbox_copy or general.inbox_copy or { enabled = false; flags = []; };
       cleanup          = p.cleanup or general.cleanup or {};
+      # Dynamic cross-cutting filter views (size/time/state/attachment).
+      # Carried through merge so toLegacyJson can hand them to jmap-sorter,
+      # which maintains them via JMAP multi-mailbox membership each poll.
+      filters          = p.filters or general.filters or { views = []; section_headers = []; };
+      # One-time in-place mailbox renames (old->new), applied by jmap-sorter
+      # before ensure/cleanup so renamed folders keep their emails.
+      folder_renames   = p.folder_renames or general.folder_renames or { map = {}; };
       predicates       = (general.predicates or {}) // (p.predicates or {});
       rules            = (general.rules or []) ++ (p.rules or []);
     };
@@ -393,6 +400,10 @@ let
       folders_ui     = merged.folders_ui or [];
       routing_default = defFolder;
       tags           = orderedBuckets;
+      # Dynamic cross-cutting filter views — maintained by jmap-sorter via
+      # JMAP multi-mailbox membership over emails in the numeric folders.
+      filters        = merged.filters or { views = []; section_headers = []; };
+      folder_renames = merged.folder_renames or { map = {}; };
       inherit routing;
     };
 

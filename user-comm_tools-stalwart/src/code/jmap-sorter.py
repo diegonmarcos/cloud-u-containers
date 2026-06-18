@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
-"""JMAP-native email sorter for Stalwart — dual-vector organization.
+"""JMAP-native email sorter for Stalwart — dynamic filter views.
 
-Reads mail-rules.json and applies via JMAP API:
-  A) Routing: move to emoji inbox folders
-  B) Tags: set JMAP keywords + place in numbered tag subfolders
-  INBOX emails marked $Sorted after processing
+Routing is owned by the native Sieve (_shared/lib/mail-rules.nix::toSieve):
+each inbound email lands in INBOX (read) + exactly one numeric 1*-9*
+category folder as an UNREAD copy. This sorter does NOT route or set $seen.
+
+Instead it maintains dynamic cross-cutting filter folders A*/B*/C*/D*
+(size / time / read-state / attachment) over the emails living in the
+numeric folders, using JMAP multi-mailbox membership (add the existing
+message into the filter mailbox — no copies, no keyword changes). Each
+poll re-evaluates and adds AND removes membership so time/read windows
+stay current.
 
 Uses JMAP mailboxIds (email in multiple mailboxes, no copies).
-Uses JMAP keywords (native tags, like Gmail labels).
 Uses JMAP parentId + sortOrder for folder hierarchy.
 """
+import re
 import json
 import os
 import sys
 import ssl
 import time
 import logging
-import email.utils
+import datetime
 import urllib.request
 import urllib.error
 from base64 import b64encode
@@ -31,9 +37,6 @@ RULES_PATH = os.getenv("RULES_PATH", "/data/mail-rules.json")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "30"))
 STARTUP_DELAY = int(os.getenv("STARTUP_DELAY", "20"))
 BATCH_SIZE = 100  # emails per Email/set call
-
-# B7 and B8 are meta — emails in these folders get $seen
-META_TAG_IDS = {"B7", "B8"}
 
 
 def load_rules(path):
@@ -98,25 +101,13 @@ class JMAPClient:
         resp = self.call([["Mailbox/set", args, "0"]])
         return resp[0][1]
 
-    def email_query(self, inbox_id, limit=500):
-        """Find unsorted emails in INBOX."""
-        resp = self.call([["Email/query", {
-            "accountId": self.account_id,
-            "filter": {
-                "inMailbox": inbox_id,
-                "notKeyword": "$Sorted",
-            },
-            "sort": [{"property": "receivedAt", "isAscending": False}],
-            "limit": limit,
-        }, "0"]])
-        return resp[0][1].get("ids", [])
-
-    def email_get(self, ids):
+    def email_get(self, ids, properties=None):
+        props = properties or ["from", "subject", "size", "mailboxIds",
+                               "keywords", "bodyStructure"]
         resp = self.call([["Email/get", {
             "accountId": self.account_id,
             "ids": ids,
-            "properties": ["from", "subject", "size", "mailboxIds", "keywords",
-                           "bodyStructure"],
+            "properties": props,
         }, "0"]])
         return resp[0][1].get("list", [])
 
@@ -127,55 +118,26 @@ class JMAPClient:
         }, "0"]])
         return resp[0][1]
 
+    def email_query_in(self, mailbox_ids, limit=2000):
+        """Return the union of email ids that live in ANY of mailbox_ids.
 
-def match_routing(from_domain, rules):
-    for route in rules["routing"]:
-        if route["match"]["type"] == "from_domain" and from_domain in route["match"]["values"]:
-            return route["folder"]
-    return rules.get("routing_default")
-
-
-def match_tags(from_addr, from_domain, subject, size, rules):
-    """Return list of (group_id, group_name, rule_idx, flag, is_meta)."""
-    matches = []
-    account = rules.get("account", "")
-
-    for group in rules.get("tags", []):
-        is_meta = group["id"] in META_TAG_IDS
-        for idx, rule in enumerate(group.get("rules", [])):
-            matched = False
-            rtype = rule["type"]
-
-            if rtype == "from_domain":
-                matched = from_domain in rule["values"]
-            elif rtype == "from_address":
-                matched = from_addr in rule["values"]
-            elif rtype == "header_contains":
-                if rule["header"].lower() in ("subject",):
-                    matched = any(v.lower() in subject.lower() for v in rule["values"])
-                elif rule["header"].lower() in ("from",):
-                    matched = any(v.lower() in from_addr.lower() for v in rule["values"])
-                elif rule["header"].lower() in ("precedence",):
-                    pass  # Can't check Precedence via JMAP Email/get easily
-            elif rtype == "header_exists":
-                pass  # JMAP Email/get doesn't expose arbitrary headers
-            elif rtype == "size_over":
-                matched = size >= rule["bytes"]
-            elif rtype == "self_sent":
-                matched = from_addr == account
-            elif rtype == "has_cc":
-                pass  # Would need cc property
-            elif rtype == "list_header":
-                pass  # Would need headers property
-            elif rtype == "content_type":
-                pass  # Would need bodyStructure parsing
-
-            if matched:
-                group_num = group["name"].split("-")[0]
-                sub_name = f"{group_num}-{idx} {rule['flag']}"
-                matches.append((group["id"], group["name"], sub_name, rule["flag"], is_meta))
-
-    return matches
+        Uses an `inMailboxOtherThan`-free OR filter so Stalwart returns
+        every message present in at least one source (numeric 1*-9*) folder.
+        """
+        if not mailbox_ids:
+            return []
+        if len(mailbox_ids) == 1:
+            flt = {"inMailbox": mailbox_ids[0]}
+        else:
+            flt = {"operator": "OR",
+                   "conditions": [{"inMailbox": m} for m in mailbox_ids]}
+        resp = self.call([["Email/query", {
+            "accountId": self.account_id,
+            "filter": flt,
+            "sort": [{"property": "receivedAt", "isAscending": False}],
+            "limit": limit,
+        }, "0"]])
+        return resp[0][1].get("ids", [])
 
 
 def ensure_mailboxes(client, rules):
@@ -241,6 +203,17 @@ def ensure_mailboxes(client, rules):
         pick_or_create(label, None, "section", 100 + j)
         create_counter += 1
 
+    # Dynamic filter views — flat ROOT mailboxes (section headers +
+    # one folder per view). Membership is maintained by maintain_filters
+    # via JMAP multi-mailbox; here we only ensure the mailboxes exist.
+    filters = rules.get("filters") or {}
+    for k, label in enumerate(filters.get("section_headers") or []):
+        pick_or_create(label, None, "filtersec", 200 + k)
+        create_counter += 1
+    for vi, view in enumerate(filters.get("views") or []):
+        pick_or_create(view["folder"], None, "filterview", 300 + vi)
+        create_counter += 1
+
     # Tag group parents (ROOT) + their subfolders.
     for gi, group in enumerate(rules["tags"]):
         group_name = group["name"]
@@ -282,71 +255,195 @@ def find_inbox_id(mailboxes):
     return None
 
 
-def sort_emails(client, rules, name_to_id, mailboxes):
-    """Process unsorted emails in INBOX."""
-    inbox_id = find_inbox_id(mailboxes)
-    if not inbox_id:
-        logging.error("No INBOX found")
+# ── Dynamic cross-cutting filter views ───────────────────────────────
+#
+# Routing is now owned entirely by the native Sieve (see _shared/lib/
+# mail-rules.nix::toSieve): every inbound email lands in INBOX (read) plus
+# exactly one numeric 1*-9* category folder as an UNREAD copy. The sorter
+# no longer routes or sets $seen.
+#
+# Instead it maintains DYNAMIC cross-cutting filter folders A*/B*/C*/D*
+# over the emails that live in the numeric folders, using JMAP
+# multi-mailbox membership (add the existing message into the filter
+# mailbox; NO new copies; NO $seen/$Sorted changes). Re-evaluated every
+# poll so time/read windows stay current (membership added AND removed).
+
+
+def _has_attachment(em):
+    """True if the email has a real (non-inline) attachment.
+
+    Prefers JMAP's `hasAttachment` property when present; falls back to
+    walking bodyStructure for a part with a disposition of "attachment"
+    or a filename.
+    """
+    if "hasAttachment" in em:
+        return bool(em.get("hasAttachment"))
+    return bool(_attachment_types(em))
+
+
+def _attachment_types(em):
+    """Collect the set of MIME `type`s of attachment parts in bodyStructure."""
+    types = set()
+
+    def walk(part):
+        if not isinstance(part, dict):
+            return
+        disp = (part.get("disposition") or "").lower()
+        name = part.get("name")
+        if disp == "attachment" or name:
+            t = part.get("type")
+            if t:
+                types.add(t.lower())
+        for sub in part.get("subParts") or []:
+            walk(sub)
+
+    walk(em.get("bodyStructure") or {})
+    return types
+
+
+def _email_matches(em, predicate, now):
+    """Evaluate a single filter predicate against an Email/get object."""
+    ptype = predicate.get("type")
+    size = em.get("size") or 0
+
+    if ptype == "size_min":
+        return size >= predicate["bytes"]
+    if ptype == "size_max":
+        return size < predicate["bytes"]
+    if ptype == "size_range":
+        return predicate["min"] <= size <= predicate["max"]
+    if ptype == "newer_than_hours":
+        ts = _parse_iso8601(em.get("receivedAt"))
+        if ts is None:
+            return False
+        return (now - ts) <= predicate["hours"] * 3600
+    if ptype == "unread":
+        return not (em.get("keywords") or {}).get("$seen", False)
+    if ptype == "has_attachment":
+        return _has_attachment(em)
+    if ptype == "attach_type":
+        wanted = {v.lower() for v in predicate.get("values") or []}
+        return bool(wanted & _attachment_types(em))
+    return False
+
+
+def _parse_iso8601(value):
+    """Parse a JMAP UTCDate (RFC3339, e.g. 2026-06-18T10:20:30Z) to epoch."""
+    if not value:
+        return None
+    v = value.strip()
+    # Normalise trailing Z to +00:00 for fromisoformat (Py 3.7+ chokes on Z).
+    if v.endswith("Z"):
+        v = v[:-1] + "+00:00"
+    try:
+        dt = datetime.datetime.fromisoformat(v)
+        return dt.timestamp()
+    except Exception:
+        return None
+
+
+def apply_renames(client, rules, mailboxes):
+    """One-time in-place mailbox renames (old name -> new name) from
+    rules.folder_renames.map. Idempotent: rename only when the old name exists
+    AND the new name does not. JMAP Mailbox/set name-update preserves the
+    mailbox's emails + children — the whole point vs create-new + reap-old."""
+    renames = (rules.get("folder_renames") or {}).get("map") or {}
+    if not renames:
+        return
+    by_name = {mb["name"]: mb["id"] for mb in mailboxes}
+    updates = {}
+    for old_name, new_name in renames.items():
+        old_id = by_name.get(old_name)
+        if old_id and new_name not in by_name:
+            updates[old_id] = {"name": new_name}
+    if not updates:
+        return
+    logging.info("Renaming %d mailbox(es) in place (keep emails)...", len(updates))
+    result = client.mailbox_set(update=updates)
+    for mid, err in (result.get("notUpdated") or {}).items():
+        logging.warning("Rename failed %s: %s", mid, err)
+
+
+def maintain_filters(client, rules, name_to_id, mailboxes):
+    """Reconcile dynamic A*/B*/C*/D* filter-view mailbox membership.
+
+    For each view: compute the matching email set from its predicate over
+    the emails living in the numeric (source) folders, then add the view
+    mailbox to matching emails' mailboxIds and remove it from emails that
+    no longer match. Email/set mailboxIds-only — never touches keywords.
+    """
+    filters = rules.get("filters") or {}
+    views = filters.get("views") or []
+    if not views:
         return 0
 
-    email_ids = client.email_query(inbox_id)
+    src_re = re.compile(filters.get("source_folder_regex", "^[0-9]"))
+
+    # 1. Source mailbox ids = mailboxes whose NAME matches the regex.
+    source_ids = [mb["id"] for mb in mailboxes if src_re.search(mb["name"])]
+    if not source_ids:
+        return 0
+
+    # View folder name → mailbox id (skip views whose mailbox isn't created).
+    view_ids = {}
+    for view in views:
+        mid = name_to_id.get(view["folder"])
+        if mid:
+            view_ids[view["folder"]] = mid
+    if not view_ids:
+        return 0
+    view_id_set = set(view_ids.values())
+
+    # 2. Union of emails in any source folder.
+    email_ids = client.email_query_in(source_ids)
     if not email_ids:
-        return 0
+        email_ids = []
 
-    logging.info("Processing %d unsorted emails...", len(email_ids))
+    now = time.time()
+    updates = {}
 
-    # Process in batches
-    total = 0
     for batch_start in range(0, len(email_ids), BATCH_SIZE):
         batch_ids = email_ids[batch_start:batch_start + BATCH_SIZE]
-        emails = client.email_get(batch_ids)
+        emails = client.email_get(batch_ids, properties=[
+            "size", "receivedAt", "keywords", "mailboxIds",
+            "hasAttachment", "bodyStructure",
+        ])
 
-        updates = {}
         for em in emails:
-            from_list = em.get("from") or [{}]
-            from_addr = (from_list[0].get("email") or "").lower()
-            from_domain = from_addr.split("@")[-1] if "@" in from_addr else ""
-            subject = em.get("subject") or ""
-            size = em.get("size") or 0
+            current = dict(em.get("mailboxIds") or {})
+            desired = dict(current)
 
-            # A) Routing
-            folder = match_routing(from_domain, rules)
-            folder_id = name_to_id.get(folder) if folder else None
+            for view in views:
+                vid = view_ids.get(view["folder"])
+                if not vid:
+                    continue
+                if _email_matches(em, view["predicate"], now):
+                    desired[vid] = True
+                elif vid in desired:
+                    del desired[vid]
 
-            # B) Tags
-            tag_matches = match_tags(from_addr, from_domain, subject, size, rules)
+            # Only emit an update if a VIEW-mailbox bit changed. Compare the
+            # restriction of current/desired to the view mailbox set so we
+            # never rewrite non-view membership (numeric folders, INBOX).
+            cur_views = {m for m in current if m in view_id_set}
+            des_views = {m for m in desired if m in view_id_set}
+            if cur_views != des_views:
+                updates[em["id"]] = {"mailboxIds": desired}
 
-            # Build mailboxIds: INBOX + routing folder + tag subfolders
-            new_mailbox_ids = {inbox_id: True}
-            if folder_id:
-                new_mailbox_ids[folder_id] = True
-
-            # Build keywords
-            new_keywords = dict(em.get("keywords") or {})
-            new_keywords["$seen"] = True
-            new_keywords["$Sorted"] = True
-
-            for group_id, group_name, sub_name, flag, is_meta in tag_matches:
-                new_keywords[flag] = True
-                sub_id = name_to_id.get(sub_name)
-                if sub_id:
-                    new_mailbox_ids[sub_id] = True
-
-            updates[em["id"]] = {
-                "mailboxIds": new_mailbox_ids,
-                "keywords": new_keywords,
-            }
-
-        if updates:
-            result = client.email_set(updates)
-            updated = len(result.get("updated", {}))
+    total = 0
+    if updates:
+        items = list(updates.items())
+        for batch_start in range(0, len(items), BATCH_SIZE):
+            chunk = dict(items[batch_start:batch_start + BATCH_SIZE])
+            result = client.email_set(chunk)
+            total += len(result.get("updated", {}))
             errors = result.get("notUpdated", {})
-            total += updated
             if errors:
                 for eid, err in list(errors.items())[:3]:
-                    logging.warning("Update failed %s: %s", eid, err)
+                    logging.warning("Filter update failed %s: %s", eid, err)
 
-    logging.info("Sorted %d emails", total)
+    if total:
+        logging.info("Filter views: updated membership on %d emails", total)
     return total
 
 
@@ -359,6 +456,12 @@ def cleanup_stale(client, rules, name_to_id, mailboxes):
     # Visual section headers (folders_ui — flat siblings, Maddy-equivalent)
     for f in rules.get("folders_ui") or []:
         valid_names.add(f)
+    # Dynamic filter views + their section headers (flat ROOT siblings)
+    filters = rules.get("filters") or {}
+    for f in filters.get("section_headers") or []:
+        valid_names.add(f)
+    for view in filters.get("views") or []:
+        valid_names.add(view["folder"])
     # Tag groups + subfolders
     for group in rules["tags"]:
         valid_names.add(group["name"])
@@ -506,13 +609,21 @@ def main():
 
             while True:
                 try:
+                    # One-time in-place renames first (old->new name), so a
+                    # renamed folder keeps its emails instead of being recreated
+                    # empty + the old reaped by cleanup_stale. Idempotent.
+                    apply_renames(client, rules, client.mailbox_get())
                     name_to_id, mailboxes = ensure_mailboxes(client, rules)
                     # Run on every poll — cleanup is idempotent (no stale →
                     # no-op) and self-healing. Previously this was gated by
                     # `first_run`, so a single bad first poll permanently
                     # left orphans until the container restarted.
                     cleanup_stale(client, rules, name_to_id, mailboxes)
-                    sort_emails(client, rules, name_to_id, mailboxes)
+                    # Routing is owned by the Sieve. The sorter now only
+                    # maintains dynamic A*/B*/C*/D* filter views over the
+                    # emails in the numeric folders (membership add/remove,
+                    # no $seen/$Sorted, no copies).
+                    maintain_filters(client, rules, name_to_id, mailboxes)
                 except urllib.error.URLError as e:
                     logging.warning("Connection lost: %s, reconnecting...", e)
                     break

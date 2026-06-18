@@ -22,16 +22,16 @@
     "social": "22    📰 Social & General",
     "government": "23    🧻 Goverment",
     "development": "31    🎓 Development & Tech",
-    "others": "Aa    📬 Others (fallback)",
-    "archive": "Ab    📥 Archive",
-    "junk": "Ac    🚫 Junk"
+    "others": "91    📬 Others (fallback)",
+    "archive": "92    📥 Archive",
+    "junk": "93    🚫 Junk"
   },
   "_folders_ui_doc": "Visual section-headers — flat sibling mailboxes (NOT actual parents) that alphabetically sort just before each numeric block (10_ before 11/12/..., 20_ before 21/..., etc). Maddy creates these via the legacy `folders_ui` schema (see flake.nix line 82) and Stalwart's jmap-sorter now mirrors them so the two engines have identical mailbox listings. They are not routing targets — no rule.copy_to references them.",
   "folders_ui": [
     "10 _ ADMIN",
     "20 _ INFORMS",
     "30 _ DEV",
-    "AA _ OTHERS"
+    "90 _ OTHERS"
   ],
   "routing_default": "others",
   "inbox_copy": {
@@ -44,6 +44,31 @@
   "cleanup": {
     "drop_name_regex": "^[0-9]-",
     "comment": "Used by cleanup-stale-mailboxes.sh, not by delivery filter."
+  },
+  "folder_renames": {
+    "_doc": "One-time in-place mailbox renames (old name -> new name) applied by jmap-sorter BEFORE ensure_mailboxes/cleanup, so a renamed folder KEEPS its emails (JMAP Mailbox/set name update) instead of being reaped + recreated empty. Idempotent: only renames when the old name exists and the new name does not.",
+    "map": {
+      "Aa    📬 Others (fallback)": "91    📬 Others (fallback)",
+      "Ab    📥 Archive": "92    📥 Archive",
+      "Ac    🚫 Junk": "93    🚫 Junk",
+      "AA _ OTHERS": "90 _ OTHERS"
+    }
+  },
+  "filters": {
+    "_doc": "Dynamic cross-cutting filter views maintained by jmap-sorter each poll over emails in the numeric 1*-9* folders. Multi-mailbox membership only (no copies, no $seen changes); add+remove each poll so time/read windows stay current.",
+    "source_folder_regex": "^[0-9]",
+    "section_headers": ["A0 _ SIZE", "B0 _ TIME", "C0 _ STATE", "D0 _ ATTACH"],
+    "views": [
+      {"folder": "Aa    📏 Large (≥10MB)",       "predicate": {"type": "size_min", "bytes": 10485760}},
+      {"folder": "Ab    📏 Medium (1–10MB)",      "predicate": {"type": "size_range", "min": 1048576, "max": 10485760}},
+      {"folder": "Ac    📏 Small (<1MB)",         "predicate": {"type": "size_max", "bytes": 1048576}},
+      {"folder": "Ba    ⏱️ Last 24h",             "predicate": {"type": "newer_than_hours", "hours": 24}},
+      {"folder": "Bc    ⏱️ Last 7 days",          "predicate": {"type": "newer_than_hours", "hours": 168}},
+      {"folder": "Ca    📩 Unread",               "predicate": {"type": "unread"}},
+      {"folder": "Da    📎 With attachments",      "predicate": {"type": "has_attachment"}},
+      {"folder": "Db    📎 PDF",                   "predicate": {"type": "attach_type", "values": ["application/pdf"]}},
+      {"folder": "Dc    📎 Docs",                  "predicate": {"type": "attach_type", "values": ["application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.oasis.opendocument.text","text/plain"]}}
+    ]
   },
   "predicates": {
     "github_any": {
@@ -1625,6 +1650,6 @@
     "10 _ ADMIN",
     "20 _ INFORMS",
     "30 _ DEV",
-    "AA _ OTHERS"
+    "90 _ OTHERS"
   ]
 }
