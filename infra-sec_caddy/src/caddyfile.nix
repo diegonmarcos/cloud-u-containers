@@ -284,10 +284,11 @@ ${plainOut}${sniMuxBlock}
   mkSubdomainRoute = route:
     let
       isNoAuth = (route.auth or null) == "none";
-      # Fail-closed: WG-only unless build.json explicitly sets wg_only:false.
-      # Mirrors the derive engine's `wgOnly ?? true` so the template layer can't
-      # silently fall open if a route ever arrives without the field.
-      isWgOnly = route.wg_only or true;
+      # The derive engine emits wg_only:true ONLY for private routes and OMITS the
+      # field for public ones (wgOnly ?? true at the source). So "absent" reliably
+      # means PUBLIC — default false here. Fail-closed lives at the derive, NOT here:
+      # defaulting true would wrongly gate public routes (vpn WG-join, matrix federation).
+      isWgOnly = route.wg_only or false;
       hasMaxUpload = (route.max_upload or null) != null;
       hasTimeout = (route.timeout or null) != null;
       hasTlsSkipVerify = route.tls_skip_verify or false;
@@ -509,8 +510,8 @@ ${plainOut}${sniMuxBlock}
           # Gate is applied INSIDE each handle/handle_path so the 403 catch-all is
           # path-scoped and never swallows sibling routes in the shared site block.
           # public_paths are gated too (the "gate everything" decision).
-          # Fail-closed: WG-only unless build.json sets wg_only:false (mirrors derive ?? true).
-          isWg = path.wg_only or true;
+          # Absent wg_only means PUBLIC (derive omits it for public). Default false.
+          isWg = path.wg_only or false;
 
           redirectBlock = if hasRedirectBare then ''
       @${builtins.replaceStrings ["/"] [""] path.base_path}_bare path ${path.base_path}
@@ -583,7 +584,7 @@ ${plainOut}${sniMuxBlock}
           # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
           # Invert to a `handle @wg` / `handle` pair so the deny is order-independent
           # (both are `handle` blocks → source-order, first-match-wins).
-          inner = if (ep.wg_only or true) then ''@wg remote_ip 10.0.0.0/24
+          inner = if (ep.wg_only or false) then ''@wg remote_ip 10.0.0.0/24
         handle @wg {
           ${proxyBody}
         }
