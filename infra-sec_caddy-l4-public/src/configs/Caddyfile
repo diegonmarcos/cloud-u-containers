@@ -20,18 +20,31 @@
             # the autoconfig URL returns SSL_ERROR_SYSCALL.
             # Any other SNI (random scans, mis-resolved CDN, etc.) falls
             # through to no route and gets a TCP RST.
-            @sni_diegonmarcos tls sni *.diegonmarcos.com diegonmarcos.com
-            route @sni_diegonmarcos {
-                # TCP-relay to the gcp-proxy Caddy edge via wg-public.
-                # wg-public mesh layout (cloud-data.native.wg_public.peers):
-                #   10.1.0.1 = oci-analytics (hub — THIS box; relaying here loops)
-                #   10.1.0.2 = gcp-proxy (spoke — Caddy edge, TLS termination)
-                #   10.1.0.3 = oci-mail, 10.1.0.4 = oci-apps
-                # gcp-proxy at 10.1.0.2:443 owns TLS termination + all
-                # path / authelia / forward_auth routing for the whole
-                # service catalogue (gitea, vault, api, etc.).
+            # ── Mail L4 protocols (IMAP/SMTP — NOT HTTP) keep going to
+            # gcp-proxy, which owns the layer4 SNI→Maddy mux (993/465). These
+            # MUST NOT reach the HTTP-only caddy-public, or the IMAP/SMTP
+            # handshake breaks. This list mirrors build-caddy.json l4_routes[].sni
+            # (currently imap + smtps); keep in sync if a mail L4 SNI is added.
+            # Order matters: this matches BEFORE the web wildcard below.
+            @sni_mail tls sni imap.diegonmarcos.com smtps.diegonmarcos.com
+            route @sni_mail {
                 proxy {
                     upstream 10.1.0.2:443
+                }
+            }
+            # ── All other *.diegonmarcos.com web SNIs → LOCAL caddy-public (L7,
+            # :8443) which terminates TLS, serves the declared-public allowlist,
+            # and forwards everything else to gcp-proxy (10.1.0.2:443) where the
+            # @wg gate 403s non-mesh clients. PROXY protocol v2 preserves the
+            # real client IP across the local hop (caddy-public unwraps it via
+            # listener_wrappers proxy_protocol allow 127.0.0.1/32).
+            # wg-public mesh layout (cloud-data.native.wg_public.peers):
+            #   10.1.0.1 = oci-analytics (hub — THIS box) · 10.1.0.2 = gcp-proxy
+            @sni_web tls sni *.diegonmarcos.com diegonmarcos.com
+            route @sni_web {
+                proxy {
+                    proxy_protocol v2
+                    upstream 127.0.0.1:8443
                 }
             }
             # No fallback. Unmatched SNI = TCP closed.

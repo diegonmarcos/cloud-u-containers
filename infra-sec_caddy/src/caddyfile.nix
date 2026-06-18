@@ -164,6 +164,7 @@ let
     rewrite * /${path}{uri}
     reverse_proxy https://diegonmarcos.github.io {
       header_up Host diegonmarcos.github.io
+      header_up X-Real-IP {http.request.remote.host}
     }
   '';
 
@@ -283,7 +284,10 @@ ${plainOut}${sniMuxBlock}
   mkSubdomainRoute = route:
     let
       isNoAuth = (route.auth or null) == "none";
-      isWgOnly = route.wg_only or false;
+      # Fail-closed: WG-only unless build.json explicitly sets wg_only:false.
+      # Mirrors the derive engine's `wgOnly ?? true` so the template layer can't
+      # silently fall open if a route ever arrives without the field.
+      isWgOnly = route.wg_only or true;
       hasMaxUpload = (route.max_upload or null) != null;
       hasTimeout = (route.timeout or null) != null;
       hasTlsSkipVerify = route.tls_skip_verify or false;
@@ -304,12 +308,15 @@ ${plainOut}${sniMuxBlock}
       proxyBlock =
         if isNoAuth && hasTlsSkipVerify then
           ''    reverse_proxy https://${route.upstream} {
+        header_up X-Real-IP {http.request.remote.host}
         transport http {
       tls_insecure_skip_verify
     }
       }''
         else if isNoAuth then
-          "    reverse_proxy ${route.upstream}"
+          ''    reverse_proxy ${route.upstream} {
+        header_up X-Real-IP {http.request.remote.host}
+      }''
         else if hasTlsServerName && hasTimeout then
           mkProtectedCustom upstreamUrl ''
         transport http {
@@ -502,7 +509,8 @@ ${plainOut}${sniMuxBlock}
           # Gate is applied INSIDE each handle/handle_path so the 403 catch-all is
           # path-scoped and never swallows sibling routes in the shared site block.
           # public_paths are gated too (the "gate everything" decision).
-          isWg = path.wg_only or false;
+          # Fail-closed: WG-only unless build.json sets wg_only:false (mirrors derive ?? true).
+          isWg = path.wg_only or true;
 
           redirectBlock = if hasRedirectBare then ''
       @${builtins.replaceStrings ["/"] [""] path.base_path}_bare path ${path.base_path}
@@ -569,12 +577,13 @@ ${plainOut}${sniMuxBlock}
         let
           proxyBody = ''reverse_proxy ${ep.upstream} {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }'';
           # Per-endpoint WG-only gate (ep.wg_only from build.json proxy.primary.wg_only).
           # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
           # Invert to a `handle @wg` / `handle` pair so the deny is order-independent
           # (both are `handle` blocks → source-order, first-match-wins).
-          inner = if (ep.wg_only or false) then ''@wg remote_ip 10.0.0.0/24
+          inner = if (ep.wg_only or true) then ''@wg remote_ip 10.0.0.0/24
         handle @wg {
           ${proxyBody}
         }
