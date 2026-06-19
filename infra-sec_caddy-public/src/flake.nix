@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson   = builtins.fromJSON (builtins.readFile ../build.json);
-    caddyPublic = builtins.fromJSON (builtins.readFile ./build-caddy-public.json);
+    caddyPublic = builtins.fromJSON (builtins.readFile ./build-caddy-edge.json);
 
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
