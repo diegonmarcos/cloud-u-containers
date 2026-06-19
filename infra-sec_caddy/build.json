@@ -231,7 +231,8 @@
   "containers": {
     "app": {
       "container_name": "caddy",
-      "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
+      "_image_doc": "PINNED to the last-known-good digest. caddy-l4:latest was rebuilt broken on 2026-06-19 (no caddy binary, CMD=/bin/sh) → gcp-proxy pulled it → :443 outage. Repin to :latest once infra-sec_caddy-l4-image is rebuilt + verified to contain caddy.",
+      "image": "ghcr.io/diegonmarcos/caddy-l4@sha256:d8309fad8a32c393ddf7a258b8dbfc990ea928372284804a08bd071a13df6b7c",
       "port": 443,
       "extra_ports": [
         {
