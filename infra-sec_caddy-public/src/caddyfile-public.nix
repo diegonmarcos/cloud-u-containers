@@ -298,23 +298,12 @@ ${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
       ${handleErrors}
     }'';
 
-  # ── GLOBAL fail-closed fallback ──
-  # Any *.diegonmarcos.com host not matched by an explicit named site above
-  # (i.e. every private subdomain: git, vault, db, ide, …) lands here and
-  # forwards to gcp-proxy (10.1.0.2:443), whose @wg gate 403s public clients.
-  # MUST be the named wildcard `*.diegonmarcos.com` (NOT a port-only `:8443`):
-  # caddy-public terminates TLS, so it needs a cert for the forwarded host.
-  # `*.diegonmarcos.com` provisions a wildcard cert via ACME DNS-01 (acme_dns
-  # cloudflare, above); a port-only site provisions no cert → TLS handshake
-  # failure for every forwarded private host. https_port 8443 keeps it on :8443.
-  globalFallbackBlock = ''
-    # GLOBAL fail-closed fallback — forward all unmatched *.diegonmarcos.com
-    # hosts to gcp-proxy over wg-public. gcp-proxy's @wg gate 403s public clients.
-    *.diegonmarcos.com {
-    ${sec}
-      ${fwd}
-      ${handleErrors}
-    }'';
+  # NOTE: there is intentionally NO L7 *.diegonmarcos.com fail-closed site.
+  # Private/unmatched subdomains are handled one tier earlier by the layer4
+  # @rest passthrough (raw TLS → gcp-proxy 10.1.0.2:443, no termination), so
+  # caddy-public never terminates TLS for a private host and never needs the
+  # wildcard cert. (A named *.diegonmarcos.com L7 site would re-introduce the
+  # wildcard-cert DNS-01 collision with gcp-proxy that broke issuance.)
 
 in ''
 ${globalsBlock}
@@ -344,15 +333,12 @@ ${lib.concatMapStringsSep "\n\n" mkGithubPagesRoute ghPages}
 ${lib.concatMapStringsSep "\n\n" mkSubdomainRoute (builtins.filter (r: (r.auth or null) == "none") (caddyPublic.public_routes or []))}
 
   # ════════════════════════════════════════════════════════════
-  # L7 DEFENCE-IN-DEPTH — only pure-public SNIs are routed to :8443 by the
-  # layer4 mux (mixed/private/mail go elsewhere). Any unexpected host arriving
-  # here is a mux mis-route → respond 403, NEVER serve. Legit private forwarding
-  # is the L4 @rest passthrough to gcp-proxy, not an L7 reverse_proxy.
+  # NO L7 *.diegonmarcos.com catch-all — a named-wildcard site would force
+  # caddy-public to provision a *.diegonmarcos.com ACME cert, colliding with
+  # gcp-proxy's wildcard DNS-01 (shared _acme-challenge.diegonmarcos.com TXT) —
+  # which is exactly what broke cert issuance. The layer4 @rest tier already
+  # raw-TLS-passes every non-public SNI to gcp-proxy, so no host ever reaches
+  # :8443 without an explicit per-host public site above. caddy-public therefore
+  # requests ONLY per-host certs for its declared-public hosts (no wildcard).
   # ════════════════════════════════════════════════════════════
-
-  *.diegonmarcos.com {
-  ${sec}
-    respond "Forbidden" 403
-    ${handleErrors}
-  }
 ''
