@@ -135,7 +135,7 @@
   "containers": {
     "app": {
       "container_name": "caddy-public",
-      "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
+      "image": "ghcr.io/diegonmarcos/caddy-public:latest",
       "port": 443,
       "extra_ports": [
         {
@@ -175,8 +175,9 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "caddy-l4",
+    "image": "caddy-public",
     "image_tag": "latest",
+    "dockerfile": "Dockerfile",
     "arch": "amd64"
   }
 }
