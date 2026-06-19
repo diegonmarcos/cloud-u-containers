@@ -15,7 +15,7 @@
     "registry": "ghcr.io/diegonmarcos",
     "image": "dagu",
     "dockerfile": "Dockerfile",
-    "arch": "amd64"
+    "arch": "arm64"
   },
   "deploy": {
     "host": "oci-apps",
