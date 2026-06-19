@@ -31,6 +31,18 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
+# Headroom proxy face (optional): the interactive ANTHROPIC_BASE_URL target.
+# Compresses then forwards to Anthropic with the CLIENT's own creds (transparent),
+# so a local `claude` keeps full multi-turn/tool behaviour. WG-bound (never 0.0.0.0).
+if [ "${HEADROOM_PROXY_ENABLED:-1}" = "1" ]; then
+  PROXY_PORT="${HEADROOM_PROXY_PORT:-8789}"
+  PROXY_BIND="${HEADROOM_PROXY_BIND:-127.0.0.1}"
+  PROXY_BACKEND="${HEADROOM_PROXY_BACKEND:-anthropic}"
+  echo "[start] launching headroom proxy on ${PROXY_BIND}:${PROXY_PORT} (backend=${PROXY_BACKEND})"
+  headroom proxy --host "$PROXY_BIND" --port "$PROXY_PORT" --backend "$PROXY_BACKEND" &
+  PIDS+=("$!")
+fi
+
 echo "[start] launching node front"
 node /app/server.mjs &
 PIDS+=("$!")

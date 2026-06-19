@@ -75,5 +75,5 @@ RUN useradd -r -m -u 10001 appuser \
     && chown -R appuser:appuser /home/appuser /app
 USER appuser
 
-EXPOSE 3107 11434 8787
+EXPOSE 3117 11436 8788 8789
 CMD ["/app/start.sh"]

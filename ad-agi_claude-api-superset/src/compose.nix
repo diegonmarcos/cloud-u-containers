@@ -55,6 +55,13 @@ in
         HEADROOM_PORT          = toString buildJson.ports.headroom;
         HEADROOM_SAVINGS_PROFILE   = hr.savings_profile or "agent-90";
         HEADROOM_MIN_TOKENS        = toString (hr.min_tokens_to_compress or 250);
+        # Headroom proxy face — compress-and-forward to Anthropic with the
+        # CLIENT's own creds (transparent), so `ANTHROPIC_BASE_URL=<this> claude`
+        # gets full interactive/multi-turn compression. WG-bound, fail-closed.
+        HEADROOM_PROXY_ENABLED = if (hr.proxy_enabled or true) then "1" else "0";
+        HEADROOM_PROXY_PORT    = toString (buildJson.ports.proxy or 8789);
+        HEADROOM_PROXY_BIND    = wgIp;
+        HEADROOM_PROXY_BACKEND = hr.proxy_backend or "anthropic";
         # Durable savings ledger (Headroom convention) lives in the volume.
         HEADROOM_WORKSPACE_DIR = "${home}/.headroom";
       };
