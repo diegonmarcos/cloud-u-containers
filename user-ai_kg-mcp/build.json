@@ -57,12 +57,12 @@
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
       "llm": {
-        "_comment": "octocode GraphRAG LLM \u2192 kg-bridge, TWO providers with fallback. openai:* reads OPENAI_API_URL \u2192 bridge /v1; ollama:* reads OLLAMA_API_URL (localhost:11434) \u2192 bridge Ollama mimic. reindex.sh forces use_llm=true (the flag that was off \u2192 0 LLM calls) and tries `models` in order, falling back if a provider makes 0 bridge calls. api_key is a throwaway.",
-        "openai_api_url": "http://10.0.0.6:3107/v1/chat/completions",
-        "ollama_api_url": "http://localhost:11434",
+        "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 \u2014 the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
+        "openai_api_url": "http://10.0.0.6:3117/v1/chat/completions",
+        "ollama_api_url": "http://10.0.0.6:11436",
         "api_key": "sk-dummy",
         "models": "ollama:claude-sonnet openai:gpt-4o-mini",
-        "health_url": "http://10.0.0.6:3107/health"
+        "health_url": "http://10.0.0.6:3117/health"
       },
       "index_repos": [
         "cloud",

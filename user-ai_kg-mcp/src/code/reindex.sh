@@ -1,13 +1,13 @@
 #!/bin/sh
-# ── kg-mcp · one-shot octocode GraphRAG reindexer (LLM via claude bridge) ──
+# ── kg-mcp · one-shot octocode GraphRAG reindexer (LLM via claude-api-superset) ──
 # Runs in a throwaway container (compose profile "reindex") with octocode_db +
-# octocode_repos mounted RW and the kg-bridge env set. Points octocode's
-# GraphRAG LLM at the bridge, sets use_llm=true (the flag that was OFF → 0 LLM calls),
-# then indexes each repo in $OCTOCODE_REPOS.
+# octocode_repos mounted RW and the superset env set. Points octocode's
+# GraphRAG LLM at the superset (kg-bridge successor), sets use_llm=true (the flag
+# that was OFF → 0 LLM calls), then indexes each repo in $OCTOCODE_REPOS.
 #
-# PROVIDER FALLBACK (one-shot insurance): octocode reaches the bridge two ways —
-#   openai:<m>  → OPENAI_API_URL  → bridge /v1
-#   ollama:<m>  → localhost:11434 → bridge Ollama mimic
+# PROVIDER FALLBACK (one-shot insurance): octocode reaches the superset two ways —
+#   openai:<m>  → OPENAI_API_URL  → superset /v1 (3117)
+#   ollama:<m>  → OLLAMA_API_URL  → superset Ollama mimic (10.0.0.6:11436)
 # We try $OCTOCODE_LLM_MODELS in order; after each `octocode index` we diff the
 # bridge /health call counter and fall back to the next provider if it made 0 calls.
 # octocode is incremental, so a fallback re-index reuses cached embeddings (cheap).
@@ -18,7 +18,7 @@ CFG="$HOME/.local/share/octocode/config.toml"
 MODELS="${OCTOCODE_LLM_MODELS:-openai:gpt-4o-mini ollama:claude-sonnet}"
 REPOS="${OCTOCODE_REPOS:-cloud unix front tools cloud-data front-data}"
 REPOS_ROOT="${OCTOCODE_REPOS_ROOT:-/repos}"
-HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3107/health}"
+HEALTH="${BRIDGE_HEALTH_URL:-http://10.0.0.6:3117/health}"
 PULL="${OCTOCODE_PULL:-0}"
 # FORCE a fresh index: octocode skips when the git HEAD is unchanged ("No commit
 # changes since last index"), but --no-git ALSO skips the GraphRAG AI phase (the
