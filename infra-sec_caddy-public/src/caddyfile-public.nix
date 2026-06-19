@@ -100,11 +100,55 @@ let
     "@ERR_FILE@"   = baseNameOf eh.error_html;
   } (readTpl "22-handle-errors.caddy.tpl"));
 
+  # ── layer4 SNI mux (caddy-l4 module) — caddy-public IS the smart :443 edge ──
+  # Replaces the blind caddy-l4-public relay. Three tiers, evaluated in order
+  # (caddy-l4 #294 flat pattern: a final `not { tls { sni … } }` forces the
+  # ClientHello parse so the bare-tls prefetch race can't win):
+  #   1. mail SNIs (imap./smtps.) → L4-forward to maddy — raw IMAPS/SMTPS, never L7.
+  #   2. pure-public SNIs → local :8443 with PROXY-protocol (L7 terminate + serve).
+  #   3. everything else (private + mixed api./analytics.) → raw-TLS passthrough to
+  #      gcp-proxy (private_forward_upstream). No termination ⇒ no re-encryption;
+  #      gcp-proxy terminates + its @wg gate 403s public clients (source 10.1.0.1).
+  mailL4     = caddyPublic.mail_l4_routes or [];
+  publicSnis = caddyPublic.public_sni_hosts or [];
+  sniSlug    = h: lib.replaceStrings [ "." "-" ] [ "_" "_" ] h;
+  allMuxSnis = (map (r: r.sni) mailL4) ++ publicSnis;
+  mkMailL4Route = r: ''
+        @m_${sniSlug r.sni} tls sni ${r.sni}
+        route @m_${sniSlug r.sni} {
+          proxy {
+            upstream ${r.upstream}
+          }
+        }'';
+  l4Section = ''
+
+      layer4 {
+        :443 {
+${lib.concatMapStringsSep "\n" mkMailL4Route mailL4}
+          @public tls sni ${lib.concatStringsSep " " publicSnis}
+          route @public {
+            proxy {
+              proxy_protocol v2
+              upstream 127.0.0.1:8443
+            }
+          }
+          @rest not {
+            tls {
+              sni ${lib.concatStringsSep " " allMuxSnis}
+            }
+          }
+          route @rest {
+            proxy {
+              upstream ${privateUpstream}
+            }
+          }
+        }
+      }'';
+
   # ── Globals block (snippet-driven from 00-globals.caddy.tpl) ──
-  # https_port 8443, proxy_protocol→tls listener_wrapper, ACME DNS-01
-  # (Cloudflare). caddy-l4-public owns 0.0.0.0:443 and forwards the
-  # unwrapped TLS to 127.0.0.1:8443 with a PROXY-protocol header.
-  # @L4_SECTION@ = "" — no layer4 block in the L7 public edge.
+  # https_port 8443 (the L7 server), proxy_protocol→tls listener_wrapper (unwraps
+  # the PP from our own layer4 tier-2), ACME DNS-01 (Cloudflare wildcard cert).
+  # @L4_SECTION@ = the layer4 mux above — caddy-public owns 0.0.0.0:443 directly.
   global = caddyPublic.global or {};
   odt    = caddyPublic.on_demand_tls or {};
   globalsBlock = subst {
@@ -113,7 +157,7 @@ let
     "@ORDER@"       = global.order;
     "@AUTO_HTTPS@"  = global.auto_https;
     "@ODT_ASK_URL@" = odt.ask_url or "http://127.0.0.1:2020";
-    "@L4_SECTION@"  = "";
+    "@L4_SECTION@"  = l4Section;
   } (readTpl "00-globals.caddy.tpl");
 
   # ── Helpers to recognise gh-pages domains (multi-domain "a, b" field) ──
@@ -294,26 +338,21 @@ ${globalsBlock}
 ${lib.concatMapStringsSep "\n\n" mkGithubPagesRoute ghPages}
 
   # ════════════════════════════════════════════════════════════
-  # PUBLIC SUBDOMAINS (auth==none served; else forwarded)
+  # PUBLIC SUBDOMAINS (auth==none — served at edge; routed here by layer4 @public)
   # ════════════════════════════════════════════════════════════
 
-${lib.concatMapStringsSep "\n\n" mkSubdomainRoute (caddyPublic.public_routes or [])}
+${lib.concatMapStringsSep "\n\n" mkSubdomainRoute (builtins.filter (r: (r.auth or null) == "none") (caddyPublic.public_routes or []))}
 
   # ════════════════════════════════════════════════════════════
-  # PUBLIC PATH ROUTES (only public_paths served; base forwarded)
+  # L7 DEFENCE-IN-DEPTH — only pure-public SNIs are routed to :8443 by the
+  # layer4 mux (mixed/private/mail go elsewhere). Any unexpected host arriving
+  # here is a mux mis-route → respond 403, NEVER serve. Legit private forwarding
+  # is the L4 @rest passthrough to gcp-proxy, not an L7 reverse_proxy.
   # ════════════════════════════════════════════════════════════
 
-${lib.concatMapStringsSep "\n\n" mkPathRouteGroup (caddyPublic.public_path_routes or [])}
-
-  # ════════════════════════════════════════════════════════════
-  # WELL-KNOWN HOSTS (non gh-pages target domains)
-  # ════════════════════════════════════════════════════════════
-
-${lib.concatMapStringsSep "\n\n" mkNonGhWellKnownSite nonGhWkDomains}
-
-  # ════════════════════════════════════════════════════════════
-  # GLOBAL FAIL-CLOSED FALLBACK → gcp-proxy (${privateUpstream})
-  # ════════════════════════════════════════════════════════════
-
-${globalFallbackBlock}
+  *.diegonmarcos.com {
+  ${sec}
+    respond "Forbidden" 403
+    ${handleErrors}
+  }
 ''
