@@ -101,7 +101,7 @@ let
   } (readTpl "22-handle-errors.caddy.tpl"));
 
   # ── layer4 SNI mux (caddy-l4 module) — caddy-public IS the smart :443 edge ──
-  # Replaces the blind caddy-l4-public relay. Three tiers, evaluated in order
+  # caddy-public IS the :443 edge (formerly a separate blind L4 relay). Three tiers, in order
   # (caddy-l4 #294 flat pattern: a final `not { tls { sni … } }` forces the
   # ClientHello parse so the bare-tls prefetch race can't win):
   #   1. mail SNIs (imap./smtps.) → L4-forward to maddy — raw IMAPS/SMTPS, never L7.

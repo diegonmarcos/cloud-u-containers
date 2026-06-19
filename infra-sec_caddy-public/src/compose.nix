@@ -1,10 +1,10 @@
 # compose.nix — docker-compose spec for caddy-public.
 #
-# Runs on oci-analytics. The public socket 0.0.0.0:443 is owned by
-# caddy-l4-public (SNI mux). This service is the L7 edge behind it:
-# it terminates TLS on :8443 (https_port set in the Caddyfile global
-# block), serves the declared-public allowlist, and forwards everything
-# else to gcp-proxy over wg-public (private_forward_upstream 10.1.0.2:443).
+# Runs on oci-analytics and OWNS the public socket 0.0.0.0:443 via its own
+# layer4 SNI mux (mail→maddy L4, pure-public→local :8443 L7, rest→gcp-proxy
+# passthrough). The L7 server terminates TLS on :8443 (https_port set in the
+# Caddyfile global block), serves the declared-public allowlist, and forwards
+# WKD to gcp-proxy over wg-public (private_forward_upstream 10.1.0.2:443).
 #
 # Network: host (not bridge). Needs to bind :8443 directly on the VM and
 # reach gcp-proxy over wg-public (10.1.0.x) + internal upstreams over wg0

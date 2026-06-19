@@ -24,7 +24,7 @@
       "order": "respond before handle",
       "auto_https": "disable_redirects",
       "https_port": 8443,
-      "_doc_wg_bind_ip": "oci-analytics wg0 IP (10.0.0.4). The public edge listens on :8443 (TLS-terminated, fronted by caddy-l4-public on 0.0.0.0:443) and forwards non-allowlisted traffic to gcp-proxy over wg-public (private_forward_upstream = 10.1.0.2:443).",
+      "_doc_wg_bind_ip": "oci-analytics wg0 IP (10.0.0.4). caddy-public OWNS 0.0.0.0:443 via its layer4 SNI mux (mail→maddy L4, pure-public→local :8443 L7, rest→gcp-proxy passthrough) and an internal :8443 L7 server. Non-allowlisted traffic reaches gcp-proxy over wg-public (private_forward_upstream = 10.1.0.2:443).",
       "wg_bind_ip": "10.0.0.4"
     },
     "on_demand_tls": {
