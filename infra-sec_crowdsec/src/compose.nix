@@ -2,12 +2,15 @@
 # engine.nix serialises this attrset via lib.generators.toYAML and deep-merges
 # _shared/compose-defaults.json (init:true, restart:no, pids cap, logging…).
 #
-# DORMANT by construction:
-#   • acquis.yaml is empty            → the engine reads NO logs, detects nothing
+# DORMANT by construction (LAPI-only):
+#   • DISABLE_AGENT=true              → the log processor never runs; nothing is
+#                                       acquired, parsed, or detected. CrowdSec
+#                                       FATALs on an empty acquisition, so the
+#                                       agent is disabled rather than fed no data.
 #   • DISABLE_ONLINE_API=true         → no CAPI enrolment / signal sharing / blocklist
 #   • no bouncers declared anywhere   → nothing is ever remediated
-# To activate later: populate acquis.yaml (e.g. Caddy logs), wire a bouncer,
-# and (optionally) enrol to the console. Nothing here needs to change structurally.
+# The Local API stays up to front crowdsec.diegonmarcos.com. To activate later:
+# set DISABLE_AGENT=false, populate acquis.yaml (e.g. Caddy logs), wire a bouncer.
 { lib, buildJson, container }:
 
 let
@@ -28,8 +31,13 @@ in
     network_mode = "host";
 
     environment = {
-      # Dormant: never reach the central API. Belt-and-suspenders with the
-      # online_api stanza CrowdSec also reads from config.yaml.
+      # Dormant = LAPI-only. CrowdSec's agent (log processor) FATALs on boot with
+      # "no datasource enabled" when acquisition is empty, so we disable the agent
+      # entirely: the Local API stays up (fronts crowdsec.diegonmarcos.com) but
+      # nothing is acquired, parsed, or detected. To activate later: set
+      # DISABLE_AGENT=false, populate acquis.yaml, and wire a bouncer.
+      DISABLE_AGENT      = "true";
+      # Never reach the central API (no CAPI enrolment / signal sharing / blocklist).
       DISABLE_ONLINE_API = "true";
       TZ = buildJson.timezone;
     };
