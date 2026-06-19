@@ -19,10 +19,11 @@ RUN ARCH=$(uname -m) && \
     curl -sfL "https://github.com/vi/websocat/releases/download/v1.14.0/websocat.${WS_ARCH}" -o /usr/local/bin/websocat && \
     chmod +x /usr/local/bin/websocat
 
-# Bake config files into image (no bind mounts needed)
-COPY dags /var/lib/dagu/dags
-COPY base.yaml /var/lib/dagu/base.yaml
-COPY fetch-token.sh /var/lib/dagu/fetch-token.sh
+# Bake ONLY the static files. dags/, base.yaml and fetch-token.sh arrive via
+# compose bind-mounts (see compose.nix volumes), so COPYing them here is both
+# redundant AND would break the Type-A build context (base.yaml/fetch-token.sh
+# are rendered into dist/configs/, outside the docker context). triggers.json +
+# ntfy-bridge.sh are static src files, supplied via nativeBuild.extraFiles.
 COPY triggers.json /etc/dagu/triggers.json
 COPY ntfy-bridge.sh /usr/local/bin/ntfy-bridge.sh
 RUN chmod +x /usr/local/bin/ntfy-bridge.sh

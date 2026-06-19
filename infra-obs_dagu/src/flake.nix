@@ -33,6 +33,17 @@
           ./triggers.json
           ./dags
         ];
+        # Type A: build the REAL Dockerfile (FROM ghcr.io/dagucloud/dagu:2.5.0,
+        # multi-arch) so the shipped image matches the deploy host's arch. Without
+        # this the engine emits a Type-B stub `FROM ghcr.io/diegonmarcos/dagu:latest`
+        # — it re-wraps dagu's own previous image, freezing the arch at amd64 and
+        # crashing on aarch64 oci-apps ("exec format error"). extraFiles are the
+        # only files the Dockerfile bakes (the rest — dags/base.yaml/fetch-token.sh
+        # — arrive via compose bind-mounts, so they're NOT COPYed).
+        nativeBuild = {
+          dockerfile = ./code/Dockerfile;
+          extraFiles = [ ./code/ntfy-bridge.sh ./triggers.json ];
+        };
         title = "Dagu - Lightweight DAG-based workflow scheduler";
       };
     });
