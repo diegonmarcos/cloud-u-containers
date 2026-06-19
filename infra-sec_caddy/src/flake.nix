@@ -26,6 +26,13 @@
         container = caddyRoutes;
         srcDir = ./.;
         composeSpec = import ./compose.nix { inherit buildJson; container = caddyRoutes; };
+        # caddy builds its OWN caddy+layer4 image (xcaddy recipe in src/code/Dockerfile)
+        # rather than sharing caddy-l4-image. Type-A nativeBuild.dockerfile → engine
+        # emits it verbatim as dist/code/<arch>/Dockerfile; step_docker builds + pushes
+        # ghcr.io/diegonmarcos/caddy. NOTE: containers.app.image stays PINNED to the
+        # known-good caddy-l4 digest until this own-image is built + verified via GHA —
+        # then flip the image ref. A build failure must never strand the live hub.
+        nativeBuild = { dockerfile = ./code/Dockerfile; };
         title = "Caddy";
       };
       svcPath = "a_solutions/bb-sec_caddy";

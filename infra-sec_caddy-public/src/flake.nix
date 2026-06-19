@@ -26,6 +26,12 @@
         container = caddyPublic;
         srcDir = ./.;
         composeSpec = import ./compose.nix { inherit buildJson; container = caddyPublic; };
+        # caddy-public builds its OWN caddy+layer4 image (xcaddy recipe in
+        # src/code/Dockerfile) rather than sharing caddy-l4-image. Type-A
+        # nativeBuild.dockerfile → engine emits it verbatim as
+        # dist/code/<arch>/Dockerfile; step_docker builds + pushes it. The image
+        # MUST contain the layer4 module — caddy-public's SNI mux depends on it.
+        nativeBuild = { dockerfile = ./code/Dockerfile; };
         title = "Caddy Public";
       };
       svcPath = "a_solutions/infra-sec_caddy-public";
