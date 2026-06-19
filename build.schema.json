@@ -160,8 +160,85 @@
         "dockerfile": {
           "type": "string",
           "description": "Dockerfile path relative to src/"
+        },
+        "arch": {
+          "type": "string",
+          "enum": ["arm64", "amd64"],
+          "description": "Target image architecture. Selects the build runner (arm64 → on-VM cloud-builder-x, no QEMU)."
+        },
+        "platform": {
+          "type": "string",
+          "description": "OCI platform string (e.g. 'linux/arm64'). Optional; 'arch' is authoritative for runner selection."
+        },
+        "build_args": {
+          "type": "object",
+          "description": "Docker --build-arg key/value pairs passed to the image build.",
+          "additionalProperties": { "type": "string" }
+        },
+        "native_build": {
+          "type": "object",
+          "description": "Build a service-owned image (Type A). Set this to own the Dockerfile/build rather than wrapping an upstream image. Consumed by cloud-ship-container-step-build-docker.sh.",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["binary", "app", "image-wrapper"],
+              "description": "binary (default): COPY a prebuilt binary. app: copy app_dir + run cmd. image-wrapper: single-FROM, install at RUN time then switch user."
+            },
+            "dockerfile": {
+              "type": "string",
+              "description": "Path to a service-vendored multi-stage Dockerfile (passed by flake.nix as nativeBuild.dockerfile). When set, the engine uses this verbatim instead of generating one."
+            },
+            "extraFiles": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Sibling build-context dirs/files copied (cp -rL) next to the vendored Dockerfile."
+            },
+            "builder_image": {
+              "type": "string",
+              "description": "Builder base image for in-container multi-stage build (e.g. 'rust:1-bookworm'). Triggers a generated 2-stage Dockerfile."
+            },
+            "base_image": {
+              "type": "string",
+              "description": "Runtime base image (e.g. 'debian:bookworm-slim')."
+            },
+            "cmd": {
+              "type": "string",
+              "description": "Build/compile command run in the builder (or RUN-time install command for image-wrapper)."
+            },
+            "binary": {
+              "type": "string",
+              "description": "Path to the built binary to COPY into the runtime image."
+            },
+            "entrypoint": {
+              "type": "string",
+              "description": "Container CMD/entrypoint (e.g. 'node server.mjs')."
+            },
+            "app_dir": {
+              "type": "string",
+              "description": "Source subdir under src/ that holds the app (e.g. 'code')."
+            },
+            "apt": {
+              "type": "string",
+              "description": "Space-separated apt packages installed in the runtime stage."
+            },
+            "user": {
+              "type": "string",
+              "description": "Non-root user the image switches to (image-wrapper type)."
+            },
+            "env": {
+              "type": "object",
+              "description": "Build-time/baked ENV key/value pairs.",
+              "additionalProperties": { "type": "string" }
+            }
+          }
         }
       }
+    },
+    "runtime": {
+      "type": "object",
+      "description": "Service-specific runtime configuration consumed by the service's own flake.nix/compose.nix (free-form per service; e.g. octocode LLM backend, fallback chains). Not interpreted by the shared engine.",
+      "additionalProperties": true
     },
     "proxy": {
       "type": "object",
