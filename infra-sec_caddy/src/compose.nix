@@ -11,6 +11,11 @@
       # directly so a single source of truth governs which binary image runs.
       image = buildJson.containers.app.image;
       container_name = buildJson.containers.app.container_name;
+      # REQUIRED: the caddy-l4 image's default CMD is ["/bin/sh"] (it ships a bare
+      # shell, NOT `caddy run`). Without an explicit command the container runs sh,
+      # exits instantly, and :443 goes dark with empty logs — the gcp-proxy outage
+      # of 2026-06-19. Every caddy-l4 consumer MUST declare this command.
+      command = [ "caddy" "run" "--config" "/etc/caddy/Caddyfile" "--adapter" "caddyfile" ];
       network_mode = "host";
       env_file = [ ".secrets" ];
       cap_add = [ "NET_BIND_SERVICE" ];
