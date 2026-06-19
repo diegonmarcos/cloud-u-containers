@@ -58,7 +58,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 # Python runtime: the installed site-packages (headroom + _core.so + deps) and
 # the `headroom` console script, copied from the builder.
-COPY --from=builder /usr/local/lib/python${PYTHON_VERSION}/site-packages /usr/local/lib/python${PYTHON_VERSION}/site-packages
+# NOTE: CPython's lib dir is major.minor (python3.13) regardless of the patch
+# release — and the cloud-builder injects PYTHON_VERSION as the full patch
+# (e.g. 3.13.14), so ${PYTHON_VERSION} must NOT be used in this path. Pin
+# major.minor to match the `python:3.13-slim` base tag above.
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 
 # App code.
