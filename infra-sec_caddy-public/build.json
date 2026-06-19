@@ -136,8 +136,14 @@
     "app": {
       "container_name": "caddy-public",
       "image": "ghcr.io/diegonmarcos/caddy-l4:latest",
-      "port": 8443,
+      "port": 443,
       "extra_ports": [
+        {
+          "port": 8443,
+          "protocol": "https",
+          "monitor": false,
+          "_comment": "Internal L7 server — the layer4 :443 mux PROXY-protocols pure-public SNIs here."
+        },
         {
           "port": 2019,
           "protocol": "http",
