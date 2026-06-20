@@ -32,7 +32,11 @@ in
       # carve-out, no legacy /config/.secrets.d mount needed.
       ports = [ "${svc.authelia.ip}:${toString buildJson.ports.app}:9091" ];
       networks = [ "auth-net" ];
-      depends_on.redis = { condition = "service_started"; };
+      # service_healthy (not service_started): authelia FATALs with no retry if
+      # it connects while redis is still "LOADING the dataset" — that race took
+      # down all auth + mail (2026-06-20). The redis healthcheck below only goes
+      # healthy once PING returns PONG (redis withholds PONG during LOADING).
+      depends_on.redis = { condition = "service_healthy"; };
       cap_add = [ "DAC_OVERRIDE" ];
       deploy.resources = {
         limits       = { memory = "128M"; cpus = "1.0"; };
@@ -46,6 +50,17 @@ in
       command = "sh -c 'redis-server --port ${toString buildJson.ports.redis} --requirepass $$AUTHELIA_REDIS_PASSWORD --appendonly yes --appendfsync everysec --save 900 1 --save 300 10'";
       volumes = [ "authelia_redis_data:/data" ];
       networks = [ "auth-net" ];
+      # Healthy ONLY when PING returns PONG — redis returns -LOADING (no PONG)
+      # while replaying the AOF, so this gates authelia until the dataset is
+      # fully loaded. grep -q PONG is required because redis-cli exits 0 even on
+      # a -LOADING error reply. start_period covers the AOF replay window.
+      healthcheck = {
+        test = [ "CMD-SHELL" "redis-cli -p ${toString buildJson.ports.redis} -a \"$$AUTHELIA_REDIS_PASSWORD\" ping 2>/dev/null | grep -q PONG" ];
+        interval = "5s";
+        timeout = "3s";
+        retries = 12;
+        start_period = "10s";
+      };
       deploy.resources = {
         limits       = { memory = "48M"; cpus = "1.0"; };
         reservations = { memory = "16M"; };
