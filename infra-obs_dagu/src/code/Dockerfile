@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install websocat (WebSocket CLI — ntfy bridge)
 RUN ARCH=$(uname -m) && \
     case "$ARCH" in x86_64) WS_ARCH="x86_64-unknown-linux-musl";; aarch64) WS_ARCH="aarch64-unknown-linux-musl";; esac && \
-    curl -sfL "https://github.com/vi/websocat/releases/download/v1.14.0/websocat.${WS_ARCH}" -o /usr/local/bin/websocat && \
+    curl -sfL "https://github.com/vi/websocat/releases/download/v1.14.0/websocat_max.${WS_ARCH}" -o /usr/local/bin/websocat && \
     chmod +x /usr/local/bin/websocat
 
 # Bake ONLY the static files. dags/, base.yaml and fetch-token.sh arrive via
