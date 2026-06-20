@@ -6,16 +6,16 @@
 
 let
   app = buildJson.containers.app;
-  image = app.image;
+  # Own-code: pull the engine-built+pushed image (real Dockerfile, native arch
+  # per deploy host) — matches every other own-code service (dbgate/kg-store/…).
+  # NO compose-side `build:` — that re-used a stale amd64 dagu:latest and never
+  # rebuilt on the aarch64 host. The engine builds ghcr.io/…/dagu-binaries:latest.
+  image = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {
   services = {
     dagu = {
       image = image;
-      build = {
-        context = "./assets";
-        dockerfile = "Dockerfile";
-      };
       container_name = app.container_name;
       network_mode = "host";
       entrypoint = [ "dagu" "start-all" ];
