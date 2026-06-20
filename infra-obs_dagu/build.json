@@ -44,7 +44,7 @@
   "containers": {
     "app": {
       "container_name": "dagu",
-      "image": "ghcr.io/diegonmarcos/dagu:latest",
+      "image": "ghcr.io/diegonmarcos/dagu-binaries:latest",
       "port": 8070,
       "port_env": "DAGU_PORT",
       "dns": "dagu.app",
