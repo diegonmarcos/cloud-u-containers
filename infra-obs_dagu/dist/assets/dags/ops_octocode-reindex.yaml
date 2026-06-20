@@ -3,7 +3,11 @@ env:
   - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
   - OCI_APPS: ubuntu@10.0.0.6
   - NTFY_URL: http://10.0.0.6:8090
-  - OCTOCODE_IMAGE: octocode-fastembed:aarch64
+  # ARM octocode image (binary + fastembed model). The bare tag octocode-fastembed:aarch64
+  # never existed in any registry — pull always failed. Use the GHCR image the cgc service
+  # is also built from. First run downloads the fastembed model into octocode_db (the empty
+  # volume shadows the baked one); it persists for subsequent runs.
+  - OCTOCODE_IMAGE: ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest
   - GIT_IMAGE: alpine/git:latest
   # local_dir:github_repo pairs — local dir is what octocode indexes, github_repo is the clone source
   - REPO_MAP: cloud:cloud cloud-data:cloud-data front:diegonmarcos.github.io front-data:front-data unix:unix tools:tools
