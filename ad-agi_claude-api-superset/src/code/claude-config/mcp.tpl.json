@@ -1,0 +1,37 @@
+{
+  "cloud-infra": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/c3-infra-mcp/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "cloud-cgc-mcp": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/cloud-cgc-mcp/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "cloud-services": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/c3-services-mcp/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "mattermost": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/mattermost-mcp/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "mail-mcp": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/mail-mcp/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "google-workspace": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/g-workspace/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  },
+  "google-personal": {
+    "type": "http",
+    "url": "https://mcp.diegonmarcos.com/g-personal/mcp",
+    "headers": { "Authorization": "Bearer ${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN}" }
+  }
+}

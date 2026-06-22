@@ -27,6 +27,9 @@
     "remote_path": "/opt/containers/claude-api-superset",
     "compose_flags": "--pull always --force-recreate"
   },
+  "secrets": {
+    "escape_dollars": "false"
+  },
   "proxy": {
     "app_hub": false
   },
@@ -52,7 +55,7 @@
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,
-      "env_file": false,
+      "env_file": true,
       "depends_on": [],
       "resources": null,
       "read_only": false,

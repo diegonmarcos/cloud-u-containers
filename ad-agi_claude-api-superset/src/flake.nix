@@ -39,6 +39,7 @@
             ./code/server.mjs
             ./code/package.json
             ./code/start.sh
+            ./code/claude-config
           ];
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";

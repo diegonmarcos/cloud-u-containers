@@ -10,6 +10,22 @@ set -euo pipefail
 
 HEADROOM_PORT="${HEADROOM_PORT:-8787}"
 
+# Claude parity config: re-sync hooks/skills/CLAUDE.md/ponytail from the image and
+# render the HTTP MCP servers on every boot. The claude_home volume mounts over the
+# whole home and seeds from the image only once, so baked ~/.claude files would never
+# update — syncing here makes redeploys propagate. Never touches ~/.claude.json's login.
+CLAUDE_DIR="${HOME}/.claude"
+mkdir -p "${CLAUDE_DIR}/skills"
+cp -rf /app/claude-config/CLAUDE.md /app/claude-config/settings.json \
+       /app/claude-config/hooks /app/claude-config/ponytail "${CLAUDE_DIR}/"
+cp -rf /app/claude-config/skills/. "${CLAUDE_DIR}/skills/"
+chmod +x "${CLAUDE_DIR}"/hooks/*.sh 2>/dev/null || true
+if [ -n "${AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN:-}" ]; then
+  node /app/claude-config/render-mcp.mjs || echo "[start] WARN: MCP render failed; continuing" >&2
+else
+  echo "[start] AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN unset; skipping MCP servers" >&2
+fi
+
 term() { echo "[start] shutting down"; kill "${PIDS[@]}" 2>/dev/null || true; }
 trap term TERM INT
 
