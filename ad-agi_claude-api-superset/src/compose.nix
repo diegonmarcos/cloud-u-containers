@@ -65,6 +65,10 @@ in
         # Durable savings ledger (Headroom convention) lives in the volume.
         HEADROOM_WORKSPACE_DIR = "${home}/.headroom";
       };
+      # Secrets: sops src/secrets.yaml -> dist/.secrets (rsynced beside this
+      # compose.yml at deploy). Delivers AUTHELIA_OIDC_TOKEN_CLAUDE_ADMIN, the
+      # bearer for the HTTP MCP servers rendered by start.sh into ~/.claude.json.
+      env_file = [ "./.secrets" ];
       # Persist home: ~/.claude/.credentials.json (login), ~/.claude.json, and
       # ~/.headroom/proxy_savings.json (lifetime savings). Volume initialises from
       # the image dir (appuser-owned via the Dockerfile) so appuser can write.

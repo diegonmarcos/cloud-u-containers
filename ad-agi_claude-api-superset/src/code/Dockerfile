@@ -48,8 +48,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HOME=/home/appuser
 
-# Node (for server.mjs + the claude CLI) + curl (start.sh readiness probe).
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+# Node (for server.mjs + the claude CLI) + curl (start.sh readiness probe) +
+# jq (the c-* PreToolUse guard hooks parse the hook JSON with jq).
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install -g @anthropic-ai/claude-code \
@@ -71,6 +72,10 @@ COPY server.mjs package.json /app/
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
+# Claude parity config (hooks + ponytail + skills + CLAUDE.md + MCP template).
+# Baked under /app (NOT ~/.claude): the claude_home volume mounts over the whole
+# home and only seeds once, so start.sh re-syncs from here on every boot.
+COPY claude-config /app/claude-config
 
 # Non-root appuser; HOME holds the persisted Claude login + ~/.headroom ledger
 # (mounted as the claude_home named volume at runtime).

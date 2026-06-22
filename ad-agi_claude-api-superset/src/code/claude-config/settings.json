@@ -1,0 +1,60 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/a-context-inject-memory.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "node \"$HOME\"/.claude/ponytail/hooks/ponytail-activate.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/b-context-inject-prompt.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "node \"$HOME\"/.claude/ponytail/hooks/ponytail-mode-tracker.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/c-context-inject-pretool.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/c-pretool-guard-blockers.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/hooks/c-pretool-guard-warning.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
