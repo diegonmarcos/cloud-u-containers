@@ -43,10 +43,16 @@ in
       };
       volumes = [ "etherpad_data:/opt/etherpad-lite/var" ];
       healthcheck = {
-        test     = [ "CMD" "curl" "-f" "http://localhost:${appPort}/" ];
+        # The etherpad image ships node (NODE_VERSION) but NOT curl/wget — a
+        # curl healthcheck dies "curl: not found" and the container is forever
+        # (unhealthy) even while serving 200. Use a node one-liner against the
+        # app port (verified: returns 200). 127.0.0.1 (not localhost) avoids the
+        # ::1/IPv4 split since etherpad binds 0.0.0.0.
+        test     = [ "CMD" "node" "-e" "require('http').get('http://127.0.0.1:${appPort}/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))" ];
         interval = "30s";
         timeout  = "10s";
         retries  = 3;
+        start_period = "40s";
       };
       depends_on.postgres = { condition = "service_healthy"; };
       deploy.resources = {
