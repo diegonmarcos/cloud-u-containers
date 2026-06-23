@@ -1,5 +1,7 @@
 {
   "name": "cf-worker-http-to-wg-public-bridge",
+  "enabled": false,
+  "_retired": "2026-06-23: superseded by c3-public-api (/pub) + http-to-smtp-proxy-api. Disabled so the derive drops it from probe targets; kept for history.",
   "description": "HTTP-to-SMTP bridge on oci-analytics (the public-ingress VM in the wg-public mesh). CF Worker POSTs JSON email payloads to this container; container speaks SMTP over wg-public to maddy:25 + stalwart:2025 on oci-mail. Public path: api.diegonmarcos.com/cf-worker-bridge/. Mirrors aa-sui_tools-http-to-smtp-proxy-api shape but binds on the wg-public hub IP (10.1.0.1) and forwards over wg-public.",
   "dns": "cf-worker-http-to-wg-public-bridge.app",
   "category": "app",
