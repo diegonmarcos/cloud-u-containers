@@ -1,6 +1,6 @@
 import Fastify from "fastify";
-import * as gdelt from "./gdelt.js";
-import { bindHost } from "./binds.js";
+import * as gdelt from "./gdelt.ts";
+import { bindHost } from "./binds.ts";
 const PORT = parseInt(process.env.PORT ?? "3019", 10);
 const BASE_PATH = process.env.BASE_PATH ?? "/news";
 const startTime = Date.now();
