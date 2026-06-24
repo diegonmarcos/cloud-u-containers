@@ -96,6 +96,11 @@ in
       environment = {
         NODE_ENV            = runtime.node_env;
         PORT                = apiPort;
+        # Bind all interfaces (incl. the wg0 IP 10.0.0.6) — the api defaults to
+        # 127.0.0.1, so a full WG peer can't reach it (report probes 10.0.0.6:3000;
+        # 2026-06-23). HOST is the de-facto Node listen-host env; harmless if the
+        # app ignores it. (Public side is firewall-closed on oci-apps.)
+        HOST                = "0.0.0.0";
         REDIS_URL           = "redis://localhost:${redisPort}";
         S3_ENDPOINT         = "http://localhost:${minioPort}";
         S3_BUCKET           = runtime.s3_bucket;
