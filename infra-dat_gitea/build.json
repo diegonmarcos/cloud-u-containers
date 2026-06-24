@@ -14,9 +14,7 @@
   },
   "proxy": {
     "primary": {
-      "type": "path",
-      "parent_domain": "app.diegonmarcos.com",
-      "base_path": "/gitea",
+      "domain": "git.diegonmarcos.com",
       "auth": "two_factor"
     }
   },
