@@ -1,4 +1,4 @@
-# compose.nix — docker-compose for claude-api-superset.
+# compose.nix — docker-compose for claude-superset-api.
 # engine.nix serialises this via lib.generators.toYAML, merging compose-defaults.json.
 #
 # WG-ONLY sidecar (inherited from kg-bridge): host network, listeners bound to the
@@ -8,7 +8,7 @@
 #
 # AUTH: NO secret in the (public) repo. The Claude login lives ONLY in the
 # `claude_home` named volume — log in once via
-# `docker exec -it claude-api-superset claude`. Both the front's `claude -p`
+# `docker exec -it claude-superset-api claude`. Both the front's `claude -p`
 # and interactive use share that persisted ~/.claude. No metered API key.
 #
 # Tunables are data-driven from build.json `runtime` (rule 6 — no hardcoded data
@@ -21,13 +21,13 @@ let
   hr   = rt.headroom or {};
   svc  = container.services or {};
   # WG IP from cloud-data (same source as kg-bridge/cgc). Falls back to oci-apps WG IP.
-  wgIp = svc."claude-api-superset".ip or svc."kg-bridge".ip or "10.0.0.6";
+  wgIp = svc."claude-superset-api".ip or svc."kg-bridge".ip or "10.0.0.6";
   home = "/home/appuser";
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {
   services = {
-    claude-api-superset = {
+    claude-superset-api = {
       image = binariesImage;
       container_name = app.container_name;
       network_mode = "host";
@@ -87,6 +87,6 @@ in
   };
   # Named volume holding the persisted Claude login + savings — never in git, never public.
   volumes = {
-    claude_home = { name = "claude-api-superset-home"; };
+    claude_home = { name = "claude-superset-api-home"; };
   };
 }

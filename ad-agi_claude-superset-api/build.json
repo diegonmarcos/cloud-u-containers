@@ -1,7 +1,7 @@
 {
-  "name": "claude-api-superset",
-  "description": "Claude API superset on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription `claude` CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.",
-  "dns": "claude-api-superset.app",
+  "name": "claude-superset-api",
+  "description": "Claude superset API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by the subscription `claude` CLI (no metered key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Successor to kg-bridge; usable as a local/remote fallback. Internal WG-only sidecar, never public.",
+  "dns": "claude-superset-api.app",
   "ports": {
     "app": 3117,
     "ollama": 11436,
@@ -10,7 +10,7 @@
   },
   "category": "agi",
   "docker": {
-    "image": "claude-api-superset",
+    "image": "claude-superset-api",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
     "platform": "linux/arm64",
@@ -24,7 +24,7 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/claude-api-superset",
+    "remote_path": "/opt/containers/claude-superset-api",
     "compose_flags": "--pull always --force-recreate"
   },
   "secrets": {
@@ -47,11 +47,11 @@
   },
   "containers": {
     "app": {
-      "container_name": "claude-api-superset",
-      "image": "ghcr.io/diegonmarcos/claude-api-superset:latest",
+      "container_name": "claude-superset-api",
+      "image": "ghcr.io/diegonmarcos/claude-superset-api:latest",
       "port": 3117,
       "port_env": "BRIDGE_PORT",
-      "dns": "claude-api-superset.app",
+      "dns": "claude-superset-api.app",
       "public": false,
       "healthcheck": "/health",
       "monitoring": null,

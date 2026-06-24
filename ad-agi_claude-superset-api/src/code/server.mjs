@@ -206,7 +206,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/health" || req.url === "/"))
     return send(200, { status: "ok", active, max: MAX_CONC, headroom: HR_ENABLED, stats });
   if (req.method === "GET" && req.url.startsWith("/v1/models"))
-    return send(200, { object: "list", data: [{ id: DEFAULT_MODEL, object: "model", owned_by: "claude-api-superset" }] });
+    return send(200, { object: "list", data: [{ id: DEFAULT_MODEL, object: "model", owned_by: "claude-superset-api" }] });
   if (req.method === "GET" && req.url.startsWith("/api/version")) return send(200, { version: "0.5.7" });
   if (req.method === "GET" && req.url.startsWith("/api/tags"))
     return send(200, { models: OLLAMA_MODELS.map((n) => ({
