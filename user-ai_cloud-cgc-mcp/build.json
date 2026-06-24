@@ -56,6 +56,19 @@
       "repos_path": "/repos",
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
+      "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
+      "version": "0.12.2",
+      "octocode_images": {
+        "x86": "ghcr.io/diegonmarcos/octocode-fastembed-huggingface-graphrag-cpu-x86-linux-static:0.12.2",
+        "arm": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest"
+      },
+      "update": {
+        "_comment": "update = INCREMENTAL (octocode index, git-aware, changed files only) on top of the GHCR DB. NOT a reindex (clear+rebuild). First run with no upstream image bootstraps a full build once to seed GHCR.",
+        "incremental": true,
+        "use_llm": true,
+        "llm_model": "openrouter:openai/gpt-4o-mini",
+        "schedule": "0 4 * * *"
+      },
       "llm": {
         "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 \u2014 the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
         "openai_api_url": "http://10.0.0.6:3117/v1/chat/completions",
@@ -72,6 +85,15 @@
         "cloud-data",
         "front-data"
       ],
+      "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
+      "repo_map": {
+        "cloud": "cloud",
+        "unix": "unix",
+        "front": "diegonmarcos.github.io",
+        "tools": "tools",
+        "cloud-data": "cloud-data",
+        "front-data": "front-data"
+      },
       "home": "/home/appuser",
       "kg_store": {
         "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
