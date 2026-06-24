@@ -1,13 +1,13 @@
 {
-  "name": "kg-mcp",
+  "name": "cloud-cgc-mcp",
   "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
-  "dns": "kg-mcp.app",
+  "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
   },
   "category": "obs",
   "docker": {
-    "image": "kg-mcp",
+    "image": "cloud-cgc-mcp",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
     "platform": "linux/arm64",
@@ -24,12 +24,12 @@
   },
   "deploy": {
     "host": "oci-apps",
-    "remote_path": "/opt/containers/kg-mcp",
+    "remote_path": "/opt/containers/cloud-cgc-mcp",
     "compose_flags": "--build"
   },
   "db_publish": {
     "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_workflows/src/scripts/cloud-kg-db-snapshot.sh.",
-    "image": "ghcr.io/diegonmarcos/kg-mcp-octocode-db",
+    "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp-octocode-db",
     "tag": "latest",
     "volume": "octocode_db",
     "host": "oci-apps"
@@ -85,11 +85,11 @@
   },
   "containers": {
     "app": {
-      "container_name": "kg-mcp",
-      "image": "ghcr.io/diegonmarcos/kg-mcp:latest",
+      "container_name": "cloud-cgc-mcp",
+      "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp:latest",
       "port": 3105,
       "port_env": "MCP_HTTP_PORT",
-      "dns": "kg-mcp.app",
+      "dns": "cloud-cgc-mcp.app",
       "public": true,
       "proxy": {
         "streaming": true,

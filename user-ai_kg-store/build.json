@@ -92,7 +92,7 @@
         "key_source": "name"
       },
       {
-        "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_kg-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
+        "_comment": "octocode code-graph file nodes (full file-level mirror). One table; node_type property = file|source_file|test_file|config_file. Populated by a_solutions/user-ai_cloud-cgc-mcp/src/code/octocode-export.py reading octocode's Lance graphrag_nodes per repo. key = <repo>:<path>.",
         "table": "file",
         "key_source": "path"
       }

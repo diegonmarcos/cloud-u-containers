@@ -48,8 +48,8 @@
     "_note": "URLs resolved at flake build time from cloud-data services{}. Container runs in bridge mode, so 127.0.0.1 will NOT reach host-bound services — we MUST use the WG IP (10.0.0.6) of whichever VM hosts the child MCP.",
     "infra": [
       {
-        "name": "kg-mcp",
-        "service": "kg-mcp",
+        "name": "cloud-cgc-mcp",
+        "service": "cloud-cgc-mcp",
         "path": "/mcp"
       }
     ],
