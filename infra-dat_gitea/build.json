@@ -15,6 +15,7 @@
   "proxy": {
     "primary": {
       "domain": "git.diegonmarcos.com",
+      "wg_only": false,
       "auth": "two_factor"
     }
   },
