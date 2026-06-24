@@ -1,5 +1,5 @@
 {
-  description = "claude-api-superset — OpenAI/Ollama/Anthropic mimic over the subscription Claude CLI + vendored Headroom compression (successor to kg-bridge)";
+  description = "claude-superset-api — OpenAI/Ollama/Anthropic mimic over the subscription Claude CLI + vendored Headroom compression (successor to kg-bridge)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
@@ -8,7 +8,7 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    container = builtins.fromJSON (builtins.readFile ./build-claude-api-superset.json);
+    container = builtins.fromJSON (builtins.readFile ./build-claude-superset-api.json);
 
     engine = import ../../_shared/engine.nix;
     nb = buildJson.docker.native_build;
@@ -46,7 +46,7 @@
           baseImage = nb.base_image;
           apt       = nb.apt or "";
         };
-        title = "claude-api-superset";
+        title = "claude-superset-api";
       };
     });
   };
