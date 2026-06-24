@@ -20,6 +20,14 @@
       image = buildJson.containers.app.image;
       container_name = buildJson.containers.app.container_name;
       network_mode = "host";
+      # Public-first resolver. Hickory (10.0.0.1) claims internal authority for
+      # diegonmarcos.com, so certmagic's DNS-01 propagation SOA-discovery finds
+      # hickory authoritative and queries IT for the _acme-challenge TXT — which
+      # only lives at Cloudflare — so every edge cert times out (apex / vpn /
+      # suite / nexus stuck at attempt 21, 2026-06-23). caddy-public needs NO
+      # internal DNS (raw-WG-IP upstreams + github.io gh-pages), so resolve via
+      # Cloudflare's public view. Pairs with `resolvers 1.1.1.1` in the Caddyfile.
+      dns = [ "1.1.1.1" "1.0.0.1" ];
       env_file = [ ".secrets" ];          # CF_API_TOKEN for ACME DNS-01
       cap_add = [ "NET_BIND_SERVICE" ];
       read_only = false;
