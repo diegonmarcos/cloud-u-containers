@@ -11,6 +11,11 @@
   "ollama": {
     "model": "deepseek-r1:14b-qwen-distill-q8_0"
   },
+  "sidebar_categories": {
+    "ntfy": "NTFY",
+    "agents": "AGENTS",
+    "default_channels": "Projects"
+  },
   "ports": {
     "app": 8065,
     "db": 5435
