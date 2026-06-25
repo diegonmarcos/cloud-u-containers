@@ -282,6 +282,10 @@ in
       environment = {
         NTFY_URL                        = ntfyUrl;
         TOPICS                          = topicsCsv;
+        # Sidebar category display names (data-driven, build.json#sidebar_categories).
+        # ntfy-bridge.py reconciles existing categories to these on bootstrap:
+        #   ntfy → NTFY, C3 → AGENTS, default "Channels" → "Projects".
+        MM_SIDEBAR_CATEGORIES           = builtins.toJSON buildJson.sidebar_categories;
         # Mattermost now listens on ${selfWgIp}:${appPort} (WG-bind ONLY), so
         # the bots service must reach it via the WG IP too — localhost no
         # longer carries an mm listener.

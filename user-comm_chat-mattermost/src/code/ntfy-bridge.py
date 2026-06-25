@@ -26,6 +26,14 @@ MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
 MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
 C3_API_URL = os.environ.get("C3_API_URL", "http://c3-infra-mcp-api:8080")
 
+# Sidebar category display names — data-driven from build.json#sidebar_categories,
+# injected as MM_SIDEBAR_CATEGORIES (JSON) by compose.nix. Defaults match the
+# established layout so the bridge still works if the env var is absent.
+_CATS = json.loads(os.environ.get("MM_SIDEBAR_CATEGORIES") or "{}")
+CAT_NTFY     = _CATS.get("ntfy", "NTFY")
+CAT_AGENTS   = _CATS.get("agents", "AGENTS")
+CAT_PROJECTS = _CATS.get("default_channels", "Projects")
+
 
 def fetch_oidc_token():
     """Fetch OIDC token via client_credentials grant."""
@@ -205,7 +213,7 @@ def sync_sidebar_category(headers, user_id, team_id, ntfy_channel_ids):
     ntfy_set = set(ntfy_channel_ids)
 
     for cat in categories:
-        if cat.get("display_name") == "ntfy":
+        if cat.get("display_name") == CAT_NTFY:
             ntfy_cat = cat
         if cat.get("type") == "channels":
             channels_cat = cat
@@ -232,7 +240,7 @@ def sync_sidebar_category(headers, user_id, team_id, ntfy_channel_ids):
                 "id": ntfy_cat["id"],
                 "user_id": user_id,
                 "team_id": team_id,
-                "display_name": "ntfy",
+                "display_name": CAT_NTFY,
                 "type": "custom",
                 "sorting": "alpha",
                 "channel_ids": sorted_ids,
@@ -911,7 +919,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
     c3_cat = None
     dm_cat = None
     for cat in categories:
-        if cat.get("display_name") == "C3":
+        if cat.get("display_name") == CAT_AGENTS:
             c3_cat = cat
         if cat.get("type") == "direct_messages":
             dm_cat = cat
@@ -936,7 +944,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
                 "id": c3_cat["id"],
                 "user_id": user_id,
                 "team_id": team_id,
-                "display_name": "C3",
+                "display_name": CAT_AGENTS,
                 "type": "custom",
                 "channel_ids": ids,
             })
@@ -947,7 +955,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
         r = mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
             "user_id": user_id,
             "team_id": team_id,
-            "display_name": "C3",
+            "display_name": CAT_AGENTS,
             "type": "custom",
             "channel_ids": [dm_channel_id],
         })
@@ -1357,7 +1365,7 @@ def setup_ollama_sidebar(admin_headers, user_id, team_id, ai_user_id):
     c3_cat = None
     dm_cat = None
     for cat in categories:
-        if cat.get("display_name") == "C3":
+        if cat.get("display_name") == CAT_AGENTS:
             c3_cat = cat
         if cat.get("type") == "direct_messages":
             dm_cat = cat
@@ -1375,13 +1383,13 @@ def setup_ollama_sidebar(admin_headers, user_id, team_id, ai_user_id):
             ids = c3_cat["channel_ids"] + [dm_channel_id]
             mm_api("PUT", f"/users/{user_id}/teams/{team_id}/channels/categories/{c3_cat['id']}", admin_headers, json={
                 "id": c3_cat["id"], "user_id": user_id, "team_id": team_id,
-                "display_name": "C3", "type": "custom", "channel_ids": ids,
+                "display_name": CAT_AGENTS, "type": "custom", "channel_ids": ids,
             })
             log.info("Added %s DM to C3 sidebar category", OLLAMA_AI_USERNAME)
     else:
         mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
             "user_id": user_id, "team_id": team_id,
-            "display_name": "C3", "type": "custom", "channel_ids": [dm_channel_id],
+            "display_name": CAT_AGENTS, "type": "custom", "channel_ids": [dm_channel_id],
         })
         log.info("Created C3 sidebar category with %s DM", OLLAMA_AI_USERNAME)
 
@@ -1449,6 +1457,33 @@ def set_account_icons(admin_headers, account_ids):
             log.warning("Failed to set icon for %s: %s", username, r.text[:100])
 
 
+def reconcile_categories(headers, user_id, team_id):
+    """Migrate existing sidebar category names to the configured set, in place
+    (by id, so channel membership/history is preserved): ntfy→NTFY, C3→AGENTS,
+    and the default 'Channels' category → Projects. Idempotent — a no-op once
+    names already match. Runs before the create-if-missing steps so they look
+    up (and extend) the renamed categories instead of spawning duplicates."""
+    r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", headers)
+    if not r.ok:
+        log.warning("reconcile_categories: cannot list categories: %s", r.text[:100])
+        return
+    renames = {"ntfy": CAT_NTFY, "C3": CAT_AGENTS}
+    for cat in r.json().get("categories", []):
+        cur = cat.get("display_name")
+        target = renames.get(cur)
+        if target is None and cat.get("type") == "channels":
+            target = CAT_PROJECTS
+        if not target or target == cur:
+            continue
+        body = dict(cat)
+        body["display_name"] = target
+        rr = mm_api("PUT", f"/users/{user_id}/teams/{team_id}/channels/categories/{cat['id']}", headers, json=body)
+        if rr.ok:
+            log.info("Reconciled sidebar category %r -> %r", cur, target)
+        else:
+            log.warning("Failed to rename category %r -> %r: %s", cur, target, rr.text[:100])
+
+
 def main():
     wait_for_mattermost()
     admin_token = bootstrap_admin()
@@ -1460,6 +1495,9 @@ def main():
     user_id = r.json()["id"]
 
     team_id = ensure_team(headers)
+    # Rename any pre-existing categories to the configured set before the
+    # create-if-missing steps below look them up (ntfy→NTFY, C3→AGENTS, Channels→Projects).
+    reconcile_categories(headers, user_id, team_id)
     default_ch, ntfy_channel_ids = sync_channels(headers, team_id)
     webhook_url = ensure_webhook(headers, default_ch)
 
