@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { registry } from "../../registry/index.js";
+import { getReachUrl } from "../../registry/reach.js";
 import { rawHttpRequest } from "../../shared/http.js";
 
 export async function registerRegistryRoutes(app: FastifyInstance) {
@@ -100,17 +101,18 @@ export async function registerRegistryRoutes(app: FastifyInstance) {
       },
     },
   }, async (req, reply) => {
-    const svc = registry.get(req.params.service);
-    if (!svc) {
+    // Probe ANY container (not just API/MCP services) via its declared healthcheck
+    // path on the WG mesh. Reach targets are data-driven from build-c3-services-api.json
+    // (.services.<name>.healthcheck, stamped by the derive). null = unknown or no healthcheck.
+    const url = getReachUrl(req.params.service);
+    if (!url) {
       reply.code(404);
-      return { error: `Service '${req.params.service}' not found`, reachable: false };
+      return {
+        error: `Service '${req.params.service}' not found or declares no healthcheck`,
+        reachable: false,
+      };
     }
-    const baseUrl = registry.getBaseUrl(req.params.service);
-    if (!baseUrl) {
-      reply.code(404);
-      return { error: `Service '${req.params.service}' has no baseUrl`, reachable: false };
-    }
-    const result = rawHttpRequest("GET", `${baseUrl}/health`, undefined, 5_000);
+    const result = rawHttpRequest("GET", url, undefined, 5_000);
     return { service: req.params.service, reachable: result.ok, status: result.status };
   });
 
