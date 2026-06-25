@@ -11,6 +11,10 @@
   "ollama": {
     "model": "deepseek-r1:14b-qwen-distill-q8_0"
   },
+  "agents": {
+    "llm_url": "http://localhost:3117",
+    "llm_model": "claude-sonnet-4-6"
+  },
   "sidebar_categories": {
     "ntfy": "NTFY",
     "agents": "AGENTS",
