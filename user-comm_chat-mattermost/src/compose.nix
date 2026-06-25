@@ -49,6 +49,21 @@ let
   ollamaVm    = svc."ollama-hai".vm;
   ntfyUrl    = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
   topicsCsv  = builtins.concatStringsSep "," (container.ntfy_topics or []);
+  # claude-superset-api: OpenAI-compat sidecar on the same host (localhost:3117).
+  # Declared in build.json#agents so the URL/model are data-driven.
+  # agentsLlmBackends is used both as an env-var override attempt on the mattermost
+  # container AND as the source JSON for ntfy-bridge.py's config-API bootstrap.
+  agentsLlmBackends = builtins.toJSON [{
+    id           = "claude-superset";
+    name         = "claude-superset";
+    displayName  = "Claude (superset-api)";
+    type         = "openai";
+    apiURL       = buildJson.agents.llm_url;
+    apiKey       = "superset";
+    defaultModel = buildJson.agents.llm_model;
+    tokenLimit   = 131072;
+    isDefaultLLM = true;
+  }];
 in
 {
   services = {
@@ -217,6 +232,11 @@ in
           { name = "google-personal";  url = "https://mcp.${base_domain}/g-personal/mcp";      headers = { Authorization = "Bearer \${BEARER_TOKEN}"; }; }
         ];
         MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_MCPENABLED = "true";
+        # LLM backends for the Agents plugin: claude-superset-api (OpenAI-compat).
+        # The env-var override path may be a silent no-op for complex JSON keys
+        # (same caveat as MCPSERVERS above). ntfy-bridge.py's ensure_agents_llm_config()
+        # applies the same JSON via GET→PUT /api/v4/config as a reliable fallback.
+        MM_PLUGINSETTINGS_PLUGINS_MATTERMOST_AI_LLMBACKENDS = agentsLlmBackends;
       };
       volumes = [
         "mattermost_config:/mattermost/config"
@@ -301,6 +321,8 @@ in
         AUTHELIA_OIDC_CLIENT_ID         = "mattermost-cc";
         AUTHELIA_OIDC_CLIENT_SECRET     = "\${AUTHELIA_OIDC_MATTERMOST_SECRET}";
         AUTHELIA_TOKEN_URL              = "https://auth.${base_domain}/api/oidc/token";
+        # LLM backends JSON for ntfy-bridge.py's ensure_agents_llm_config() bootstrap.
+        MM_AGENTS_LLM_BACKENDS          = agentsLlmBackends;
       };
       depends_on.mattermost = { condition = "service_started"; };
       deploy.resources = {

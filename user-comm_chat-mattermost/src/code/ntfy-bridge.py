@@ -1457,6 +1457,31 @@ def set_account_icons(admin_headers, account_ids):
             log.warning("Failed to set icon for %s: %s", username, r.text[:100])
 
 
+def ensure_agents_llm_config(headers):
+    """Wire LLM backends into the mattermost-ai Agents plugin via config API.
+    Idempotent — skips PUT if the stored backends already match. Runs before
+    the ntfy bridge loop so every bots-container restart re-verifies the config."""
+    backends_json = os.environ.get("MM_AGENTS_LLM_BACKENDS")
+    if not backends_json:
+        return
+    backends = json.loads(backends_json)
+    r = mm_api("GET", "/config", headers)
+    if not r.ok:
+        log.warning("ensure_agents_llm_config: cannot GET config: %s", r.text[:100])
+        return
+    cfg = r.json()
+    cur = (cfg.get("PluginSettings") or {}).get("Plugins", {}).get("mattermost-ai", {}).get("llmBackends", [])
+    if cur == backends:
+        log.info("Agents plugin LLM backends already up-to-date")
+        return
+    cfg.setdefault("PluginSettings", {}).setdefault("Plugins", {}).setdefault("mattermost-ai", {})["llmBackends"] = backends
+    r = mm_api("PUT", "/config", headers, json=cfg)
+    if r.ok:
+        log.info("Agents plugin LLM backends configured (%d backend(s))", len(backends))
+    else:
+        log.warning("Agents plugin LLM backends config failed: %s", r.text[:200])
+
+
 def reconcile_categories(headers, user_id, team_id):
     """Migrate existing sidebar category names to the configured set, in place
     (by id, so channel membership/history is preserved): ntfy→NTFY, C3→AGENTS,
@@ -1498,6 +1523,8 @@ def main():
     # Rename any pre-existing categories to the configured set before the
     # create-if-missing steps below look them up (ntfy→NTFY, C3→AGENTS, Channels→Projects).
     reconcile_categories(headers, user_id, team_id)
+    # Wire claude-superset-api as the Agents plugin LLM backend (idempotent).
+    ensure_agents_llm_config(headers)
     default_ch, ntfy_channel_ids = sync_channels(headers, team_id)
     webhook_url = ensure_webhook(headers, default_ch)
 
