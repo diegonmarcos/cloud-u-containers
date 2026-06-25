@@ -5,7 +5,7 @@
   "ports": {
     "app": 3000,
     "dashboard": 3001,
-    "db": 5433,
+    "db": 5434,
     "redis": 6381,
     "minio": 9000,
     "minio_console": 9001
@@ -137,7 +137,7 @@
     "db": {
       "container_name": "crawlee_db",
       "image": "postgres:16-alpine",
-      "port": 5433,
+      "port": 5434,
       "port_env": "PGPORT",
       "dns": "crawlee-db.app",
       "public": false,
