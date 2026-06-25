@@ -12,7 +12,13 @@
       "type": "path",
       "parent_domain": "cloud.diegonmarcos.com",
       "base_path": "/spec",
-      "auth": "two_factor"
+      "auth": "two_factor",
+      "extra_paths": [
+        {
+          "base_path": "/probe",
+          "upstream_service": "c3-services-api"
+        }
+      ]
     },
     "app_hub": false
   },

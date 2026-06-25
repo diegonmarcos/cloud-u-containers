@@ -3,3 +3,4 @@ title = "Cloud Documentation Portal"
 
 [output.html]
 default-theme = "ayu"
+additional-js = ["probe.js"]
