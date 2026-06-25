@@ -71,8 +71,8 @@ _ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
 _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
 
-def mm_api(method, path, headers, **kwargs):
-    return requests.request(method, f"{MM_URL}/api/v4{path}", headers=headers, timeout=30, **kwargs)
+def mm_api(method, path, headers, timeout=30, **kwargs):
+    return requests.request(method, f"{MM_URL}/api/v4{path}", headers=headers, timeout=timeout, **kwargs)
 
 
 def wait_for_mattermost():
@@ -1475,7 +1475,7 @@ def ensure_agents_llm_config(headers):
         log.info("Agents plugin LLM backends already up-to-date")
         return
     cfg.setdefault("PluginSettings", {}).setdefault("Plugins", {}).setdefault("mattermost-ai", {})["llmBackends"] = backends
-    r = mm_api("PUT", "/config", headers, json=cfg)
+    r = mm_api("PUT", "/config", headers, timeout=120, json=cfg)
     if r.ok:
         log.info("Agents plugin LLM backends configured (%d backend(s))", len(backends))
     else:
