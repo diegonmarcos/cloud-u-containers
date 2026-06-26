@@ -174,6 +174,46 @@
   # SUBDOMAIN ROUTES (from routes[])
   # ════════════════════════════════════════════════════════════
 
+  # Self-hosted Git service
+  git.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+
+
+
+        @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:3002 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:3002 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
   # Read-only data-driven control panel for the WireGuard mesh + wstunnel TCP/443 fallback. Mimics Headscale's UI shape but holds zero state and exposes zero mutations — pure observability over the existing declarative VPN data (cloud-data-topology.json + bb-net_vpn/build.json + terraform.json). Snapshot is frozen at deploy time; the page hydrates from PORTAL_DATA, no runtime fetch.
   mesh.diegonmarcos.com {
   bind 0.0.0.0 10.0.0.1
@@ -192,14 +232,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8080
+      reverse_proxy 10.0.0.6:8080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8080
+      reverse_proxy 10.0.0.6:8080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -222,7 +266,9 @@ import request_limits
 
 
 
-        reverse_proxy 10.0.0.1:8080
+    reverse_proxy 10.0.0.1:8080 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -251,14 +297,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8070
+      reverse_proxy 10.0.0.6:8070 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8070
+      reverse_proxy 10.0.0.6:8070 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -290,14 +340,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8086
+      reverse_proxy 10.0.0.6:8086 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8086
+      reverse_proxy 10.0.0.6:8086 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -329,14 +383,61 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.1:9091
+      reverse_proxy 10.0.0.1:9091 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.1:9091
+      reverse_proxy 10.0.0.1:9091 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+}
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
+  # CrowdSec behavioral IDS/IPS engine — DORMANT placeholder (Cloudflare-off fallback). Container runs but detects/remediates nothing: empty acquisition, online API (CAPI) disabled, no bouncers wired.
+  crowdsec.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+@not_wg not remote_ip 10.0.0.0/24
+respond @not_wg "Forbidden" 403
+
+
+
+    handle {
+      @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:8088 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:8088 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -370,14 +471,18 @@ handle /api/v4/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8065
+      reverse_proxy 10.0.0.6:8065 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8065
+      reverse_proxy 10.0.0.6:8065 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -409,14 +514,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.3:8889
+      reverse_proxy 10.0.0.3:8889 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.3:8889
+      reverse_proxy 10.0.0.3:8889 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -439,7 +548,9 @@ import request_limits
 
 
 
-        reverse_proxy 10.0.0.6:8008
+    reverse_proxy 10.0.0.6:8008 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -468,14 +579,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8083
+      reverse_proxy 10.0.0.6:8083 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8083
+      reverse_proxy 10.0.0.6:8083 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -504,6 +619,7 @@ respond @not_wg "Forbidden" 403
     }
     handle {
   reverse_proxy https://10.0.0.3:2443 {
+    header_up X-Real-IP {http.request.remote.host}
     transport http {
   tls_insecure_skip_verify
 }
@@ -532,6 +648,7 @@ handle @root {
   rewrite * /myphotos{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
 }
@@ -547,14 +664,18 @@ reverse_proxy https://diegonmarcos.github.io {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3013
+      reverse_proxy 10.0.0.6:3013 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3013
+      reverse_proxy 10.0.0.6:3013 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -586,14 +707,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:5232
+      reverse_proxy 10.0.0.6:5232 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:5232
+      reverse_proxy 10.0.0.6:5232 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -625,14 +750,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8443
+      reverse_proxy 10.0.0.6:8443 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8443
+      reverse_proxy 10.0.0.6:8443 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -664,14 +793,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:5233
+      reverse_proxy 10.0.0.6:5233 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:5233
+      reverse_proxy 10.0.0.6:5233 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -703,14 +836,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3011
+      reverse_proxy 10.0.0.6:3011 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3011
+      reverse_proxy 10.0.0.6:3011 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -742,14 +879,18 @@ respond @not_wg "Forbidden" 403
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8095
+      reverse_proxy 10.0.0.6:8095 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8095
+      reverse_proxy 10.0.0.6:8095 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -774,7 +915,9 @@ respond @not_wg "Forbidden" 403
 
 
     handle {
-      reverse_proxy 10.0.0.6:8880
+  reverse_proxy 10.0.0.6:8880 {
+    header_up X-Real-IP {http.request.remote.host}
+  }
 }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -821,6 +964,7 @@ reverse_proxy https://10.0.0.3:2443 {
       rewrite * /landpage{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
     }
@@ -842,6 +986,7 @@ import request_limits
     rewrite * /linktree{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
       handle_errors {
@@ -862,6 +1007,7 @@ import request_limits
     rewrite * /nexus{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
       handle_errors {
@@ -882,6 +1028,7 @@ import request_limits
     rewrite * /suite{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
       handle_errors {
@@ -902,6 +1049,7 @@ import request_limits
     rewrite * /mymaps{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
       handle_errors {
@@ -929,6 +1077,7 @@ handle @root {
   rewrite * /api{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
 }
@@ -943,14 +1092,18 @@ handle_path /c3a/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.1:8085
+      reverse_proxy 10.0.0.1:8085 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.1:8085
+      reverse_proxy 10.0.0.1:8085 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
@@ -978,14 +1131,18 @@ handle_path /c3-infra-api/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8081
+      reverse_proxy 10.0.0.6:8081 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8081
+      reverse_proxy 10.0.0.6:8081 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
@@ -1013,14 +1170,18 @@ handle_path /pub/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.4:8087
+      reverse_proxy 10.0.0.4:8087 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.4:8087
+      reverse_proxy 10.0.0.4:8087 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -1035,40 +1196,24 @@ handle_path /c3-services-api/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8082
+      reverse_proxy 10.0.0.6:8082 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8082
+      reverse_proxy 10.0.0.6:8082 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
         handle {
           respond "Forbidden" 403
         }
-}
-
-handle_path /cf-worker-bridge/* {
-      @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.1.0.1:8092
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.1.0.1:8092
-    }
-
 }
 
 handle_path /crawlee/* {
@@ -1081,14 +1226,18 @@ handle_path /crawlee/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3000
+      reverse_proxy 10.0.0.6:3000 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3000
+      reverse_proxy 10.0.0.6:3000 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
@@ -1107,14 +1256,18 @@ handle_path /fin-api/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8340
+      reverse_proxy 10.0.0.6:8340 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8340
+      reverse_proxy 10.0.0.6:8340 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
@@ -1126,130 +1279,9 @@ handle {
   rewrite * /api{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
-}
-      handle_errors {
-      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
-      handle @backend_error {
-        root * /srv
-        rewrite * /error.html
-        file_server
-      }
-    }
-  }
-
-  # App hub -- path-based routing
-  app.diegonmarcos.com {
-  bind 0.0.0.0 10.0.0.1
-import security
-import request_limits
-
-handle_path /gitea/* {
-  @wg remote_ip 10.0.0.0/24
-        handle @wg {
-              @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.6:3002
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.6:3002
-    }
-
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-
-handle_path /etherpad/* {
-  @wg remote_ip 10.0.0.0/24
-        handle @wg {
-              @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.6:3012
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.6:3012
-    }
-
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-
-handle_path /filebrowser/* {
-  @wg remote_ip 10.0.0.0/24
-        handle @wg {
-              @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.6:3015
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.6:3015
-    }
-
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-
-handle_path /hedgedoc/* {
-  @wg remote_ip 10.0.0.0/24
-        handle @wg {
-              @bearer header Authorization Bearer*
-    handle @bearer {
-      forward_auth 10.0.0.1:4182 {
-      method GET
-      uri /auth
-      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
-    }
-      reverse_proxy 10.0.0.6:3018
-    }
-    handle {
-      forward_auth 10.0.0.1:9091 {
-      uri /api/authz/forward-auth
-      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
-    }
-      reverse_proxy 10.0.0.6:3018
-    }
-
-        }
-        handle {
-          respond "Forbidden" 403
-        }
-}
-handle {
-  respond "Not Found" 404
 }
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
@@ -1271,6 +1303,7 @@ handle @root {
   rewrite * /cloud{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
 }
@@ -1285,14 +1318,48 @@ handle_path /spec/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3080
+      reverse_proxy 10.0.0.6:3080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3080
+      reverse_proxy 10.0.0.6:3080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+
+handle_path /probe/* {
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:8082 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:8082 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
         }
@@ -1304,6 +1371,7 @@ handle {
   rewrite * /cloud{uri}
 reverse_proxy https://diegonmarcos.github.io {
   header_up Host diegonmarcos.github.io
+  header_up X-Real-IP {http.request.remote.host}
 }
 
 }
@@ -1331,14 +1399,18 @@ handle_path /matomo/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8084
+      reverse_proxy 10.0.0.6:8084 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8084
+      reverse_proxy 10.0.0.6:8084 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -1351,14 +1423,18 @@ handle_path /openobserve/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:5080
+      reverse_proxy 10.0.0.6:5080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:5080
+      reverse_proxy 10.0.0.6:5080 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
@@ -1371,18 +1447,130 @@ handle_path /umami/* {
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3006
+      reverse_proxy 10.0.0.6:3006 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3006
+      reverse_proxy 10.0.0.6:3006 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 }
 
+      handle_errors {
+      @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
+      handle @backend_error {
+        root * /srv
+        rewrite * /error.html
+        file_server
+      }
+    }
+  }
+
+  # App hub -- path-based routing
+  app.diegonmarcos.com {
+  bind 0.0.0.0 10.0.0.1
+import security
+import request_limits
+
+handle_path /etherpad/* {
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:3012 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:3012 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+
+handle_path /filebrowser/* {
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:3015 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:3015 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+
+handle_path /hedgedoc/* {
+  @wg remote_ip 10.0.0.0/24
+        handle @wg {
+              @bearer header Authorization Bearer*
+    handle @bearer {
+      forward_auth 10.0.0.1:4182 {
+      method GET
+      uri /auth
+      copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
+    }
+      reverse_proxy 10.0.0.6:3018 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+    handle {
+      forward_auth 10.0.0.1:9091 {
+      uri /api/authz/forward-auth
+      copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+    }
+      reverse_proxy 10.0.0.6:3018 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    }
+
+        }
+        handle {
+          respond "Forbidden" 403
+        }
+}
+handle {
+  respond "Not Found" 404
+}
       handle_errors {
       @backend_error expression `{err.status_code} == 502 || {err.status_code} == 503 || {err.status_code} == 504`
       handle @backend_error {
@@ -1408,6 +1596,7 @@ handle_path /c3-infra-mcp/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3100 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1419,6 +1608,7 @@ handle_path /c3-services-mcp/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3101 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1430,6 +1620,7 @@ handle_path /g-personal/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3106 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1441,6 +1632,7 @@ handle_path /g-workspace/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3104 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1452,6 +1644,7 @@ handle_path /mail-mcp/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3103 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1463,6 +1656,7 @@ handle_path /mattermost-mcp/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3102 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1474,6 +1668,7 @@ handle_path /cloud-cgc-mcp/* {
         handle @wg {
           reverse_proxy 10.0.0.6:3105 {
           flush_interval -1
+          header_up X-Real-IP {http.request.remote.host}
         }
         }
         handle {
@@ -1570,14 +1765,18 @@ import request_limits
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:8084
+      reverse_proxy 10.0.0.6:8084 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
     handle {
       forward_auth 10.0.0.1:9091 {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:8084
+      reverse_proxy 10.0.0.6:8084 {
+        header_up X-Real-IP {http.request.remote.host}
+      }
     }
 
 
@@ -1741,12 +1940,6 @@ import request_limits
     reverse_proxy 10.0.0.6:3102
   }
 
-  cf-worker-http-to-wg-public-bridge.app {
-    bind 10.0.0.1
-    tls internal
-    reverse_proxy 10.1.0.1:8092
-  }
-
   gitea.app {
     bind 10.0.0.1
     tls internal
@@ -1813,13 +2006,19 @@ import request_limits
     reverse_proxy 10.0.0.1:443
   }
 
-  caddy-l4-public.app {
+  caddy-public.app {
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.4:443
   }
 
-  kg-mcp.app {
+  crowdsec.app {
+    bind 10.0.0.1
+    tls internal
+    reverse_proxy 10.0.0.6:8088
+  }
+
+  cloud-cgc-mcp.app {
     bind 10.0.0.1
     tls internal
     reverse_proxy 10.0.0.6:3105
@@ -2030,14 +2229,6 @@ import request_limits
     reverse_proxy 10.0.0.6:3102
   }
 
-  cf-worker-http-to-wg-public-bridge-http-8092.app {
-    bind 10.0.0.1
-    tls internal {
-      on_demand
-    }
-    reverse_proxy 10.1.0.1:8092
-  }
-
   gitea-http-3002.app {
     bind 10.0.0.1
     tls internal {
@@ -2126,7 +2317,23 @@ import request_limits
     reverse_proxy 10.0.0.1:443
   }
 
-  kg-mcp-http-3105.app {
+  caddy-public-https-443.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.4:443
+  }
+
+  crowdsec-http-8088.app {
+    bind 10.0.0.1
+    tls internal {
+      on_demand
+    }
+    reverse_proxy 10.0.0.6:8088
+  }
+
+  cloud-cgc-mcp-http-3105.app {
     bind 10.0.0.1
     tls internal {
       on_demand

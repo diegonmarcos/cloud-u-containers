@@ -6,9 +6,22 @@
 # ║ Source:  a_solutions/infra-sec_caddy/src/flake.nix
 # ║ Rebuild: a_solutions/infra-sec_caddy/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# Type B — wrap upstream, arch=amd64
-FROM alpine:latest
-LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
-LABEL cloud.diegonmarcos.from-image="alpine:latest"
+# Type A — service-shipped Dockerfile, arch=amd64
+# Source: /nix/store/10vqrbq9ncwyq2162f5y0r44fphayaq9-source/a_solutions/infra-sec_caddy/src/code/Dockerfile
+FROM caddy:2-builder AS builder
+# Cache-bust 2026-06-19 — xcaddy resolves the plugins; the comment forces
+# RUN-layer invalidation if a stale layer cache ever drops a plugin.
+RUN xcaddy build \
+    --with github.com/mholt/caddy-l4 \
+    --with github.com/mholt/caddy-ratelimit \
+    --with github.com/caddy-dns/cloudflare
 
+FROM caddy:2
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+
+# Self-contained: only COPYs the Dockerfile itself, so the build context is
+# just dist/code/<arch>/ (no nativeBuild.extraFiles needed).
+COPY Dockerfile /opt/cloud-builder/Dockerfile
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+LABEL org.opencontainers.image.dockerfile-path="a_solutions/infra-sec_caddy/src/code/Dockerfile"
 
