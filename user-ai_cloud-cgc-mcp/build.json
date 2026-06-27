@@ -54,6 +54,7 @@
     "octocode": {
       "repos_volume": "octocode_repos",
       "repos_path": "/repos",
+      "noindex_patterns": ["z_archive/", "vendor/", "node_modules/", "dist/", "*.min.js", "*.min.css", "*.map", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
       "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
