@@ -1,0 +1,48 @@
+{
+  "name": "gha-runner",
+  "description": "GitHub Actions self-hosted runner on oci-apps — ARM64, no 6h timeout cap",
+  "category": "tools",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/gha-runner"
+  },
+  "gha": {
+    "repo_url": "https://github.com/diegonmarcos/cloud",
+    "runner_name": "oci-apps-arm64",
+    "labels": "self-hosted,linux,arm64,oci-apps",
+    "runner_workdir": "/tmp/runner/work",
+    "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) — used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
+  },
+  "containers": {
+    "app": {
+      "container_name": "gha-runner",
+      "image": "myoung34/github-runner:latest",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "volumes": [
+        "/var/run/docker.sock:/var/run/docker.sock",
+        "./work:/tmp/runner/work"
+      ],
+      "env_file": true,
+      "depends_on": [],
+      "resources": {
+        "limits": { "memory": "4G", "cpus": "3.0" },
+        "reservations": { "memory": "256M" }
+      },
+      "read_only": false,
+      "protocol": null
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "gha-runner",
+    "arch": "arm64"
+  },
+  "build": {
+    "headers_enforced": true
+  }
+}
