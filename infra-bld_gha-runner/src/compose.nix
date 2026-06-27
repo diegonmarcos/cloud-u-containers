@@ -1,6 +1,6 @@
 # compose.nix — GHA self-hosted runner on oci-apps (ARM64).
 # No port/proxy — purely outbound. Registers to build.json.gha.repo_url.
-# Secrets: .secrets must contain ACCESS_TOKEN (GitHub classic PAT, repo scope).
+# ACCESS_TOKEN: GitHub classic PAT (repo scope) in src/secrets.yaml (sops).
 { buildJson, container }:
 
 let
