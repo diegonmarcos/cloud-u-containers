@@ -120,12 +120,16 @@ in
       container_name = "cloud-cgc-mcp-db-restore";
       restart = "no";
       volumes = [ "${oct.db_volume}:${oct.db_path}" ];
+      # Use Nix-interpolated LITERAL paths, never a shell variable: docker compose
+      # interprets `$d` / `${d}` in the compose file as ITS OWN interpolation and
+      # expands them to empty before the container runs (proven: mkdir got "") — the
+      # same `$`-eating class as escape_dollars. The literal path has no `$`, so
+      # compose passes it through untouched.
       entrypoint = [ "sh" "-c" ''
         set -e
-        d="${oct.db_path}"
-        mkdir -p "$d"
-        rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null || true
-        cp -a /octocode-db/. "$d"/
+        mkdir -p "${oct.db_path}"
+        rm -rf "${oct.db_path}"/* "${oct.db_path}"/.[!.]* 2>/dev/null || true
+        cp -a /octocode-db/. "${oct.db_path}"/
         echo "[db-restore] populated ${oct.db_volume} from ${dbImage}"
       '' ];
     };
