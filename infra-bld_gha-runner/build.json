@@ -1,6 +1,6 @@
 {
   "name": "gha-runner",
-  "description": "GitHub Actions self-hosted runner on oci-apps — ARM64, no 6h timeout cap",
+  "description": "GitHub Actions self-hosted runner on oci-apps \u2014 ARM64, no 6h timeout cap",
   "category": "tools",
   "deploy": {
     "host": "oci-apps",
@@ -11,7 +11,7 @@
     "runner_name": "oci-apps-arm64",
     "labels": "self-hosted,linux,arm64,oci-apps",
     "runner_workdir": "/tmp/runner/work",
-    "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) — used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
+    "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) \u2014 used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
   },
   "containers": {
     "app": {
@@ -30,11 +30,18 @@
       "env_file": true,
       "depends_on": [],
       "resources": {
-        "limits": { "memory": "4G", "cpus": "3.0" },
-        "reservations": { "memory": "256M" }
+        "limits": {
+          "memory": "4G",
+          "cpus": "3.0"
+        },
+        "reservations": {
+          "memory": "256M"
+        }
       },
       "read_only": false,
-      "protocol": null
+      "protocol": null,
+      "mem_limit": "16G",
+      "cpus": "3.0"
     }
   },
   "docker": {
