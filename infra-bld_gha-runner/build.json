@@ -16,7 +16,7 @@
   "containers": {
     "app": {
       "container_name": "gha-runner",
-      "image": "myoung34/github-runner:latest",
+      "image": "myoung34/github-runner:ubuntu-noble",
       "port": null,
       "port_env": null,
       "dns": null,
