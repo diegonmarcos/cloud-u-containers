@@ -15,6 +15,9 @@ let
   # 127.0.0.1; we explicitly override to the WG IP here.
   vmIp = svc."cloud-cgc-mcp".ip or "10.0.0.6";
   binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
+  # Single GHCR upstream for the octocode DB (producer = cloud-cgc-db-update.sh).
+  # The db-restore init below pulls this and populates octocode_db on every deploy.
+  dbImage = "${buildJson.db_publish.image}:${buildJson.db_publish.tag or "latest"}";
   # Octocode index wiring (data-driven from build.json.runtime.octocode).
   oct = buildJson.runtime.octocode;
   # Shared body for the one-shot octocode jobs. Two profile-gated variants below
@@ -80,6 +83,11 @@ in
         KG_STORE_USER  = oct.kg_store.user;
       };
       env_file = [ ".secrets" ];
+      # Self-heal: wait for the octocode_db volume to be restored from GHCR before
+      # serving, so a cold/redeploy never comes up on an empty/stale index.
+      depends_on = {
+        cloud-cgc-mcp-db-restore = { condition = "service_completed_successfully"; };
+      };
       volumes = [
         "./data:${buildJson.runtime.data_path}:ro"
         # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
@@ -98,6 +106,28 @@ in
         retries      = 3;
         start_period = "15s";
       };
+    };
+
+    # ── DB restore (autodeploy self-heal) ───────────────────────────────────────
+    # Pull the GHCR DB image and populate the octocode_db volume BEFORE the MCP
+    # starts → a cold deploy / redeploy serves the CURRENT upstream DB instead of an
+    # empty or stale volume. GHCR is the single upstream (producer
+    # cloud-cgc-db-update.sh). Runs on every `compose up` (NOT profile-gated),
+    # idempotent, data-driven image. The DB tar is arch-independent, so the arm64
+    # busybox base is irrelevant — only its /octocode-db payload is copied.
+    cloud-cgc-mcp-db-restore = {
+      image = dbImage;
+      container_name = "cloud-cgc-mcp-db-restore";
+      restart = "no";
+      volumes = [ "${oct.db_volume}:${oct.db_path}" ];
+      entrypoint = [ "sh" "-c" ''
+        set -e
+        d="${oct.db_path}"
+        mkdir -p "$d"
+        rm -rf "$d"/* "$d"/.[!.]* 2>/dev/null || true
+        cp -a /octocode-db/. "$d"/
+        echo "[db-restore] populated ${oct.db_volume} from ${dbImage}"
+      '' ];
     };
 
     # ── One-shot octocode jobs (profile-gated; never start on `compose up`) ──────
