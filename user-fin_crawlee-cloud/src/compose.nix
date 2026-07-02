@@ -173,7 +173,10 @@ in
       };
       depends_on.api = { condition = "service_healthy"; };
       healthcheck = {
-        test         = [ "CMD-SHELL" "wget -qO /dev/null http://127.0.0.1:${dashboardPort}/ || exit 1" ];
+        # Probe the SAME host Next.js binds (HOSTNAME=dashboard_hostname,
+        # e.g. 10.0.0.6 under network_mode host) — a 127.0.0.1 probe is
+        # refused forever and marks a working dashboard unhealthy.
+        test         = [ "CMD-SHELL" "wget -qO /dev/null http://${runtime.dashboard_hostname}:${dashboardPort}/ || exit 1" ];
         interval     = "15s";
         timeout      = "5s";
         retries      = 3;
