@@ -7,7 +7,7 @@
     "db": 5439
   },
   "category": "app",
-  "domain": "doc.diegonmarcos.com",
+  "domain": "app.diegonmarcos.com/hedgedoc",
   "upstream_image": "quay.io/hedgedoc/hedgedoc:latest",
   "deploy": {
     "host": "oci-apps",
