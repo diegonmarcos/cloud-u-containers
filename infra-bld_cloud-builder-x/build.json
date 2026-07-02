@@ -7,6 +7,11 @@
     "remote_path": "/opt/containers/cloud-builder-x"
   },
   "registry": "ghcr.io/diegonmarcos",
+  "containers": {
+    "app": {
+      "container_name": "cloud-builder-x"
+    }
+  },
   "images": {
     "cloud-builder-x-deb-nixhm": {
       "ghcr": "ghcr.io/diegonmarcos/cloud-builder-x-deb-nixhm",
