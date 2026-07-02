@@ -7,10 +7,19 @@
     "remote_path": "/opt/containers/gha-runner"
   },
   "gha": {
-    "repo_url": "https://github.com/diegonmarcos/cloud",
-    "runner_name": "oci-apps-arm64",
+    "_comment": "One runner registration per repo (personal accounts have no org-level runners; myoung34 image registers RUNNER_SCOPE=repo). compose.nix maps over registrations[] \u2014 add a repo here, never a hardcoded service. Same ACCESS_TOKEN (classic PAT, repo scope) covers all repos of the user.",
     "labels": "self-hosted,linux,arm64,oci-apps",
     "runner_workdir": "/tmp/runner/work",
+    "registrations": [
+      {
+        "repo_url": "https://github.com/diegonmarcos/cloud",
+        "runner_name": "oci-apps-arm64"
+      },
+      {
+        "repo_url": "https://github.com/diegonmarcos/unix",
+        "runner_name": "oci-apps-arm64-unix"
+      }
+    ],
     "_secret_comment": "secrets.yaml must contain ACCESS_TOKEN (GitHub classic PAT, repo scope) \u2014 used only for runner registration/deregistration. Each job token is auto-issued by GitHub."
   },
   "containers": {
