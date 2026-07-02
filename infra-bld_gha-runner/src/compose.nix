@@ -1,23 +1,26 @@
-# compose.nix — GHA self-hosted runner on oci-apps (ARM64).
-# No port/proxy — purely outbound. Registers to build.json.gha.repo_url.
+# compose.nix — GHA self-hosted runners on oci-apps (ARM64).
+# No port/proxy — purely outbound. One runner service per entry in
+# build.json.gha.registrations[] (personal accounts have no org runners,
+# so each repo needs its own registration; all share one ACCESS_TOKEN).
 # ACCESS_TOKEN: GitHub classic PAT (repo scope) in src/secrets.yaml (sops).
 { buildJson, container }:
 
 let
+  inherit (builtins) listToAttrs;
   app = buildJson.containers.app;
   gha = buildJson.gha;
-in
-{
-  services = {
-    gha-runner = {
+
+  mkRunner = reg: {
+    name = reg.runner_name;
+    value = {
       image = app.image;
-      container_name = app.container_name;
+      container_name = reg.runner_name;
       restart = "always";
       network_mode = "host";
       env_file = [ ".secrets" ];
       environment = {
-        REPO_URL        = gha.repo_url;
-        RUNNER_NAME     = gha.runner_name;
+        REPO_URL        = reg.repo_url;
+        RUNNER_NAME     = reg.runner_name;
         LABELS          = gha.labels;
         RUNNER_WORKDIR  = gha.runner_workdir;
         RUNNER_SCOPE    = "repo";
@@ -25,7 +28,7 @@ in
       };
       volumes = [
         "/var/run/docker.sock:/var/run/docker.sock"
-        "./work:/tmp/runner/work"
+        "./work-${reg.runner_name}:/tmp/runner/work"
       ];
       # Data-driven limits (build.json containers.app). octocode FastEmbed+GraphRAG
       # needs well over 4G — 4G OOM-killed the index (rc=137). cpus caps it at 3 of
@@ -36,4 +39,7 @@ in
       };
     };
   };
+in
+{
+  services = listToAttrs (map mkRunner gha.registrations);
 }
