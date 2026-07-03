@@ -28,7 +28,10 @@
 
         # Static docs (overview prose, probe widget, config)
         cp ${./docs/overview.md} build/src/overview.md
-        cp ${./probe.js} build/src/probe.js
+        # mdbook additional-js paths resolve relative to the BOOK ROOT (the dir
+        # holding book.toml = build/), not src/ — probe.js must sit beside
+        # book.toml or mdbook aborts "Unable to copy /build/build/probe.js".
+        cp ${./probe.js} build/probe.js
         cp ${./book.toml} build/book.toml
 
         # ── Generate per-service pages ─────────────────────────────
