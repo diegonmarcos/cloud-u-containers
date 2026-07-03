@@ -64,7 +64,17 @@
         "*.map",
         "package-lock.json",
         "pnpm-lock.yaml",
-        "yarn.lock"
+        "yarn.lock",
+        "*.png",
+        "*.svg",
+        "*.jpg",
+        "*.jpeg",
+        "*.gif",
+        "*.ico",
+        "*.webp",
+        "*.pdf",
+        "ea_cloud-superapp/libs/keyboard/",
+        "aa_bootloader/src/loaders/"
       ],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
