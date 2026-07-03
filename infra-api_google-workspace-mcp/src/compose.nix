@@ -21,14 +21,15 @@ in
         WORKSPACE_MCP_PORT = port;
         PORT = port;
         USER_GOOGLE_EMAIL = buildJson.user_google_email;
-        GOOGLE_SERVICE_ACCOUNT_KEY_PATH = "/run/secrets/service-account-key.json";
+        GOOGLE_SERVICE_ACCOUNT_KEY_PATH = "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY";
       };
-      # /run must be writable for docker to create the file-bind mountpoint —
-      # the -binaries image ships a read-only /run and runc died with
-      # "mknod .../run/secrets/...: read-only file system" (2026-07-03).
-      tmpfs = [ "/run" ];
+      # DIR-bind, not file-bind (2026-07-03): runc on oci-apps dies with
+      # "mknod .../run/secrets/...: read-only file system" creating a FILE
+      # mountpoint (tmpfs /run didn't help), while the fleet's standard
+      # `.secrets.d:/run/secrets:ro` DIR-bind works on the same VM (rig).
+      # The key file keeps its .secrets.d name; the env path points at it.
       volumes = [
-        "./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro"
+        "./.secrets.d:/run/secrets:ro"
       ];
       healthcheck = {
         test = [
