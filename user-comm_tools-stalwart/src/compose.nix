@@ -48,13 +48,13 @@ in
 {
   services = {
     stalwart = {
-      # File-based TOML config: cert read via %{file:...}% on every startup.
-      # Data store (accounts, emails, JMAP objects) stays in stalwart_data volume.
-      # recovery_mode flag in build.json gates STALWART_RECOVERY_{MODE,ADMIN}
+      # v0.16.5 migrated bootstrap (data-store-only config.json + JMAP-object
+      # settings in RocksDB). config.toml is NOT used in v0.16+ (v0.13 format,
+      # incompatible). recovery_mode flag in build.json gates STALWART_RECOVERY_{MODE,ADMIN}
       # env vars; flip true for first bootstrap, false for production.
       image          = "stalwartlabs/stalwart:v0.16.5";
       container_name = app.container_name;
-      entrypoint     = [ "stalwart" "--config" "/opt/stalwart-mail/etc/config.toml" ];
+      entrypoint     = [ "stalwart" "--config" "/opt/stalwart-mail/etc/config.json" ];
       ports          = portMappings;
       env_file       = [ ".secrets" ];
       environment = {
@@ -79,7 +79,7 @@ in
         "stalwart_data:/opt/stalwart-mail/data"
         # TLS provisioned out-of-band by Caddy (shared with maddy's /opt/containers/maddy/tls)
         "/opt/containers/maddy/tls:/opt/stalwart-mail/tls:ro"
-        "./configs/config.toml:/opt/stalwart-mail/etc/config.toml:ro"
+        "./configs/config.json:/opt/stalwart-mail/etc/config.json:ro"
       ];
       deploy.resources = {
         limits       = { memory = app.resources.limits.memory;       cpus = "1.0"; };
