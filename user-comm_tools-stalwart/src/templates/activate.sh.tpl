@@ -191,23 +191,4 @@ if [ -s "$MTA_ROUTES_FILE" ] && [ -x "$APPLY_ROUTES_PY" -o -f "$APPLY_ROUTES_PY"
   fi
 fi
 
-# ── Step E: Configure TLS certificate in RocksDB ──────────────────────
-# Stalwart v0.16 auto-generates an rcgen self-signed cert if no cert is
-# configured in RocksDB. This step wires the real wildcard cert (written
-# to the shared TLS dir by tls-acme.nix on HM activation) so external
-# clients (FairEmail, mail clients) see a trusted cert.
-TLS_DIR="/opt/containers/maddy/tls"
-if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
-  echo "[activate] Configuring TLS certificate from $TLS_DIR..."
-  _CERT_RESP=$(curl -sk -u "$ADMIN_EMAIL:$ADMIN_PW" -X POST "$BASE/api/settings" \
-    -H "Content-Type: application/json" \
-    -d '[{"key":"certificate.default.cert","value":"%{file:/opt/stalwart-mail/tls/fullchain.pem}%"},{"key":"certificate.default.private-key","value":"%{file:/opt/stalwart-mail/tls/privkey.pem}%"},{"key":"certificate.default.default","value":"true"}]' \
-    2>/dev/null || echo '{"error":"curl-failed"}')
-  echo "[activate]   settings response: $(printf '%s' "$_CERT_RESP" | head -c 120)"
-  curl -sk -u "$ADMIN_EMAIL:$ADMIN_PW" -X GET "$BASE/api/reload" >/dev/null 2>&1 || true
-  echo "[activate]   TLS cert configured"
-else
-  echo "[activate]   WARN: $TLS_DIR/fullchain.pem missing — Stalwart will use self-signed cert" >&2
-fi
-
-echo "[activate] Done — folders + sieve + mta routes + tls ensured"
+echo "[activate] Done — folders + sieve + mta routes ensured (tls from config.toml)"
