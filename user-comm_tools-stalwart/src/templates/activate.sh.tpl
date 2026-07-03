@@ -196,7 +196,7 @@ fi
 # configured in RocksDB. This step wires the real wildcard cert (written
 # to the shared TLS dir by tls-acme.nix on HM activation) so external
 # clients (FairEmail, mail clients) see a trusted cert.
-TLS_DIR="/opt/stalwart-mail/tls"
+TLS_DIR="/opt/containers/maddy/tls"
 if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
   echo "[activate] Configuring TLS certificate from $TLS_DIR..."
   _CERT_RESP=$(curl -sk -u "$ADMIN_EMAIL:$ADMIN_PW" -X POST "$BASE/api/settings" \
