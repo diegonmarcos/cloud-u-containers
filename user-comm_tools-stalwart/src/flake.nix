@@ -153,6 +153,8 @@
           { name = "mta-routes.json"; text = mtaRoutesJson; }
           # Python helper (data-driven JMAP MtaRoute/MtaOutboundStrategy upsert).
           { name = "apply-mta-routes.py"; vars = {}; }
+          # Python helper: upsert LE wildcard cert as JMAP Certificate object.
+          { name = "apply-tls-cert.py"; vars = {}; }
         ];
         # jmap-sorter.py + mail-rules.json bind-mounted from dist/assets/.
         # mail-rules.json is DERIVED from general + profile-diego canonicals.

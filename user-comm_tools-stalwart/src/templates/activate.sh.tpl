@@ -28,6 +28,8 @@ CONFIGS_DIR="/opt/containers/stalwart/configs"
 SIEVE_FILE="$CONFIGS_DIR/default.sieve"
 MTA_ROUTES_FILE="$CONFIGS_DIR/mta-routes.json"
 APPLY_ROUTES_PY="$CONFIGS_DIR/apply-mta-routes.py"
+APPLY_CERT_PY="$CONFIGS_DIR/apply-tls-cert.py"
+TLS_DIR="/opt/containers/maddy/tls"
 
 # Admin identity sourced from build.json#users.admin (data-driven). The
 # pre-v0.16 "admin:$ADMIN_PASSWORD" magic principal only exists in
@@ -191,4 +193,19 @@ if [ -s "$MTA_ROUTES_FILE" ] && [ -x "$APPLY_ROUTES_PY" -o -f "$APPLY_ROUTES_PY"
   fi
 fi
 
-echo "[activate] Done — folders + sieve + mta routes ensured (tls from config.toml)"
+# ── Step E: TLS certificate (admin scope) ──────────────────────────────
+# Upsert the LE wildcard cert as a JMAP Certificate object so Stalwart
+# serves the real cert instead of the rcgen self-signed one. Idempotent.
+if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
+  echo "[activate] Applying TLS certificate from $TLS_DIR..."
+  if python3 "$APPLY_CERT_PY" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" \
+       "$TLS_DIR/fullchain.pem" "$TLS_DIR/privkey.pem"; then
+    :
+  else
+    echo "[activate]   apply-tls-cert.py exited $? (non-fatal)"
+  fi
+else
+  echo "[activate]   TLS cert not yet on disk ($TLS_DIR) — skipping"
+fi
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert ensured"
