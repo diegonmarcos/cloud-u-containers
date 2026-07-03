@@ -1,6 +1,6 @@
 {
   "name": "cloud-cgc-mcp",
-  "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
@@ -54,7 +54,18 @@
     "octocode": {
       "repos_volume": "octocode_repos",
       "repos_path": "/repos",
-      "noindex_patterns": ["z_archive/", "vendor/", "node_modules/", "dist/", "*.min.js", "*.min.css", "*.map", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"],
+      "noindex_patterns": [
+        "z_archive/",
+        "vendor/",
+        "node_modules/",
+        "dist/",
+        "*.min.js",
+        "*.min.css",
+        "*.map",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock"
+      ],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
       "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
@@ -73,10 +84,11 @@
         "incremental": true,
         "use_llm": false,
         "llm_model": "openrouter:openai/gpt-4o-mini",
-        "schedule": "23 2 * * *"
+        "schedule": "23 2 * * *",
+        "max_minutes": 330
       },
       "llm": {
-        "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 \u2014 the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
+        "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 — the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
         "openai_api_url": "http://10.0.0.6:3117/v1/chat/completions",
         "ollama_api_url": "http://10.0.0.6:11436",
         "api_key": "sk-dummy",
