@@ -37,7 +37,8 @@
       "binary": "target/release/rig-agentic",
       "base_image": "debian:trixie-slim",
       "apt": "curl ca-certificates docker.io",
-      "builder_image": "rust:1-bookworm"
+      "builder_image": "rust:1-bookworm",
+      "app_dir": "code"
     }
   },
   "build": {
