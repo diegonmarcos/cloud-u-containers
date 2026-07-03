@@ -17,7 +17,7 @@
     }
   },
   "rig": {
-    "ollama_service": "ollama",
+    "ollama_service": "ollama-hai",
     "ollama_model": "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0",
     "c3_api_url": "http://c3-api.app",
     "c3_mcp_url": "http://c3-mcp.app",
