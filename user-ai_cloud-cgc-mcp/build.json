@@ -72,9 +72,7 @@
         "*.gif",
         "*.ico",
         "*.webp",
-        "*.pdf",
-        "ea_cloud-superapp/libs/keyboard/",
-        "aa_bootloader/src/loaders/"
+        "*.pdf"
       ],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
@@ -130,6 +128,11 @@
         "db": "production",
         "user": "root",
         "delta": "/app/graphs/build-kg-graph_delta.json"
+      },
+      "smart_noindex": {
+        "_comment": "generic auto-noindex: exclude any dir where >=binary_ratio of its >=min_files tracked files are binary (git numstat). No hardcoded project paths.",
+        "min_files": 12,
+        "binary_ratio": 0.5
       }
     }
   },
