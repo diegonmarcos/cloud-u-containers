@@ -18,10 +18,11 @@
     "registry": "ghcr.io/diegonmarcos",
     "arch": "arm64",
     "native_build": {
-      "type": "app",
+      "_comment": "type image-wrapper (2026-07-03): type 'app' made the Dockerfile generator treat the whole entrypoint string as a binary to COPY — the image shipped with NO uv and no app code, dying with 'exec uv failed'. image-wrapper is the working sibling pattern (google-personal-mcp). base_image = official uv+python image so `uv sync`/`uv run` exist.",
+      "type": "image-wrapper",
       "cmd": "uv sync --frozen --no-dev --extra disk",
       "entrypoint": "uv run main.py --transport streamable-http --tool-tier complete",
-      "base_image": "python:3.11-slim",
+      "base_image": "ghcr.io/astral-sh/uv:python3.11-bookworm-slim",
       "apt": "curl",
       "app_dir": "code"
     }
