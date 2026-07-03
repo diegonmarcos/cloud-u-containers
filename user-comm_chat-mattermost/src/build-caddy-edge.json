@@ -1,1 +1,286 @@
-../../../2_configs/dist/build-caddy-edge.json
+{
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 2_configs/build.sh all`.",
+  "_meta": {
+    "description": "Declared-public allowlist for caddy-public edge (oci-analytics). Source: wg_only!==true. NOT the public_* zone taxonomy.",
+    "format_version": 1,
+    "generated_at": "",
+    "generated_by": "2_configs/src/engines/cloud-data-config-derive.ts",
+    "pipeline": {
+      "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
+      "source_inputs": [
+        "a_solutions/*/build.json (per-service declarations)",
+        "config.json (global topology + vms + dns + wireguard)",
+        "b_infra/*/build.json (per-VM HM config)",
+        "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
+      ],
+      "engines": {
+        "consolidator": "2_configs/src/engines/cloud-data-config-consolidated.ts",
+        "derive": "2_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
+      },
+      "outputs": {
+        "master": "2_configs/dist/_cloud-data-consolidated.json (consolidator output)",
+        "per_container": "2_configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
+        "archived": "2_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+      },
+      "rebuild_command": "bash 2_configs/build.sh all"
+    }
+  },
+  "_generated": "",
+  "_source": "deriveCaddy → routes/path_routes/mcp_routes filtered to wg_only!==true + gh-pages + well-known",
+  "global": {
+    "debug": true,
+    "admin_bind": "localhost:2019",
+    "order": "respond before handle",
+    "auto_https": "disable_redirects",
+    "_doc_wg_bind_ip": "Caddy's wg0 IP on gcp-proxy (10.0.0.1) — every public *.diegonmarcos.com site block dual-binds to (0.0.0.0, wg_bind_ip). Caddy lives on gcp-proxy (the public-facing VM); reverse-proxy upstreams to internal services traverse the wg0 mesh (10.0.0.x). Engine resolveVmIpForCaddy() still prefers wg-public IPs (10.1.0.x) when both endpoints are peers — gcp-proxy is a wg-public peer (10.1.0.2) so mail-side upstreams keep using wg-public transit.",
+    "wg_bind_ip": "10.0.0.1"
+  },
+  "on_demand_tls": {
+    "ask_bind": "127.0.0.1:2020",
+    "ask_url": "http://127.0.0.1:2020"
+  },
+  "security_snippets": {
+    "security_headers": {
+      "hsts_max_age": 31536000,
+      "frame_options": "SAMEORIGIN",
+      "referrer_policy": "strict-origin-when-cross-origin",
+      "permissions_policy": "camera=(), microphone=(), geolocation=()",
+      "cors_origin": "*",
+      "cors_methods": "GET, POST, OPTIONS",
+      "cors_headers": "Authorization, Content-Type",
+      "hide_headers": [
+        "Server"
+      ]
+    },
+    "rate_limit": {
+      "events": 100,
+      "window": "1m",
+      "key": "{remote_host}",
+      "zone": "global"
+    },
+    "bot_blocker": {
+      "user_agents": [
+        "sqlmap",
+        "nikto",
+        "masscan",
+        "nmap",
+        "zgrab",
+        "scrapy",
+        "dirbuster",
+        "gobuster",
+        "nuclei",
+        "wfuzz",
+        "havij",
+        "acunetix",
+        "nessus",
+        "openvas"
+      ]
+    },
+    "scanner_blocker": {
+      "paths": [
+        "/wp-admin*",
+        "/wp-login*",
+        "/xmlrpc.php",
+        "/.env",
+        "/.git*",
+        "/phpmyadmin*",
+        "/actuator*",
+        "/solr*",
+        "/console*",
+        "/.aws*",
+        "/cgi-bin/*"
+      ]
+    },
+    "request_limits": {
+      "max_body": "10MB"
+    },
+    "ip_block": {
+      "cidrs": []
+    },
+    "access_log": {
+      "path": "/var/log/caddy/access.log",
+      "format": "json",
+      "roll_size": "10mb",
+      "roll_keep": 5
+    }
+  },
+  "auth": {
+    "authelia_uri": "/api/authz/forward-auth",
+    "authelia_copy": [
+      "Remote-User",
+      "Remote-Groups",
+      "Remote-Email",
+      "Remote-Name"
+    ],
+    "introspect_uri": "/auth",
+    "introspect_copy": [
+      "X-Auth-User",
+      "X-Auth-Subject",
+      "X-Auth-Email"
+    ],
+    "ntfy_jwt_pattern": "^Bearer eyJ",
+    "ntfy_token_pattern": "^Bearer tk_"
+  },
+  "auth_upstreams": {
+    "authelia": "10.0.0.1:9091",
+    "introspect_proxy": "10.0.0.1:4182"
+  },
+  "error_handler": {
+    "status_codes": [
+      502,
+      503,
+      504
+    ],
+    "error_html": "/srv/error.html"
+  },
+  "catch_all": {
+    "domain": "*.diegonmarcos.com",
+    "page": "/srv/error.html"
+  },
+  "messages": {
+    "portless_placeholder": "Portless worker/sidecar — no HTTP endpoint",
+    "db_catalog_template": "DB catalog — container={container} engine={engine} port={port} upstream={upstream} path={path} vm={vm}",
+    "mcp_hub_fallback": "MCP Hub — use /g-workspace/mcp, /mail-mcp/mcp, /mattermost-mcp/mcp, /c3-infra-mcp/mcp, /c3-services-mcp/mcp, /cloud-cgc-mcp/mcp",
+    "app_hub_fallback": "Not Found"
+  },
+  "private_forward_upstream": "10.1.0.2:443",
+  "mail_l4_routes": [
+    {
+      "port": 443,
+      "upstream": "10.0.0.3:2993",
+      "comment": "IMAPS via SNI on :443 — upstream flipped from Maddy:993 to Stalwart:2993 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
+      "sni": "imap.diegonmarcos.com"
+    },
+    {
+      "port": 443,
+      "upstream": "10.0.0.3:2465",
+      "comment": "SMTPS via SNI on :443 — upstream flipped from Maddy:465 to Stalwart:2465 per aa-sui_tools-stalwart/build.json _doc_l4_ports (Maddy retired)",
+      "sni": "smtps.diegonmarcos.com"
+    }
+  ],
+  "public_sni_hosts": [
+    "diegonmarcos.com",
+    "www.diegonmarcos.com",
+    "linktree.diegonmarcos.com",
+    "nexus.diegonmarcos.com",
+    "suite.diegonmarcos.com",
+    "maps.diegonmarcos.com",
+    "vpn.diegonmarcos.com",
+    "matrix.diegonmarcos.com"
+  ],
+  "public_routes": [
+    {
+      "domain": "git.diegonmarcos.com",
+      "upstream": "10.0.0.6:3002",
+      "comment": "Self-hosted Git service"
+    },
+    {
+      "domain": "vpn.diegonmarcos.com",
+      "upstream": "10.0.0.1:8080",
+      "auth": "none",
+      "comment": "WireGuard-over-TCP/443 fallback for hostile networks (airport / hotel / corporate guest Wi-Fi blocking UDP). Sibling to bb-net_wireguard-mesh (the panel) — this folder owns the wstunnel-server that terminates WSS on gcp-proxy and forwards UDP to the kernel WG listener at 127.0.0.1:51820. UDP/51820 remains the primary transport; this kicks in only when clients can't reach UDP."
+    },
+    {
+      "domain": "matrix.diegonmarcos.com",
+      "upstream": "10.0.0.6:8008",
+      "auth": "none",
+      "comment": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443."
+    }
+  ],
+  "public_path_routes": [
+    {
+      "parent_domain": "api.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/c3-infra-api",
+          "upstream": "10.0.0.6:8081",
+          "public_paths": [
+            "/c3-infra-api/docs/json"
+          ],
+          "wg_only": true,
+          "comment": "C3 REST API — Cloud Control Center Fastify API"
+        },
+        {
+          "base_path": "/pub",
+          "upstream": "10.0.0.4:8087",
+          "public_paths": [
+            "/pub/health",
+            "/pub/ready",
+            "/pub/analytics/*"
+          ],
+          "comment": "C3 Public API — single public-edge listener on oci-analytics. Consolidates http-to-smtp-proxy-api (Bearer-gated /mail/*) and c3-analytics-api passthrough (public /analytics/*). Replaces split listeners across gcp-proxy + oci-analytics so gcp-proxy becomes a pure wg0 spoke."
+        }
+      ],
+      "comment": "API hub -- path-based routing to backend APIs",
+      "landing_page": "api"
+    },
+    {
+      "parent_domain": "analytics.diegonmarcos.com",
+      "paths": [
+        {
+          "base_path": "/matomo",
+          "upstream": "10.0.0.6:8084",
+          "comment": "Matomo hybrid analytics (oci-apps)"
+        },
+        {
+          "base_path": "/openobserve",
+          "upstream": "10.0.0.6:5080",
+          "comment": "OpenObserve - single-binary observability platform (logs + traces + metrics + RUM). Replaces LGTM stack."
+        },
+        {
+          "base_path": "/umami",
+          "upstream": "10.0.0.6:3006",
+          "comment": "Umami Analytics - lightweight privacy-focused web analytics"
+        }
+      ],
+      "comment": ""
+    }
+  ],
+  "public_mcp_routes": [],
+  "github_pages_proxies": [
+    {
+      "domain": "diegonmarcos.com, www.diegonmarcos.com",
+      "github_path": "landpage",
+      "wkd": true,
+      "comment": "Landing page + WKD (Web Key Directory for PGP)"
+    },
+    {
+      "domain": "linktree.diegonmarcos.com",
+      "github_path": "linktree"
+    },
+    {
+      "domain": "nexus.diegonmarcos.com",
+      "github_path": "nexus"
+    },
+    {
+      "domain": "suite.diegonmarcos.com",
+      "github_path": "suite"
+    },
+    {
+      "domain": "maps.diegonmarcos.com",
+      "github_path": "mymaps"
+    }
+  ],
+  "well_known_routes": [
+    {
+      "path": "/.well-known/jmap",
+      "target_domain": "diegonmarcos.com",
+      "upstream": "10.0.0.3:2443",
+      "tls_skip_verify": true,
+      "comment": "JMAP autoconfig — proxies to Stalwart (preserves per-user session)"
+    },
+    {
+      "path": "/jmap/*",
+      "target_domain": "diegonmarcos.com",
+      "upstream": "10.0.0.3:2443",
+      "tls_skip_verify": true,
+      "comment": "JMAP API follow-through (matches relative redirect from /.well-known/jmap)"
+    },
+    {
+      "path": "/",
+      "target_domain": "jmap.diegonmarcos.com",
+      "redirect_to": "/.well-known/jmap",
+      "comment": "Bare host → JMAP discovery URL (308 redirect)"
+    }
+  ]
+}

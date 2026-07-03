@@ -1,1 +1,3746 @@
-../../../2_configs/dist/build-reports.json
+{
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 2_configs/build.sh all`.",
+  "_generated": "",
+  "_source": "_cloud-data-consolidated.json + 2_configs/src/inputs/reports-*.json via cloud-data-config-derive.ts/build-reports",
+  "_replaces": [
+    "cloud-data-monitoring-targets.json",
+    "cloud-data-topology.json",
+    "cloud-data-databases.json",
+    "cloud-data-dns-services.json",
+    "cloud-data-url-health.json",
+    "cloud-data-workflows.json",
+    "cloud-data-repo-scan.json",
+    "cloud-data-sec-scan.json"
+  ],
+  "endpoint_checks": [
+    {
+      "service": "c3-analytics-api",
+      "url": "https://api.diegonmarcos.com/c3a/c3a/healthz"
+    },
+    {
+      "service": "c3-infra-api",
+      "url": "https://api.diegonmarcos.com/c3-infra-api/c3-infra-api/health"
+    },
+    {
+      "service": "c3-public-api",
+      "url": "https://api.diegonmarcos.com/pub/pub/health"
+    },
+    {
+      "service": "c3-services-api",
+      "url": "https://api.diegonmarcos.com/c3-services-api/c3-services-api/health"
+    },
+    {
+      "service": "gitea",
+      "url": "https://git.diegonmarcos.com/"
+    },
+    {
+      "service": "wireguard-mesh",
+      "url": "https://mesh.diegonmarcos.com/"
+    },
+    {
+      "service": "dagu",
+      "url": "https://workflows.diegonmarcos.com/"
+    },
+    {
+      "service": "dbgate",
+      "url": "https://db.diegonmarcos.com/"
+    },
+    {
+      "service": "matomo",
+      "url": "https://analytics.diegonmarcos.com/matomo/"
+    },
+    {
+      "service": "ntfy",
+      "url": "https://rss.diegonmarcos.com/"
+    },
+    {
+      "service": "openobserve",
+      "url": "https://analytics.diegonmarcos.com/openobserve/healthz"
+    },
+    {
+      "service": "authelia",
+      "url": "https://auth.diegonmarcos.com/api/health"
+    },
+    {
+      "service": "chat-mattermost",
+      "url": "https://chat.diegonmarcos.com/api/v4/system/ping"
+    },
+    {
+      "service": "matrix-continuwuity",
+      "url": "https://matrix.diegonmarcos.com/_matrix/client/versions"
+    },
+    {
+      "service": "matrix-element",
+      "url": "https://messenger.diegonmarcos.com/"
+    },
+    {
+      "service": "maddy",
+      "url": "https://mail.diegonmarcos.com/"
+    },
+    {
+      "service": "stalwart",
+      "url": "https://jmap.diegonmarcos.com/"
+    },
+    {
+      "service": "crawlee-cloud",
+      "url": "https://api.diegonmarcos.com/"
+    },
+    {
+      "service": "fin-api",
+      "url": "https://api.diegonmarcos.com/fin-api/fin-api/health"
+    },
+    {
+      "service": "photoprism",
+      "url": "https://photos.diegonmarcos.com/api/v1/status"
+    },
+    {
+      "service": "calendar-radicale",
+      "url": "https://cal.diegonmarcos.com/.web/"
+    },
+    {
+      "service": "code-server",
+      "url": "https://ide.diegonmarcos.com/"
+    },
+    {
+      "service": "contacts-radicale",
+      "url": "https://contacts.diegonmarcos.com/.web/"
+    },
+    {
+      "service": "etherpad",
+      "url": "https://app.diegonmarcos.com/etherpad/"
+    },
+    {
+      "service": "filebrowser",
+      "url": "https://app.diegonmarcos.com/filebrowser/"
+    },
+    {
+      "service": "grist",
+      "url": "https://sheets.diegonmarcos.com/"
+    },
+    {
+      "service": "hedgedoc",
+      "url": "https://app.diegonmarcos.com/hedgedoc/"
+    },
+    {
+      "service": "paca",
+      "url": "https://paca.diegonmarcos.com/api/healthz"
+    },
+    {
+      "service": "vaultwarden",
+      "url": "https://vault.diegonmarcos.com/alive"
+    }
+  ],
+  "dns_checks": [
+    {
+      "service": "c3-analytics-api",
+      "domain": "api.diegonmarcos.com/c3a"
+    },
+    {
+      "service": "c3-infra-api",
+      "domain": "api.diegonmarcos.com/c3-infra-api"
+    },
+    {
+      "service": "c3-public-api",
+      "domain": "api.diegonmarcos.com/pub"
+    },
+    {
+      "service": "c3-services-api",
+      "domain": "api.diegonmarcos.com/c3-services-api"
+    },
+    {
+      "service": "gitea",
+      "domain": "git.diegonmarcos.com"
+    },
+    {
+      "service": "wireguard-mesh",
+      "domain": "mesh.diegonmarcos.com"
+    },
+    {
+      "service": "wireguard-mesh-ws-tunnel",
+      "domain": "vpn.diegonmarcos.com"
+    },
+    {
+      "service": "dagu",
+      "domain": "workflows.diegonmarcos.com"
+    },
+    {
+      "service": "dbgate",
+      "domain": "db.diegonmarcos.com"
+    },
+    {
+      "service": "matomo",
+      "domain": "analytics.diegonmarcos.com/matomo"
+    },
+    {
+      "service": "ntfy",
+      "domain": "rss.diegonmarcos.com"
+    },
+    {
+      "service": "openobserve",
+      "domain": "analytics.diegonmarcos.com/openobserve"
+    },
+    {
+      "service": "authelia",
+      "domain": "auth.diegonmarcos.com"
+    },
+    {
+      "service": "crowdsec",
+      "domain": "crowdsec.diegonmarcos.com"
+    },
+    {
+      "service": "chat-mattermost",
+      "domain": "chat.diegonmarcos.com"
+    },
+    {
+      "service": "matrix-continuwuity",
+      "domain": "matrix.diegonmarcos.com"
+    },
+    {
+      "service": "matrix-element",
+      "domain": "messenger.diegonmarcos.com"
+    },
+    {
+      "service": "maddy",
+      "domain": "mail.diegonmarcos.com"
+    },
+    {
+      "service": "stalwart",
+      "domain": "jmap.diegonmarcos.com"
+    },
+    {
+      "service": "crawlee-cloud",
+      "domain": "api.diegonmarcos.com"
+    },
+    {
+      "service": "fin-api",
+      "domain": "api.diegonmarcos.com/fin-api"
+    },
+    {
+      "service": "photoprism",
+      "domain": "photos.diegonmarcos.com"
+    },
+    {
+      "service": "calendar-radicale",
+      "domain": "cal.diegonmarcos.com"
+    },
+    {
+      "service": "code-server",
+      "domain": "ide.diegonmarcos.com"
+    },
+    {
+      "service": "contacts-radicale",
+      "domain": "contacts.diegonmarcos.com"
+    },
+    {
+      "service": "etherpad",
+      "domain": "app.diegonmarcos.com/etherpad"
+    },
+    {
+      "service": "filebrowser",
+      "domain": "app.diegonmarcos.com/filebrowser"
+    },
+    {
+      "service": "grist",
+      "domain": "sheets.diegonmarcos.com"
+    },
+    {
+      "service": "hedgedoc",
+      "domain": "app.diegonmarcos.com/hedgedoc"
+    },
+    {
+      "service": "paca",
+      "domain": "paca.diegonmarcos.com"
+    },
+    {
+      "service": "vaultwarden",
+      "domain": "vault.diegonmarcos.com"
+    }
+  ],
+  "tls_checks": [
+    {
+      "service": "c3-analytics-api",
+      "domain": "api.diegonmarcos.com/c3a"
+    },
+    {
+      "service": "c3-infra-api",
+      "domain": "api.diegonmarcos.com/c3-infra-api"
+    },
+    {
+      "service": "c3-public-api",
+      "domain": "api.diegonmarcos.com/pub"
+    },
+    {
+      "service": "c3-services-api",
+      "domain": "api.diegonmarcos.com/c3-services-api"
+    },
+    {
+      "service": "gitea",
+      "domain": "git.diegonmarcos.com"
+    },
+    {
+      "service": "wireguard-mesh",
+      "domain": "mesh.diegonmarcos.com"
+    },
+    {
+      "service": "wireguard-mesh-ws-tunnel",
+      "domain": "vpn.diegonmarcos.com"
+    },
+    {
+      "service": "dagu",
+      "domain": "workflows.diegonmarcos.com"
+    },
+    {
+      "service": "dbgate",
+      "domain": "db.diegonmarcos.com"
+    },
+    {
+      "service": "matomo",
+      "domain": "analytics.diegonmarcos.com/matomo"
+    },
+    {
+      "service": "ntfy",
+      "domain": "rss.diegonmarcos.com"
+    },
+    {
+      "service": "openobserve",
+      "domain": "analytics.diegonmarcos.com/openobserve"
+    },
+    {
+      "service": "umami",
+      "domain": "analytics.diegonmarcos.com"
+    },
+    {
+      "service": "authelia",
+      "domain": "auth.diegonmarcos.com"
+    },
+    {
+      "service": "crowdsec",
+      "domain": "crowdsec.diegonmarcos.com"
+    },
+    {
+      "service": "chat-mattermost",
+      "domain": "chat.diegonmarcos.com"
+    },
+    {
+      "service": "matrix-continuwuity",
+      "domain": "matrix.diegonmarcos.com"
+    },
+    {
+      "service": "matrix-element",
+      "domain": "messenger.diegonmarcos.com"
+    },
+    {
+      "service": "maddy",
+      "domain": "mail.diegonmarcos.com"
+    },
+    {
+      "service": "stalwart",
+      "domain": "jmap.diegonmarcos.com"
+    },
+    {
+      "service": "crawlee-cloud",
+      "domain": "api.diegonmarcos.com"
+    },
+    {
+      "service": "fin-api",
+      "domain": "api.diegonmarcos.com/fin-api"
+    },
+    {
+      "service": "photoprism",
+      "domain": "photos.diegonmarcos.com"
+    },
+    {
+      "service": "calendar-radicale",
+      "domain": "cal.diegonmarcos.com"
+    },
+    {
+      "service": "code-server",
+      "domain": "ide.diegonmarcos.com"
+    },
+    {
+      "service": "contacts-radicale",
+      "domain": "contacts.diegonmarcos.com"
+    },
+    {
+      "service": "etherpad",
+      "domain": "app.diegonmarcos.com/etherpad"
+    },
+    {
+      "service": "filebrowser",
+      "domain": "app.diegonmarcos.com/filebrowser"
+    },
+    {
+      "service": "grist",
+      "domain": "sheets.diegonmarcos.com"
+    },
+    {
+      "service": "hedgedoc",
+      "domain": "app.diegonmarcos.com/hedgedoc"
+    },
+    {
+      "service": "paca",
+      "domain": "paca.diegonmarcos.com"
+    },
+    {
+      "service": "vaultwarden",
+      "domain": "vault.diegonmarcos.com"
+    }
+  ],
+  "vms": [
+    {
+      "ip": "10.0.0.3",
+      "name": "oci-mail",
+      "user": "ubuntu"
+    },
+    {
+      "ip": "10.0.0.4",
+      "name": "oci-analytics",
+      "user": "ubuntu"
+    },
+    {
+      "ip": "10.0.0.6",
+      "name": "oci-apps",
+      "user": "ubuntu"
+    },
+    {
+      "ip": "10.0.0.1",
+      "name": "gcp-proxy",
+      "user": "diego"
+    }
+  ],
+  "services": {
+    "c3-analytics-api": {
+      "name": "c3-analytics-api",
+      "vm": "gcp-E2-f_0",
+      "domain": "api.diegonmarcos.com/c3a",
+      "enabled": true,
+      "category": "obs",
+      "ports": {
+        "app": 8085
+      },
+      "health": {
+        "path": "/c3a/healthz"
+      }
+    },
+    "c3-diego-personal-data-mcp": {
+      "name": "c3-diego-personal-data-mcp",
+      "vm": "local",
+      "domain": null,
+      "enabled": true,
+      "category": "data",
+      "ports": null,
+      "health": null
+    },
+    "c3-infra-api": {
+      "name": "c3-infra-api",
+      "vm": "oci-A1-f_0",
+      "domain": "api.diegonmarcos.com/c3-infra-api",
+      "enabled": true,
+      "category": "sec",
+      "ports": {
+        "app": 8081
+      },
+      "health": {
+        "path": "/c3-infra-api/health"
+      }
+    },
+    "c3-infra-mcp": {
+      "name": "c3-infra-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
+      "enabled": true,
+      "category": "sec",
+      "ports": {
+        "app": 3100
+      },
+      "health": {
+        "path": "/mcp"
+      }
+    },
+    "c3-public-api": {
+      "name": "c3-public-api",
+      "vm": "oci-E2-f_1",
+      "domain": "api.diegonmarcos.com/pub",
+      "enabled": true,
+      "category": "obs",
+      "ports": {
+        "app": 8087
+      },
+      "health": {
+        "path": "/pub/health"
+      }
+    },
+    "c3-services-api": {
+      "name": "c3-services-api",
+      "vm": "oci-A1-f_0",
+      "domain": "api.diegonmarcos.com/c3-services-api",
+      "enabled": true,
+      "category": "obs",
+      "ports": {
+        "app": 8082
+      },
+      "health": {
+        "path": "/c3-services-api/health"
+      }
+    },
+    "c3-services-mcp": {
+      "name": "c3-services-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "obs",
+      "ports": {
+        "app": 3101
+      },
+      "health": {
+        "path": "/mcp"
+      }
+    },
+    "google-personal-mcp": {
+      "name": "google-personal-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": "mcp.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3106
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "google-workspace-mcp": {
+      "name": "google-workspace-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": "mcp.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3104
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "mail-mcp": {
+      "name": "mail-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": "mcp.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3103
+      },
+      "health": null
+    },
+    "mattermost-mcp": {
+      "name": "mattermost-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3102
+      },
+      "health": null
+    },
+    "http-to-smtp-proxy-api": {
+      "name": "http-to-smtp-proxy-api",
+      "vm": "gcp-E2-f_0",
+      "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
+      "enabled": false,
+      "category": "app",
+      "ports": {
+        "app": 8090
+      },
+      "health": null
+    },
+    "cloud-builder-x": {
+      "name": "cloud-builder-x",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "tools",
+      "ports": null,
+      "health": null
+    },
+    "gha-runner": {
+      "name": "gha-runner",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "tools",
+      "ports": null,
+      "health": null
+    },
+    "cloudflare-worker": {
+      "name": "cloudflare-worker",
+      "vm": "local",
+      "domain": null,
+      "enabled": true,
+      "category": "cloud",
+      "ports": null,
+      "health": null
+    },
+    "gcloud": {
+      "name": "gcloud",
+      "vm": "local",
+      "domain": null,
+      "enabled": true,
+      "category": "cloud",
+      "ports": null,
+      "health": null
+    },
+    "backup-borg": {
+      "name": "backup-borg",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "data",
+      "ports": {
+        "app": 2224
+      },
+      "health": null
+    },
+    "backup-bup": {
+      "name": "backup-bup",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "data",
+      "ports": {
+        "app": 2223
+      },
+      "health": null
+    },
+    "gitea": {
+      "name": "gitea",
+      "vm": "oci-A1-f_0",
+      "domain": "git.diegonmarcos.com",
+      "enabled": true,
+      "category": "data",
+      "ports": {
+        "app": 3002
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "postlite": {
+      "name": "postlite",
+      "vm": "gcp-E2-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "data",
+      "ports": {
+        "npm_rest": 8890,
+        "vaultwarden_rest": 8891,
+        "ntfy_rest": 8892,
+        "authelia_rest": 8893,
+        "npm_pg": 5433,
+        "vaultwarden_pg": 5434,
+        "ntfy_pg": 5435,
+        "authelia_pg": 5436
+      },
+      "health": null
+    },
+    "redis": {
+      "name": "redis",
+      "vm": "gcp-E2-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "data",
+      "ports": {
+        "app": 6379
+      },
+      "health": null
+    },
+    "hickory-dns": {
+      "name": "hickory-dns",
+      "vm": "gcp-E2-f_0",
+      "domain": "dns.internal",
+      "enabled": true,
+      "category": "cloud",
+      "ports": {
+        "dns": 53
+      },
+      "health": null
+    },
+    "wireguard-mesh": {
+      "name": "wireguard-mesh",
+      "vm": "oci-A1-f_0",
+      "domain": "mesh.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 8080
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "wireguard-mesh-ws-tunnel": {
+      "name": "wireguard-mesh-ws-tunnel",
+      "vm": "gcp-E2-f_0",
+      "domain": "vpn.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "ws": 8080
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "wireguard-public": {
+      "name": "wireguard-public",
+      "vm": "local",
+      "domain": null,
+      "enabled": false,
+      "category": "net",
+      "ports": null,
+      "health": null
+    },
+    "cloud-spec": {
+      "name": "cloud-spec",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 3080
+      },
+      "health": null
+    },
+    "dagu": {
+      "name": "dagu",
+      "vm": "oci-A1-f_0",
+      "domain": "workflows.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 8070
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "dbgate": {
+      "name": "dbgate",
+      "vm": "oci-A1-f_0",
+      "domain": "db.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 8086
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "matomo": {
+      "name": "matomo",
+      "vm": "oci-A1-f_0",
+      "domain": "analytics.diegonmarcos.com/matomo",
+      "enabled": true,
+      "category": "tools",
+      "ports": null,
+      "health": {
+        "path": "/"
+      }
+    },
+    "ntfy": {
+      "name": "ntfy",
+      "vm": "oci-A1-f_0",
+      "domain": "rss.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 8090
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "openobserve": {
+      "name": "openobserve",
+      "vm": "oci-A1-f_0",
+      "domain": "analytics.diegonmarcos.com/openobserve",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 5080
+      },
+      "health": {
+        "path": "/healthz"
+      }
+    },
+    "umami": {
+      "name": "umami",
+      "vm": "oci-A1-f_0",
+      "domain": "analytics.diegonmarcos.com",
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 3006,
+        "db": 5442
+      },
+      "health": null
+    },
+    "authelia": {
+      "name": "authelia",
+      "vm": "gcp-E2-f_0",
+      "domain": "auth.diegonmarcos.com",
+      "enabled": true,
+      "category": "sec",
+      "ports": {
+        "app": 9091,
+        "redis": 6380
+      },
+      "health": {
+        "path": "/api/health"
+      }
+    },
+    "caddy": {
+      "name": "caddy",
+      "vm": "gcp-E2-f_0",
+      "domain": "proxy.diegonmarcos.com",
+      "enabled": true,
+      "category": "sec",
+      "ports": null,
+      "health": null
+    },
+    "caddy-l4-image": {
+      "name": "caddy-l4-image",
+      "vm": "local",
+      "domain": null,
+      "enabled": true,
+      "category": "sec",
+      "ports": null,
+      "health": null
+    },
+    "caddy-public": {
+      "name": "caddy-public",
+      "vm": "oci-E2-f_1",
+      "domain": null,
+      "enabled": true,
+      "category": "sec",
+      "ports": null,
+      "health": null
+    },
+    "crowdsec": {
+      "name": "crowdsec",
+      "vm": "oci-A1-f_0",
+      "domain": "crowdsec.diegonmarcos.com",
+      "enabled": true,
+      "category": "sec",
+      "ports": {
+        "lapi": 8088,
+        "metrics": 6062
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "introspect-proxy": {
+      "name": "introspect-proxy",
+      "vm": "gcp-E2-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "sec",
+      "ports": {
+        "app": 4182
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "claude-superset-api": {
+      "name": "claude-superset-api",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "app": 3117,
+        "ollama": 11436,
+        "headroom": 8788,
+        "proxy": 8789
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "cloud-cgc-mcp": {
+      "name": "cloud-cgc-mcp",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "obs",
+      "ports": {
+        "app": 3105
+      },
+      "health": {
+        "path": "/mcp"
+      }
+    },
+    "db-agent": {
+      "name": "db-agent",
+      "vm": "all",
+      "domain": null,
+      "enabled": true,
+      "category": "data",
+      "ports": null,
+      "health": null
+    },
+    "kg-store": {
+      "name": "kg-store",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "data",
+      "ports": {
+        "app": 8001
+      },
+      "health": null
+    },
+    "ollama": {
+      "name": "ollama",
+      "vm": "gcp-t4",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "app": 11434
+      },
+      "health": null
+    },
+    "ollama-arm": {
+      "name": "ollama-arm",
+      "vm": "oci-apps-2",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "app": 11434
+      },
+      "health": null
+    },
+    "ollama-hai": {
+      "name": "ollama-hai",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "agi",
+      "ports": {
+        "app": 11435
+      },
+      "health": null
+    },
+    "rig-agentic-hai-1.5bq4": {
+      "name": "rig-agentic-hai-1.5bq4",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "agi",
+      "ports": {
+        "app": 8091
+      },
+      "health": null
+    },
+    "rig-agentic-sonn-14bq8": {
+      "name": "rig-agentic-sonn-14bq8",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "app": 8091
+      },
+      "health": null
+    },
+    "session-memory": {
+      "name": "session-memory",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "agi",
+      "ports": {
+        "app": 3108
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "chat-mattermost": {
+      "name": "chat-mattermost",
+      "vm": "oci-A1-f_0",
+      "domain": "chat.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8065,
+        "db": 5435
+      },
+      "health": {
+        "path": "/api/v4/system/ping"
+      }
+    },
+    "cypht": {
+      "name": "cypht",
+      "vm": "oci-E2-f_0",
+      "domain": "webmail.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8889
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "mail-puller": {
+      "name": "mail-puller",
+      "vm": "oci-E2-f_0",
+      "domain": "mail-puller.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": null
+      },
+      "health": {
+        "path": null
+      }
+    },
+    "matrix-continuwuity": {
+      "name": "matrix-continuwuity",
+      "vm": "oci-A1-f_0",
+      "domain": "matrix.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8008
+      },
+      "health": {
+        "path": "/_matrix/client/versions"
+      }
+    },
+    "matrix-element": {
+      "name": "matrix-element",
+      "vm": "oci-A1-f_0",
+      "domain": "messenger.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8083
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "matrix-mautrix-whatsapp": {
+      "name": "matrix-mautrix-whatsapp",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 29318
+      },
+      "health": null
+    },
+    "snappymail": {
+      "name": "snappymail",
+      "vm": "oci-E2-f_0",
+      "domain": "webmail.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8888
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "maddy": {
+      "name": "maddy",
+      "vm": "oci-E2-f_0",
+      "domain": "mail.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 993,
+        "smtp": 465,
+        "imap": 993
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "stalwart": {
+      "name": "stalwart",
+      "vm": "oci-E2-f_0",
+      "domain": "jmap.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": null,
+      "health": {
+        "path": "/"
+      }
+    },
+    "crawlee-cloud": {
+      "name": "crawlee-cloud",
+      "vm": "oci-A1-f_0",
+      "domain": "api.diegonmarcos.com",
+      "enabled": true,
+      "category": "fin",
+      "ports": {
+        "app": 3000,
+        "dashboard": 3001,
+        "db": 5434,
+        "redis": 6381,
+        "minio": 9000,
+        "minio_console": 9001
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "fin-api": {
+      "name": "fin-api",
+      "vm": "oci-A1-f_0",
+      "domain": "api.diegonmarcos.com/fin-api",
+      "enabled": true,
+      "category": "fin",
+      "ports": {
+        "app": 8340
+      },
+      "health": {
+        "path": "/fin-api/health"
+      }
+    },
+    "photoprism": {
+      "name": "photoprism",
+      "vm": "oci-A1-f_0",
+      "domain": "photos.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3013
+      },
+      "health": {
+        "path": "/api/v1/status"
+      }
+    },
+    "news-gdelt": {
+      "name": "news-gdelt",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": true,
+      "category": "tools",
+      "ports": {
+        "app": 3019
+      },
+      "health": {
+        "path": "/health"
+      }
+    },
+    "calendar-radicale": {
+      "name": "calendar-radicale",
+      "vm": "oci-A1-f_0",
+      "domain": "cal.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 5232
+      },
+      "health": {
+        "path": "/.web/"
+      }
+    },
+    "code-server": {
+      "name": "code-server",
+      "vm": "oci-A1-f_0",
+      "domain": "ide.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 8443
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "contacts-radicale": {
+      "name": "contacts-radicale",
+      "vm": "oci-A1-f_0",
+      "domain": "contacts.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 5233
+      },
+      "health": {
+        "path": "/.web/"
+      }
+    },
+    "etherpad": {
+      "name": "etherpad",
+      "vm": "oci-A1-f_0",
+      "domain": "app.diegonmarcos.com/etherpad",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3012,
+        "db": 5436
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "filebrowser": {
+      "name": "filebrowser",
+      "vm": "oci-A1-f_0",
+      "domain": "app.diegonmarcos.com/filebrowser",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3015
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "grist": {
+      "name": "grist",
+      "vm": "oci-A1-f_0",
+      "domain": "sheets.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3011
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "hedgedoc": {
+      "name": "hedgedoc",
+      "vm": "oci-A1-f_0",
+      "domain": "app.diegonmarcos.com/hedgedoc",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "app": 3018,
+        "db": 5439
+      },
+      "health": {
+        "path": "/"
+      }
+    },
+    "paca": {
+      "name": "paca",
+      "vm": "oci-A1-f_0",
+      "domain": "paca.diegonmarcos.com",
+      "enabled": true,
+      "category": "app",
+      "ports": {
+        "gateway": 8095,
+        "api": 8080,
+        "realtime": 3001,
+        "db": 5432
+      },
+      "health": {
+        "path": "/api/healthz"
+      }
+    },
+    "revealmd": {
+      "name": "revealmd",
+      "vm": "oci-A1-f_0",
+      "domain": null,
+      "enabled": false,
+      "category": "app",
+      "ports": {
+        "app": 3014
+      },
+      "health": null
+    },
+    "vaultwarden": {
+      "name": "vaultwarden",
+      "vm": "oci-A1-f_0",
+      "domain": "vault.diegonmarcos.com",
+      "enabled": true,
+      "category": "mic",
+      "ports": {
+        "app": 8880
+      },
+      "health": {
+        "path": "/alive"
+      }
+    },
+    "front-end": {
+      "name": "front-end",
+      "vm": "local",
+      "domain": null,
+      "enabled": true,
+      "category": "app",
+      "ports": null,
+      "health": null
+    }
+  },
+  "dns_services": [
+    {
+      "service": "c3-analytics-api",
+      "dns": "c3-analytics-api.app"
+    },
+    {
+      "service": "c3-analytics-api",
+      "container": "app",
+      "dns": "c3-analytics-api.app"
+    },
+    {
+      "service": "c3-infra-api",
+      "dns": "c3-infra-api.app"
+    },
+    {
+      "service": "c3-infra-api",
+      "container": "app",
+      "dns": "c3-infra-api.app"
+    },
+    {
+      "service": "c3-infra-mcp",
+      "dns": "c3-infra-mcp.app"
+    },
+    {
+      "service": "c3-infra-mcp",
+      "container": "app",
+      "dns": "c3-infra-mcp.app"
+    },
+    {
+      "service": "c3-public-api",
+      "dns": "c3-public-api.app"
+    },
+    {
+      "service": "c3-public-api",
+      "container": "app",
+      "dns": "c3-public-api.app"
+    },
+    {
+      "service": "c3-services-api",
+      "dns": "c3-services-api.app"
+    },
+    {
+      "service": "c3-services-api",
+      "container": "app",
+      "dns": "c3-services-api.app"
+    },
+    {
+      "service": "c3-services-mcp",
+      "dns": "c3-services-mcp.app"
+    },
+    {
+      "service": "c3-services-mcp",
+      "container": "app",
+      "dns": "c3-services-mcp.app"
+    },
+    {
+      "service": "google-personal-mcp",
+      "dns": "g-personal-mcp.app"
+    },
+    {
+      "service": "google-personal-mcp",
+      "container": "app",
+      "dns": "g-personal-mcp.app"
+    },
+    {
+      "service": "google-workspace-mcp",
+      "dns": "g-workspace-mcp.app"
+    },
+    {
+      "service": "google-workspace-mcp",
+      "container": "app",
+      "dns": "g-workspace-mcp.app"
+    },
+    {
+      "service": "mail-mcp",
+      "dns": "mail-mcp.app"
+    },
+    {
+      "service": "mail-mcp",
+      "container": "app",
+      "dns": "mail-mcp.app"
+    },
+    {
+      "service": "mattermost-mcp",
+      "dns": "mattermost-mcp.app"
+    },
+    {
+      "service": "mattermost-mcp",
+      "container": "app",
+      "dns": "mattermost-mcp.app"
+    },
+    {
+      "service": "http-to-smtp-proxy-api",
+      "dns": "http-to-smtp-proxy-api.app"
+    },
+    {
+      "service": "http-to-smtp-proxy-api",
+      "container": "app",
+      "dns": "http-to-smtp-proxy-api.app"
+    },
+    {
+      "service": "backup-borg",
+      "dns": "backup-borg.app"
+    },
+    {
+      "service": "backup-bup",
+      "dns": "backup-bup.app"
+    },
+    {
+      "service": "gitea",
+      "dns": "gitea.app"
+    },
+    {
+      "service": "gitea",
+      "container": "app",
+      "dns": "gitea.app"
+    },
+    {
+      "service": "redis",
+      "dns": "redis.app"
+    },
+    {
+      "service": "redis",
+      "container": "app",
+      "dns": "redis.app"
+    },
+    {
+      "service": "hickory-dns",
+      "dns": "hickory-dns.app"
+    },
+    {
+      "service": "hickory-dns",
+      "container": "app",
+      "dns": "hickory-dns.app"
+    },
+    {
+      "service": "wireguard-mesh",
+      "dns": "wireguard-mesh.app"
+    },
+    {
+      "service": "wireguard-mesh-ws-tunnel",
+      "dns": "wireguard-mesh-ws-tunnel.app"
+    },
+    {
+      "service": "cloud-spec",
+      "dns": "c3-spec.app"
+    },
+    {
+      "service": "cloud-spec",
+      "container": "app",
+      "dns": "c3-spec.app"
+    },
+    {
+      "service": "dagu",
+      "dns": "dagu.app"
+    },
+    {
+      "service": "dagu",
+      "container": "app",
+      "dns": "dagu.app"
+    },
+    {
+      "service": "dbgate",
+      "dns": "dbgate.app"
+    },
+    {
+      "service": "dbgate",
+      "container": "app",
+      "dns": "dbgate.app"
+    },
+    {
+      "service": "matomo",
+      "dns": "matomo.app"
+    },
+    {
+      "service": "matomo",
+      "container": "app",
+      "dns": "matomo.app"
+    },
+    {
+      "service": "ntfy",
+      "dns": "ntfy.app"
+    },
+    {
+      "service": "ntfy",
+      "container": "app",
+      "dns": "ntfy.app"
+    },
+    {
+      "service": "openobserve",
+      "dns": "openobserve.app"
+    },
+    {
+      "service": "openobserve",
+      "container": "app",
+      "dns": "openobserve.app"
+    },
+    {
+      "service": "umami",
+      "dns": "umami.app"
+    },
+    {
+      "service": "umami",
+      "container": "app",
+      "dns": "umami.app"
+    },
+    {
+      "service": "umami",
+      "container": "db",
+      "dns": "umami-db.app"
+    },
+    {
+      "service": "umami",
+      "container": "setup",
+      "dns": "umami-setup.app"
+    },
+    {
+      "service": "authelia",
+      "dns": "authelia.app"
+    },
+    {
+      "service": "authelia",
+      "container": "app",
+      "dns": "authelia.app"
+    },
+    {
+      "service": "authelia",
+      "container": "redis",
+      "dns": "authelia-redis.app"
+    },
+    {
+      "service": "caddy",
+      "dns": "caddy.app"
+    },
+    {
+      "service": "caddy",
+      "container": "app",
+      "dns": "caddy.app"
+    },
+    {
+      "service": "caddy-public",
+      "dns": "caddy-public.app"
+    },
+    {
+      "service": "caddy-public",
+      "container": "app",
+      "dns": "caddy-public.app"
+    },
+    {
+      "service": "crowdsec",
+      "dns": "crowdsec.app"
+    },
+    {
+      "service": "crowdsec",
+      "container": "app",
+      "dns": "crowdsec.app"
+    },
+    {
+      "service": "introspect-proxy",
+      "dns": "introspect-proxy.app"
+    },
+    {
+      "service": "introspect-proxy",
+      "container": "app",
+      "dns": "introspect-proxy.app"
+    },
+    {
+      "service": "claude-superset-api",
+      "dns": "claude-superset-api.app"
+    },
+    {
+      "service": "claude-superset-api",
+      "container": "app",
+      "dns": "claude-superset-api.app"
+    },
+    {
+      "service": "cloud-cgc-mcp",
+      "dns": "cloud-cgc-mcp.app"
+    },
+    {
+      "service": "cloud-cgc-mcp",
+      "container": "app",
+      "dns": "cloud-cgc-mcp.app"
+    },
+    {
+      "service": "kg-store",
+      "dns": "kg-store.app"
+    },
+    {
+      "service": "ollama",
+      "dns": "ollama.app"
+    },
+    {
+      "service": "ollama",
+      "container": "app",
+      "dns": "ollama.app"
+    },
+    {
+      "service": "ollama-arm",
+      "dns": "ollama-arm.app"
+    },
+    {
+      "service": "ollama-hai",
+      "dns": "ollama-hai.app"
+    },
+    {
+      "service": "ollama-hai",
+      "container": "app",
+      "dns": "ollama-hai.app"
+    },
+    {
+      "service": "rig-agentic-hai-1.5bq4",
+      "dns": "rig-agentic-hai-1.5bq4.app"
+    },
+    {
+      "service": "rig-agentic-sonn-14bq8",
+      "dns": "rig-agentic-sonn-14bq8.app"
+    },
+    {
+      "service": "session-memory",
+      "dns": "session-memory.app"
+    },
+    {
+      "service": "session-memory",
+      "container": "app",
+      "dns": "session-memory.app"
+    },
+    {
+      "service": "chat-mattermost",
+      "dns": "mattermost.app"
+    },
+    {
+      "service": "chat-mattermost",
+      "container": "app",
+      "dns": "mattermost.app"
+    },
+    {
+      "service": "chat-mattermost",
+      "container": "db",
+      "dns": "mattermost-postgres.app"
+    },
+    {
+      "service": "chat-mattermost",
+      "container": "bots",
+      "dns": "mattermost-bots.app"
+    },
+    {
+      "service": "cypht",
+      "dns": "cypht.app"
+    },
+    {
+      "service": "cypht",
+      "container": "app",
+      "dns": "cypht.app"
+    },
+    {
+      "service": "mail-puller",
+      "dns": "mail-puller.app"
+    },
+    {
+      "service": "matrix-continuwuity",
+      "dns": "matrix-continuwuity.app"
+    },
+    {
+      "service": "matrix-continuwuity",
+      "container": "app",
+      "dns": "matrix-continuwuity.app"
+    },
+    {
+      "service": "matrix-element",
+      "dns": "matrix-element.app"
+    },
+    {
+      "service": "matrix-element",
+      "container": "app",
+      "dns": "matrix-element.app"
+    },
+    {
+      "service": "matrix-mautrix-whatsapp",
+      "dns": "matrix-mautrix-whatsapp.app"
+    },
+    {
+      "service": "matrix-mautrix-whatsapp",
+      "container": "app",
+      "dns": "matrix-mautrix-whatsapp.app"
+    },
+    {
+      "service": "snappymail",
+      "dns": "snappymail.app"
+    },
+    {
+      "service": "snappymail",
+      "container": "app",
+      "dns": "snappymail.app"
+    },
+    {
+      "service": "maddy",
+      "dns": "maddy.app"
+    },
+    {
+      "service": "maddy",
+      "container": "app",
+      "dns": "maddy.app"
+    },
+    {
+      "service": "stalwart",
+      "dns": "stalwart.app"
+    },
+    {
+      "service": "stalwart",
+      "container": "app",
+      "dns": "stalwart.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "dns": "crawlee.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "app",
+      "dns": "crawlee.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "runner",
+      "dns": "crawlee-runner.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "dashboard",
+      "dns": "crawlee-dashboard.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "scheduler",
+      "dns": "crawlee-scheduler.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "db",
+      "dns": "crawlee-db.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "redis",
+      "dns": "crawlee-redis.app"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "minio",
+      "dns": "crawlee-minio.app"
+    },
+    {
+      "service": "fin-api",
+      "dns": "fin-api.app"
+    },
+    {
+      "service": "fin-api",
+      "container": "app",
+      "dns": "fin-api.app"
+    },
+    {
+      "service": "photoprism",
+      "dns": "photoprism.app"
+    },
+    {
+      "service": "photoprism",
+      "container": "app",
+      "dns": "photoprism.app"
+    },
+    {
+      "service": "news-gdelt",
+      "dns": "news-gdelt.app"
+    },
+    {
+      "service": "calendar-radicale",
+      "dns": "calendar.app"
+    },
+    {
+      "service": "calendar-radicale",
+      "container": "app",
+      "dns": "calendar.app"
+    },
+    {
+      "service": "code-server",
+      "dns": "code-server.app"
+    },
+    {
+      "service": "code-server",
+      "container": "app",
+      "dns": "code-server.app"
+    },
+    {
+      "service": "contacts-radicale",
+      "dns": "contacts.app"
+    },
+    {
+      "service": "contacts-radicale",
+      "container": "app",
+      "dns": "contacts.app"
+    },
+    {
+      "service": "etherpad",
+      "dns": "etherpad.app"
+    },
+    {
+      "service": "etherpad",
+      "container": "app",
+      "dns": "etherpad.app"
+    },
+    {
+      "service": "etherpad",
+      "container": "db",
+      "dns": "etherpad-db.app"
+    },
+    {
+      "service": "filebrowser",
+      "dns": "filebrowser.app"
+    },
+    {
+      "service": "filebrowser",
+      "container": "app",
+      "dns": "filebrowser.app"
+    },
+    {
+      "service": "grist",
+      "dns": "grist.app"
+    },
+    {
+      "service": "grist",
+      "container": "app",
+      "dns": "grist.app"
+    },
+    {
+      "service": "hedgedoc",
+      "dns": "hedgedoc.app"
+    },
+    {
+      "service": "hedgedoc",
+      "container": "app",
+      "dns": "hedgedoc.app"
+    },
+    {
+      "service": "hedgedoc",
+      "container": "db",
+      "dns": "hedgedoc-db.app"
+    },
+    {
+      "service": "paca",
+      "dns": "paca.app"
+    },
+    {
+      "service": "paca",
+      "container": "gateway",
+      "dns": "paca.app"
+    },
+    {
+      "service": "paca",
+      "container": "api",
+      "dns": "paca-api.app"
+    },
+    {
+      "service": "paca",
+      "container": "web",
+      "dns": "paca-web.app"
+    },
+    {
+      "service": "paca",
+      "container": "realtime",
+      "dns": "paca-realtime.app"
+    },
+    {
+      "service": "paca",
+      "container": "valkey",
+      "dns": "paca-valkey.app"
+    },
+    {
+      "service": "paca",
+      "container": "db",
+      "dns": "paca-postgres.app"
+    },
+    {
+      "service": "revealmd",
+      "dns": "revealmd.app"
+    },
+    {
+      "service": "revealmd",
+      "container": "app",
+      "dns": "revealmd.app"
+    },
+    {
+      "service": "vaultwarden",
+      "dns": "vaultwarden.app"
+    },
+    {
+      "service": "vaultwarden",
+      "container": "app",
+      "dns": "vaultwarden.app"
+    }
+  ],
+  "databases": [
+    {
+      "service": "redis",
+      "container": "app",
+      "engine": "redis",
+      "port": 6379,
+      "db_name": null,
+      "db_user": null
+    },
+    {
+      "service": "umami",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5442,
+      "db_name": "umami",
+      "db_user": "umami"
+    },
+    {
+      "service": "authelia",
+      "container": "redis",
+      "engine": "redis",
+      "port": 6380,
+      "db_name": null,
+      "db_user": null
+    },
+    {
+      "service": "kg-store",
+      "container": "app",
+      "engine": "surrealdb",
+      "port": 8001,
+      "db_name": null,
+      "db_user": null
+    },
+    {
+      "service": "chat-mattermost",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5435,
+      "db_name": "mattermost",
+      "db_user": "mattermost"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5434,
+      "db_name": "crawlee",
+      "db_user": "crawlee"
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "redis",
+      "engine": "redis",
+      "port": 6381,
+      "db_name": null,
+      "db_user": null
+    },
+    {
+      "service": "crawlee-cloud",
+      "container": "minio",
+      "engine": "minio",
+      "port": 9000,
+      "db_name": null,
+      "db_user": null
+    },
+    {
+      "service": "photoprism",
+      "container": "db",
+      "engine": "mariadb",
+      "port": null,
+      "db_name": "photoprism",
+      "db_user": "root"
+    },
+    {
+      "service": "etherpad",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5436,
+      "db_name": "etherpad",
+      "db_user": "etherpad"
+    },
+    {
+      "service": "hedgedoc",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5439,
+      "db_name": "hedgedoc",
+      "db_user": "hedgedoc"
+    },
+    {
+      "service": "paca",
+      "container": "db",
+      "engine": "postgres",
+      "port": 5432,
+      "db_name": "paca",
+      "db_user": "paca"
+    }
+  ],
+  "topology": {
+    "vms": {
+      "oci-E2-f_0": {
+        "alias": "oci-mail",
+        "wg_ip": "10.0.0.3",
+        "public_ip": null,
+        "user": "ubuntu",
+        "provider": null,
+        "services": [
+          "cypht",
+          "mail-puller",
+          "snappymail",
+          "maddy",
+          "stalwart"
+        ]
+      },
+      "oci-E2-f_1": {
+        "alias": "oci-analytics",
+        "wg_ip": "10.0.0.4",
+        "public_ip": null,
+        "user": "ubuntu",
+        "provider": null,
+        "services": [
+          "c3-public-api",
+          "caddy-public"
+        ]
+      },
+      "oci-A1-f_0": {
+        "alias": "oci-apps",
+        "wg_ip": "10.0.0.6",
+        "public_ip": null,
+        "user": "ubuntu",
+        "provider": null,
+        "services": [
+          "c3-infra-api",
+          "c3-infra-mcp",
+          "c3-services-api",
+          "c3-services-mcp",
+          "google-personal-mcp",
+          "google-workspace-mcp",
+          "mail-mcp",
+          "mattermost-mcp",
+          "cloud-builder-x",
+          "gha-runner",
+          "backup-borg",
+          "backup-bup",
+          "gitea",
+          "wireguard-mesh",
+          "cloud-spec",
+          "dagu",
+          "dbgate",
+          "matomo",
+          "ntfy",
+          "openobserve",
+          "umami",
+          "crowdsec",
+          "claude-superset-api",
+          "cloud-cgc-mcp",
+          "kg-store",
+          "ollama-hai",
+          "rig-agentic-hai-1.5bq4",
+          "rig-agentic-sonn-14bq8",
+          "session-memory",
+          "chat-mattermost",
+          "matrix-continuwuity",
+          "matrix-element",
+          "matrix-mautrix-whatsapp",
+          "crawlee-cloud",
+          "fin-api",
+          "photoprism",
+          "news-gdelt",
+          "calendar-radicale",
+          "code-server",
+          "contacts-radicale",
+          "etherpad",
+          "filebrowser",
+          "grist",
+          "hedgedoc",
+          "paca",
+          "revealmd",
+          "vaultwarden"
+        ]
+      },
+      "gcp-E2-f_0": {
+        "alias": "gcp-proxy",
+        "wg_ip": "10.0.0.1",
+        "public_ip": null,
+        "user": "diego",
+        "provider": null,
+        "services": [
+          "c3-analytics-api",
+          "http-to-smtp-proxy-api",
+          "postlite",
+          "redis",
+          "hickory-dns",
+          "wireguard-mesh-ws-tunnel",
+          "authelia",
+          "caddy",
+          "introspect-proxy"
+        ]
+      },
+      "vast-RTX-p_0": {
+        "alias": "vast-ollama",
+        "wg_ip": null,
+        "public_ip": null,
+        "user": "root",
+        "provider": "vast.ai",
+        "services": []
+      }
+    },
+    "services": {
+      "c3-analytics-api": {
+        "name": "c3-analytics-api",
+        "vm": "gcp-E2-f_0",
+        "domain": "api.diegonmarcos.com/c3a",
+        "enabled": true,
+        "category": "obs",
+        "ports": {
+          "app": 8085
+        },
+        "health": {
+          "path": "/c3a/healthz"
+        }
+      },
+      "c3-diego-personal-data-mcp": {
+        "name": "c3-diego-personal-data-mcp",
+        "vm": "local",
+        "domain": null,
+        "enabled": true,
+        "category": "data",
+        "ports": null,
+        "health": null
+      },
+      "c3-infra-api": {
+        "name": "c3-infra-api",
+        "vm": "oci-A1-f_0",
+        "domain": "api.diegonmarcos.com/c3-infra-api",
+        "enabled": true,
+        "category": "sec",
+        "ports": {
+          "app": 8081
+        },
+        "health": {
+          "path": "/c3-infra-api/health"
+        }
+      },
+      "c3-infra-mcp": {
+        "name": "c3-infra-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": "mcp.diegonmarcos.com/c3-infra-mcp",
+        "enabled": true,
+        "category": "sec",
+        "ports": {
+          "app": 3100
+        },
+        "health": {
+          "path": "/mcp"
+        }
+      },
+      "c3-public-api": {
+        "name": "c3-public-api",
+        "vm": "oci-E2-f_1",
+        "domain": "api.diegonmarcos.com/pub",
+        "enabled": true,
+        "category": "obs",
+        "ports": {
+          "app": 8087
+        },
+        "health": {
+          "path": "/pub/health"
+        }
+      },
+      "c3-services-api": {
+        "name": "c3-services-api",
+        "vm": "oci-A1-f_0",
+        "domain": "api.diegonmarcos.com/c3-services-api",
+        "enabled": true,
+        "category": "obs",
+        "ports": {
+          "app": 8082
+        },
+        "health": {
+          "path": "/c3-services-api/health"
+        }
+      },
+      "c3-services-mcp": {
+        "name": "c3-services-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "obs",
+        "ports": {
+          "app": 3101
+        },
+        "health": {
+          "path": "/mcp"
+        }
+      },
+      "google-personal-mcp": {
+        "name": "google-personal-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": "mcp.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3106
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "google-workspace-mcp": {
+        "name": "google-workspace-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": "mcp.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3104
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "mail-mcp": {
+        "name": "mail-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": "mcp.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3103
+        },
+        "health": null
+      },
+      "mattermost-mcp": {
+        "name": "mattermost-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3102
+        },
+        "health": null
+      },
+      "http-to-smtp-proxy-api": {
+        "name": "http-to-smtp-proxy-api",
+        "vm": "gcp-E2-f_0",
+        "domain": "api.diegonmarcos.com/http-to-smtp-proxy-api",
+        "enabled": false,
+        "category": "app",
+        "ports": {
+          "app": 8090
+        },
+        "health": null
+      },
+      "cloud-builder-x": {
+        "name": "cloud-builder-x",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "tools",
+        "ports": null,
+        "health": null
+      },
+      "gha-runner": {
+        "name": "gha-runner",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "tools",
+        "ports": null,
+        "health": null
+      },
+      "cloudflare-worker": {
+        "name": "cloudflare-worker",
+        "vm": "local",
+        "domain": null,
+        "enabled": true,
+        "category": "cloud",
+        "ports": null,
+        "health": null
+      },
+      "gcloud": {
+        "name": "gcloud",
+        "vm": "local",
+        "domain": null,
+        "enabled": true,
+        "category": "cloud",
+        "ports": null,
+        "health": null
+      },
+      "backup-borg": {
+        "name": "backup-borg",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "data",
+        "ports": {
+          "app": 2224
+        },
+        "health": null
+      },
+      "backup-bup": {
+        "name": "backup-bup",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "data",
+        "ports": {
+          "app": 2223
+        },
+        "health": null
+      },
+      "gitea": {
+        "name": "gitea",
+        "vm": "oci-A1-f_0",
+        "domain": "git.diegonmarcos.com",
+        "enabled": true,
+        "category": "data",
+        "ports": {
+          "app": 3002
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "postlite": {
+        "name": "postlite",
+        "vm": "gcp-E2-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "data",
+        "ports": {
+          "npm_rest": 8890,
+          "vaultwarden_rest": 8891,
+          "ntfy_rest": 8892,
+          "authelia_rest": 8893,
+          "npm_pg": 5433,
+          "vaultwarden_pg": 5434,
+          "ntfy_pg": 5435,
+          "authelia_pg": 5436
+        },
+        "health": null
+      },
+      "redis": {
+        "name": "redis",
+        "vm": "gcp-E2-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "data",
+        "ports": {
+          "app": 6379
+        },
+        "health": null
+      },
+      "hickory-dns": {
+        "name": "hickory-dns",
+        "vm": "gcp-E2-f_0",
+        "domain": "dns.internal",
+        "enabled": true,
+        "category": "cloud",
+        "ports": {
+          "dns": 53
+        },
+        "health": null
+      },
+      "wireguard-mesh": {
+        "name": "wireguard-mesh",
+        "vm": "oci-A1-f_0",
+        "domain": "mesh.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 8080
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "wireguard-mesh-ws-tunnel": {
+        "name": "wireguard-mesh-ws-tunnel",
+        "vm": "gcp-E2-f_0",
+        "domain": "vpn.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "ws": 8080
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "wireguard-public": {
+        "name": "wireguard-public",
+        "vm": "local",
+        "domain": null,
+        "enabled": false,
+        "category": "net",
+        "ports": null,
+        "health": null
+      },
+      "cloud-spec": {
+        "name": "cloud-spec",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 3080
+        },
+        "health": null
+      },
+      "dagu": {
+        "name": "dagu",
+        "vm": "oci-A1-f_0",
+        "domain": "workflows.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 8070
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "dbgate": {
+        "name": "dbgate",
+        "vm": "oci-A1-f_0",
+        "domain": "db.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 8086
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "matomo": {
+        "name": "matomo",
+        "vm": "oci-A1-f_0",
+        "domain": "analytics.diegonmarcos.com/matomo",
+        "enabled": true,
+        "category": "tools",
+        "ports": null,
+        "health": {
+          "path": "/"
+        }
+      },
+      "ntfy": {
+        "name": "ntfy",
+        "vm": "oci-A1-f_0",
+        "domain": "rss.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 8090
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "openobserve": {
+        "name": "openobserve",
+        "vm": "oci-A1-f_0",
+        "domain": "analytics.diegonmarcos.com/openobserve",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 5080
+        },
+        "health": {
+          "path": "/healthz"
+        }
+      },
+      "umami": {
+        "name": "umami",
+        "vm": "oci-A1-f_0",
+        "domain": "analytics.diegonmarcos.com",
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 3006,
+          "db": 5442
+        },
+        "health": null
+      },
+      "authelia": {
+        "name": "authelia",
+        "vm": "gcp-E2-f_0",
+        "domain": "auth.diegonmarcos.com",
+        "enabled": true,
+        "category": "sec",
+        "ports": {
+          "app": 9091,
+          "redis": 6380
+        },
+        "health": {
+          "path": "/api/health"
+        }
+      },
+      "caddy": {
+        "name": "caddy",
+        "vm": "gcp-E2-f_0",
+        "domain": "proxy.diegonmarcos.com",
+        "enabled": true,
+        "category": "sec",
+        "ports": null,
+        "health": null
+      },
+      "caddy-l4-image": {
+        "name": "caddy-l4-image",
+        "vm": "local",
+        "domain": null,
+        "enabled": true,
+        "category": "sec",
+        "ports": null,
+        "health": null
+      },
+      "caddy-public": {
+        "name": "caddy-public",
+        "vm": "oci-E2-f_1",
+        "domain": null,
+        "enabled": true,
+        "category": "sec",
+        "ports": null,
+        "health": null
+      },
+      "crowdsec": {
+        "name": "crowdsec",
+        "vm": "oci-A1-f_0",
+        "domain": "crowdsec.diegonmarcos.com",
+        "enabled": true,
+        "category": "sec",
+        "ports": {
+          "lapi": 8088,
+          "metrics": 6062
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "introspect-proxy": {
+        "name": "introspect-proxy",
+        "vm": "gcp-E2-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "sec",
+        "ports": {
+          "app": 4182
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "claude-superset-api": {
+        "name": "claude-superset-api",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "app": 3117,
+          "ollama": 11436,
+          "headroom": 8788,
+          "proxy": 8789
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "cloud-cgc-mcp": {
+        "name": "cloud-cgc-mcp",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "obs",
+        "ports": {
+          "app": 3105
+        },
+        "health": {
+          "path": "/mcp"
+        }
+      },
+      "db-agent": {
+        "name": "db-agent",
+        "vm": "all",
+        "domain": null,
+        "enabled": true,
+        "category": "data",
+        "ports": null,
+        "health": null
+      },
+      "kg-store": {
+        "name": "kg-store",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "data",
+        "ports": {
+          "app": 8001
+        },
+        "health": null
+      },
+      "ollama": {
+        "name": "ollama",
+        "vm": "gcp-t4",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "app": 11434
+        },
+        "health": null
+      },
+      "ollama-arm": {
+        "name": "ollama-arm",
+        "vm": "oci-apps-2",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "app": 11434
+        },
+        "health": null
+      },
+      "ollama-hai": {
+        "name": "ollama-hai",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "agi",
+        "ports": {
+          "app": 11435
+        },
+        "health": null
+      },
+      "rig-agentic-hai-1.5bq4": {
+        "name": "rig-agentic-hai-1.5bq4",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "agi",
+        "ports": {
+          "app": 8091
+        },
+        "health": null
+      },
+      "rig-agentic-sonn-14bq8": {
+        "name": "rig-agentic-sonn-14bq8",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "app": 8091
+        },
+        "health": null
+      },
+      "session-memory": {
+        "name": "session-memory",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "agi",
+        "ports": {
+          "app": 3108
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "chat-mattermost": {
+        "name": "chat-mattermost",
+        "vm": "oci-A1-f_0",
+        "domain": "chat.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8065,
+          "db": 5435
+        },
+        "health": {
+          "path": "/api/v4/system/ping"
+        }
+      },
+      "cypht": {
+        "name": "cypht",
+        "vm": "oci-E2-f_0",
+        "domain": "webmail.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8889
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "mail-puller": {
+        "name": "mail-puller",
+        "vm": "oci-E2-f_0",
+        "domain": "mail-puller.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": null
+        },
+        "health": {
+          "path": null
+        }
+      },
+      "matrix-continuwuity": {
+        "name": "matrix-continuwuity",
+        "vm": "oci-A1-f_0",
+        "domain": "matrix.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8008
+        },
+        "health": {
+          "path": "/_matrix/client/versions"
+        }
+      },
+      "matrix-element": {
+        "name": "matrix-element",
+        "vm": "oci-A1-f_0",
+        "domain": "messenger.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8083
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "matrix-mautrix-whatsapp": {
+        "name": "matrix-mautrix-whatsapp",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 29318
+        },
+        "health": null
+      },
+      "snappymail": {
+        "name": "snappymail",
+        "vm": "oci-E2-f_0",
+        "domain": "webmail.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8888
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "maddy": {
+        "name": "maddy",
+        "vm": "oci-E2-f_0",
+        "domain": "mail.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 993,
+          "smtp": 465,
+          "imap": 993
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "stalwart": {
+        "name": "stalwart",
+        "vm": "oci-E2-f_0",
+        "domain": "jmap.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": null,
+        "health": {
+          "path": "/"
+        }
+      },
+      "crawlee-cloud": {
+        "name": "crawlee-cloud",
+        "vm": "oci-A1-f_0",
+        "domain": "api.diegonmarcos.com",
+        "enabled": true,
+        "category": "fin",
+        "ports": {
+          "app": 3000,
+          "dashboard": 3001,
+          "db": 5434,
+          "redis": 6381,
+          "minio": 9000,
+          "minio_console": 9001
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "fin-api": {
+        "name": "fin-api",
+        "vm": "oci-A1-f_0",
+        "domain": "api.diegonmarcos.com/fin-api",
+        "enabled": true,
+        "category": "fin",
+        "ports": {
+          "app": 8340
+        },
+        "health": {
+          "path": "/fin-api/health"
+        }
+      },
+      "photoprism": {
+        "name": "photoprism",
+        "vm": "oci-A1-f_0",
+        "domain": "photos.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3013
+        },
+        "health": {
+          "path": "/api/v1/status"
+        }
+      },
+      "news-gdelt": {
+        "name": "news-gdelt",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": true,
+        "category": "tools",
+        "ports": {
+          "app": 3019
+        },
+        "health": {
+          "path": "/health"
+        }
+      },
+      "calendar-radicale": {
+        "name": "calendar-radicale",
+        "vm": "oci-A1-f_0",
+        "domain": "cal.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 5232
+        },
+        "health": {
+          "path": "/.web/"
+        }
+      },
+      "code-server": {
+        "name": "code-server",
+        "vm": "oci-A1-f_0",
+        "domain": "ide.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 8443
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "contacts-radicale": {
+        "name": "contacts-radicale",
+        "vm": "oci-A1-f_0",
+        "domain": "contacts.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 5233
+        },
+        "health": {
+          "path": "/.web/"
+        }
+      },
+      "etherpad": {
+        "name": "etherpad",
+        "vm": "oci-A1-f_0",
+        "domain": "app.diegonmarcos.com/etherpad",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3012,
+          "db": 5436
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "filebrowser": {
+        "name": "filebrowser",
+        "vm": "oci-A1-f_0",
+        "domain": "app.diegonmarcos.com/filebrowser",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3015
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "grist": {
+        "name": "grist",
+        "vm": "oci-A1-f_0",
+        "domain": "sheets.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3011
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "hedgedoc": {
+        "name": "hedgedoc",
+        "vm": "oci-A1-f_0",
+        "domain": "app.diegonmarcos.com/hedgedoc",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "app": 3018,
+          "db": 5439
+        },
+        "health": {
+          "path": "/"
+        }
+      },
+      "paca": {
+        "name": "paca",
+        "vm": "oci-A1-f_0",
+        "domain": "paca.diegonmarcos.com",
+        "enabled": true,
+        "category": "app",
+        "ports": {
+          "gateway": 8095,
+          "api": 8080,
+          "realtime": 3001,
+          "db": 5432
+        },
+        "health": {
+          "path": "/api/healthz"
+        }
+      },
+      "revealmd": {
+        "name": "revealmd",
+        "vm": "oci-A1-f_0",
+        "domain": null,
+        "enabled": false,
+        "category": "app",
+        "ports": {
+          "app": 3014
+        },
+        "health": null
+      },
+      "vaultwarden": {
+        "name": "vaultwarden",
+        "vm": "oci-A1-f_0",
+        "domain": "vault.diegonmarcos.com",
+        "enabled": true,
+        "category": "mic",
+        "ports": {
+          "app": 8880
+        },
+        "health": {
+          "path": "/alive"
+        }
+      },
+      "front-end": {
+        "name": "front-end",
+        "vm": "local",
+        "domain": null,
+        "enabled": true,
+        "category": "app",
+        "ports": null,
+        "health": null
+      }
+    }
+  },
+  "url_health": {
+    "_comment": "cloud-url-health-report runtime config. Passwords NEVER live here — NOREPLY_PASSWORD + ME_PASSWORD come from env (sops-decrypted upstream).",
+    "concurrency": {
+      "_comment": "Private concurrency intentionally low: 16 simultaneous WG probes saturate idle handshakes and cause cascading timeouts on the spokes. 4 is high-enough for the 86 private targets to finish in <30s while staying under the WG renegotiation pressure point.",
+      "public": 16,
+      "private": 4
+    },
+    "timeouts": {
+      "_comment": "Bumped 2026-05-07: WG re-handshake on idle peers can take ~3-5s before first packet, so a 3s TCP / 5s HTTP-total budget produced false negatives across the 10.0.0.6 spoke (oci-apps) when probing from desktop. New budget allows one full handshake + actual request.",
+      "http_connect_secs": 10,
+      "http_total_secs": 15,
+      "tcp_secs": 10
+    },
+    "targets": {
+      "_comment": "Ports that are not HTTP servers — probe via TcpStream::connect only, skip HTTP GET.",
+      "tcp_only_ports": [
+        25,
+        53,
+        143,
+        443,
+        465,
+        587,
+        993,
+        4190,
+        2222,
+        2223,
+        2224,
+        2443,
+        3306,
+        5432,
+        5433,
+        5434,
+        5435,
+        5436,
+        5437,
+        5438,
+        5439,
+        5440,
+        5441,
+        5442,
+        5443,
+        6379,
+        6380,
+        6381,
+        8001,
+        11434
+      ]
+    },
+    "email": {
+      "smtp": {
+        "host": "10.0.0.3",
+        "port": 465,
+        "username": "no-reply@diegonmarcos.com"
+      },
+      "imap": {
+        "host": "10.0.0.3",
+        "port": 993,
+        "username": "me@diegonmarcos.com"
+      },
+      "timeout_secs": 180,
+      "poll_interval_ms": 2000,
+      "subject_prefix": "[url-health-e2e]",
+      "jmap": {
+        "_comment": "WG-direct to Stalwart on oci-mail (10.0.0.3:2443) — same transport as the IMAP leg. The public jmap.diegonmarcos.com edge is unreachable/slow from the CI runner.",
+        "host": "10.0.0.3",
+        "port": 2443,
+        "username": "me@diegonmarcos.com"
+      },
+      "api_health_url": "https://api.diegonmarcos.com/http-to-smtp-proxy-api/",
+      "mcp_health_url": "https://mcp.diegonmarcos.com/mail-mcp/"
+    }
+  },
+  "workflows": {
+    "_comment": "Declarative config for the workflow-status audit in reports. Fire rule 3: no hardcoded repo/host names in engine code. Consumed by cloud-health-full-daily (GHA + Dagu fetchers). Evidence goes to reports-logs/dist/workflows/.",
+    "enabled": true,
+    "window_hours": 24,
+    "github": {
+      "enabled": true,
+      "repos": [
+        "diegonmarcos/cloud",
+        "diegonmarcos/cloud-data",
+        "diegonmarcos/unix",
+        "diegonmarcos/front",
+        "diegonmarcos/tools"
+      ],
+      "max_runs_per_repo": 50,
+      "token_sources": [
+        "env:GITHUB_TOKEN",
+        "vault:~/.config/gh/hosts.yml"
+      ],
+      "fail_threshold_per_workflow": 1,
+      "emit_severity": {
+        "failure": "critical",
+        "cancelled": "warning",
+        "timed_out": "warning",
+        "action_required": "warning",
+        "startup_failure": "critical"
+      }
+    },
+    "dagu": {
+      "enabled": true,
+      "api_base": "https://api.diegonmarcos.com/dagu",
+      "auth_header_source": "vault:bearer_jwt",
+      "max_runs_per_dag": 20,
+      "fail_threshold_per_dag": 1,
+      "emit_severity": {
+        "failed": "critical",
+        "cancelled": "warning",
+        "timeout": "warning"
+      }
+    },
+    "summary": {
+      "group_by": [
+        "source",
+        "repo_or_host",
+        "workflow",
+        "conclusion"
+      ],
+      "include_urls": true,
+      "max_rows_per_group": 10
+    },
+    "testers": {
+      "checks": [
+        {
+          "id": "workflows_window_respected",
+          "description": "Only failures within `window_hours` appear in report",
+          "command": "jq '.workflow_failures | map(select(.age_hours <= 24)) | length' dist/cloud_health_daily.json",
+          "expect_nonzero_ok": true
+        },
+        {
+          "id": "github_repos_from_json",
+          "description": "Code does not hardcode any of the repos from this JSON",
+          "command": "grep -RE 'diegonmarcos/(cloud|unix|front|tools|cloud-data)' reports/src/cloud-health-full-daily/src/ | grep -v 'cloud-data-workflows'",
+          "expect_empty": true
+        },
+        {
+          "id": "dagu_endpoint_reachable",
+          "description": "Dagu API responds 200 on /health",
+          "command": "curl -sS -o /dev/null -w '%{http_code}' $DAGU_BASE/health",
+          "expect": "200"
+        }
+      ]
+    }
+  },
+  "repo_scan": {
+    "_comment": "cloud-sec-data-report::repo_scan config. Zero VM CPU — laptop-local. `~/git/vault/` NEVER scanned: intentional secrets store.",
+    "enabled": true,
+    "repos": [
+      {
+        "path": "~/git/cloud-data",
+        "visibility": "public",
+        "scan_history": true,
+        "scan_tree": true
+      },
+      {
+        "path": "~/git/cloud",
+        "visibility": "public",
+        "scan_history": true,
+        "scan_tree": true
+      },
+      {
+        "path": "~/git/tools",
+        "visibility": "public",
+        "scan_history": true,
+        "scan_tree": true
+      },
+      {
+        "path": "~/git/unix",
+        "visibility": "public",
+        "scan_history": true,
+        "scan_tree": true
+      },
+      {
+        "path": "~/git/front",
+        "visibility": "public",
+        "scan_history": true,
+        "scan_tree": true
+      }
+    ],
+    "history_max_commits": 5000,
+    "history_secs_budget": 60,
+    "skip_paths_re": [
+      "(^|/)vault/",
+      "(^|/)I_cloud-data/",
+      "(^|/)II_tools/",
+      "(^|/)III_unix/",
+      "(^|/)dist/\\.secrets(\\.d)?(/|$)",
+      "(^|/)\\.gitmodules$",
+      "(^|/)target/",
+      "(^|/)node_modules/",
+      "(^|/)\\.git/",
+      "(^|/)z_archive/",
+      "(^|/)yara-rules/",
+      "\\.yar$",
+      "(^|/)raw_logs/",
+      "\\.jsonl$",
+      "(^|/)cloud-data-repo-scan\\.json$"
+    ],
+    "_activation_script_patterns_re_comment": "Filename patterns identifying ACTIVATION / PROVISIONING scripts. Any content-pattern match inside these files is auto-elevated to CRITICAL — fire rule 3: scripts MUST be data-driven. Anything with a hardcoded password/token/key is P0.",
+    "activation_script_patterns_re": [
+      "(^|/)build\\.sh$",
+      "(^|/)_engine\\.sh$",
+      "(^|/)entrypoint\\.sh$",
+      "(^|/)init\\.sh$",
+      "(^|/)activate$",
+      "(^|/)activate\\.sh$",
+      "(^|/)activation-script$",
+      "(^|/)(home-manager-activate|system-activate|hm-activate)(\\.sh)?$",
+      "(^|/)install-[^/]+\\.sh$",
+      "(^|/)setup-[^/]+\\.sh$",
+      "(^|/)deploy[^/]*\\.sh$",
+      "(^|/)bootstrap[^/]*\\.sh$",
+      "(^|/)post-install\\.sh$",
+      "(^|/)provision[^/]*\\.sh$",
+      "(^|/)first-boot\\.sh$",
+      "(^|/)[^/]+-setup\\.sh$",
+      "(^|/)[^/]+-install\\.sh$",
+      "\\.activation\\.sh$",
+      "(^|/)cloud-init\\.(sh|yaml|yml)$",
+      "(^|/)user-data$",
+      "(^|/)pre-commit\\.sh$",
+      "(^|/)post-commit\\.sh$"
+    ],
+    "expected_encrypted_files_re": [
+      "(^|/)[^/]*secrets[^/]*\\.ya?ml(\\.(new|bak|old|tmp|orig|swp))?$",
+      "(^|/)[^/]*secrets[^/]*\\.json(\\.(new|bak|old|tmp|orig|swp))?$",
+      "\\.secrets\\.ya?ml$",
+      "\\.secrets\\.sops\\.ya?ml$"
+    ],
+    "filename_allowlist_re": [
+      "\\.pub$",
+      "\\.pub\\.pem$",
+      "\\.(cert|crt|ca)$",
+      "(^|/)\\.env\\.(example|sample|template|dist)$",
+      "(^|/)[^/]*secrets[^/]*\\.(example|sample|template|dist)\\.ya?ml$",
+      "(^|/)[^/]*secrets[^/]*\\.ya?ml\\.(example|sample|template|dist)$",
+      "(^|/)authorized_keys$",
+      "(^|/)known_hosts$",
+      "(^|/)public_[^/]*$",
+      "(^|/)cloud-data-secrets-env-var-names\\.json$",
+      "(^|/)secrets-template\\.ya?ml$",
+      "(^|/)[^/]*secrets[^/]*-template\\.ya?ml$",
+      "(^|/)sync_secrets\\.ya?ml$",
+      "(^|/)\\.github/workflows/[^/]*secrets[^/]*\\.ya?ml$",
+      "(^|/)3_secrets/dist/",
+      "(^|/)secrets-schema\\.md$",
+      "(^|/)test_precommit_blocks_plaintext_secret\\.sh$",
+      "(^|/)_shared/secrets-[a-z]+\\.(md|ya?ml)$"
+    ],
+    "filename_patterns": [
+      {
+        "id": "pem_file",
+        "severity": "critical",
+        "regex": "\\.pem$"
+      },
+      {
+        "id": "key_file",
+        "severity": "critical",
+        "regex": "\\.key$"
+      },
+      {
+        "id": "keystore",
+        "severity": "critical",
+        "regex": "\\.(p12|pfx|jks|bks|keystore|truststore)$"
+      },
+      {
+        "id": "ppk_file",
+        "severity": "critical",
+        "regex": "\\.ppk$"
+      },
+      {
+        "id": "pgp_ascii_armor",
+        "severity": "warning",
+        "regex": "\\.asc$"
+      },
+      {
+        "id": "gpg_keyfile",
+        "severity": "critical",
+        "regex": "\\.gpg$"
+      },
+      {
+        "id": "age_keyfile",
+        "severity": "critical",
+        "regex": "\\.age$"
+      },
+      {
+        "id": "age_keys_txt",
+        "severity": "critical",
+        "regex": "(^|/)age[-_]?keys?\\.txt$"
+      },
+      {
+        "id": "keepass_db",
+        "severity": "critical",
+        "regex": "\\.kdbx$"
+      },
+      {
+        "id": "password_safe",
+        "severity": "critical",
+        "regex": "\\.psafe3$"
+      },
+      {
+        "id": "ssh_private_named",
+        "severity": "critical",
+        "regex": "(^|/)(id_(rsa|dsa|ed25519|ecdsa))$"
+      },
+      {
+        "id": "ssh_private_suffix",
+        "severity": "critical",
+        "regex": "_rsa$|_dsa$|_ed25519$|_ecdsa$"
+      },
+      {
+        "id": "env_file",
+        "severity": "warning",
+        "regex": "(^|/)\\.env(\\.[^.]+)?$"
+      },
+      {
+        "id": "credentials_file",
+        "severity": "critical",
+        "regex": "(^|/)credentials(\\.json)?$"
+      },
+      {
+        "id": "gcp_sa_json",
+        "severity": "critical",
+        "regex": "service_account[^/]*\\.json$"
+      },
+      {
+        "id": "aws_credentials",
+        "severity": "critical",
+        "regex": "(^|/)\\.aws/credentials$"
+      },
+      {
+        "id": "docker_config",
+        "severity": "warning",
+        "regex": "(^|/)\\.docker/config\\.json$"
+      },
+      {
+        "id": "netrc",
+        "severity": "warning",
+        "regex": "(^|/)\\.netrc$"
+      },
+      {
+        "id": "kubeconfig",
+        "severity": "warning",
+        "regex": "(^|/)(kube\\.config|kubeconfig)$"
+      },
+      {
+        "id": "htpasswd",
+        "severity": "warning",
+        "regex": "(^|/)\\.?htpasswd$"
+      },
+      {
+        "id": "wireguard_private",
+        "severity": "critical",
+        "regex": "(^|/)(wg[^/]*-private|wg-private[^/]*|privatekey)\\.conf$"
+      },
+      {
+        "id": "mobileprovision",
+        "severity": "warning",
+        "regex": "\\.mobileprovision$"
+      },
+      {
+        "id": "backup_suffix",
+        "severity": "warning",
+        "regex": "\\.(bak|old|orig|tmp|swp)$"
+      }
+    ],
+    "ignore_line_markers": [
+      "ENC[AES256_GCM",
+      "sops_version",
+      "\"sops\":",
+      "lastmodified:",
+      "mac:",
+      "pgp:"
+    ],
+    "content_patterns": [
+      {
+        "id": "pem_private_key",
+        "severity": "critical",
+        "regex": "-----BEGIN (RSA |DSA |EC |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY( BLOCK)?-----"
+      },
+      {
+        "id": "putty_private_key",
+        "severity": "critical",
+        "regex": "PuTTY-User-Key-File-[23]:"
+      },
+      {
+        "id": "age_private_key",
+        "severity": "critical",
+        "regex": "AGE-SECRET-KEY-1[0-9A-Z]{58}"
+      },
+      {
+        "id": "aws_access_key",
+        "severity": "critical",
+        "regex": "AKIA[0-9A-Z]{16}"
+      },
+      {
+        "id": "aws_secret_key_named",
+        "severity": "critical",
+        "regex": "(?i)aws(.{0,20})?(secret|access)(.{0,20})?(key|id)[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9+/=]{40}"
+      },
+      {
+        "id": "gcp_api_key",
+        "severity": "critical",
+        "regex": "AIza[0-9A-Za-z_-]{35}"
+      },
+      {
+        "id": "gcp_service_account",
+        "severity": "critical",
+        "regex": "\"type\"\\s*:\\s*\"service_account\""
+      },
+      {
+        "id": "gcp_oauth_refresh",
+        "severity": "critical",
+        "regex": "1//0[A-Za-z0-9_-]{50,}"
+      },
+      {
+        "id": "azure_storage_key",
+        "severity": "critical",
+        "regex": "DefaultEndpointsProtocol=https;AccountKey=[A-Za-z0-9+/=]{88}"
+      },
+      {
+        "id": "cloudflare_api_token",
+        "severity": "critical",
+        "regex": "(?i)(cf|cloudflare)[-_]?(api[-_]?)?token[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9_-]{40}"
+      },
+      {
+        "id": "hetzner_api_token",
+        "severity": "critical",
+        "regex": "(?i)hetzner[-_]?(api[-_]?)?token[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9]{64}"
+      },
+      {
+        "id": "digitalocean_token",
+        "severity": "critical",
+        "regex": "dop_v1_[a-f0-9]{64}"
+      },
+      {
+        "id": "oci_api_key",
+        "severity": "critical",
+        "regex": "(?i)oci[-_]?(api[-_]?)?key[\"'\\s]*[:=][\"'\\s]*ocid1\\.[a-z]+\\.[a-z0-9.-]+"
+      },
+      {
+        "id": "github_pat_classic",
+        "severity": "critical",
+        "regex": "ghp_[A-Za-z0-9]{36}"
+      },
+      {
+        "id": "github_pat_fine",
+        "severity": "critical",
+        "regex": "github_pat_[A-Za-z0-9_]{82}"
+      },
+      {
+        "id": "github_app_install",
+        "severity": "critical",
+        "regex": "gh[oprsu]_[A-Za-z0-9]{36}"
+      },
+      {
+        "id": "gitlab_pat",
+        "severity": "critical",
+        "regex": "glpat-[A-Za-z0-9_-]{20}"
+      },
+      {
+        "id": "bitbucket_app_pw",
+        "severity": "critical",
+        "regex": "ATBB[A-Za-z0-9]{32}[A-Za-z0-9]"
+      },
+      {
+        "id": "npm_token",
+        "severity": "critical",
+        "regex": "npm_[A-Za-z0-9]{36}"
+      },
+      {
+        "id": "pypi_token",
+        "severity": "critical",
+        "regex": "pypi-AgE[A-Za-z0-9_-]{50,}"
+      },
+      {
+        "id": "docker_hub_token",
+        "severity": "critical",
+        "regex": "dckr_pat_[A-Za-z0-9_-]{27,}"
+      },
+      {
+        "id": "vault_token",
+        "severity": "critical",
+        "regex": "hv[sb]\\.[A-Za-z0-9_-]{24,}"
+      },
+      {
+        "id": "terraform_cloud",
+        "severity": "critical",
+        "regex": "[A-Za-z0-9]{14}\\.atlasv1\\.[A-Za-z0-9_-]{60,}"
+      },
+      {
+        "id": "openai_api_key",
+        "severity": "critical",
+        "regex": "sk-(proj-|svcacct-)?[A-Za-z0-9_-]{40,}"
+      },
+      {
+        "id": "anthropic_api_key",
+        "severity": "critical",
+        "regex": "sk-ant-(api03|admin01)-[A-Za-z0-9_-]{90,}"
+      },
+      {
+        "id": "groq_api_key",
+        "severity": "critical",
+        "regex": "gsk_[A-Za-z0-9]{52}"
+      },
+      {
+        "id": "cohere_api_key",
+        "severity": "warning",
+        "regex": "(?i)cohere[-_]?(api[-_]?)?key[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9]{40}"
+      },
+      {
+        "id": "hugging_face_token",
+        "severity": "critical",
+        "regex": "hf_[A-Za-z0-9]{34}"
+      },
+      {
+        "id": "replicate_api_token",
+        "severity": "critical",
+        "regex": "r8_[A-Za-z0-9]{37}"
+      },
+      {
+        "id": "slack_token",
+        "severity": "critical",
+        "regex": "xox[abprsu]-[0-9A-Za-z-]{10,}"
+      },
+      {
+        "id": "slack_webhook",
+        "severity": "warning",
+        "regex": "https://hooks\\.slack\\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+"
+      },
+      {
+        "id": "discord_webhook",
+        "severity": "warning",
+        "regex": "https://discord(app)?\\.com/api/webhooks/\\d+/[A-Za-z0-9_-]+"
+      },
+      {
+        "id": "discord_bot_token",
+        "severity": "critical",
+        "regex": "[MN][A-Za-z\\d]{23}\\.[\\w-]{6}\\.[\\w-]{27}"
+      },
+      {
+        "id": "telegram_bot_token",
+        "severity": "critical",
+        "regex": "[0-9]{9,10}:AA[A-Za-z0-9_-]{33}"
+      },
+      {
+        "id": "stripe_live",
+        "severity": "critical",
+        "regex": "(sk|rk)_live_[A-Za-z0-9]{24,}"
+      },
+      {
+        "id": "stripe_restricted",
+        "severity": "critical",
+        "regex": "rk_(live|test)_[A-Za-z0-9]{24,}"
+      },
+      {
+        "id": "sendgrid",
+        "severity": "critical",
+        "regex": "SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}"
+      },
+      {
+        "id": "mailgun_api_key",
+        "severity": "critical",
+        "regex": "key-[a-f0-9]{32}"
+      },
+      {
+        "id": "mailchimp_api",
+        "severity": "critical",
+        "regex": "[a-f0-9]{32}-us[0-9]{1,2}"
+      },
+      {
+        "id": "twilio_sid_ac",
+        "severity": "warning",
+        "regex": "AC[a-f0-9]{32}"
+      },
+      {
+        "id": "twilio_key_sk",
+        "severity": "warning",
+        "regex": "(?:^|[^A-Za-z0-9])SK[a-f0-9]{32}"
+      },
+      {
+        "id": "shopify_token",
+        "severity": "critical",
+        "regex": "shp(at|ca|ss|pa)_[a-fA-F0-9]{32}"
+      },
+      {
+        "id": "notion_token",
+        "severity": "critical",
+        "regex": "(^|[^A-Za-z0-9])secret_[A-Za-z0-9]{43}"
+      },
+      {
+        "id": "linear_api_key",
+        "severity": "critical",
+        "regex": "lin_api_[A-Za-z0-9]{40}"
+      },
+      {
+        "id": "sentry_auth_token",
+        "severity": "critical",
+        "regex": "sntr(ys|yu)_[A-Za-z0-9+/=_-]{40,}"
+      },
+      {
+        "id": "datadog_api_key",
+        "severity": "warning",
+        "regex": "(?i)dd[-_]?api[-_]?key[\"'\\s]*[:=][\"'\\s]*[a-f0-9]{32}"
+      },
+      {
+        "id": "newrelic_license",
+        "severity": "warning",
+        "regex": "(?i)new[-_]?relic[-_]?(license|api)[-_]?key[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9]{40}"
+      },
+      {
+        "id": "pagerduty_token",
+        "severity": "critical",
+        "regex": "(?i)pagerduty[-_]?(api[-_]?)?(key|token)[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9+\\-_]{20}"
+      },
+      {
+        "id": "algolia_admin_key",
+        "severity": "critical",
+        "regex": "(?i)algolia[-_]?(admin[-_]?)?api[-_]?key[\"'\\s]*[:=][\"'\\s]*[a-f0-9]{32}"
+      },
+      {
+        "id": "resend_api_key",
+        "severity": "critical",
+        "regex": "re_[A-Za-z0-9]{8}_[A-Za-z0-9]{24,}"
+      },
+      {
+        "id": "pgp_private_key",
+        "severity": "critical",
+        "regex": "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+      },
+      {
+        "id": "ssh_private_block",
+        "severity": "critical",
+        "regex": "-----BEGIN OPENSSH PRIVATE KEY-----"
+      },
+      {
+        "id": "jwt_token",
+        "severity": "warning",
+        "regex": "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+      },
+      {
+        "id": "pbkdf2_hash",
+        "severity": "warning",
+        "regex": "\\$pbkdf2-sha(256|512)\\$"
+      },
+      {
+        "id": "argon2_hash",
+        "severity": "warning",
+        "regex": "\\$argon2i?d?\\$"
+      },
+      {
+        "id": "bcrypt_hash",
+        "severity": "warning",
+        "regex": "\\$2[aby]?\\$\\d{2}\\$"
+      },
+      {
+        "id": "url_embedded_creds",
+        "severity": "warning",
+        "regex": "(postgres(ql)?|mysql|mongodb|redis|amqp|ftp|https?)://[A-Za-z0-9._%+-]+:[A-Za-z0-9._%+=!*-]+@[^\\s]+"
+      },
+      {
+        "id": "generic_high_entropy",
+        "severity": "warning",
+        "regex": "(?i)(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|secret[_-]?key|bearer[_-]?token|client[_-]?secret)[\"'\\s]*[:=][\"'\\s]*[A-Za-z0-9+/=_-]{24,}"
+      },
+      {
+        "id": "ntfy_access_token",
+        "severity": "critical",
+        "regex": "\\btk_[A-Za-z0-9]{20,}\\b"
+      },
+      {
+        "id": "bare_token_json",
+        "severity": "critical",
+        "regex": "(?i)\"(token|access_token)\"\\s*:\\s*\"[A-Za-z0-9_-]{16,}\""
+      },
+      {
+        "id": "db_password_env",
+        "severity": "critical",
+        "regex": "(?i)(mysql|postgres(ql)?|mariadb|mongo(db)?|redis|db|database|matomo|admin|root|user|app)_?(root_?)?password[\"'\\s]*[:=][\"'\\s]*[^'\"\\s${}]{6,}"
+      },
+      {
+        "id": "generic_password_env",
+        "severity": "warning",
+        "regex": "(?i)\\b(password|passwd|passphrase|secret)[\"'\\s]*[:=][\"'\\s]*[^'\"\\s${}]{8,}"
+      },
+      {
+        "id": "basic_auth_header",
+        "severity": "critical",
+        "regex": "(?i)authorization\\s*:\\s*basic\\s+[A-Za-z0-9+/=]{16,}"
+      },
+      {
+        "id": "bearer_auth_header",
+        "severity": "critical",
+        "regex": "(?i)authorization\\s*:\\s*bearer\\s+[A-Za-z0-9._~+/-]{20,}"
+      }
+    ]
+  },
+  "sec_scan": {
+    "_comment": "cloud-sec-data-report runtime config. docker_cp_fallback OFF — never load CPU on slow VMs.",
+    "phases": {
+      "yara_enabled": false,
+      "export_enabled": true,
+      "docker_cp_fallback_enabled": false,
+      "siem_enabled": true,
+      "threat_intel_enabled": true,
+      "journal_enabled": true,
+      "runtime_enabled": true,
+      "diff_enabled": true
+    },
+    "concurrency": {
+      "vm_parallel": 8,
+      "container_parallel": 8
+    },
+    "limits": {
+      "max_bytes_per_dir": 52428800,
+      "ssh_timeout_secs": 30
+    },
+    "targets": {
+      "scan_dirs": [
+        "etc",
+        "opt",
+        "app",
+        "usr/local/bin",
+        "usr/local/sbin"
+      ],
+      "skip_db_patterns": [
+        "db",
+        "redis",
+        "postgres",
+        "mysql",
+        "mariadb",
+        "mongo"
+      ]
+    },
+    "evidence_files": [
+      "manifest.json",
+      "diff.json",
+      "journal-24h.json.gz",
+      "docker-inspect.json",
+      "processes.txt",
+      "connections.txt"
+    ]
+  },
+  "_meta": {
+    "generated_at": "",
+    "generated_by": "2_configs/src/engines/cloud-data-config-derive.ts",
+    "pipeline": {
+      "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
+      "source_inputs": [
+        "a_solutions/*/build.json (per-service declarations)",
+        "config.json (global topology + vms + dns + wireguard)",
+        "b_infra/*/build.json (per-VM HM config)",
+        "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
+      ],
+      "engines": {
+        "consolidator": "2_configs/src/engines/cloud-data-config-consolidated.ts",
+        "derive": "2_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
+      },
+      "outputs": {
+        "master": "2_configs/dist/_cloud-data-consolidated.json (consolidator output)",
+        "per_container": "2_configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
+        "archived": "2_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+      },
+      "rebuild_command": "bash 2_configs/build.sh all"
+    }
+  }
+}
