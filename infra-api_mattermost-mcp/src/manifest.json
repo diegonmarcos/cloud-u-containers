@@ -1,0 +1,558 @@
+[
+  {
+    "file": "_cloud-data-consolidated.json",
+    "name": "_cloud data consolidated"
+  },
+  {
+    "file": "build-vm-oci-mail.json",
+    "name": "build vm oci mail"
+  },
+  {
+    "file": "build-vm-oci-analytics.json",
+    "name": "build vm oci analytics"
+  },
+  {
+    "file": "build-vm-oci-apps.json",
+    "name": "build vm oci apps"
+  },
+  {
+    "file": "build-vm-gcp-proxy.json",
+    "name": "build vm gcp proxy"
+  },
+  {
+    "file": "z_archive/cloud-data-service-connections.json",
+    "name": "cloud data service connections (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-dns-services.json",
+    "name": "cloud data dns services (archived)"
+  },
+  {
+    "file": "build-caddy.json",
+    "name": "build caddy"
+  },
+  {
+    "file": "build-caddy-edge.json",
+    "name": "build caddy edge"
+  },
+  {
+    "file": "z_archive/cloud-data-authelia-acl.json",
+    "name": "cloud data authelia acl (archived)"
+  },
+  {
+    "file": "build-authelia.json",
+    "name": "build authelia"
+  },
+  {
+    "file": "build-redis.json",
+    "name": "build redis"
+  },
+  {
+    "file": "build-c3-analytics-api.json",
+    "name": "build c3 analytics api"
+  },
+  {
+    "file": "build-c3-diego-personal-data-mcp.json",
+    "name": "build c3 diego personal data mcp"
+  },
+  {
+    "file": "build-c3-infra-api.json",
+    "name": "build c3 infra api"
+  },
+  {
+    "file": "build-c3-infra-mcp.json",
+    "name": "build c3 infra mcp"
+  },
+  {
+    "file": "build-c3-public-api.json",
+    "name": "build c3 public api"
+  },
+  {
+    "file": "build-c3-services-api.json",
+    "name": "build c3 services api"
+  },
+  {
+    "file": "build-c3-services-mcp.json",
+    "name": "build c3 services mcp"
+  },
+  {
+    "file": "build-google-personal-mcp.json",
+    "name": "build google personal mcp"
+  },
+  {
+    "file": "build-google-workspace-mcp.json",
+    "name": "build google workspace mcp"
+  },
+  {
+    "file": "build-mail-mcp.json",
+    "name": "build mail mcp"
+  },
+  {
+    "file": "build-mattermost-mcp.json",
+    "name": "build mattermost mcp"
+  },
+  {
+    "file": "build-http-to-smtp-proxy-api.json",
+    "name": "build http to smtp proxy api"
+  },
+  {
+    "file": "build-cloud-builder-x.json",
+    "name": "build cloud builder x"
+  },
+  {
+    "file": "build-gha-runner.json",
+    "name": "build gha runner"
+  },
+  {
+    "file": "build-cloudflare-worker.json",
+    "name": "build cloudflare worker"
+  },
+  {
+    "file": "build-gcloud.json",
+    "name": "build gcloud"
+  },
+  {
+    "file": "build-borg-server.json",
+    "name": "build borg server"
+  },
+  {
+    "file": "build-bup-server.json",
+    "name": "build bup server"
+  },
+  {
+    "file": "build-gitea.json",
+    "name": "build gitea"
+  },
+  {
+    "file": "build-postlite-npm.json",
+    "name": "build postlite npm"
+  },
+  {
+    "file": "build-postlite-vaultwarden.json",
+    "name": "build postlite vaultwarden"
+  },
+  {
+    "file": "build-postlite-ntfy.json",
+    "name": "build postlite ntfy"
+  },
+  {
+    "file": "build-postlite-authelia.json",
+    "name": "build postlite authelia"
+  },
+  {
+    "file": "build-sqlite-npm.json",
+    "name": "build sqlite npm"
+  },
+  {
+    "file": "build-sqlite-vaultwarden.json",
+    "name": "build sqlite vaultwarden"
+  },
+  {
+    "file": "build-sqlite-ntfy.json",
+    "name": "build sqlite ntfy"
+  },
+  {
+    "file": "build-sqlite-authelia.json",
+    "name": "build sqlite authelia"
+  },
+  {
+    "file": "build-hickory-dns.json",
+    "name": "build hickory dns"
+  },
+  {
+    "file": "build-wireguard-mesh.json",
+    "name": "build wireguard mesh"
+  },
+  {
+    "file": "build-wireguard-mesh-ws-tunnel.json",
+    "name": "build wireguard mesh ws tunnel"
+  },
+  {
+    "file": "build-wireguard-public.json",
+    "name": "build wireguard public"
+  },
+  {
+    "file": "build-cloud-spec.json",
+    "name": "build cloud spec"
+  },
+  {
+    "file": "build-dagu.json",
+    "name": "build dagu"
+  },
+  {
+    "file": "build-dbgate.json",
+    "name": "build dbgate"
+  },
+  {
+    "file": "build-matomo-hybrid.json",
+    "name": "build matomo hybrid"
+  },
+  {
+    "file": "build-ntfy.json",
+    "name": "build ntfy"
+  },
+  {
+    "file": "build-syslog-bridge.json",
+    "name": "build syslog bridge"
+  },
+  {
+    "file": "build-github-rss.json",
+    "name": "build github rss"
+  },
+  {
+    "file": "build-openobserve.json",
+    "name": "build openobserve"
+  },
+  {
+    "file": "build-umami.json",
+    "name": "build umami"
+  },
+  {
+    "file": "build-umami-db.json",
+    "name": "build umami db"
+  },
+  {
+    "file": "build-umami-setup.json",
+    "name": "build umami setup"
+  },
+  {
+    "file": "build-authelia-redis.json",
+    "name": "build authelia redis"
+  },
+  {
+    "file": "build-postlite-authelia.json",
+    "name": "build postlite authelia"
+  },
+  {
+    "file": "build-caddy-l4-image.json",
+    "name": "build caddy l4 image"
+  },
+  {
+    "file": "build-caddy-public.json",
+    "name": "build caddy public"
+  },
+  {
+    "file": "build-crowdsec.json",
+    "name": "build crowdsec"
+  },
+  {
+    "file": "build-introspect-proxy.json",
+    "name": "build introspect proxy"
+  },
+  {
+    "file": "build-claude-superset-api.json",
+    "name": "build claude superset api"
+  },
+  {
+    "file": "build-cloud-cgc-mcp.json",
+    "name": "build cloud cgc mcp"
+  },
+  {
+    "file": "build-db-agent.json",
+    "name": "build db agent"
+  },
+  {
+    "file": "build-kg-store.json",
+    "name": "build kg store"
+  },
+  {
+    "file": "build-surrealdb.json",
+    "name": "build surrealdb"
+  },
+  {
+    "file": "build-ollama.json",
+    "name": "build ollama"
+  },
+  {
+    "file": "build-ollama-arm.json",
+    "name": "build ollama arm"
+  },
+  {
+    "file": "build-ollama-hai.json",
+    "name": "build ollama hai"
+  },
+  {
+    "file": "build-rig-agentic-hai.json",
+    "name": "build rig agentic hai"
+  },
+  {
+    "file": "build-rig-agentic-sonn-14bq8.json",
+    "name": "build rig agentic sonn 14bq8"
+  },
+  {
+    "file": "build-session-memory.json",
+    "name": "build session memory"
+  },
+  {
+    "file": "build-mattermost.json",
+    "name": "build mattermost"
+  },
+  {
+    "file": "build-mattermost-postgres.json",
+    "name": "build mattermost postgres"
+  },
+  {
+    "file": "build-mattermost-bots.json",
+    "name": "build mattermost bots"
+  },
+  {
+    "file": "build-cypht.json",
+    "name": "build cypht"
+  },
+  {
+    "file": "build-cypht-postgres.json",
+    "name": "build cypht postgres"
+  },
+  {
+    "file": "build-mail-puller.json",
+    "name": "build mail puller"
+  },
+  {
+    "file": "build-continuwuity.json",
+    "name": "build continuwuity"
+  },
+  {
+    "file": "build-matrix-element.json",
+    "name": "build matrix element"
+  },
+  {
+    "file": "build-mautrix-whatsapp.json",
+    "name": "build mautrix whatsapp"
+  },
+  {
+    "file": "build-snappymail.json",
+    "name": "build snappymail"
+  },
+  {
+    "file": "build-maddy.json",
+    "name": "build maddy"
+  },
+  {
+    "file": "build-stalwart.json",
+    "name": "build stalwart"
+  },
+  {
+    "file": "build-stalwart-sorter.json",
+    "name": "build stalwart sorter"
+  },
+  {
+    "file": "build-crawlee_api.json",
+    "name": "build crawlee_api"
+  },
+  {
+    "file": "build-crawlee_runner.json",
+    "name": "build crawlee_runner"
+  },
+  {
+    "file": "build-crawlee_dashboard.json",
+    "name": "build crawlee_dashboard"
+  },
+  {
+    "file": "build-crawlee_scheduler.json",
+    "name": "build crawlee_scheduler"
+  },
+  {
+    "file": "build-crawlee_db.json",
+    "name": "build crawlee_db"
+  },
+  {
+    "file": "build-crawlee_redis.json",
+    "name": "build crawlee_redis"
+  },
+  {
+    "file": "build-crawlee_minio.json",
+    "name": "build crawlee_minio"
+  },
+  {
+    "file": "build-minio.json",
+    "name": "build minio"
+  },
+  {
+    "file": "build-fin-api.json",
+    "name": "build fin api"
+  },
+  {
+    "file": "build-photoprism_app.json",
+    "name": "build photoprism_app"
+  },
+  {
+    "file": "build-photoprism_mariadb.json",
+    "name": "build photoprism_mariadb"
+  },
+  {
+    "file": "build-mariadb.json",
+    "name": "build mariadb"
+  },
+  {
+    "file": "build-photoprism_rclone.json",
+    "name": "build photoprism_rclone"
+  },
+  {
+    "file": "build-news-gdelt.json",
+    "name": "build news gdelt"
+  },
+  {
+    "file": "build-calendar-radicale.json",
+    "name": "build calendar radicale"
+  },
+  {
+    "file": "build-code-server.json",
+    "name": "build code server"
+  },
+  {
+    "file": "build-contacts-radicale.json",
+    "name": "build contacts radicale"
+  },
+  {
+    "file": "build-etherpad_app.json",
+    "name": "build etherpad_app"
+  },
+  {
+    "file": "build-etherpad_postgres.json",
+    "name": "build etherpad_postgres"
+  },
+  {
+    "file": "build-filebrowser_app.json",
+    "name": "build filebrowser_app"
+  },
+  {
+    "file": "build-grist_app.json",
+    "name": "build grist_app"
+  },
+  {
+    "file": "build-hedgedoc_app.json",
+    "name": "build hedgedoc_app"
+  },
+  {
+    "file": "build-hedgedoc_postgres.json",
+    "name": "build hedgedoc_postgres"
+  },
+  {
+    "file": "build-paca-gateway.json",
+    "name": "build paca gateway"
+  },
+  {
+    "file": "build-paca-api.json",
+    "name": "build paca api"
+  },
+  {
+    "file": "build-paca-web.json",
+    "name": "build paca web"
+  },
+  {
+    "file": "build-paca-realtime.json",
+    "name": "build paca realtime"
+  },
+  {
+    "file": "build-paca-valkey.json",
+    "name": "build paca valkey"
+  },
+  {
+    "file": "build-paca-postgres.json",
+    "name": "build paca postgres"
+  },
+  {
+    "file": "build-revealmd_app.json",
+    "name": "build revealmd_app"
+  },
+  {
+    "file": "build-vaultwarden.json",
+    "name": "build vaultwarden"
+  },
+  {
+    "file": "build-front-end.json",
+    "name": "build front end"
+  },
+  {
+    "file": "z_archive/cloud-data-home-manager.json",
+    "name": "cloud data home manager (archived)"
+  },
+  {
+    "file": "build-gha.json",
+    "name": "build gha"
+  },
+  {
+    "file": "z_archive/cloud-data-wireguard-peers.json",
+    "name": "cloud data wireguard peers (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-firewall-rules.json",
+    "name": "cloud data firewall rules (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-monitoring-targets.json",
+    "name": "cloud data monitoring targets (archived)"
+  },
+  {
+    "file": "build-reports.json",
+    "name": "build reports"
+  },
+  {
+    "file": "z_archive/cloud-data-backup-targets.json",
+    "name": "cloud data backup targets (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-container-resources.json",
+    "name": "cloud data container resources (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-log-routing.json",
+    "name": "cloud data log routing (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-cloudflare-dns.json",
+    "name": "cloud data cloudflare dns (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-matomo-sites.json",
+    "name": "cloud data matomo sites (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-ntfy-acl.json",
+    "name": "cloud data ntfy acl (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-topology.json",
+    "name": "cloud data topology (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-configs.json",
+    "name": "cloud data configs (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-deps.json",
+    "name": "cloud data deps (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-databases.json",
+    "name": "cloud data databases (archived)"
+  },
+  {
+    "file": "z_archive/cloud-data-secrets-env-var-names.json",
+    "name": "cloud data secrets env var names (archived)"
+  },
+  {
+    "file": "build-kg-graph_schema.json",
+    "name": "build kg graph_schema"
+  },
+  {
+    "file": "build-kg-graph_delta.json",
+    "name": "build kg graph_delta"
+  },
+  {
+    "file": "build-flakes_desktop.json",
+    "name": "build flakes_desktop"
+  },
+  {
+    "file": "build-flakes_termux.json",
+    "name": "build flakes_termux"
+  },
+  {
+    "file": "build-builders.json",
+    "name": "build builders"
+  },
+  {
+    "file": "build-secrets.json",
+    "name": "build secrets"
+  }
+]
