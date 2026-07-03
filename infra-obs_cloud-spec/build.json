@@ -61,6 +61,8 @@
     "command": "busybox httpd -f -p %PORT% -h /srv"
   },
   "build": {
-    "headers_enforced": true
+    "headers_enforced": true,
+    "_deref_comment": "cloud-data.json is PATH-INTERPOLATED in flake.nix (DATA=${./cloud-data.json}) — nix interns that single symlink verbatim (dangling in store), so the engine must dereference src symlinks pre-build. Only services with path-interpolated external symlinks need this.",
+    "dereference_symlinks": true
   }
 }
