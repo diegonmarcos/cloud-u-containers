@@ -1,5 +1,6 @@
-# Stalwart v0.13 — minimal config (shadow mode, offset ports)
-# Matches auto-generated format. Admin panel manages everything else.
+# Stalwart v0.16 — file-based config (TOML). Certificate read from file on every
+# startup via %{file:...}% macro — no RocksDB API call needed for TLS.
+# Data (accounts, emails, JMAP objects) stays in RocksDB data store.
 
 [server]
 hostname = "@DOMAIN@"
@@ -16,28 +17,27 @@ url = "https://@DOMAIN@"
 # advertise-url config (tracked upstream).
 
 [server.listener.smtp]
-bind = "[::]:2025"
+bind = "[::]:25"
 protocol = "smtp"
 
 [server.listener.submissions]
-bind = "[::]:2465"
+bind = "[::]:465"
 protocol = "smtp"
 tls.implicit = true
 
 [server.listener.imaptls]
-bind = "[::]:2993"
+bind = "[::]:993"
 protocol = "imap"
 tls.implicit = true
 
 [server.listener.sieve]
-bind = "[::]:6190"
+bind = "[::]:4190"
 protocol = "managesieve"
 
 [server.listener.https]
 protocol = "http"
-bind = "[::]:@APP_PORT@"
-# Public URL is via Caddy reverse_proxy on :443 — clients should never see
-# the internal :@APP_PORT@. JMAP session-resource URLs are built from this.
+bind = "[::]:443"
+# Public URL is via Caddy reverse_proxy — clients never see the internal port.
 url = "https://@DOMAIN@"
 tls.implicit = true
 

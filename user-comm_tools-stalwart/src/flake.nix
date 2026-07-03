@@ -40,7 +40,6 @@
     # ── Template variable sets ──────────────────────────────────────
     configTomlVars = {
       DOMAIN     = buildJson.domain;
-      APP_PORT   = appPort;
       ADMIN_HASH = adminHash;
     };
 
