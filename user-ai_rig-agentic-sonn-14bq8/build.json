@@ -29,7 +29,7 @@
   },
   "docker": {
     "registry": "ghcr.io/diegonmarcos",
-    "image": "rig-agentic-sonn",
+    "image": "rig-agentic-sonn-14bq8",
     "dockerfile": "Dockerfile",
     "arch": "arm64",
     "native_build": {
