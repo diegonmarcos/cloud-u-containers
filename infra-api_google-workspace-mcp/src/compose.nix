@@ -23,6 +23,10 @@ in
         USER_GOOGLE_EMAIL = buildJson.user_google_email;
         GOOGLE_SERVICE_ACCOUNT_KEY_PATH = "/run/secrets/service-account-key.json";
       };
+      # /run must be writable for docker to create the file-bind mountpoint —
+      # the -binaries image ships a read-only /run and runc died with
+      # "mknod .../run/secrets/...: read-only file system" (2026-07-03).
+      tmpfs = [ "/run" ];
       volumes = [
         "./.secrets.d/GOOGLE_SERVICE_ACCOUNT_KEY:/run/secrets/service-account-key.json:ro"
       ];
