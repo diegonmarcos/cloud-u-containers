@@ -65,9 +65,23 @@ in
         retries  = 3;
         start_period = "15s";
       };
+      # 2026-07-03: `privileged = true` was broader than this container
+      # needs. cap_add SYS_ADMIN + /dev/fuse + empty security_opt still
+      # fails ("fusermount3: mount failed: Permission denied") — reproduced
+      # live on redeploy. Root cause: security_opt=[] only drops the
+      # fleet-wide no-new-privileges default, it does NOT disable Docker's
+      # *default* AppArmor profile (that requires an explicit
+      # "apparmor:unconfined", omission ≠ unconfined). fusermount3 is a
+      # setuid-root helper that needs the mount() syscall path AppArmor's
+      # default docker-default profile blocks, cap_add or not. This is the
+      # documented Docker+FUSE gotcha (same root cause as e.g. rclone/sshfs
+      # containers everywhere). apparmor:unconfined is still strictly
+      # narrower than privileged=true: no extra capabilities beyond
+      # SYS_ADMIN, no extra host devices beyond /dev/fuse, seccomp profile
+      # untouched.
       cap_add = [ "SYS_ADMIN" ];
-      privileged = true;
       devices = [ "/dev/fuse" ];
+      security_opt = [ "apparmor:unconfined" ];
       deploy.resources = {
         limits       = { memory = "512M"; cpus = "1.0"; };
         reservations = { memory = "64M"; };
