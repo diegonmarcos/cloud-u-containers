@@ -1,0 +1,104 @@
+{
+  "name": "send",
+  "description": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.",
+  "category": "app",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/send",
+    "compose_flags": "--build"
+  },
+  "ports": {
+    "app": 3016
+  },
+  "domain": "send.diegonmarcos.com",
+  "proxy": {
+    "primary": {
+      "domain": "send.diegonmarcos.com",
+      "auth": "none"
+    }
+  },
+  "health": {
+    "path": "/__lbheartbeat__"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "send_app",
+      "image": "registry.gitlab.com/timvisee/send:latest",
+      "port": 3016,
+      "port_env": null,
+      "dns": "send.app",
+      "public": true,
+      "proxy": {
+        "domain": "send.diegonmarcos.com",
+        "auth": "none"
+      },
+      "healthcheck": "/__lbheartbeat__",
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "volumes": [
+        "send_uploads:/uploads"
+      ],
+      "env_file": false,
+      "depends_on": ["redis"],
+      "resources": {
+        "limits": {
+          "memory": "256M"
+        },
+        "reservations": {
+          "memory": "64M"
+        }
+      },
+      "read_only": false,
+      "protocol": "http"
+    },
+    "redis": {
+      "container_name": "send_redis",
+      "image": "redis:7-alpine",
+      "port": null,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "send_redis_data:/data"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "limits": {
+          "memory": "64M"
+        },
+        "reservations": {
+          "memory": "16M"
+        }
+      },
+      "read_only": false
+    }
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "send",
+    "dockerfile": "Dockerfile",
+    "arch": "arm64"
+  },
+  "build": {
+    "include_cloud_data": "true",
+    "headers_enforced": false
+  },
+  "send_config": {
+    "max_file_size_bytes": 2147483648,
+    "max_downloads": 20,
+    "default_expire_seconds": 86400,
+    "max_expire_seconds": 604800
+  }
+}
