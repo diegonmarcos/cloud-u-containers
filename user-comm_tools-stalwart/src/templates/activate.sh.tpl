@@ -196,13 +196,27 @@ fi
 # ── Step E: TLS certificate (admin scope) ──────────────────────────────
 # Upsert the LE wildcard cert as a JMAP Certificate object so Stalwart
 # serves the real cert instead of the rcgen self-signed one. Idempotent.
+# After storing, restart the container so Stalwart reloads the TLS cert
+# from the JMAP store at startup (ReloadSettings does not reload TLS).
 if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
   echo "[activate] Applying TLS certificate from $TLS_DIR..."
+  CERT_APPLIED=0
   if python3 "$APPLY_CERT_PY" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" \
        "$TLS_DIR/fullchain.pem" "$TLS_DIR/privkey.pem"; then
-    :
+    CERT_APPLIED=1
   else
     echo "[activate]   apply-tls-cert.py exited $? (non-fatal)"
+  fi
+
+  if [ "$CERT_APPLIED" = 1 ]; then
+    echo "[activate] Restarting stalwart to reload TLS cert from JMAP store..."
+    docker restart stalwart 2>/dev/null || true
+    # Wait for JMAP to come back before exit
+    for i in $(seq 1 30); do
+      _c=$(curl -sk -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+      case "$_c" in 2*) echo "[activate]   stalwart ready (HTTP $_c)"; break ;; esac
+      sleep 2
+    done
   fi
 else
   echo "[activate]   TLS cert not yet on disk ($TLS_DIR) — skipping"
