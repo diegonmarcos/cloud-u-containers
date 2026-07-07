@@ -30,7 +30,8 @@
     "endpoint_check": true
   },
   "ports": {
-    "app": 8090
+    "app": 8090,
+    "rss_gateway": 8091
   },
   "timezone": "Europe/Paris",
   "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json so chat-mattermost reads them via its src/build-mattermost.json symlink). Adding a topic = edit this array + rebuild; no separate sync-topics.sh or ntfy-topics.nix to chase.",
@@ -52,6 +53,14 @@
     { "name": "sec_tls",             "category": "sec",       "desc": "TLS certificate expiry warnings" },
     { "name": "sec_connections",     "category": "sec",       "desc": "SSH/sudo/connection events across VMs" },
     { "name": "sec_yara",            "category": "sec",       "desc": "YARA malware scanner alerts & status" }
+  ],
+  "_profiles_comment": "RSS profile groups — each profile is a named set of topic categories resolved at build time by the Nix flake into profiles-config.json. Cloud Mail and any RSS reader subscribe to ONE profile URL instead of N individual topic feeds. Categories: 'topics' key = explicit topic list; 'categories' key = all topics whose category field matches. Add a profile = edit here + rebuild; consumers (rss-gateway sidecar + Cloud Mail app) auto-pick up changes.",
+  "profiles": [
+    { "id": "security", "title": "Security",  "categories": ["sec"] },
+    { "id": "cicd",     "title": "CI/CD",     "categories": ["dev", "deploy"] },
+    { "id": "health",   "title": "Health",    "categories": ["health"] },
+    { "id": "ops",      "title": "Ops",       "categories": ["ops"] },
+    { "id": "all",      "title": "Everything","topics": ["all"] }
   ],
   "backup": {
     "enabled": true
@@ -112,6 +121,34 @@
         "./syslog-to-ntfy.py:/app/syslog-to-ntfy.py:ro",
         "./cache:/var/cache/ntfy",
         "/var/log:/var/log:ro"
+      ],
+      "env_file": false,
+      "depends_on": [
+        "app"
+      ],
+      "resources": {
+        "limits": {
+          "memory": "32M"
+        },
+        "reservations": {
+          "memory": "8M"
+        }
+      },
+      "read_only": false
+    },
+    "rss-gateway": {
+      "container_name": "rss-gateway",
+      "image": "python:3.11-slim",
+      "port": 8091,
+      "port_env": null,
+      "dns": null,
+      "public": false,
+      "proxy": null,
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "./rss-gateway.py:/app/rss-gateway.py:ro",
+        "./configs/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
       ],
       "env_file": false,
       "depends_on": [
