@@ -3487,8 +3487,8 @@
           "healthcheck": null,
           "monitoring": null,
           "volumes": [
-            "./rss-gateway.py:/app/rss-gateway.py:ro",
-            "./configs/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+            "./assets/rss-gateway.py:/app/rss-gateway.py:ro",
+            "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
           ],
           "env_file": false,
           "depends_on": [
