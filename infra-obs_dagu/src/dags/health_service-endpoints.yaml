@@ -37,9 +37,17 @@ steps:
         svc=${rest##*:}
         url="$proto:${rest%:*}"
         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "$url" 2>/dev/null || echo "000")
-        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 400 ]; then
-          echo "  - $svc ($url) -> HTTP $HTTP_CODE" >> /tmp/endpoints-failed.$$
-        fi
+        # DOWN only if unreachable (000) or backend dead (502/503/504). An
+        # auth-gated endpoint answers 401/403 UNAUTHENTICATED — that proves the
+        # endpoint is ALIVE and correctly gating, NOT down. Treating >=400 as
+        # down (the old rule) flagged every Authelia/ntfy-3tier service as a
+        # false outage → this DAG exit-1'd every 5 min on healthy auth gates.
+        # 2xx/3xx = up; 401/403 = up-and-gated; 000/502/503/504 = genuinely down.
+        case "$HTTP_CODE" in
+          000|502|503|504)
+            echo "  - $svc ($url) -> HTTP $HTTP_CODE" >> /tmp/endpoints-failed.$$
+            ;;
+        esac
       done
       if [ -f /tmp/endpoints-failed.$$ ]; then
         FAILED=$(cat /tmp/endpoints-failed.$$)
