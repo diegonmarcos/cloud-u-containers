@@ -697,7 +697,30 @@ ${plainOut}${sniMuxBlock}
   '';
 
   mkNtfyBlock =
-    let ntfy = caddyRoutes.special.ntfy or null;
+    let
+      ntfy          = caddyRoutes.special.ntfy or null;
+      gatewayUp     = if ntfy != null then ntfy.gateway_upstream or null else null;
+      hasGateway    = gatewayUp != null;
+      # /feed* is served by the rss-gateway sidecar with the same 3-tier auth
+      # as the main ntfy block so clients using JWT, ntfy-native tokens, or
+      # browser cookies all work identically.
+      gatewayBlock  = if hasGateway then ''
+      handle /feed* {
+        @gw_jwt header_regexp Authorization "${auth.ntfy_jwt_pattern}"
+        handle @gw_jwt {
+  ${bearer}
+          reverse_proxy ${gatewayUp}
+        }
+        @gw_token header_regexp Authorization "${auth.ntfy_token_pattern}"
+        handle @gw_token {
+          reverse_proxy ${gatewayUp}
+        }
+        handle {
+  ${authelia}
+          reverse_proxy ${gatewayUp}
+        }
+      }
+'' else "";
     in if ntfy == null then ""
     else ''
     # ${ntfy.comment or "ntfy"}
@@ -711,6 +734,7 @@ ${plainOut}${sniMuxBlock}
         rewrite * /ntfy-setup.html
         file_server
       }
+      ${gatewayBlock}
       @authelia_jwt header_regexp Authorization "${auth.ntfy_jwt_pattern}"
       handle @authelia_jwt {
   ${bearer}

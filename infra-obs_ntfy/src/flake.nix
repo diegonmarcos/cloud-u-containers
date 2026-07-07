@@ -7,12 +7,47 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     # ── Data sources (declarative JSON) ────────────────────────────
-    buildJson   = builtins.fromJSON (builtins.readFile ../build.json);
-    ntfyJson    = builtins.fromJSON (builtins.readFile ./build-ntfy.json);
-    cNtfy       = ntfyJson.container;
-    cSyslog     = (builtins.fromJSON (builtins.readFile ./build-syslog-bridge.json)).container;
-    cGithubRss  = (builtins.fromJSON (builtins.readFile ./build-github-rss.json)).container;
-    usersJson   = (builtins.fromJSON (builtins.readFile ./users.json)).users;
+    buildJson    = builtins.fromJSON (builtins.readFile ../build.json);
+    ntfyJson     = builtins.fromJSON (builtins.readFile ./build-ntfy.json);
+    cNtfy        = ntfyJson.container;
+    cSyslog      = (builtins.fromJSON (builtins.readFile ./build-syslog-bridge.json)).container;
+    cGithubRss   = (builtins.fromJSON (builtins.readFile ./build-github-rss.json)).container;
+    cRssGateway  = buildJson.containers."rss-gateway";
+    usersJson    = (builtins.fromJSON (builtins.readFile ./users.json)).users;
+
+    # ── profiles-config.json — baked from build.json at flake build time ──
+    # Resolves profile.categories → matching topic objects so the rss-gateway
+    # sidecar and Cloud Mail app can subscribe to ONE URL per profile group.
+    allTopics   = buildJson.topics or [];
+    allProfiles = buildJson.profiles or [];
+    resolveProfile = p:
+      let
+        matched = if p ? "topics"
+          then builtins.filter (t: builtins.elem t.name p.topics) allTopics
+          else builtins.filter (t: builtins.elem t.category (p.categories or [])) allTopics;
+      in {
+        id       = p.id;
+        title    = p.title;
+        feed     = "/feed/${p.id}.atom";
+        channels = map (t: {
+          name = t.name;
+          desc = t.desc;
+          feed = "/feed/c/${t.name}.atom";
+        }) matched;
+      };
+    profilesConfig = {
+      version  = 1;
+      base     = "https://${buildJson.domain}/feed";
+      profiles = map resolveProfile allProfiles;
+      channels = map (t: {
+        name     = t.name;
+        category = t.category;
+        desc     = t.desc;
+        feed     = "/feed/c/${t.name}.atom";
+      }) allTopics;
+    };
+    profilesConfigAsset = pkgs.writeText "profiles-config.json"
+      (builtins.toJSON profilesConfig);
 
     engine = import ../../_shared/engine.nix;
     lib    = nixpkgs.lib;
@@ -53,7 +88,7 @@
           }
         ];
         composeSpec = import ./compose.nix {
-          inherit buildJson cNtfy cSyslog cGithubRss;
+          inherit buildJson cNtfy cSyslog cGithubRss cRssGateway;
           # Pass full ntfy container JSON so compose can read svc.<name>.ip
           # for the Tier-3 wg-only bind (cloud-data-driven; never hardcoded).
           containerNtfy = ntfyJson;
@@ -62,6 +97,8 @@
           ./code/syslog-to-ntfy.py
           ./code/github-rss-to-ntfy.py
           ./code/topic-scanner.py
+          ./code/rss-gateway.py
+          profilesConfigAsset
         ];
         title = "ntfy Push Notifications + syslog-bridge + github-rss";
       };

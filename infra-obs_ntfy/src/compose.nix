@@ -1,14 +1,15 @@
-# compose.nix — docker-compose spec for ntfy + syslog-bridge + github-rss.
+# compose.nix — docker-compose spec for ntfy + syslog-bridge + github-rss + rss-gateway.
 # engine.nix serialises this via lib.generators.toYAML and merges
 # compose-defaults.json into every service. Paths are relative to dist/
 # (docker-compose project-directory at deploy time).
-{ buildJson, cNtfy, cSyslog, cGithubRss, containerNtfy }:
+{ buildJson, cNtfy, cSyslog, cGithubRss, cRssGateway, containerNtfy }:
 
 let
-  svc        = containerNtfy.services;
-  appC       = buildJson.containers.app;
-  syslogC    = buildJson.containers."syslog-bridge";
-  githubRssC = buildJson.containers."github-rss";
+  svc          = containerNtfy.services;
+  appC         = buildJson.containers.app;
+  syslogC      = buildJson.containers."syslog-bridge";
+  githubRssC   = buildJson.containers."github-rss";
+  rssGatewayC  = buildJson.containers."rss-gateway";
 
   # Main container uses the wrapped-upstream image emitted by the engine
   # into code/<arch>/Dockerfile. Side-car Python containers pull their
@@ -78,6 +79,28 @@ in
       deploy.resources = {
         limits       = { memory = githubRssC.resources.limits.memory;       cpus = "1.0"; };
         reservations = { memory = githubRssC.resources.reservations.memory; };
+      };
+    };
+
+    rss-gateway = {
+      image = pythonImage;
+      container_name = rssGatewayC.container_name;
+      command = "python -u /app/rss-gateway.py";
+      environment = {
+        TZ = tz;
+        PYTHONUNBUFFERED = "1";
+      };
+      volumes = [
+        "./assets/rss-gateway.py:/app/rss-gateway.py:ro"
+        "./configs/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+      ];
+      # Bind to WG IP so Caddy (gcp-proxy) can reach the gateway over the mesh;
+      # same pattern as the main ntfy app container.
+      ports = [ "${svc.ntfy.ip}:${toString buildJson.ports.rss_gateway}:${toString buildJson.ports.rss_gateway}" ];
+      depends_on.ntfy = { condition = "service_started"; };
+      deploy.resources = {
+        limits       = { memory = rssGatewayC.resources.limits.memory;       cpus = "1.0"; };
+        reservations = { memory = rssGatewayC.resources.reservations.memory; };
       };
     };
   };
