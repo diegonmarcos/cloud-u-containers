@@ -42,6 +42,9 @@ in
         BRIDGE_OLLAMA_PORT     = toString buildJson.ports.ollama;
         BRIDGE_OLLAMA_BIND     = wgIp;
         BRIDGE_DEFAULT_MODEL   = rt.model or "claude-sonnet-4-6";
+        # Requested-id → claude model id map (JSON). Lets callers pick a cheaper
+        # tier per request (cgc indexing → haiku); unknown ids → BRIDGE_DEFAULT_MODEL.
+        BRIDGE_MODEL_ALIASES   = builtins.toJSON (rt.model_aliases or { });
         BRIDGE_MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
         BRIDGE_CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
         # Compress hop → Python sidecar (vendored Headroom `compress()`).
