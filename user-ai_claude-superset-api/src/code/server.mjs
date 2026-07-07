@@ -22,10 +22,16 @@ const CLAUDE_BIN    = process.env.CLAUDE_BIN || "claude";
 const MAX_CONC      = parseInt(process.env.BRIDGE_MAX_CONCURRENCY || "12", 10);
 const CALL_TIMEOUT  = parseInt(process.env.BRIDGE_CALL_TIMEOUT_MS || "180000", 10);
 const DEFAULT_MODEL = process.env.BRIDGE_DEFAULT_MODEL || "claude-sonnet-4-6";
+// Requested-id → real `claude --model` id. Data-driven (compose wires it from
+// build.json runtime.model_aliases); unknown/absent ids fall back to DEFAULT_MODEL,
+// so arbitrary client model strings keep working exactly as before.
+const MODEL_ALIASES = JSON.parse(process.env.BRIDGE_MODEL_ALIASES || "{}");
 
 const OLLAMA_PORT   = parseInt(process.env.BRIDGE_OLLAMA_PORT || "11434", 10);
 const OLLAMA_BIND   = process.env.BRIDGE_OLLAMA_BIND || "127.0.0.1";
-const OLLAMA_MODELS = (process.env.BRIDGE_OLLAMA_MODELS || `${DEFAULT_MODEL},${DEFAULT_MODEL}:latest,claude,claude:latest,claude-sonnet,claude-sonnet:latest`)
+const OLLAMA_MODELS = (process.env.BRIDGE_OLLAMA_MODELS ||
+  [...new Set([DEFAULT_MODEL, "claude", "claude-sonnet", ...Object.keys(MODEL_ALIASES)]
+    .flatMap((n) => [n, `${n}:latest`]))].join(","))
   .split(",").map((s) => s.trim()).filter(Boolean);
 
 // ── Headroom compression hop (Python sidecar) ────────────────────────────────
@@ -93,14 +99,16 @@ const toPrompt = (messages = []) => {
   return { system: sys.join("\n\n"), prompt: turns.join("\n\n") };
 };
 
-// The superset ALWAYS serves BRIDGE_DEFAULT_MODEL (requested ids are arbitrary /
-// not valid `claude --model` ids). Override only via BRIDGE_DEFAULT_MODEL.
-const mapModel = () => DEFAULT_MODEL;
+// Serve BRIDGE_DEFAULT_MODEL unless the requested id (sans :latest) is a declared
+// alias in BRIDGE_MODEL_ALIASES — lets a caller pick e.g. haiku for bulk indexing
+// while arbitrary/garbage client ids still land on the default.
+const mapModel = (requested) =>
+  MODEL_ALIASES[String(requested || "").replace(/:latest$/, "")] || DEFAULT_MODEL;
 
 // ── one claude -p invocation ─────────────────────────────────────────────────
-const callClaude = ({ system, prompt }) =>
+const callClaude = ({ system, prompt, model }) =>
   new Promise((resolve, reject) => {
-    const args = ["-p", "--output-format", "json", "--max-turns", "1", "--model", mapModel()];
+    const args = ["-p", "--output-format", "json", "--max-turns", "1", "--model", mapModel(model)];
     if (system) args.push("--append-system-prompt", system);
     const child = spawn(CLAUDE_BIN, args, {
       env: { ...process.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },
@@ -129,7 +137,7 @@ const withRetry = async (fn) => { try { return await fn(); } catch { return awai
 const run = async (messages, model) => {
   const compressed = await compress(messages, model);
   const { system, prompt } = toPrompt(compressed);
-  const { text, usage } = await withRetry(() => callClaude({ system, prompt }));
+  const { text, usage } = await withRetry(() => callClaude({ system, prompt, model }));
   stats.calls++;
   stats.prompt_tokens += usage.input_tokens ?? 0;
   stats.completion_tokens += usage.output_tokens ?? 0;

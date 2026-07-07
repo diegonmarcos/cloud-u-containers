@@ -67,13 +67,12 @@
       },
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacbwylmkqr253ay7binepapgsyopllfayovkzaky6oigbq",
       "services": [
-        "cypht",
         "mail-puller",
         "snappymail",
         "maddy",
         "stalwart"
       ],
-      "container_count": 7
+      "container_count": 5
     },
     "oci-E2-f_1": {
       "ip": "129.151.228.66",
@@ -202,9 +201,10 @@
         "hedgedoc",
         "paca",
         "revealmd",
+        "send",
         "vaultwarden"
       ],
-      "container_count": 62
+      "container_count": 65
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -3476,6 +3476,34 @@
           },
           "read_only": false
         },
+        "rss-gateway": {
+          "container_name": "rss-gateway",
+          "image": "python:3.11-slim",
+          "port": 8091,
+          "port_env": null,
+          "dns": null,
+          "public": false,
+          "proxy": null,
+          "healthcheck": null,
+          "monitoring": null,
+          "volumes": [
+            "./rss-gateway.py:/app/rss-gateway.py:ro",
+            "./configs/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+          ],
+          "env_file": false,
+          "depends_on": [
+            "app"
+          ],
+          "resources": {
+            "limits": {
+              "memory": "32M"
+            },
+            "reservations": {
+              "memory": "8M"
+            }
+          },
+          "read_only": false
+        },
         "github-rss": {
           "container_name": "github-rss",
           "image": "python:3.11-slim",
@@ -3508,10 +3536,12 @@
       "container_names": [
         "ntfy",
         "syslog-bridge",
+        "rss-gateway",
         "github-rss"
       ],
       "all_ports": [
-        "8090"
+        "8090",
+        "8091"
       ],
       "all_dns": [
         "ntfy.app"
@@ -3528,7 +3558,8 @@
         }
       },
       "declared_ports": {
-        "app": 8090
+        "app": 8090,
+        "rss_gateway": 8091
       },
       "health": {
         "path": "/"
@@ -3628,6 +3659,45 @@
           "name": "sec_yara",
           "category": "sec",
           "desc": "YARA malware scanner alerts & status"
+        }
+      ],
+      "_profiles_comment": "RSS profile groups — each profile is a named set of topic categories resolved at build time by the Nix flake into profiles-config.json. Cloud Mail and any RSS reader subscribe to ONE profile URL instead of N individual topic feeds. Categories: 'topics' key = explicit topic list; 'categories' key = all topics whose category field matches. Add a profile = edit here + rebuild; consumers (rss-gateway sidecar + Cloud Mail app) auto-pick up changes.",
+      "profiles": [
+        {
+          "id": "security",
+          "title": "Security",
+          "categories": [
+            "sec"
+          ]
+        },
+        {
+          "id": "cicd",
+          "title": "CI/CD",
+          "categories": [
+            "dev",
+            "deploy"
+          ]
+        },
+        {
+          "id": "health",
+          "title": "Health",
+          "categories": [
+            "health"
+          ]
+        },
+        {
+          "id": "ops",
+          "title": "Ops",
+          "categories": [
+            "ops"
+          ]
+        },
+        {
+          "id": "all",
+          "title": "Everything",
+          "topics": [
+            "all"
+          ]
         }
       ],
       "api": {
@@ -4828,6 +4898,11 @@
       },
       "runtime": {
         "model": "claude-sonnet-4-6",
+        "_model_aliases_comment": "requested-id → real `claude --model` id. Callers pick a cheaper tier per request (cgc octocode indexing asks for claude-haiku); unknown/absent ids fall back to `model`.",
+        "model_aliases": {
+          "claude-sonnet": "claude-sonnet-4-6",
+          "claude-haiku": "claude-haiku-4-5"
+        },
         "max_concurrency": 12,
         "call_timeout_ms": 180000,
         "headroom": {
@@ -4940,7 +5015,15 @@
             "*.map",
             "package-lock.json",
             "pnpm-lock.yaml",
-            "yarn.lock"
+            "yarn.lock",
+            "*.png",
+            "*.svg",
+            "*.jpg",
+            "*.jpeg",
+            "*.gif",
+            "*.ico",
+            "*.webp",
+            "*.pdf"
           ],
           "db_volume": "octocode_db",
           "db_path": "/home/appuser/.local/share/octocode",
@@ -4959,15 +5042,16 @@
             "_comment": "update = INCREMENTAL (octocode index, git-aware, changed files only) on top of the GHCR DB. NOT a reindex (clear+rebuild). First run with no upstream image bootstraps a full build once to seed GHCR. use_llm=false: the 2148-node base is structural-only; the LLM GraphRAG phase makes one LLM call PER node (~hours over the full graph) and timed out the job. Structural incremental of changed files is minutes and matches the base.",
             "incremental": true,
             "use_llm": false,
-            "llm_model": "openrouter:openai/gpt-4o-mini",
-            "schedule": "23 2 * * *"
+            "llm_model": "openrouter:anthropic/claude-haiku-4.5",
+            "schedule": "23 2 * * *",
+            "max_minutes": 330
           },
           "llm": {
             "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 — the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
             "openai_api_url": "http://10.0.0.6:3117/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:11436",
             "api_key": "sk-dummy",
-            "models": "ollama:claude-sonnet openai:gpt-4o-mini",
+            "models": "ollama:claude-haiku openai:gpt-4o-mini",
             "health_url": "http://10.0.0.6:3117/health"
           },
           "index_repos": [
@@ -4995,6 +5079,11 @@
             "db": "production",
             "user": "root",
             "delta": "/app/graphs/build-kg-graph_delta.json"
+          },
+          "smart_noindex": {
+            "_comment": "generic auto-noindex: exclude any dir where >=binary_ratio of its >=min_files tracked files are binary (git numstat). No hardcoded project paths.",
+            "min_files": 12,
+            "binary_ratio": 0.5
           }
         }
       },
@@ -5568,7 +5657,7 @@
         "app": 8091
       },
       "rig": {
-        "ollama_service": "ollama",
+        "ollama_service": "ollama-hai",
         "ollama_model": "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0",
         "c3_api_url": "http://c3-api.app",
         "c3_mcp_url": "http://c3-mcp.app",
@@ -5819,231 +5908,6 @@
         "MM_CLAUDE_PASSWORD",
         "AUTHELIA_OIDC_MATTERMOST_SECRET",
         "MM_EMAILSETTINGS_SMTPPASSWORD"
-      ]
-    },
-    "cypht": {
-      "category": "app",
-      "vm": "oci-E2-f_0",
-      "folder": "user-comm_cypht",
-      "description": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com",
-      "enabled": true,
-      "domain": "webmail.diegonmarcos.com",
-      "flake": "user-comm_cypht",
-      "port": 8889,
-      "dns": "cypht.app",
-      "upstream": "10.0.0.3:8889",
-      "containers": {
-        "app": {
-          "container_name": "cypht",
-          "image": "cypht/cypht:latest",
-          "port": 8889,
-          "port_env": null,
-          "dns": "cypht.app",
-          "public": true,
-          "proxy": {
-            "domain": "webmail.diegonmarcos.com",
-            "auth": "two_factor"
-          },
-          "healthcheck": "/",
-          "monitoring": null,
-          "volumes": [
-            "cypht_data:/var/lib/hm3"
-          ],
-          "env_file": true,
-          "depends_on": [
-            "cypht-postgres"
-          ],
-          "resources": {
-            "mem_limit": "256M",
-            "mem_reservation": "64M"
-          },
-          "read_only": false,
-          "protocol": "http",
-          "embedded_dbs": []
-        },
-        "db": {
-          "container_name": "cypht-postgres",
-          "image": "postgres:16-alpine",
-          "port": null,
-          "port_env": null,
-          "dns": null,
-          "public": false,
-          "proxy": null,
-          "healthcheck": null,
-          "monitoring": null,
-          "volumes": [
-            "cypht_pgdata:/var/lib/postgresql/data"
-          ],
-          "env_file": true,
-          "depends_on": [],
-          "resources": {
-            "mem_limit": "128M",
-            "mem_reservation": "32M"
-          },
-          "read_only": false,
-          "protocol": "tcp",
-          "extra_ports": [
-            {
-              "port": 5432,
-              "protocol": "tcp",
-              "bind": "127.0.0.1",
-              "desc": "PostgreSQL — loopback only (cypht co-located via host network)"
-            }
-          ],
-          "embedded_dbs": [
-            {
-              "engine": "postgres",
-              "path": "/var/lib/postgresql/data"
-            }
-          ]
-        }
-      },
-      "container_names": [
-        "cypht",
-        "cypht-postgres"
-      ],
-      "all_ports": [
-        "8889"
-      ],
-      "all_dns": [
-        "cypht.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "domain": "webmail.diegonmarcos.com",
-          "auth": "two_factor"
-        }
-      },
-      "declared_ports": {
-        "app": 8889
-      },
-      "health": {
-        "path": "/"
-      },
-      "upstream_image": "cypht/cypht:latest",
-      "resources": {
-        "mem_limit": "256M",
-        "mem_reservation": "64M"
-      },
-      "mail_clients": {
-        "_doc": "Cypht-only declarations. Cross-service data (mail server hosts/ports, mailbox identities) is JOINED at engine derive time from peers' build.json (services.<peer>.users + .domain + .ports/extra_ports). Output lands in build-cypht.json#mail_accounts (resolved). The cypht flake reads build-cypht.json and emits dist/assets/seed-accounts.json + dist/assets/cypht-api/configs.json — no hand-written duplicates.",
-        "primary_user": {
-          "_doc": "Cypht UI master login (Hm_Auth_DB). INDEPENDENT from the mailbox passwords (those come from peers' users{}.pass_env). Cypht-only data — owned by cypht.",
-          "user_ref": "stalwart.users.admin",
-          "pass_env": "CYPHT_LOGIN_PASSWORD"
-        },
-        "via_internal": [
-          {
-            "_doc": "JMAP via Stalwart. Cypht runs network_mode=host on oci-mail (same VM as Stalwart). Engine resolves service=stalwart, via=jmap_tls → host=jmap.diegonmarcos.com:2443 — reachable inside-VM (Stalwart listens on 10.0.0.3:2443) and externally via Caddy L4 reverse_proxy on jmap.diegonmarcos.com:443.",
-            "label_template": "{addr_short} | JMAP-Stalwart",
-            "user_ref": "stalwart.users.admin",
-            "receive_via": {
-              "service": "stalwart",
-              "via": "jmap_tls"
-            },
-            "send_via": {
-              "service": "stalwart",
-              "via": "smtp_ssl"
-            },
-            "alias_email": "me-jmap@stalwart"
-          }
-        ],
-        "via_external": [
-          {
-            "_doc": "External providers (no internal SoT exists). Hosts/ports declared inline because no peer service owns them.",
-            "label": "diegonmarcos@livecom | IMAP-outlook",
-            "email": "diegonmarcos@live.com",
-            "pass_env": "LIVE_APP_PASSWORD",
-            "imap": {
-              "host": "outlook.office365.com",
-              "port": 993,
-              "secure": "SSL"
-            },
-            "smtp": {
-              "host": "smtp-mail.outlook.com",
-              "port": 587,
-              "secure": "TLS"
-            }
-          },
-          {
-            "label": "diegonmarcos1@gmail.com | IMAP-gaccount",
-            "email": "diegonmarcos1@gmail.com",
-            "pass_env": "GMAIL_APP_PASSWORD",
-            "imap": {
-              "host": "imap.gmail.com",
-              "port": 993,
-              "secure": "SSL"
-            },
-            "smtp": {
-              "host": "smtp.gmail.com",
-              "port": 587,
-              "secure": "TLS"
-            }
-          }
-        ],
-        "carddav": {
-          "_doc": "CardDAV providers. Engine resolves service_ref → services.{name}.domain at derive time.",
-          "contacts-radicale": {
-            "service_ref": "contacts-radicale",
-            "path_template": "/{user_url_encoded}/",
-            "user_ref": "stalwart.users.admin",
-            "pass_env": "ME_PASSWORD"
-          }
-        },
-        "feeds": {
-          "_doc": "RSS feeds. Engine resolves service_ref → services.ntfy.domain. topics_source is a path (relative to cypht src/) to a topics list — itself a build-time copy of the canonical I_cloud-data/ntfy-api/src/topics.json.",
-          "service_ref": "ntfy",
-          "topics_source": "../ntfy-topics.json",
-          "url_path_template": "/{topic}/json?poll=1"
-        },
-        "profiles": {
-          "_doc": "Cypht send-as profiles (Hm_Profiles, modules/profiles). Profile is a CYPHT-ONLY concept — owned by cypht. match_template is rendered after via_internal labels are resolved; engine wires smtp_id/imap_id by name lookup at apply-time.",
-          "diego": {
-            "name": "Diego",
-            "user_ref": "stalwart.users.admin",
-            "match_template": "{addr_short} | IMAPS-Stalwart",
-            "default": true,
-            "sig": "",
-            "rmk": ""
-          }
-        },
-        "settings": {
-          "_doc": "Per-user UI prefs. Each key MUST end in _setting (Cypht convention). Cypht-only — owned by cypht.",
-          "theme_setting": "darkly",
-          "start_page_setting": "unread",
-          "enable_sieve_filter_setting": true,
-          "enable_snooze_setting": true,
-          "smtp_compose_type_setting": 1,
-          "enable_attachment_reminder_setting": true,
-          "enable_compose_delivery_receipt_setting": true,
-          "mailto_handler_setting": true,
-          "enable_collect_address_on_send_setting": true
-        }
-      },
-      "api": {
-        "has_api": false,
-        "has_web_ui": true,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": [
-          "/"
-        ]
-      },
-      "secret_env_vars": [
-        "CYPHT_DB_PASSWORD",
-        "POSTGRES_PASSWORD",
-        "CYPHT_2FA_SECRET",
-        "CYPHT_ADMIN_PASSWORD",
-        "ME_PASSWORD",
-        "NOREPLY_PASSWORD",
-        "LIVE_APP_PASSWORD",
-        "GMAIL_APP_PASSWORD",
-        "CYPHT_LOGIN_PASSWORD"
       ]
     },
     "mail-puller": {
@@ -8452,6 +8316,127 @@
         "healthcheck_paths": []
       }
     },
+    "send": {
+      "category": "app",
+      "vm": "oci-A1-f_0",
+      "folder": "user-prod_send",
+      "description": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.",
+      "enabled": true,
+      "domain": "send.diegonmarcos.com",
+      "flake": "user-prod_send",
+      "port": 3016,
+      "dns": "send.app",
+      "upstream": "10.0.0.6:3016",
+      "containers": {
+        "app": {
+          "container_name": "send_app",
+          "image": "registry.gitlab.com/timvisee/send:latest",
+          "port": 3016,
+          "port_env": null,
+          "dns": "send.app",
+          "public": true,
+          "proxy": {
+            "domain": "send.diegonmarcos.com",
+            "auth": "none"
+          },
+          "healthcheck": "/__lbheartbeat__",
+          "monitoring": {
+            "tls_check": true,
+            "dns_check": true,
+            "endpoint_check": true
+          },
+          "volumes": [
+            "send_uploads:/uploads"
+          ],
+          "env_file": false,
+          "depends_on": [
+            "redis"
+          ],
+          "resources": {
+            "limits": {
+              "memory": "256M"
+            },
+            "reservations": {
+              "memory": "64M"
+            }
+          },
+          "read_only": false,
+          "protocol": "http"
+        },
+        "redis": {
+          "container_name": "send_redis",
+          "image": "redis:7-alpine",
+          "port": null,
+          "port_env": null,
+          "dns": null,
+          "public": false,
+          "proxy": null,
+          "healthcheck": null,
+          "monitoring": null,
+          "volumes": [
+            "send_redis_data:/data"
+          ],
+          "env_file": false,
+          "depends_on": [],
+          "resources": {
+            "limits": {
+              "memory": "64M"
+            },
+            "reservations": {
+              "memory": "16M"
+            }
+          },
+          "read_only": false
+        }
+      },
+      "container_names": [
+        "send_app",
+        "send_redis"
+      ],
+      "all_ports": [
+        "3016"
+      ],
+      "all_dns": [
+        "send.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "send.diegonmarcos.com",
+          "auth": "none"
+        }
+      },
+      "declared_ports": {
+        "app": 3016
+      },
+      "health": {
+        "path": "/__lbheartbeat__"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "send_config": {
+        "max_file_size_bytes": 2147483648,
+        "max_downloads": 20,
+        "default_expire_seconds": 86400,
+        "max_expire_seconds": 604800
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/__lbheartbeat__"
+        ]
+      }
+    },
     "vaultwarden": {
       "category": "mic",
       "vm": "oci-A1-f_0",
@@ -8981,12 +8966,6 @@
         "service": "chat-mattermost"
       },
       {
-        "name": "cypht.app",
-        "type": "A",
-        "value": "10.0.0.3",
-        "service": "cypht"
-      },
-      {
         "name": "matrix-continuwuity.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9173,6 +9152,12 @@
         "service": "revealmd"
       },
       {
+        "name": "send.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "send"
+      },
+      {
         "name": "vaultwarden.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9327,9 +9312,132 @@
           ]
         }
       ],
+      "profiles": [
+        {
+          "id": "security",
+          "title": "Security",
+          "feed": "/feed/security.atom",
+          "channels": [
+            {
+              "name": "sec_audit",
+              "desc": "Auth log analysis & brute-force detection",
+              "feed": "/feed/c/sec_audit.atom"
+            },
+            {
+              "name": "sec_tls",
+              "desc": "TLS certificate expiry warnings",
+              "feed": "/feed/c/sec_tls.atom"
+            },
+            {
+              "name": "sec_connections",
+              "desc": "SSH/sudo/connection events across VMs",
+              "feed": "/feed/c/sec_connections.atom"
+            },
+            {
+              "name": "sec_yara",
+              "desc": "YARA malware scanner alerts & status",
+              "feed": "/feed/c/sec_yara.atom"
+            }
+          ]
+        },
+        {
+          "id": "cicd",
+          "title": "CI/CD",
+          "feed": "/feed/cicd.atom",
+          "channels": [
+            {
+              "name": "dev_commits",
+              "desc": "Push/commit events",
+              "feed": "/feed/c/dev_commits.atom"
+            },
+            {
+              "name": "dev_pull-requests",
+              "desc": "PR open/close/merge events",
+              "feed": "/feed/c/dev_pull-requests.atom"
+            },
+            {
+              "name": "dev_releases",
+              "desc": "Issues, releases, tags, forks",
+              "feed": "/feed/c/dev_releases.atom"
+            },
+            {
+              "name": "deploy_ship",
+              "desc": "build.sh ship / GHA deploys",
+              "feed": "/feed/c/deploy_ship.atom"
+            },
+            {
+              "name": "deploy_containers",
+              "desc": "Container restarts, image pulls",
+              "feed": "/feed/c/deploy_containers.atom"
+            }
+          ]
+        },
+        {
+          "id": "health",
+          "title": "Health",
+          "feed": "/feed/health.atom",
+          "channels": [
+            {
+              "name": "health_mesh",
+              "desc": "WireGuard mesh connectivity",
+              "feed": "/feed/c/health_mesh.atom"
+            },
+            {
+              "name": "health_endpoints",
+              "desc": "HTTP service endpoint checks",
+              "feed": "/feed/c/health_endpoints.atom"
+            },
+            {
+              "name": "health_dns",
+              "desc": "DNS resolution checks",
+              "feed": "/feed/c/health_dns.atom"
+            },
+            {
+              "name": "health_resources",
+              "desc": "VM disk/memory/CPU usage",
+              "feed": "/feed/c/health_resources.atom"
+            },
+            {
+              "name": "health_containers",
+              "desc": "Docker container health",
+              "feed": "/feed/c/health_containers.atom"
+            }
+          ]
+        },
+        {
+          "id": "ops",
+          "title": "Ops",
+          "feed": "/feed/ops.atom",
+          "channels": [
+            {
+              "name": "ops_backups",
+              "desc": "Backup freshness status",
+              "feed": "/feed/c/ops_backups.atom"
+            },
+            {
+              "name": "ops_reports",
+              "desc": "Daily/weekly summaries",
+              "feed": "/feed/c/ops_reports.atom"
+            }
+          ]
+        },
+        {
+          "id": "all",
+          "title": "Everything",
+          "feed": "/feed/all.atom",
+          "channels": [
+            {
+              "name": "all",
+              "desc": "Every message from every channel",
+              "feed": "/feed/c/all.atom"
+            }
+          ]
+        }
+      ],
       "users": [],
       "enable_login": false,
-      "auth_default_access": "read-write"
+      "auth_default_access": "read-write",
+      "base_url": "https://rss.diegonmarcos.com/feed"
     }
   },
   "_home_manager": {
@@ -9358,7 +9466,6 @@
         "is_public_ingress": false,
         "idle_shutdown": null,
         "containers": [
-          "cypht",
           "mail-puller",
           "snappymail",
           "maddy",
@@ -9489,6 +9596,7 @@
           "hedgedoc",
           "paca",
           "revealmd",
+          "send",
           "vaultwarden"
         ],
         "method": "key",
@@ -9947,11 +10055,6 @@
         "vm": "oci-apps",
         "has_docker": true
       },
-      "cypht": {
-        "dir": "user-comm_cypht",
-        "vm": "oci-mail",
-        "has_docker": true
-      },
       "mail-puller": {
         "dir": "user-comm_mail-puller",
         "vm": "oci-mail",
@@ -10049,6 +10152,11 @@
       },
       "revealmd": {
         "dir": "user-prod_revealmd",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
+      "send": {
+        "dir": "user-prod_send",
         "vm": "oci-apps",
         "has_docker": true
       },
