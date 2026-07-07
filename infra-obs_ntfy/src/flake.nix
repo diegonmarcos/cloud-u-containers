@@ -46,7 +46,10 @@
         feed     = "/feed/c/${t.name}.atom";
       }) allTopics;
     };
-    profilesConfigAsset = pkgs.writeText "profiles-config.json"
+    # builtins.toFile: pure eval, no pkgs needed (pkgs is only in scope inside
+    # the per-system lambda below). Engine's { name; src; } extraAssets form
+    # strips the store-hash prefix so it lands as assets/profiles-config.json.
+    profilesConfigAsset = builtins.toFile "profiles-config.json"
       (builtins.toJSON profilesConfig);
 
     engine = import ../../_shared/engine.nix;
@@ -98,7 +101,7 @@
           ./code/github-rss-to-ntfy.py
           ./code/topic-scanner.py
           ./code/rss-gateway.py
-          profilesConfigAsset
+          { name = "profiles-config.json"; src = profilesConfigAsset; }
         ];
         title = "ntfy Push Notifications + syslog-bridge + github-rss";
       };
