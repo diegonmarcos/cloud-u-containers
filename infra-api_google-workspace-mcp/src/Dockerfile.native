@@ -1,0 +1,25 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                                                                  ║
+# ║   GENERATED FILE — DO NOT EDIT                                   ║
+# ║                                                                  ║
+# ║   Source : a_solutions/infra-api_google-workspace-mcp/dist/Dockerfile.native
+# ║   Engine : 1_workflows/src/scripts/cloud-ship-container-engine.sh
+# ║   Rebuild: ./1_workflows/build.sh
+# ║                                                                  ║
+# ║   Manual edits will be overwritten on next build.                ║
+# ║                                                                  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY code /app
+COPY build.json /app/build.json
+RUN uv sync --frozen --no-dev --extra disk
+RUN id -u appuser >/dev/null 2>&1 || useradd -r -m -u 10001 appuser; chown -R appuser /app
+USER appuser
+ENV HOME=/home/appuser
+
+LABEL org.opencontainers.image.source="https://github.com/diegonmarcos/cloud"
+ENTRYPOINT []
+CMD ["uv","run","main.py","--transport","streamable-http","--tool-tier","complete"]
