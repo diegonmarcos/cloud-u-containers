@@ -508,6 +508,29 @@
     "monitoring": {
       "ntfy_base": "https://rss.diegonmarcos.com",
       "description": "ntfy push notification base URL"
+    },
+    "protection": {
+      "_doc": "Cross-VM defaults for the vm-pilot protection stack (load-shedder, tier1-apps watchdog, health-agent fd/wg checks, watchdog-petter disk/docker). Per-VM overrides live in b_infra/nixhm-sudo-<alias>/build.json .protection. Consumed (data-driven, never hardcoded in Nix) by: protection/load-shedder.nix, protection/tier1-apps.nix, protection/watchdog.nix, agents/health-agent.nix via consolidated._home_manager.vms.<alias>.protection merged over native.protection. Edit here + redeploy to retune.",
+      "mem_psi_warn": 35,
+      "mem_psi_crit": 50,
+      "mem_psi_page": 65,
+      "interval_secs": 15,
+      "backoff_secs": 120,
+      "need_breaches": 3,
+      "fd_warn_pct": 70,
+      "fd_crit_pct": 90,
+      "wg_stale_secs": 180,
+      "disk_warn_pct": 80,
+      "disk_high_pct": 85,
+      "disk_emerg_pct": 90,
+      "docker_fail_threshold": 120,
+      "low_mem_prune_mb": 50,
+      "tier1_services": [],
+      "tier1_mem_min_mb": 48,
+      "tier1_max_restarts": 3,
+      "tier1_reset_window_secs": 300,
+      "tier1_check_interval_secs": 30,
+      "ntfy_topic": "health_resources"
     }
   },
   "wireguard_public": {
@@ -9475,6 +9498,17 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
+        },
+        "protection": {
+          "_doc": "Per-VM overrides for the protection stack; merged over native.protection defaults (config.json). Mail stack: maddy+stalwart are tier-1 (survive graduated shed until last resort).",
+          "tier1_services": [
+            "maddy",
+            "stalwart",
+            "mail-puller"
+          ],
+          "mem_psi_warn": 30,
+          "mem_psi_crit": 50,
+          "mem_psi_page": 65
         }
       },
       "oci-analytics": {
@@ -9524,7 +9558,8 @@
         "gha": {
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
-        }
+        },
+        "protection": {}
       },
       "oci-apps": {
         "vm_id": "oci-A1-f_0",
@@ -9604,6 +9639,7 @@
           "ssh_secret": "OCI_SSH_KEY",
           "host_literal": true
         },
+        "protection": {},
         "ssh_containers": [
           {
             "name": "c3-infra-api",
@@ -9719,6 +9755,19 @@
           "ssh_secret": "GCP_PROXY_SSH_KEY",
           "host_secret": "GCP_PROXY_HOST",
           "user_secret": "GCP_PROXY_USER"
+        },
+        "protection": {
+          "_doc": "Per-VM overrides for the protection stack; merged over native.protection defaults (config.json). Proxy/mesh hub: caddy+introspect-proxy+authelia+hickory+wg-tunnel are tier-1 (survive graduated shed until last resort). Slightly higher PSI thresholds — this VM idles low and a brief spike is normal.",
+          "tier1_services": [
+            "caddy",
+            "introspect-proxy",
+            "authelia",
+            "hickory-dns",
+            "wireguard-mesh-ws-tunnel"
+          ],
+          "mem_psi_warn": 35,
+          "mem_psi_crit": 55,
+          "mem_psi_page": 70
         }
       },
       "vast-ollama": {
@@ -9744,7 +9793,8 @@
         "idle_shutdown": null,
         "containers": [],
         "method": "key",
-        "gha": null
+        "gha": null,
+        "protection": {}
       }
     },
     "ssh_config": [
