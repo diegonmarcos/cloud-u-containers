@@ -101,6 +101,15 @@
           ./code/github-rss-to-ntfy.py
           ./code/topic-scanner.py
           ./code/rss-gateway.py
+          # Enterprise notification broker + daily/weekly digest (§4A/§4C).
+          # Policy (severity/routing/dedup/flap/escalation/recovery) is data in
+          # build-notify.json (symlink → 2_configs/dist/build-notify.json), read
+          # by the broker at /app/build-notify.json. Producers POST events to the
+          # broker on :8092 instead of the health_resources firehose — see
+          # MIGRATION-notify-broker.md for the event contract.
+          ./code/notify-broker.py
+          ./code/notify-digest.py
+          { name = "build-notify.json"; src = ./build-notify.json; }
           { name = "profiles-config.json"; src = profilesConfigAsset; }
         ];
         title = "ntfy Push Notifications + syslog-bridge + github-rss";
