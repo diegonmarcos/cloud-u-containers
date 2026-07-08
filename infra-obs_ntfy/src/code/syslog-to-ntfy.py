@@ -12,8 +12,8 @@ import urllib.request
 import urllib.error
 
 SYSLOG_FILE = '/var/log/messages'
-NTFY_URL = 'http://ntfy:80'
-NTFY_TOPIC = 'security_yara'
+NTFY_URL = 'http://ntfy:8090'
+NTFY_TOPIC = 'sec_yara'
 STATE_FILE = '/var/cache/ntfy/syslog-offset.txt'
 
 def get_last_offset():

@@ -701,10 +701,17 @@ ${plainOut}${sniMuxBlock}
       ntfy          = caddyRoutes.special.ntfy or null;
       gatewayUp     = if ntfy != null then ntfy.gateway_upstream or null else null;
       hasGateway    = gatewayUp != null;
-      # /feed* is served by the rss-gateway sidecar with the same 3-tier auth
-      # as the main ntfy block so clients using JWT, ntfy-native tokens, or
-      # browser cookies all work identically.
-      gatewayBlock  = if hasGateway then ''
+      feedNoAuth    = (ntfy.feed_auth or "") == "none";
+      # /feed* is served by the rss-gateway sidecar. Default: same 3-tier auth as
+      # the main ntfy block (JWT / ntfy-token / cookie). When feed_auth=="none"
+      # (wg0-only sites): bare reverse_proxy — on-mesh is the only way in, so
+      # Cloud Mail polls the RSS tree without a token.
+      gatewayBlock  = if !hasGateway then ""
+        else if feedNoAuth then ''
+      handle /feed* {
+        reverse_proxy ${gatewayUp}
+      }
+''      else ''
       handle /feed* {
         @gw_jwt header_regexp Authorization "${auth.ntfy_jwt_pattern}"
         handle @gw_jwt {
@@ -720,9 +727,12 @@ ${plainOut}${sniMuxBlock}
           reverse_proxy ${gatewayUp}
         }
       }
-'' else "";
+'';
     in if ntfy == null then ""
-    else ''
+    # Safety: serving /feed/* with no auth is only sound when the whole site is
+    # wg0-gated — otherwise the RSS tree would be world-readable. Fail eval.
+    else assert (!feedNoAuth) || (ntfy.wg_only or false);
+    ''
     # ${ntfy.comment or "ntfy"}
     ${ntfy.domain} {
   ${publicBindLine}
