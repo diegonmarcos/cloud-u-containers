@@ -93,7 +93,8 @@
         "use_llm": false,
         "llm_model": "openrouter:anthropic/claude-haiku-4.5",
         "schedule": "23 2 * * *",
-        "max_minutes": 330
+        "max_minutes": 330,
+        "repo_timeout_min": 90
       },
       "llm": {
         "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 — the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
