@@ -18,7 +18,10 @@
   "proxy": {
     "primary": {
       "domain": "rss.diegonmarcos.com",
-      "auth": "ntfy-3tier"
+      "auth": "ntfy-3tier",
+      "wg_only": true,
+      "_feed_auth_comment": "The /feed/* RSS routes (rss-gateway) are served with NO Authelia/bearer — the whole rss.diegonmarcos.com site is already wg0-gated (wg_only), so on-mesh is the only way in. Cloud Mail (SUPER RSS READER) polls channels.json + per-topic Atom feeds over wg0 without a token. The ntfy app itself (publish/web UI) keeps ntfy-3tier.",
+      "feed_auth": "none"
     }
   },
   "health": {
@@ -34,25 +37,31 @@
     "rss_gateway": 8091
   },
   "timezone": "Europe/Paris",
-  "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json so chat-mattermost reads them via its src/build-mattermost.json symlink). Adding a topic = edit this array + rebuild; no separate sync-topics.sh or ntfy-topics.nix to chase.",
+  "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
   "topics": [
-    { "name": "all",                 "category": "universal", "desc": "Every message from every channel" },
-    { "name": "dev_commits",         "category": "dev",       "desc": "Push/commit events" },
-    { "name": "dev_pull-requests",   "category": "dev",       "desc": "PR open/close/merge events" },
-    { "name": "dev_releases",        "category": "dev",       "desc": "Issues, releases, tags, forks" },
-    { "name": "deploy_ship",         "category": "deploy",    "desc": "build.sh ship / GHA deploys" },
-    { "name": "deploy_containers",   "category": "deploy",    "desc": "Container restarts, image pulls" },
-    { "name": "health_mesh",         "category": "health",    "desc": "WireGuard mesh connectivity" },
-    { "name": "health_endpoints",    "category": "health",    "desc": "HTTP service endpoint checks" },
-    { "name": "health_dns",          "category": "health",    "desc": "DNS resolution checks" },
-    { "name": "health_resources",    "category": "health",    "desc": "VM disk/memory/CPU usage" },
-    { "name": "health_containers",   "category": "health",    "desc": "Docker container health" },
-    { "name": "ops_backups",         "category": "ops",       "desc": "Backup freshness status" },
-    { "name": "ops_reports",         "category": "ops",       "desc": "Daily/weekly summaries" },
-    { "name": "sec_audit",           "category": "sec",       "desc": "Auth log analysis & brute-force detection" },
-    { "name": "sec_tls",             "category": "sec",       "desc": "TLS certificate expiry warnings" },
-    { "name": "sec_connections",     "category": "sec",       "desc": "SSH/sudo/connection events across VMs" },
-    { "name": "sec_yara",            "category": "sec",       "desc": "YARA malware scanner alerts & status" }
+    { "name": "all",                 "category": "universal", "title": "All",            "desc": "Every message from every channel" },
+    { "name": "dev_commits",         "category": "dev",       "title": "Commits",        "path": "Cloud-Infra/CICD/GH",       "desc": "Push/commit events" },
+    { "name": "dev_pull-requests",   "category": "dev",       "title": "Pull Requests",  "path": "Cloud-Infra/CICD/GH",       "desc": "PR open/close/merge events" },
+    { "name": "dev_releases",        "category": "dev",       "title": "Releases & Tags","path": "Cloud-Infra/CICD/GH",       "desc": "Issues, releases, tags, forks" },
+    { "name": "deploy_containers",   "category": "deploy",    "title": "GHCR",           "path": "Cloud-Infra/CICD",          "desc": "Container restarts, image pulls" },
+    { "name": "deploy_ship",         "category": "deploy",    "title": "Ship",           "path": "Cloud-Infra/CICD",          "desc": "build.sh ship / GHA deploys" },
+    { "name": "deploy_dagu",         "category": "deploy",    "title": "Dagu",           "path": "Cloud-Infra/CICD",          "desc": "Dagu DAG run failures" },
+    { "name": "health_mesh",         "category": "health",    "title": "Mesh",           "path": "Cloud-Infra/Health/Checks", "desc": "WireGuard mesh connectivity" },
+    { "name": "health_endpoints",    "category": "health",    "title": "Endpoints",      "path": "Cloud-Infra/Health/Checks", "desc": "HTTP service endpoint checks" },
+    { "name": "health_dns",          "category": "health",    "title": "DNS",            "path": "Cloud-Infra/Health/Checks", "desc": "DNS resolution checks" },
+    { "name": "health_resources",    "category": "health",    "title": "Resources",      "path": "Cloud-Infra/Health/Checks", "desc": "VM disk/memory/CPU usage" },
+    { "name": "health_containers",   "category": "health",    "title": "Containers",     "path": "Cloud-Infra/Health/Checks", "desc": "Docker container health" },
+    { "name": "ops_backups",         "category": "ops",       "title": "Backups",        "path": "Cloud-Infra/Ops",           "desc": "Backup freshness status" },
+    { "name": "ops_reports",         "category": "ops",       "title": "Summaries",      "path": "Cloud-Infra/Ops",           "desc": "Daily/weekly summaries" },
+    { "name": "sec_audit",           "category": "sec",       "title": "Audit",          "path": "Cloud-Infra/Security",      "desc": "Auth log analysis & brute-force detection" },
+    { "name": "sec_tls",             "category": "sec",       "title": "TLS",            "path": "Cloud-Infra/Security",      "desc": "TLS certificate expiry warnings" },
+    { "name": "sec_connections",     "category": "sec",       "title": "Connections",    "path": "Cloud-Infra/Security",      "desc": "SSH/sudo/connection events across VMs" },
+    { "name": "sec_yara",            "category": "sec",       "title": "YARA",           "path": "Cloud-Infra/Security",      "desc": "YARA malware scanner alerts & status" },
+    { "name": "health_report_cloud-health-full-daily",  "category": "health", "title": "Health — Daily Full",   "path": "Cloud-Infra/Health/Reports", "desc": "Daily full cloud health report" },
+    { "name": "health_report_cloud-health-full-2",      "category": "health", "title": "Health — Full #2",      "path": "Cloud-Infra/Health/Reports", "desc": "Secondary full cloud health report" },
+    { "name": "health_report_cloud-mail-health-full",   "category": "health", "title": "Mail Health",           "path": "Cloud-Infra/Health/Reports", "desc": "Full mail-stack health report" },
+    { "name": "health_report_cloud-sec-data-report",    "category": "health", "title": "Security — Data",       "path": "Cloud-Infra/Health/Reports", "desc": "Security data report" },
+    { "name": "health_report_cloud-sec-network-report", "category": "health", "title": "Security — Network",    "path": "Cloud-Infra/Health/Reports", "desc": "Security network report" }
   ],
   "_profiles_comment": "RSS profile groups — each profile is a named set of topic categories resolved at build time by the Nix flake into profiles-config.json. Cloud Mail and any RSS reader subscribe to ONE profile URL instead of N individual topic feeds. Categories: 'topics' key = explicit topic list; 'categories' key = all topics whose category field matches. Add a profile = edit here + rebuild; consumers (rss-gateway sidecar + Cloud Mail app) auto-pick up changes.",
   "profiles": [
@@ -148,7 +157,8 @@
       "monitoring": null,
       "volumes": [
         "./assets/rss-gateway.py:/app/rss-gateway.py:ro",
-        "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+        "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro",
+        "./assets/channels-config.json:/etc/ntfy/channels-config.json:ro"
       ],
       "env_file": false,
       "depends_on": [

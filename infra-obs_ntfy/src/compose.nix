@@ -93,6 +93,7 @@ in
       volumes = [
         "./assets/rss-gateway.py:/app/rss-gateway.py:ro"
         "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+        "./assets/channels-config.json:/etc/ntfy/channels-config.json:ro"
       ];
       # Bind to WG IP so Caddy (gcp-proxy) can reach the gateway over the mesh;
       # same pattern as the main ntfy app container.

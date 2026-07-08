@@ -3511,7 +3511,8 @@
           "monitoring": null,
           "volumes": [
             "./assets/rss-gateway.py:/app/rss-gateway.py:ro",
-            "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro"
+            "./assets/profiles-config.json:/etc/ntfy/profiles-config.json:ro",
+            "./assets/channels-config.json:/etc/ntfy/channels-config.json:ro"
           ],
           "env_file": false,
           "depends_on": [
@@ -3577,7 +3578,10 @@
       "proxy": {
         "primary": {
           "domain": "rss.diegonmarcos.com",
-          "auth": "ntfy-3tier"
+          "auth": "ntfy-3tier",
+          "wg_only": true,
+          "_feed_auth_comment": "The /feed/* RSS routes (rss-gateway) are served with NO Authelia/bearer — the whole rss.diegonmarcos.com site is already wg0-gated (wg_only), so on-mesh is the only way in. Cloud Mail (SUPER RSS READER) polls channels.json + per-topic Atom feeds over wg0 without a token. The ntfy app itself (publish/web UI) keeps ntfy-3tier.",
+          "feed_auth": "none"
         }
       },
       "declared_ports": {
@@ -3596,92 +3600,167 @@
         "enabled": true
       },
       "timezone": "Europe/Paris",
-      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json so chat-mattermost reads them via its src/build-mattermost.json symlink). Adding a topic = edit this array + rebuild; no separate sync-topics.sh or ntfy-topics.nix to chase.",
+      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
       "topics": [
         {
           "name": "all",
           "category": "universal",
+          "title": "All",
           "desc": "Every message from every channel"
         },
         {
           "name": "dev_commits",
           "category": "dev",
+          "title": "Commits",
+          "path": "Cloud-Infra/CICD/GH",
           "desc": "Push/commit events"
         },
         {
           "name": "dev_pull-requests",
           "category": "dev",
+          "title": "Pull Requests",
+          "path": "Cloud-Infra/CICD/GH",
           "desc": "PR open/close/merge events"
         },
         {
           "name": "dev_releases",
           "category": "dev",
+          "title": "Releases & Tags",
+          "path": "Cloud-Infra/CICD/GH",
           "desc": "Issues, releases, tags, forks"
-        },
-        {
-          "name": "deploy_ship",
-          "category": "deploy",
-          "desc": "build.sh ship / GHA deploys"
         },
         {
           "name": "deploy_containers",
           "category": "deploy",
+          "title": "GHCR",
+          "path": "Cloud-Infra/CICD",
           "desc": "Container restarts, image pulls"
+        },
+        {
+          "name": "deploy_ship",
+          "category": "deploy",
+          "title": "Ship",
+          "path": "Cloud-Infra/CICD",
+          "desc": "build.sh ship / GHA deploys"
+        },
+        {
+          "name": "deploy_dagu",
+          "category": "deploy",
+          "title": "Dagu",
+          "path": "Cloud-Infra/CICD",
+          "desc": "Dagu DAG run failures"
         },
         {
           "name": "health_mesh",
           "category": "health",
+          "title": "Mesh",
+          "path": "Cloud-Infra/Health/Checks",
           "desc": "WireGuard mesh connectivity"
         },
         {
           "name": "health_endpoints",
           "category": "health",
+          "title": "Endpoints",
+          "path": "Cloud-Infra/Health/Checks",
           "desc": "HTTP service endpoint checks"
         },
         {
           "name": "health_dns",
           "category": "health",
+          "title": "DNS",
+          "path": "Cloud-Infra/Health/Checks",
           "desc": "DNS resolution checks"
         },
         {
           "name": "health_resources",
           "category": "health",
+          "title": "Resources",
+          "path": "Cloud-Infra/Health/Checks",
           "desc": "VM disk/memory/CPU usage"
         },
         {
           "name": "health_containers",
           "category": "health",
+          "title": "Containers",
+          "path": "Cloud-Infra/Health/Checks",
           "desc": "Docker container health"
         },
         {
           "name": "ops_backups",
           "category": "ops",
+          "title": "Backups",
+          "path": "Cloud-Infra/Ops",
           "desc": "Backup freshness status"
         },
         {
           "name": "ops_reports",
           "category": "ops",
+          "title": "Summaries",
+          "path": "Cloud-Infra/Ops",
           "desc": "Daily/weekly summaries"
         },
         {
           "name": "sec_audit",
           "category": "sec",
+          "title": "Audit",
+          "path": "Cloud-Infra/Security",
           "desc": "Auth log analysis & brute-force detection"
         },
         {
           "name": "sec_tls",
           "category": "sec",
+          "title": "TLS",
+          "path": "Cloud-Infra/Security",
           "desc": "TLS certificate expiry warnings"
         },
         {
           "name": "sec_connections",
           "category": "sec",
+          "title": "Connections",
+          "path": "Cloud-Infra/Security",
           "desc": "SSH/sudo/connection events across VMs"
         },
         {
           "name": "sec_yara",
           "category": "sec",
+          "title": "YARA",
+          "path": "Cloud-Infra/Security",
           "desc": "YARA malware scanner alerts & status"
+        },
+        {
+          "name": "health_report_cloud-health-full-daily",
+          "category": "health",
+          "title": "Health — Daily Full",
+          "path": "Cloud-Infra/Health/Reports",
+          "desc": "Daily full cloud health report"
+        },
+        {
+          "name": "health_report_cloud-health-full-2",
+          "category": "health",
+          "title": "Health — Full #2",
+          "path": "Cloud-Infra/Health/Reports",
+          "desc": "Secondary full cloud health report"
+        },
+        {
+          "name": "health_report_cloud-mail-health-full",
+          "category": "health",
+          "title": "Mail Health",
+          "path": "Cloud-Infra/Health/Reports",
+          "desc": "Full mail-stack health report"
+        },
+        {
+          "name": "health_report_cloud-sec-data-report",
+          "category": "health",
+          "title": "Security — Data",
+          "path": "Cloud-Infra/Health/Reports",
+          "desc": "Security data report"
+        },
+        {
+          "name": "health_report_cloud-sec-network-report",
+          "category": "health",
+          "title": "Security — Network",
+          "path": "Cloud-Infra/Health/Reports",
+          "desc": "Security network report"
         }
       ],
       "_profiles_comment": "RSS profile groups — each profile is a named set of topic categories resolved at build time by the Nix flake into profiles-config.json. Cloud Mail and any RSS reader subscribe to ONE profile URL instead of N individual topic feeds. Categories: 'topics' key = explicit topic list; 'categories' key = all topics whose category field matches. Add a profile = edit here + rebuild; consumers (rss-gateway sidecar + Cloud Mail app) auto-pick up changes.",
@@ -9206,7 +9285,8 @@
           "desc": "Every message from every channel",
           "publishers": [
             "system"
-          ]
+          ],
+          "title": "All"
         },
         {
           "name": "dev_commits",
@@ -9214,7 +9294,9 @@
           "desc": "Push/commit events",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/CICD/GH",
+          "title": "Commits"
         },
         {
           "name": "dev_pull-requests",
@@ -9222,7 +9304,9 @@
           "desc": "PR open/close/merge events",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/CICD/GH",
+          "title": "Pull Requests"
         },
         {
           "name": "dev_releases",
@@ -9230,15 +9314,9 @@
           "desc": "Issues, releases, tags, forks",
           "publishers": [
             "system"
-          ]
-        },
-        {
-          "name": "deploy_ship",
-          "category": "deploy",
-          "desc": "build.sh ship / GHA deploys",
-          "publishers": [
-            "system"
-          ]
+          ],
+          "path": "Cloud-Infra/CICD/GH",
+          "title": "Releases & Tags"
         },
         {
           "name": "deploy_containers",
@@ -9246,7 +9324,29 @@
           "desc": "Container restarts, image pulls",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/CICD",
+          "title": "GHCR"
+        },
+        {
+          "name": "deploy_ship",
+          "category": "deploy",
+          "desc": "build.sh ship / GHA deploys",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/CICD",
+          "title": "Ship"
+        },
+        {
+          "name": "deploy_dagu",
+          "category": "deploy",
+          "desc": "Dagu DAG run failures",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/CICD",
+          "title": "Dagu"
         },
         {
           "name": "health_mesh",
@@ -9254,7 +9354,9 @@
           "desc": "WireGuard mesh connectivity",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Health/Checks",
+          "title": "Mesh"
         },
         {
           "name": "health_endpoints",
@@ -9262,7 +9364,9 @@
           "desc": "HTTP service endpoint checks",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Health/Checks",
+          "title": "Endpoints"
         },
         {
           "name": "health_dns",
@@ -9270,7 +9374,9 @@
           "desc": "DNS resolution checks",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Health/Checks",
+          "title": "DNS"
         },
         {
           "name": "health_resources",
@@ -9278,7 +9384,9 @@
           "desc": "VM disk/memory/CPU usage",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Health/Checks",
+          "title": "Resources"
         },
         {
           "name": "health_containers",
@@ -9286,7 +9394,9 @@
           "desc": "Docker container health",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Health/Checks",
+          "title": "Containers"
         },
         {
           "name": "ops_backups",
@@ -9294,7 +9404,9 @@
           "desc": "Backup freshness status",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Ops",
+          "title": "Backups"
         },
         {
           "name": "ops_reports",
@@ -9302,7 +9414,9 @@
           "desc": "Daily/weekly summaries",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Ops",
+          "title": "Summaries"
         },
         {
           "name": "sec_audit",
@@ -9310,7 +9424,9 @@
           "desc": "Auth log analysis & brute-force detection",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Security",
+          "title": "Audit"
         },
         {
           "name": "sec_tls",
@@ -9318,7 +9434,9 @@
           "desc": "TLS certificate expiry warnings",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Security",
+          "title": "TLS"
         },
         {
           "name": "sec_connections",
@@ -9326,7 +9444,9 @@
           "desc": "SSH/sudo/connection events across VMs",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Security",
+          "title": "Connections"
         },
         {
           "name": "sec_yara",
@@ -9334,7 +9454,59 @@
           "desc": "YARA malware scanner alerts & status",
           "publishers": [
             "system"
-          ]
+          ],
+          "path": "Cloud-Infra/Security",
+          "title": "YARA"
+        },
+        {
+          "name": "health_report_cloud-health-full-daily",
+          "category": "health",
+          "desc": "Daily full cloud health report",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/Health/Reports",
+          "title": "Health — Daily Full"
+        },
+        {
+          "name": "health_report_cloud-health-full-2",
+          "category": "health",
+          "desc": "Secondary full cloud health report",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/Health/Reports",
+          "title": "Health — Full #2"
+        },
+        {
+          "name": "health_report_cloud-mail-health-full",
+          "category": "health",
+          "desc": "Full mail-stack health report",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/Health/Reports",
+          "title": "Mail Health"
+        },
+        {
+          "name": "health_report_cloud-sec-data-report",
+          "category": "health",
+          "desc": "Security data report",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/Health/Reports",
+          "title": "Security — Data"
+        },
+        {
+          "name": "health_report_cloud-sec-network-report",
+          "category": "health",
+          "desc": "Security network report",
+          "publishers": [
+            "system"
+          ],
+          "path": "Cloud-Infra/Health/Reports",
+          "title": "Security — Network"
         }
       ],
       "profiles": [
@@ -9386,14 +9558,19 @@
               "feed": "/feed/c/dev_releases.atom"
             },
             {
+              "name": "deploy_containers",
+              "desc": "Container restarts, image pulls",
+              "feed": "/feed/c/deploy_containers.atom"
+            },
+            {
               "name": "deploy_ship",
               "desc": "build.sh ship / GHA deploys",
               "feed": "/feed/c/deploy_ship.atom"
             },
             {
-              "name": "deploy_containers",
-              "desc": "Container restarts, image pulls",
-              "feed": "/feed/c/deploy_containers.atom"
+              "name": "deploy_dagu",
+              "desc": "Dagu DAG run failures",
+              "feed": "/feed/c/deploy_dagu.atom"
             }
           ]
         },
@@ -9426,6 +9603,31 @@
               "name": "health_containers",
               "desc": "Docker container health",
               "feed": "/feed/c/health_containers.atom"
+            },
+            {
+              "name": "health_report_cloud-health-full-daily",
+              "desc": "Daily full cloud health report",
+              "feed": "/feed/c/health_report_cloud-health-full-daily.atom"
+            },
+            {
+              "name": "health_report_cloud-health-full-2",
+              "desc": "Secondary full cloud health report",
+              "feed": "/feed/c/health_report_cloud-health-full-2.atom"
+            },
+            {
+              "name": "health_report_cloud-mail-health-full",
+              "desc": "Full mail-stack health report",
+              "feed": "/feed/c/health_report_cloud-mail-health-full.atom"
+            },
+            {
+              "name": "health_report_cloud-sec-data-report",
+              "desc": "Security data report",
+              "feed": "/feed/c/health_report_cloud-sec-data-report.atom"
+            },
+            {
+              "name": "health_report_cloud-sec-network-report",
+              "desc": "Security network report",
+              "feed": "/feed/c/health_report_cloud-sec-network-report.atom"
             }
           ]
         },

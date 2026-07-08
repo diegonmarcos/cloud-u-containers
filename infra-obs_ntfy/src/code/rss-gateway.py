@@ -4,6 +4,7 @@ RSS Profile Gateway — serves ntfy topic groups as Atom feeds + discovery JSON.
 
 Endpoints (all under /feed/ prefix — routed here by Caddy from rss.diegonmarcos.com):
   GET /feed/profiles.json           → discovery: all profiles + channels (schema v1)
+  GET /feed/channels.json           → hierarchical RSS taxonomy (Cloud Mail tree)
   GET /feed/<profile_id>.atom       → Atom feed for a profile (aggregated topics)
   GET /feed/c/<channel_name>.atom   → Atom feed for a single topic/channel
   GET /feed/health                  → 200 OK, for healthchecks
@@ -26,6 +27,7 @@ from datetime import datetime, timezone
 from xml.sax.saxutils import escape
 
 PROFILES_CONFIG = "/etc/ntfy/profiles-config.json"
+CHANNELS_CONFIG = "/etc/ntfy/channels-config.json"
 NTFY_INTERNAL   = "http://ntfy:8090"
 POLL_SINCE      = "168h"          # 7 days of history in each Atom feed
 PORT            = 8091
@@ -34,6 +36,15 @@ ATOM_NS         = "http://www.w3.org/2005/Atom"
 
 def load_config():
     return json.loads(Path(PROFILES_CONFIG).read_text())
+
+
+def load_channels():
+    """Hierarchical RSS taxonomy (build-ntfy-rss-channels.json, baked by the Nix
+    flake) for the Cloud Mail SUPER RSS READER. Absent on legacy deploys → {}."""
+    try:
+        return json.loads(Path(CHANNELS_CONFIG).read_text())
+    except Exception:
+        return {}
 
 
 def ntfy_poll(topics: list[str]) -> list[dict]:
@@ -138,6 +149,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(cfg)
             return
 
+        # ── /feed/channels.json — hierarchical RSS taxonomy (Cloud Mail tree) ────
+        if path in ("/feed/channels.json", "/feed/channels.json/"):
+            self._json(load_channels())
+            return
+
         # ── /feed/<profile_id>.atom ─────────────────────────────────────────────
         if path.startswith("/feed/") and path.endswith(".atom") and "/c/" not in path:
             profile_id = path[len("/feed/"):-len(".atom")]
@@ -154,7 +170,11 @@ class Handler(BaseHTTPRequestHandler):
         # ── /feed/c/<channel_name>.atom ─────────────────────────────────────────
         if path.startswith("/feed/c/") and path.endswith(".atom"):
             channel = path[len("/feed/c/"):-len(".atom")]
+            # Valid set = profile channels (profiles-config `.channels[].name`)
+            # UNION the RSS-taxonomy topics (channels-config `.channels[].topic`).
+            # Without the union every generated logs_*/app_*/report feed 404s.
             all_channels = {ch["name"] for ch in cfg.get("channels", [])}
+            all_channels |= {ch["topic"] for ch in load_channels().get("channels", [])}
             if channel not in all_channels:
                 self.send_error(404, f"Unknown channel: {channel}")
                 return
