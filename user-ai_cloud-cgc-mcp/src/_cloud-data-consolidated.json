@@ -6424,8 +6424,12 @@
         "networks": []
       },
       "proxy": {
-        "_demoted_2026-04-27": "Public webmail.diegonmarcos.com handed off to aa-sui_cypht (pure-kindling-pixel.md). SnappyMail keeps running on internal snappymail.app route only — fallback in case Cypht has issues. Re-promote by restoring primary + mail_hub fields and re-shipping caddy.",
-        "primary": null
+        "_repromoted_2026-07-09": "webmail.diegonmarcos.com re-promoted to SnappyMail. It was demoted 2026-04-27 for a Cypht (user-comm_cypht) handoff that was never finished — Cypht has no build.json/src, so no route was ever emitted and the domain orphaned to the Caddy catch-all (200 wormhole). SnappyMail is healthy on oci-mail; restored primary per the demote note.",
+        "primary": {
+          "domain": "webmail.diegonmarcos.com",
+          "auth": "two_factor",
+          "landing_page": "mymail"
+        }
       },
       "declared_ports": {
         "app": 8888
