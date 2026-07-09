@@ -850,30 +850,34 @@ ${plainOut}${sniMuxBlock}
   s3Tpl         = readTpl "34-s3-route.caddy.tpl";
 
   mkInternalRoute = route: subst {
-    "@SERVICE@"        = route.service;
-    "@UPSTREAM@"       = route.upstream;
-    "@EMPTY_GUARD@"    = emptyGuard;
-    "@HANDLE_ERRORS@"  = handleErrors;
+    "@SERVICE@"          = route.service;
+    "@UPSTREAM@"         = route.upstream;
+    "@EMPTY_GUARD@"      = emptyGuard;
+    "@HANDLE_ERRORS@"    = handleErrors;
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
   } internalTpl;
 
   mkS3Route = route: subst {
-    "@SERVICE@"     = route.service;
-    "@BUCKET@"      = route.bucket;
-    "@S3_ENDPOINT@" = route.s3_endpoint;
-    "@S3_HOST@"     = route.s3_host;
+    "@SERVICE@"          = route.service;
+    "@BUCKET@"           = route.bucket;
+    "@S3_ENDPOINT@"      = route.s3_endpoint;
+    "@S3_HOST@"          = route.s3_host;
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
   } s3Tpl;
 
   mkCanonicalAppRoute = entry: subst {
-    "@SERVICE@"        = entry.service;
-    "@UPSTREAM@"       = entry.upstream;
-    "@EMPTY_GUARD@"    = emptyGuard;
-    "@HANDLE_ERRORS@"  = handleErrors;
+    "@SERVICE@"          = entry.service;
+    "@UPSTREAM@"         = entry.upstream;
+    "@EMPTY_GUARD@"      = emptyGuard;
+    "@HANDLE_ERRORS@"    = handleErrors;
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
   } canonicalTpl;
 
   msgs = caddyRoutes.messages or {};
   mkPortlessAppRoute = entry: subst {
-    "@SERVICE@"         = entry.service;
-    "@PLACEHOLDER_MSG@" = msgs.portless_placeholder;
+    "@SERVICE@"          = entry.service;
+    "@PLACEHOLDER_MSG@"  = msgs.portless_placeholder;
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
   } portlessTpl;
 
   canonicalHttpEntries = lib.filter
@@ -899,13 +903,14 @@ ${plainOut}${sniMuxBlock}
   dbCatalogEntries = caddyRoutes.all_db_urls or [];
 
   mkDbPlaceholderRoute = e: subst {
-    "@SERVICE@"   = e.service;
-    "@CONTAINER@" = e.container or "?";
-    "@ENGINE@"    = e.engine or "?";
-    "@PORT@"      = toString (e.port or 0);
-    "@UPSTREAM@"  = e.upstream or "(embedded)";
-    "@DB_PATH@"   = e.path or "-";
-    "@VM@"        = e.vm or "-";
+    "@SERVICE@"          = e.service;
+    "@CONTAINER@"        = e.container or "?";
+    "@ENGINE@"           = e.engine or "?";
+    "@PORT@"             = toString (e.port or 0);
+    "@UPSTREAM@"         = e.upstream or "(embedded)";
+    "@DB_PATH@"          = e.path or "-";
+    "@VM@"               = e.vm or "-";
+    "@PUBLIC_BIND_LINE@" = publicBindLine;
   } dbTpl;
 
   global = caddyRoutes.global or {};
