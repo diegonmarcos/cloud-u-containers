@@ -41,6 +41,7 @@ steps:
         -v dagu_dagu_data:/var/lib/dagu/data \
         -w /var/lib/dagu/data/cloud-data/reports \
         -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist \
+        -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
         -e HTTP_TO_SMTP_PROXY_API_URL="$HTTP_TO_SMTP_PROXY_API_URL" \
         -e HTTP_TO_SMTP_PROXY_API_KEY="$HTTP_TO_SMTP_PROXY_API_KEY" \

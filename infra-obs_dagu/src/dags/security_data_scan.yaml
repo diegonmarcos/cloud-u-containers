@@ -7,17 +7,24 @@ type: graph
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - GITHUB_TOKEN: ${GITHUB_TOKEN}
+  - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
 mail_on:
   failure: true
   success: false
 steps:
   - name: sec-data-scan
-    command: >-
-      docker run --rm --network host
-      --pull always
-      -v /opt/ssh-keys/dagu:/root/.ssh
-      -v dagu_dagu_data:/var/lib/dagu/data
-      -w /var/lib/dagu/data/cloud-data/reports
-      -e GITHUB_TOKEN=$GITHUB_TOKEN
-      ghcr.io/diegonmarcos/cloud-data-reports:latest
-      bash src/build.sh sec
+    # command: | (literal block) is mandatory — Dagu runs it through bash so
+    # $VAR references expand. The previous `>-` (folded) form was exec'd
+    # directly, leaving `$GITHUB_TOKEN` as a LITERAL string in the inner
+    # container's env (same bug class as report_daily's 401, fixed 2026-06).
+    # BEARER_TOKEN: entrypoint §5d fails loud without it (R6 hardening).
+    command: |
+      docker run --rm --network host \
+        --pull always \
+        -v /opt/ssh-keys/dagu:/root/.ssh \
+        -v dagu_dagu_data:/var/lib/dagu/data \
+        -w /var/lib/dagu/data/cloud-data/reports \
+        -e GITHUB_TOKEN="$GITHUB_TOKEN" \
+        -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
+        ghcr.io/diegonmarcos/cloud-data-reports:latest \
+        bash src/build.sh sec
