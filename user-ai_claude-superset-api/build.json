@@ -42,6 +42,11 @@
     },
     "max_concurrency": 12,
     "call_timeout_ms": 180000,
+    "_sessions_comment": "Cross-device session store: devices push recent Claude Code sessions here (WG-only) so any device can restore them. dir is under container HOME; keep = max sessions retained per device.",
+    "sessions": {
+      "dir": ".claude-sessions",
+      "keep": 20
+    },
     "headroom": {
       "enabled": true,
       "savings_profile": "agent-90",
