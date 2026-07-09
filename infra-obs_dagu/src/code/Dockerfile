@@ -1,7 +1,3 @@
-# dagucloud/dagu:2.5.0 removes apk for hardening — cannot RUN apk on it.
-# Multi-stage: pull only the dagu binary, install tooling on fresh Alpine.
-FROM ghcr.io/dagucloud/dagu:2.5.0 AS dagu-src
-
 FROM alpine:3.19
 USER root
 
@@ -15,7 +11,16 @@ RUN apk add --no-cache \
     jq \
     docker-cli
 
-COPY --from=dagu-src /usr/local/bin/dagu /usr/local/bin/dagu
+# Static dagu binary from GitHub releases — avoids dynamic-link issues from
+# copying out of the hardened official image (which strips apk and may link
+# against a different musl version).
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in x86_64) DA="amd64";; aarch64) DA="arm64";; esac && \
+    curl -sfL "https://github.com/dagucloud/dagu/releases/download/v2.5.0/dagu_2.5.0_linux_${DA}.tar.gz" \
+      -o /tmp/dagu.tar.gz && \
+    tar -xzf /tmp/dagu.tar.gz -C /usr/local/bin/ dagu && \
+    rm /tmp/dagu.tar.gz && \
+    chmod +x /usr/local/bin/dagu
 
 # Install websocat (WebSocket CLI — ntfy bridge)
 RUN ARCH=$(uname -m) && \
