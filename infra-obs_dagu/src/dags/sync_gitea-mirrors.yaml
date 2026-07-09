@@ -9,6 +9,7 @@ env:
   - GITEA_HOST: 10.0.0.6
   - GITEA_PORT: 3017
   - GITEA_ORG: diego
+  - GITEA_TOKEN: ${GITEA_TOKEN}
 mail_on:
   failure: true
   success: false
@@ -18,23 +19,22 @@ steps:
     command: |
       SSH="ssh $SSH_OPTS ubuntu@$GITEA_HOST"
 
-      # Get Gitea API token from container env
-      TOKEN=$($SSH "docker exec gitea sh -c 'cat /data/gitea/conf/app.ini 2>/dev/null | grep -A5 \"\\[api\\]\" | grep ADMIN_TOKEN | cut -d= -f2 | tr -d \" \"' 2>/dev/null || echo ''")
-
-      # If no token, use the Gitea API without auth (internal network)
-      AUTH=""
-      [ -n "$TOKEN" ] && AUTH="-H \"Authorization: token $TOKEN\""
+      if [ -z "$GITEA_TOKEN" ]; then
+        echo "SKIP: GITEA_TOKEN not configured in dagu secrets — add it to secrets.yaml to enable mirror sync"
+        exit 0
+      fi
+      AUTH="-H \"Authorization: token $GITEA_TOKEN\""
 
       echo "=== Triggering mirror sync for all repos ==="
       SYNCED=0
       FAILED=0
 
       # List all repos in org and trigger mirror sync
-      REPOS=$($SSH "curl -sf http://localhost:$GITEA_PORT/api/v1/orgs/$GITEA_ORG/repos $AUTH 2>/dev/null | jq -r '.[].name'" 2>/dev/null)
+      REPOS=$($SSH "curl -sf -H 'Authorization: token $GITEA_TOKEN' http://localhost:$GITEA_PORT/api/v1/orgs/$GITEA_ORG/repos 2>/dev/null | jq -r '.[].name'" 2>/dev/null)
 
       if [ -z "$REPOS" ]; then
         # Fallback: try listing user repos
-        REPOS=$($SSH "curl -sf http://localhost:$GITEA_PORT/api/v1/user/repos $AUTH 2>/dev/null | jq -r '.[].name'" 2>/dev/null)
+        REPOS=$($SSH "curl -sf -H 'Authorization: token $GITEA_TOKEN' http://localhost:$GITEA_PORT/api/v1/user/repos 2>/dev/null | jq -r '.[].name'" 2>/dev/null)
       fi
 
       if [ -z "$REPOS" ]; then
@@ -44,7 +44,7 @@ steps:
 
       for repo in $REPOS; do
         echo -n "  $repo: "
-        RESULT=$($SSH "curl -sf -X POST http://localhost:$GITEA_PORT/api/v1/repos/$GITEA_ORG/$repo/mirror-sync $AUTH 2>&1" || echo "FAIL")
+        RESULT=$($SSH "curl -sf -X POST -H 'Authorization: token $GITEA_TOKEN' http://localhost:$GITEA_PORT/api/v1/repos/$GITEA_ORG/$repo/mirror-sync 2>&1" || echo "FAIL")
         if echo "$RESULT" | grep -q "FAIL\|error\|404"; then
           echo "FAIL ($RESULT)"
           FAILED=$((FAILED + 1))
@@ -69,7 +69,7 @@ steps:
 
       echo "=== Checking mirror freshness (max 24h) ==="
 
-      REPOS=$($SSH "curl -sf http://localhost:$GITEA_PORT/api/v1/orgs/$GITEA_ORG/repos 2>/dev/null | jq -r '.[] | \"\(.name)|\(.updated_at)\"'" 2>/dev/null)
+      REPOS=$($SSH "curl -sf -H 'Authorization: token $GITEA_TOKEN' http://localhost:$GITEA_PORT/api/v1/orgs/$GITEA_ORG/repos 2>/dev/null | jq -r '.[] | \"\(.name)|\(.updated_at)\"'" 2>/dev/null)
 
       for entry in $REPOS; do
         REPO=$(echo "$entry" | cut -d'|' -f1)

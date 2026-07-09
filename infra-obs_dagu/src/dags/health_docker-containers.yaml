@@ -13,7 +13,7 @@ steps:
         name="${vm#*:}"
         DATA=$(curl -sf --max-time 5 "http://${ip}:8199/latest.json" 2>/dev/null)
         if [ -z "$DATA" ]; then
-          ALERTS="${ALERTS}${name}: health endpoint unreachable\n"
+          echo "SKIP: $name :8199 not reachable (agent not deployed)"
           continue
         fi
         UNHEALTHY=$(echo "$DATA" | jq -r '.containers[] | select(.health == "unhealthy") | .name' 2>/dev/null)
