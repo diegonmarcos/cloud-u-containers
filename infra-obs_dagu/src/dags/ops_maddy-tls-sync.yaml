@@ -2,7 +2,7 @@ schedule: "0 3 * * *"
 env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
-  - RSYNC_SSH: ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10
+  - RSYNC_SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=10
 mail_on:
   failure: false
   success: false
@@ -47,7 +47,7 @@ steps:
       echo "Cert valid until: $EXPIRY"
 
       # Push to oci-mail
-      scp -o StrictHostKeyChecking=no "$CERT_SRC/fullchain.pem" "$CERT_SRC/privkey.pem" "$MAIL:$CERT_DST/"
+      scp -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no "$CERT_SRC/fullchain.pem" "$CERT_SRC/privkey.pem" "$MAIL:$CERT_DST/"
 
       # Verify Maddy can read the new cert
       $RSYNC_SSH $MAIL "openssl x509 -noout -enddate -in $CERT_DST/fullchain.pem"
