@@ -3,5 +3,8 @@
     tls internal {
       on_demand
     }
-    reverse_proxy @UPSTREAM@
+    reverse_proxy @UPSTREAM@ {
+@EMPTY_GUARD@
+    }
+@HANDLE_ERRORS@
   }

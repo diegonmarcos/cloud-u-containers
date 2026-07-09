@@ -4,6 +4,7 @@
       reverse_proxy @UPSTREAM@ {
         header_up X-Real-IP {http.request.remote.host}
         @TRANSPORT_BLOCK@
+@EMPTY_GUARD@
       }
     }
     handle {
@@ -11,5 +12,6 @@
       reverse_proxy @UPSTREAM@ {
         header_up X-Real-IP {http.request.remote.host}
         @TRANSPORT_BLOCK@
+@EMPTY_GUARD@
       }
     }
