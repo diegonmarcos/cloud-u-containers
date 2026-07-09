@@ -16,7 +16,8 @@ function resolveDaguApi(): string {
     const vm = svc?.vm ? topo.vms?.[svc.vm] : null;
     if (vm?.wg_ip && svc?.port) return `http://${vm.wg_ip}:${svc.port}`;
   } catch {}
-  return "http://10.0.0.3:8070";
+  // Dagu runs on oci-apps 10.0.0.6:8070 (not 10.0.0.3 — that's oci-mail).
+  return "http://10.0.0.6:8070";
 }
 
 // Resolve the Dagu REST API base path from cloud-data (services.dagu.api.base_path).
