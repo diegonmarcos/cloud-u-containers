@@ -20,4 +20,10 @@ mail_on:
 steps:
   - name: restore
     command: |
-      $SSH "$OCI_APPS" "DB_IMAGE='$DB_IMAGE' DB_VOLUME='$DB_VOLUME' MCP_CONTAINER='$MCP_CONTAINER' NTFY_URL='$NTFY_URL' /opt/scripts/cloud-cgc-db-restore.sh"
+      $SSH "$OCI_APPS" bash << REMOTE
+      if [ ! -x /opt/scripts/cloud-cgc-db-restore.sh ]; then
+        echo "SKIP: cloud-cgc-db-restore.sh not yet deployed via vm-pilot"
+        exit 0
+      fi
+      DB_IMAGE="$DB_IMAGE" DB_VOLUME="$DB_VOLUME" MCP_CONTAINER="$MCP_CONTAINER" NTFY_URL="$NTFY_URL" /opt/scripts/cloud-cgc-db-restore.sh
+      REMOTE

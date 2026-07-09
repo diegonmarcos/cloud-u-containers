@@ -14,7 +14,7 @@ steps:
       # cloud_health_daily.{md,html,_web.html,json} into the dagu_dagu_data
       # volume (Docker Compose-prefixed name — bare `dagu_data` is a
       # different, empty volume).
-      docker run --rm --network host \
+      docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh:ro \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
