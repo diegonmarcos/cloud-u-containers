@@ -202,6 +202,18 @@ a:hover{color:#845ef7;border-color:#845ef7}
   <p class="msg" style="font-size:.8rem;word-break:break-all">
     <span style="color:#495057">requested:</span> <span id="req-url" style="color:#339af0"></span>
   </p>
+  <div class="vm-panel" id="edge-panel">
+    <div class="vm-header">
+      <span class="vm-indicator yellow" id="edge-light"></span>
+      <span class="vm-name">edge route debug</span>
+      <span class="vm-health" id="edge-health">probing&hellip;</span>
+    </div>
+    <div class="vm-status" id="edge-debug"></div>
+    <div class="vm-actions">
+      <button class="vm-btn refresh" id="edge-retry-btn">Retry</button>
+      <button class="vm-btn start" id="edge-download">Download JSON</button>
+    </div>
+  </div>
   <div class="log">
     <div><span class="ok">[OK]</span> DNS resolved &mdash; you found the server</div>
     <div><span class="ok">[OK]</span> TLS handshake &mdash; encrypted tunnel up</div>
@@ -324,6 +336,40 @@ document.getElementById('vm-reset-btn').addEventListener('click',function(){vmAc
 document.getElementById('vm-refresh-btn').addEventListener('click',checkStatus);
 
 discoverVm().then(checkStatus).catch(function(){setIndicator('blue','discovery failed')});
+
+// ── Truthful-edge route debug (parity with infra-sec_caddy-public) ──
+// The edge tags fallback responses with X-Edge-Fallback + the real upstream
+// status (22-handle-errors + 99-catch-all). Re-probe the failed URL: render
+// those as downloadable JSON, and self-dismiss — redirect back the moment the
+// route recovers. All client-side on the bind-mounted page; no server templating.
+var edgeDbg={requested:location.href,host:location.host,path:location.pathname,ts:new Date().toISOString()};
+var edgeLight=document.getElementById('edge-light');
+var edgeHealth=document.getElementById('edge-health');
+var edgeOut=document.getElementById('edge-debug');
+function renderEdge(){edgeOut.textContent=JSON.stringify(edgeDbg,null,2)}
+function probeRoute(){
+  edgeLight.className='vm-indicator yellow';edgeHealth.textContent='probing...';
+  fetch(location.href,{method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(8000)})
+    .then(function(r){
+      edgeDbg.status=r.status;
+      edgeDbg.x_edge_fallback=r.headers.get('x-edge-fallback');
+      edgeDbg.x_edge_route=r.headers.get('x-edge-route');
+      edgeDbg.x_edge_upstream_status=r.headers.get('x-edge-upstream-status');
+      var recovered=!r.headers.get('x-edge-fallback')&&r.status<500&&r.type!=='opaqueredirect';
+      edgeDbg.recovered=recovered;renderEdge();
+      if(recovered){
+        edgeLight.className='vm-indicator green';edgeHealth.textContent='recovered - returning...';
+        if(!sessionStorage.getItem('edge_redir')){sessionStorage.setItem('edge_redir','1');setTimeout(function(){location.replace(location.href)},1200)}
+      }else{edgeLight.className='vm-indicator red';edgeHealth.textContent='route not found'}
+    })
+    .catch(function(e){edgeDbg.error=String(e);edgeLight.className='vm-indicator blue';edgeHealth.textContent='probe error';renderEdge()});
+}
+document.getElementById('edge-retry-btn').addEventListener('click',probeRoute);
+document.getElementById('edge-download').addEventListener('click',function(){
+  var b=new Blob([JSON.stringify(edgeDbg,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='edge-debug-'+location.host+'.json';a.click();
+});
+renderEdge();probeRoute();
 </script>
 </body>
 </html>

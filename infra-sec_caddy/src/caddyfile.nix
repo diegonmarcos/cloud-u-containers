@@ -121,10 +121,16 @@ let
   protectedTpl       = readTpl "23-protected.caddy.tpl";
   protectedCustomTpl = readTpl "24-protected-custom.caddy.tpl";
 
+  # Shared empty-body guard (snippet 35): injected into every reverse_proxy
+  # block so an upstream 200 with Content-Length 0 (a blank white page) becomes
+  # a truthful 502 that handle_errors renders, instead of a silent false green.
+  emptyGuard = stripTrail (readTpl "35-empty-body-guard.caddy.tpl");
+
   mkProtected = upstream: subst {
     "@BEARER_BLOCK@"   = bearer;
     "@AUTHELIA_BLOCK@" = authelia;
     "@UPSTREAM@"       = upstream;
+    "@EMPTY_GUARD@"    = emptyGuard;
   } protectedTpl;
 
   mkProtectedCustom = upstreamUrl: transportBlock: subst {
@@ -132,6 +138,7 @@ let
     "@AUTHELIA_BLOCK@"  = authelia;
     "@UPSTREAM@"        = upstreamUrl;
     "@TRANSPORT_BLOCK@" = transportBlock;
+    "@EMPTY_GUARD@"     = emptyGuard;
   } protectedCustomTpl;
 
   # ── WG-only gates (fail-closed posture; route.wg_only from build.json
@@ -843,8 +850,10 @@ ${plainOut}${sniMuxBlock}
   s3Tpl         = readTpl "34-s3-route.caddy.tpl";
 
   mkInternalRoute = route: subst {
-    "@SERVICE@"  = route.service;
-    "@UPSTREAM@" = route.upstream;
+    "@SERVICE@"        = route.service;
+    "@UPSTREAM@"       = route.upstream;
+    "@EMPTY_GUARD@"    = emptyGuard;
+    "@HANDLE_ERRORS@"  = handleErrors;
   } internalTpl;
 
   mkS3Route = route: subst {
@@ -855,8 +864,10 @@ ${plainOut}${sniMuxBlock}
   } s3Tpl;
 
   mkCanonicalAppRoute = entry: subst {
-    "@SERVICE@"  = entry.service;
-    "@UPSTREAM@" = entry.upstream;
+    "@SERVICE@"        = entry.service;
+    "@UPSTREAM@"       = entry.upstream;
+    "@EMPTY_GUARD@"    = emptyGuard;
+    "@HANDLE_ERRORS@"  = handleErrors;
   } canonicalTpl;
 
   msgs = caddyRoutes.messages or {};
