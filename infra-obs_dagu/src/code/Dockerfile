@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     bind-tools \
     git \
     jq \
-    docker-cli
+    docker-cli \
+    tzdata
 
 # Static dagu binary from GitHub releases — avoids dynamic-link issues from
 # copying out of the hardened official image (which strips apk and may link

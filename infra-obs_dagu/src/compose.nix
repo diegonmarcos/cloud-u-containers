@@ -18,8 +18,7 @@ in
       image = image;
       container_name = app.container_name;
       network_mode = "host";
-      # ponytail: diagnostic wrapper — captures crash output, keeps container alive 600s
-      entrypoint = [ "/bin/sh" "-c" "dagu start-all 2>&1; echo \"DAGU_EXIT=$?\"; sleep 600" ];
+      entrypoint = [ "dagu" "start-all" ];
       env_file = [ ".secrets" ];
       environment = [
         "DAGU_HOST=${svc.dagu.ip}"
