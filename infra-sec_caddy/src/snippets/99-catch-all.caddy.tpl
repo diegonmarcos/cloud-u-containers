@@ -9,5 +9,13 @@
     }
     root * @CATCH_ROOT@
     rewrite * /@CATCH_FILE@
-    file_server
+    # No matching vhost/route: serve the wormhole page but with a truthful 404.
+    # A plain `file_server` returns 200 — a FALSE GREEN that made unrouted hosts
+    # (e.g. webmail.diegonmarcos.com after its route was orphaned) look alive to
+    # probes. Tag the response so probes detect the catch-all deterministically.
+    header X-Edge-Fallback "1"
+    header X-Edge-Route "catch-all"
+    file_server {
+      status 404
+    }
   }
