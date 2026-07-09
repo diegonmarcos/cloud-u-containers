@@ -47,6 +47,9 @@ in
         BRIDGE_MODEL_ALIASES   = builtins.toJSON (rt.model_aliases or { });
         BRIDGE_MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
         BRIDGE_CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
+        # Cross-device session store (WG-only), persisted in the claude_home volume.
+        BRIDGE_SESSIONS_DIR    = "${home}/${(rt.sessions.dir or ".claude-sessions")}";
+        BRIDGE_SESSIONS_KEEP   = toString ((rt.sessions.keep or 20));
         # Compress hop → Python sidecar (vendored Headroom `compress()`).
         # WG-ONLY, fail-closed: the sidecar binds the WireGuard IP (NOT 0.0.0.0 —
         # with host networking 0.0.0.0 would expose /dashboard + /compress on the

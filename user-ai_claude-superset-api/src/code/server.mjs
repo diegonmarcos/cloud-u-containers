@@ -15,6 +15,8 @@
 // hop, which degrades to passthrough if the sidecar is unreachable.
 import http from "node:http";
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3107", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -26,6 +28,16 @@ const DEFAULT_MODEL = process.env.BRIDGE_DEFAULT_MODEL || "claude-sonnet-4-6";
 // build.json runtime.model_aliases); unknown/absent ids fall back to DEFAULT_MODEL,
 // so arbitrary client model strings keep working exactly as before.
 const MODEL_ALIASES = JSON.parse(process.env.BRIDGE_MODEL_ALIASES || "{}");
+
+// ── cross-device session store (per-device .jsonl blobs, WG-only) ─────────────
+// Devices PUT their recent Claude Code sessions here; any device can list/GET
+// them to restore. Lives in the persistent claude_home volume. Data-driven from
+// build.json runtime.sessions (dir under HOME, keep-per-device cap).
+const SESSIONS_DIR  = process.env.BRIDGE_SESSIONS_DIR ||
+  path.join(process.env.HOME || ".", ".claude-sessions");
+const SESSIONS_KEEP = parseInt(process.env.BRIDGE_SESSIONS_KEEP || "20", 10);
+// Path components must be a single safe segment (no traversal, no separators).
+const safeSeg = (s) => /^[A-Za-z0-9._-]+$/.test(s || "");
 
 const OLLAMA_PORT   = parseInt(process.env.BRIDGE_OLLAMA_PORT || "11434", 10);
 const OLLAMA_BIND   = process.env.BRIDGE_OLLAMA_BIND || "127.0.0.1";
@@ -209,6 +221,52 @@ const server = http.createServer(async (req, res) => {
     res.end(typeof obj === "string" ? obj : JSON.stringify(obj));
   };
   const isOllama = req.url.startsWith("/api/");
+
+  // ── cross-device session store ────────────────────────────────────────────
+  // GET  /sessions                    → [{device,id,mtime,size}]
+  // GET  /sessions/<device>/<id>      → raw .jsonl
+  // PUT  /sessions/<device>/<id>      → store .jsonl (prunes device to KEEP)
+  if (req.url === "/sessions" || req.url.startsWith("/sessions/")) {
+    const parts = req.url.split("?")[0].split("/").filter(Boolean); // ["sessions", device?, id?]
+    try {
+      if (req.method === "GET" && parts.length === 1) {
+        const out = [];
+        for (const device of fs.existsSync(SESSIONS_DIR) ? fs.readdirSync(SESSIONS_DIR) : []) {
+          const ddir = path.join(SESSIONS_DIR, device);
+          if (!fs.statSync(ddir).isDirectory()) continue;
+          for (const f of fs.readdirSync(ddir)) {
+            if (!f.endsWith(".jsonl")) continue;
+            const st = fs.statSync(path.join(ddir, f));
+            out.push({ device, id: f.slice(0, -6), mtime: st.mtimeMs, size: st.size });
+          }
+        }
+        return send(200, out);
+      }
+      if (parts.length === 3) {
+        const [, device, id] = parts;
+        if (!safeSeg(device) || !safeSeg(id)) return send(400, { error: { message: "bad device/id" } });
+        const ddir = path.join(SESSIONS_DIR, device);
+        const file = path.join(ddir, `${id}.jsonl`);
+        if (req.method === "GET") {
+          if (!fs.existsSync(file)) return send(404, { error: { message: "no such session" } });
+          res.writeHead(200, { "content-type": "application/x-ndjson" });
+          return res.end(fs.readFileSync(file));
+        }
+        if (req.method === "PUT") {
+          const body = await readBody(req);
+          fs.mkdirSync(ddir, { recursive: true });
+          fs.writeFileSync(file, body);
+          // Prune this device to the newest SESSIONS_KEEP files.
+          const files = fs.readdirSync(ddir).filter((f) => f.endsWith(".jsonl"))
+            .map((f) => ({ f, m: fs.statSync(path.join(ddir, f)).mtimeMs }))
+            .sort((a, b) => b.m - a.m);
+          for (const { f } of files.slice(SESSIONS_KEEP)) fs.rmSync(path.join(ddir, f), { force: true });
+          return send(200, { ok: true, device, id });
+        }
+      }
+    } catch (e) { return send(500, { error: { message: String(e.message || e) } }); }
+    return send(404, { error: { message: "not found" } });
+  }
 
   // ── health + model discovery (all shapes) ─────────────────────────────────
   if (req.method === "GET" && (req.url === "/health" || req.url === "/"))
