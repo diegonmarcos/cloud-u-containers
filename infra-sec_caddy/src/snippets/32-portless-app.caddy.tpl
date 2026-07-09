@@ -1,7 +1,7 @@
   @SERVICE@ {
-    # No explicit bind: see 30-internal-route.caddy.tpl — a narrow
-    # `bind 10.0.0.1` put this site on its own unreachable Caddy server.
+    # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
+@PUBLIC_BIND_LINE@
     tls internal {
       on_demand
     }
