@@ -26,7 +26,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        printf "Container issues:\n%b\nDagu: http://10.0.0.3:8070" "$ALERTS" | \
+        printf "Container issues:\n%b\nDagu: https://workflows.diegonmarcos.com" "$ALERTS" | \
           curl -sf -X POST "$NTFY_URL/health_containers" \
             -H "Title: Container Health Issues" -H "Priority: 4" -H "Tags: whale,warning" -d @-
         printf "%b" "$ALERTS"

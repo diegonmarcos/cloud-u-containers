@@ -27,7 +27,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        MSG=$(echo -e "Suspicious auth activity:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'fail2ban-client status sshd'\n\nDagu: http://10.0.0.3:8070")
+        MSG=$(echo -e "Suspicious auth activity:\n${ALERTS}\nAction:\n  ssh <user>@<ip> 'grep \"Failed password\" /var/log/auth.log | tail -20'\n  ssh <user>@<ip> 'last -20'\n  ssh <user>@<ip> 'fail2ban-client status sshd'\n\nDagu: https://workflows.diegonmarcos.com")
         curl -s -X POST "$NTFY_URL/sec_audit" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Security Audit Alert" \

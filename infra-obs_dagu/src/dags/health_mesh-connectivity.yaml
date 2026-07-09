@@ -41,7 +41,7 @@ steps:
       if [ -f /tmp/mesh-failed.$$ ]; then
         FAILED=$(cat /tmp/mesh-failed.$$)
         rm -f /tmp/mesh-failed.$$
-        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: http://10.0.0.3:8070" "$FAILED")
+        MSG=$(printf "Unreachable peers:\n%s\n\nAction:\n  ssh <vm> 'wg show'\n  ssh <vm> 'systemctl status wg-quick@wg0'\n\nDagu: https://workflows.diegonmarcos.com" "$FAILED")
         curl -s -X POST "$NTFY_URL/health_mesh" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mesh Health FAILED" \

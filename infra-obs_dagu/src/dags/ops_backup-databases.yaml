@@ -515,7 +515,7 @@ steps:
       COLLECT_USER=$(jq -r '.by_vm."oci-apps".user' "$BACKUP_JSON")
       COUNT=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "ls /var/backups/collected/*$(date +%Y%m%d)* 2>/dev/null | wc -l")
       SIZE=$(ssh $SSH_OPTS "$COLLECT_USER@$COLLECT_IP" "du -sh /var/backups/collected/ 2>/dev/null | awk '{print \$1}'" || echo "N/A")
-      MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: http://10.0.0.3:8070"
+      MSG="DB backup → OCI S3: $COUNT dumps ($SIZE)\nBucket: cloud-backups-db\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/ops_backups" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Daily DB Backup OK ($COUNT dumps)" \

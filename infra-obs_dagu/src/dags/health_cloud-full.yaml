@@ -43,13 +43,13 @@ steps:
           -H "Title: Cloud Health OK ($WARNINGS warnings)" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,cloud" \
-          -d "$(printf 'Fleet: %s\nOK=%s · WARN=%s · CRIT=%s\n\nDagu: http://10.0.0.3:8070' "$FLEET" "$OK" "$WARNINGS" "$CRITICAL")"
+          -d "$(printf 'Fleet: %s\nOK=%s · WARN=%s · CRIT=%s\n\nDagu: https://workflows.diegonmarcos.com' "$FLEET" "$OK" "$WARNINGS" "$CRITICAL")"
       else
         curl -s -X POST "$NTFY_URL/infra_cloud-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Cloud Health CRITICAL ($CRITICAL critical, $WARNINGS warnings)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,cloud" \
-          -d "$(printf 'Fleet: %s\n\nTop issues:\n%s\n\nDagu: http://10.0.0.3:8070' "$FLEET" "$ISSUES")"
+          -d "$(printf 'Fleet: %s\n\nTop issues:\n%s\n\nDagu: https://workflows.diegonmarcos.com' "$FLEET" "$ISSUES")"
         exit 1
       fi
