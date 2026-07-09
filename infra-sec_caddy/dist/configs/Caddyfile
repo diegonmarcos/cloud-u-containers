@@ -196,6 +196,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -203,6 +213,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -217,6 +230,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -224,6 +247,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -271,6 +297,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -278,6 +314,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -292,6 +331,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -299,6 +348,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -378,6 +430,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -385,6 +447,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -399,6 +464,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -406,6 +481,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -454,6 +532,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -461,6 +549,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -475,6 +566,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -482,6 +583,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -530,6 +634,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -537,6 +651,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -551,6 +668,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -558,6 +685,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -606,6 +736,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -613,6 +753,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -627,6 +770,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -634,6 +787,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -684,6 +840,16 @@ handle /api/v4/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -691,6 +857,9 @@ handle /api/v4/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -705,6 +874,16 @@ handle /api/v4/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -712,6 +891,9 @@ handle /api/v4/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -791,6 +973,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -798,6 +990,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -812,6 +1007,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -819,6 +1024,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -878,6 +1086,16 @@ reverse_proxy https://diegonmarcos.github.io {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -885,6 +1103,9 @@ reverse_proxy https://diegonmarcos.github.io {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -899,6 +1120,16 @@ reverse_proxy https://diegonmarcos.github.io {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -906,6 +1137,9 @@ reverse_proxy https://diegonmarcos.github.io {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1005,6 +1239,16 @@ reverse_proxy https://diegonmarcos.github.io {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1012,6 +1256,9 @@ reverse_proxy https://diegonmarcos.github.io {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1026,6 +1273,16 @@ reverse_proxy https://diegonmarcos.github.io {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1033,6 +1290,9 @@ reverse_proxy https://diegonmarcos.github.io {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1081,6 +1341,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1088,6 +1358,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1102,6 +1375,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1109,6 +1392,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1157,6 +1443,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1164,6 +1460,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1178,6 +1477,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1185,6 +1494,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1233,6 +1545,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1240,6 +1562,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1254,6 +1579,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1261,6 +1596,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1343,6 +1681,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1350,6 +1698,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1364,6 +1715,16 @@ respond @not_wg "Forbidden" 403
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1371,6 +1732,9 @@ respond @not_wg "Forbidden" 403
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1677,6 +2041,16 @@ handle_path /c3a/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1684,6 +2058,9 @@ handle_path /c3a/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1698,6 +2075,16 @@ handle_path /c3a/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1705,6 +2092,9 @@ handle_path /c3a/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1740,6 +2130,16 @@ handle_path /c3-infra-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1747,6 +2147,9 @@ handle_path /c3-infra-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1761,6 +2164,16 @@ handle_path /c3-infra-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1768,6 +2181,9 @@ handle_path /c3-infra-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1803,6 +2219,16 @@ handle_path /pub/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1810,6 +2236,9 @@ handle_path /pub/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1824,6 +2253,16 @@ handle_path /pub/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1831,6 +2270,9 @@ handle_path /pub/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1853,6 +2295,16 @@ handle_path /c3-services-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1860,6 +2312,9 @@ handle_path /c3-services-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1874,6 +2329,16 @@ handle_path /c3-services-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1881,6 +2346,9 @@ handle_path /c3-services-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1907,6 +2375,16 @@ handle_path /crawlee/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1914,6 +2392,9 @@ handle_path /crawlee/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1928,6 +2409,16 @@ handle_path /crawlee/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1935,6 +2426,9 @@ handle_path /crawlee/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1961,6 +2455,16 @@ handle_path /fin-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1968,6 +2472,9 @@ handle_path /fin-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -1982,6 +2489,16 @@ handle_path /fin-api/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -1989,6 +2506,9 @@ handle_path /fin-api/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2056,6 +2576,16 @@ handle_path /spec/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2063,6 +2593,9 @@ handle_path /spec/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2077,6 +2610,16 @@ handle_path /spec/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2084,6 +2627,9 @@ handle_path /spec/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2110,6 +2656,16 @@ handle_path /probe/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2117,6 +2673,9 @@ handle_path /probe/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2131,6 +2690,16 @@ handle_path /probe/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2138,6 +2707,9 @@ handle_path /probe/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2194,6 +2766,16 @@ handle_path /matomo/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2201,6 +2783,9 @@ handle_path /matomo/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2215,6 +2800,16 @@ handle_path /matomo/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2222,6 +2817,9 @@ handle_path /matomo/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2242,6 +2840,16 @@ handle_path /openobserve/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2249,6 +2857,9 @@ handle_path /openobserve/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2263,6 +2874,16 @@ handle_path /openobserve/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2270,6 +2891,9 @@ handle_path /openobserve/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2290,6 +2914,16 @@ handle_path /umami/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2297,6 +2931,9 @@ handle_path /umami/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2311,6 +2948,16 @@ handle_path /umami/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2318,6 +2965,9 @@ handle_path /umami/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2365,6 +3015,16 @@ handle_path /etherpad/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2372,6 +3032,9 @@ handle_path /etherpad/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2386,6 +3049,16 @@ handle_path /etherpad/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2393,6 +3066,9 @@ handle_path /etherpad/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2419,6 +3095,16 @@ handle_path /filebrowser/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2426,6 +3112,9 @@ handle_path /filebrowser/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2440,6 +3129,16 @@ handle_path /filebrowser/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2447,6 +3146,9 @@ handle_path /filebrowser/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2473,6 +3175,16 @@ handle_path /hedgedoc/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2480,6 +3192,9 @@ handle_path /hedgedoc/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2494,6 +3209,16 @@ handle_path /hedgedoc/* {
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2501,6 +3226,9 @@ handle_path /hedgedoc/* {
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2740,6 +3468,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2747,6 +3485,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2761,6 +3502,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2768,6 +3519,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
       }
     }
@@ -2912,6 +3666,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2919,6 +3683,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -2948,6 +3715,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2955,6 +3732,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -2984,6 +3764,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -2991,6 +3781,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3020,6 +3813,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3027,6 +3830,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3056,6 +3862,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3063,6 +3879,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3092,6 +3911,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3099,6 +3928,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3128,6 +3960,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3135,6 +3977,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3164,6 +4009,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3171,6 +4026,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3200,6 +4058,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3207,6 +4075,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3236,6 +4107,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3243,6 +4124,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3272,6 +4156,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3279,6 +4173,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3308,6 +4205,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3315,6 +4222,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3344,6 +4254,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3351,6 +4271,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3380,6 +4303,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3387,6 +4320,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3416,6 +4352,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3423,6 +4369,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3452,6 +4401,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3459,6 +4418,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3488,6 +4450,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3495,6 +4467,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3524,6 +4499,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3531,6 +4516,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3560,6 +4548,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3567,6 +4565,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3596,6 +4597,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3603,6 +4614,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3632,6 +4646,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3639,6 +4663,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3668,6 +4695,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3675,6 +4712,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3704,6 +4744,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3711,6 +4761,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3740,6 +4793,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3747,6 +4810,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3776,6 +4842,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3783,6 +4859,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3812,6 +4891,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3819,6 +4908,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3848,6 +4940,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3855,6 +4957,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3884,6 +4989,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3891,6 +5006,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3920,6 +5038,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3927,6 +5055,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3956,6 +5087,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3963,6 +5104,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -3992,6 +5136,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -3999,6 +5153,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4028,6 +5185,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4035,6 +5202,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4064,6 +5234,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4071,6 +5251,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4100,6 +5283,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4107,6 +5300,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4136,6 +5332,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4143,6 +5349,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4172,6 +5381,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4179,6 +5398,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4208,6 +5430,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4215,6 +5447,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4244,6 +5479,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4251,6 +5496,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4280,6 +5528,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4287,6 +5545,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4316,6 +5577,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4323,6 +5594,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4352,6 +5626,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4359,6 +5643,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4388,6 +5675,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4395,6 +5692,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4424,6 +5724,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4431,6 +5741,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4460,6 +5773,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4467,6 +5790,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4503,6 +5829,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4510,6 +5846,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4541,6 +5880,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4548,6 +5897,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4579,6 +5931,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4586,6 +5948,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4617,6 +5982,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4624,6 +5999,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4655,6 +6033,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4662,6 +6050,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4693,6 +6084,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4700,6 +6101,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4731,6 +6135,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4738,6 +6152,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4769,6 +6186,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4776,6 +6203,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4807,6 +6237,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4814,6 +6254,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4845,6 +6288,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4852,6 +6305,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4883,6 +6339,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4890,6 +6356,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4921,6 +6390,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4928,6 +6407,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4959,6 +6441,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -4966,6 +6458,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -4997,6 +6492,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5004,6 +6509,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5035,6 +6543,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5042,6 +6560,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5073,6 +6594,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5080,6 +6611,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5111,6 +6645,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5118,6 +6662,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5149,6 +6696,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5156,6 +6713,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5187,6 +6747,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5194,6 +6764,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5225,6 +6798,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5232,6 +6815,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5263,6 +6849,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5270,6 +6866,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5301,6 +6900,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5308,6 +6917,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5339,6 +6951,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5346,6 +6968,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5377,6 +7002,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5384,6 +7019,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5415,6 +7053,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5422,6 +7070,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5453,6 +7104,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5460,6 +7121,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5491,6 +7155,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5498,6 +7172,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5529,6 +7206,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5536,6 +7223,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5567,6 +7257,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5574,6 +7274,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5605,6 +7308,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5612,6 +7325,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5643,6 +7359,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5650,6 +7376,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5681,6 +7410,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5688,6 +7427,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5719,6 +7461,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5726,6 +7478,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5757,6 +7512,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5764,6 +7529,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5795,6 +7563,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5802,6 +7580,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5833,6 +7614,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5840,6 +7631,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5871,6 +7665,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5878,6 +7682,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5909,6 +7716,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5916,6 +7733,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5947,6 +7767,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5954,6 +7784,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -5985,6 +7818,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -5992,6 +7835,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -6023,6 +7869,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -6030,6 +7886,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -6061,6 +7920,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -6068,6 +7937,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
@@ -6099,6 +7971,16 @@ import request_limits
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
         # Gated to GET so legitimately-empty HEAD/OPTIONS responses pass through.
+        #
+        # CRITICAL: once ANY named handle_response matcher exists on a
+        # reverse_proxy, Caddy defers writing the response entirely — a
+        # response that matches NO handle_response block writes NOTHING
+        # (not "pass through unmodified"). Confirmed via production incident
+        # 2026-07-09: this guard alone silently emptied every real response
+        # (gitea.app 14821b -> 0b, snappymail.app 161138b -> 0b) fleet-wide,
+        # a worse outage than the bug it fixed. The bare fallback block below
+        # is MANDATORY and MUST come after @empty_ok — it copies through every
+        # response that isn't the empty-200 false-green.
         @empty_ok {
           status 200
           header Content-Length 0
@@ -6106,6 +7988,9 @@ import request_limits
         handle_response @empty_ok {
           @get method GET
           error @get 502
+        }
+        handle_response {
+          copy_response
         }
     }
   handle_errors {
