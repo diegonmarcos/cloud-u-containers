@@ -15,7 +15,7 @@ steps:
       # volumes with the project name → bare `dagu_data` resolves to a
       # different, empty auto-created volume so cloud-data/reports/
       # build.sh isn't visible inside the spawned container).
-      docker run --rm --network host \
+      docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh:ro \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
