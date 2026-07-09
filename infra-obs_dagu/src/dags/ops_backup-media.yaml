@@ -56,7 +56,7 @@ steps:
     depends:
       - backup-media
     command: |
-      MSG="Weekly media backup → OCI S3 (Archive)\nBucket: cloud-backups-media\nDagu: http://10.0.0.3:8070"
+      MSG="Weekly media backup → OCI S3 (Archive)\nBucket: cloud-backups-media\nDagu: https://workflows.diegonmarcos.com"
       curl -s -X POST "$NTFY_URL/ops_backups" \
         -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
         -H "Title: Weekly Media Backup OK" \

@@ -24,7 +24,7 @@ steps:
         fi
       done
       if [ -n "$ALERTS" ]; then
-        printf "High resource usage:\n%b\nDagu: http://10.0.0.3:8070" "$ALERTS" | \
+        printf "High resource usage:\n%b\nDagu: https://workflows.diegonmarcos.com" "$ALERTS" | \
           curl -sf -X POST "$NTFY_URL/health_resources" \
             -H "Title: System Resources Alert" -H "Priority: 4" -H "Tags: warning,chart_with_upwards_trend" -d @-
         printf "%b" "$ALERTS"

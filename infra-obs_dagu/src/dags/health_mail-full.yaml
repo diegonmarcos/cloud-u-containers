@@ -45,7 +45,7 @@ steps:
           -H "Title: Mail Health OK ($PASSED/$TOTAL passed)" \
           -H "Priority: 2" \
           -H "Tags: white_check_mark,email" \
-          -d "$(printf 'All mail checks passed\nPASS=%s · WARN=%s · CRIT=%s\n\nDagu: http://10.0.0.3:8070' "$PASSED" "$WARNINGS" "$CRITICAL")"
+          -d "$(printf 'All mail checks passed\nPASS=%s · WARN=%s · CRIT=%s\n\nDagu: https://workflows.diegonmarcos.com' "$PASSED" "$WARNINGS" "$CRITICAL")"
       else
         FAIL_DETAILS=$(jq -r '.path_checks[]?, .containers[]?, .network[]?, .dns_auth[]?, .internals[]?, .e2e_delivery[]? | select(.passed == false) | "  \(.severity // "?"): \(.name) — \(.details)"' "$RESULT_JSON" | head -15)
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
@@ -53,6 +53,6 @@ steps:
           -H "Title: Mail Health FAILED ($CRITICAL critical, $FAILED failed)" \
           -H "Priority: 5" \
           -H "Tags: rotating_light,email" \
-          -d "$(printf 'PASS=%s · FAIL=%s · CRIT=%s · WARN=%s\n\nTop issues:\n%s\n\nDagu: http://10.0.0.3:8070' "$PASSED" "$FAILED" "$CRITICAL" "$WARNINGS" "$FAIL_DETAILS")"
+          -d "$(printf 'PASS=%s · FAIL=%s · CRIT=%s · WARN=%s\n\nTop issues:\n%s\n\nDagu: https://workflows.diegonmarcos.com' "$PASSED" "$FAILED" "$CRITICAL" "$WARNINGS" "$FAIL_DETAILS")"
         exit 1
       fi
