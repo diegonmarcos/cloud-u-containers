@@ -17,7 +17,7 @@ steps:
       # build.sh isn't visible inside the spawned container).
       docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
-        -v /opt/ssh-keys/dagu:/root/.ssh:ro \
+        -v /opt/ssh-keys/dagu:/root/.ssh \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -w /var/lib/dagu/data/cloud-data/reports \
         "$REPORT_IMAGE" mail
