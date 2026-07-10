@@ -21,11 +21,6 @@
       cap_add = [ "NET_BIND_SERVICE" ];
       read_only = false;
       volumes = [
-        # Per-key secret files from the sops pipeline (.secrets.d/<KEY>, mode
-        # 0600) — carries the mesh-CA PEM key+cert that the pki global block
-        # (00-globals.caddy.tpl) reads at /run/secrets/MESH_CA_{KEY,CERT}.
-        # Multi-line PEM can't ride the .secrets env_file, files can.
-        "./.secrets.d:/run/secrets:ro"
         "./configs/Caddyfile:/etc/caddy/Caddyfile:ro"
         "./configs/error.html:/srv/error.html:ro"
         "./configs/dashboard.html:/srv/dashboard.html:ro"
