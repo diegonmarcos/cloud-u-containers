@@ -11,7 +11,7 @@ steps:
       for vm in "10.0.0.1:gcp-proxy" "10.0.0.3:oci-mail" "10.0.0.4:oci-analytics" "10.0.0.6:oci-apps"; do
         ip="${vm%%:*}"
         name="${vm#*:}"
-        DATA=$(curl -sf --max-time 5 "http://${ip}:8199/latest.json" 2>/dev/null)
+        DATA=$(curl -sf --max-time 5 "http://${ip}:8199/latest.json" 2>/dev/null) || true
         if [ -z "$DATA" ]; then
           echo "SKIP: $name :8199 not reachable (agent not deployed)"
           continue
