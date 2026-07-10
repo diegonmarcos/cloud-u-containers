@@ -178,7 +178,9 @@ steps:
       ' "$BACKUP_JSON")
 
       ssh $SSH_OPTS "$USER@$IP" bash <<REMOTE
-        sudo mkdir -p /var/backups/databases && cd /var/backups/databases
+        # gcp-proxy's /var/backups is root-only; chown so the non-root dump
+        # user can write docker-cp'd files (else authelia sqlite never lands).
+        sudo mkdir -p /var/backups/databases && sudo chown "$USER" /var/backups/databases && cd /var/backups/databases
         $DUMP_SCRIPT
         echo ""; ls -lh /var/backups/databases/*${STAMP}* 2>/dev/null | wc -l | xargs -I{} echo "Total: {} dumps on $VM"
       REMOTE
