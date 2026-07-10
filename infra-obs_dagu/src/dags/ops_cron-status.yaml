@@ -18,9 +18,12 @@ steps:
         FAILED_TIMERS=$($SSH $user@$ip "systemctl list-timers --failed --no-legend 2>/dev/null" 2>/dev/null || echo "")
         if [ -n "$FAILED_TIMERS" ]; then
           ALERTS="${ALERTS}  $name ($ip):\n"
-          while IFS= read -r t; do
+          OLD_IFS=$IFS; IFS='
+'
+          for t in $FAILED_TIMERS; do
             ALERTS="${ALERTS}    - $t\n"
-          done <<< "$FAILED_TIMERS"
+          done
+          IFS=$OLD_IFS
         fi
       done
       if [ -n "$ALERTS" ]; then
