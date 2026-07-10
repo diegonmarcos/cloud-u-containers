@@ -15,10 +15,14 @@ steps:
       # volumes with the project name → bare `dagu_data` resolves to a
       # different, empty auto-created volume so cloud-data/reports/
       # build.sh isn't visible inside the spawned container).
+      # CLOUD_DATA_DIR points reports-common's find_cloud_data_file at the
+      # cloud-source 2_configs/dist tree (report cwd under cloud-data/ can't
+      # walk up into cloud-source/).
       docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh \
         -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
+        -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist \
         -w /var/lib/dagu/data/cloud-data/reports \
         "$REPORT_IMAGE" mail
 
