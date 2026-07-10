@@ -21,14 +21,14 @@ steps:
       mkdir -p "$CERT_SRC"
 
       # Extract wildcard cert from Caddy's data dir on gcp-proxy
-      $RSYNC_SSH $PROXY 'sudo docker cp caddy:/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.diegonmarcos.com/. /tmp/caddy-cert-export/ 2>/dev/null && cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.crt' > "$CERT_SRC/fullchain.pem" 2>/dev/null
-      $RSYNC_SSH $PROXY 'cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.key' > "$CERT_SRC/privkey.pem" 2>/dev/null
+      $RSYNC_SSH $PROXY 'mkdir -p /tmp/caddy-cert-export && sudo docker cp caddy:/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.diegonmarcos.com/. /tmp/caddy-cert-export/ 2>/dev/null && cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.crt' > "$CERT_SRC/fullchain.pem" 2>/dev/null || true
+      $RSYNC_SSH $PROXY 'cat /tmp/caddy-cert-export/wildcard_.diegonmarcos.com.key' > "$CERT_SRC/privkey.pem" 2>/dev/null || true
 
       # Verify cert is valid
       if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
         # Fallback: try Caddy's internal cert storage path
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.crt" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/fullchain.pem" 2>/dev/null
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.key" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/privkey.pem" 2>/dev/null
+        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.crt" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/fullchain.pem" 2>/dev/null || true
+        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.key" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/privkey.pem" 2>/dev/null || true
       fi
 
       if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
