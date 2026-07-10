@@ -10,7 +10,11 @@
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
 @PUBLIC_BIND_LINE@
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy @UPSTREAM@ {
 @EMPTY_GUARD@
     }

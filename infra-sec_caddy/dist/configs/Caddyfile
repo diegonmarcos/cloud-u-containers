@@ -44,6 +44,23 @@
   on_demand_tls {
     ask http://127.0.0.1:2020
   }
+  # Mesh Root CA (declared in vault, delivered via sops → .secrets.d →
+  # /run/secrets). Internal .app/.db certs are issued from THIS root instead
+  # of Caddy's runtime-generated local CA, so clients that trust the one
+  # mesh-ca.crt (NixOS security.pki on desktop, termux CA store) get valid
+  # TLS on every internal name — including HSTS-preloaded TLDs like .app,
+  # where browsers refuse untrusted certs with no click-through. Root cause
+  # of "snappymail.app unreachable in browsers", 2026-07-10.
+  pki {
+    ca mesh {
+      name "diegonmarcos mesh CA"
+      root {
+        format pem
+        cert /run/secrets/MESH_CA_CERT
+        key /run/secrets/MESH_CA_KEY
+      }
+    }
+  }
 
     layer4 {
         :25 {
@@ -3670,7 +3687,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3729,7 +3750,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.1:8085 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3788,7 +3813,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8081 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3847,7 +3876,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3906,7 +3939,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.4:8087 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -3965,7 +4002,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8082 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4024,7 +4065,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3101 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4083,7 +4128,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3106 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4142,7 +4191,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3104 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4201,7 +4254,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3103 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4260,7 +4317,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4319,7 +4380,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4378,7 +4443,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4437,7 +4506,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4496,7 +4569,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8070 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4555,7 +4632,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8086 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4614,7 +4695,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4673,7 +4758,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4732,7 +4821,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:5080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4791,7 +4884,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4850,7 +4947,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.1:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4909,7 +5010,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.1:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -4968,7 +5073,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.4:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5027,7 +5136,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8088 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5086,7 +5199,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3105 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5145,7 +5262,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5204,7 +5325,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8065 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5263,7 +5388,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8083 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5322,7 +5451,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.3:8888 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5381,7 +5514,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.3:2443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5440,7 +5577,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5499,7 +5640,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8340 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5558,7 +5703,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5617,7 +5766,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3019 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5676,7 +5829,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5735,7 +5892,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5794,7 +5955,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5853,7 +6018,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3012 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5912,7 +6081,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3015 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -5971,7 +6144,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3011 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -6030,7 +6207,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3018 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -6089,7 +6270,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8095 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -6148,7 +6333,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:3016 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -6207,7 +6396,11 @@ import request_limits
     # "0.0.0.0:8443" — even though both cover the same sockets. Only an
     # byte-identical bind directive guarantees one merged server. 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     reverse_proxy 10.0.0.6:8880 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -6263,8 +6456,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8008 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6316,8 +6512,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.1:8085 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6369,8 +6568,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8081 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6422,8 +6624,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3100 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6475,8 +6680,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.4:8087 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6528,8 +6736,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8082 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6581,8 +6792,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3101 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6634,8 +6848,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3106 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6687,8 +6904,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3104 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6740,8 +6960,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3103 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6793,8 +7016,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3102 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6846,8 +7072,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3002 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6899,8 +7128,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -6952,8 +7184,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7005,8 +7240,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8070 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7058,8 +7296,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8086 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7111,8 +7352,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8084 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7164,8 +7408,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8090 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7217,8 +7464,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:5080 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7270,8 +7520,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3006 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7323,8 +7576,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.1:9091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7376,8 +7632,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.1:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7429,8 +7688,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.4:443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7482,8 +7744,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8088 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7535,8 +7800,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3105 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7588,8 +7856,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8091 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7641,8 +7912,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8065 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7694,8 +7968,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8083 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7747,8 +8024,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.3:8888 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7800,8 +8080,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.3:2443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7853,8 +8136,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3000 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7906,8 +8192,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8340 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -7959,8 +8248,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3013 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8012,8 +8304,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:5232 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8065,8 +8360,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8443 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8118,8 +8416,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:5233 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8171,8 +8472,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3012 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8224,8 +8528,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3015 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8277,8 +8584,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3011 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8330,8 +8640,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3018 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8383,8 +8696,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8095 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8436,8 +8752,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:3016 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8489,8 +8808,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     reverse_proxy 10.0.0.6:8880 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
@@ -8543,8 +8865,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "Portless worker/sidecar — no HTTP endpoint" 204
   }
@@ -8553,8 +8878,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "Portless worker/sidecar — no HTTP endpoint" 204
   }
@@ -8563,8 +8891,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "Portless worker/sidecar — no HTTP endpoint" 204
   }
@@ -8578,8 +8909,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=gitea engine=sqlite port= upstream=(embedded) path=/data/gitea/gitea.db vm=oci-A1-f_0" 200
   }
@@ -8588,8 +8922,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=dagu engine=sqlite port= upstream=(embedded) path=/var/lib/dagu/dagu.db vm=oci-A1-f_0" 200
   }
@@ -8598,8 +8935,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=matomo-hybrid engine=mariadb port=3306 upstream=10.0.0.6:3306 path=/var/lib/mysql vm=oci-A1-f_0" 200
   }
@@ -8608,8 +8948,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=ntfy engine=sqlite port= upstream=(embedded) path=/var/cache/ntfy/cache.db vm=oci-A1-f_0" 200
   }
@@ -8618,8 +8961,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=openobserve engine=parquet port= upstream=(embedded) path=/data vm=oci-A1-f_0" 200
   }
@@ -8628,8 +8974,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=authelia engine=sqlite port= upstream=(embedded) path=/data/db.sqlite3 vm=gcp-E2-f_0" 200
   }
@@ -8638,8 +8987,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=snappymail engine=files port= upstream=(embedded) path=/var/lib/snappymail vm=oci-E2-f_0" 200
   }
@@ -8648,8 +9000,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=stalwart engine=rocksdb port= upstream=(embedded) path=/opt/stalwart-mail/data vm=oci-E2-f_0" 200
   }
@@ -8658,8 +9013,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=calendar-radicale engine=files port= upstream=(embedded) path=/data/collections vm=oci-A1-f_0" 200
   }
@@ -8668,8 +9026,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=contacts-radicale engine=files port= upstream=(embedded) path=/data/collections vm=oci-A1-f_0" 200
   }
@@ -8678,8 +9039,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=filebrowser_app engine=sqlite port= upstream=(embedded) path=/data/filebrowser.db vm=oci-A1-f_0" 200
   }
@@ -8688,8 +9052,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal {
+    tls {
       on_demand
+      issuer internal {
+        ca mesh
+      }
     }
     respond "DB catalog — container=vaultwarden engine=sqlite port= upstream=(embedded) path=/data/db.sqlite3 vm=oci-A1-f_0" 200
   }
@@ -8703,7 +9070,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     rewrite * /cloud-backups-binaries-medias{uri}
     reverse_proxy https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com {
       header_up Host axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
@@ -8714,7 +9085,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     rewrite * /cloud-backups-db{uri}
     reverse_proxy https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com {
       header_up Host axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
@@ -8725,7 +9100,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     rewrite * /cloud-backups-media{uri}
     reverse_proxy https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com {
       header_up Host axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
@@ -8736,7 +9115,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     rewrite * /cloud-backups-non-binaries{uri}
     reverse_proxy https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com {
       header_up Host axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
@@ -8747,7 +9130,11 @@ import request_limits
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
-    tls internal
+    tls {
+      issuer internal {
+        ca mesh
+      }
+    }
     rewrite * /my-photos{uri}
     reverse_proxy https://axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com {
       header_up Host axpmn3qtq4ig.compat.objectstorage.eu-marseille-1.oraclecloud.com
