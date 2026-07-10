@@ -36,22 +36,5 @@
   on_demand_tls {
     ask @ODT_ASK_URL@
   }
-  # Mesh Root CA (declared in vault, delivered via sops → .secrets.d →
-  # /run/secrets). Internal .app/.db certs are issued from THIS root instead
-  # of Caddy's runtime-generated local CA, so clients that trust the one
-  # mesh-ca.crt (NixOS security.pki on desktop, termux CA store) get valid
-  # TLS on every internal name — including HSTS-preloaded TLDs like .app,
-  # where browsers refuse untrusted certs with no click-through. Root cause
-  # of "snappymail.app unreachable in browsers", 2026-07-10.
-  pki {
-    ca mesh {
-      name "diegonmarcos mesh CA"
-      root {
-        format pem
-        cert /run/secrets/MESH_CA_CERT
-        key /run/secrets/MESH_CA_KEY
-      }
-    }
-  }
 @L4_SECTION@
 }
