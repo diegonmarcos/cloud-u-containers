@@ -47,7 +47,7 @@
     ca mesh {
       name "diegonmarcos mesh CA"
       root {
-        format pem
+        format pem_file
         cert /run/secrets/MESH_CA_CERT
         key /run/secrets/MESH_CA_KEY
       }
