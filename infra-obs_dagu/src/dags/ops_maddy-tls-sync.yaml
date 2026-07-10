@@ -26,9 +26,13 @@ steps:
 
       # Verify cert is valid
       if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
-        # Fallback: try Caddy's internal cert storage path
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.crt" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/fullchain.pem" 2>/dev/null || true
-        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.key" -path "*diegonmarcos*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/privkey.pem" 2>/dev/null || true
+        # Fallback: Caddy's internal cert storage path. MUST target the
+        # WILDCARD cert (*.diegonmarcos.com covers mail./imap./smtps.) — Caddy
+        # also stores an apex-only cert (diegonmarcos.com), and a bare
+        # "*diegonmarcos*" + head -1 grabs the apex, leaving maddy with a cert
+        # that fails SAN validation for mail.diegonmarcos.com.
+        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.crt" -path "*wildcard_.diegonmarcos.com*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/fullchain.pem" 2>/dev/null || true
+        $RSYNC_SSH $PROXY 'sudo find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -name "*.key" -path "*wildcard_.diegonmarcos.com*" 2>/dev/null | head -1 | xargs sudo cat' > "$CERT_SRC/privkey.pem" 2>/dev/null || true
       fi
 
       if ! openssl x509 -noout -in "$CERT_SRC/fullchain.pem" 2>/dev/null; then
