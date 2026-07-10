@@ -48,12 +48,8 @@ steps:
           ALERTS="${ALERTS}  $name ($ip): NO backups in last 24h\n"
           if [ -n "$RECENT" ]; then
             ALERTS="${ALERTS}    Latest files:\n"
-            OLD_IFS=$IFS; IFS='
-'
-            for f in $RECENT; do
-              ALERTS="${ALERTS}      $f\n"
-            done
-            IFS=$OLD_IFS
+            FMT=$(printf '%s\n' "$RECENT" | while IFS= read -r f; do [ -n "$f" ] && printf '      %s\\n' "$f"; done)
+            ALERTS="${ALERTS}${FMT}"
           fi
         fi
       done
