@@ -88,7 +88,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -171,7 +171,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -254,7 +254,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
@@ -337,7 +337,7 @@ steps:
         elif .type == "mariadb" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) mariadb-dump -u \(.user) \(.db) 2>/dev/null | gzip > \(.container)-\($s).sql.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "sqlite" then
-          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) sqlite3 \(.path) \".backup /tmp/backup-dump.db\" 2>/dev/null && docker cp \(.container):/tmp/backup-dump.db /var/backups/databases/\(.container)-\($s).sqlite && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
+          "if docker ps --format {{.Names}} | grep -qx \(.container); then docker cp \(.container):\(.path) /var/backups/databases/\(.container)-\($s).sqlite 2>/dev/null && gzip -f /var/backups/databases/\(.container)-\($s).sqlite && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         elif .type == "custom" then
           "if docker ps --format {{.Names}} | grep -qx \(.container); then docker exec \(.container) \(.dump_cmd) 2>/dev/null | gzip > \(.container)-\($s).dump.gz && echo OK_\(.container) || echo FAIL_\(.container); else echo SKIP_\(.container); fi"
         else "echo UNKNOWN_TYPE_\(.type)_\(.container)" end
