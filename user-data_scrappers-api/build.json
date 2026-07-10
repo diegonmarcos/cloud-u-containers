@@ -1,0 +1,78 @@
+{
+  "name": "scrappers-api",
+  "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/scrappers-api",
+    "compose_flags": "--build"
+  },
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "scrappers-api",
+    "arch": "arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "cmd": "pip install --no-cache-dir -r requirements.txt",
+      "entrypoint": "python main.py",
+      "base_image": "python:3.13-slim-bookworm",
+      "apt": "curl ca-certificates git",
+      "app_dir": "./code"
+    }
+  },
+  "ports": {
+    "app": 3020
+  },
+  "timezone": "Europe/Paris",
+  "category": "data",
+  "domain": "api.diegonmarcos.com/scrappers",
+  "proxy": {
+    "primary": {
+      "type": "path",
+      "parent_domain": "api.diegonmarcos.com",
+      "base_path": "/scrappers",
+      "auth": "two_factor",
+      "paths": {
+        "/openapi.json": { "auth": "public" },
+        "/health": { "auth": "public" }
+      }
+    }
+  },
+  "health": {
+    "path": "/health"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": true
+  },
+  "backup": {
+    "enabled": true
+  },
+  "containers": {
+    "app": {
+      "container_name": "scrappers-api",
+      "image": "ghcr.io/diegonmarcos/scrappers-api:latest",
+      "port": 3020,
+      "port_env": "PORT",
+      "public": true,
+      "proxy": {
+        "domain": "api.diegonmarcos.com",
+        "base_path": "/scrappers",
+        "auth": "two_factor"
+      },
+      "healthcheck": "curl -fsS http://127.0.0.1:3020/health >/dev/null 2>&1 || exit 1",
+      "env_file": true
+    }
+  },
+  "build": {
+    "headers_enforced": true
+  },
+  "api": {
+    "type": "openapi",
+    "spec_path": "/openapi.json",
+    "base_path": "/scrappers",
+    "display_name": "Scrapers API",
+    "description": "Unified profile-scrape + generic-crawl API. Replaces crawlee-cloud.",
+    "auth": "two_factor"
+  }
+}
