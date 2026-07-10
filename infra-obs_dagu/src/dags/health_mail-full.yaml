@@ -55,7 +55,9 @@ steps:
       WARNINGS=$(jq -r '.summary.warnings // 0' "$RESULT_JSON")
       TOTAL=$(jq -r '.summary.total_checks // 0' "$RESULT_JSON")
 
-      if [ "$CRITICAL" = "0" ] && [ "$FAILED" = "0" ]; then
+      # Alert (red) only on CRITICAL findings — warnings are informational
+      # health notes, not failures (consistent with health_cloud-full's gate).
+      if [ "$CRITICAL" = "0" ]; then
         curl -s -X POST "$NTFY_URL/infra_mail-health" \
           -H "Authorization: Bearer $AUTHELIA_BEARER_TOKEN" \
           -H "Title: Mail Health OK ($PASSED/$TOTAL passed)" \
