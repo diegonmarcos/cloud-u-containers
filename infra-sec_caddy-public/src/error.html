@@ -206,6 +206,7 @@ a:hover{color:#845ef7;border-color:#845ef7}
     <div class="vm-status" id="edge-debug"></div>
     <div class="vm-actions">
       <button class="vm-btn refresh" id="edge-retry-btn">Retry</button>
+      <button class="vm-btn refresh" id="edge-copy-btn">Copy</button>
       <button class="vm-btn start" id="edge-download">Download JSON</button>
     </div>
   </div>
@@ -332,40 +333,120 @@ document.getElementById('vm-refresh-btn').addEventListener('click',checkStatus);
 
 discoverVm().then(checkStatus).catch(function(){setIndicator('blue','discovery failed')});
 
-// ── Truthful-edge route debug (directives 3-5) ──
+// ── Truthful-edge route debug (public edge) ──
 // The edge tags fallback responses with X-Edge-Fallback + the real upstream
-// status (22-handle-errors.caddy.tpl). Re-probe the failed URL: render those as
-// downloadable JSON, and self-dismiss — redirect back the moment the route
-// recovers. All client-side on the bind-mounted page; no server templating.
-var edgeDbg={requested:location.href,host:location.host,path:location.pathname,ts:new Date().toISOString()};
+// status (22-handle-errors.caddy.tpl). This panel is the single place to triage
+// a broken route without shell access: re-probes the failed URL with full
+// response headers + timing, checks whether THIS page's own load was slow
+// anywhere (DNS/connect/TLS/TTFB), cross-checks public DNS resolution, and
+// sanity-pings a known-good API to distinguish "just this route" from "the
+// whole mesh is unreachable". Keeps a rolling probe history. All client-side.
+var edgeDbg={
+  requested:location.href,host:location.host,path:location.pathname,
+  ts:new Date().toISOString(),
+  client:{
+    userAgent:navigator.userAgent,
+    language:navigator.language,
+    onLine:navigator.onLine,
+    viewport:window.innerWidth+'x'+window.innerHeight,
+    timezone:(Intl.DateTimeFormat().resolvedOptions().timeZone)||null,
+    connection:(navigator.connection?{effectiveType:navigator.connection.effectiveType,downlinkMbps:navigator.connection.downlink,rttMs:navigator.connection.rtt,saveData:navigator.connection.saveData}:null)
+  },
+  pageLoad:null,
+  publicDns:{checked:false},
+  mesh:{checked:false},
+  probes:[]
+};
+
+(function(){
+  var nav=performance.getEntriesByType('navigation')[0];
+  if(nav){
+    edgeDbg.pageLoad={
+      dnsMs:Math.round(nav.domainLookupEnd-nav.domainLookupStart),
+      connectMs:Math.round(nav.connectEnd-nav.connectStart),
+      tlsMs:nav.secureConnectionStart?Math.round(nav.connectEnd-nav.secureConnectionStart):null,
+      ttfbMs:Math.round(nav.responseStart-nav.requestStart),
+      totalMs:Math.round(nav.responseEnd-nav.startTime),
+      protocol:nav.nextHopProtocol||'?',
+      transferSizeBytes:nav.transferSize||0
+    };
+  }
+})();
+
 var edgeLight=document.getElementById('edge-light');
 var edgeHealth=document.getElementById('edge-health');
 var edgeOut=document.getElementById('edge-debug');
+
 function renderEdge(){edgeOut.textContent=JSON.stringify(edgeDbg,null,2)}
+function headersToObj(h){var o={};h.forEach(function(v,k){o[k]=v});return o}
+
 function probeRoute(){
   edgeLight.className='vm-indicator yellow';edgeHealth.textContent='probing...';
+  var t0=performance.now();
   fetch(location.href,{method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(8000)})
     .then(function(r){
-      edgeDbg.status=r.status;
-      edgeDbg.x_edge_fallback=r.headers.get('x-edge-fallback');
-      edgeDbg.x_edge_upstream_status=r.headers.get('x-edge-upstream-status');
+      var hdrs=headersToObj(r.headers);
       // opaqueredirect (302->Authelia) is NOT "recovered": a healthy auth gate
       // says nothing about the final upstream (that's the active-health-check job).
-      var recovered=!r.headers.get('x-edge-fallback')&&r.status<500&&r.type!=='opaqueredirect';
-      edgeDbg.recovered=recovered;renderEdge();
+      var recovered=!hdrs['x-edge-fallback']&&r.status<500&&r.type!=='opaqueredirect';
+      edgeDbg.probes.unshift({
+        ts:new Date().toISOString(),
+        durationMs:Math.round(performance.now()-t0),
+        status:r.status,type:r.type,ok:r.ok,redirected:r.redirected,
+        headers:hdrs,
+        x_edge_fallback:hdrs['x-edge-fallback']||null,
+        x_edge_route:hdrs['x-edge-route']||null,
+        x_edge_upstream_status:hdrs['x-edge-upstream-status']||null,
+        recovered:recovered
+      });
+      if(edgeDbg.probes.length>10)edgeDbg.probes.length=10;
+      renderEdge();
       if(recovered){
         edgeLight.className='vm-indicator green';edgeHealth.textContent='recovered - returning...';
         if(!sessionStorage.getItem('edge_redir')){sessionStorage.setItem('edge_redir','1');setTimeout(function(){location.replace(location.href)},1200)}
-      }else{edgeLight.className='vm-indicator red';edgeHealth.textContent='upstream down'}
+      }else{edgeLight.className='vm-indicator red';edgeHealth.textContent='status '+r.status+(hdrs['x-edge-upstream-status']?' (upstream '+hdrs['x-edge-upstream-status']+')':'')}
     })
-    .catch(function(e){edgeDbg.error=String(e);edgeLight.className='vm-indicator blue';edgeHealth.textContent='probe error';renderEdge()});
+    .catch(function(e){
+      edgeDbg.probes.unshift({ts:new Date().toISOString(),durationMs:Math.round(performance.now()-t0),error:String(e&&e.message||e)});
+      if(edgeDbg.probes.length>10)edgeDbg.probes.length=10;
+      edgeLight.className='vm-indicator blue';edgeHealth.textContent='probe error';renderEdge();
+    });
 }
+
+function checkPublicDns(){
+  fetch('https://cloudflare-dns.com/dns-query?name='+encodeURIComponent(location.hostname)+'&type=A',{headers:{accept:'application/dns-json'},signal:AbortSignal.timeout(6000)})
+    .then(function(r){return r.json()})
+    .then(function(data){edgeDbg.publicDns={checked:true,status:data.Status,answers:(data.Answer||[]).map(function(a){return a.data})};renderEdge()})
+    .catch(function(e){edgeDbg.publicDns={checked:true,error:String(e&&e.message||e)};renderEdge()});
+}
+
+function checkMesh(){
+  var t0=performance.now();
+  fetch('https://api.diegonmarcos.com/api/health/declared',{signal:AbortSignal.timeout(6000)})
+    .then(function(r){edgeDbg.mesh={checked:true,ok:r.ok,status:r.status,latencyMs:Math.round(performance.now()-t0)};renderEdge()})
+    .catch(function(e){edgeDbg.mesh={checked:true,ok:false,error:String(e&&e.message||e),latencyMs:Math.round(performance.now()-t0)};renderEdge()});
+}
+
+function copyToClipboard(text,btn){
+  var orig=btn.textContent;
+  function done(){btn.textContent='Copied!';setTimeout(function(){btn.textContent=orig},1200)}
+  function fail(){
+    var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    try{document.execCommand('copy')}catch(e){}
+    document.body.removeChild(ta);done();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(fail)}else{fail()}
+}
+
 document.getElementById('edge-retry-btn').addEventListener('click',probeRoute);
+var _cpb=document.getElementById('edge-copy-btn');
+if(_cpb)_cpb.addEventListener('click',function(){copyToClipboard(JSON.stringify(edgeDbg,null,2),this)});
 document.getElementById('edge-download').addEventListener('click',function(){
   var b=new Blob([JSON.stringify(edgeDbg,null,2)],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='edge-debug-'+location.host+'.json';a.click();
 });
-renderEdge();probeRoute();
+renderEdge();probeRoute();checkPublicDns();checkMesh();
 </script>
 </body>
 </html>
