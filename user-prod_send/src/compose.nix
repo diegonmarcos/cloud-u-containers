@@ -36,7 +36,11 @@ in
         "send_uploads:/uploads"
       ];
       healthcheck = {
-        test     = [ "CMD" "wget" "-q" "--spider" "http://localhost:1234/__lbheartbeat__" ];
+        # 127.0.0.1 not localhost: the send node server binds IPv4 0.0.0.0:1234
+        # only, but `localhost` resolves to IPv6 ::1 first in the busybox image →
+        # wget gets "connection refused" and the container is falsely marked
+        # unhealthy while send.diegonmarcos.com serves fine (verified 2026-07-10).
+        test     = [ "CMD" "wget" "-q" "--spider" "http://127.0.0.1:1234/__lbheartbeat__" ];
         interval = "30s";
         timeout  = "10s";
         retries  = 3;
