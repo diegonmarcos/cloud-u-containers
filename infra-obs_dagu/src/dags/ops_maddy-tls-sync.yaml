@@ -20,7 +20,9 @@ steps:
       # install to the shared tls dir, reload both daemons. Fail-safe: validation runs
       # on a temp copy BEFORE overwrite, so a bad/missing/expired source leaves the
       # currently-installed cert untouched.
-      SRC_FIND='find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -path "*wildcard_.diegonmarcos.com*"'
+      # oci-analytics runs the PUBLIC edge caddy (service infra-sec_caddy-public),
+      # whose ACME store is the caddy_public_data volume (NOT caddy_caddy_data).
+      SRC_FIND='find /var/lib/docker/volumes/caddy_public_data/_data/caddy/certificates -path "*wildcard_.diegonmarcos.com*"'
       CRT_B64=$($RSYNC_SSH ubuntu@10.0.0.4 "sudo sh -c '$SRC_FIND -name \"*.crt\" | head -1 | xargs -r base64 -w0'")
       KEY_B64=$($RSYNC_SSH ubuntu@10.0.0.4 "sudo sh -c '$SRC_FIND -name \"*.key\" | head -1 | xargs -r base64 -w0'")
       [ -n "$CRT_B64" ] && [ -n "$KEY_B64" ] || { echo "FAIL: no wildcard cert found on oci-analytics (public ACME edge)"; exit 1; }
