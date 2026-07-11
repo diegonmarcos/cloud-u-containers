@@ -28,8 +28,8 @@ app = FastAPI(
     title="Scrapers API",
     description="Unified profile-scrape + generic-crawl. Replaces crawlee-cloud.",
     version="0.1.0",
-    openapi_url=f"{BASE_PATH}/openapi.json",
-    docs_url=f"{BASE_PATH}/docs",
+    openapi_url="/openapi.json",  # Caddy strips /scrappers; serve docs at root so the public bypass path resolves
+    docs_url="/docs",
 )
 
 
@@ -63,11 +63,13 @@ def health():
 
 
 @app.get(f"{BASE_PATH}/targets")
+@app.get("/targets")  # Caddy strips the /scrappers prefix — register unprefixed too (like /health)
 def list_targets():
     return {"targets": list(TARGETS.values())}
 
 
 @app.post(f"{BASE_PATH}/scrape/{{platform}}")
+@app.post("/scrape/{platform}")  # unprefixed twin (Caddy strips /scrappers)
 def scrape(platform: str, req: ScrapeReq):
     mod = _load(platform)
     params = {k: v for k, v in req.model_dump().items() if v is not None}
@@ -82,6 +84,7 @@ def scrape(platform: str, req: ScrapeReq):
 
 
 @app.post(f"{BASE_PATH}/run/{{target_id}}")
+@app.post("/run/{target_id}")  # unprefixed twin (Caddy strips /scrappers)
 def run_target(target_id: str):
     """Run a data-driven target from scrappers.json (what Dagu calls on schedule)."""
     t = TARGETS.get(target_id)
@@ -99,6 +102,7 @@ def run_target(target_id: str):
 
 
 @app.post(f"{BASE_PATH}/scrape/linkedin/export")
+@app.post("/scrape/linkedin/export")  # unprefixed twin (Caddy strips /scrappers)
 async def linkedin_export(file: UploadFile = File(...)):
     """Parse an official LinkedIn data-export zip (zero account risk)."""
     mod = _load("linkedin")
