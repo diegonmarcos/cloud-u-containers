@@ -55,6 +55,8 @@
       "image": "ghcr.io/diegonmarcos/scrappers-api:latest",
       "port": 3020,
       "port_env": "PORT",
+      "protocol": "http",
+      "dns": "scrappers-api.app",
       "public": true,
       "proxy": {
         "domain": "api.diegonmarcos.com",
