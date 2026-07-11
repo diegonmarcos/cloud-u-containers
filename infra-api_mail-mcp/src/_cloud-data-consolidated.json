@@ -155,6 +155,7 @@
       },
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva",
       "services": [
+        "matrix-continuwuity",
         "c3-infra-api",
         "c3-infra-mcp",
         "c3-services-api",
@@ -185,10 +186,9 @@
         "rig-agentic-sonn-14bq8",
         "session-memory",
         "chat-mattermost",
-        "matrix-continuwuity",
         "matrix-element",
         "matrix-mautrix-whatsapp",
-        "crawlee-cloud",
+        "scrappers-api",
         "fin-api",
         "photoprism",
         "news-gdelt",
@@ -204,7 +204,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 65
+      "container_count": 59
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -430,6 +430,11 @@
           "wg_ip": "10.0.0.200",
           "role": "client",
           "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
+        },
+        "health-runner": {
+          "wg_ip": "10.0.0.201",
+          "role": "client",
+          "wg_public_key": "VeUK6t5/oXQiACcqXgCGkzLZlP2iBTgPghhhwFADViQ="
         }
       }
     },
@@ -756,6 +761,107 @@
     }
   },
   "services": {
+    "matrix-continuwuity": {
+      "category": "app",
+      "vm": "oci-A1-f_0",
+      "folder": "user-comm_matrix-continuwuity",
+      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
+      "enabled": true,
+      "domain": "matrix.diegonmarcos.com",
+      "flake": "user-comm_matrix-continuwuity",
+      "port": 8008,
+      "dns": "matrix-continuwuity.app",
+      "upstream": "10.0.0.6:8008",
+      "containers": {
+        "app": {
+          "container_name": "continuwuity",
+          "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
+          "port": 8008,
+          "port_env": "CONTINUWUITY_PORT",
+          "dns": "matrix-continuwuity.app",
+          "public": true,
+          "proxy": {
+            "domain": "matrix.diegonmarcos.com",
+            "auth": "none"
+          },
+          "healthcheck": "/_matrix/client/versions",
+          "monitoring": {
+            "tls_check": true,
+            "dns_check": true,
+            "endpoint_check": true
+          },
+          "volumes": [
+            "continuwuity_data:/var/lib/continuwuity"
+          ],
+          "env_file": true,
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
+        }
+      },
+      "container_names": [
+        "continuwuity"
+      ],
+      "all_ports": [
+        "8008"
+      ],
+      "all_dns": [
+        "matrix-continuwuity.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "wg_only": false,
+          "domain": "matrix.diegonmarcos.com",
+          "auth": "none"
+        }
+      },
+      "declared_ports": {
+        "app": 8008
+      },
+      "health": {
+        "path": "/_matrix/client/versions"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "volumes": [
+          "continuwuity_data"
+        ]
+      },
+      "timezone": "Europe/Madrid",
+      "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
+      "resources": {
+        "mem_limit": "768M",
+        "mem_reservation": "128M"
+      },
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/_matrix",
+        "api_url": "https://matrix.diegonmarcos.com/_matrix",
+        "healthcheck_paths": [
+          "/_matrix/client/versions"
+        ],
+        "type": "custom-rest",
+        "base_path": "/_matrix",
+        "display_name": "Matrix (Continuwuity)",
+        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
+        "auth": "bearer"
+      },
+      "secret_env_vars": [
+        "CONTINUWUITY_REGISTRATION_TOKEN"
+      ]
+    },
     "c3-analytics-api": {
       "category": "obs",
       "vm": "gcp-E2-f_0",
@@ -3180,7 +3286,8 @@
         "AUTHELIA_BEARER_TOKEN",
         "UMAMI_USERNAME",
         "UMAMI_PASSWORD",
-        "HTTP_TO_SMTP_PROXY_API_KEY"
+        "HTTP_TO_SMTP_PROXY_API_KEY",
+        "STALWART_LOGIN_PASSWORD"
       ]
     },
     "dbgate": {
@@ -4546,7 +4653,9 @@
       "secret_env_vars": [
         "AUTHELIA_CLI_SECRET",
         "CF_API_TOKEN",
-        "NTFY_ADMIN_AUTH"
+        "NTFY_ADMIN_AUTH",
+        "MESH_CA_KEY",
+        "MESH_CA_CERT"
       ]
     },
     "caddy-l4-image": {
@@ -5007,6 +5116,11 @@
         },
         "max_concurrency": 12,
         "call_timeout_ms": 180000,
+        "_sessions_comment": "Cross-device session store: devices push recent Claude Code sessions here (WG-only) so any device can restore them. dir is under container HOME; keep = max sessions retained per device.",
+        "sessions": {
+          "dir": ".claude-sessions",
+          "keep": 20
+        },
         "headroom": {
           "enabled": true,
           "savings_profile": "agent-90",
@@ -6102,107 +6216,6 @@
         "GMAIL_APP_PASSWORD"
       ]
     },
-    "matrix-continuwuity": {
-      "category": "app",
-      "vm": "oci-A1-f_0",
-      "folder": "user-comm_matrix-continuwuity",
-      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-      "enabled": true,
-      "domain": "matrix.diegonmarcos.com",
-      "flake": "user-comm_matrix-continuwuity",
-      "port": 8008,
-      "dns": "matrix-continuwuity.app",
-      "upstream": "10.0.0.6:8008",
-      "containers": {
-        "app": {
-          "container_name": "continuwuity",
-          "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
-          "port": 8008,
-          "port_env": "CONTINUWUITY_PORT",
-          "dns": "matrix-continuwuity.app",
-          "public": true,
-          "proxy": {
-            "domain": "matrix.diegonmarcos.com",
-            "auth": "none"
-          },
-          "healthcheck": "/_matrix/client/versions",
-          "monitoring": {
-            "tls_check": true,
-            "dns_check": true,
-            "endpoint_check": true
-          },
-          "volumes": [
-            "continuwuity_data:/var/lib/continuwuity"
-          ],
-          "env_file": true,
-          "depends_on": [],
-          "resources": null,
-          "read_only": false,
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "continuwuity"
-      ],
-      "all_ports": [
-        "8008"
-      ],
-      "all_dns": [
-        "matrix-continuwuity.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "wg_only": false,
-          "domain": "matrix.diegonmarcos.com",
-          "auth": "none"
-        }
-      },
-      "declared_ports": {
-        "app": 8008
-      },
-      "health": {
-        "path": "/_matrix/client/versions"
-      },
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
-      },
-      "backup": {
-        "enabled": true,
-        "volumes": [
-          "continuwuity_data"
-        ]
-      },
-      "timezone": "Europe/Madrid",
-      "upstream_image": "forgejo.ellis.link/continuwuation/continuwuity:latest",
-      "resources": {
-        "mem_limit": "768M",
-        "mem_reservation": "128M"
-      },
-      "api": {
-        "has_api": true,
-        "has_web_ui": true,
-        "api_path": "/_matrix",
-        "api_url": "https://matrix.diegonmarcos.com/_matrix",
-        "healthcheck_paths": [
-          "/_matrix/client/versions"
-        ],
-        "type": "custom-rest",
-        "base_path": "/_matrix",
-        "display_name": "Matrix (Continuwuity)",
-        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
-        "auth": "bearer"
-      },
-      "secret_env_vars": [
-        "CONTINUWUITY_REGISTRATION_TOKEN"
-      ]
-    },
     "matrix-element": {
       "category": "app",
       "vm": "oci-A1-f_0",
@@ -6427,8 +6440,7 @@
         "_repromoted_2026-07-09": "webmail.diegonmarcos.com re-promoted to SnappyMail. It was demoted 2026-04-27 for a handoff to a successor webmail service that was never finished (no build.json/src), so no route was ever emitted and the domain orphaned to the Caddy catch-all (200 wormhole). SnappyMail is healthy on oci-mail; restored primary per the demote note.",
         "primary": {
           "domain": "webmail.diegonmarcos.com",
-          "auth": "two_factor",
-          "landing_page": "mymail"
+          "auth": "two_factor"
         }
       },
       "declared_ports": {
@@ -6880,175 +6892,43 @@
         "DKIM_PRIVATE_KEY_B64"
       ]
     },
-    "crawlee-cloud": {
-      "category": "fin",
+    "scrappers-api": {
+      "category": "data",
       "vm": "oci-A1-f_0",
-      "folder": "user-fin_crawlee-cloud",
-      "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+      "folder": "user-data_scrappers-api",
+      "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
       "enabled": true,
       "domain": "api.diegonmarcos.com",
-      "flake": "user-fin_crawlee-cloud",
-      "port": 3000,
-      "dns": "crawlee.app",
-      "upstream": "10.0.0.6:3000",
+      "flake": "user-data_scrappers-api",
+      "port": 3020,
+      "dns": "scrappers-api.app",
+      "upstream": "10.0.0.6:3020",
       "containers": {
         "app": {
-          "container_name": "crawlee_api",
-          "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
-          "port": 3000,
+          "container_name": "scrappers-api",
+          "image": "ghcr.io/diegonmarcos/scrappers-api:latest",
+          "port": 3020,
           "port_env": "PORT",
-          "dns": "crawlee.app",
+          "protocol": "http",
+          "dns": "scrappers-api.app",
           "public": true,
           "proxy": {
             "domain": "api.diegonmarcos.com",
-            "base_path": "/crawlee",
+            "base_path": "/scrappers",
             "auth": "two_factor"
           },
-          "healthcheck": "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
-          "monitoring": {
-            "tls_check": true
-          },
-          "volumes": [],
-          "env_file": true,
-          "depends_on": [
-            "db",
-            "redis",
-            "minio"
-          ],
-          "resources": null,
-          "read_only": false,
-          "protocol": "http"
-        },
-        "runner": {
-          "container_name": "crawlee_runner",
-          "image": "ghcr.io/diegonmarcos/crawlee-cloud-runner:latest",
-          "port": null,
-          "port_env": null,
-          "dns": "crawlee-runner.app",
-          "public": false,
-          "healthcheck": null,
-          "volumes": [
-            "/var/run/docker.sock:/var/run/docker.sock"
-          ],
-          "env_file": true,
-          "depends_on": [
-            "app"
-          ],
-          "resources": null,
-          "read_only": false
-        },
-        "dashboard": {
-          "container_name": "crawlee_dashboard",
-          "image": "ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest",
-          "port": 3001,
-          "port_env": "PORT",
-          "dns": "crawlee-dashboard.app",
-          "public": false,
-          "healthcheck": null,
-          "volumes": [],
-          "env_file": false,
-          "depends_on": [
-            "app"
-          ],
-          "resources": null,
-          "read_only": false,
-          "protocol": "http"
-        },
-        "scheduler": {
-          "container_name": "crawlee_scheduler",
-          "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
-          "port": null,
-          "port_env": null,
-          "dns": "crawlee-scheduler.app",
-          "public": false,
-          "healthcheck": null,
-          "volumes": [],
-          "env_file": true,
-          "depends_on": [
-            "db",
-            "redis"
-          ],
-          "resources": null,
-          "read_only": false
-        },
-        "db": {
-          "container_name": "crawlee_db",
-          "image": "postgres:16-alpine",
-          "port": 5434,
-          "port_env": "PGPORT",
-          "dns": "crawlee-db.app",
-          "public": false,
-          "healthcheck": "pg_isready -U $POSTGRES_USER",
-          "volumes": [
-            "crawlee_postgres:/var/lib/postgresql/data"
-          ],
-          "env_file": true,
-          "resources": null,
-          "read_only": false,
-          "db_user": "crawlee",
-          "db_name": "crawlee",
-          "protocol": "tcp",
-          "db_engine": "postgres"
-        },
-        "redis": {
-          "container_name": "crawlee_redis",
-          "image": "redis:7-alpine",
-          "port": 6381,
-          "port_env": null,
-          "dns": "crawlee-redis.app",
-          "public": false,
-          "healthcheck": "redis-cli -p 6381 ping",
-          "volumes": [
-            "crawlee_redis:/data"
-          ],
-          "env_file": false,
-          "resources": null,
-          "read_only": false,
-          "protocol": "tcp",
-          "db_engine": "redis"
-        },
-        "minio": {
-          "container_name": "crawlee_minio",
-          "image": "minio/minio:latest",
-          "port": 9000,
-          "port_env": null,
-          "dns": "crawlee-minio.app",
-          "public": false,
-          "healthcheck": "curl -f http://localhost:9000/minio/health/live",
-          "volumes": [
-            "crawlee_minio:/data"
-          ],
-          "env_file": true,
-          "resources": null,
-          "read_only": false,
-          "protocol": "http",
-          "db_engine": "minio"
+          "healthcheck": "curl -fsS http://127.0.0.1:3020/health >/dev/null 2>&1 || exit 1",
+          "env_file": true
         }
       },
       "container_names": [
-        "crawlee_api",
-        "crawlee_runner",
-        "crawlee_dashboard",
-        "crawlee_scheduler",
-        "crawlee_db",
-        "crawlee_redis",
-        "crawlee_minio"
+        "scrappers-api"
       ],
       "all_ports": [
-        "3000",
-        "3001",
-        "5434",
-        "6381",
-        "9000"
+        "3020"
       ],
       "all_dns": [
-        "crawlee.app",
-        "crawlee-runner.app",
-        "crawlee-dashboard.app",
-        "crawlee-scheduler.app",
-        "crawlee-db.app",
-        "crawlee-redis.app",
-        "crawlee-minio.app"
+        "scrappers-api.app"
       ],
       "compose": {
         "containers": [],
@@ -7059,26 +6939,21 @@
         "primary": {
           "type": "path",
           "parent_domain": "api.diegonmarcos.com",
-          "base_path": "/crawlee",
+          "base_path": "/scrappers",
           "auth": "two_factor",
-          "paths": {
-            "/openapi.json": {
-              "auth": "public"
-            }
-          },
+          "wg_only": false,
+          "public_paths": [
+            "/scrappers/health",
+            "/scrappers/openapi.json"
+          ],
           "domain": "api.diegonmarcos.com"
         }
       },
       "declared_ports": {
-        "app": 3000,
-        "dashboard": 3001,
-        "db": 5434,
-        "redis": 6381,
-        "minio": 9000,
-        "minio_console": 9001
+        "app": 3020
       },
       "health": {
-        "path": "/"
+        "path": "/health"
       },
       "monitoring": {
         "tls_check": true,
@@ -7088,20 +6963,7 @@
       "backup": {
         "enabled": true
       },
-      "runtime": {
-        "node_env": "production",
-        "log_level": "info",
-        "rate_limit_max": 1000,
-        "max_concurrent_runs": 5,
-        "actor_max_memory_mb": 2048,
-        "actor_default_memory_mb": 512,
-        "actor_timeout_secs": 3600,
-        "s3_bucket": "crawlee-cloud",
-        "s3_region": "us-east-1",
-        "s3_force_path_style": true,
-        "cors_origins": "https://api.diegonmarcos.com,http://localhost:3001",
-        "dashboard_hostname": "10.0.0.6"
-      },
+      "timezone": "Europe/Paris",
       "api": {
         "has_api": true,
         "has_web_ui": true,
@@ -7110,23 +6972,11 @@
         "healthcheck_paths": [],
         "type": "openapi",
         "spec_path": "/openapi.json",
-        "base_path": "/v2",
-        "endpoint_count": 74,
-        "display_name": "Crawlee Cloud Apify-Compatible API",
-        "description": "Self-hosted Apify-compatible web scraping platform with actors, runs, datasets, queues, and schedules.",
-        "auth": "api-key"
-      },
-      "secret_env_vars": [
-        "POSTGRES_USER",
-        "POSTGRES_PASSWORD",
-        "POSTGRES_DB",
-        "MINIO_USER",
-        "MINIO_PASSWORD",
-        "JWT_SECRET",
-        "ADMIN_EMAIL",
-        "ADMIN_PASSWORD",
-        "RUNNER_TOKEN"
-      ]
+        "base_path": "/scrappers",
+        "display_name": "Scrapers API",
+        "description": "Unified profile-scrape + generic-crawl API. Replaces crawlee-cloud.",
+        "auth": "two_factor"
+      }
     },
     "fin-api": {
       "category": "fin",
@@ -8858,6 +8708,12 @@
     "internal_zones": [],
     "derived_entries": [
       {
+        "name": "matrix-continuwuity.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "matrix-continuwuity"
+      },
+      {
         "name": "c3-analytics-api.app",
         "type": "A",
         "value": "10.0.0.1",
@@ -9074,12 +8930,6 @@
         "service": "chat-mattermost"
       },
       {
-        "name": "matrix-continuwuity.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "matrix-continuwuity"
-      },
-      {
         "name": "matrix-element.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9110,46 +8960,10 @@
         "service": "stalwart"
       },
       {
-        "name": "crawlee.app",
+        "name": "scrappers-api.app",
         "type": "A",
         "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-runner.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-dashboard.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-scheduler.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-db.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-redis.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
-      },
-      {
-        "name": "crawlee-minio.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "crawlee-cloud"
+        "service": "scrappers-api"
       },
       {
         "name": "fin-api.app",
@@ -9793,6 +9607,7 @@
         "is_public_ingress": false,
         "idle_shutdown": null,
         "containers": [
+          "matrix-continuwuity",
           "c3-infra-api",
           "c3-infra-mcp",
           "c3-services-api",
@@ -9823,10 +9638,9 @@
           "rig-agentic-sonn-14bq8",
           "session-memory",
           "chat-mattermost",
-          "matrix-continuwuity",
           "matrix-element",
           "matrix-mautrix-whatsapp",
-          "crawlee-cloud",
+          "scrappers-api",
           "fin-api",
           "photoprism",
           "news-gdelt",
@@ -10103,6 +9917,11 @@
       }
     },
     "services": {
+      "matrix-continuwuity": {
+        "dir": "user-comm_matrix-continuwuity",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
       "c3-analytics-api": {
         "dir": "infra-api_c3-analytics-api",
         "vm": "gcp-proxy",
@@ -10318,11 +10137,6 @@
         "vm": "oci-mail",
         "has_docker": true
       },
-      "matrix-continuwuity": {
-        "dir": "user-comm_matrix-continuwuity",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
       "matrix-element": {
         "dir": "user-comm_matrix-element",
         "vm": "oci-apps",
@@ -10348,8 +10162,8 @@
         "vm": "oci-mail",
         "has_docker": true
       },
-      "crawlee-cloud": {
-        "dir": "user-fin_crawlee-cloud",
+      "scrappers-api": {
+        "dir": "user-data_scrappers-api",
         "vm": "oci-apps",
         "has_docker": true
       },
