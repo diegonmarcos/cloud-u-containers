@@ -1,40 +1,48 @@
-"""Firecrawl backend — hosted scrape API that returns clean markdown for a URL.
+"""Firecrawl backend — self-hosted "URL -> clean, LLM-ready markdown" engine.
 
-Why: handles JS rendering + boilerplate stripping server-side; useful as a lighter
-alternative to cloudflare.py when only markdown content (not raw HTML/links) is needed.
+Why: Firecrawl (github.com/mendableai/firecrawl, MIT) is a hosted paid API whose core
+job is: fetch a page, strip boilerplate (nav/ads/footers), extract the main readable
+content, convert to markdown. That job is fully reproducible in-house with trafilatura,
+so this module fetches the page itself (plain httpx, or cloudflare.render for JS pages)
+and runs local extraction — no external API, no API keys.
 
-Secret (env, from src/secrets.yaml -> sops): FIRECRAWL_API_KEY.
-Docs: https://docs.firecrawl.dev/api-reference/endpoint/scrape
+Fetch strategy:
+  • render=False (default): plain httpx GET.
+  • render=True: reuse cloudflare.render(url) for JS-heavy pages (SPA content).
 """
-import os
 import httpx
+import trafilatura
+from selectolax.parser import HTMLParser
 
-API = "https://api.firecrawl.dev/v1/scrape"
+from . import cloudflare
 
-
-def _key():
-    key = os.environ.get("FIRECRAWL_API_KEY")
-    if not key:
-        raise RuntimeError("Firecrawl needs FIRECRAWL_API_KEY (add to src/secrets.yaml)")
-    return key
+_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; scrappers-api/1.0)"}
 
 
-def scrape(url: str, **_):
-    """Fetch `url` via Firecrawl and return its markdown content."""
+def _fetch(url: str, render: bool) -> str:
+    if render:
+        return cloudflare.render(url)
+    with httpx.Client(timeout=60, headers=_HEADERS, follow_redirects=True) as c:
+        r = c.get(url)
+        r.raise_for_status()
+        return r.text
+
+
+def scrape(url: str, render: bool = False, **_):
+    """Fetch `url`, extract the main content, and return it as clean markdown."""
     if not url:
         raise ValueError("url required")
-    key = _key()
-    with httpx.Client(timeout=60) as c:
-        r = c.post(
-            API,
-            headers={"Authorization": f"Bearer {key}"},
-            json={"url": url, "formats": ["markdown"]},
-        )
-        r.raise_for_status()
-        data = r.json()
-    markdown = data.get("data", {}).get("markdown", "")
+    html = _fetch(url, render)
+
+    markdown = trafilatura.extract(html, url=url, output_format="markdown") or ""
+
+    tree = HTMLParser(html)
+    title_node = tree.css_first("title")
+    title = title_node.text(strip=True) if title_node else ""
+
     return {
         "url": url,
         "markdown": markdown,
-        "_summary": {"chars": len(markdown), "via": "firecrawl"},
+        "title": title,
+        "_summary": {"chars": len(markdown), "via": "self-hosted-firecrawl"},
     }

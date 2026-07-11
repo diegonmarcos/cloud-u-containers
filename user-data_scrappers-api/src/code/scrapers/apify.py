@@ -1,39 +1,99 @@
-"""Apify backend — run a pre-built Apify actor and collect its dataset items.
+"""Apify backend — self-hosted BFS crawl engine (the Crawlee idea, in-house).
 
-Why: Apify hosts maintained scrapers (Instagram, TikTok, etc.) as actors; this module
-just triggers a sync run and returns the resulting dataset, no scraping logic of our own.
+Why: Apify/Crawlee (github.com/apify/crawlee, Apache-2) is at its core a request
+QUEUE + BFS crawl + visited-dedup + limits. That core is fully reproducible locally
+with a deque and selectolax (already a dependency) — no actor marketplace, no
+external API, no API keys.
 
-Secret (env, from src/secrets.yaml -> sops): APIFY_TOKEN.
-Docs: https://docs.apify.com/api/v2#/reference/actor-tasks/run-collection/run-actor-synchronously-and-get-dataset-items
+Fetch strategy per page:
+  • render=False (default): plain httpx GET.
+  • render=True: reuse cloudflare.render(url) for JS-heavy pages.
+
+Kept lean: no Playwright, no crawlee/scrapy framework — just a queue + parser.
 """
-import os
+from collections import deque
+from urllib.parse import urljoin, urlparse
+
 import httpx
+from selectolax.parser import HTMLParser
 
-API = "https://api.apify.com/v2/acts/{actor}/run-sync-get-dataset-items"
+from . import cloudflare
 
-
-def _token():
-    token = os.environ.get("APIFY_TOKEN")
-    if not token:
-        raise RuntimeError("Apify needs APIFY_TOKEN (add to src/secrets.yaml)")
-    return token
+_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; scrappers-api/1.0)"}
+_HARD_MAX_PAGES = 200
 
 
-def scrape(actor: str, input: dict | None = None, **_):
-    """Run `actor` (e.g. 'apify~instagram-scraper') synchronously and return its dataset items."""
-    if not actor:
-        raise ValueError("actor required")
-    token = _token()
-    with httpx.Client(timeout=120) as c:
-        r = c.post(
-            API.format(actor=actor),
-            params={"token": token},
-            json=input or {},
-        )
+def _fetch(url: str, render: bool) -> str:
+    if render:
+        return cloudflare.render(url)
+    with httpx.Client(timeout=60, headers=_HEADERS, follow_redirects=True) as c:
+        r = c.get(url)
         r.raise_for_status()
-        items = r.json()
+        return r.text
+
+
+def scrape(
+    start_url: str,
+    max_pages: int = 50,
+    same_domain: bool = True,
+    selector: str | None = None,
+    render: bool = False,
+    **_,
+):
+    """BFS-crawl from `start_url` via an in-process request queue, dedup visited URLs."""
+    if not start_url:
+        raise ValueError("start_url required")
+    max_pages = max(1, min(int(max_pages), _HARD_MAX_PAGES))
+
+    start_domain = urlparse(start_url).netloc
+    queue: deque[str] = deque([start_url])
+    visited: set[str] = set()
+    pages: list[dict] = []
+
+    while queue and len(pages) < max_pages:
+        url = queue.popleft()
+        if url in visited:
+            continue
+        visited.add(url)
+
+        try:
+            html = _fetch(url, render)
+        except httpx.HTTPError:
+            continue
+
+        tree = HTMLParser(html)
+        title_node = tree.css_first("title")
+        title = title_node.text(strip=True) if title_node else ""
+
+        if selector:
+            matches = [n.text(strip=True) for n in tree.css(selector) if n.text(strip=True)]
+        else:
+            matches = None
+
+        links: list[str] = []
+        for a in tree.css("a[href]"):
+            href = a.attributes.get("href")
+            if not href:
+                continue
+            abs_url = urljoin(url, href)
+            if not abs_url.startswith(("http://", "https://")):
+                continue
+            if same_domain and urlparse(abs_url).netloc != start_domain:
+                continue
+            links.append(abs_url)
+            if abs_url not in visited and abs_url not in queue:
+                queue.append(abs_url)
+
+        page: dict = {"url": url, "title": title, "links": links}
+        if matches is not None:
+            page["selector_matches"] = matches
+        else:
+            body_node = tree.css_first("body")
+            page["text"] = body_node.text(strip=True, separator=" ")[:5000] if body_node else ""
+        pages.append(page)
+
     return {
-        "actor": actor,
-        "items": items,
-        "_summary": {"items": len(items), "via": "apify"},
+        "start_url": start_url,
+        "pages": pages,
+        "_summary": {"crawled": len(pages), "via": "self-hosted-crawlee"},
     }
