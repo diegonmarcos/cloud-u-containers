@@ -33,8 +33,7 @@
     "_repromoted_2026-07-09": "webmail.diegonmarcos.com re-promoted to SnappyMail. It was demoted 2026-04-27 for a handoff to a successor webmail service that was never finished (no build.json/src), so no route was ever emitted and the domain orphaned to the Caddy catch-all (200 wormhole). SnappyMail is healthy on oci-mail; restored primary per the demote note.",
     "primary": {
       "domain": "webmail.diegonmarcos.com",
-      "auth": "two_factor",
-      "landing_page": "mymail"
+      "auth": "two_factor"
     }
   },
   "containers": {
