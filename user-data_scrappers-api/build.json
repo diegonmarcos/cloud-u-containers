@@ -32,7 +32,8 @@
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/scrappers",
       "auth": "two_factor",
-      "bypass_paths": [
+      "wg_only": false,
+      "public_paths": [
         "/scrappers/health",
         "/scrappers/openapi.json"
       ]
