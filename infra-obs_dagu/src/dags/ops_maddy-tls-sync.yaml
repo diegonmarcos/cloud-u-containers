@@ -9,25 +9,34 @@ mail_on:
 steps:
   - name: sync-wildcard-cert-to-maddy
     command: |
-      # The *.diegonmarcos.com wildcard (covers imap./smtps./mail.) is issued by the LOCAL
-      # caddy on oci-mail (caddy_caddy_data volume) and shared by Maddy + Stalwart via
-      # /opt/containers/maddy/tls. This DAG used to pull from gcp-proxy, but gcp-proxy went
-      # fully-private (2026-05) and no longer holds the LE wildcard, so it shipped the apex-only
-      # cert (diegonmarcos.com) → SNI imap.diegonmarcos.com failed "not in certificate". Fix:
-      # source the wildcard LOCALLY on oci-mail, ASSERT SAN=*.diegonmarcos.com (never ship apex),
-      # install to the shared tls dir, and reload both daemons. Heredoc runs entirely on oci-mail.
-      $RSYNC_SSH ubuntu@10.0.0.3 'sudo sh -s' <<'REMOTE'
+      # The *.diegonmarcos.com wildcard (covers imap./smtps./mail./jmap.) is shared by
+      # Maddy + Stalwart via /opt/containers/maddy/tls. It MUST be sourced from the
+      # PUBLIC ACME edge (oci-analytics, 10.0.0.4) — the ONLY node that renews it.
+      # oci-mail's LOCAL caddy has no public :443, cannot complete ACME, and its copy
+      # EXPIRED 2026-06-26; the previous "source locally" logic therefore shipped an
+      # EXPIRED cert (maddy served it → clients + the mail-mcp reject "certificate has
+      # expired"; stalwart never got a valid one). Pull from oci-analytics, hard-assert
+      # SAN=*.diegonmarcos.com AND not-expiring-within-24h (NEVER ship apex OR expired),
+      # install to the shared tls dir, reload both daemons. Fail-safe: validation runs
+      # on a temp copy BEFORE overwrite, so a bad/missing/expired source leaves the
+      # currently-installed cert untouched.
+      SRC_FIND='find /var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates -path "*wildcard_.diegonmarcos.com*"'
+      CRT_B64=$($RSYNC_SSH ubuntu@10.0.0.4 "sudo sh -c '$SRC_FIND -name \"*.crt\" | head -1 | xargs -r base64 -w0'")
+      KEY_B64=$($RSYNC_SSH ubuntu@10.0.0.4 "sudo sh -c '$SRC_FIND -name \"*.key\" | head -1 | xargs -r base64 -w0'")
+      [ -n "$CRT_B64" ] && [ -n "$KEY_B64" ] || { echo "FAIL: no wildcard cert found on oci-analytics (public ACME edge)"; exit 1; }
+      $RSYNC_SSH ubuntu@10.0.0.3 "CRT_B64='$CRT_B64' KEY_B64='$KEY_B64' sh -s" <<'REMOTE'
       set -e
-      CERTDIR=/var/lib/docker/volumes/caddy_caddy_data/_data/caddy/certificates
       DST=/opt/containers/maddy/tls
-      CRT=$(find "$CERTDIR" -path "*wildcard_.diegonmarcos.com*" -name "*.crt" 2>/dev/null | head -1)
-      KEY=$(find "$CERTDIR" -path "*wildcard_.diegonmarcos.com*" -name "*.key" 2>/dev/null | head -1)
-      [ -n "$CRT" ] && [ -n "$KEY" ] || { echo "FAIL: no local wildcard cert on oci-mail"; exit 1; }
-      openssl x509 -noout -ext subjectAltName -in "$CRT" 2>/dev/null | grep -q '[*].diegonmarcos.com' \
-        || { echo "FAIL: cert SAN is not the wildcard — refusing to ship apex"; exit 1; }
-      EXPIRY=$(openssl x509 -noout -enddate -in "$CRT" | cut -d= -f2)
-      cp "$CRT" "$DST/fullchain.pem"
-      cp "$KEY" "$DST/privkey.pem"
-      docker restart maddy stalwart >/dev/null 2>&1 || true
-      echo "OK: maddy+stalwart wildcard cert installed (expires $EXPIRY)"
+      TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+      printf '%s' "$CRT_B64" | base64 -d > "$TMP/fullchain.pem"
+      printf '%s' "$KEY_B64" | base64 -d > "$TMP/privkey.pem"
+      openssl x509 -noout -ext subjectAltName -in "$TMP/fullchain.pem" 2>/dev/null | grep -q '[*].diegonmarcos.com' \
+        || { echo "FAIL: SAN is not the wildcard — refusing to ship apex"; exit 1; }
+      openssl x509 -noout -checkend 86400 -in "$TMP/fullchain.pem" \
+        || { echo "FAIL: cert expired or expiring within 24h — refusing to ship"; exit 1; }
+      EXPIRY=$(openssl x509 -noout -enddate -in "$TMP/fullchain.pem" | cut -d= -f2)
+      sudo install -m 644 "$TMP/fullchain.pem" "$DST/fullchain.pem"
+      sudo install -m 600 "$TMP/privkey.pem" "$DST/privkey.pem"
+      sudo docker restart maddy stalwart >/dev/null 2>&1 || docker restart maddy stalwart >/dev/null 2>&1 || true
+      echo "OK: maddy+stalwart wildcard installed from oci-analytics (expires $EXPIRY)"
       REMOTE
