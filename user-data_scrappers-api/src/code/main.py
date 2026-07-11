@@ -22,7 +22,7 @@ HERE = Path(__file__).parent
 
 # ── data-driven targets (never hardcode handles in code) ──
 TARGETS = {t["id"]: t for t in json.loads((HERE / "scrappers.json").read_text())["targets"]}
-PLATFORMS = ("instagram", "pinterest", "linkedin", "crawl")
+PLATFORMS = ("instagram", "pinterest", "linkedin", "crawl", "cloudflare")
 
 app = FastAPI(
     title="Scrapers API",
