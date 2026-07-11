@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "crawlee-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1775510256,
+        "narHash": "sha256-uhraKmg/W8EJUh7Ejsy+FLez2Ozilshh3fEbEAZFEys=",
+        "owner": "crawlee-cloud",
+        "repo": "crawlee-cloud",
+        "rev": "717f33102d145263e5407bfff85cab4f11779227",
+        "type": "github"
+      },
+      "original": {
+        "owner": "crawlee-cloud",
+        "repo": "crawlee-cloud",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1751274312,
+        "narHash": "sha256-/bVBlRpECLVzjV19t5KMdMFWSwKLtb5RyXdjz3LJT+g=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "crawlee-src": "crawlee-src",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
