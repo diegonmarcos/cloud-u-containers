@@ -24,6 +24,7 @@
   },
   "timezone": "Europe/Paris",
   "category": "data",
+  "dns": "scrappers-api.app",
   "domain": "api.diegonmarcos.com/scrappers",
   "proxy": {
     "primary": {
@@ -31,10 +32,10 @@
       "parent_domain": "api.diegonmarcos.com",
       "base_path": "/scrappers",
       "auth": "two_factor",
-      "paths": {
-        "/openapi.json": { "auth": "public" },
-        "/health": { "auth": "public" }
-      }
+      "bypass_paths": [
+        "/scrappers/health",
+        "/scrappers/openapi.json"
+      ]
     }
   },
   "health": {

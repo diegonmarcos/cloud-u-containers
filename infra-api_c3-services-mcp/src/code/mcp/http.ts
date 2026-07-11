@@ -14,7 +14,7 @@ import { registerNtfyTools } from "./tools/ntfy.js";
 import { registerSyncthingTools } from "./tools/syncthing.js";
 import { registerOllamaTools } from "./tools/ollama.js";
 import { registerDaguTools } from "./tools/dagu.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerScrappersTools } from "./tools/scrappers.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
 import { registerRigTools } from "./tools/rig.js";
@@ -47,7 +47,7 @@ function createNativeServer(): McpServer {
   registerSyncthingTools(server);
   registerOllamaTools(server);
   registerDaguTools(server);
-  registerCrawleeTools(server);
+  registerScrappersTools(server);
   registerAutheliaTools(server);
   registerNocodbTools(server);
   registerRigTools(server);

@@ -14,7 +14,7 @@ import { registerNtfyTools } from "./tools/ntfy.js";
 import { registerSyncthingTools } from "./tools/syncthing.js";
 import { registerOllamaTools } from "./tools/ollama.js";
 import { registerDaguTools } from "./tools/dagu.js";
-import { registerCrawleeTools } from "./tools/crawlee.js";
+import { registerScrappersTools } from "./tools/scrappers.js";
 import { registerAutheliaTools } from "./tools/authelia.js";
 import { registerNocodbTools } from "./tools/nocodb.js";
 import { registerRigTools } from "./tools/rig.js";
@@ -55,7 +55,7 @@ async function main() {
   registerSyncthingTools(server);     //  4: status, config, folders, devices
   registerOllamaTools(server);        //  3: models, generate, chat
   registerDaguTools(server);          //  2: list, trigger
-  registerCrawleeTools(server);       //  8: actors, detail, run, runs, run_detail, abort, datasets, items
+  registerScrappersTools(server);
   registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
   registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
   registerRigTools(server);           //  5: status, health, run, tasks, task_detail

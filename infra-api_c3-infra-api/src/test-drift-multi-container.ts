@@ -34,7 +34,6 @@ const cases: Array<{
     { label: "grist (single but role-named)", declared: ["grist_app"], deployed: ["grist_app"], expect: true },
     { label: "hedgedoc", declared: ["hedgedoc_app", "hedgedoc_postgres"], deployed: ["hedgedoc_app", "hedgedoc_postgres"], expect: true },
     { label: "photoprism (3 roles)", declared: ["photoprism_app", "photoprism_mariadb", "photoprism_rclone"], deployed: ["photoprism_app", "photoprism_mariadb", "photoprism_rclone"], expect: true },
-    { label: "crawlee-cloud (7 roles)", declared: ["crawlee_api", "crawlee_runner", "crawlee_dashboard", "crawlee_scheduler", "crawlee_db", "crawlee_redis", "crawlee_minio"], deployed: ["crawlee_api", "crawlee_runner", "crawlee_db"], expect: true },
     // Partial deployment still counts as deployed (1 of N up).
     { label: "photoprism partial (only app up)", declared: ["photoprism_app", "photoprism_mariadb", "photoprism_rclone"], deployed: ["photoprism_app"], expect: true },
     // Service truly missing — zero matches.

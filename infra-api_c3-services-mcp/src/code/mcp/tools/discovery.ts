@@ -16,7 +16,7 @@ const log = (msg: string) => process.stderr.write(`[discovery] ${msg}\n`);
 // ── Services with native MCP tool wrappers ──────────────────────────────
 // Must match the actual tool files in tools/
 const NATIVE_WRAPPED: Set<string> = new Set([
-  "authelia", "crawlee-cloud", "dagu", "etherpad", "filebrowser",
+  "authelia", "scrappers-api", "dagu", "etherpad", "filebrowser",
   "gitea", "grist", "hedgedoc", "matomo", "nocodb",
   "ntfy", "ollama", "ollama-hai", "photoprism", "radicale",
   "rig-agentic-hai-1.5bq4", "rig-agentic-sonn-14bq8", "snappymail",
