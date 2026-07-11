@@ -55,7 +55,7 @@ async function main() {
   registerSyncthingTools(server);     //  4: status, config, folders, devices
   registerOllamaTools(server);        //  3: models, generate, chat
   registerDaguTools(server);          //  2: list, trigger
-  registerScrappersTools(server);
+  registerScrappersTools(server);     //  4: health, targets, scrape, run
   registerAutheliaTools(server);      //  5: health, state, config, jwks, user_info
   registerNocodbTools(server);        //  7: bases, tables, rows, row_create, row_update, row_delete, table_info
   registerRigTools(server);           //  5: status, health, run, tasks, task_detail
