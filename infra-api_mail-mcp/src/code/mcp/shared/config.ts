@@ -14,6 +14,14 @@ export interface ServerConfig {
   adminUrl?: string;
   sshAlias: string;
   container: string;
+  // Skip TLS cert-hostname verification for this server's IMAP connection.
+  // Set for servers reached over the trusted WG mesh that present a cert not
+  // matching the connect hostname — e.g. Stalwart, which serves a self-signed
+  // apex cert on its internal listener (its JMAP-store cert isn't selected for
+  // SNI in v0.16), so `jmap.diegonmarcos.com` never validates. The connection
+  // is already inside the encrypted WG tunnel, so hostname verification here is
+  // belt-and-suspenders; disabling it for the internal endpoint is safe.
+  tlsInsecure?: boolean;
 }
 
 export interface AccountCredentials {
@@ -41,6 +49,8 @@ const SERVERS: Record<string, ServerConfig> = {
     adminUrl: process.env.STALWART_ADMIN_URL,
     sshAlias: "oci-mail",
     container: "stalwart",
+    // Internal WG endpoint serving a self-signed apex cert — env-overridable.
+    tlsInsecure: (process.env.STALWART_TLS_INSECURE ?? "true") === "true",
   },
 };
 
