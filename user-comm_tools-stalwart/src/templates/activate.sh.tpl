@@ -59,46 +59,6 @@ if [ "$_ready" = 0 ]; then
   exit 1
 fi
 
-# ── Password sync (Stalwart has no declarative password rotation) ──────
-# Accounts are bootstrap-only (stalwart-cli apply); a rotated secret never
-# reaches the live principal — unlike maddy's init.sh which UPSERTs — so a
-# stale no-reply@ password silently rejects authenticated submissions. The
-# admin principal (holds urn:ietf:params:jmap:principals) patches each
-# principal's `secrets` via JMAP Principal/set every deploy. Idempotent;
-# `secrets` is the same field the flake's create-block POSTs (mkUserLines).
-ADMIN_ACCT=$(curl -sk -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null \
-  | python3 -c "import json,sys
-try: print(next(iter(json.load(sys.stdin).get('accounts',{})),''))
-except Exception: pass" 2>/dev/null)
-
-sync_principal_password() {
-  # $1 = principal name (email)   $2 = plaintext password from the secret
-  [ -z "$ADMIN_ACCT" ] && { echo "[activate]   $1: no admin account for password sync, skip"; return 0; }
-  python3 - "$BASE" "$ADMIN_EMAIL" "$ADMIN_PW" "$ADMIN_ACCT" "$1" "$2" <<'PY'
-import sys, json, base64, ssl, urllib.request
-base, user, pw, acct, name, newpw = sys.argv[1:7]
-ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
-auth = "Basic " + base64.b64encode(f"{user}:{pw}".encode()).decode()
-def jmap(calls):
-    body = json.dumps({"using": ["urn:ietf:params:jmap:core", "urn:ietf:params:jmap:principals"], "methodCalls": calls}).encode()
-    req = urllib.request.Request(base + "/jmap/", data=body, method="POST",
-                                 headers={"Content-Type": "application/json", "Authorization": auth})
-    return json.load(urllib.request.urlopen(req, context=ctx, timeout=15))
-try:
-    lst = jmap([["Principal/get", {"accountId": acct, "ids": None}, "0"]])["methodResponses"][0][1]["list"]
-    pid = next((p["id"] for p in lst if p.get("name") == name), None)
-    if not pid:
-        print(f"[activate]   {name}: principal not found, skip"); sys.exit(0)
-    resp = jmap([["Principal/set", {"accountId": acct, "update": {pid: {"secrets": [newpw]}}}, "0"]])["methodResponses"][0][1]
-    if pid in (resp.get("updated") or {}):
-        print(f"[activate]   {name}: password synced from secret (Principal/set)")
-    else:
-        print(f"[activate]   {name}: sync not applied: {json.dumps(resp.get('notUpdated', resp))[:180]}")
-except Exception as e:
-    print(f"[activate]   {name}: password sync error: {e}")
-PY
-}
-
 # Resolve a mailbox id by name from current Mailbox/get response (JSON in $1).
 # Outputs the id (no quotes) or empty string.
 mailbox_id_for() {
@@ -130,11 +90,6 @@ for PAIR in @USERS_LIST@; do
     echo "[activate]   $USER: no password ($PASS_ENV), skipping"
     continue
   fi
-
-  # Sync the live principal password to the deployed secret FIRST — the
-  # per-user JMAP config below authenticates as $USER:$USER_PW and would
-  # otherwise fail whenever the secret has rotated away from the account.
-  sync_principal_password "$USER" "$USER_PW"
 
   echo "[activate] Setup $USER..."
 
