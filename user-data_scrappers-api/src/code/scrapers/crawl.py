@@ -9,13 +9,19 @@ from selectolax.parser import HTMLParser
 UA = "Mozilla/5.0 (compatible; scrappers-api/0.1; +https://api.diegonmarcos.com/scrappers)"
 
 
-def scrape(url: str, selector: str | None = None, **_):
+def scrape(url: str, selector: str | None = None, render: bool = False, **_):
     if not url:
         raise ValueError("url required")
-    with httpx.Client(follow_redirects=True, timeout=30, headers={"User-Agent": UA}) as c:
-        r = c.get(url)
-        r.raise_for_status()
-    tree = HTMLParser(r.text)
+    if render:
+        # JS-heavy or anti-bot target → render via Cloudflare Browser Rendering instead of httpx.
+        from . import cloudflare
+        html = cloudflare.render(url)
+    else:
+        with httpx.Client(follow_redirects=True, timeout=30, headers={"User-Agent": UA}) as c:
+            r = c.get(url)
+            r.raise_for_status()
+        html = r.text
+    tree = HTMLParser(html)
 
     if selector:
         items = [n.text(strip=True) for n in tree.css(selector) if n.text(strip=True)]
@@ -28,5 +34,5 @@ def scrape(url: str, selector: str | None = None, **_):
         "url": url,
         "title": title.text(strip=True) if title else "",
         "links": links,
-        "_summary": {"links": len(links), "bytes": len(r.text)},
+        "_summary": {"links": len(links), "bytes": len(html)},
     }
