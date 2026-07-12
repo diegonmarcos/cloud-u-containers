@@ -17,7 +17,7 @@
     "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
-      "cmd": "npm ci --omit=dev",
+      "cmd": "npm ci --omit=dev && npm install tsx",
       "entrypoint": "./entrypoint.sh",
       "base_image": "node:22-bookworm-slim",
       "apt": "ca-certificates curl",
