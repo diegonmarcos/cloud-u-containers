@@ -8,6 +8,9 @@
   "category": "app",
   "domain": "mcp.diegonmarcos.com",
   "user_google_email": "me@diegonmarcos.com",
+  "secrets": {
+    "container_readable": true
+  },
   "build": {
     "include_cloud_data": "true",
     "headers_enforced": true
