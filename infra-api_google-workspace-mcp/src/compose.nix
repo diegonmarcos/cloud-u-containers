@@ -25,7 +25,7 @@ in
         # key is materialised at the path below from the sops secret. Redeploy 2026-07-11
         # to actually roll this config onto the running container (prior ships skipped it
         # as "unchanged", so the container was still on the OAuth-client codepath).
-        GOOGLE_SERVICE_ACCOUNT_KEY_PATH = "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY";
+        GOOGLE_SERVICE_ACCOUNT_KEY_FILE = "/run/secrets/GOOGLE_SERVICE_ACCOUNT_KEY";
       };
       # DIR-bind, not file-bind (2026-07-03): runc on oci-apps dies with
       # "mknod .../run/secrets/...: read-only file system" creating a FILE
