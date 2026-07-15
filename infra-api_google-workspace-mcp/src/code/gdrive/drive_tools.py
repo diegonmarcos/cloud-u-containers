@@ -2381,3 +2381,130 @@ async def set_drive_file_permissions(
     output_parts.extend(["", f"View link: {file_metadata.get('webViewLink', 'N/A')}"])
 
     return "\n".join(output_parts)
+
+
+@server.tool()
+@require_google_service("drive", "drive_read")
+async def download_drive_folder_as_zip(
+    service,
+    user_google_email: str,
+    folder_id: str,
+    name_contains: str = "",
+    max_files: int = 5000,
+) -> str:
+    """Recursively download every file in a Drive folder and package them into a
+    single .zip, returned as one temporary download URL (valid ~1 hour).
+
+    Solves bulk retrieval: the Drive API has no server-side folder export, so this
+    walks the folder tree, streams each file's bytes, and zips them in memory —
+    turning N per-file downloads into one archive.
+
+    Args:
+        user_google_email: The user's Google email address. Required.
+        folder_id: The Drive folder ID to archive (recurse into all subfolders).
+        name_contains: Optional case-insensitive substring filter on file names
+            (e.g. ".jpg" to grab only images). Empty = all files.
+        max_files: Safety cap on number of files (default 5000).
+
+    Returns:
+        A summary with the zip's temporary download URL, file count, and byte size.
+    """
+    import io
+    import zipfile
+    import base64 as _b64
+    from googleapiclient.http import MediaIoBaseDownload
+    from core.attachment_storage import get_attachment_storage, get_attachment_url
+
+    FOLDER_MIME = "application/vnd.google-apps.folder"
+    _filt = name_contains.lower()
+
+    def _list_children(fid):
+        items, token = [], None
+        while True:
+            resp = (
+                service.files()
+                .list(
+                    q=f"'{fid}' in parents and trashed=false",
+                    fields="nextPageToken, files(id, name, mimeType, size)",
+                    pageSize=1000,
+                    pageToken=token,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
+                )
+                .execute()
+            )
+            items.extend(resp.get("files", []))
+            token = resp.get("nextPageToken")
+            if not token:
+                return items
+
+    # BFS the tree, collecting (zip_path, file_id) for non-folder files.
+    import asyncio
+
+    collected, folder_name = [], folder_id
+    try:
+        meta = await asyncio.to_thread(
+            service.files().get(fileId=folder_id, fields="name", supportsAllDrives=True).execute
+        )
+        folder_name = meta.get("name", folder_id)
+    except Exception:
+        pass
+
+    stack = [(folder_id, "")]
+    while stack:
+        fid, prefix = stack.pop()
+        try:
+            children = await asyncio.to_thread(_list_children, fid)
+        except Exception as e:
+            return f"❌ Failed to list folder {fid}: {e}"
+        for c in children:
+            path = f"{prefix}{c['name']}"
+            if c["mimeType"] == FOLDER_MIME:
+                stack.append((c["id"], f"{path}/"))
+            else:
+                if _filt and _filt not in c["name"].lower():
+                    continue
+                collected.append((path, c["id"]))
+                if len(collected) > max_files:
+                    return (
+                        f"❌ Aborted: folder has more than max_files={max_files} matching files. "
+                        "Raise max_files or narrow name_contains."
+                    )
+
+    if not collected:
+        return f"No files matched in folder '{folder_name}' (filter: {name_contains or 'none'})."
+
+    # Stream each file into the zip (in-memory).
+    buf = io.BytesIO()
+    ok, failed = 0, []
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path, fid in collected:
+            try:
+                req = service.files().get_media(fileId=fid, supportsAllDrives=True)
+                fh = io.BytesIO()
+                dl = MediaIoBaseDownload(fh, req)
+                done = False
+                while not done:
+                    _, done = await asyncio.to_thread(dl.next_chunk)
+                zf.writestr(path, fh.getvalue())
+                ok += 1
+            except Exception as e:
+                failed.append(f"{path}: {e}")
+
+    data = buf.getvalue()
+    zip_name = f"{folder_name}.zip"
+    b64 = _b64.urlsafe_b64encode(data).decode()
+    saved = await asyncio.to_thread(
+        get_attachment_storage().save_attachment, b64, zip_name, "application/zip"
+    )
+    url = get_attachment_url(saved.file_id)
+
+    lines = [
+        f"📦 Zipped '{folder_name}' → {ok} files ({len(data)} bytes)",
+        f"📎 Download URL: {url}",
+        "The file will expire after 1 hour.",
+    ]
+    if failed:
+        lines.append(f"⚠️ {len(failed)} file(s) failed:")
+        lines.extend(f"  - {f}" for f in failed[:10])
+    return "\n".join(lines)
