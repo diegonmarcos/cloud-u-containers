@@ -92,7 +92,7 @@
         "incremental": true,
         "use_llm": false,
         "llm_model": "openrouter:anthropic/claude-haiku-4.5",
-        "schedule": "23 2 * * *",
+        "schedule": "",
         "max_minutes": 330,
         "repo_timeout_min": 90
       },
