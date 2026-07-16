@@ -2474,22 +2474,37 @@ async def download_drive_folder_as_zip(
     if not collected:
         return f"No files matched in folder '{folder_name}' (filter: {name_contains or 'none'})."
 
-    # Stream each file into the zip (in-memory).
-    buf = io.BytesIO()
-    ok, failed = 0, []
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for path, fid in collected:
-            try:
+    # Download files CONCURRENTLY (bounded), then zip sequentially. Sequential
+    # per-file download made large folders (e.g. 1300+ stories) exceed the request
+    # timeout; a semaphore-bounded gather keeps memory/API pressure sane while
+    # cutting wall-clock ~10x. zipfile writes are single-threaded (not thread-safe).
+    _sem = asyncio.Semaphore(16)
+
+    async def _fetch(path, fid):
+        async with _sem:
+            def _dl():
                 req = service.files().get_media(fileId=fid, supportsAllDrives=True)
                 fh = io.BytesIO()
                 dl = MediaIoBaseDownload(fh, req)
                 done = False
                 while not done:
-                    _, done = await asyncio.to_thread(dl.next_chunk)
-                zf.writestr(path, fh.getvalue())
+                    _, done = dl.next_chunk()
+                return fh.getvalue()
+            try:
+                return path, await asyncio.to_thread(_dl)
+            except Exception as e:  # noqa: BLE001 - report per-file, don't abort the batch
+                return path, e
+
+    fetched = await asyncio.gather(*[_fetch(p, f) for p, f in collected])
+    buf = io.BytesIO()
+    ok, failed = 0, []
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path, data in fetched:
+            if isinstance(data, Exception):
+                failed.append(f"{path}: {data}")
+            else:
+                zf.writestr(path, data)
                 ok += 1
-            except Exception as e:
-                failed.append(f"{path}: {e}")
 
     data = buf.getvalue()
     zip_name = f"{folder_name}.zip"
