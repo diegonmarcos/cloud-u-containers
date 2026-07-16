@@ -22,7 +22,11 @@ HERE = Path(__file__).parent
 
 # ── data-driven targets (never hardcode handles in code) ──
 TARGETS = {t["id"]: t for t in json.loads((HERE / "scrappers.json").read_text())["targets"]}
-PLATFORMS = ("instagram", "pinterest", "linkedin", "crawl", "cloudflare", "apify", "firecrawl")
+# Platforms are auto-discovered from scrapers/*.py — drop a module in, it registers.
+# (No hardcoded list to keep in sync: FIRE RULE 6.)
+PLATFORMS = tuple(sorted(
+    p.stem for p in (HERE / "scrapers").glob("*.py") if not p.stem.startswith("_")
+))
 
 app = FastAPI(
     title="Scrapers API",
@@ -50,10 +54,12 @@ def _persist(name: str, data: dict) -> str:
 
 
 class ScrapeReq(BaseModel):
-    handle: str | None = None      # instagram
-    board_url: str | None = None   # pinterest
-    url: str | None = None         # crawl
-    selector: str | None = None    # crawl (CSS selector -> text list)
+    handle: str | None = None          # instagram
+    board_url: str | None = None       # pinterest
+    url: str | None = None             # crawl / youtube (playlist url with ?list=)
+    selector: str | None = None        # crawl (CSS selector -> text list)
+    playlist_url: str | None = None    # youtube
+    playlist_id: str | None = None     # youtube
 
 
 @app.get(f"{BASE_PATH}/health")
