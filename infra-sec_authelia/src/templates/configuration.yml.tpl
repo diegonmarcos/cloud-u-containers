@@ -76,6 +76,9 @@ notifier:
     tls:
       server_name: mail.@BASE_DOMAIN@
 
+# Passkey (WebAuthn) is the primary factor offered; TOTP is the fallback.
+default_2fa_method: 'webauthn'
+
 webauthn:
   disable: false
   display_name: @BASE_DOMAIN@
