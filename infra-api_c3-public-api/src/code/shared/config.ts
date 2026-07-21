@@ -63,7 +63,7 @@ function readInt(name: string, fallback: number): number {
 export function loadConfig(): AppConfig {
   const backends = readJson<Record<string, BackendCfg>>("BACKENDS_JSON", {});
   const limits = readJson<Limits>("LIMITS_JSON", {
-    max_body_bytes: 1048576,
+    max_body_bytes: 104857600,
     max_ingest_lines: 5000,
     rate_per_ip_per_min: 60,
     rate_per_sid_per_min: 1000,
