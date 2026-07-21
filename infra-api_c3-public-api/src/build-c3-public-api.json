@@ -1734,7 +1734,7 @@
   },
   "limits": {
     "_doc_request_timeout_ms": "Caps nodemailer connectionTimeout + greetingTimeout + socketTimeout for BOTH primary (Maddy:25) and shadow (Stalwart:2025). Measured baseline 2026-05-21: full SMTP transaction (HELO→DATA→QUIT) to Stalwart warm = 2.3s. Cold-start + STARTTLS-aware Stalwart can spike — first CF Worker probe after deploy had shadow.delivery_failed err=Timeout at 5000ms. 15000ms gives 6× warm-baseline headroom; primary still completes <3s so user-visible latency unchanged. Fire-and-forget shadow detached promise — does not impact response time.",
-    "max_body_bytes": 1048576,
+    "max_body_bytes": 104857600,
     "max_ingest_lines": 5000,
     "rate_per_ip_per_min": 60,
     "rate_per_sid_per_min": 1000,
