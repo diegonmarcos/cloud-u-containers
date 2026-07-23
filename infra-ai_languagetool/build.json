@@ -1,0 +1,60 @@
+{
+  "name": "languagetool",
+  "description": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps",
+  "category": "tools",
+  "domain": "languagetool.diegonmarcos.com",
+  "ports": {
+    "app": 8010
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/languagetool"
+  },
+  "proxy": {
+    "primary": {
+      "domain": "languagetool.diegonmarcos.com",
+      "wg_only": true,
+      "_doc": "wg_only:true → caddyfile.nix emits a remote_ip 10.0.0.0/24 gate (403 for anything off the WireGuard mesh). No Cloudflare A-record exists for this domain — fail-closed."
+    }
+  },
+  "health": {
+    "path": "/v2/check"
+  },
+  "monitoring": {
+    "tls_check": true,
+    "dns_check": true,
+    "endpoint_check": false,
+    "_doc": "endpoint_check disabled: /v2/check requires POST body; TLS+DNS checks confirm reachability."
+  },
+  "containers": {
+    "app": {
+      "container_name": "languagetool",
+      "image": "erikvl87/languagetool:latest",
+      "port": 8010,
+      "port_env": null,
+      "dns": "languagetool.app",
+      "public": false,
+      "proxy": {
+        "domain": "languagetool.diegonmarcos.com",
+        "wg_only": true
+      },
+      "healthcheck": null,
+      "monitoring": null,
+      "volumes": [
+        "languagetool_data:/home/user/languagetool"
+      ],
+      "env_file": false,
+      "depends_on": [],
+      "resources": {
+        "mem_limit": "2g",
+        "mem_reservation": "512m"
+      },
+      "read_only": false,
+      "protocol": "http",
+      "_ngrams_note": "N-gram language models (~24 GB) are DEFERRED. To enable: (1) download the desired language pack from https://languagetool.org/download/ngram-data/ to /opt/languagetool/ngrams on oci-apps; (2) add volume mount 'ngrams:/ngrams:ro' to this container; (3) set environment.languageModel='/ngrams' below. Rules-only mode is the current default."
+    }
+  },
+  "build": {
+    "headers_enforced": false
+  }
+}
