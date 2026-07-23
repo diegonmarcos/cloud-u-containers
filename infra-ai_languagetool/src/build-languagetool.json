@@ -1,0 +1,58 @@
+{
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 2_configs/build.sh all`.",
+  "_meta": {
+    "description": "languagetool container config (service=languagetool, role=app)",
+    "format_version": 1,
+    "generated_at": "",
+    "generated_by": "2_configs/src/engines/cloud-data-config-derive.ts",
+    "pipeline": {
+      "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
+      "source_inputs": [
+        "a_solutions/*/build.json (per-service declarations)",
+        "config.json (global topology + vms + dns + wireguard)",
+        "b_infra/*/build.json (per-VM HM config)",
+        "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
+      ],
+      "engines": {
+        "consolidator": "2_configs/src/engines/cloud-data-config-consolidated.ts",
+        "derive": "2_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
+      },
+      "outputs": {
+        "master": "2_configs/dist/_cloud-data-consolidated.json (consolidator output)",
+        "per_container": "2_configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
+        "archived": "2_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+      },
+      "rebuild_command": "bash 2_configs/build.sh all"
+    }
+  },
+  "_generated": "",
+  "_source": "_cloud-data-consolidated.json via cloud-data-config-derive.ts/container-configs",
+  "container": {
+    "container_name": "languagetool",
+    "image": "erikvl87/languagetool:latest",
+    "port": 8010,
+    "port_env": null,
+    "dns": "languagetool.app",
+    "public": false,
+    "proxy": {
+      "domain": "languagetool.diegonmarcos.com",
+      "wg_only": true
+    },
+    "healthcheck": null,
+    "monitoring": null,
+    "volumes": [
+      "languagetool_data:/home/user/languagetool"
+    ],
+    "env_file": false,
+    "depends_on": [],
+    "resources": {
+      "mem_limit": "2g",
+      "mem_reservation": "512m"
+    },
+    "read_only": false,
+    "protocol": "http"
+  },
+  "service": "languagetool",
+  "role": "app",
+  "vm": "oci-apps"
+}
