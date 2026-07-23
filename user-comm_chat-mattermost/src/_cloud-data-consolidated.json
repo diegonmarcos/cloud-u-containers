@@ -156,6 +156,7 @@
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacj7dfxl7uifar574je7fzlvtdjp4ghljdwuwdemsdbiva",
       "services": [
         "matrix-continuwuity",
+        "languagetool",
         "c3-infra-api",
         "c3-infra-mcp",
         "c3-services-api",
@@ -204,7 +205,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 59
+      "container_count": 60
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -861,6 +862,86 @@
       "secret_env_vars": [
         "CONTINUWUITY_REGISTRATION_TOKEN"
       ]
+    },
+    "languagetool": {
+      "category": "tools",
+      "vm": "oci-A1-f_0",
+      "folder": "infra-ai_languagetool",
+      "description": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps",
+      "enabled": true,
+      "domain": "languagetool.diegonmarcos.com",
+      "flake": "infra-ai_languagetool",
+      "port": 8010,
+      "dns": "languagetool.app",
+      "upstream": "10.0.0.6:8010",
+      "containers": {
+        "app": {
+          "container_name": "languagetool",
+          "image": "erikvl87/languagetool:latest",
+          "port": 8010,
+          "port_env": null,
+          "dns": "languagetool.app",
+          "public": false,
+          "proxy": {
+            "domain": "languagetool.diegonmarcos.com",
+            "wg_only": true
+          },
+          "healthcheck": null,
+          "monitoring": null,
+          "volumes": [
+            "languagetool_data:/home/user/languagetool"
+          ],
+          "env_file": false,
+          "depends_on": [],
+          "resources": {
+            "mem_limit": "2g",
+            "mem_reservation": "512m"
+          },
+          "read_only": false,
+          "protocol": "http",
+          "_ngrams_note": "N-gram language models (~24 GB) are DEFERRED. To enable: (1) download the desired language pack from https://languagetool.org/download/ngram-data/ to /opt/languagetool/ngrams on oci-apps; (2) add volume mount 'ngrams:/ngrams:ro' to this container; (3) set environment.languageModel='/ngrams' below. Rules-only mode is the current default."
+        }
+      },
+      "container_names": [
+        "languagetool"
+      ],
+      "all_ports": [
+        "8010"
+      ],
+      "all_dns": [
+        "languagetool.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "languagetool.diegonmarcos.com",
+          "wg_only": true,
+          "_doc": "wg_only:true → caddyfile.nix emits a remote_ip 10.0.0.0/24 gate (403 for anything off the WireGuard mesh). No Cloudflare A-record exists for this domain — fail-closed."
+        }
+      },
+      "declared_ports": {
+        "app": 8010
+      },
+      "health": {
+        "path": "/v2/check"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": false,
+        "_doc": "endpoint_check disabled: /v2/check requires POST body; TLS+DNS checks confirm reachability."
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "c3-analytics-api": {
       "category": "obs",
@@ -8714,6 +8795,12 @@
         "service": "matrix-continuwuity"
       },
       {
+        "name": "languagetool.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "languagetool"
+      },
+      {
         "name": "c3-analytics-api.app",
         "type": "A",
         "value": "10.0.0.1",
@@ -9608,6 +9695,7 @@
         "idle_shutdown": null,
         "containers": [
           "matrix-continuwuity",
+          "languagetool",
           "c3-infra-api",
           "c3-infra-mcp",
           "c3-services-api",
@@ -9921,6 +10009,11 @@
         "dir": "user-comm_matrix-continuwuity",
         "vm": "oci-apps",
         "has_docker": true
+      },
+      "languagetool": {
+        "dir": "infra-ai_languagetool",
+        "vm": "oci-apps",
+        "has_docker": false
       },
       "c3-analytics-api": {
         "dir": "infra-api_c3-analytics-api",
