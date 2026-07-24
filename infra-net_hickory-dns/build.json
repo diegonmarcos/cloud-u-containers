@@ -16,6 +16,9 @@
       "app": [
         { "name": "maddy",         "type": "A", "value": "10.0.0.3" },
         { "name": "stalwart",      "type": "A", "value": "10.0.0.3" }
+      ],
+      "diegonmarcos.com": [
+        { "name": "wg-public", "type": "AAAA", "value": "2603:c026:c104:8f00:0:c704:63b:6eee" }
       ]
     }
   },
