@@ -121,9 +121,10 @@
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
       "services": [
         "c3-public-api",
+        "unbound-dns64",
         "caddy-public"
       ],
-      "container_count": 2
+      "container_count": 3
     },
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
@@ -2879,6 +2880,65 @@
       "api": {
         "has_api": false,
         "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
+    "unbound-dns64": {
+      "category": "infra-net",
+      "vm": "oci-E2-f_1",
+      "folder": "infra-net_unbound-dns64",
+      "description": "DNS64 resolver for NAT64 — synthesises AAAA records for IPv4-only names so IPv6-only clients can reach the internet via the Tayga NAT64 translator",
+      "enabled": true,
+      "domain": "dns64.internal",
+      "flake": "infra-net_unbound-dns64",
+      "port": 53,
+      "dns": "unbound-dns64.app",
+      "upstream": "10.0.0.4:53",
+      "containers": {
+        "app": {
+          "container_name": "unbound-dns64",
+          "image": "ghcr.io/diegonmarcos/unbound-dns64:latest",
+          "port": 53,
+          "port_env": null,
+          "dns": "unbound-dns64.app",
+          "public": true,
+          "proxy": null,
+          "healthcheck": null,
+          "monitoring": null,
+          "volumes": [
+            "./configs/unbound.conf:/etc/unbound/unbound.conf:ro"
+          ],
+          "env_file": false,
+          "depends_on": [],
+          "resources": {
+            "mem_limit": "64M"
+          },
+          "read_only": false,
+          "protocol": "udp"
+        }
+      },
+      "container_names": [
+        "unbound-dns64"
+      ],
+      "all_ports": [
+        "53"
+      ],
+      "all_dns": [
+        "unbound-dns64.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "declared_ports": {
+        "dns": 53
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
@@ -8885,6 +8945,12 @@
         "service": "hickory-dns"
       },
       {
+        "name": "unbound-dns64.app",
+        "type": "A",
+        "value": "10.0.0.4",
+        "service": "unbound-dns64"
+      },
+      {
         "name": "c3-spec.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9661,6 +9727,7 @@
         "idle_shutdown": null,
         "containers": [
           "c3-public-api",
+          "unbound-dns64",
           "caddy-public"
         ],
         "method": "key",
@@ -10108,6 +10175,11 @@
       "hickory-dns": {
         "dir": "infra-net_hickory-dns",
         "vm": "gcp-proxy",
+        "has_docker": true
+      },
+      "unbound-dns64": {
+        "dir": "infra-net_unbound-dns64",
+        "vm": "oci-analytics",
         "has_docker": true
       },
       "wireguard-mesh": {
