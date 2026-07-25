@@ -28,6 +28,13 @@
       # Managed by home-manager / nix flake (unbound-dns64) — do not edit
       server:
         verbosity: 1
+        # Run in the foreground as-is for the klutchell/unbound base (no chroot,
+        # no privilege drop — the container already isolates us).
+        do-daemonize: no
+        username: ""
+        chroot: ""
+        directory: "/etc/unbound"
+        pidfile: "/tmp/unbound.pid"
         interface: ::0@53
         interface: 10.1.0.1@53
 

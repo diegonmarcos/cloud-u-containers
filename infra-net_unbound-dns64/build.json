@@ -1,5 +1,6 @@
 {
   "name": "unbound-dns64",
+  "upstream_image": "klutchell/unbound:latest",
   "description": "DNS64 resolver for NAT64 — synthesises AAAA records for IPv4-only names so IPv6-only clients can reach the internet via the Tayga NAT64 translator",
   "category": "infra-net",
   "domain": "dns64.internal",
