@@ -51,6 +51,7 @@
       },
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
+      "wg_ipv6": "fd0c:1d00::3",
       "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_port": 51820,
       "wg_role": "spoke",
@@ -88,6 +89,7 @@
       },
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
+      "wg_ipv6": "fd0c:1d00::4",
       "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_port": 51820,
       "wg_role": "spoke",
@@ -140,6 +142,7 @@
       },
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
+      "wg_ipv6": "fd0c:1d00::6",
       "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
@@ -220,6 +223,7 @@
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
+      "wg_ipv6": "fd0c:1d00::1",
       "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_port": 51820,
       "wg_role": "hub",
@@ -305,6 +309,7 @@
       },
       "description": "Vast.ai On-Demand - RTX A4000 (16GB VRAM) - Ollama LLM fallback",
       "wg_ip": null,
+      "wg_ipv6": null,
       "wg_public_key": null,
       "wg_port": 51820,
       "wg_role": "spoke",
@@ -384,6 +389,7 @@
   "native": {
     "wireguard": {
       "subnet": "10.0.0.0/24",
+      "subnet_v6": "fd0c:1d00::/64",
       "port": 51820,
       "port_fallback": 443,
       "port_fallback_proto": "udp",
@@ -394,48 +400,56 @@
           "wg_ip": "10.0.0.3",
           "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
           "endpoint": "130.110.251.193:51820",
-          "role": "spoke"
+          "role": "spoke",
+          "wg_ipv6": "fd0c:1d00::3"
         },
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
           "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
           "endpoint": "129.151.228.66:51820",
-          "role": "spoke"
+          "role": "spoke",
+          "wg_ipv6": "fd0c:1d00::4"
         },
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
           "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
           "endpoint": "82.70.229.129:51820",
-          "role": "spoke"
+          "role": "spoke",
+          "wg_ipv6": "fd0c:1d00::6"
         },
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
           "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
           "endpoint": "35.226.147.64:51820",
-          "role": "hub"
+          "role": "hub",
+          "wg_ipv6": "fd0c:1d00::1"
         }
       ],
       "clients": {
         "surface": {
           "wg_ip": "10.0.0.5",
+          "wg_ipv6": "fd0c:1d00::5",
           "role": "client",
           "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
         },
         "termux": {
           "wg_ip": "10.0.0.9",
+          "wg_ipv6": "fd0c:1d00::9",
           "role": "client",
           "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
         },
         "gha-runner": {
           "wg_ip": "10.0.0.200",
+          "wg_ipv6": "fd0c:1d00::200",
           "role": "client",
           "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
         },
         "health-runner": {
           "wg_ip": "10.0.0.201",
+          "wg_ipv6": "fd0c:1d00::201",
           "role": "client",
           "wg_public_key": "VeUK6t5/oXQiACcqXgCGkzLZlP2iBTgPghhhwFADViQ="
         }
