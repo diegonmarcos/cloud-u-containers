@@ -1,0 +1,47 @@
+# Hermes Agent config — declarative, git-tracked. Secrets (bot tokens, api_key) come from env
+# via the service .secrets file, never here. Backend = claude-superset-api (subscription CLI,
+# no metered key). Schema verified against hermes-agent source (agent/agent_init.py,
+# hermes_cli/config.py, gateway/config.py).
+
+# LLM backend → internal claude-superset-api, an OpenAI-compatible proxy over the
+# subscription Claude CLI (WG-only on oci-apps). api_mode chat_completions selects the
+# /v1/chat/completions wire format against our custom base_url.
+model:
+  provider: openai
+  default: claude-sonnet-4-6
+  base_url: http://10.0.0.6:3117/v1
+  api_mode: chat_completions
+  # api_key supplied via OPENAI_API_KEY env (dummy; claude-superset-api authenticates
+  # through the persisted Claude CLI login, so the key value is unused).
+
+# Background/auxiliary tasks (memory compression) → cheaper tier, same backend.
+auxiliary:
+  compression:
+    provider: openai
+    base_url: http://10.0.0.6:3117/v1
+    model: claude-haiku-4-5
+
+# Messaging gateway. A platform auto-enables when its token env var is present
+# (TELEGRAM_BOT_TOKEN); `enabled: false` is an explicit override honored even when a
+# token env is set.
+gateway:
+  platforms:
+    telegram:
+      enabled: true
+      # token via TELEGRAM_BOT_TOKEN env; allowed users via TELEGRAM_ALLOWED_USERS env
+      # (locked to Diego, 6431508617). Belt-and-suspenders in-config allow-list too:
+      allow_from:
+        - 6431508617
+      require_mention: false
+      reactions: true
+      extra:
+        status_indicator: true
+        rich_messages: true
+
+    # Mattermost — DISABLED. Explicit `enabled: false` guarantees it stays off even if a
+    # MATTERMOST_TOKEN env is later present. To enable: provision a Mattermost bot account
+    # (Integrations → Bot Accounts), add MATTERMOST_TOKEN to the service secrets, set
+    # MATTERMOST_URL=http://10.0.0.6:8065 (internal wg0 address of user-comm_chat-mattermost),
+    # then flip enabled: true. Integration is REST-API v4 + WebSocket (bot token, not a webhook).
+    mattermost:
+      enabled: false
