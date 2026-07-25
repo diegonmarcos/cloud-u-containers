@@ -1,7 +1,7 @@
 # Hermes Agent config — declarative, git-tracked. Secrets (bot tokens, api_key) come from env
 # via the service .secrets file, never here. Backend = claude-superset-api (subscription CLI,
-# no metered key). Schema verified against hermes-agent source (agent/agent_init.py,
-# hermes_cli/config.py, gateway/config.py).
+# no metered key). All keys below verified against hermes-agent source
+# (hermes_cli/config.py, hermes_cli/tools_config.py, cli-config.yaml.example).
 
 # LLM backend → internal claude-superset-api, an OpenAI-compatible proxy over the
 # subscription Claude CLI (WG-only on oci-apps). api_mode chat_completions selects the
@@ -14,16 +14,63 @@ model:
   # api_key supplied via OPENAI_API_KEY env (dummy; claude-superset-api authenticates
   # through the persisted Claude CLI login, so the key value is unused).
 
-# Background/auxiliary tasks (memory compression) → cheaper tier, same backend.
-auxiliary:
-  compression:
-    provider: openai
-    base_url: http://10.0.0.6:3117/v1
-    model: claude-haiku-4-5
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEAN PROFILE — capabilities stripped to a minimal, low-RAM / low-quota set.
+# Every block below is a toggle; the comment on each says how to turn it back on.
+# ═══════════════════════════════════════════════════════════════════════════════
 
+# TOOLSETS — the master capability switch (per platform). The default preset
+# `hermes-telegram` bundles browser + tts + image_gen + vision + cronjob; we
+# replace it with a lean custom list. A capability is present ONLY if its
+# toolset is listed here.
+#   KEPT:    web (search+extract), terminal, file, todo, skills, memory
+#   DROPPED: browser  → Chromium never launches (biggest RAM win, ~2-4GB → ~1GB)
+#            tts      → no text-to-speech
+#            image_gen→ no image generation
+#            vision   → no image analysis
+#            cronjob  → no scheduled/autonomous timed tasks
+#            delegation → no sub-agent fan-out (biggest subscription-quota win)
+#            session_search → no FTS5+Gemini background summarization
+# To restore everything:  telegram: [hermes-telegram]
+# To re-add just browsing: append `browser` (needs BROWSERBASE_API_KEY).
+platform_toolsets:
+  telegram: [web, terminal, file, todo, skills, memory]
+
+# CONTEXT COMPRESSION — OFF. No background summarization LLM calls.
+# Enable: compression.enabled: true
+compression:
+  enabled: false
+
+# VOICE TRANSCRIPTION (speech-to-text) — OFF. No audio model / whisper libs.
+# Enable: stt.enabled: true  (+ a provider key in secrets)
+stt:
+  enabled: false
+
+# SKILLS auto-creation — OFF. The skills_list/skill_view tools still work
+# (skills toolset kept above); only the background "save a skill?" LLM nudges stop.
+# Enable auto-creation nudges: skills.creation_nudge_interval: 15
+skills:
+  creation_nudge_interval: 0
+
+# MEMORY — stored memory stays readable/writable (memory toolset kept), but the
+# periodic background nudges/flush LLM passes are OFF. The agent still saves
+# memory when explicitly asked.
+# Re-enable nudges: memory.nudge_interval: 10 / flush_min_turns: 6
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  nudge_interval: 0
+  flush_min_turns: 0
+
+# AGENT — cap the tool-loop fan-out per message to bound subscription-quota use.
+# Raise (50-100) for heavier autonomous exploration.
+agent:
+  max_turns: 30
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Messaging gateway. A platform auto-enables when its token env var is present
-# (TELEGRAM_BOT_TOKEN); `enabled: false` is an explicit override honored even when a
-# token env is set.
+# (TELEGRAM_BOT_TOKEN); `enabled: false` is an explicit override honored even when
+# a token env is set.
 gateway:
   platforms:
     telegram:
@@ -45,3 +92,5 @@ gateway:
     # then flip enabled: true. Integration is REST-API v4 + WebSocket (bot token, not a webhook).
     mattermost:
       enabled: false
+    # Per-platform toolsets for Mattermost, when enabled, would go under
+    # platform_toolsets.mattermost: [web, terminal, file, todo, skills, memory]
