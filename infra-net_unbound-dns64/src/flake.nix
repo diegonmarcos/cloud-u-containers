@@ -56,6 +56,8 @@
         access-control: 127.0.0.0/8 allow
         access-control: 10.0.0.0/24 allow
         access-control: 10.1.0.0/24 allow
+        # wg0 mesh ULA (IPv6 mesh clients query fd0c:1d00::4, served via ::0@53)
+        access-control: fd0c:1d00::/64 allow
         # oci-analytics' real Oracle /64
         access-control: 2603:c026:c104:8f00::/64 allow
 
