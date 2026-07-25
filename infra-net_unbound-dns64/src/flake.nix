@@ -41,6 +41,9 @@
         ip-freebind: yes
         interface: ::0@53
         interface: 10.1.0.1@53
+        # wg0 mesh listener — lets mesh clients (10.0.0.0/24) use DNS64 too,
+        # not just wg-public. 10.0.0.4 = oci-analytics' mesh address.
+        interface: 10.0.0.4@53
 
         # Module order: dns64 must run before iterator
         module-config: "dns64 iterator"
