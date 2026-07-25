@@ -22,7 +22,11 @@ in
 {
   services = {
     hermes-agent = {
-      image          = "nousresearch/hermes-agent:latest";
+      # Mirrored from docker.io/nousresearch/hermes-agent by the
+      # "Mirror hermes-agent image" workflow. GHCR pull is authenticated + fast;
+      # Docker Hub anonymous pulls are rate-limited and stall the ship's SSH
+      # compose window on this ~900MB image (exit 255, nothing cached).
+      image          = "ghcr.io/diegonmarcos/hermes-agent:latest";
       container_name = app.container_name;
       # host networking: reach WG mesh (10.0.0.6) + outbound Telegram without NAT.
       network_mode   = "host";
