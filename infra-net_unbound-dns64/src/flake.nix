@@ -35,6 +35,10 @@
         chroot: ""
         directory: "/etc/unbound"
         pidfile: "/tmp/unbound.pid"
+        # Bind even if the wg-public IP (10.1.0.1) isn't up yet at container
+        # start — otherwise unbound FATALs "can't bind socket: Cannot assign
+        # requested address" and crash-loops.
+        ip-freebind: yes
         interface: ::0@53
         interface: 10.1.0.1@53
 
