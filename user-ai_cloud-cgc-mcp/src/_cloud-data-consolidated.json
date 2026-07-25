@@ -182,6 +182,7 @@
         "crowdsec",
         "claude-superset-api",
         "cloud-cgc-mcp",
+        "hermes-agent",
         "kg-store",
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
@@ -206,7 +207,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 60
+      "container_count": 61
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -5517,6 +5518,71 @@
         "BUP_REMOTE"
       ]
     },
+    "hermes-agent": {
+      "category": "agi",
+      "vm": "oci-A1-f_0",
+      "folder": "user-ai_hermes-agent",
+      "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
+      "enabled": true,
+      "flake": "user-ai_hermes-agent",
+      "port": 8642,
+      "dns": "hermes-agent.app",
+      "upstream": "10.0.0.6:8642",
+      "containers": {
+        "app": {
+          "container_name": "hermes-agent",
+          "image": "nousresearch/hermes-agent:latest",
+          "port": 8642,
+          "port_env": null,
+          "dns": "hermes-agent.app",
+          "public": false,
+          "healthcheck": null,
+          "monitoring": null,
+          "env_file": true,
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
+        }
+      },
+      "container_names": [
+        "hermes-agent"
+      ],
+      "all_ports": [
+        "8642"
+      ],
+      "all_dns": [
+        "hermes-agent.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "app_hub": false
+      },
+      "declared_ports": {
+        "api": 8642,
+        "dashboard": 9119
+      },
+      "runtime": {
+        "model": "claude-sonnet-4-6",
+        "backend_url": "http://10.0.0.6:3117/v1",
+        "api_mode": "chat_completions"
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      },
+      "secret_env_vars": [
+        "TELEGRAM_BOT_TOKEN",
+        "OPENAI_API_KEY"
+      ]
+    },
     "kg-store": {
       "category": "data",
       "vm": "oci-A1-f_0",
@@ -9054,6 +9120,12 @@
         "service": "cloud-cgc-mcp"
       },
       {
+        "name": "hermes-agent.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "hermes-agent"
+      },
+      {
         "name": "ollama-hai.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9788,6 +9860,7 @@
           "crowdsec",
           "claude-superset-api",
           "cloud-cgc-mcp",
+          "hermes-agent",
           "kg-store",
           "ollama-hai",
           "rig-agentic-hai-1.5bq4",
@@ -10260,6 +10333,11 @@
       },
       "cloud-cgc-mcp": {
         "dir": "user-ai_cloud-cgc-mcp",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
+      "hermes-agent": {
+        "dir": "user-ai_hermes-agent",
         "vm": "oci-apps",
         "has_docker": true
       },

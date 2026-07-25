@@ -1,0 +1,51 @@
+{
+  "name": "hermes-agent",
+  "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
+  "dns": "hermes-agent.app",
+  "ports": {
+    "api": 8642,
+    "dashboard": 9119
+  },
+  "category": "agi",
+  "docker": {
+    "registry": "ghcr.io/diegonmarcos",
+    "image": "hermes-agent",
+    "arch": "arm64,amd64",
+    "native_build": {
+      "type": "none"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/hermes-agent",
+    "compose_flags": "--pull always --force-recreate"
+  },
+  "secrets": {
+    "escape_dollars": "false"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "runtime": {
+    "model": "claude-sonnet-4-6",
+    "backend_url": "http://10.0.0.6:3117/v1",
+    "api_mode": "chat_completions"
+  },
+  "containers": {
+    "app": {
+      "container_name": "hermes-agent",
+      "image": "nousresearch/hermes-agent:latest",
+      "port": 8642,
+      "port_env": null,
+      "dns": "hermes-agent.app",
+      "public": false,
+      "healthcheck": null,
+      "monitoring": null,
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  }
+}
