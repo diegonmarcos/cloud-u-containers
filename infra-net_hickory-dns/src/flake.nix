@@ -40,6 +40,10 @@
 
     namedToml = ''
       listen_addrs_ipv4 = ["${caddy_wg_ip}"]
+      # wg0 mesh ULA — serve DNS over IPv6 too (fd0c:1d00::1). Bind "::" (all v6)
+      # not the specific ULA, so a not-yet-up wg0 addr can't crash-loop the resolver.
+      # gcp-proxy has no public IPv6, so this is reachable only over wg0.
+      listen_addrs_ipv6 = ["::"]
       listen_port = ${toString dns_port}
       directory = "/etc/zones"
 
