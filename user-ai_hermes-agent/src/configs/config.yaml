@@ -75,15 +75,29 @@ gateway:
   platforms:
     telegram:
       enabled: true
-      # token via TELEGRAM_BOT_TOKEN env; allowed users via TELEGRAM_ALLOWED_USERS env
-      # (locked to Diego, 6431508617). Belt-and-suspenders in-config allow-list too:
-      allow_from:
-        - 6431508617
-      require_mention: false
+      # require_mention applies to GROUP/forum chats only — the bot answers there
+      # solely when @-mentioned (keeps it quiet in busy groups). DMs always respond.
+      require_mention: true
       reactions: true
+      # The adapter reads access-control + dm_topics from `extra` and treats them
+      # as the sole authority (verified in plugins/platforms/telegram/adapter.py).
       extra:
         status_indicator: true
         rich_messages: true
+        # ── Access control (split by surface) ──
+        allow_from: [6431508617]         # DM access — you (Diego)
+        group_allow_from: [6431508617]   # group/forum access — you; add teammate IDs to share
+        guest_mode: false
+        # allowed_chats: ["-100XXXXXXXXXX"]  # TODO: add the forum group's chat_id once created
+        # ── Parallel DM topics — separate concurrent sessions inside your DM.
+        #    Auto-created on startup (needs Telegram's DM-topics capability on the bot).
+        #    chat_id in a 1:1 DM == your user id.
+        dm_topics:
+          - chat_id: 6431508617
+            topics:
+              - name: ops
+              - name: research
+              - name: scratch
 
     # Mattermost — DISABLED. Explicit `enabled: false` guarantees it stays off even if a
     # MATTERMOST_TOKEN env is later present. To enable: provision a Mattermost bot account
