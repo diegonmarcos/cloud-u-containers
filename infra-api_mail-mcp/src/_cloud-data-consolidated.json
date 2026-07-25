@@ -2936,6 +2936,7 @@
       "declared_ports": {
         "dns": 53
       },
+      "upstream_image": "klutchell/unbound:latest",
       "api": {
         "has_api": false,
         "has_web_ui": true,
