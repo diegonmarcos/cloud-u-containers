@@ -8,6 +8,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
     engine  = import ../../_shared/engine.nix;
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
+    container = builtins.fromJSON (builtins.readFile ./build-unbound-dns64.json);
 
     # ── Shared NAT64 constant ────────────────────────────────────────────────
     # Real Oracle /96 carved from oci-analytics' /64 (2603:c026:c104:8f00::/64).
@@ -79,9 +80,9 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = engine {
-        inherit pkgs buildJson templates;
+        inherit pkgs buildJson container templates;
         srcDir = ./.;
-        composeSpec = import ./compose.nix { inherit buildJson; container = {}; };
+        composeSpec = import ./compose.nix { inherit buildJson container; };
         title = "Unbound DNS64";
       };
     });
