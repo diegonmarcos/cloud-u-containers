@@ -1075,18 +1075,7 @@ import security
 import request_limits
 @not_wg not remote_ip 10.0.0.0/24
 respond @not_wg "Forbidden" 403
-# Root path → landing page (proxied, keeps our domain)
-@root path /
-handle @root {
-  rewrite * /mymail{uri}
-reverse_proxy https://diegonmarcos.github.io {
-  header_up Host diegonmarcos.github.io
-  header_up X-Real-IP {http.request.remote.host}
-}
 
-}
-
-# All other paths → auth + upstream
 
 
     handle {
@@ -2375,18 +2364,23 @@ handle_path /c3-services-api/* {
           respond "Forbidden" 403
         }
 }
-
-handle_path /crawlee/* {
-  @wg remote_ip 10.0.0.0/24
-        handle @wg {
-              @bearer header Authorization Bearer*
+handle /scrappers/health {
+  uri strip_prefix /scrappers
+        reverse_proxy 10.0.0.6:3020
+}
+handle /scrappers/openapi.json {
+  uri strip_prefix /scrappers
+        reverse_proxy 10.0.0.6:3020
+}
+handle_path /scrappers/* {
+      @bearer header Authorization Bearer*
     handle @bearer {
       forward_auth 10.0.0.1:4182 {
       method GET
       uri /auth
       copy_headers X-Auth-User X-Auth-Subject X-Auth-Email
     }
-      reverse_proxy 10.0.0.6:3000 {
+      reverse_proxy 10.0.0.6:3020 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -2420,7 +2414,7 @@ handle_path /crawlee/* {
       uri /api/authz/forward-auth
       copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
     }
-      reverse_proxy 10.0.0.6:3000 {
+      reverse_proxy 10.0.0.6:3020 {
         header_up X-Real-IP {http.request.remote.host}
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
@@ -2450,10 +2444,6 @@ handle_path /crawlee/* {
       }
     }
 
-        }
-        handle {
-          respond "Forbidden" 403
-        }
 }
 
 handle_path /fin-api/* {
@@ -5565,7 +5555,7 @@ import request_limits
     }
   }
 
-  crawlee.app {
+  scrappers-api.app {
     # MUST match the public routes' bind LITERALLY (publicBindLine, i.e.
     # "bind 0.0.0.0 10.0.0.1"). `bind 10.0.0.1` alone put this site on its
     # own Caddy server (srv1, listen=[10.0.0.1:8443]) that caddy-l4's
@@ -5582,7 +5572,7 @@ import request_limits
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:3000 {
+    reverse_proxy 10.0.0.6:3020 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.
@@ -8132,7 +8122,7 @@ import request_limits
     }
   }
 
-  crawlee_api-http-3000.app {
+  scrappers-api-http-3020.app {
     # Bind must byte-match public routes: see 30-internal-route.caddy.tpl.
     # 2026-07-09.
   bind 0.0.0.0 10.0.0.1
@@ -8142,7 +8132,7 @@ import request_limits
         ca mesh
       }
     }
-    reverse_proxy 10.0.0.6:3000 {
+    reverse_proxy 10.0.0.6:3020 {
         # Empty-body guard: an upstream that answers 200 with Content-Length 0
         # is a FALSE GREEN (blank white page) — treat it as a truthful 502 so
         # handle_errors renders the diagnostic page instead of a silent blank.

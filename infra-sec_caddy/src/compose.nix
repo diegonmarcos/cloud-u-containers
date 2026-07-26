@@ -17,6 +17,11 @@
       # of 2026-06-19. Every caddy-l4 consumer MUST declare this command.
       command = [ "caddy" "run" "--config" "/etc/caddy/Caddyfile" "--adapter" "caddyfile" ];
       network_mode = "host";
+      # Deviation from the fleet-wide restart:no convention (_shared/compose-defaults.json).
+      # Caddy is the sole ingress for every public route (443/8443); a stopped/removed
+      # container here blacks out the whole public surface until a manual `build.sh ship`.
+      # unless-stopped auto-reopens it after a crash, OOM-kill, or host reboot.
+      restart = "unless-stopped";
       env_file = [ ".secrets" ];
       cap_add = [ "NET_BIND_SERVICE" ];
       read_only = false;
