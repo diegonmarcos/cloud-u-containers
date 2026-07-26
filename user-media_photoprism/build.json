@@ -26,7 +26,9 @@
     "primary": {
       "domain": "photos.diegonmarcos.com",
       "auth": "two_factor",
-      "landing_page": "myphotos"
+      "landing_page": "myphotos",
+      "wg_only": true,
+      "_doc": "wg_only:true → caddyfile.nix emits a remote_ip 10.0.0.0/24 gate (403 off the WireGuard mesh). Moved off public + Authelia two_factor: the Android app cannot complete an interactive Authelia 2FA challenge during a WebDAV PUT (camera-roll auto-backup), so the client now reaches the origin only via WireGuard."
     }
   },
   "health": {
@@ -41,7 +43,8 @@
     "enabled": true,
     "volumes": [
       "photoprism_originals",
-      "photoprism_storage"
+      "photoprism_storage",
+      "photoprism_import"
     ]
   },
   "containers": {
@@ -55,7 +58,8 @@
       "proxy": {
         "domain": "photos.diegonmarcos.com",
         "auth": "two_factor",
-        "landing_page": "myphotos"
+        "landing_page": "myphotos",
+        "wg_only": true
       },
       "healthcheck": "/api/v1/status",
       "monitoring": {
@@ -65,7 +69,8 @@
       },
       "volumes": [
         "photoprism_storage:/photoprism/storage",
-        "/opt/containers/photoprism/originals:/photoprism/originals:ro"
+        "/opt/containers/photoprism/originals:/photoprism/originals:ro",
+        "photoprism_import:/photoprism/import"
       ],
       "env_file": true,
       "depends_on": [
