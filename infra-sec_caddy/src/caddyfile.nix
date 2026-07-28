@@ -361,7 +361,7 @@ ${plainOut}${sniMuxBlock}
 
       landingBlock = if hasLandingPage then ''
       # Root path → landing page (proxied, keeps our domain)
-      @root path /
+      @root path =/
       handle @root {
         ${mkGithubProxy route.landing_page}
       }
@@ -554,7 +554,7 @@ ${plainOut}${sniMuxBlock}
       pathBlocks = lib.concatMapStringsSep "\n" mkPathEntry activePaths;
 
       landingRootBlock = if hasLandingPage then ''
-      @root path /
+      @root path =/
       handle @root {
         ${mkGithubProxy group.landing_page}
       }
@@ -688,7 +688,7 @@ ${plainOut}${sniMuxBlock}
     ${mail.domain} {
   ${publicBindLine}
   ${sec}
-      @root path /
+      @root path =/
       handle @root {
         ${mkGithubProxy mail.landing_page}
       }
