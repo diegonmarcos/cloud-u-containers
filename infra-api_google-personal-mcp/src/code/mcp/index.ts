@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerSearchTools } from "./tools/gmail_search.js";
-import { registerReadTools } from "./tools/gmail_read.js";
-import { registerSendTools } from "./tools/gmail_send.js";
-import { registerLabelTools } from "./tools/gmail_labels.js";
-import { registerThreadTools } from "./tools/gmail_threads.js";
-import { registerAccountTools } from "./tools/account.js";
+import { registerMetaTool } from "./tools/meta.js";
 import { listAccounts, configuredAccountAliases } from "./shared/config.js";
 
 const log = (msg: string) => process.stderr.write(`[google-personal-mcp] ${msg}\n`);
@@ -31,14 +26,9 @@ async function main() {
     await startMcpHttpServer(port);
   } else {
     const server = new McpServer({ name: "google-personal-mcp", version: "1.0.0" });
-    registerAccountTools(server);
-    registerSearchTools(server);
-    registerReadTools(server);
-    registerSendTools(server);
-    registerLabelTools(server);
-    registerThreadTools(server);
+    registerMetaTool(server);
     const transport = new StdioServerTransport();
-    log(`Starting google-personal-mcp v1.0.0 (8 tools: account, search, read, send, labels, threads)...`);
+    log(`Starting google-personal-mcp v1.0.0 (1 meta-tool: google_personal, 9 methods)...`);
     await server.connect(transport);
     log("Connected via stdio transport");
   }

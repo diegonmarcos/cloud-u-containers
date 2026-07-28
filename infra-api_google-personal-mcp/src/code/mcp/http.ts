@@ -1,12 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerSearchTools } from "./tools/gmail_search.js";
-import { registerReadTools } from "./tools/gmail_read.js";
-import { registerSendTools } from "./tools/gmail_send.js";
-import { registerLabelTools } from "./tools/gmail_labels.js";
-import { registerThreadTools } from "./tools/gmail_threads.js";
-import { registerAccountTools } from "./tools/account.js";
+import { registerMetaTool } from "./tools/meta.js";
 import { configuredAccountAliases } from "./shared/config.js";
 
 const log = (msg: string) => process.stderr.write(`[google-personal-mcp-http] ${msg}\n`);
@@ -15,12 +10,7 @@ const VERSION = "1.0.0";
 
 function createMcpServer(): McpServer {
   const server = new McpServer({ name: "google-personal-mcp", version: VERSION });
-  registerAccountTools(server);
-  registerSearchTools(server);
-  registerReadTools(server);
-  registerSendTools(server);
-  registerLabelTools(server);
-  registerThreadTools(server);
+  registerMetaTool(server);
   return server;
 }
 
