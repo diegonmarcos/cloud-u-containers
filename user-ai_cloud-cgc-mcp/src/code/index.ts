@@ -50,11 +50,11 @@ function createMcpServer(): McpServer {
   );
 
   // ── Section A: Knowledge & Data ─────────────────────────────────────
-  registerSpecTools(server);              //  3: service, vm, services_by_category
-  registerDocsTools(server);              //  4: overview, service, readme, context
-  registerInventoryTools(server);         // 25: cloud inventory + frontend projects
-  registerConfigTools(server);            //  6: topology, configs, deps, topology_md, configs_md, front-deps
-  registerSkillTools(server);             //  4: cloud_architect, frontend_developer, debug_ops, crawlee_scraping
+  registerSpecTools(server);              //  1: knowledge.spec (service|vm|services_by_category)
+  registerDocsTools(server);              //  1: knowledge.docs (overview|readme|service|context)
+  registerInventoryTools(server);         //  1: knowledge.inventory (25 methods)
+  registerConfigTools(server);            //  1: knowledge.config (topology|topology_md|configs|configs_md|deps|front_deps)
+  registerSkillTools(server);             //  1: knowledge.skill (cloud_architect|frontend_developer|debug_ops|crawlee_scraping)
 
   // ── Section B: Code Graph Context ──────────────────────────────────
   registerOctocodeTools(server);          //  3: search, memory, index (octocode Lance DB)
