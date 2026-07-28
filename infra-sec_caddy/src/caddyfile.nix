@@ -818,6 +818,13 @@ ${plainOut}${sniMuxBlock}
 
   mkProxyDashboardBlock =
     let pd = caddyRoutes.special.proxy_dashboard or null;
+        # When auth=="none" (WG-only sites), serve static files directly —
+        # the WG network is the auth boundary, mirroring ntfy feed_auth:"none".
+        isNoAuth = (pd.auth or "") == "none";
+        dashboardServe = ''
+        root * /srv
+        rewrite * /dashboard.html
+        file_server'';
     in if pd == null then ""
     else ''
     # ${pd.comment or "Proxy dashboard"}
@@ -825,19 +832,16 @@ ${plainOut}${sniMuxBlock}
   ${publicBindLine}
   ${sec}
       ${wgSiteLine (pd.wg_only or false)}
+      ${if isNoAuth then dashboardServe else ''
       @bearer header Authorization Bearer*
       handle @bearer {
   ${bearer}
-        root * /srv
-        rewrite * /dashboard.html
-        file_server
+        ${dashboardServe}
       }
       handle {
   ${authelia}
-        root * /srv
-        rewrite * /dashboard.html
-        file_server
-      }
+        ${dashboardServe}
+      }''}
       ${handleErrors}
     }
   '';
