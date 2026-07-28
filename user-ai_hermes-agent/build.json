@@ -27,8 +27,8 @@
     "app_hub": false
   },
   "runtime": {
-    "model": "claude-sonnet-4-6",
-    "backend_url": "http://10.0.0.6:3117/v1",
+    "model": "z-ai/glm-5.2",
+    "backend_url": "https://openrouter.ai/api/v1",
     "api_mode": "chat_completions"
   },
   "containers": {
