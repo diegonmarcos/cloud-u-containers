@@ -1,14 +1,14 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerTools } from "./tools.js";
+import { registerMetaTool } from "./meta.js";
 
 const log = (msg: string) => process.stderr.write(`[mattermost-http] ${msg}\n`);
 const SESSION_ID = "mattermost-mcp-session";
 
 function createMcpServer(): McpServer {
   const server = new McpServer({ name: "mattermost", version: "1.0.0" });
-  registerTools(server);
+  registerMetaTool(server);
   return server;
 }
 
