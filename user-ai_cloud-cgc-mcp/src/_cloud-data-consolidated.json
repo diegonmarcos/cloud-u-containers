@@ -5443,18 +5443,18 @@
             "_comment": "update = INCREMENTAL (octocode index, git-aware, changed files only) on top of the GHCR DB. NOT a reindex (clear+rebuild). First run with no upstream image bootstraps a full build once to seed GHCR. use_llm=false: the 2148-node base is structural-only; the LLM GraphRAG phase makes one LLM call PER node (~hours over the full graph) and timed out the job. Structural incremental of changed files is minutes and matches the base.",
             "incremental": true,
             "use_llm": false,
-            "llm_model": "openrouter:anthropic/claude-haiku-4.5",
+            "llm_model": "openrouter:deepseek/deepseek-v4-pro",
             "schedule": "",
             "max_minutes": 330,
             "repo_timeout_min": 90
           },
           "llm": {
-            "_comment": "octocode GraphRAG LLM -> claude-api-superset (kg-bridge successor), TWO providers with fallback. openai:* reads OPENAI_API_URL -> superset /v1 (3117); ollama:* reads OLLAMA_API_URL -> superset Ollama mimic (10.0.0.6:11436 — the superset binds the WG IP, not localhost). reindex.sh forces use_llm=true and tries `models` in order, falling back if a provider makes 0 superset /health calls. api_key is a throwaway.",
-            "openai_api_url": "http://10.0.0.6:3117/v1/chat/completions",
-            "ollama_api_url": "http://10.0.0.6:11436",
+            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro — 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
+            "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
+            "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
-            "models": "ollama:claude-haiku openai:gpt-4o-mini",
-            "health_url": "http://10.0.0.6:3117/health"
+            "models": "openai:deepseek/deepseek-v4-pro",
+            "health_url": "http://10.0.0.6:3217/health"
           },
           "index_repos": [
             "cloud",
@@ -5900,7 +5900,10 @@
         "healthcheck_paths": [
           "/health"
         ]
-      }
+      },
+      "secret_env_vars": [
+        "OPENROUTER_API_KEY"
+      ]
     },
     "ollama": {
       "category": "agi",
