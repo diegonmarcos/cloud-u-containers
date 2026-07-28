@@ -187,6 +187,7 @@
         "cloud-cgc-mcp",
         "hermes-agent",
         "kg-store",
+        "my-ai-api",
         "ollama-hai",
         "rig-agentic-hai-1.5bq4",
         "rig-agentic-sonn-14bq8",
@@ -210,7 +211,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 61
+      "container_count": 62
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -5805,6 +5806,102 @@
         "SURREAL_ROOT_PASSWORD"
       ]
     },
+    "my-ai-api": {
+      "category": "agi",
+      "vm": "oci-A1-f_0",
+      "folder": "user-ai_my-ai-api",
+      "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
+      "enabled": true,
+      "flake": "user-ai_my-ai-api",
+      "port": 3217,
+      "dns": "my-ai-api.app",
+      "upstream": "10.0.0.6:3217",
+      "containers": {
+        "app": {
+          "container_name": "my-ai-api",
+          "image": "ghcr.io/diegonmarcos/my-ai-api:latest",
+          "port": 3217,
+          "port_env": "BRIDGE_PORT",
+          "dns": "my-ai-api.app",
+          "public": false,
+          "healthcheck": "/health",
+          "monitoring": null,
+          "env_file": true,
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
+        }
+      },
+      "container_names": [
+        "my-ai-api"
+      ],
+      "all_ports": [
+        "3217"
+      ],
+      "all_dns": [
+        "my-ai-api.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "app_hub": false
+      },
+      "declared_ports": {
+        "app": 3217,
+        "ollama": 12436,
+        "headroom": 8890
+      },
+      "health": {
+        "path": "/health"
+      },
+      "runtime": {
+        "model": "z-ai/glm-5",
+        "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
+        "model_aliases": {
+          "glm": "z-ai/glm-5",
+          "gpt-4": "openai/gpt-4o",
+          "gpt-4o": "openai/gpt-4o",
+          "gemini": "google/gemini-2.5-pro",
+          "llama": "meta-llama/llama-3.3-70b-instruct",
+          "deepseek": "deepseek/deepseek-chat"
+        },
+        "max_concurrency": 12,
+        "call_timeout_ms": 180000,
+        "_upstream_comment": "OpenRouter is the single upstream (start here). The Node front forwards compressed OpenAI-shaped chat requests to https://openrouter.ai/api/v1/chat/completions with the container's OPENROUTER_API_KEY (from src/secrets.yaml). The Anthropic /v1/messages face is a shape-translation shim so ANTHROPIC_BASE_URL=<my-ai-api> clients also land on OpenRouter — NOT Claude.",
+        "upstream": {
+          "provider": "openrouter",
+          "base_url": "https://openrouter.ai/api/v1",
+          "chat_path": "/chat/completions",
+          "models_path": "/models",
+          "auth_env": "OPENROUTER_API_KEY",
+          "passthrough_auth": false,
+          "_passthrough_auth_comment": "false = the container injects OPENROUTER_API_KEY; clients may send any placeholder Authorization (ignored). true = forward the client's own key (transparent, like claude-superset-api's anthropic proxy face)."
+        },
+        "_sessions_comment": "Cross-device session store for goose sessions (WG-only). Devices push recent goose session .jsonl here; any device can list/GET them to restore. dir is under container HOME; keep = max sessions retained per device.",
+        "sessions": {
+          "dir": ".goose-sessions",
+          "keep": 20
+        },
+        "headroom": {
+          "enabled": true,
+          "savings_profile": "agent-90",
+          "min_tokens_to_compress": 250
+        }
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/health"
+        ]
+      }
+    },
     "ollama": {
       "category": "agi",
       "vm": "gcp-t4",
@@ -9172,6 +9269,12 @@
         "service": "hermes-agent"
       },
       {
+        "name": "my-ai-api.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "my-ai-api"
+      },
+      {
         "name": "ollama-hai.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9908,6 +10011,7 @@
           "cloud-cgc-mcp",
           "hermes-agent",
           "kg-store",
+          "my-ai-api",
           "ollama-hai",
           "rig-agentic-hai-1.5bq4",
           "rig-agentic-sonn-14bq8",
@@ -10389,6 +10493,11 @@
       },
       "kg-store": {
         "dir": "user-ai_kg-store",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
+      "my-ai-api": {
+        "dir": "user-ai_my-ai-api",
         "vm": "oci-apps",
         "has_docker": true
       },
