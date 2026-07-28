@@ -1,0 +1,111 @@
+# my-ai-api — polyglot image (Python Headroom sidecar + Node front).
+#
+# Sibling of claude-superset-api. Routes to three agent backends (OpenRouter,
+# claude-superset-api WG, goose binary) with a plugin pipeline:
+#   RTK     — ANSI stripping + tool-result truncation (Node, RTK_ENABLED=1)
+#   Caveman — assistant filler-phrase stripping (Python sidecar, CAVEMAN_ENABLED=1)
+#   Ponytail— per-request savings profile (X-Ponytail-Mode: off|lite|full|ultra)
+#   Headroom— token compression via vendored Rust core (Python sidecar)
+#
+# Build context (assembled by engine.nix from flake nativeBuild.extraFiles):
+#   ./vendor/headroom/   vendored Apache-2.0 Headroom source (maturin/pyo3 + Python)
+#   ./py/                compress_service.py (FastAPI sidecar)
+#   ./server.mjs         Node front (OpenAI/Ollama/Anthropic → multi-backend)
+#   ./package.json
+#   ./start.sh           process supervisor
+#
+# Built on the arm64 cloud-builder-x (oci-apps) — no QEMU. Stage 1 compiles the
+# Headroom Rust core via maturin into a wheel; stage 2 is a slim Python+Node
+# runtime. Adapted from claude-superset-api's multi-stage Dockerfile (rustls,
+# no openssl).
+
+ARG PYTHON_VERSION=3.13
+
+# ─── Stage 1: build the Headroom wheel (Rust core via maturin) ───────────────
+FROM python:${PYTHON_VERSION}-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential g++ curl ca-certificates patchelf git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m pip install --no-cache-dir uv
+
+# Rust toolchain (pinned to match vendor/headroom/rust-toolchain.toml = 1.95.0).
+ENV CARGO_HOME=/usr/local/cargo \
+    RUSTUP_HOME=/usr/local/rustup \
+    PATH=/usr/local/cargo/bin:${PATH}
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --no-modify-path --profile minimal --default-toolchain 1.95.0
+
+WORKDIR /build
+# Vendored Headroom source (pyproject.toml + Cargo workspace + crates + python).
+COPY vendor/headroom/ /build/
+
+# Build + install the wheel with the proxy (FastAPI/uvicorn — used by the sidecar)
+# and code (AST CodeCompressor) extras. ML extras are intentionally omitted on arm64.
+RUN uv pip install --system ".[proxy,code]"
+
+# Fail-loud smoke check: the Rust core must import before we ship.
+RUN cd /tmp && python -c "from headroom._core import SmartCrusher; from headroom import compress; print('headroom core OK')"
+
+# ─── Stage 2: runtime (Python + Node) ────────────────────────────────────────
+FROM python:${PYTHON_VERSION}-slim AS runtime
+
+ARG NODE_MAJOR=22
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HOME=/home/appuser \
+    RTK_ENABLED=1 \
+    CAVEMAN_ENABLED=1 \
+    PONYTAIL_DEFAULT_MODE=full \
+    AGENTS_PRINCIPLES_ENABLED=1 \
+    CLOUD_PRINCIPLES_ENABLED=1
+
+# Node (for server.mjs) + curl (start.sh readiness probe).
+# Also install goose (Block) — the container ships a preconfigured agent so it
+# is self-contained: `docker exec -it my-ai-api goose session` works out of the
+# box, pointed at OpenRouter via the container's OPENROUTER_API_KEY (sops-decrypted
+# at ship time). goose is downloaded as a static binary for the target arch.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && ARCH="$(uname -m)" \
+    && case "$ARCH" in \
+         aarch64|arm64) GOOSE_ARCH="aarch64-unknown-linux-gnu" ;; \
+         x86_64|amd64)  GOOSE_ARCH="x86_64-unknown-linux-gnu"  ;; \
+         *) echo "unsupported arch: $ARCH" >&2; exit 1 ;; \
+       esac \
+    && GOOSE_VER="1.44.0" \
+    && curl -fsSL "https://github.com/block/goose/releases/download/v${GOOSE_VER}/goose-${GOOSE_ARCH}.tar.gz" \
+       | tar -xz -C /usr/local/bin --strip-components=1 goose-${GOOSE_ARCH}/goose \
+    && chmod +x /usr/local/bin/goose \
+    && goose --version \
+    && npm cache clean --force \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python runtime: the installed site-packages (headroom + _core.so + deps) and
+# the `headroom` console script, copied from the builder.
+# NOTE: CPython's lib dir is major.minor (python3.13) regardless of the patch
+# release — and the cloud-builder injects PYTHON_VERSION as the full patch
+# (e.g. 3.13.14), so ${PYTHON_VERSION} must NOT be used in this path. Pin
+# major.minor to match the `python:3.13-slim` base tag above.
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
+
+# App code.
+WORKDIR /app
+COPY server.mjs package.json /app/
+COPY py/ /app/py/
+COPY start.sh /app/start.sh
+COPY principles/ /app/principles/
+RUN chmod +x /app/start.sh
+
+# Non-root appuser; HOME holds the persisted session store + ~/.headroom ledger
+# (mounted as the my_ai_home named volume at runtime).
+RUN useradd -r -m -u 10001 appuser \
+    && mkdir -p /home/appuser/.headroom \
+    && chown -R appuser:appuser /home/appuser /app
+USER appuser
+
+EXPOSE 3217 12436 8890
+CMD ["/app/start.sh"]
