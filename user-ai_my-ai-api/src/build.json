@@ -1,0 +1,86 @@
+{
+  "name": "my-ai-api",
+  "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
+  "dns": "my-ai-api.app",
+  "ports": {
+    "app": 3217,
+    "ollama": 12436,
+    "headroom": 8890
+  },
+  "category": "agi",
+  "docker": {
+    "image": "my-ai-api",
+    "dockerfile": "Dockerfile",
+    "registry": "ghcr.io/diegonmarcos",
+    "platform": "linux/arm64,linux/amd64",
+    "arch": "amd64,arm64",
+    "native_build": {
+      "type": "image-wrapper",
+      "entrypoint": "/app/start.sh",
+      "base_image": "python:3.13-slim",
+      "app_dir": "code"
+    }
+  },
+  "deploy": {
+    "host": "oci-apps",
+    "remote_path": "/opt/containers/my-ai-api",
+    "compose_flags": "--pull always --force-recreate"
+  },
+  "secrets": {
+    "escape_dollars": "false"
+  },
+  "proxy": {
+    "app_hub": false
+  },
+  "runtime": {
+    "model": "z-ai/glm-5",
+    "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
+    "model_aliases": {
+      "glm": "z-ai/glm-5",
+      "gpt-4": "openai/gpt-4o",
+      "gpt-4o": "openai/gpt-4o",
+      "gemini": "google/gemini-2.5-pro",
+      "llama": "meta-llama/llama-3.3-70b-instruct",
+      "deepseek": "deepseek/deepseek-chat"
+    },
+    "max_concurrency": 12,
+    "call_timeout_ms": 180000,
+    "_upstream_comment": "OpenRouter is the single upstream (start here). The Node front forwards compressed OpenAI-shaped chat requests to https://openrouter.ai/api/v1/chat/completions with the container's OPENROUTER_API_KEY (from src/secrets.yaml). The Anthropic /v1/messages face is a shape-translation shim so ANTHROPIC_BASE_URL=<my-ai-api> clients also land on OpenRouter — NOT Claude.",
+    "upstream": {
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "chat_path": "/chat/completions",
+      "models_path": "/models",
+      "auth_env": "OPENROUTER_API_KEY",
+      "passthrough_auth": false,
+      "_passthrough_auth_comment": "false = the container injects OPENROUTER_API_KEY; clients may send any placeholder Authorization (ignored). true = forward the client's own key (transparent, like claude-superset-api's anthropic proxy face)."
+    },
+    "_sessions_comment": "Cross-device session store for goose sessions (WG-only). Devices push recent goose session .jsonl here; any device can list/GET them to restore. dir is under container HOME; keep = max sessions retained per device.",
+    "sessions": {
+      "dir": ".goose-sessions",
+      "keep": 20
+    },
+    "headroom": {
+      "enabled": true,
+      "savings_profile": "agent-90",
+      "min_tokens_to_compress": 250
+    }
+  },
+  "containers": {
+    "app": {
+      "container_name": "my-ai-api",
+      "image": "ghcr.io/diegonmarcos/my-ai-api:latest",
+      "port": 3217,
+      "port_env": "BRIDGE_PORT",
+      "dns": "my-ai-api.app",
+      "public": false,
+      "healthcheck": "/health",
+      "monitoring": null,
+      "env_file": true,
+      "depends_on": [],
+      "resources": null,
+      "read_only": false,
+      "protocol": "http"
+    }
+  }
+}
