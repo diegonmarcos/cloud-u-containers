@@ -1,12 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse, request as httpRequest } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerInboxTools } from "./tools/inbox.js";
-import { registerComposeTools } from "./tools/compose.js";
-import { registerAdminTools } from "./tools/admin.js";
-import { registerResendTools } from "./tools/resend.js";
-import { registerDebugTools } from "./tools/debug.js";
-import { registerStalwartTools } from "./tools/stalwart.js";
+import { registerMetaTool } from "./tools/meta.js";
 import { registerProxiedMcpTools, startProxyRetryLoop } from "./shared/proxy-mcp.js";
 
 const log = (msg: string) => process.stderr.write(`[mail-mcp-http] ${msg}\n`);
@@ -14,12 +9,7 @@ const SESSION_ID = "mail-mcp-session";
 
 function createMcpServer(): McpServer {
   const server = new McpServer({ name: "mail-mcp", version: "1.5.0" });
-  registerInboxTools(server);
-  registerComposeTools(server);
-  registerAdminTools(server);
-  registerResendTools(server);
-  registerDebugTools(server);
-  registerStalwartTools(server);
+  registerMetaTool(server);
   // Best-effort attach to proxied MCPs (google-personal-mcp et al). Failed
   // children are picked up by the background retry loop started below.
   registerProxiedMcpTools(server).catch((e) => log(`proxy attach failed: ${e}`));
