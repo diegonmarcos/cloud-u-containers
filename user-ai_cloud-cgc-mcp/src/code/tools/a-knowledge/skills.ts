@@ -8,32 +8,34 @@ import { getConfig, getVmSshAlias } from "../../config.js";
 
 export function registerSkillTools(server: McpServer) {
 
-  // ── 1. cloud-architect ──────────────────────────────────────────────
   server.tool(
-    "knowledge.skill.cloud_architect",
-    "Load cloud infrastructure context — VMs, services, architecture, tool decision matrix. Call this before infrastructure tasks.",
-    {},
-    async () => {
-      const config = getConfig();
+    "knowledge.skill",
+    "Load skill context on-demand. Methods: cloud_architect (VMs, services, architecture, tool index), frontend_developer (TS/Svelte5/Vue3/SCSS, build system, project archetypes), debug_ops (debug workflow, common issues, WireGuard/SMTP gotchas), crawlee_scraping (Crawlee Cloud workflow, actors, runs)",
+    { method: z.enum(["cloud_architect", "frontend_developer", "debug_ops", "crawlee_scraping"]) },
+    async ({ method }) => {
+      switch (method) {
 
-      const vmTable = Object.entries(config.vms)
-        .map(([id, vm]) => `| ${id} | ${getVmSshAlias(id)} | ${vm.ip} | ${vm.wg_ip ?? ""} | ${vm.user} | ${vm.description ?? ""} |`)
-        .join("\n");
+        case "cloud_architect": {
+          const config = getConfig();
 
-      const categories = new Map<string, string[]>();
-      for (const [name, svc] of Object.entries(config.services)) {
-        const cat = svc.category;
-        if (!categories.has(cat)) categories.set(cat, []);
-        categories.get(cat)!.push(`${name} → ${svc.vm}`);
-      }
-      const serviceList = [...categories.entries()]
-        .map(([cat, svcs]) => `| ${cat} | ${svcs.join(", ")} |`)
-        .join("\n");
+          const vmTable = Object.entries(config.vms)
+            .map(([id, vm]) => `| ${id} | ${getVmSshAlias(id)} | ${vm.ip} | ${vm.wg_ip ?? ""} | ${vm.user} | ${vm.description ?? ""} |`)
+            .join("\n");
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: `# Cloud Infrastructure Context
+          const categories = new Map<string, string[]>();
+          for (const [name, svc] of Object.entries(config.services)) {
+            const cat = svc.category;
+            if (!categories.has(cat)) categories.set(cat, []);
+            categories.get(cat)!.push(`${name} → ${svc.vm}`);
+          }
+          const serviceList = [...categories.entries()]
+            .map(([cat, svcs]) => `| ${cat} | ${svcs.join(", ")} |`)
+            .join("\n");
+
+          return {
+            content: [{
+              type: "text" as const,
+              text: `# Cloud Infrastructure Context
 
 ## VMs (${Object.keys(config.vms).length})
 
@@ -89,20 +91,15 @@ ${serviceList}
 3. service_get_spec before service_api_call
 4. build_ship for deployment, API tools for runtime control
 5. Never expose secrets`,
-        }],
-      };
-    }
-  );
+            }],
+          };
+        }
 
-  // ── 2. frontend-developer ───────────────────────────────────────────
-  server.tool(
-    "knowledge.skill.frontend_developer",
-    "Load front-end development context — code standards (TS/Svelte5/Vue3/SCSS), build system, project archetypes. Call this before front-end work.",
-    {},
-    async () => ({
-      content: [{
-        type: "text" as const,
-        text: `# Front-End Development Context
+        case "frontend_developer": {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `# Front-End Development Context
 
 ## Build System
 - Universal build.sh engine + build.json config per project
@@ -148,25 +145,20 @@ const user = ref<User | null>(null);
 
 ### Matomo (required in every HTML <head>)
 Include the container_odwLIyPV.js tag manager snippet from analytics.diegonmarcos.com.`,
-      }],
-    })
-  );
+            }],
+          };
+        }
 
-  // ── 3. debug-ops ────────────────────────────────────────────────────
-  server.tool(
-    "knowledge.skill.debug_ops",
-    "Load debugging/ops context — debug workflow, common issues, WireGuard/SMTP/memory gotchas. Call this before debugging infrastructure.",
-    {},
-    async () => {
-      const config = getConfig();
-      const vmAliases = Object.entries(config.vms)
-        .map(([id, vm]) => `${getVmSshAlias(id)} (${vm.ip})`)
-        .join(", ");
+        case "debug_ops": {
+          const config = getConfig();
+          const vmAliases = Object.entries(config.vms)
+            .map(([id, vm]) => `${getVmSshAlias(id)} (${vm.ip})`)
+            .join(", ");
 
-      return {
-        content: [{
-          type: "text" as const,
-          text: `# Debug & Ops Context
+          return {
+            content: [{
+              type: "text" as const,
+              text: `# Debug & Ops Context
 
 ## VMs: ${vmAliases}
 
@@ -199,20 +191,15 @@ health_status → check_vm → ssh_exec: nft list ruleset → wg show
 - Nix eval needs 2-3GB swap
 - nix-store --verify --repair for corruption
 - Docker build: --jobs 1, lto = false`,
-        }],
-      };
-    }
-  );
+            }],
+          };
+        }
 
-  // ── 4. crawlee-scraping ─────────────────────────────────────────────
-  server.tool(
-    "knowledge.skill.crawlee_scraping",
-    "Load web scraping context — Crawlee Cloud workflow, actors, runs, results. Call this before scraping tasks.",
-    {},
-    async () => ({
-      content: [{
-        type: "text" as const,
-        text: `# Crawlee Cloud Scraping Context
+        case "crawlee_scraping": {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `# Crawlee Cloud Scraping Context
 
 ## Workflow
 1. crawlee_list_actors → get actor IDs
@@ -230,7 +217,10 @@ health_status → check_vm → ssh_exec: nft list ruleset → wg show
 - Always list actors first — don't guess IDs
 - Start with low maxCrawlPages
 - Check logs on failure`,
-      }],
-    })
+            }],
+          };
+        }
+      }
+    }
   );
 }
