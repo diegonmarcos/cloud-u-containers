@@ -5,9 +5,13 @@
 
   outputs = { self, nixpkgs }: let
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     container  = builtins.fromJSON (builtins.readFile ./build-my-ai-api.json);
-    engine     = import ../../_shared/engine.nix;
+
+    engine = import ../../_shared/engine.nix;
+    nb     = buildJson.docker.native_build;
+
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
@@ -17,7 +21,22 @@
         srcDir      = ./.;
         templates   = [];
         composeSpec = import ./compose.nix { inherit buildJson container; };
-        title       = "my-ai-api";
+        nativeBuild = {
+          dockerfile = ./code/Dockerfile;
+          extraFiles = [
+            ./code/vendor
+            ./code/py
+            ./code/server.mjs
+            ./code/package.json
+            ./code/start.sh
+            ./code/principles
+          ];
+          cmd       = nb.cmd or "";
+          binary    = nb.entrypoint or "";
+          baseImage = nb.base_image;
+          apt       = nb.apt or "";
+        };
+        title = "my-ai-api";
       };
     });
   };
