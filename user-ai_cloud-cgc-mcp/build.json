@@ -92,7 +92,7 @@
         "incremental": true,
         "use_llm": false,
         "llm_model": "openrouter:deepseek/deepseek-v4-pro",
-        "schedule": "",
+        "schedule": "0 4,16 * * *",
         "max_minutes": 330,
         "repo_timeout_min": 90
       },
