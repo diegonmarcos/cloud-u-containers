@@ -1,5 +1,5 @@
 {
-  description = "Google Workspace MCP Server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport (v2, Type A own-code)"; # redeploy trigger 2026-07-29b
+  description = "Google Workspace MCP Server — Gmail, Calendar, Drive, Docs, Sheets via HTTP transport (v2, Type A own-code)"; # redeploy trigger 2026-07-29c
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
