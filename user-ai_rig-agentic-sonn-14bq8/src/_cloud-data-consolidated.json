@@ -5447,8 +5447,8 @@
             "schedule": "0 4,16 * * *",
             "max_minutes": 330,
             "repo_timeout_min": 90,
-            "code_embedding_model": "fastembed:all-MiniLM-L6-v2",
-            "text_embedding_model": "fastembed:all-MiniLM-L6-v2"
+            "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
+            "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
           "llm": {
             "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro — 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
