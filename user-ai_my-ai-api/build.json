@@ -12,8 +12,8 @@
     "image": "my-ai-api",
     "dockerfile": "Dockerfile",
     "registry": "ghcr.io/diegonmarcos",
-    "platform": "linux/arm64,linux/amd64",
-    "arch": "amd64,arm64",
+    "platform": "linux/arm64",
+    "arch": "arm64",
     "native_build": {
       "type": "image-wrapper",
       "entrypoint": "/app/start.sh",
