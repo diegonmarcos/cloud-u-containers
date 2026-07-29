@@ -5890,6 +5890,12 @@
           "enabled": true,
           "savings_profile": "agent-90",
           "min_tokens_to_compress": 250
+        },
+        "gateway": {
+          "_comment": "Non-secret gateway env vars. Secrets (TELEGRAM_BOT_TOKEN, MATTERMOST_TOKEN) come from .secrets env_file via secrets.yaml.",
+          "mattermost_url": "http://10.0.0.6:8065",
+          "mattermost_enabled": "true",
+          "telegram_allow_from": "6431508617"
         }
       },
       "api": {
@@ -5902,7 +5908,8 @@
         ]
       },
       "secret_env_vars": [
-        "OPENROUTER_API_KEY"
+        "OPENROUTER_API_KEY",
+        "TELEGRAM_BOT_TOKEN"
       ]
     },
     "ollama": {
