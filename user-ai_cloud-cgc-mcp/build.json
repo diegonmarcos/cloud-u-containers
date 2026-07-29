@@ -1,6 +1,6 @@
 {
   "name": "cloud-cgc-mcp",
-  "description": "Cloud CGC MCP \u2014 Code Graph Context: infra knowledge, specs, docs, semantic code search",
+  "description": "Cloud CGC MCP — Code Graph Context: infra knowledge, specs, docs, semantic code search",
   "dns": "cloud-cgc-mcp.app",
   "ports": {
     "app": 3105
@@ -15,7 +15,7 @@
     "native_build": {
       "type": "image-wrapper",
       "apt": "curl ca-certificates python3 python3-pip",
-      "_cmd_comment": "git config --system safe.directory '*' FIRST: octocode keys each GraphRAG project by its git-root. The repos volume is owned by root but the MCP runs as appuser \u2014 without this, git fails 'dubious ownership', octocode can't resolve the git-root, and the reader lands on a DIFFERENT project key than the root-built index (symptom: 'GraphRAG knowledge graph is empty' despite a populated DB). --system writes /etc/gitconfig as root during the RUN (before the USER appuser switch) so EVERY runtime user resolves the same key.",
+      "_cmd_comment": "git config --system safe.directory '*' FIRST: octocode keys each GraphRAG project by its git-root. The repos volume is owned by root but the MCP runs as appuser — without this, git fails 'dubious ownership', octocode can't resolve the git-root, and the reader lands on a DIFFERENT project key than the root-built index (symptom: 'GraphRAG knowledge graph is empty' despite a populated DB). --system writes /etc/gitconfig as root during the RUN (before the USER appuser switch) so EVERY runtime user resolves the same key.",
       "cmd": "git config --system --add safe.directory '*' && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y --no-install-recommends nodejs && npm install --omit=dev && pip3 install --break-system-packages --no-cache-dir pylance",
       "entrypoint": "npx tsx index.ts",
       "base_image": "ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest",
@@ -76,7 +76,7 @@
       ],
       "db_volume": "octocode_db",
       "db_path": "/home/appuser/.local/share/octocode",
-      "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image \u2014 never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
+      "_db_upstream_comment": "GHCR is the SINGLE upstream for both octocode DBs (semantic FastEmbed vectors + GraphRAG graph). The producer (GHA x86, ship-cgc-db.yml) pulls db_publish.image, runs an INCREMENTAL octocode index on top, and pushes it back. oci-apps (arm) + local both CONSUME by pulling the same image — never build. Pinned octocode version keeps the on-disk DB schema compatible across x86/arm/local.",
       "version": "0.12.2",
       "octocode_images": {
         "x86": "ghcr.io/diegonmarcos/octocode-fastembed-huggingface-graphrag-cpu-x86-linux-static:0.12.2",
@@ -95,11 +95,11 @@
         "schedule": "0 4,16 * * *",
         "max_minutes": 330,
         "repo_timeout_min": 90,
-        "code_embedding_model": "fastembed:all-MiniLM-L6-v2",
-        "text_embedding_model": "fastembed:all-MiniLM-L6-v2"
+        "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
+        "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
       },
       "llm": {
-        "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro \u2014 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
+        "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro — 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
         "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
         "ollama_api_url": "http://10.0.0.6:12436",
         "api_key": "sk-dummy",
@@ -114,7 +114,7 @@
         "cloud-data",
         "front-data"
       ],
-      "_repo_map_comment": "local index dir \u2192 GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven \u2014 never hardcode in the workflow/DAG.",
+      "_repo_map_comment": "local index dir → GitHub repo to clone (producer GHA / arm DAG). Only 'front' differs (GitHub Pages repo). Data-driven — never hardcode in the workflow/DAG.",
       "repo_map": {
         "cloud": "cloud",
         "unix": "unix",
@@ -125,7 +125,7 @@
       },
       "home": "/home/appuser",
       "kg_store": {
-        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph \u2014 unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
+        "_comment": "reindex.sh ingests the infra graph delta into kg-store (SurrealDB) after building the code graph — unified 'build all graphs' job. Localhost host-network; ns/db/user data-driven; delta from the cgc bundle. KG_STORE_PASS (SurrealDB root) is wired as a shared secret later; until then the ingest gracefully no-ops.",
         "url": "http://127.0.0.1:8001",
         "ns": "infra",
         "db": "production",
