@@ -586,6 +586,7 @@ ${plainOut}${sniMuxBlock}
           proxyBody = ''reverse_proxy ${ep.upstream} {
           flush_interval -1
           header_up X-Real-IP {http.request.remote.host}
+          header_up Accept "application/json, text/event-stream"
         }'';
           # Per-endpoint WG-only gate (ep.wg_only from build.json proxy.primary.wg_only).
           # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
