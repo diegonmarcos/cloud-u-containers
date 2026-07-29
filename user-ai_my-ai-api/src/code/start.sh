@@ -16,6 +16,7 @@
 set -euo pipefail
 
 HEADROOM_PORT="${HEADROOM_PORT:-8890}"
+GOOSE_PORT="${GOOSE_PORT:-3227}"
 
 # Goose reads $XDG_CONFIG_HOME/goose/config.yaml. The Dockerfile bakes the config
 # at /app/.config/goose/config.yaml and sets XDG_CONFIG_HOME=/app/.config (outside
@@ -48,6 +49,15 @@ done
 echo "[start] launching node front"
 node /app/server.mjs &
 PIDS+=("$!")
+
+# Goosed: only launch if the ACP secret key is set.
+if [ -n "${GOOSE_SERVER__SECRET_KEY:-}" ]; then
+  echo "[goosed] serving on :${GOOSE_PORT} (ACP, X-Secret-Key)"
+  goose serve --platform desktop --enable-scheduler --host 0.0.0.0 --port "${GOOSE_PORT}" &
+  PIDS+=("$!")
+else
+  echo "[goosed] no secret key — skipping"
+fi
 
 # Gateway: only launch if at least one messaging platform is configured.
 if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || [ "${MATTERMOST_ENABLED:-}" = "true" ]; then
