@@ -124,7 +124,7 @@ let
   declaredArchs =
     let d = buildJson.docker.arch or "amd64"; in
     if builtins.isList d then d
-    else if builtins.isString d then [ d ]
+    else if builtins.isString d then lib.splitString "," d
     else [ "amd64" ];
 
   allArchs = [ "amd64" "arm64" ];
