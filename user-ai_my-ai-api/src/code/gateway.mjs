@@ -4,37 +4,146 @@
 // Reads env at startup; each platform starts independently (both can run together).
 //
 // Env vars:
-//   TELEGRAM_BOT_TOKEN      — if set, Telegram long-poll starts
-//   TELEGRAM_ALLOW_FROM     — comma-separated numeric chat/user ids (empty = allow all)
-//   MATTERMOST_ENABLED      — "true" to enable Mattermost WS bridge
-//   MATTERMOST_URL          — e.g. http://10.0.0.6:8065
-//   MATTERMOST_TOKEN        — bot user token (from .secrets env_file)
-//   MYAI_LOCAL_URL          — default "http://127.0.0.1:3217"
+//   TELEGRAM_BOT_TOKEN          — if set, Telegram long-poll starts
+//   TELEGRAM_ALLOW_FROM         — comma-separated numeric chat/user ids (empty = allow all)
+//   MATTERMOST_ENABLED          — "true" to enable Mattermost WS bridge
+//   MATTERMOST_URL              — e.g. http://10.0.0.6:8065
+//   MATTERMOST_TOKEN            — bot user token (from .secrets env_file)
+//   MYAI_LOCAL_URL              — default "http://127.0.0.1:3217"
+//   GOOSE_PORT                  — goosed REST+SSE port, default 3227
+//   GOOSE_SERVER__SECRET_KEY    — shared secret for X-Secret-Key header
 
-const MYAI_LOCAL_URL = process.env.MYAI_LOCAL_URL || "http://127.0.0.1:3217";
+const MYAI_LOCAL_URL    = process.env.MYAI_LOCAL_URL || "http://127.0.0.1:3217";
+const GOOSE_PORT        = process.env.GOOSE_PORT || "3227";
+const GOOSE_SECRET_KEY  = process.env.GOOSE_SERVER__SECRET_KEY || "";
+const GOOSED_BASE       = `http://127.0.0.1:${GOOSE_PORT}`;
+
+// ── Session cache: platform+chatId → goosed session id ────────────────────────
+// Keyed by a string like "telegram:12345" or "mattermost:channelId".
+// Sessions are created lazily on first message and reused for the conversation.
+const goosedSessionCache = new Map();
+
+// ── goosed: create or retrieve a session id for a conversation key ─────────────
+const getOrCreateGoosedSession = async (conversationKey) => {
+  if (goosedSessionCache.has(conversationKey)) {
+    return goosedSessionCache.get(conversationKey);
+  }
+  const res = await fetch(`${GOOSED_BASE}/sessions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "X-Secret-Key": GOOSE_SECRET_KEY,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(`goosed POST /sessions returned ${res.status}`);
+  }
+  const data = await res.json();
+  // Defensive: accept id, session_id, or any field whose value is a non-empty string.
+  const sessionId = data?.id ?? data?.session_id
+    ?? Object.values(data).find((v) => typeof v === "string" && v.length > 0);
+  if (!sessionId) {
+    throw new Error(`goosed /sessions response has no id field: ${JSON.stringify(data)}`);
+  }
+  goosedSessionCache.set(conversationKey, sessionId);
+  return sessionId;
+};
+
+// ── goosed: send a prompt and accumulate the SSE reply ────────────────────────
+const sendToGoosedSession = async (sessionId, text) => {
+  const res = await fetch(`${GOOSED_BASE}/sessions/${sessionId}/reply`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "X-Secret-Key": GOOSE_SECRET_KEY,
+    },
+    // ponytail: try "content" first (goosed v0.x); some builds use "message" — both
+    // are sent so the server picks whichever field it recognises; extra fields ignored.
+    body: JSON.stringify({ content: text, message: text }),
+  });
+  if (!res.ok) {
+    throw new Error(`goosed POST /sessions/${sessionId}/reply returned ${res.status}`);
+  }
+
+  // Read the SSE stream and accumulate assistant text deltas.
+  // ponytail: defensive SSE parse — goosed schema may vary by version; we extract
+  // any of {delta, text, content, message} string fields that look like assistant
+  // output; malformed or non-data lines are silently skipped; an empty accumulation
+  // is treated as a failure so the caller can fall back to the one-shot path.
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop(); // keep the incomplete trailing line
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const raw = line.slice(5).trim();
+      if (raw === "" || raw === "[DONE]") continue;
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { continue; }
+      // Accept any string field that carries assistant text.
+      const piece = parsed?.delta ?? parsed?.text ?? parsed?.content ?? parsed?.message ?? "";
+      if (typeof piece === "string" && piece.length > 0) {
+        accumulated += piece;
+      }
+    }
+  }
+
+  return accumulated.trim();
+};
+
+// ── One-shot fallback: the original /v1/chat/completions path ─────────────────
+const routeToGooseOneShotFallback = async (text) => {
+  const res = await fetch(`${MYAI_LOCAL_URL}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "X-Agent-Mode": "goose",
+    },
+    body: JSON.stringify({
+      model: "goose",
+      messages: [{ role: "user", content: text }],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    return `[gateway error ${res.status}] ${body.slice(0, 200)}`;
+  }
+  const json = await res.json();
+  return json?.choices?.[0]?.message?.content ?? "[gateway: empty reply]";
+};
 
 // ── Shared: route a text prompt through the local goose pipeline ──────────────
-const routeToGoose = async (text) => {
+// Primary path: goosed persistent session (REST+SSE at 127.0.0.1:GOOSE_PORT).
+// Fallback path: one-shot POST to MYAI_LOCAL_URL/v1/chat/completions (X-Agent-Mode: goose).
+// conversationKey identifies the chat so sessions are reused across turns.
+const routeToGoose = async (text, conversationKey = "default") => {
   try {
-    const res = await fetch(`${MYAI_LOCAL_URL}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "X-Agent-Mode": "goose",
-      },
-      body: JSON.stringify({
-        model: "goose",
-        messages: [{ role: "user", content: text }],
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return `[gateway error ${res.status}] ${body.slice(0, 200)}`;
+    const sessionId = await getOrCreateGoosedSession(conversationKey);
+    const reply = await sendToGoosedSession(sessionId, text);
+    if (reply.length === 0) {
+      throw new Error("goosed returned empty text — falling back");
     }
-    const json = await res.json();
-    return json?.choices?.[0]?.message?.content ?? "[gateway: empty reply]";
-  } catch (err) {
-    return `[gateway error] ${err.message}`;
+    console.log(`[gateway] routed via goosed session (key=${conversationKey} sid=${sessionId})`);
+    return reply;
+  } catch (goosedErr) {
+    console.warn(`[gateway] goosed unavailable or failed (${goosedErr.message}); falling back to one-shot path`);
+    // Evict the cached session so the next call tries a fresh one.
+    goosedSessionCache.delete(conversationKey);
+    try {
+      const reply = await routeToGooseOneShotFallback(text);
+      console.log("[gateway] routed via one-shot fallback (X-Agent-Mode: goose)");
+      return reply;
+    } catch (fallbackErr) {
+      return `[gateway error] ${fallbackErr.message}`;
+    }
   }
 };
 
@@ -82,7 +191,8 @@ const startTelegram = () => {
               console.log(`[gateway] telegram: denied from ${from_id}`);
               continue;
             }
-            const reply = await routeToGoose(msg.text);
+            const conversationKey = `telegram:${msg.chat.id}`;
+            const reply = await routeToGoose(msg.text, conversationKey);
             await sendMessage(msg.chat.id, reply);
           } catch (innerErr) {
             console.error("[gateway] telegram: error processing update:", innerErr.message);
@@ -166,7 +276,8 @@ const startMattermost = () => {
       if (botUserId === null) await fetchBotUserId();
       if (botUserId === null || post.user_id === botUserId) return;
       if (!post.message) return;
-      const reply = await routeToGoose(post.message);
+      const conversationKey = `mattermost:${post.channel_id}`;
+      const reply = await routeToGoose(post.message, conversationKey);
       await postReply(post.channel_id, reply);
     });
 
@@ -184,6 +295,6 @@ const startMattermost = () => {
 };
 
 // ── Startup ───────────────────────────────────────────────────────────────────
-console.log("[gateway] starting — MYAI_LOCAL_URL:", MYAI_LOCAL_URL);
+console.log("[gateway] starting — MYAI_LOCAL_URL:", MYAI_LOCAL_URL, "GOOSED_BASE:", GOOSED_BASE);
 startTelegram();
 startMattermost();
