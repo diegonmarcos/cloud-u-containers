@@ -1,0 +1,32 @@
+# schema: goose 1.44
+# goose-config.yaml — baked into the my-ai-api image at /home/appuser/.config/goose/config.yaml.
+# Routes goose back through the local my-ai-api front so all plugin pipeline stages
+# (RTK, Caveman, Headroom, Ponytail) apply to goose sessions too.
+# The cloud-cgc-mcp extension gives goose access to the full infra knowledge graph.
+
+GOOSE_PROVIDER: openai
+GOOSE_MODEL: deepseek/deepseek-v4-pro
+
+# OpenAI-compatible base: point at the local my-ai-api front (port 3217).
+# goose 1.44 respects OPENAI_HOST as the base URL for the openai provider.
+OPENAI_HOST: http://127.0.0.1:3217
+
+# Extensions loaded by goose at session start.
+extensions:
+  # Infrastructure knowledge graph — streamable HTTP MCP server on the WG mesh.
+  cloud-cgc-mcp:
+    enabled: true
+    type: streamablehttp
+    uri: http://10.0.0.6:3105/mcp
+    name: cloud-cgc-mcp
+
+  # Built-in goose extensions.
+  developer:
+    enabled: true
+    type: builtin
+    name: developer
+
+  todo:
+    enabled: true
+    type: builtin
+    name: todo

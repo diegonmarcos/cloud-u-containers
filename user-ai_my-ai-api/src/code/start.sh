@@ -2,6 +2,7 @@
 # start.sh — supervise the my-ai-api processes in one container:
 #   1. compress_service  (Python/FastAPI · vendored Headroom)  — must come up first
 #   2. server.mjs        (Node front · OpenAI/Ollama/Anthropic → OpenRouter)
+#   3. gateway.mjs       (Telegram + Mattermost → goose bridge, optional)
 #
 # Slimmer than claude-superset-api's start.sh: NO headroom transparent-proxy face
 # (no `headroom proxy --backend anthropic` — we route OpenRouter, and the Node
@@ -15,6 +16,13 @@
 set -euo pipefail
 
 HEADROOM_PORT="${HEADROOM_PORT:-8890}"
+
+# Goose reads $XDG_CONFIG_HOME/goose/config.yaml. The Dockerfile bakes the config
+# at /app/.config/goose/config.yaml and sets XDG_CONFIG_HOME=/app/.config (outside
+# the /home/appuser volume, so it refreshes every deploy). Honour those; only fall
+# back if unset.
+export HOME="${HOME:-/home/appuser}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/app/.config}"
 
 term() { echo "[start] shutting down"; kill "${PIDS[@]}" 2>/dev/null || true; }
 trap term TERM INT
@@ -40,6 +48,15 @@ done
 echo "[start] launching node front"
 node /app/server.mjs &
 PIDS+=("$!")
+
+# Gateway: only launch if at least one messaging platform is configured.
+if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] || [ "${MATTERMOST_ENABLED:-}" = "true" ]; then
+  echo "[start] launching gateway (messaging bridge)"
+  node /app/gateway.mjs &
+  PIDS+=("$!")
+else
+  echo "[start] gateway: no messaging configured — skipping"
+fi
 
 # Supervise: first process to exit takes the container down with it.
 wait -n
