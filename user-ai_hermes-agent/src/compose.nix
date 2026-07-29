@@ -31,6 +31,10 @@ in
       # host networking: reach WG mesh (10.0.0.6) + outbound Telegram without NAT.
       network_mode   = "host";
       command        = [ "gateway" "run" ];
+      # Override the fleet default init:true — the nousresearch/hermes-agent image
+      # runs s6-overlay, which aborts ("s6-overlay-suexec: can only run as pid 1")
+      # when Docker's tini is injected as PID 1. s6 must be PID 1, so disable init.
+      init           = false;
       # Secrets: TELEGRAM_BOT_TOKEN, OPENAI_API_KEY, MATTERMOST_TOKEN.
       env_file       = [ "./.secrets" ];
       environment    = {
