@@ -1,32 +1,46 @@
-# schema: goose 1.44
-# goose-config.yaml — baked into the my-ai-api image at /home/appuser/.config/goose/config.yaml.
-# Routes goose back through the local my-ai-api front so all plugin pipeline stages
-# (RTK, Caveman, Headroom, Ponytail) apply to goose sessions too.
-# The cloud-cgc-mcp extension gives goose access to the full infra knowledge graph.
+# Goose config for the my-ai-api container — baked at /app/.config/goose/config.yaml
+# schema mirrors III_unix/bb_flakes_termux/src/modules/dotfiles/goose/config.yaml (goose 1.44)
 
+# Provider: goose -> my-ai-api's own OpenAI-compatible front (127.0.0.1:3217/v1/chat/completions)
+# so every goose LLM call flows back through the my-ai-api plugin pipeline
+# (principles/RTK/ponytail/headroom) before hitting OpenRouter.
 GOOSE_PROVIDER: openai
 GOOSE_MODEL: deepseek/deepseek-v4-pro
-
-# OpenAI-compatible base: point at the local my-ai-api front (port 3217).
-# goose 1.44 respects OPENAI_HOST as the base URL for the openai provider.
 OPENAI_HOST: http://127.0.0.1:3217
+OPENAI_API_KEY: sk-my-ai-api-local
+GOOSE_CONTEXT_WINDOW: 8192
+GOOSE_TELEMETRY_ENABLED: false
 
-# Extensions loaded by goose at session start.
 extensions:
-  # Infrastructure knowledge graph — streamable HTTP MCP server on the WG mesh.
   cloud-cgc-mcp:
-    enabled: true
-    type: streamablehttp
+    name: Cloud Code Graph Context MCP
+    type: streamable_http
     uri: http://10.0.0.6:3105/mcp
-    name: cloud-cgc-mcp
+    enabled: true
+    timeout: 300
 
-  # Built-in goose extensions.
   developer:
     enabled: true
-    type: builtin
+    type: platform
     name: developer
+    description: Write and edit files, and execute shell commands
+    display_name: Developer
+    bundled: true
+    available_tools: []
 
   todo:
     enabled: true
-    type: builtin
+    type: platform
     name: todo
+    description: Enable a todo list for goose so it can keep track of what it is doing
+    display_name: Todo
+    bundled: true
+    available_tools: []
+
+providers:
+  openai:
+    enabled: true
+    model: deepseek/deepseek-v4-pro
+    configured: true
+
+active_provider: openai
