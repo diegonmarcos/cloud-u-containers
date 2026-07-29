@@ -441,6 +441,8 @@ def main():
 
     # Filter tools based on tier configuration (if tier-based loading is enabled)
     filter_server_tools(server)
+    from core.meta import register_meta_tools
+    register_meta_tools(server)
 
     # Handle CLI mode - execute tool and exit
     if args.cli is not None:
