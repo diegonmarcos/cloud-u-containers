@@ -77,7 +77,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
        esac \
     && GOOSE_VER="1.44.0" \
     && curl -fsSL "https://github.com/block/goose/releases/download/v${GOOSE_VER}/goose-${GOOSE_ARCH}.tar.gz" \
-       | tar -xz -C /usr/local/bin --strip-components=1 goose-${GOOSE_ARCH}/goose \
+       | tar -xz -C /usr/local/bin ./goose \
     && chmod +x /usr/local/bin/goose \
     && goose --version \
     && npm cache clean --force \
