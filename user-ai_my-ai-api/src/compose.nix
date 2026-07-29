@@ -23,6 +23,7 @@ in
         BRIDGE_PORT        = toString (ports.app      or 3217);
         OLLAMA_PORT        = toString (ports.ollama   or 12436);
         HEADROOM_PORT      = toString (ports.headroom or 8890);
+        GOOSE_PORT         = toString (ports.goosed   or 3227);
         DEFAULT_MODEL      = rt.model or "z-ai/glm-5";
         MAX_CONCURRENCY    = toString (rt.max_concurrency or 12);
         CALL_TIMEOUT_MS    = toString (rt.call_timeout_ms or 180000);

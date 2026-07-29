@@ -5,7 +5,9 @@
   "ports": {
     "app": 3217,
     "ollama": 12436,
-    "headroom": 8890
+    "headroom": 8890,
+    "goosed": 3227,
+    "_goosed_doc": "goosed = goose agent ACP/REST+SSE server (goose serve, X-Secret-Key auth, WireGuard-only)"
   },
   "category": "agi",
   "docker": {
@@ -27,7 +29,13 @@
     "compose_flags": "--pull always --force-recreate"
   },
   "secrets": {
-    "escape_dollars": "false"
+    "escape_dollars": "false",
+    "_required": [
+      "OPENROUTER_API_KEY",
+      "TELEGRAM_BOT_TOKEN",
+      "GOOSE_SERVER__SECRET_KEY"
+    ],
+    "_goose_server_secret_key_doc": "X-Secret-Key header required by all goosed ACP requests. Comes from .secrets env_file (src/secrets.yaml). If unset the goosed process is skipped at startup."
   },
   "proxy": {
     "app_hub": false
