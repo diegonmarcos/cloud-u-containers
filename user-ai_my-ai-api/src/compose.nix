@@ -10,6 +10,7 @@ let
   app   = buildJson.containers.app;
   rt    = buildJson.runtime or {};
   ports = buildJson.ports or {};
+  gw = rt.gateway or {};
 in
 {
   services = {
@@ -19,12 +20,15 @@ in
       network_mode   = "host";
       env_file       = [ "./.secrets" ];
       environment    = {
-        BRIDGE_PORT     = toString (ports.app      or 3217);
-        OLLAMA_PORT     = toString (ports.ollama   or 12436);
-        HEADROOM_PORT   = toString (ports.headroom or 8890);
-        DEFAULT_MODEL   = rt.model or "z-ai/glm-5";
-        MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
-        CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
+        BRIDGE_PORT        = toString (ports.app      or 3217);
+        OLLAMA_PORT        = toString (ports.ollama   or 12436);
+        HEADROOM_PORT      = toString (ports.headroom or 8890);
+        DEFAULT_MODEL      = rt.model or "z-ai/glm-5";
+        MAX_CONCURRENCY    = toString (rt.max_concurrency or 12);
+        CALL_TIMEOUT_MS    = toString (rt.call_timeout_ms or 180000);
+        MATTERMOST_URL     = gw.mattermost_url     or "";
+        MATTERMOST_ENABLED = gw.mattermost_enabled  or "false";
+        TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
       };
       volumes = [
         "my_ai_home:/home/appuser"

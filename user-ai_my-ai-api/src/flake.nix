@@ -27,9 +27,11 @@
             ./code/vendor
             ./code/py
             ./code/server.mjs
+            ./code/gateway.mjs
             ./code/package.json
             ./code/start.sh
             ./code/principles
+            ./code/configs
           ];
           cmd       = nb.cmd or "";
           binary    = nb.entrypoint or "";

@@ -95,6 +95,7 @@ COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 # App code.
 WORKDIR /app
 COPY server.mjs package.json /app/
+COPY gateway.mjs /app/gateway.mjs
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 COPY principles/ /app/principles/
@@ -102,9 +103,21 @@ RUN chmod +x /app/start.sh
 
 # Non-root appuser; HOME holds the persisted session store + ~/.headroom ledger
 # (mounted as the my_ai_home named volume at runtime).
+# The goose config lives under /app/.config (XDG_CONFIG_HOME), NOT under
+# /home/appuser — the my_ai_home:/home/appuser volume would otherwise shadow it
+# and pin whatever config landed on first boot, so config edits would never
+# propagate on redeploy. Keeping it in the image layer at /app makes goose read
+# the freshly-built config every deploy while sessions/headroom persist in the volume.
 RUN useradd -r -m -u 10001 appuser \
     && mkdir -p /home/appuser/.headroom \
+    && mkdir -p /app/.config/goose \
     && chown -R appuser:appuser /home/appuser /app
+COPY configs/goose-config.yaml /app/.config/goose/config.yaml
+RUN chown appuser:appuser /app/.config/goose/config.yaml
+
+ENV HOME=/home/appuser \
+    XDG_CONFIG_HOME=/app/.config
+
 USER appuser
 
 EXPOSE 3217 12436 8890
