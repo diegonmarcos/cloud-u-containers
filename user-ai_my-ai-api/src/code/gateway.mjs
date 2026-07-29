@@ -159,8 +159,12 @@ const startMattermost = () => {
       if (payload.event !== "posted") return;
       let post;
       try { post = JSON.parse(payload.data?.post ?? "{}"); } catch { return; }
-      // Skip self-echo (author check); ponytail: no dedup beyond this single author check.
-      if (botUserId && post.user_id === botUserId) return;
+      // Skip self-echo (author check).
+      // If botUserId was not available at connect time, re-fetch it now (cheap: only
+      // runs when null).  If it is still null after the retry, skip this post entirely
+      // rather than risk an infinite echo loop.
+      if (botUserId === null) await fetchBotUserId();
+      if (botUserId === null || post.user_id === botUserId) return;
       if (!post.message) return;
       const reply = await routeToGoose(post.message);
       await postReply(post.channel_id, reply);
