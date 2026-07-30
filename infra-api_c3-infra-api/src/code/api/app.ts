@@ -11,6 +11,7 @@ import { registerOperationsRoutes } from "./routes/operations.js";
 import { registerObservabilityRoutes } from "./routes/observability.js";
 import { registerSecurityRoutes } from "./routes/security.js";
 import { registerFinOpsRoutes } from "./routes/finops.js";
+import { registerPublicLogsRoutes } from "./routes/publicLogs.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -56,6 +57,7 @@ export async function buildApp() {
   await app.register(registerObservabilityRoutes);
   await app.register(registerSecurityRoutes);
   await app.register(registerFinOpsRoutes);
+  await app.register(registerPublicLogsRoutes);
 
   return app;
 }

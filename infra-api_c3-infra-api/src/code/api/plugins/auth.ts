@@ -11,6 +11,7 @@ const PUBLIC_PATHS = new Set([
 
 function isPublicPath(url: string): boolean {
   if (url.startsWith("/docs")) return true;
+  if (url.startsWith("/public/")) return true;
   return PUBLIC_PATHS.has(url);
 }
 
