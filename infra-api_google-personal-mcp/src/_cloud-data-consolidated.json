@@ -5445,8 +5445,8 @@
             "use_llm": false,
             "llm_model": "openrouter:deepseek/deepseek-v4-pro",
             "schedule": "0 4,16 * * *",
-            "max_minutes": 330,
-            "repo_timeout_min": 90,
+            "max_minutes": 340,
+            "repo_timeout_min": 0,
             "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
