@@ -46,6 +46,7 @@ in
         "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro"
         "~/.config/gcloud:/root/.config/gcloud"
         "c3_git_repos:/root/git"
+        "c3_public_logs:/app/public/logs"
       ];
       healthcheck = {
         test = [
@@ -61,5 +62,6 @@ in
   };
   volumes = {
     c3_git_repos = { external = true; name = "c3-mcp-api_c3-repos"; };
+    c3_public_logs = { };
   };
 }
