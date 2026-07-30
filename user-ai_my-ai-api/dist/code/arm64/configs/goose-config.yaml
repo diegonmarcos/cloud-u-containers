@@ -1,0 +1,46 @@
+# Goose config for the my-ai-api container — baked at /app/.config/goose/config.yaml
+# schema mirrors III_unix/bb_flakes_termux/src/modules/dotfiles/goose/config.yaml (goose 1.44)
+
+# Provider: goose -> my-ai-api's own OpenAI-compatible front (127.0.0.1:3217/v1/chat/completions)
+# so every goose LLM call flows back through the my-ai-api plugin pipeline
+# (principles/RTK/ponytail/headroom) before hitting OpenRouter.
+GOOSE_PROVIDER: openai
+GOOSE_MODEL: deepseek/deepseek-v4-pro
+OPENAI_HOST: http://127.0.0.1:3217
+OPENAI_API_KEY: sk-my-ai-api-local
+GOOSE_CONTEXT_WINDOW: 8192
+GOOSE_TELEMETRY_ENABLED: false
+
+extensions:
+  cloud-cgc-mcp:
+    name: Cloud Code Graph Context MCP
+    type: streamable_http
+    uri: http://10.0.0.6:3105/mcp
+    enabled: true
+    timeout: 300
+
+  developer:
+    enabled: true
+    type: platform
+    name: developer
+    description: Write and edit files, and execute shell commands
+    display_name: Developer
+    bundled: true
+    available_tools: []
+
+  todo:
+    enabled: true
+    type: platform
+    name: todo
+    description: Enable a todo list for goose so it can keep track of what it is doing
+    display_name: Todo
+    bundled: true
+    available_tools: []
+
+providers:
+  openai:
+    enabled: true
+    model: deepseek/deepseek-v4-pro
+    configured: true
+
+active_provider: openai
