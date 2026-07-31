@@ -188,9 +188,6 @@
         "hermes-agent",
         "kg-store",
         "my-ai-api",
-        "ollama-hai",
-        "rig-agentic-hai-1.5bq4",
-        "rig-agentic-sonn-14bq8",
         "session-memory",
         "chat-mattermost",
         "matrix-element",
@@ -211,7 +208,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 62
+      "container_count": 61
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -286,7 +283,6 @@
       "gcloud_instance": "arch-1",
       "gcloud_zone": "us-central1-a",
       "services": [
-        "c3-analytics-api",
         "http-to-smtp-proxy-api",
         "postlite",
         "redis",
@@ -296,7 +292,7 @@
         "caddy",
         "introspect-proxy"
       ],
-      "container_count": 9
+      "container_count": 8
     },
     "vast-RTX-p_0": {
       "ip": "TBD",
@@ -977,145 +973,6 @@
         "api_url": null,
         "healthcheck_paths": []
       }
-    },
-    "c3-analytics-api": {
-      "category": "obs",
-      "vm": "gcp-E2-f_0",
-      "folder": "infra-api_c3-analytics-api",
-      "description": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve",
-      "enabled": true,
-      "domain": "api.diegonmarcos.com/c3a",
-      "flake": "infra-api_c3-analytics-api",
-      "port": 8085,
-      "dns": "c3-analytics-api.app",
-      "upstream": "10.0.0.1:8085",
-      "containers": {
-        "app": {
-          "container_name": "c3-analytics-api",
-          "image": "ghcr.io/diegonmarcos/c3-analytics-api:latest",
-          "port": 8085,
-          "port_env": "PORT",
-          "dns": "c3-analytics-api.app",
-          "public": true,
-          "proxy": {
-            "type": "path",
-            "parent_domain": "api.diegonmarcos.com",
-            "base_path": "/c3a",
-            "auth": "none"
-          },
-          "healthcheck": "/healthz",
-          "monitoring": {
-            "tls_check": true,
-            "dns_check": true,
-            "endpoint_check": true
-          },
-          "volumes": [],
-          "env_file": true,
-          "depends_on": [],
-          "resources": null,
-          "read_only": false,
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "c3-analytics-api"
-      ],
-      "all_ports": [
-        "8085"
-      ],
-      "all_dns": [
-        "c3-analytics-api.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "proxy": {
-        "primary": {
-          "type": "path",
-          "parent_domain": "api.diegonmarcos.com",
-          "base_path": "/c3a",
-          "auth": "none"
-        }
-      },
-      "declared_ports": {
-        "app": 8085
-      },
-      "health": {
-        "path": "/c3a/healthz"
-      },
-      "monitoring": {
-        "tls_check": true,
-        "dns_check": true,
-        "endpoint_check": true
-      },
-      "backends": {
-        "e": {
-          "service": "matomo",
-          "rewrite_path": "/matomo.php",
-          "description": "Matomo Tracking API",
-          "methods": [
-            "GET",
-            "POST"
-          ]
-        },
-        "s": {
-          "service": "umami",
-          "rewrite_path": "/api/send",
-          "description": "Umami /api/send",
-          "methods": [
-            "POST"
-          ]
-        },
-        "l": {
-          "service": "openobserve",
-          "rewrite_path": "/api/default/default/_json",
-          "description": "OpenObserve _json bulk ingest",
-          "methods": [
-            "POST"
-          ],
-          "auth_header_env": "OPENOBSERVE_AUTHORIZATION"
-        }
-      },
-      "sites": [
-        {
-          "id": "diegonmarcos-com",
-          "origins": [
-            "https://diegonmarcos.com",
-            "https://www.diegonmarcos.com"
-          ],
-          "matomo_idsite": null,
-          "umami_website_id": null,
-          "openobserve_stream": "diegonmarcos-com"
-        }
-      ],
-      "limits": {
-        "max_body_bytes": 1048576,
-        "max_ingest_lines": 5000,
-        "rate_per_ip_per_min": 60,
-        "rate_per_sid_per_min": 1000,
-        "tracker_cache_seconds": 300,
-        "request_timeout_ms": 5000
-      },
-      "api": {
-        "has_api": true,
-        "has_web_ui": true,
-        "api_path": "/c3a/docs/json",
-        "api_url": "https://api.diegonmarcos.com/c3a/c3a/docs/json",
-        "healthcheck_paths": [
-          "/healthz"
-        ],
-        "type": "openapi",
-        "spec_path": "/c3a/docs/json",
-        "base_path": "/c3a",
-        "display_name": "C3 Analytics Public Collector",
-        "description": "Public passthrough analytics collector. Browsers/sites POST to /c3a/{e|s|l}, file ingest /c3a/f, tracker /c3a/t.js.",
-        "auth": "none"
-      },
-      "secret_env_vars": [
-        "OPENOBSERVE_AUTHORIZATION"
-      ]
     },
     "c3-diego-personal-data-mcp": {
       "category": "data",
@@ -5919,347 +5776,6 @@
         "GOOSE_SERVER__SECRET_KEY"
       ]
     },
-    "ollama": {
-      "category": "agi",
-      "vm": "gcp-t4",
-      "folder": "user-ai_ollama",
-      "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
-      "enabled": true,
-      "flake": "user-ai_ollama",
-      "port": 11434,
-      "dns": "ollama.app",
-      "containers": {
-        "app": {
-          "container_name": "ollama",
-          "image": "ollama/ollama:latest",
-          "port": 11434,
-          "port_env": "OLLAMA_HOST",
-          "dns": "ollama.app",
-          "public": false,
-          "proxy": null,
-          "healthcheck": null,
-          "monitoring": null,
-          "volumes": [
-            "ollama_data:/root/.ollama"
-          ],
-          "env_file": false,
-          "depends_on": [],
-          "resources": {
-            "gpu": {
-              "driver": "nvidia",
-              "count": 1,
-              "capabilities": [
-                "gpu"
-              ]
-            }
-          },
-          "read_only": false,
-          "port_format": "host",
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "ollama"
-      ],
-      "all_ports": [
-        "11434"
-      ],
-      "all_dns": [
-        "ollama.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "app": 11434
-      },
-      "fallback_vm": "vast-RTX-p_0",
-      "models": [
-        "deepseek-r1:14b",
-        "qwen2.5:14b"
-      ],
-      "notes": "Primary: GCP Spot T4. Fallback: Vast.ai on-demand. WireGuard only (10.0.0.8).",
-      "api": {
-        "has_api": true,
-        "has_web_ui": false,
-        "api_path": "/api",
-        "api_url": null,
-        "healthcheck_paths": [],
-        "type": "custom-rest",
-        "base_path": "/api",
-        "endpoint_count": 16,
-        "display_name": "Ollama LLM API (gcp-t4)",
-        "description": "REST API for LLM inference, embeddings, model management, and version information.",
-        "auth": "none"
-      }
-    },
-    "ollama-arm": {
-      "category": "agi",
-      "vm": "oci-apps-2",
-      "folder": "user-ai_ollama-arm",
-      "description": "Ollama LLM server (ARM CPU, 7b models)",
-      "enabled": true,
-      "flake": "user-ai_ollama-arm",
-      "port": 11434,
-      "dns": "ollama-arm.app",
-      "containers": {
-        "app": {
-          "container_name": "ollama-arm",
-          "port": 11434,
-          "port_env": "OLLAMA_HOST",
-          "port_format": "host",
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "ollama-arm"
-      ],
-      "all_ports": [
-        "11434"
-      ],
-      "all_dns": [],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "app": 11434
-      },
-      "api": {
-        "has_api": true,
-        "has_web_ui": false,
-        "api_path": "/api",
-        "api_url": null,
-        "healthcheck_paths": [],
-        "type": "custom-rest",
-        "base_path": "/api",
-        "endpoint_count": 16,
-        "display_name": "Ollama LLM API (ARM)",
-        "description": "REST API for LLM inference, embeddings, model management on ARM CPU.",
-        "auth": "none"
-      }
-    },
-    "ollama-hai": {
-      "category": "agi",
-      "vm": "oci-A1-f_0",
-      "folder": "user-ai_ollama-hai",
-      "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
-      "enabled": false,
-      "flake": "user-ai_ollama-hai",
-      "port": 11435,
-      "dns": "ollama-hai.app",
-      "upstream": "10.0.0.6:11435",
-      "containers": {
-        "app": {
-          "container_name": "ollama-hai",
-          "image": "ollama/ollama:latest",
-          "port": 11435,
-          "port_env": "OLLAMA_HOST",
-          "dns": "ollama-hai.app",
-          "public": false,
-          "proxy": null,
-          "healthcheck": null,
-          "volumes": [
-            "ollama_hai_data:/root/.ollama"
-          ],
-          "env_file": false,
-          "depends_on": [],
-          "resources": {
-            "limits": {
-              "memory": "6G"
-            }
-          },
-          "read_only": false,
-          "port_format": "host",
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "ollama-hai"
-      ],
-      "all_ports": [
-        "11435"
-      ],
-      "all_dns": [
-        "ollama-hai.app"
-      ],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "app": 11435
-      },
-      "timezone": "America/Chicago",
-      "upstream_image": "ollama/ollama:latest",
-      "ollama": {
-        "keep_alive": "-1",
-        "num_parallel": 2,
-        "max_loaded_models": 2,
-        "num_ctx": 4096,
-        "models": [
-          "qwen2.5:1.5b",
-          "nomic-embed-text"
-        ]
-      },
-      "resources": {
-        "mem_limit": "6G"
-      },
-      "api": {
-        "has_api": true,
-        "has_web_ui": false,
-        "api_path": "/api",
-        "api_url": null,
-        "healthcheck_paths": [],
-        "type": "custom-rest",
-        "base_path": "/api",
-        "endpoint_count": 16,
-        "display_name": "Ollama LLM API (HAI)",
-        "description": "REST API for LLM inference and embeddings for HAI agent and octocode support.",
-        "auth": "none"
-      }
-    },
-    "rig-agentic-hai-1.5bq4": {
-      "category": "agi",
-      "vm": "oci-A1-f_0",
-      "folder": "user-ai_rig-agentic-hai-1.5bq4",
-      "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
-      "enabled": false,
-      "flake": "user-ai_rig-agentic-hai-1.5bq4",
-      "port": 8091,
-      "dns": "rig-agentic-hai-1.5bq4.app",
-      "upstream": "10.0.0.6:8091",
-      "containers": {
-        "app": {
-          "container_name": "rig-agentic-hai",
-          "port": 8091,
-          "port_env": "RIG_PORT",
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "rig-agentic-hai"
-      ],
-      "all_ports": [
-        "8091"
-      ],
-      "all_dns": [],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "app": 8091
-      },
-      "rig": {
-        "ollama_service": "ollama-hai",
-        "ollama_model": "qwen2.5:1.5b",
-        "c3_mcp_url": "http://c3-services-mcp.app",
-        "mattermost_url": "http://mattermost.app",
-        "mm_bot_mention": "@hai-1.5bq4-ai",
-        "guardrail_max_turns": 5,
-        "self_healing_enabled": false,
-        "rust_log": "rig_agentic=info",
-        "allowed_tools": [
-          "mm_post",
-          "mm_reply",
-          "mm_read",
-          "mm_channels",
-          "mail_send",
-          "mail_reply",
-          "ntfy_publish",
-          "services_list",
-          "services_info",
-          "c3_topology",
-          "c3_configs",
-          "c3_deps",
-          "c3_topology_md",
-          "c3_configs_md",
-          "c3_deps_front",
-          "cloud_context",
-          "knowledge_vm_info",
-          "knowledge_services_by_category",
-          "octocode_search",
-          "octocode_memory",
-          "dagu_trigger",
-          "dagu_list",
-          "gha_trigger",
-          "gha_list_runs"
-        ]
-      },
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      },
-      "secret_env_vars": [
-        "MM_BOT_TOKEN"
-      ]
-    },
-    "rig-agentic-sonn-14bq8": {
-      "category": "agi",
-      "vm": "oci-A1-f_0",
-      "folder": "user-ai_rig-agentic-sonn-14bq8",
-      "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
-      "enabled": true,
-      "flake": "user-ai_rig-agentic-sonn-14bq8",
-      "port": 8091,
-      "dns": "rig-agentic-sonn-14bq8.app",
-      "upstream": "10.0.0.6:8091",
-      "containers": {
-        "app": {
-          "container_name": "rig-agentic-sonn-14bq8",
-          "port": 8091,
-          "port_env": "RIG_PORT",
-          "protocol": "http"
-        }
-      },
-      "container_names": [
-        "rig-agentic-sonn-14bq8"
-      ],
-      "all_ports": [
-        "8091"
-      ],
-      "all_dns": [],
-      "compose": {
-        "containers": [],
-        "ports": [],
-        "networks": []
-      },
-      "declared_ports": {
-        "app": 8091
-      },
-      "rig": {
-        "ollama_service": "ollama-hai",
-        "ollama_model": "MFDoom/deepseek-r1-tool-calling:14b-qwen-distill-q8_0",
-        "c3_api_url": "http://c3-api.app",
-        "c3_mcp_url": "http://c3-mcp.app",
-        "mattermost_service": "chat-mattermost",
-        "mm_bot_mention": "@ollama-14bq8-ai",
-        "guardrail_max_turns": 20,
-        "self_healing_enabled": true,
-        "rust_log": "rig_agentic=info"
-      },
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      },
-      "secret_env_vars": [
-        "SURREAL_ROOT_PASSWORD",
-        "SURREAL_URL",
-        "MM_BOT_TOKEN"
-      ]
-    },
     "session-memory": {
       "category": "agi",
       "vm": "oci-A1-f_0",
@@ -9088,12 +8604,6 @@
         "service": "languagetool"
       },
       {
-        "name": "c3-analytics-api.app",
-        "type": "A",
-        "value": "10.0.0.1",
-        "service": "c3-analytics-api"
-      },
-      {
         "name": "c3-infra-api.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9290,12 +8800,6 @@
         "type": "A",
         "value": "10.0.0.6",
         "service": "my-ai-api"
-      },
-      {
-        "name": "ollama-hai.app",
-        "type": "A",
-        "value": "10.0.0.6",
-        "service": "ollama-hai"
       },
       {
         "name": "session-memory.app",
@@ -10029,9 +9533,6 @@
           "hermes-agent",
           "kg-store",
           "my-ai-api",
-          "ollama-hai",
-          "rig-agentic-hai-1.5bq4",
-          "rig-agentic-sonn-14bq8",
           "session-memory",
           "chat-mattermost",
           "matrix-element",
@@ -10158,7 +9659,6 @@
         "is_public_ingress": true,
         "idle_shutdown": null,
         "containers": [
-          "c3-analytics-api",
           "http-to-smtp-proxy-api",
           "postlite",
           "redis",
@@ -10322,11 +9822,6 @@
         "dir": "infra-ai_languagetool",
         "vm": "oci-apps",
         "has_docker": false
-      },
-      "c3-analytics-api": {
-        "dir": "infra-api_c3-analytics-api",
-        "vm": "gcp-proxy",
-        "has_docker": true
       },
       "c3-infra-api": {
         "dir": "infra-api_c3-infra-api",
@@ -10515,26 +10010,6 @@
       },
       "my-ai-api": {
         "dir": "user-ai_my-ai-api",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
-      "ollama": {
-        "dir": "user-ai_ollama",
-        "vm": "gcp-t4",
-        "has_docker": true
-      },
-      "ollama-hai": {
-        "dir": "user-ai_ollama-hai",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
-      "rig-agentic-hai-1.5bq4": {
-        "dir": "user-ai_rig-agentic-hai-1.5bq4",
-        "vm": "oci-apps",
-        "has_docker": true
-      },
-      "rig-agentic-sonn-14bq8": {
-        "dir": "user-ai_rig-agentic-sonn-14bq8",
         "vm": "oci-apps",
         "has_docker": true
       },
