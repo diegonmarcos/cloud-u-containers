@@ -83,11 +83,6 @@ in
         KG_STORE_USER  = oct.kg_store.user;
       };
       env_file = [ ".secrets" ];
-      # Self-heal: wait for the octocode_db volume to be restored from GHCR before
-      # serving, so a cold/redeploy never comes up on an empty/stale index.
-      depends_on = {
-        cloud-cgc-mcp-db-restore = { condition = "service_completed_successfully"; };
-      };
       volumes = [
         "./data:${buildJson.runtime.data_path}:ro"
         # Read the FastEmbed/GraphRAG index + cloned repos maintained by the Dagu
@@ -108,16 +103,15 @@ in
       };
     };
 
-    # ── DB restore (autodeploy self-heal) ───────────────────────────────────────
-    # Pull the GHCR DB image and populate the octocode_db volume BEFORE the MCP
-    # starts → a cold deploy / redeploy serves the CURRENT upstream DB instead of an
-    # empty or stale volume. GHCR is the single upstream (producer
-    # cloud-cgc-db-update.sh). Runs on every `compose up` (NOT profile-gated),
-    # idempotent, data-driven image. The DB tar is arch-independent, so the arm64
-    # busybox base is irrelevant — only its /octocode-db payload is copied.
+    # ── DB restore (profile-gated; NOT auto-started) ────────────────────────────
+    # Profile-gated because the octocode-db image is built amd64-only by the x86
+    # GHA runner; running it on arm64 oci-apps produces "exec format error".
+    # The octocode_db volume is populated externally (Dagu DAG / cgc-db GHA).
+    # Explicit opt-in: docker compose --profile restore run --rm cloud-cgc-mcp-db-restore
     cloud-cgc-mcp-db-restore = {
       image = dbImage;
       container_name = "cloud-cgc-mcp-db-restore";
+      profiles = [ "restore" ];
       restart = "no";
       volumes = [ "${oct.db_volume}:${oct.db_path}" ];
       # Use Nix-interpolated LITERAL paths, never a shell variable: docker compose
