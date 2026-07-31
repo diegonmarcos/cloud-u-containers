@@ -28,6 +28,7 @@
             ./code/py
             ./code/server.mjs
             ./code/gateway.mjs
+            ./code/mcp.mjs
             ./code/package.json
             ./code/start.sh
             ./code/principles

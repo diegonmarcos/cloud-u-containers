@@ -20,6 +20,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { runAgenticLoop, mcpEnabled, metaTools, MCP_ENABLED, searchTools, getServerCounts } from "./mcp.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -108,8 +109,23 @@ const stats = {
   since: Math.floor(Date.now() / 1000),
 };
 
+// ── per-request plugin toggle overrides ──────────────────────────────────────
+// Request headers x-rtk / x-headroom / x-caveman / x-principles override the
+// corresponding env default when present (on/off/1/0/true/false, case-insensitive).
+// Header absent ⇒ use the existing env default unchanged.
+const TRUE_VALS  = new Set(["on", "1", "true"]);
+const FALSE_VALS = new Set(["off", "0", "false"]);
+const headerBool = (headers, name, envDefault) => {
+  const v = (headers?.[name] || "").toLowerCase().trim();
+  if (TRUE_VALS.has(v)) return true;
+  if (FALSE_VALS.has(v)) return false;
+  return envDefault;
+};
+
 // ── Plugin: Principles — prepend system context ───────────────────────────────
-const injectPrinciples = (messages) => {
+const injectPrinciples = (messages, headers) => {
+  const principlesOn = headerBool(headers, "x-principles", AGENTS_PRINCIPLES_ENABLED || CLOUD_PRINCIPLES_ENABLED);
+  if (!principlesOn) return messages;
   const parts = [];
   if (CLOUD_PRINCIPLES)  parts.push(CLOUD_PRINCIPLES);
   if (AGENTS_PRINCIPLES) parts.push(AGENTS_PRINCIPLES);
@@ -126,8 +142,8 @@ const injectPrinciples = (messages) => {
 
 // ── Plugin: RTK implementation ───────────────────────────────────────────────
 const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
-const applyRTK = (messages) => {
-  if (!RTK_ENABLED || !Array.isArray(messages)) return messages;
+const applyRTK = (messages, headers) => {
+  if (!headerBool(headers, "x-rtk", RTK_ENABLED) || !Array.isArray(messages)) return messages;
   return messages.map((msg) => {
     if (!msg) return msg;
     const isToolMsg = msg.role === "tool" ||
@@ -171,17 +187,18 @@ const getPonytailProfile = (headers) => {
 };
 
 // ── Plugin: Headroom compress (calls Python sidecar) ─────────────────────────
-const compress = async (messages, model, savingsProfile) => {
+const compress = async (messages, model, savingsProfile, headers) => {
   const profile = savingsProfile !== undefined ? savingsProfile : HR_PROFILE;
   if (profile === null) return messages; // Ponytail "off"
-  if (!HR_ENABLED || !Array.isArray(messages) || messages.length === 0) return messages;
+  if (!headerBool(headers, "x-headroom", HR_ENABLED) || !Array.isArray(messages) || messages.length === 0) return messages;
+  const cavemanEnabled = headerBool(headers, "x-caveman", CAVEMAN_ENABLED);
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 30000);
     const r = await fetch(HR_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ messages, model, savings_profile: profile, caveman_enabled: CAVEMAN_ENABLED }),
+      body: JSON.stringify({ messages, model, savings_profile: profile, caveman_enabled: cavemanEnabled }),
       signal: ctrl.signal,
     }).finally(() => clearTimeout(t));
     if (!r.ok) throw new Error(`compress ${r.status}`);
@@ -202,9 +219,9 @@ const compress = async (messages, model, savingsProfile) => {
 
 // ── full plugin pipeline: Principles → RTK → Headroom (Caveman in sidecar) ───
 const pipeline = async (messages, model, headers) => {
-  const withPrinciples = injectPrinciples(messages);
-  const rtkd = applyRTK(withPrinciples);
-  return compress(rtkd, model, getPonytailProfile(headers));
+  const withPrinciples = injectPrinciples(messages, headers);
+  const rtkd = applyRTK(withPrinciples, headers);
+  return compress(rtkd, model, getPonytailProfile(headers), headers);
 };
 
 // ── Agent mode detection ──────────────────────────────────────────────────────
@@ -295,11 +312,28 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
   }
 };
 
+// ── MCP-agentic variant of callOpenRouter: runs the tool_search/tool_call loop ──
+const callOpenRouterAgentic = async ({ messages, model, extra }) => {
+  let lastRaw = null;
+  const callModel = async (msgs, tools) => {
+    const r = await forward({ messages: msgs, model, stream: false, extra: { ...extra, tools } });
+    lastRaw = await r.json();
+    return lastRaw.choices?.[0]?.message ?? { role: "assistant", content: "" };
+  };
+  const msgs = [...messages];
+  const text = await runAgenticLoop({ callModel, messages: msgs });
+  const usage = { input_tokens: lastRaw?.usage?.prompt_tokens ?? 0, output_tokens: lastRaw?.usage?.completion_tokens ?? 0 };
+  stats.calls++;
+  stats.prompt_tokens += usage.input_tokens;
+  stats.completion_tokens += usage.output_tokens;
+  return { text, usage, raw: lastRaw };
+};
+
 // ── Dispatch to the right backend ─────────────────────────────────────────────
 const dispatch = async ({ messages, model, extra, agentMode }) => {
   if (agentMode === "claude-cli") return callClaudeCLI({ messages, model, extra });
-  if (agentMode === "goose")      return callOpenRouter({ messages, model: GOOSE_MODEL, extra });
-  if (agentMode === "hermes")     return callOpenRouter({ messages, model: HERMES_MODEL, extra });
+  if (agentMode === "goose")      return mcpEnabled() ? callOpenRouterAgentic({ messages, model: GOOSE_MODEL, extra }) : callOpenRouter({ messages, model: GOOSE_MODEL, extra });
+  if (agentMode === "hermes")     return mcpEnabled() ? callOpenRouterAgentic({ messages, model: HERMES_MODEL, extra }) : callOpenRouter({ messages, model: HERMES_MODEL, extra });
   return callOpenRouter({ messages, model, extra });
 };
 
@@ -431,10 +465,24 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/health" || req.url === "/readyz" || req.url === "/livez" || req.url === "/"))
     return send(200, {
       status: "ok", active, max: MAX_CONC,
-      plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES },
+      plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES, mcp: MCP_ENABLED && mcpEnabled() },
       agents: { openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: GOOSE_MODEL, hermes: HERMES_MODEL },
       stats,
     });
+  if (req.method === "GET" && req.url.startsWith("/v1/mcp/status")) {
+    if (!mcpEnabled()) return send(200, { enabled: false });
+    try { return send(200, await getServerCounts()); }
+    catch (e) { return send(200, { enabled: true, error: String(e.message || e) }); }
+  }
+  if (req.method === "GET" && req.url.startsWith("/v1/mcp/search")) {
+    if (!mcpEnabled()) return send(200, { enabled: false });
+    try {
+      const u = new URL(req.url, "http://localhost");
+      const q = u.searchParams.get("q") || "";
+      const limit = parseInt(u.searchParams.get("limit") || "15", 10);
+      return send(200, await searchTools(q, limit));
+    } catch (e) { return send(200, { enabled: true, error: String(e.message || e) }); }
+  }
   if (req.method === "GET" && req.url.startsWith("/v1/models")) {
     if (!UP_KEY) return send(200, { object: "list", data: [{ id: DEFAULT_MODEL, object: "model", owned_by: "my-ai-api" }] });
     try {
