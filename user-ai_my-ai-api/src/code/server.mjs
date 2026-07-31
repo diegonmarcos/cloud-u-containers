@@ -20,7 +20,6 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3217", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -43,9 +42,8 @@ if (!UP_KEY) console.error("[my-ai-api] WARNING: OPENROUTER_API_KEY unset — ch
 // claude-cli: route to claude-superset-api (speaks OpenAI shape, WG-only)
 const CLAUDE_CLI_BASE = process.env.CLAUDE_CLI_BASE_URL || "";
 const CLAUDE_CLI_CHAT = process.env.CLAUDE_CLI_CHAT_PATH || "/v1/chat/completions";
-// goose: path to the goose binary (baked into the image alongside the server)
-const GOOSE_BIN = process.env.GOOSE_BIN || "/usr/local/bin/goose";
-const GOOSE_TIMEOUT = parseInt(process.env.GOOSE_TIMEOUT_MS || "120000", 10);
+// goose: OpenRouter model slug (forwarded like hermes, no local binary)
+const GOOSE_MODEL = process.env.GOOSE_MODEL || DEFAULT_MODEL;
 // hermes: OpenRouter model slug for Nous Hermes
 const HERMES_MODEL = process.env.HERMES_MODEL || "nousresearch/hermes-3-llama-3.1-405b:free";
 
@@ -297,30 +295,10 @@ const callClaudeCLI = async ({ messages, model, extra }) => {
   }
 };
 
-// ── Backend: goose binary ─────────────────────────────────────────────────────
-const callGoose = ({ messages }) => {
-  // Extract the last user message as the prompt; prepend system if present.
-  const system = messages.find((m) => m.role === "system")?.content || "";
-  const userMsgs = messages.filter((m) => m.role === "user");
-  const lastUser = userMsgs[userMsgs.length - 1];
-  const prompt = [system, typeof lastUser?.content === "string" ? lastUser.content : ""].filter(Boolean).join("\n\n");
-  if (!prompt.trim()) throw new Error("goose: no user prompt found in messages");
-  const result = spawnSync(GOOSE_BIN, ["run", "--text", prompt], {
-    timeout: GOOSE_TIMEOUT,
-    encoding: "utf8",
-    env: { ...process.env },
-  });
-  if (result.error) throw new Error(`goose spawn error: ${result.error.message}`);
-  if (result.status !== 0) throw new Error(`goose exit ${result.status}: ${(result.stderr || "").slice(0, 400)}`);
-  const text = (result.stdout || "").trim();
-  stats.calls++;
-  return { text, usage: { input_tokens: 0, output_tokens: 0 }, raw: null };
-};
-
 // ── Dispatch to the right backend ─────────────────────────────────────────────
 const dispatch = async ({ messages, model, extra, agentMode }) => {
   if (agentMode === "claude-cli") return callClaudeCLI({ messages, model, extra });
-  if (agentMode === "goose")      return callGoose({ messages });
+  if (agentMode === "goose")      return callOpenRouter({ messages, model: GOOSE_MODEL, extra });
   if (agentMode === "hermes")     return callOpenRouter({ messages, model: HERMES_MODEL, extra });
   return callOpenRouter({ messages, model, extra });
 };
@@ -454,7 +432,7 @@ const server = http.createServer(async (req, res) => {
     return send(200, {
       status: "ok", active, max: MAX_CONC,
       plugins: { headroom: HR_ENABLED, rtk: RTK_ENABLED, caveman: CAVEMAN_ENABLED, ponytail: PONYTAIL_DEFAULT, agents_principles: !!AGENTS_PRINCIPLES, cloud_principles: !!CLOUD_PRINCIPLES },
-      agents: { openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: fs.existsSync(GOOSE_BIN), hermes: HERMES_MODEL },
+      agents: { openrouter: !!UP_KEY, claude_cli: !!CLAUDE_CLI_BASE, goose: GOOSE_MODEL, hermes: HERMES_MODEL },
       stats,
     });
   if (req.method === "GET" && req.url.startsWith("/v1/models")) {
