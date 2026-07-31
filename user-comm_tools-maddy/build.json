@@ -115,6 +115,10 @@
       "name": "no-reply",
       "pass_env": "NOREPLY_PASSWORD",
       "aliases": ["noreply"]
+    },
+    "mailadmin": {
+      "name": "admin",
+      "pass_env": "ADMIN_PASSWORD"
     }
   },
   "containers": {
