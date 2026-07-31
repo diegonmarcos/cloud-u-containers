@@ -151,6 +151,10 @@
       "name": "no-reply",
       "pass_env": "NOREPLY_PASSWORD",
       "aliases": ["noreply"]
+    },
+    "mailadmin": {
+      "name": "admin",
+      "pass_env": "ADMIN_PASSWORD"
     }
   },
   "_doc_mta_routes": "Outbound SMTP routes for Stalwart's MTA. OCI Free Tier blocks outbound :25/:465/:587 from VMs, so direct MX delivery fails — every route must be a Relay to a paid SMTP service (OCI Email Delivery, AWS SES, etc.). activate.sh maps these into JMAP MtaRoute objects via /jmap/ + the urn:stalwart:jmap capability. Credentials are referenced by env-var NAME only (auth_username_env / auth_secret_env); actual values live in secrets.yaml.",
