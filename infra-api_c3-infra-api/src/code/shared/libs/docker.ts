@@ -314,6 +314,61 @@ export function composeUpAll(
   return { ok: allOk, output: parts.join("\n"), results };
 }
 
+// ── Pull + Up via the deployed engine script ─────────────────────────────
+// Wraps /opt/scripts/vm-images-pull-up.sh (home-manager managed, manifest-driven
+// serial pull then serial compose-up). Do not reimplement its logic here.
+
+const PULL_UP_CMD = "/opt/scripts/vm-images-pull-up.sh --manifest /opt/scripts/build-vm.json";
+
+function runPullUp(
+  vmNameOrAlias: string,
+  filter?: string,
+): { alias: string; ok: boolean; output: string } {
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+  const cmd = filter ? `${PULL_UP_CMD} ${filter}` : PULL_UP_CMD;
+  const result = sshExec(vmId, cmd, 300_000);
+  return { alias, ok: result.ok, output: (result.stdout + result.stderr).trim() };
+}
+
+export function pullUpContainer(
+  service: string,
+): { ok: boolean; output: string; vm: string } {
+  const config = getConfig();
+  const svc = config.services[service];
+  if (!svc) throw new Error(`Unknown service: ${service}`);
+  if (svc.vm === "local" || svc.vm === "all") {
+    throw new Error(`Cannot pull/up for vm=${svc.vm}`);
+  }
+  validatePathComponent(service);
+
+  const { alias, ok, output } = runPullUp(svc.vm, service);
+  audit("pull_up_container", `${service}@${alias}`, ok ? "OK" : "FAILED");
+  return { ok, output, vm: alias };
+}
+
+export function pullUpVmFleet(
+  vmNameOrAlias: string,
+): { ok: boolean; output: string; vm: string } {
+  const { alias, ok, output } = runPullUp(vmNameOrAlias);
+  audit("pull_up_vm_fleet", alias, ok ? "OK" : "FAILED");
+  return { ok, output, vm: alias };
+}
+
+export function pullUpCloudFleet(): {
+  ok: boolean;
+  results: { vm: string; ok: boolean; output: string }[];
+} {
+  const config = getConfig();
+  const results = Object.keys(config.vms).map((vmId) => {
+    const { alias, ok, output } = runPullUp(vmId);
+    return { vm: alias, ok, output };
+  });
+  const allOk = results.every((r) => r.ok);
+  audit("pull_up_cloud_fleet", `${results.length} vms`, allOk ? "OK" : "PARTIAL");
+  return { ok: allOk, results };
+}
+
 export function dockerSystemDf(
   vmNameOrAlias: string,
 ): { ok: boolean; output: string } {

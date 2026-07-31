@@ -18,6 +18,9 @@ import {
   logsMulti,
   dockerSystemDf,
   composeUpAll,
+  pullUpContainer,
+  pullUpVmFleet,
+  pullUpCloudFleet,
 } from "../../shared/libs/docker.js";
 import {
   vmStart,
@@ -251,6 +254,39 @@ export function registerOperationsTools(server: McpServer) {
           },
         ],
         isError: !result.ok,
+      };
+    }
+  );
+
+  server.tool(
+    "devops.docker.compose_up_scoped",
+    "Serial pull+up via the deployed engine (/opt/scripts/vm-images-pull-up.sh, manifest-driven). scope=container needs `target`=service name; scope=vm_fleet needs `target`=VM id/alias; scope=cloud_fleet runs every VM.",
+    {
+      scope: z.enum(["container", "vm_fleet", "cloud_fleet"]).describe("Blast radius: single service, one VM's fleet, or every VM"),
+      target: z.string().optional().describe("Service name (scope=container) or VM id/alias (scope=vm_fleet). Unused for cloud_fleet."),
+    },
+    async ({ scope, target }) => {
+      if (scope === "container") {
+        if (!target) return { content: [{ type: "text", text: "target (service name) required for scope=container" }], isError: true };
+        const r = pullUpContainer(target);
+        return {
+          content: [{ type: "text", text: `pull+up ${target} on ${r.vm}:\n${r.ok ? "SUCCESS" : "FAILED"}\n\n${r.output}` }],
+          isError: !r.ok,
+        };
+      }
+      if (scope === "vm_fleet") {
+        if (!target) return { content: [{ type: "text", text: "target (VM id/alias) required for scope=vm_fleet" }], isError: true };
+        const r = pullUpVmFleet(target);
+        return {
+          content: [{ type: "text", text: `pull+up fleet on ${r.vm}:\n${r.ok ? "SUCCESS" : "FAILED"}\n\n${r.output}` }],
+          isError: !r.ok,
+        };
+      }
+      const r = pullUpCloudFleet();
+      const text = r.results.map((v) => `=== ${v.vm}: ${v.ok ? "OK" : "FAILED"} ===\n${v.output}`).join("\n\n");
+      return {
+        content: [{ type: "text", text: `pull+up cloud fleet (${r.results.length} vms):\n${r.ok ? "ALL OK" : "PARTIAL FAILURE"}\n\n${text}` }],
+        isError: !r.ok,
       };
     }
   );
