@@ -1,6 +1,8 @@
 {
   "name": "c3-analytics-api",
-  "enabled": true,
+  "enabled": false,
+  "archived_at": "2026-07-31",
+  "archived_reason": "retired project, never deployed, moved to z_archive",
   "description": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve",
   "dns": "c3-analytics-api.app",
   "ports": {

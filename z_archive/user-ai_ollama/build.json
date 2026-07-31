@@ -1,5 +1,8 @@
 {
   "name": "ollama",
+  "enabled": false,
+  "archived_at": "2026-07-31",
+  "archived_reason": "no live container on any reachable VM; gcp-t4 spot host + vast.ai fallback both unreachable during health probe",
   "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
   "category": "agi",
   "build": {

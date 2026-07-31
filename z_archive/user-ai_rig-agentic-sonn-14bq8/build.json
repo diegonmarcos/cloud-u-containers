@@ -1,5 +1,8 @@
 {
   "name": "rig-agentic-sonn-14bq8",
+  "enabled": false,
+  "archived_at": "2026-07-31",
+  "archived_reason": "retired heavy agentic rig, no live container on any reachable VM",
   "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
   "port": 8091,
   "dns": "rig-agentic-sonn-14bq8.app",

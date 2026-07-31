@@ -1,5 +1,8 @@
 {
   "name": "ollama-arm",
+  "enabled": false,
+  "archived_at": "2026-07-31",
+  "archived_reason": "was already frozen:true; no live container on any reachable VM",
   "description": "Ollama LLM server (ARM CPU, 7b models)",
   "category": "agi",
   "build": {

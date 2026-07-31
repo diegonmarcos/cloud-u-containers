@@ -1,6 +1,8 @@
 {
   "name": "ollama-hai",
   "enabled": false,
+  "archived_at": "2026-07-31",
+  "archived_reason": "retired agentic-rig support model, no live container on any reachable VM",
   "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
   "category": "agi",
   "timezone": "America/Chicago",
