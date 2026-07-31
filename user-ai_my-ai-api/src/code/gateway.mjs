@@ -1,5 +1,9 @@
 // gateway.mjs — messaging gateway: Telegram + Mattermost → my-ai-api (via local /v1).
 //
+// redeploy 2026-07-31: force goose-hermes-parity image (ffb3a8450) into the
+// running container — the fix (drop hanging spawnSync /usr/local/bin/goose,
+// forward goose over HTTP like hermes) was committed but never rolled out, so
+// Telegram→goose still 502'd with `spawnSync ... ETIMEDOUT` on the stale image.
 // Zero npm dependencies: uses Node 22 global fetch + global WebSocket.
 // Reads env at startup; each platform starts independently (both can run together).
 //
