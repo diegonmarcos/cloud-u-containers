@@ -122,11 +122,12 @@
       },
       "instance_id": "ocid1.instance.oc1.eu-marseille-1.anwxeljruadvczacgwg5rkrjyomuxvjtvtuk5xrbmy7hmslwn4pse4kw5jkq",
       "services": [
+        "alerts-api",
         "c3-public-api",
         "unbound-dns64",
         "caddy-public"
       ],
-      "container_count": 3
+      "container_count": 4
     },
     "oci-A1-f_0": {
       "ip": "82.70.229.129",
@@ -893,6 +894,48 @@
       "secret_env_vars": [
         "CONTINUWUITY_REGISTRATION_TOKEN"
       ]
+    },
+    "alerts-api": {
+      "category": "tools",
+      "vm": "oci-E2-f_1",
+      "folder": "bc-obs_alerts-api",
+      "description": "Security Alert Aggregation API",
+      "enabled": true,
+      "port": 5050,
+      "dns": "alerts-api.app",
+      "upstream": "10.0.0.4:5050",
+      "containers": {
+        "app": {
+          "container_name": "alerts-api",
+          "image": "",
+          "public": false,
+          "port": 5050,
+          "dns": "alerts-api.app"
+        }
+      },
+      "container_names": [
+        "alerts-api"
+      ],
+      "all_ports": [
+        "5050"
+      ],
+      "all_dns": [
+        "alerts-api.app"
+      ],
+      "compose": {
+        "containers": [
+          "alerts-api"
+        ],
+        "ports": [],
+        "networks": []
+      },
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
     },
     "languagetool": {
       "category": "tools",
@@ -5773,7 +5816,8 @@
       "secret_env_vars": [
         "OPENROUTER_API_KEY",
         "TELEGRAM_BOT_TOKEN",
-        "GOOSE_SERVER__SECRET_KEY"
+        "GOOSE_SERVER__SECRET_KEY",
+        "MCP_BEARER_TOKEN"
       ]
     },
     "session-memory": {
@@ -8607,6 +8651,12 @@
         "service": "matrix-continuwuity"
       },
       {
+        "name": "alerts-api.app",
+        "type": "A",
+        "value": "10.0.0.4",
+        "service": "alerts-api"
+      },
+      {
         "name": "languagetool.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -9478,6 +9528,7 @@
         "is_public_ingress": true,
         "idle_shutdown": null,
         "containers": [
+          "alerts-api",
           "c3-public-api",
           "unbound-dns64",
           "caddy-public"
@@ -9825,6 +9876,11 @@
       "matrix-continuwuity": {
         "dir": "user-comm_matrix-continuwuity",
         "vm": "oci-apps",
+        "has_docker": true
+      },
+      "alerts-api": {
+        "dir": "bc-obs_alerts-api",
+        "vm": "oci-analytics",
         "has_docker": true
       },
       "languagetool": {
