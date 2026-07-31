@@ -41,12 +41,13 @@ let
   dbPort     = buildJson.ports.db;
   c3Port     = buildJson.c3.port;
   c3ApiUrl   = buildJson.c3.api_url;
-  # Ollama service was renamed: cluster cloud-data now exposes "ollama-hai"
-  # (the Haiku-tier Ollama runner on oci-apps-2) instead of plain "ollama".
+  # Ollama service was renamed again: "ollama-hai" is decommissioned
+  # (archived to a_solutions/z_archive/user-ai_ollama-hai); cluster cloud-data
+  # now exposes "ollama-arm" (oci-apps A1 CPU runner).
   # Quoted lookup because hyphens aren't valid Nix attr-path bare identifiers.
-  ollamaUrl  = "http://${svc."ollama-hai".ip}:${toString svc."ollama-hai".ports.app}";
+  ollamaUrl  = "http://${svc."ollama-arm".ip}:${toString svc."ollama-arm".ports.app}";
   ollamaModel = buildJson.ollama.model;
-  ollamaVm    = svc."ollama-hai".vm;
+  ollamaVm    = svc."ollama-arm".vm;
   ntfyUrl    = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
   topicsCsv  = builtins.concatStringsSep "," (container.ntfy_topics or []);
   # claude-superset-api: OpenAI-compat sidecar on the same host (localhost:3117).
