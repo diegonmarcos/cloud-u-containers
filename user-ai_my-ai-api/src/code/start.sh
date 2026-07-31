@@ -50,7 +50,7 @@ done
 # unsupported subcommand in this build, the container is not affected.
 if [ -n "${GOOSE_SERVER__SECRET_KEY:-}" ]; then
   echo "[goosed] serving on :${GOOSE_PORT} (ACP, X-Secret-Key)"
-  ( goose serve --platform desktop --enable-scheduler --host 0.0.0.0 --port "${GOOSE_PORT}" \
+  ( goose serve --platform desktop --host 0.0.0.0 --port "${GOOSE_PORT}" \
       || echo "[goosed] serve unavailable — remote agent disabled, container continues" ) &
 else
   echo "[goosed] no secret key — skipping"
