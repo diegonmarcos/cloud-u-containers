@@ -14,7 +14,7 @@
 //
 // Agent modes (X-Agent-Mode header, or model-name prefix):
 //   claude-cli — forward to claude-superset-api (CLAUDE_CLI_BASE_URL, WG-only)
-//   goose      — invoke goose binary with the prompt (non-stream)
+//   goose      — OpenRouter with GOOSE_MODEL (forwarded like hermes, no local binary)
 //   hermes     — OpenRouter with HERMES_MODEL (Nous Hermes, default nousresearch/hermes-3-llama-3.1-405b)
 //   (default)  — OpenRouter with the requested model
 import http from "node:http";
@@ -519,7 +519,7 @@ const server = http.createServer(async (req, res) => {
 
 const handler = server.listeners("request")[0];
 server.listen(PORT, BIND, () =>
-  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=openrouter+${CLAUDE_CLI_BASE ? "claude-cli" : ""}+goose+hermes)`));
+  console.error(`[my-ai-api] API on http://${BIND}:${PORT} (model=${DEFAULT_MODEL}, conc=${MAX_CONC}, headroom=${HR_ENABLED}, rtk=${RTK_ENABLED}, caveman=${CAVEMAN_ENABLED}, ponytail=${PONYTAIL_DEFAULT}, agents=${["openrouter", CLAUDE_CLI_BASE && "claude-cli", "goose", "hermes"].filter(Boolean).join("+")})`));
 
 if (OLLAMA_PORT && !(OLLAMA_BIND === BIND && OLLAMA_PORT === PORT)) {
   const ollama = http.createServer(handler);
