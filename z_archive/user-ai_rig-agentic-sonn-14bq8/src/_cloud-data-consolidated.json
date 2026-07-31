@@ -198,6 +198,7 @@
         "scrappers-api",
         "fin-api",
         "photoprism",
+        "playlist-syncer",
         "news-gdelt",
         "calendar-radicale",
         "code-server",
@@ -211,7 +212,7 @@
         "send",
         "vaultwarden"
       ],
-      "container_count": 62
+      "container_count": 63
     },
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
@@ -7607,6 +7608,114 @@
         "OCI_S3_SECRET_KEY"
       ]
     },
+    "playlist-syncer": {
+      "category": "app",
+      "vm": "oci-A1-f_0",
+      "folder": "user-media_playlist-syncer",
+      "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
+      "enabled": true,
+      "domain": "playlist.diegonmarcos.com",
+      "flake": "user-media_playlist-syncer",
+      "port": 8090,
+      "dns": "playlist-syncer.app",
+      "upstream": "10.0.0.6:8090",
+      "containers": {
+        "app": {
+          "container_name": "playlist-syncer",
+          "image": "ghcr.io/diegonmarcos/playlist-syncer-binaries:latest",
+          "port": 8090,
+          "port_env": "PORT",
+          "dns": "playlist-syncer.app",
+          "public": true,
+          "proxy": {
+            "domain": "playlist.diegonmarcos.com",
+            "auth": "two_factor",
+            "bypass_paths": [
+              "/api/auth/spotify/callback",
+              "/api/auth/youtube/callback"
+            ]
+          },
+          "healthcheck": "/api/health",
+          "monitoring": {
+            "tls_check": true,
+            "dns_check": true,
+            "endpoint_check": true
+          },
+          "volumes": [
+            "playlist_syncer_data:/data"
+          ],
+          "env_file": true,
+          "environment": {
+            "APP_ENV": "production",
+            "PUBLIC_URL": "https://playlist.diegonmarcos.com",
+            "DB_PATH": "/data/spotube.db",
+            "SESSION_SECURE": "true",
+            "LOG_LEVEL": "info"
+          },
+          "depends_on": [],
+          "resources": null,
+          "read_only": false,
+          "protocol": "http"
+        }
+      },
+      "container_names": [
+        "playlist-syncer"
+      ],
+      "all_ports": [
+        "8090"
+      ],
+      "all_dns": [
+        "playlist-syncer.app"
+      ],
+      "compose": {
+        "containers": [],
+        "ports": [],
+        "networks": []
+      },
+      "proxy": {
+        "primary": {
+          "domain": "playlist.diegonmarcos.com",
+          "auth": "two_factor",
+          "bypass_paths": [
+            "/api/auth/spotify/callback",
+            "/api/auth/youtube/callback"
+          ]
+        }
+      },
+      "declared_ports": {
+        "app": 8090
+      },
+      "health": {
+        "path": "/api/health"
+      },
+      "monitoring": {
+        "tls_check": true,
+        "dns_check": true,
+        "endpoint_check": true
+      },
+      "backup": {
+        "enabled": true,
+        "strategy": "bup",
+        "volumes": [
+          "playlist_syncer_data"
+        ]
+      },
+      "timezone": "Europe/Madrid",
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://playlist.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/api/health"
+        ],
+        "type": "custom-rest",
+        "base_path": "/api",
+        "display_name": "Playlist Syncer",
+        "description": "Bidirectional Spotify / YouTube Music playlist sync (Spotube fork). REST API + web UI.",
+        "auth": "bearer"
+      }
+    },
     "news-gdelt": {
       "category": "tools",
       "vm": "oci-A1-f_0",
@@ -9370,6 +9479,12 @@
         "service": "photoprism"
       },
       {
+        "name": "playlist-syncer.app",
+        "type": "A",
+        "value": "10.0.0.6",
+        "service": "playlist-syncer"
+      },
+      {
         "name": "calendar.app",
         "type": "A",
         "value": "10.0.0.6",
@@ -10039,6 +10154,7 @@
           "scrappers-api",
           "fin-api",
           "photoprism",
+          "playlist-syncer",
           "news-gdelt",
           "calendar-radicale",
           "code-server",
@@ -10590,6 +10706,11 @@
       },
       "photoprism": {
         "dir": "user-media_photoprism",
+        "vm": "oci-apps",
+        "has_docker": true
+      },
+      "playlist-syncer": {
+        "dir": "user-media_playlist-syncer",
         "vm": "oci-apps",
         "has_docker": true
       },
