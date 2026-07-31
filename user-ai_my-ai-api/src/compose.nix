@@ -30,6 +30,7 @@ in
         MATTERMOST_URL     = gw.mattermost_url     or "";
         MATTERMOST_ENABLED = gw.mattermost_enabled  or "false";
         TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
+        MCP_ENABLED        = "1";
       };
       volumes = [
         "my_ai_home:/home/appuser"
