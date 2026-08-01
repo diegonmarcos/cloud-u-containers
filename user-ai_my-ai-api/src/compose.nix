@@ -11,11 +11,12 @@ let
   rt    = buildJson.runtime or {};
   ports = buildJson.ports or {};
   gw = rt.gateway or {};
+  binariesImage = "ghcr.io/diegonmarcos/${buildJson.name}-binaries:latest";
 in
 {
   services = {
     my-ai-api = {
-      image          = app.image;
+      image          = binariesImage;
       container_name = app.container_name;
       network_mode   = "host";
       env_file       = [ "./.secrets" ];
