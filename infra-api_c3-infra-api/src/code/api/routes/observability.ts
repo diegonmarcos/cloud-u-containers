@@ -44,6 +44,7 @@ import {
 } from "../../shared/libs/db.js";
 import { resolveVmId } from "../../shared/libs/config.js";
 import { DAGU_API, daguHeaders } from "../../shared/libs/ops.js";
+import { pollerEvents, getLastFleetHealthSnapshot, type FleetHealthSnapshot } from "../../shared/libs/poller.js";
 
 // ── Zod schemas for validated endpoints ──
 
@@ -644,5 +645,113 @@ export const registerObservabilityRoutes: FastifyPluginAsync = async (app) => {
   }, async () => {
     const pruned = cachePrune();
     return { ok: true, pruned };
+  });
+
+  // ── SLO: uptime % vs target + error budget, derived from getUptimeReport ──
+  // (same uptime source as /db/uptime/report above — not refetched independently)
+
+  const DEFAULT_SLO_TARGET = 99.9;
+  const DEFAULT_SLO_HOURS = 24 * 30; // 30d window
+
+  function computeSlo(vm: string | undefined, targetPercent: number, hours: number) {
+    const rows = getUptimeReport(vm, hours);
+    return rows.map((r) => {
+      const errorBudgetPercent = 100 - targetPercent; // allowed downtime %, e.g. 0.1
+      const consumedPercent = Math.max(0, 100 - r.uptimePercent);
+      const remainingPercent = errorBudgetPercent - consumedPercent;
+      const remainingBudgetPercentOfBudget = errorBudgetPercent > 0
+        ? Math.round((remainingPercent / errorBudgetPercent) * 10000) / 100
+        : null;
+      return {
+        vm: r.vm,
+        target: targetPercent,
+        uptimePercent: r.uptimePercent,
+        checks: r.checks,
+        windowHours: hours,
+        errorBudgetPercent,
+        errorBudgetConsumedPercent: Math.round(consumedPercent * 10000) / 10000,
+        errorBudgetRemainingPercent: Math.round(remainingPercent * 10000) / 10000,
+        errorBudgetRemainingPercentOfBudget: remainingBudgetPercentOfBudget,
+        breached: remainingPercent < 0,
+      };
+    });
+  }
+
+  app.get<{ Querystring: { target?: string; hours?: string } }>(
+    "/slo",
+    {
+      schema: {
+        tags: ["Observability"],
+        summary: "Uptime % vs target + error budget remaining, for every VM",
+        querystring: {
+          type: "object" as const,
+          properties: {
+            target: { type: "string" as const, description: "SLO target percent, default 99.9" },
+            hours: { type: "string" as const, description: "Lookback window in hours, default 720 (30d)" },
+          },
+        },
+      },
+    },
+    async (req) => {
+      const target = req.query.target ? parseFloat(req.query.target) : DEFAULT_SLO_TARGET;
+      const hours = req.query.hours ? parseInt(req.query.hours, 10) : DEFAULT_SLO_HOURS;
+      return { slos: computeSlo(undefined, target, hours) };
+    },
+  );
+
+  app.get<{ Params: { service: string }; Querystring: { target?: string; hours?: string } }>(
+    "/slo/:service",
+    {
+      schema: {
+        tags: ["Observability"],
+        summary: "Uptime % vs target + error budget remaining, for one service/VM",
+        params: { type: "object" as const, properties: { service: { type: "string" as const } }, required: ["service"] },
+        querystring: {
+          type: "object" as const,
+          properties: {
+            target: { type: "string" as const },
+            hours: { type: "string" as const },
+          },
+        },
+      },
+    },
+    async (req, reply) => {
+      const target = req.query.target ? parseFloat(req.query.target) : DEFAULT_SLO_TARGET;
+      const hours = req.query.hours ? parseInt(req.query.hours, 10) : DEFAULT_SLO_HOURS;
+      const slos = computeSlo(req.params.service, target, hours);
+      if (slos.length === 0) {
+        reply.code(404).send({ error: `No health-check history for ${req.params.service}` });
+        return;
+      }
+      return slos[0];
+    },
+  );
+
+  // ── SSE: fleet health pushed on the shared poller tick ──
+  // Same hook pattern as the metrics sampler / alert evaluator: subscribe to
+  // pollerEvents ("health" is emitted once per tick in poller.ts's runTick()),
+  // no separate interval is started here.
+
+  app.get("/stream/health", { schema: { tags: ["Observability"], summary: "SSE stream of fleet health snapshots, pushed on each poller tick" } }, async (req, reply) => {
+    reply.hijack();
+    reply.raw.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    const write = (snapshot: FleetHealthSnapshot) => {
+      reply.raw.write(`data: ${JSON.stringify(snapshot)}\n\n`);
+    };
+
+    const last = getLastFleetHealthSnapshot();
+    if (last) write(last);
+
+    const onHealth = (snapshot: FleetHealthSnapshot) => write(snapshot);
+    pollerEvents.on("health", onHealth);
+
+    req.raw.on("close", () => {
+      pollerEvents.off("health", onHealth);
+    });
   });
 };

@@ -376,3 +376,236 @@ export function dockerSystemDf(
   const result = sshExec(vmId, "docker system df -v 2>/dev/null", 15_000);
   return { ok: result.ok, output: (result.stdout + result.stderr).trim() };
 }
+
+// ── New: Container update (pull + recreate) ──────────────────────────────
+
+/**
+ * Pull the container's current image and recreate it.
+ *
+ * If the container is managed by docker-compose (has the standard
+ * com.docker.compose.project.working_dir / .service labels — the same
+ * labels composeUp/composeUpAll rely on implicitly), we recreate via
+ * `docker compose pull <service> && docker compose up -d <service>`,
+ * which correctly reapplies the original run config (env, mounts, ports).
+ * Otherwise we only pull the image and report that a manual recreate
+ * is required, rather than guessing at run flags and risking dropping
+ * config on a plain `docker run`.
+ */
+export function updateContainer(
+  vmNameOrAlias: string,
+  container: string,
+): { ok: boolean; output: string; recreated: boolean } {
+  validateContainerName(container);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+
+  const labelsCmd = `docker inspect ${container} --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}|{{ index .Config.Labels "com.docker.compose.service" }}'`;
+  const labelsResult = sshExec(vmId, labelsCmd, 10_000);
+  const [workingDir, service] = labelsResult.ok
+    ? labelsResult.stdout.trim().split("|")
+    : ["", ""];
+
+  let result: { ok: boolean; output: string; recreated: boolean };
+
+  if (workingDir && service && workingDir !== "<no value>" && service !== "<no value>") {
+    const cmd = `cd ${workingDir} && docker compose pull ${service} && docker compose up -d ${service}`;
+    const r = sshExec(vmId, cmd, 120_000);
+    result = { ok: r.ok, output: `${r.stdout}${r.stderr}`.trim(), recreated: r.ok };
+  } else {
+    const imageCmd = `docker inspect ${container} --format '{{ .Config.Image }}'`;
+    const imageResult = sshExec(vmId, imageCmd, 10_000);
+    const image = imageResult.stdout.trim();
+    if (!imageResult.ok || !image) {
+      return { ok: false, output: `Could not resolve image for ${container}: ${imageResult.stderr}`, recreated: false };
+    }
+    const r = sshExec(vmId, `docker pull ${image}`, 120_000);
+    result = {
+      ok: r.ok,
+      output: `${r.stdout}${r.stderr}\n(container is not compose-managed; image pulled but NOT recreated — recreate manually to apply)`.trim(),
+      recreated: false,
+    };
+  }
+
+  audit("container_update", `${container}@${alias}`, result.ok ? (result.recreated ? "OK (recreated)" : "OK (pulled only)") : "FAILED");
+  return result;
+}
+
+// ── New: Live stats for a single container ────────────────────────────────
+
+export interface ContainerStats {
+  name: string;
+  cpuPerc: string | null;
+  memUsage: string | null;
+  memPerc: string | null;
+  netIO: string | null;
+  blockIO: string | null;
+  pids: string | null;
+}
+
+export function containerStatsOne(
+  vmNameOrAlias: string,
+  container: string,
+): { ok: boolean; stats: ContainerStats | null; error?: string } {
+  validateContainerName(container);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const fmt = "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.NetIO}}|{{.BlockIO}}|{{.PIDs}}";
+  const result = sshExec(vmId, `docker stats --no-stream --format '${fmt}' ${container}`, 10_000);
+  if (!result.ok || !result.stdout.trim()) {
+    return { ok: false, stats: null, error: (result.stderr || "no output").trim() };
+  }
+  const [name, cpuPerc, memUsage, memPerc, netIO, blockIO, pids] = result.stdout.trim().split("|");
+  return {
+    ok: true,
+    stats: { name: name ?? container, cpuPerc: cpuPerc ?? null, memUsage: memUsage ?? null, memPerc: memPerc ?? null, netIO: netIO ?? null, blockIO: blockIO ?? null, pids: pids ?? null },
+  };
+}
+
+// ── New: Detailed inspect (env/mounts/ports/digest), secret-redacted ─────
+
+/** Broader than SENSITIVE_ENV_RE above — matches the spec's exact key pattern. */
+const SECRET_KEY_RE = /secret|password|token|key|pass|credential/i;
+
+export interface ContainerDetails {
+  image: string;
+  imageDigest: string | null;
+  env: Record<string, string>;
+  mounts: Array<{ source: string; destination: string; mode: string }>;
+  ports: Record<string, unknown>;
+  state: string;
+}
+
+export function inspectContainerDetails(
+  vmNameOrAlias: string,
+  container: string,
+): { ok: boolean; details: ContainerDetails | null; error?: string } {
+  validateContainerName(container);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const result = sshExec(vmId, `docker inspect ${container}`, 10_000);
+  if (!result.ok) {
+    return { ok: false, details: null, error: result.stderr.trim() };
+  }
+
+  try {
+    const parsed = JSON.parse(result.stdout) as Array<Record<string, any>>;
+    const item = parsed[0];
+    if (!item) return { ok: false, details: null, error: "empty inspect output" };
+
+    const rawEnv: string[] = item?.Config?.Env ?? [];
+    const env: Record<string, string> = {};
+    for (const entry of rawEnv) {
+      const idx = entry.indexOf("=");
+      if (idx < 0) continue;
+      const k = entry.slice(0, idx);
+      const v = entry.slice(idx + 1);
+      env[k] = SECRET_KEY_RE.test(k) ? "***" : v;
+    }
+
+    const mounts = (item?.Mounts ?? []).map((m: Record<string, unknown>) => ({
+      source: String(m.Source ?? ""),
+      destination: String(m.Destination ?? ""),
+      mode: String(m.Mode ?? ""),
+    }));
+
+    const imageDigestSource: string[] = item?.RepoDigests ?? [];
+    const imageDigest = imageDigestSource[0]?.split("@")[1] ?? null;
+
+    return {
+      ok: true,
+      details: {
+        image: item?.Config?.Image ?? "",
+        imageDigest,
+        env,
+        mounts,
+        ports: item?.NetworkSettings?.Ports ?? {},
+        state: item?.State?.Status ?? "unknown",
+      },
+    };
+  } catch (err) {
+    return { ok: false, details: null, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// ── New: Image update check (local digest vs upstream registry digest) ───
+
+export interface ImageUpdateStatus {
+  service: string;
+  vm: string;
+  container: string;
+  image: string;
+  localDigest: string | null;
+  remoteDigest: string | null;
+  updateAvailable: boolean | null; // null = could not be determined
+  error?: string;
+}
+
+/**
+ * Compares each running container's local image digest against the
+ * upstream registry digest via `docker manifest inspect` (no image is
+ * pulled/modified). Requires the Docker CLI's manifest command to be
+ * available on the VM; when it isn't (or the registry call fails) this
+ * degrades to updateAvailable: null rather than guessing.
+ */
+export function checkImageUpdate(
+  vmNameOrAlias: string,
+  container: string,
+): ImageUpdateStatus {
+  validateContainerName(container);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+
+  const imageResult = sshExec(vmId, `docker inspect ${container} --format '{{ .Config.Image }}'`, 10_000);
+  const image = imageResult.stdout.trim();
+  if (!imageResult.ok || !image) {
+    return { service: container, vm: alias, container, image: "", localDigest: null, remoteDigest: null, updateAvailable: null, error: "could not resolve image" };
+  }
+
+  const digestResult = sshExec(vmId, `docker inspect ${container} --format '{{ index .Image }}'`, 10_000);
+  const localDigest = digestResult.ok ? digestResult.stdout.trim() : null;
+
+  const manifestResult = sshExec(vmId, `docker manifest inspect ${image} 2>/dev/null | sha256sum | cut -d' ' -f1`, 20_000);
+  const remoteDigest = manifestResult.ok && manifestResult.stdout.trim() ? manifestResult.stdout.trim() : null;
+
+  if (!remoteDigest || !localDigest) {
+    return { service: container, vm: alias, container, image, localDigest, remoteDigest, updateAvailable: null, error: "manifest inspect unavailable" };
+  }
+
+  return { service: container, vm: alias, container, image, localDigest, remoteDigest, updateAvailable: localDigest !== remoteDigest };
+}
+
+// ── New: Allowlisted in-container exec (deny-by-default, no shell interpolation) ─
+
+/**
+ * Fixed allowlist mapping a command NAME (from the request body) to a fixed,
+ * hardcoded docker argv array. The container name is the only variable part
+ * (already passed through validateContainerName), and it is placed as a
+ * single ssh/exec argument — never string-concatenated into a shell command
+ * built from request-supplied text. Anything not in this map is rejected.
+ */
+export const EXEC_COMMAND_ALLOWLIST: Record<string, (container: string) => string[]> = {
+  restart: (c) => ["restart", c],
+  stop: (c) => ["stop", c],
+  start: (c) => ["start", c],
+  "logs-tail": (c) => ["logs", "--tail", "200", c],
+  top: (c) => ["top", c, "-eo", "pid,user,%cpu,%mem,comm"],
+  "stats-snapshot": (c) => ["stats", "--no-stream", c],
+};
+
+export function runAllowlistedExecCommand(
+  vmNameOrAlias: string,
+  container: string,
+  commandName: string,
+): { ok: boolean; output: string } {
+  validateContainerName(container);
+  const vmId = resolveVmId(vmNameOrAlias);
+  const alias = getVmSshAlias(vmId);
+
+  const build = EXEC_COMMAND_ALLOWLIST[commandName];
+  if (!build) {
+    throw Object.assign(new Error(`Command not allowed: ${commandName}. Allowed: ${Object.keys(EXEC_COMMAND_ALLOWLIST).join(", ")}`), { statusCode: 400 });
+  }
+
+  const args = build(container);
+  const result = sshExec(vmId, `docker ${args.join(" ")}`, 20_000);
+  audit("container_exec_allowlisted", `${commandName} ${container}@${alias}`, result.ok ? "OK" : "FAILED");
+  return { ok: result.ok, output: `${result.stdout}${result.stderr}`.trim() };
+}

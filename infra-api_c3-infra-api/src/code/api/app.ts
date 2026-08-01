@@ -12,6 +12,11 @@ import { registerObservabilityRoutes } from "./routes/observability.js";
 import { registerSecurityRoutes } from "./routes/security.js";
 import { registerFinOpsRoutes } from "./routes/finops.js";
 import { registerPublicLogsRoutes } from "./routes/publicLogs.js";
+import { registerMetricsRoutes } from "./routes/metrics.js";
+import { registerLogsRoutes } from "./routes/logs.js";
+import { registerAlertsRoutes } from "./routes/alerts.js";
+import { registerEventsRoutes } from "./routes/events.js";
+import { startPoller } from "../shared/libs/poller.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -36,6 +41,10 @@ export async function buildApp() {
         { name: "Observability", description: "Health, profiling, diagnostics, testing, and alerting" },
         { name: "Security", description: "Security scanning, auditing, and compliance" },
         { name: "FinOps", description: "Cloud provider operations and cost tracking" },
+        { name: "Metrics", description: "Time-series metrics: query, series, top consumers" },
+        { name: "Logs", description: "Log search and live tail" },
+        { name: "Alerts", description: "Alert rules, active alerts, and history" },
+        { name: "Events", description: "Unified timeline of deploys, alerts, ops actions, and CI runs" },
       ],
     },
   });
@@ -58,6 +67,16 @@ export async function buildApp() {
   await app.register(registerSecurityRoutes);
   await app.register(registerFinOpsRoutes);
   await app.register(registerPublicLogsRoutes);
+  await app.register(registerMetricsRoutes);
+  await app.register(registerLogsRoutes);
+  await app.register(registerAlertsRoutes);
+  await app.register(registerEventsRoutes);
+
+  // Background poller tick (metrics sampler + alert evaluator + SSE health
+  // broadcast all hook onto this single tick — see shared/libs/poller.ts).
+  // NOTE: this was never actually started anywhere before this change, even
+  // though metrics.ts/alerts.ts already assumed it ran — starting it here.
+  startPoller();
 
   return app;
 }
