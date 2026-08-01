@@ -17,6 +17,7 @@ import {
   getConfigsSlice,
   getDepsSlice,
   FRONT_DEPS_PATH,
+  FRONT_TOPOLOGY_PATH,
   SOLUTIONS_DIR,
 } from "../../shared/libs/paths.js";
 
@@ -161,6 +162,22 @@ export async function registerInventoryRoutes(app: FastifyInstance) {
     if (!existsSync(FRONT_DEPS_PATH)) { reply.code(404).send({ error: "front-deps.json not generated yet. Run: front/build.sh deps or cloud build.sh config" }); return; }
     return JSON.parse(readFileSync(FRONT_DEPS_PATH, "utf-8"));
   });
+
+  // ── Front-end apps (GitHub Pages projects tracked in front-topology.json, not in a_solutions) ──
+
+  app.get<{ Querystring: { category?: string } }>(
+    "/cloud-data/front-apps",
+    { schema: { tags: ["Inventory"], querystring: { type: "object" as const, properties: { category: { type: "string" as const } } } } },
+    async (req, reply) => {
+      if (!existsSync(FRONT_TOPOLOGY_PATH)) { reply.code(404).send({ error: "front-topology.json not generated yet. Run: front/build.sh topology or cloud build.sh config" }); return; }
+      const data = JSON.parse(readFileSync(FRONT_TOPOLOGY_PATH, "utf-8"));
+      let projects = data.projects ?? [];
+      if (req.query.category) {
+        projects = projects.filter((p: { category?: string }) => p.category === req.query.category);
+      }
+      return { _meta: data._meta, projects };
+    },
+  );
 
   // ── DNS Registry (container name → WG IP, for Hickory DNS auto-generation) ──
 

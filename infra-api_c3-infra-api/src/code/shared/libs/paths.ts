@@ -126,6 +126,7 @@ export const getTopologySlice = (): any => readConsolidated() ?? {};
 export const getConfigsSlice = (): any => readConsolidated()?.configs ?? null;
 export const getDepsSlice = (): any => readConsolidated()?.deps ?? null;
 export const FRONT_DEPS_PATH = join(GIT_BASE, "front", "front-deps.json");
+export const FRONT_TOPOLOGY_PATH = join(GIT_BASE, "front", "front-topology.json");
 export const BUILD_SCRIPT = join(SOLUTIONS_DIR, "build.sh");
 export const SSH_CONFIG_PATH = join(HOME, ".ssh/config");
 export const SOPS_AGE_KEY_FILE = join(HOME, ".config/sops/age/keys.txt");
