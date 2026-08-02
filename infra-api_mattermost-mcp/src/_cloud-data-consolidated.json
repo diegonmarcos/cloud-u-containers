@@ -6013,9 +6013,6 @@
         "api_url": "http://c3-infra-api:8081",
         "port": 8887
       },
-      "ollama": {
-        "model": "deepseek-r1:14b-qwen-distill-q8_0"
-      },
       "agents": {
         "llm_url": "http://localhost:3117",
         "llm_model": "claude-sonnet-4-6"
