@@ -85,10 +85,11 @@ authentication = "0/0"
 invalid-rcpt   = "0/0"
 loiter         = "0/0"
 
-# 2) Allow-list the WG /24 so any IP-based block check short-circuits
-#    in security.rs::is_ip_allowed(). Stalwart's set_values() reads the key
-#    suffix as the IP/CIDR; the value is unused.
-server.allowed-ip = ["10.0.0.0/24"]
+# 2) Allow-list WG /24 + Docker bridge so any IP-based block check
+#    short-circuits in security.rs::is_ip_allowed(). Cross-VM deliveries
+#    (e.g. oci-analytics → stalwart:2025) arrive via Docker NAT as
+#    172.18.0.1 (stalwart_default bridge gateway), not the real WG IP.
+server.allowed-ip = ["10.0.0.0/24", "172.18.0.0/16"]
 
 # 2587/STARTTLS submission listener retired 2026-05-08 — implicit-TLS
 # only via [server.listener.submissions] on 2465.
