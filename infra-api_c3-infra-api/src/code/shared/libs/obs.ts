@@ -9,7 +9,7 @@
  */
 
 import { getConfig, resolveVmId, getVmSshAlias } from "./config.js";
-import { sshPool, httpPool, Pool } from "./pool.js";
+import { sshPool, httpPool, Pool, runAsBulk } from "./pool.js";
 import {
   sshExecAsync,
   tcpProbeAsync,
@@ -238,7 +238,7 @@ export async function upAll(): Promise<UpAllResult> {
     .map(([name]) => name);
 
   const pool = new Pool(6);
-  const results = await pool.map(targets, (t) => up(t));
+  const results = await runAsBulk(() => pool.map(targets, (t) => up(t)));
   const t_pool = Date.now();
 
   const upCount = results.filter((r) => r.up).length;
@@ -278,7 +278,7 @@ export async function upAllContainers(): Promise<UpAllResult> {
   const t_resolve = Date.now();
 
   const pool = new Pool(6);
-  const results = await pool.map(containers, (c) => up(c));
+  const results = await runAsBulk(() => pool.map(containers, (c) => up(c)));
   const t_pool = Date.now();
 
   const upCount = results.filter((r) => r.up).length;
@@ -497,7 +497,7 @@ export async function healthAll(): Promise<{
     .map(([name]) => name);
 
   const pool = new Pool(6);
-  const results = await pool.map(targets, (t) => health(t));
+  const results = await runAsBulk(() => pool.map(targets, (t) => health(t)));
   const t_pool = Date.now();
 
   const healthyCount = results.filter((r) => r.healthy).length;
@@ -764,7 +764,7 @@ export async function profileAllServices(): Promise<{
     .map(([name]) => name);
 
   const pool = new Pool(6);
-  const results = await pool.map(targets, (t) => profile(t));
+  const results = await runAsBulk(() => pool.map(targets, (t) => profile(t)));
   const t_pool = Date.now();
 
   return {
@@ -801,7 +801,7 @@ export async function profileAllContainers(): Promise<{
   }
 
   const pool = new Pool(6);
-  const results = await pool.map(containers, (c) => profile(c));
+  const results = await runAsBulk(() => pool.map(containers, (c) => profile(c)));
   const t_pool = Date.now();
 
   return {
