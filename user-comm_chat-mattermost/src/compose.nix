@@ -41,13 +41,10 @@ let
   dbPort     = buildJson.ports.db;
   c3Port     = buildJson.c3.port;
   c3ApiUrl   = buildJson.c3.api_url;
-  # Ollama service was renamed again: "ollama-hai" is decommissioned
-  # (archived to a_solutions/z_archive/user-ai_ollama-hai); cluster cloud-data
-  # now exposes "ollama-arm" (oci-apps A1 CPU runner).
-  # Quoted lookup because hyphens aren't valid Nix attr-path bare identifiers.
-  ollamaUrl  = "http://${svc."ollama-arm".ip}:${toString svc."ollama-arm".ports.app}";
-  ollamaModel = buildJson.ollama.model;
-  ollamaVm    = svc."ollama-arm".vm;
+  # Ollama is fully decommissioned (2026-08-02): "ollama", "ollama-arm" and
+  # "ollama-hai" are all gone from cloud-data's services map, so the lookup
+  # here failed the whole nix build with `attribute 'ollama-arm' missing`.
+  # Agents run on claude-superset-api (below) — that is the only LLM backend.
   ntfyUrl    = "http://${svc.ntfy.ip}:${toString svc.ntfy.ports.app}";
   topicsCsv  = builtins.concatStringsSep "," (container.ntfy_topics or []);
   # claude-superset-api: OpenAI-compat sidecar on the same host (localhost:3117).
@@ -316,9 +313,6 @@ in
         C3_PORT                         = toString c3Port;
         C3_ACTION_URL                   = "http://mattermost-bots:${toString c3Port}/c3/action";
         C3_SLASH_URL                    = "http://mattermost-bots:${toString c3Port}/c3";
-        OLLAMA_URL                      = ollamaUrl;
-        OLLAMA_MODEL                    = ollamaModel;
-        OLLAMA_VM                       = ollamaVm;
         AUTHELIA_OIDC_CLIENT_ID         = "mattermost-cc";
         AUTHELIA_OIDC_CLIENT_SECRET     = "\${AUTHELIA_OIDC_MATTERMOST_SECRET}";
         AUTHELIA_TOKEN_URL              = "https://auth.${base_domain}/api/oidc/token";
