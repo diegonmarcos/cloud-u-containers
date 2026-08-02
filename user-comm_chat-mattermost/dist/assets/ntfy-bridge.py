@@ -26,6 +26,14 @@ MM_ADMIN_USERNAME = os.environ["MM_ADMIN_USERNAME"]
 MM_ADMIN_PASSWORD = os.environ["MM_ADMIN_PASSWORD"]
 C3_API_URL = os.environ.get("C3_API_URL", "http://c3-infra-mcp-api:8080")
 
+# Sidebar category display names — data-driven from build.json#sidebar_categories,
+# injected as MM_SIDEBAR_CATEGORIES (JSON) by compose.nix. Defaults match the
+# established layout so the bridge still works if the env var is absent.
+_CATS = json.loads(os.environ.get("MM_SIDEBAR_CATEGORIES") or "{}")
+CAT_NTFY     = _CATS.get("ntfy", "NTFY")
+CAT_AGENTS   = _CATS.get("agents", "AGENTS")
+CAT_PROJECTS = _CATS.get("default_channels", "Projects")
+
 
 def fetch_oidc_token():
     """Fetch OIDC token via client_credentials grant."""
@@ -49,22 +57,17 @@ def fetch_oidc_token():
 
 
 C3_API_TOKEN = fetch_oidc_token() or os.environ.get("C3_API_TOKEN", "")
-OLLAMA_URL = os.environ["OLLAMA_URL"]  # required; injected from cloud-data via compose
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "deepseek-r1:14b")
-OLLAMA_VM = os.environ.get("OLLAMA_VM", "gcp-t4")
-OLLAMA_WG_IP = urlparse(OLLAMA_URL).hostname  # e.g. "10.0.0.8"
 
 # C3 slash-command HTTP server bind + URL config (env-driven; set by compose)
 C3_BIND_IP = os.environ.get("C3_BIND_IP", "0.0.0.0")
 C3_PORT = int(os.environ.get("C3_PORT", "8887"))
 C3_ACTION_URL = os.environ.get("C3_ACTION_URL", f"http://mattermost-bots:{C3_PORT}/c3/action")
 C3_SLASH_URL = os.environ.get("C3_SLASH_URL", f"http://mattermost-bots:{C3_PORT}/c3")
-_ollama_contexts = {}  # channel_id -> [{"role": ..., "content": ...}]
 _c3_bot_headers = None  # set after c3-bot login, used by slash cmd gpu background
 
 
-def mm_api(method, path, headers, **kwargs):
-    return requests.request(method, f"{MM_URL}/api/v4{path}", headers=headers, timeout=30, **kwargs)
+def mm_api(method, path, headers, timeout=30, **kwargs):
+    return requests.request(method, f"{MM_URL}/api/v4{path}", headers=headers, timeout=timeout, **kwargs)
 
 
 def wait_for_mattermost():
@@ -205,7 +208,7 @@ def sync_sidebar_category(headers, user_id, team_id, ntfy_channel_ids):
     ntfy_set = set(ntfy_channel_ids)
 
     for cat in categories:
-        if cat.get("display_name") == "ntfy":
+        if cat.get("display_name") == CAT_NTFY:
             ntfy_cat = cat
         if cat.get("type") == "channels":
             channels_cat = cat
@@ -232,7 +235,7 @@ def sync_sidebar_category(headers, user_id, team_id, ntfy_channel_ids):
                 "id": ntfy_cat["id"],
                 "user_id": user_id,
                 "team_id": team_id,
-                "display_name": "ntfy",
+                "display_name": CAT_NTFY,
                 "type": "custom",
                 "sorting": "alpha",
                 "channel_ids": sorted_ids,
@@ -377,106 +380,6 @@ def format_tier3(data):
     return "\n".join(lines)
 
 
-def _gpu_post(channel_id, root_id, bot_headers, msg):
-    """Helper: post a message to channel, optionally in thread."""
-    body = {"channel_id": channel_id, "message": msg}
-    if root_id:
-        body["root_id"] = root_id
-    mm_api("POST", "/posts", bot_headers, json=body)
-
-def _gpu_background(channel_id, root_id, bot_headers):
-    """Background thread: wake VM -> compose up -> poll until Ollama API responds."""
-    try:
-        # Step 1: Start VM
-        log.info("GPU: step 1 — starting %s via C3 API", OLLAMA_VM)
-        r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-        log.info("GPU: vm start response: %s", str(r)[:200])
-        if "error" in r:
-            _gpu_post(channel_id, root_id, bot_headers, f":x: Failed to start {OLLAMA_VM}: {r['error']}")
-            return
-
-        # Step 2: Poll until VM is reachable via WireGuard
-        log.info("GPU: step 2 — polling VM reachability")
-        vm_up = False
-        for i in range(30):
-            time.sleep(5)
-            if _check_vm_reachable(OLLAMA_VM):
-                vm_up = True
-                log.info("GPU: VM reachable after %ds", (i+1)*5)
-                _gpu_post(channel_id, root_id, bot_headers, f":white_check_mark: {OLLAMA_VM} reachable after {(i+1)*5}s")
-                break
-        if not vm_up:
-            log.warning("GPU: VM not reachable after 150s")
-            _gpu_post(channel_id, root_id, bot_headers, f":warning: {OLLAMA_VM} not reachable after 150s")
-            return
-
-        # Step 3: Start ollama service (compose up, not just container start)
-        log.info("GPU: step 3 — starting ollama service")
-        r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-        log.info("GPU: service start response: %s", str(r)[:200])
-        if "error" in r:
-            # Fallback: try container start
-            log.info("GPU: service start failed, trying container start")
-            r = c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-            log.info("GPU: container start response: %s", str(r)[:200])
-        if "error" in r:
-            _gpu_post(channel_id, root_id, bot_headers, f":warning: Service start returned: {r['error'][:100]}")
-
-        # Step 4: Poll until Ollama HTTP API responds
-        log.info("GPU: step 4 — polling Ollama API at %s", OLLAMA_URL)
-        _gpu_post(channel_id, root_id, bot_headers, ":hourglass: Waiting for Ollama API...")
-        api_ready = False
-        for i in range(24):
-            time.sleep(5)
-            try:
-                resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-                if resp.ok:
-                    models = [m.get("name", "?") for m in resp.json().get("models", [])]
-                    model_list = ", ".join(f"`{m}`" for m in models[:5]) if models else "none loaded"
-                    log.info("GPU: Ollama API ready after %ds, models: %s", (i+1)*5, model_list)
-                    _gpu_post(channel_id, root_id, bot_headers,
-                        f":white_check_mark: Ollama API up after {(i+1)*5}s — loading model into GPU...")
-                    api_ready = True
-                    break
-            except Exception:
-                pass
-        if not api_ready:
-            log.warning("GPU: Ollama API not responding after 120s")
-            _gpu_post(channel_id, root_id, bot_headers, f":warning: Ollama API not responding after 120s (container may still be loading)")
-            return
-
-        # Step 5: Pre-warm model into GPU VRAM (first inference triggers loading)
-        log.info("GPU: step 5 — pre-warming model %s", OLLAMA_MODEL)
-        try:
-            r = requests.post(f"{OLLAMA_URL}/api/chat", json={
-                "model": OLLAMA_MODEL,
-                "messages": [{"role": "user", "content": "hi"}],
-                "stream": False,
-            }, timeout=300)
-            if r.ok:
-                log.info("GPU: model pre-warmed successfully")
-                _gpu_post(channel_id, root_id, bot_headers,
-                    f":white_check_mark: **{OLLAMA_MODEL}** loaded and ready\n**Available:** {model_list}")
-            else:
-                log.warning("GPU: pre-warm returned %s", r.status_code)
-                _gpu_post(channel_id, root_id, bot_headers,
-                    f":warning: Model pre-warm returned {r.status_code} — may need a retry")
-        except Exception as e:
-            log.warning("GPU: pre-warm failed: %s", e)
-            _gpu_post(channel_id, root_id, bot_headers,
-                f":warning: Model pre-warm timed out — first chat may be slow")
-    except Exception as e:
-        log.exception("_gpu_background crashed")
-        try:
-            _gpu_post(channel_id, root_id, bot_headers, f":x: GPU wake crashed: {e}")
-        except Exception:
-            log.exception("Failed to post gpu crash to MM")
-
-def handle_gpu():
-    """Immediate ack — actual wake runs in background thread."""
-    return f":hourglass: Starting {OLLAMA_VM}... (polling in background)"
-
-
 def handle_c3_command(text):
     """Parse and route /c3 commands. Returns markdown response."""
     parts = text.strip().split()
@@ -548,43 +451,6 @@ def handle_c3_command(text):
             return f":x: {data['error']}"
         return f":arrows_counterclockwise: Restarted **{args[1]}** on **{args[0]}**"
 
-    elif cmd == "gpu":
-        return handle_gpu()
-
-    elif cmd == "model" and args:
-        new_model = " ".join(args)
-        try:
-            r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
-            r.raise_for_status()
-            available = [m.get("name", "") for m in r.json().get("models", [])]
-            if new_model not in available and f"{new_model}:latest" not in available:
-                return f":x: Model `{new_model}` not found.\n**Available:**\n" + "\n".join(f"- `{m}`" for m in available)
-        except Exception:
-            pass
-        global OLLAMA_MODEL
-        OLLAMA_MODEL = new_model
-        _ollama_contexts.clear()
-        return f":brain: Ollama model set to **`{new_model}`**\nContext cleared for all channels."
-
-    elif cmd == "model" and not args:
-        return f":brain: Current model: **`{OLLAMA_MODEL}`**"
-
-    elif cmd == "models":
-        try:
-            r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
-            r.raise_for_status()
-            models = r.json().get("models", [])
-            lines = ["| Model | Size | Modified |", "|:---|:---|:---|"]
-            for m in models:
-                name = m.get("name", "?")
-                size = f"{m.get('size', 0) / 1e9:.1f}GB"
-                modified = m.get("modified_at", "?")[:10]
-                current = " :white_check_mark:" if name == OLLAMA_MODEL else ""
-                lines.append(f"| `{name}`{current} | {size} | {modified} |")
-            return "\n".join(lines)
-        except Exception as e:
-            return f":x: Cannot reach Ollama: {e}"
-
     else:
         return (
             "**C3 Infrastructure Commands**\n"
@@ -600,9 +466,6 @@ def handle_c3_command(text):
             "| `start <vm> <c>` | Start a container |\n"
             "| `stop <vm> <c>` | Stop a container |\n"
             "| `restart <vm> <c>` | Restart a container |\n"
-            "| `gpu` | Wake GPU VM + start ollama |\n"
-            "| `model [name]` | Get/set Ollama model |\n"
-            "| `models` | List available Ollama models |\n"
             "| `help` | Show this message |"
         )
 
@@ -695,14 +558,6 @@ class C3CommandHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.end_headers()
         self.wfile.write(json.dumps(resp).encode())
-
-        # Launch background polling for gpu via slash command
-        if cmd == "gpu" and slash_channel_id and _c3_bot_headers:
-            threading.Thread(
-                target=_gpu_background,
-                args=(slash_channel_id, "", _c3_bot_headers),
-                daemon=True,
-            ).start()
 
     def log_message(self, fmt, *a):
         pass
@@ -856,14 +711,6 @@ def ws_listener(bot_user_id, bot_token):
             post_body["root_id"] = root_id
         mm_api("POST", "/posts", bot_headers, json=post_body)
 
-        # Launch background polling for gpu command
-        if cmd == "gpu":
-            threading.Thread(
-                target=_gpu_background,
-                args=(channel_id, root_id, bot_headers),
-                daemon=True,
-            ).start()
-
     def on_open(ws):
         ws.send(json.dumps({
             "seq": 1,
@@ -911,7 +758,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
     c3_cat = None
     dm_cat = None
     for cat in categories:
-        if cat.get("display_name") == "C3":
+        if cat.get("display_name") == CAT_AGENTS:
             c3_cat = cat
         if cat.get("type") == "direct_messages":
             dm_cat = cat
@@ -936,7 +783,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
                 "id": c3_cat["id"],
                 "user_id": user_id,
                 "team_id": team_id,
-                "display_name": "C3",
+                "display_name": CAT_AGENTS,
                 "type": "custom",
                 "channel_ids": ids,
             })
@@ -947,7 +794,7 @@ def setup_c3_sidebar(admin_headers, user_id, team_id, bot_user_id):
         r = mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
             "user_id": user_id,
             "team_id": team_id,
-            "display_name": "C3",
+            "display_name": CAT_AGENTS,
             "type": "custom",
             "channel_ids": [dm_channel_id],
         })
@@ -1014,179 +861,6 @@ def create_claude_users(admin_headers, team_id, all_channel_ids, ntfy_channel_id
             sync_sidebar_category(admin_headers, uid, team_id, ntfy_channel_ids)
 
 
-# ── Ollama AI ─────────────────────────────────────────────
-
-def _check_wg_reachable(ip, port=22, timeout=3):
-    """Direct TCP socket check via WireGuard IP."""
-    try:
-        s = socket.create_connection((ip, port), timeout=timeout)
-        s.close()
-        return True
-    except Exception:
-        return False
-
-def _check_vm_reachable(vm):
-    """Quick tier1 check with WG IP fallback for known VMs."""
-    check = c3_req("GET", f"/health/tier1/{vm}")
-    if isinstance(check, list):
-        if any(v.get("reachable") for v in check):
-            return True
-    elif isinstance(check, dict):
-        if check.get("reachable", False):
-            return True
-    # Fallback: direct WG socket check (handles stale public IPs on spot VMs)
-    if vm == OLLAMA_VM and OLLAMA_WG_IP:
-        wg_ok = _check_wg_reachable(OLLAMA_WG_IP)
-        if wg_ok:
-            log.info("tier1 failed for %s but WG IP %s reachable", vm, OLLAMA_WG_IP)
-        return wg_ok
-    return False
-
-def ensure_ollama_up():
-    """Quick check — returns (ok, message). Does NOT block/poll."""
-    if not _check_vm_reachable(OLLAMA_VM):
-        c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-        return False, f":hourglass: {OLLAMA_VM} is down — waking up..."
-    # VM reachable — check if Ollama API actually responds
-    try:
-        resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-        if resp.ok:
-            return True, ""
-    except Exception:
-        pass
-    # VM up but Ollama not responding — try compose up
-    c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=30)
-    return False, f":hourglass: {OLLAMA_VM} reachable but Ollama not responding — starting service..."
-
-def _ollama_wake_and_reply(channel_id, root_id, user_text, post_headers):
-    """Background thread: wake VM -> compose up -> poll Ollama API -> chat."""
-    def _post(msg):
-        body = {"channel_id": channel_id, "message": msg}
-        if root_id:
-            body["root_id"] = root_id
-        mm_api("POST", "/posts", post_headers, json=body)
-
-    try:
-        # Step 1: Start VM
-        log.info("OllamaWake: step 1 — starting %s", OLLAMA_VM)
-        r = c3_req("POST", f"/vms/{OLLAMA_VM}/start")
-        log.info("OllamaWake: vm start response: %s", str(r)[:200])
-
-        # Step 2: Poll until VM reachable via WireGuard
-        log.info("OllamaWake: step 2 — polling VM reachability")
-        vm_up = False
-        for i in range(30):
-            time.sleep(5)
-            if _check_vm_reachable(OLLAMA_VM):
-                vm_up = True
-                break
-        if not vm_up:
-            log.warning("OllamaWake: VM not reachable after 150s")
-            _post(f":warning: {OLLAMA_VM} not reachable after 150s")
-            return
-        log.info("OllamaWake: VM reachable after %ds", (i+1)*5)
-        _post(f":white_check_mark: {OLLAMA_VM} reachable")
-
-        # Step 3: Start ollama service (compose up)
-        log.info("OllamaWake: step 3 — starting ollama service")
-        r = c3_req("POST", f"/vms/{OLLAMA_VM}/services/ollama/start", timeout=60)
-        log.info("OllamaWake: service start response: %s", str(r)[:200])
-        if "error" in r:
-            log.info("OllamaWake: service start failed, trying container start")
-            c3_req("POST", f"/vms/{OLLAMA_VM}/containers/ollama/start")
-
-        # Step 4: Poll until Ollama HTTP API responds
-        log.info("OllamaWake: step 4 — polling Ollama API at %s", OLLAMA_URL)
-        _post(":hourglass: Waiting for Ollama API...")
-        ollama_ready = False
-        for i in range(24):
-            time.sleep(5)
-            try:
-                resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=5)
-                if resp.ok:
-                    ollama_ready = True
-                    log.info("OllamaWake: Ollama ready after %ds", (i+1)*5)
-                    _post(f":white_check_mark: Ollama ready after {(i+1)*5}s")
-                    break
-            except Exception:
-                pass
-        if not ollama_ready:
-            log.warning("OllamaWake: Ollama API not responding after 120s")
-            _post(f":warning: Ollama API not responding after 120s")
-            return
-
-        # Step 5: Send the actual chat
-        log.info("OllamaWake: step 5 — sending chat")
-        response = ollama_chat(channel_id, user_text)
-        _post(response)
-    except Exception as e:
-        log.exception("_ollama_wake_and_reply crashed")
-        try:
-            _post(f":x: Ollama wake crashed: {e}")
-        except Exception:
-            log.exception("Failed to post ollama crash to MM")
-
-
-def ollama_chat(channel_id, user_text):
-    """Send message to Ollama, maintain 10-msg context per channel."""
-    ctx = _ollama_contexts.setdefault(channel_id, [])
-    ctx.append({"role": "user", "content": user_text})
-    if len(ctx) > 10:
-        ctx[:] = ctx[-10:]
-    try:
-        r = requests.post(f"{OLLAMA_URL}/api/chat", json={
-            "model": OLLAMA_MODEL,
-            "messages": ctx,
-            "stream": False,
-        }, timeout=300)
-        r.raise_for_status()
-        content = r.json().get("message", {}).get("content", "")
-        content = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
-        ctx.append({"role": "assistant", "content": content})
-        return content or "(empty response)"
-    except Exception as e:
-        return f":x: Ollama error: {e}"
-
-
-OLLAMA_AI_USERNAME = "ollama-14bq8-ai"
-HAI_AI_USERNAME = "hai-1.5bq4-ai"
-
-def create_ollama_ai(admin_headers, team_id):
-    """Create or find Ollama AI account. Returns (ai_user_id, ai_token) or (None, None)."""
-    ai_user_id = None
-    r = mm_api("GET", "/bots?include_deleted=false&per_page=200", admin_headers)
-    if r.ok:
-        for entry in r.json():
-            if entry.get("username") == OLLAMA_AI_USERNAME:
-                ai_user_id = entry["user_id"]
-                log.info("Found existing %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
-                break
-    if not ai_user_id:
-        r = mm_api("POST", "/bots", admin_headers, json={
-            "username": OLLAMA_AI_USERNAME,
-            "display_name": "Ollama 14B-Q8 AI",
-            "description": "Chat with DeepSeek-R1 14B Q8 LLM. DM me or @mention. Commands: clear, model <name>, models, status",
-        })
-        if r.ok or r.status_code == 201:
-            ai_user_id = r.json()["user_id"]
-            log.info("Created %s: %s", OLLAMA_AI_USERNAME, ai_user_id)
-        else:
-            log.error("Failed to create %s: %s", OLLAMA_AI_USERNAME, r.text[:200])
-            return None, None
-    mm_api("POST", f"/teams/{team_id}/members", admin_headers, json={
-        "team_id": team_id, "user_id": ai_user_id,
-    })
-    r = mm_api("POST", f"/users/{ai_user_id}/tokens", admin_headers, json={
-        "description": f"{OLLAMA_AI_USERNAME} runtime",
-    })
-    if not r.ok:
-        log.error("Failed to create %s token: %s", OLLAMA_AI_USERNAME, r.text[:200])
-        return ai_user_id, None
-    ai_token = r.json()["token"]
-    log.info("Created %s access token", OLLAMA_AI_USERNAME)
-    return ai_user_id, ai_token
-
-
 def create_hai_ai(admin_headers, team_id):
     """Create or find HAI AI bot account (no WS listener — rig-agentic-hai handles its own).
     Returns (bot_user_id, bot_token) or (None, None)."""
@@ -1222,168 +896,6 @@ def create_hai_ai(admin_headers, team_id):
     bot_token = r.json()["token"]
     log.info("Created %s access token: %s", HAI_AI_USERNAME, bot_token)
     return bot_user_id, bot_token
-
-
-def ollama_ws_listener(ai_user_id, ai_token):
-    """WebSocket listener for Ollama AI — DMs + @mentions."""
-    ws_url = MM_URL.replace("http://", "ws://").replace("https://", "wss://") + "/api/v4/websocket"
-    ai_headers = {"Authorization": f"Bearer {ai_token}"}
-
-    def on_message(ws, message):
-        try:
-            data = json.loads(message)
-        except json.JSONDecodeError:
-            return
-        if data.get("event") != "posted":
-            return
-        post_data = data.get("data", {})
-        channel_type = post_data.get("channel_type", "")
-        try:
-            post = json.loads(post_data["post"])
-        except (KeyError, json.JSONDecodeError):
-            return
-        if post.get("user_id") == ai_user_id:
-            return
-        text = post.get("message", "").strip()
-        if not text:
-            return
-
-        is_dm = channel_type == "D"
-        if not is_dm:
-            # In channels and group DMs, require explicit @mention in text
-            if f"@{OLLAMA_AI_USERNAME}" not in text.lower():
-                return
-            text = re.sub(rf"@{re.escape(OLLAMA_AI_USERNAME)}\s*", "", text, flags=re.IGNORECASE).strip()
-            if not text:
-                text = "hello"
-
-        channel_id = post["channel_id"]
-        root_id = post.get("id", "") if not is_dm else ""
-        log.info("%s %s: %s", OLLAMA_AI_USERNAME, "DM" if is_dm else "mention", text[:80])
-
-        def _post_reply(msg):
-            body = {"channel_id": channel_id, "message": msg}
-            if root_id:
-                body["root_id"] = root_id
-            mm_api("POST", "/posts", ai_headers, json=body)
-
-        cmd_lower = text.lower().strip()
-        if cmd_lower == "clear":
-            _ollama_contexts.pop(channel_id, None)
-            _post_reply(":wastebasket: Context cleared")
-        elif cmd_lower.startswith("model "):
-            global OLLAMA_MODEL
-            new_model = text[6:].strip()
-            OLLAMA_MODEL = new_model
-            _ollama_contexts.clear()
-            _post_reply(f":brain: Model set to **{new_model}** (context cleared)")
-        elif cmd_lower == "models":
-            try:
-                r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=30)
-                r.raise_for_status()
-                models = [m.get("name", "?") for m in r.json().get("models", [])]
-                _post_reply("**Available models:**\n" + "\n".join(f"- `{m}`" for m in models) if models else "No models found")
-            except Exception as e:
-                ok, wake_msg = ensure_ollama_up()
-                _post_reply(wake_msg if wake_msg else f":x: {e}")
-        elif cmd_lower == "status":
-            reachable = _check_vm_reachable(OLLAMA_VM)
-            icon = ":white_check_mark:" if reachable else ":x:"
-            ctx_len = len(_ollama_contexts.get(channel_id, []))
-            _post_reply(f"{icon} **{OLLAMA_VM}** | Model: `{OLLAMA_MODEL}` | Context: {ctx_len} msgs")
-        else:
-            # Chat request — may need to wake VM + run inference (slow)
-            # Run in background thread to not block WebSocket
-            def _handle_chat():
-                try:
-                    ok, wake_msg = ensure_ollama_up()
-                    if not ok:
-                        # VM/Ollama not ready — full wake chain + chat
-                        _post_reply(wake_msg)
-                        _ollama_wake_and_reply(channel_id, root_id, text, ai_headers)
-                        return
-                    response = ollama_chat(channel_id, text)
-                    _post_reply(response)
-                except Exception as e:
-                    log.exception("_handle_chat crashed")
-                    try:
-                        _post_reply(f":x: Chat error: {e}")
-                    except Exception:
-                        log.exception("Failed to post chat crash to MM")
-            threading.Thread(target=_handle_chat, daemon=True).start()
-
-    def on_open(ws):
-        ws.send(json.dumps({
-            "seq": 1,
-            "action": "authentication_challenge",
-            "data": {"token": ai_token},
-        }))
-        log.info("%s WebSocket connected", OLLAMA_AI_USERNAME)
-
-    def on_error(ws, error):
-        log.warning("%s WebSocket error: %s", OLLAMA_AI_USERNAME, error)
-
-    def on_close(ws, code, msg):
-        log.warning("%s WebSocket closed: %s %s", OLLAMA_AI_USERNAME, code, msg)
-
-    while True:
-        try:
-            ws = websocket.WebSocketApp(
-                ws_url,
-                on_message=on_message,
-                on_open=on_open,
-                on_error=on_error,
-                on_close=on_close,
-            )
-            ws.run_forever(ping_interval=30, ping_timeout=10, origin="https://chat.diegonmarcos.com")
-        except Exception as e:
-            log.warning("%s WebSocket failed: %s — retrying in 5s", OLLAMA_AI_USERNAME, e)
-        time.sleep(5)
-
-
-def setup_ollama_sidebar(admin_headers, user_id, team_id, ai_user_id):
-    """Create DM channel with Ollama AI and put it in the C3 sidebar category."""
-    r = mm_api("POST", "/channels/direct", admin_headers, json=[user_id, ai_user_id])
-    if not r.ok:
-        log.warning("Failed to create DM with %s: %s", OLLAMA_AI_USERNAME, r.text[:100])
-        return
-    dm_channel_id = r.json()["id"]
-    log.info("DM channel with %s: %s", OLLAMA_AI_USERNAME, dm_channel_id)
-
-    r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers)
-    if not r.ok:
-        return
-    categories = r.json().get("categories", [])
-    c3_cat = None
-    dm_cat = None
-    for cat in categories:
-        if cat.get("display_name") == "C3":
-            c3_cat = cat
-        if cat.get("type") == "direct_messages":
-            dm_cat = cat
-
-    if dm_cat and dm_channel_id in dm_cat.get("channel_ids", []):
-        cleaned = [cid for cid in dm_cat["channel_ids"] if cid != dm_channel_id]
-        mm_api("PUT", f"/users/{user_id}/teams/{team_id}/channels/categories/{dm_cat['id']}", admin_headers, json={
-            "id": dm_cat["id"], "user_id": user_id, "team_id": team_id,
-            "display_name": dm_cat.get("display_name", "Direct Messages"),
-            "type": "direct_messages", "channel_ids": cleaned,
-        })
-
-    if c3_cat:
-        if dm_channel_id not in c3_cat.get("channel_ids", []):
-            ids = c3_cat["channel_ids"] + [dm_channel_id]
-            mm_api("PUT", f"/users/{user_id}/teams/{team_id}/channels/categories/{c3_cat['id']}", admin_headers, json={
-                "id": c3_cat["id"], "user_id": user_id, "team_id": team_id,
-                "display_name": "C3", "type": "custom", "channel_ids": ids,
-            })
-            log.info("Added %s DM to C3 sidebar category", OLLAMA_AI_USERNAME)
-    else:
-        mm_api("POST", f"/users/{user_id}/teams/{team_id}/channels/categories", admin_headers, json={
-            "user_id": user_id, "team_id": team_id,
-            "display_name": "C3", "type": "custom", "channel_ids": [dm_channel_id],
-        })
-        log.info("Created C3 sidebar category with %s DM", OLLAMA_AI_USERNAME)
 
 
 # ── Profile Icons ──────────────────────────────────────────
@@ -1430,7 +942,6 @@ def set_account_icons(admin_headers, account_ids):
     """Set profile icons for all bot/AI accounts at bootstrap (PNG via /users/{id}/image)."""
     icons = {
         "c3-bot": ("#00B8D9", "C3"),
-        OLLAMA_AI_USERNAME: ("#FF1744", "Q"),
         HAI_AI_USERNAME: ("#00BCD4", "H"),
         "claude-opus-ai": ("#FF6B35", "O"),
         "claude-sonnet-ai": ("#7B61FF", "S"),
@@ -1449,6 +960,58 @@ def set_account_icons(admin_headers, account_ids):
             log.warning("Failed to set icon for %s: %s", username, r.text[:100])
 
 
+def ensure_agents_llm_config(headers):
+    """Wire LLM backends into the mattermost-ai Agents plugin via config API.
+    Idempotent — skips PUT if the stored backends already match. Runs before
+    the ntfy bridge loop so every bots-container restart re-verifies the config."""
+    backends_json = os.environ.get("MM_AGENTS_LLM_BACKENDS")
+    if not backends_json:
+        return
+    backends = json.loads(backends_json)
+    r = mm_api("GET", "/config", headers)
+    if not r.ok:
+        log.warning("ensure_agents_llm_config: cannot GET config: %s", r.text[:100])
+        return
+    cfg = r.json()
+    cur = (cfg.get("PluginSettings") or {}).get("Plugins", {}).get("mattermost-ai", {}).get("llmBackends", [])
+    if cur == backends:
+        log.info("Agents plugin LLM backends already up-to-date")
+        return
+    cfg.setdefault("PluginSettings", {}).setdefault("Plugins", {}).setdefault("mattermost-ai", {})["llmBackends"] = backends
+    r = mm_api("PUT", "/config", headers, timeout=120, json=cfg)
+    if r.ok:
+        log.info("Agents plugin LLM backends configured (%d backend(s))", len(backends))
+    else:
+        log.warning("Agents plugin LLM backends config failed: %s", r.text[:200])
+
+
+def reconcile_categories(headers, user_id, team_id):
+    """Migrate existing sidebar category names to the configured set, in place
+    (by id, so channel membership/history is preserved): ntfy→NTFY, C3→AGENTS,
+    and the default 'Channels' category → Projects. Idempotent — a no-op once
+    names already match. Runs before the create-if-missing steps so they look
+    up (and extend) the renamed categories instead of spawning duplicates."""
+    r = mm_api("GET", f"/users/{user_id}/teams/{team_id}/channels/categories", headers)
+    if not r.ok:
+        log.warning("reconcile_categories: cannot list categories: %s", r.text[:100])
+        return
+    renames = {"ntfy": CAT_NTFY, "C3": CAT_AGENTS}
+    for cat in r.json().get("categories", []):
+        cur = cat.get("display_name")
+        target = renames.get(cur)
+        if target is None and cat.get("type") == "channels":
+            target = CAT_PROJECTS
+        if not target or target == cur:
+            continue
+        body = dict(cat)
+        body["display_name"] = target
+        rr = mm_api("PUT", f"/users/{user_id}/teams/{team_id}/channels/categories/{cat['id']}", headers, json=body)
+        if rr.ok:
+            log.info("Reconciled sidebar category %r -> %r", cur, target)
+        else:
+            log.warning("Failed to rename category %r -> %r: %s", cur, target, rr.text[:100])
+
+
 def main():
     wait_for_mattermost()
     admin_token = bootstrap_admin()
@@ -1460,6 +1023,11 @@ def main():
     user_id = r.json()["id"]
 
     team_id = ensure_team(headers)
+    # Rename any pre-existing categories to the configured set before the
+    # create-if-missing steps below look them up (ntfy→NTFY, C3→AGENTS, Channels→Projects).
+    reconcile_categories(headers, user_id, team_id)
+    # Wire claude-superset-api as the Agents plugin LLM backend (idempotent).
+    ensure_agents_llm_config(headers)
     default_ch, ntfy_channel_ids = sync_channels(headers, team_id)
     webhook_url = ensure_webhook(headers, default_ch)
 
@@ -1498,16 +1066,6 @@ def main():
     else:
         log.warning("C3 bot creation failed — slash command still works")
 
-    # Create Ollama AI and start WebSocket listener
-    ollama_user_id, ollama_token = create_ollama_ai(headers, team_id)
-    if ollama_user_id and ollama_token:
-        add_bot_to_channels(headers, ollama_user_id, all_channel_ids)
-        threading.Thread(target=ollama_ws_listener, args=(ollama_user_id, ollama_token), daemon=True).start()
-        setup_ollama_sidebar(headers, user_id, team_id, ollama_user_id)
-        log.info("%s ready — DM @%s or @mention", OLLAMA_AI_USERNAME, OLLAMA_AI_USERNAME)
-    else:
-        log.warning("%s creation failed", OLLAMA_AI_USERNAME)
-
     # Create HAI AI bot account (no WS listener — rig-agentic-hai handles its own)
     hai_user_id, hai_token = create_hai_ai(headers, team_id)
     if hai_user_id:
@@ -1520,8 +1078,6 @@ def main():
     account_ids = {}
     if bot_user_id:
         account_ids["c3-bot"] = bot_user_id
-    if ollama_user_id:
-        account_ids[OLLAMA_AI_USERNAME] = ollama_user_id
     if hai_user_id:
         account_ids[HAI_AI_USERNAME] = hai_user_id
     for info in CLAUDE_USERS:
