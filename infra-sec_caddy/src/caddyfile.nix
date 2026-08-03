@@ -588,17 +588,26 @@ ${plainOut}${sniMuxBlock}
           header_up X-Real-IP {http.request.remote.host}
           header_up Accept "application/json, text/event-stream"
         }'';
-          # Per-endpoint WG-only gate (ep.wg_only from build.json proxy.primary.wg_only).
-          # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
-          # Invert to a `handle @wg` / `handle` pair so the deny is order-independent
-          # (both are `handle` blocks → source-order, first-match-wins).
-          inner = if (ep.wg_only or false) then ''@wg remote_ip 10.0.0.0/24
+          # Three-tier auth for every MCP endpoint (unconditional):
+          #   1. WG fast-path — WireGuard clients skip auth for lower latency.
+          #   2. Bearer fallback — non-WG clients with a valid bearer token are
+          #      forwarded through introspect-proxy and then proxied.
+          #   3. 403 catch-all — all other requests are denied.
+          # Both `handle @wg` and `handle @bearer` are `handle` blocks so Caddy
+          # evaluates them in source order (first-match-wins), which is the
+          # correct order-independent posture for this three-tier pattern.
+          inner = ''@wg remote_ip 10.0.0.0/24
         handle @wg {
+          ${proxyBody}
+        }
+        @bearer header Authorization Bearer*
+        handle @bearer {
+  ${bearer}
           ${proxyBody}
         }
         handle {
           respond "Forbidden" 403
-        }'' else proxyBody;
+        }'';
         in ''
       handle_path ${ep.base_path}/* {
         ${inner}
