@@ -8,7 +8,8 @@
 // Reads env at startup; each platform starts independently (both can run together).
 //
 // Env vars:
-//   TELEGRAM_BOT_TOKEN          — if set, Telegram long-poll starts
+//   TELEGRAM_BOT_TOKEN          — if set, Telegram long-poll starts (default agent: goose)
+//   TELEGRAM_CLAUDE_BOT_TOKEN   — if set, second Telegram long-poll starts (default agent: claude)
 //   TELEGRAM_ALLOW_FROM         — comma-separated numeric chat/user ids (empty = allow all)
 //   MATTERMOST_ENABLED          — "true" to enable Mattermost WS bridge
 //   MATTERMOST_URL              — e.g. http://10.0.0.6:8065
@@ -21,10 +22,10 @@ const MYAI_LOCAL_URL = process.env.MYAI_LOCAL_URL || "http://127.0.0.1:3217";
 // null in toggles/model/ponytail means "use server default" (no header sent).
 const HISTORY_CAP = 20; // ~10 turns
 const chatState = new Map(); // chatKey -> state
-const getState = (chatKey) => {
+const getState = (chatKey, defaultAgent = "goose") => {
   let s = chatState.get(chatKey);
   if (!s) {
-    s = { agent: "goose", model: null, history: [], ponytail: null,
+    s = { agent: defaultAgent, model: null, history: [], ponytail: null,
           toggles: { headroom: null, rtk: null, caveman: null, principles: null },
           busy: false };
     chatState.set(chatKey, s);
@@ -36,8 +37,8 @@ const getState = (chatKey) => {
 // Builds messages from the chat's rolling history + the new user turn, and
 // applies the chat's per-chat header overrides (agent mode, model, ponytail,
 // plugin toggles). Appends the turn to history on success.
-const routeToGoose = async (text, chatKey = "default") => {
-  const state = getState(chatKey);
+const routeToGoose = async (text, chatKey = "default", defaultAgent = "goose") => {
+  const state = getState(chatKey, defaultAgent);
   const messages = [...state.history, { role: "user", content: text }];
   const headers = { "content-type": "application/json", "x-agent-mode": state.agent };
   if (state.ponytail !== null) headers["x-ponytail-mode"] = state.ponytail;
@@ -115,9 +116,9 @@ const jget = async (url) => {
   catch { return { ok: res.ok, status: res.status, text }; }
 };
 
-const handleCommand = async (cmdIn, arg, chatKey, meta = {}) => {
+const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent = "goose") => {
   const cmd = ALIASES[cmdIn] || cmdIn;
-  const state = getState(chatKey);
+  const state = getState(chatKey, defaultAgent);
   switch (cmd) {
     case "start":
       return "👋 my-ai-api gateway. I route your messages to an LLM agent (goose by default) with a compression/plugin pipeline in front. Try /help for the full command list.";
@@ -277,10 +278,10 @@ const handleCommand = async (cmdIn, arg, chatKey, meta = {}) => {
 };
 
 // ── Telegram: offset-based long-poll ─────────────────────────────────────────
-const startTelegram = () => {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) { console.log("[gateway] telegram: TELEGRAM_BOT_TOKEN not set — skipping"); return; }
-  console.log("[gateway] telegram: starting long-poll");
+const startTelegram = ({ tokenEnvVar = "TELEGRAM_BOT_TOKEN", chatKeyPrefix = "telegram", logLabel = "telegram", defaultAgent = "goose" } = {}) => {
+  const token = process.env[tokenEnvVar];
+  if (!token) { console.log(`[gateway] ${logLabel}: ${tokenEnvVar} not set — skipping`); return; }
+  console.log(`[gateway] ${logLabel}: starting long-poll (default agent: ${defaultAgent})`);
 
   const allowFrom = (process.env.TELEGRAM_ALLOW_FROM || "")
     .split(",").map((s) => s.trim()).filter(Boolean);
@@ -302,7 +303,7 @@ const startTelegram = () => {
     tgPost("sendMessage", { chat_id, text });
 
   tgPost("setMyCommands", { commands: COMMANDS }).catch((err) =>
-    console.error("[gateway] telegram: setMyCommands failed:", err.message));
+    console.error(`[gateway] ${logLabel}: setMyCommands failed:`, err.message));
 
   let offset = 0;
 
@@ -312,7 +313,7 @@ const startTelegram = () => {
       try {
         const data = await tgApi("getUpdates", { timeout: 50, offset });
         if (!data.ok) {
-          console.error("[gateway] telegram: getUpdates not ok:", JSON.stringify(data));
+          console.error(`[gateway] ${logLabel}: getUpdates not ok:`, JSON.stringify(data));
           await new Promise((r) => setTimeout(r, 5000));
           continue;
         }
@@ -323,32 +324,32 @@ const startTelegram = () => {
             if (!msg?.text) continue;
             const from_id = String(msg.from?.id ?? "");
             if (allowFrom.length > 0 && !allowFrom.includes(from_id)) {
-              console.log(`[gateway] telegram: denied from ${from_id}`);
+              console.log(`[gateway] ${logLabel}: denied from ${from_id}`);
               continue;
             }
-            const conversationKey = `telegram:${msg.chat.id}`;
+            const conversationKey = `${chatKeyPrefix}:${msg.chat.id}`;
             let reply;
             if (msg.text.startsWith("/")) {
               const [cmdRaw, ...argParts] = msg.text.trim().split(/\s+/);
               const cmd = cmdRaw.slice(1).split("@")[0].toLowerCase();
               const arg = argParts.join(" ");
-              reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom });
+              reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom }, defaultAgent);
             } else {
-              reply = await routeToGoose(msg.text, conversationKey);
+              reply = await routeToGoose(msg.text, conversationKey, defaultAgent);
             }
             await sendMessage(msg.chat.id, reply);
           } catch (innerErr) {
-            console.error("[gateway] telegram: error processing update:", innerErr.message);
+            console.error(`[gateway] ${logLabel}: error processing update:`, innerErr.message);
           }
         }
       } catch (loopErr) {
-        console.error("[gateway] telegram: network error:", loopErr.message);
+        console.error(`[gateway] ${logLabel}: network error:`, loopErr.message);
         await new Promise((r) => setTimeout(r, 5000));
       }
     }
   };
 
-  poll().catch((err) => console.error("[gateway] telegram: poll died:", err.message));
+  poll().catch((err) => console.error(`[gateway] ${logLabel}: poll died:`, err.message));
 };
 
 // ── Mattermost: WebSocket bridge ──────────────────────────────────────────────
@@ -440,4 +441,5 @@ const startMattermost = () => {
 // ── Startup ───────────────────────────────────────────────────────────────────
 console.log("[gateway] starting — MYAI_LOCAL_URL:", MYAI_LOCAL_URL);
 startTelegram();
+startTelegram({ tokenEnvVar: "TELEGRAM_CLAUDE_BOT_TOKEN", chatKeyPrefix: "telegram-claude", logLabel: "telegram-claude", defaultAgent: "claude" });
 startMattermost();
