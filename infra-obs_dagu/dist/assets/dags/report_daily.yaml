@@ -4,6 +4,9 @@ env:
   - NTFY_URL: http://10.0.0.6:8090
   - AUTHELIA_BEARER_TOKEN: ${AUTHELIA_BEARER_TOKEN}
   - NOREPLY_PASSWORD: ${NOREPLY_PASSWORD}
+  # Stalwart leg authenticates as me@ (its no-reply@ password is unmanaged at
+  # runtime and drifts); me@'s password IS managed. See send.sh.
+  - STALWART_LOGIN_PASSWORD: ${STALWART_LOGIN_PASSWORD}
   - HTTP_TO_SMTP_PROXY_API_URL: http://10.0.0.1:8090/
   - HTTP_TO_SMTP_PROXY_API_KEY: ${HTTP_TO_SMTP_PROXY_API_KEY}
   - GITHUB_TOKEN: ${GITHUB_TOKEN}
@@ -41,7 +44,10 @@ steps:
         -v dagu_dagu_data:/var/lib/dagu/data \
         -w /var/lib/dagu/data/cloud-data/reports \
         -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist \
+        -e BEARER_TOKEN="$AUTHELIA_BEARER_TOKEN" \
         -e NOREPLY_PASSWORD="$NOREPLY_PASSWORD" \
+        -e STALWART_LOGIN_PASSWORD="$STALWART_LOGIN_PASSWORD" \
+        -e LOCAL_ENVELOPE_FROM="no-reply@diegonmarcos.com" \
         -e HTTP_TO_SMTP_PROXY_API_URL="$HTTP_TO_SMTP_PROXY_API_URL" \
         -e HTTP_TO_SMTP_PROXY_API_KEY="$HTTP_TO_SMTP_PROXY_API_KEY" \
         -e GITHUB_TOKEN="$GITHUB_TOKEN" \
