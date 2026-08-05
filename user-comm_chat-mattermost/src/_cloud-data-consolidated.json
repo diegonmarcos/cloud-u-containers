@@ -5343,8 +5343,8 @@
             "io_weight": "10",
             "_comment": "update = INCREMENTAL (octocode index, git-aware, changed files only) on top of the GHCR DB. NOT a reindex (clear+rebuild). First run with no upstream image bootstraps a full build once to seed GHCR. use_llm=false: the 2148-node base is structural-only; the LLM GraphRAG phase makes one LLM call PER node (~hours over the full graph) and timed out the job. Structural incremental of changed files is minutes and matches the base.",
             "incremental": true,
-            "use_llm": false,
-            "llm_model": "openrouter:deepseek/deepseek-v4-pro",
+            "use_llm": true,
+            "llm_model": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
             "schedule": "0 4,16 * * *",
             "max_minutes": 300,
             "repo_timeout_min": 90,
@@ -5356,7 +5356,7 @@
             "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
-            "models": "openai:deepseek/deepseek-v4-pro",
+            "models": "openai:qwen/qwen3-coder-30b-a3b-instruct",
             "health_url": "http://10.0.0.6:3217/health"
           },
           "index_repos": [
