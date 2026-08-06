@@ -59,7 +59,8 @@
 
     # User creation block — generated from build.json#users (this service's SoT).
     # Each user gets creds create + creds password (UPSERT) + imap-acct create.
-    # Pipe passwords via stdin (never --password $VAR — would leak via `docker top`).
+    # Use -p flag (not pipe) — maddy creds password tries TurnOnRawIO on stdin
+    # even when piped, which fails without a TTY (inappropriate ioctl for device).
     # Shell-level $ENV refs are built via string concat to avoid Nix interpolation
     # confusion with multi-line `''...''` strings.
     mkUserLines = key: u:
@@ -67,8 +68,8 @@
         addr      = "${u.name}@${base_domain}";
         passShell = "\"$" + u.pass_env + "\"";
       in lib.concatStringsSep "\n" [
-        "printf '%s' ${passShell} | maddy creds create   ${addr} 2>&1 | sed 's|^|  [creds:create ${u.name}]   |' || true"
-        "printf '%s' ${passShell} | maddy creds password ${addr} 2>&1 | sed 's|^|  [creds:password ${u.name}] |' || true"
+        "maddy creds create   -p ${passShell} ${addr} 2>&1 | sed 's|^|  [creds:create ${u.name}]   |' || true"
+        "maddy creds password -p ${passShell} ${addr} 2>&1 | sed 's|^|  [creds:password ${u.name}] |' || true"
         "maddy imap-acct create ${addr} 2>/dev/null || true"
       ];
 
