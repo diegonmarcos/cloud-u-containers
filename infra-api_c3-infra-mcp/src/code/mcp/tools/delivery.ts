@@ -24,7 +24,7 @@ export function registerDeliveryTools(server: McpServer) {
 
   server.tool(
     "devops.build.service",
-    "Run build.sh for a specific service (build/secrets/ship/clean/all)",
+    "Run build.sh for a specific service (build/secrets/ship/clean/all). Executes on the oci-apps ARM runner via c3-infra-mcp. For x86 builds use devops.workflows.gha_trigger (GHA runner).",
     {
       service: z.string().describe("Service name"),
       step: z
@@ -67,7 +67,7 @@ export function registerDeliveryTools(server: McpServer) {
 
   server.tool(
     "devops.build.all",
-    "Run the root build.sh orchestrator to build all services",
+    "Run the root build.sh orchestrator to build all services. Executes on the oci-apps ARM runner via c3-infra-mcp. For x86 or multi-arch use devops.workflows.gha_trigger.",
     {
       dryRun: z.boolean().optional().describe("Dry run mode (default: false)"),
     },
@@ -101,7 +101,7 @@ export function registerDeliveryTools(server: McpServer) {
 
   server.tool(
     "devops.build.ship",
-    "Run full deployment pipeline: build → secrets → deploy → compose (build.sh ship)",
+    "Run full deployment pipeline on the oci-apps ARM runner: build → secrets → deploy → compose (cloud/build.sh ship). For x86 services or multi-arch use devops.workflows.gha_trigger (GHA x86 runner, ship.yml).",
     {
       service: z.string().describe("Service name to deploy"),
     },
@@ -139,7 +139,7 @@ export function registerDeliveryTools(server: McpServer) {
 
   server.tool(
     "devops.build.docker",
-    "Build and push Docker image for a service (build.sh docker)",
+    "Build and push Docker image for a service on the oci-apps ARM runner (build.sh docker). Produces arm64 image only. For x86_64 or multi-arch images use devops.workflows.gha_trigger.",
     {
       service: z.string().describe("Service name"),
     },
