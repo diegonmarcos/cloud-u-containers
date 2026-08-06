@@ -455,7 +455,7 @@ export function registerWorkflowTools(server: McpServer): void {
   // ── GHA ──
   server.tool(
     "devops.workflows.gha",
-    "GHA: all workflow runs last 24h — status, counts, per-workflow breakdown",
+    "GHA x86 runner (ubuntu-latest): all workflow runs last 24h — status, counts, per-workflow breakdown",
     {},
     () => safeRun(workflowsGha),
   );
@@ -486,7 +486,7 @@ export function registerWorkflowTools(server: McpServer): void {
 
   server.tool(
     "devops.workflows.gha_trigger",
-    "Trigger GHA workflow(s) — specify name or 'all' for all active workflows",
+    "Trigger GHA workflow(s) on the GHA x86 runner (ubuntu-latest, ship.yml). This is the canonical build+deploy runner for cloud services. Specify workflow name or 'all' for all active workflows.",
     {
       workflow: z.string().optional().describe("Workflow name (partial match) or 'all'. Omit to list available."),
     },

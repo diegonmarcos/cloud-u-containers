@@ -72,7 +72,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
 export function registerFrontendExecTools(server: McpServer) {
   server.tool(
     "devops.front.build",
-    "Build a front-end project using the universal build.sh engine",
+    "Build a front-end project on the oci-apps ARM runner using front/build.sh. For CI/production builds (committed dist, GHA x86 runner, ship.yml) use devops.workflows.gha_trigger instead.",
     {
       project: z.string().describe("Project name"),
       command: z
@@ -120,7 +120,7 @@ export function registerFrontendExecTools(server: McpServer) {
 
   server.tool(
     "devops.front.dev_server",
-    "Start, stop, or check status of a project's dev server",
+    "Start, stop, or check status of a project's dev server on the oci-apps ARM runner (c3-infra-mcp container).",
     {
       project: z.string().describe("Project name"),
       action: z.enum(["dev", "stop", "status"]).describe("Dev server action"),
@@ -160,7 +160,7 @@ export function registerFrontendExecTools(server: McpServer) {
 
   server.tool(
     "devops.front.deploy",
-    "Run deploy.sh to merge deps and build all changed projects (CI-like)",
+    "Run deploy.sh on the oci-apps ARM runner to merge deps and build all changed projects (CI-like). For the canonical production build+dist-commit use devops.workflows.gha_trigger (GHA x86 runner, ship.yml).",
     {
       phase: z
         .enum(["deps", "build", "all"])
