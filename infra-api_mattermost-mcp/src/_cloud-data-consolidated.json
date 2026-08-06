@@ -5347,7 +5347,7 @@
             "llm_model": "openrouter:qwen/qwen3-coder-30b-a3b-instruct",
             "schedule": "0 4,16 * * *",
             "max_minutes": 300,
-            "repo_timeout_min": 90,
+            "repo_timeout_min": 160,
             "code_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5",
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
@@ -5818,7 +5818,8 @@
         "OPENROUTER_API_KEY",
         "TELEGRAM_BOT_TOKEN",
         "GOOSE_SERVER__SECRET_KEY",
-        "MCP_BEARER_TOKEN"
+        "MCP_BEARER_TOKEN",
+        "TELEGRAM_CLAUDE_BOT_TOKEN"
       ]
     },
     "session-memory": {
