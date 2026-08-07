@@ -48,7 +48,15 @@ msgpipeline local_routing {
         modify {
             replace_rcpt &local_rewrites
         }
+        # Dual-write: store in maddy's own imapsql AND relay to Stalwart
+        # (the JMAP/IMAP store on :2443/:2993). maddy commits both targets
+        # atomically — if either fails the whole delivery defers and retries,
+        # so no message is ever lost or duplicated across the two stores.
+        # This completes Phase 3 of the Stalwart migration: inbound external
+        # mail (via http-to-smtp-proxy-api / CF Worker -> :25) and mail-puller
+        # re-injections (via submission :465) both converge here.
         deliver_to &local_mailboxes
+        deliver_to &stalwart_relay
     }
     default_destination {
         reject 550 5.1.1 "User doesn't exist"
@@ -139,6 +147,19 @@ submission @LISTEN_465@ tls://127.0.0.1:465 {
             reject 550 5.7.1 "Relay denied: external sender + external recipient (open-relay guard)"
         }
     }
+}
+
+# ── Stalwart relay (local JMAP/IMAP store ingest) ─────────────────
+# Co-located Stalwart SMTP ingest port. Plain SMTP over the WG-internal
+# loopback (10.0.0.3); unauthenticated local delivery to local recipients,
+# mirroring how http-to-smtp-proxy-api uses this same shadow port. STARTTLS
+# is opportunistic (Stalwart advertises it) but not required on-host.
+target.smtp stalwart_relay {
+    targets tcp://10.0.0.3:2025
+    # Plain SMTP: WG already encrypts on-host loopback transport, and
+    # Stalwart's STARTTLS cert won't validate against the 10.0.0.3 IP.
+    # Matches http-to-smtp-proxy-api's shadow delivery to this same port.
+    starttls no
 }
 
 # ── Outbound relay (OCI SMTP) ─────────────────────────────────────
