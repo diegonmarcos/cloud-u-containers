@@ -80,6 +80,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
        | tar -xz -C /usr/local/bin ./goose \
     && chmod +x /usr/local/bin/goose \
     && goose --version \
+    && npm install -g @anthropic-ai/claude-code \
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 

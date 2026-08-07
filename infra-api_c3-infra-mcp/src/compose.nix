@@ -46,7 +46,7 @@ in
         "/nix/store:/nix/store:ro"
         "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro"
         "~/.config/gcloud:/root/.config/gcloud"
-        "c3_git_repos:/root/git"
+        "octocode_repos:/root/git"
       ];
       healthcheck = {
         test = [
@@ -62,9 +62,8 @@ in
   };
 
   volumes = {
-    c3_git_repos = {
-      external = true;
-      name = "c3-mcp-api_c3-repos";
+    octocode_repos = {
+      name = "octocode_repos";
     };
   };
 }

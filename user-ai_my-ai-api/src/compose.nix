@@ -41,6 +41,7 @@ in
         MATTERMOST_ENABLED = gw.mattermost_enabled  or "false";
         TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
         MCP_ENABLED        = "1";
+        CLAUDE_CLI_BASE_URL = "http://10.0.0.6:3117";
       };
       volumes = [
         "my_ai_home:/home/appuser"

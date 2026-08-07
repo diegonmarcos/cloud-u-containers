@@ -78,7 +78,7 @@
         "/nix/store:/nix/store:ro",
         "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro",
         "~/.config/gcloud:/root/.config/gcloud",
-        "c3_git_repos:/root/git"
+        "octocode_repos:/root/git"
       ],
       "env_file": true,
       "depends_on": [],
