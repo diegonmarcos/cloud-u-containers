@@ -23,6 +23,15 @@ in
       environment    = {
         BRIDGE_PORT        = toString (ports.app      or 3217);
         OLLAMA_PORT        = toString (ports.ollama   or 12436);
+        # wg0-only: bind the /v1 API + Ollama mimic to the WG address so WG-peer
+        # GHA runners can reach them. localhost default left them unreachable over
+        # wg0 (octocode LLM calls from the x86 runner silently failed). NOT 0.0.0.0
+        # — 10.0.0.6 is the WG interface only, never a public bind.
+        BRIDGE_BIND        = rt.wg_bind or "10.0.0.6";
+        BRIDGE_OLLAMA_BIND = rt.wg_bind or "10.0.0.6";
+        # In-container gateway (telegram/mattermost bot) calls the /v1 API. Follow
+        # the wg0 bind — localhost no longer answers once BRIDGE_BIND is the WG IP.
+        MYAI_LOCAL_URL     = "http://${rt.wg_bind or "10.0.0.6"}:3217";
         HEADROOM_PORT      = toString (ports.headroom or 8890);
         GOOSE_PORT         = toString (ports.goosed   or 3227);
         DEFAULT_MODEL      = rt.model or "z-ai/glm-5";
@@ -37,7 +46,7 @@ in
         "my_ai_home:/home/appuser"
       ];
       healthcheck = {
-        test     = [ "CMD" "curl" "-sf" "http://localhost:3217/health" ];
+        test     = [ "CMD" "curl" "-sf" "http://10.0.0.6:3217/health" ];
         interval = "30s";
         timeout  = "5s";
         retries  = 3;
