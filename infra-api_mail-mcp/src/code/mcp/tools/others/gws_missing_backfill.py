@@ -11,50 +11,55 @@ AND imports into Google Workspace. This tool is the BACKFILL half — it pulls
 the historical Workspace mail that predates the dual-write into Stalwart.
 It is NOT part of the steady-state flow; run it by hand for a one-time sync.
 
-Access model (no app-password, no user consent):
-  The Google Workspace domain has a service account with domain-wide
-  delegation (diego-cli@diegonmarcos-infra-prod). Mint a short-lived Gmail
-  IMAP access token that impersonates the target user, then IMAP-XOAUTH2 into
-  imap.gmail.com. The SA private key never leaves its container:
+READ path — Gmail API (NOT IMAP):
+  The Workspace domain's service account (diego-cli@diegonmarcos-infra-prod)
+  has domain-wide delegation for Gmail *API* scopes (gmail.readonly) but NOT
+  the IMAP scope https://mail.google.com/ (that returns `unauthorized_client`).
+  So we read via the Gmail REST API, impersonating the target user, and never
+  need an app password or user consent. If you later grant the SA the
+  mail.google.com scope in the Workspace admin console, an IMAP variant would
+  also be possible, but the API path needs no extra delegation.
 
-    TOKEN=$(ssh oci-apps "docker exec google-workspace-mcp \\
-      /app/.venv/bin/python -c \"
-    from google.oauth2 import service_account
-    from google.auth.transport.requests import Request
-    c = service_account.Credentials.from_service_account_file(
-        '/run/secrets/service-account-key.json',
-        scopes=['https://mail.google.com/'], subject='me@diegonmarcos.com')
-    c.refresh(Request()); print(c.token)\"")
+WRITE path — Stalwart IMAP APPEND:
+  Missing messages are APPENDed to Stalwart INBOX (10.0.0.3:2993) with their
+  original internalDate + the \\Seen flag (historical mail, not shown unread).
 
-Run from a host that reaches BOTH imap.gmail.com (internet) and Stalwart's WG
-IMAP (10.0.0.3:2993) — e.g. oci-mail:
+RUN — inside the google-workspace-mcp container (has google-auth +
+googleapiclient and, via network_mode host on oci-apps, WG reach to Stalwart):
 
-    python3 gws_missing_backfill.py <GMAIL_ACCESS_TOKEN> <STALWART_PASSWORD> [SRC_MAILBOX]
+  docker cp gws_missing_backfill.py google-workspace-mcp:/tmp/bf.py
+  docker exec google-workspace-mcp /app/.venv/bin/python /tmp/bf.py <STALWART_PASSWORD>
 
-  SRC_MAILBOX default: "[Gmail]/All Mail" (the complete archive). Missing
-  messages are APPENDed to Stalwart INBOX with their original INTERNALDATE and
-  the \\Seen flag (historical mail, not shown as unread).
+  Optional argv[2]: impersonated user (default me@diegonmarcos.com).
 
-Notes:
-  - USER / STALW below assume me@diegonmarcos.com on Stalwart 10.0.0.3:2993.
-    Adjust for another account/host.
-  - Stalwart's per-account auth rate-limit bans after a few auths in a short
-    window; this tool uses a SINGLE Stalwart login with backoff retry to stay
-    under it. Avoid hammering the account with other IMAP logins while it runs.
+Gotcha — Stalwart per-account auth rate-limit:
+  Stalwart bans an account after a few auths in a short rolling window (even
+  successful ones; it is the intended-but-mis-deployed fail2ban — config.toml
+  is dead in v0.16, settings live in RocksDB). This tool uses a SINGLE Stalwart
+  login (one connection for indexing + appending) with backoff retry, and
+  NOOP-keepalive on long runs. Don't run other IMAP/JMAP logins for this
+  account while it runs, and give it a quiet window before starting.
 """
-import imaplib, ssl, sys, email, time
+import imaplib, ssl, sys, email, time, base64
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
 
-USER = "me@diegonmarcos.com"
-GMAIL = ("imap.gmail.com", 993)
+SA_KEY = "/run/secrets/service-account-key.json"
+PASSWORD = sys.argv[1]
+USER = sys.argv[2] if len(sys.argv) > 2 else "me@diegonmarcos.com"
 STALW = ("10.0.0.3", 2993)
-TOKEN = sys.argv[1]
-PASSWORD = sys.argv[2]
-SRC_MB = sys.argv[3] if len(sys.argv) > 3 else "[Gmail]/All Mail"
 
 imaplib._MAXLINE = 10_000_000
 ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
 
-def stalwart_login(retries=8, wait=45):
+def gmail_service():
+    creds = service_account.Credentials.from_service_account_file(
+        SA_KEY, scopes=["https://www.googleapis.com/auth/gmail.readonly"], subject=USER)
+    creds.refresh(Request())
+    return build("gmail", "v1", credentials=creds, cache_discovery=False)
+
+def stalwart_login(retries=6, wait=90):
     """Single Stalwart connection with backoff — survives the per-account
     auth rate-limit (bans after a few auths in a short window)."""
     last = None
@@ -86,10 +91,7 @@ def list_folders(c):
         if not line:
             continue
         s = line.decode(errors="replace")
-        if '"' in s:
-            name = s.split('"')[-2] if s.rstrip().endswith('"') else s.split('"')[-1].strip()
-        else:
-            name = s.split()[-1]
+        name = s.split('"')[-2] if s.rstrip().endswith('"') else s.split()[-1]
         out.append(name)
     return out
 
@@ -118,68 +120,62 @@ def collect_stalwart_mids(c):
             print(f"  (folder {fld} skipped: {e})", flush=True)
     return ids
 
-def gmail_connect():
-    c = imaplib.IMAP4_SSL(*GMAIL)
-    auth = "user=%s\x01auth=Bearer %s\x01\x01" % (USER, TOKEN)
-    c.authenticate("XOAUTH2", lambda _x: auth.encode())
-    return c
-
 def main():
-    # ONE Stalwart connection for both indexing and appending — a single login
-    # keeps us under the aggressive per-account auth rate-limit.
     dst = stalwart_login()
     print("Indexing Stalwart (all folders) for Message-IDs...", flush=True)
     have = collect_stalwart_mids(dst)
     print(f"Stalwart already holds {len(have)} distinct Message-IDs", flush=True)
 
-    g = gmail_connect()
-    typ, d = g.select(SRC_MB, readonly=True)
-    if typ != "OK":
-        print(f"cannot select {SRC_MB}: {d}", flush=True); return
-    typ, data = g.uid("search", None, "ALL")
-    uids = data[0].split() if (typ == "OK" and data and data[0]) else []
-    print(f"Gmail {SRC_MB} has {len(uids)} messages; finding missing ones...", flush=True)
+    svc = gmail_service()
+    ids = []
+    req = svc.users().messages().list(userId="me", maxResults=500)
+    while req is not None:
+        resp = req.execute()
+        ids += [m["id"] for m in resp.get("messages", [])]
+        req = svc.users().messages().list_next(req, resp)
+    print(f"Gmail mailbox has {len(ids)} messages; copying the ones missing from Stalwart...", flush=True)
 
     dst.select("INBOX")
     copied = skipped = failed = 0
-    for n, uid in enumerate(uids, 1):
-        typ, hf = g.uid("fetch", uid, "(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])")
-        mid = None
-        if typ == "OK" and hf and isinstance(hf[0], tuple):
-            mid = mid_of(hf[0][1])
-        if mid and mid in have:
-            skipped += 1
-        else:
-            typ, ff = g.uid("fetch", uid, "(FLAGS INTERNALDATE BODY.PEEK[])")
-            if typ != "OK" or not ff or not isinstance(ff[0], tuple):
-                failed += 1
+    for n, gid in enumerate(ids, 1):
+        try:
+            meta = svc.users().messages().get(
+                userId="me", id=gid, format="metadata", metadataHeaders=["Message-Id"]).execute()
+            headers = {h["name"].lower(): h["value"] for h in meta.get("payload", {}).get("headers", [])}
+            msgid = (headers.get("message-id") or "").strip() or None
+            internal = meta.get("internalDate")  # ms since epoch, as string
+            if msgid and msgid in have:
+                skipped += 1
             else:
-                meta = ff[0][0]; raw = ff[0][1]
-                if mid is None:
-                    mid = mid_of(raw)
-                if mid and mid in have:
+                full = svc.users().messages().get(userId="me", id=gid, format="raw").execute()
+                raw = base64.urlsafe_b64decode(full["raw"].encode())
+                if not msgid:
+                    msgid = mid_of(raw)
+                if msgid and msgid in have:
                     skipped += 1
                 else:
                     idate = None
                     try:
-                        s = meta.decode(errors="replace")
-                        if "INTERNALDATE" in s:
-                            idate = '"' + s.split('INTERNALDATE "')[1].split('"')[0] + '"'
+                        if internal:
+                            idate = imaplib.Time2Internaldate(int(internal) / 1000.0)
                     except Exception:
                         idate = None
-                    try:
-                        dst.append("INBOX", "(\\Seen)",
-                                   idate or imaplib.Time2Internaldate(time.time()), raw)
-                        copied += 1
-                        if mid:
-                            have.add(mid)
-                    except Exception as e:
-                        print(f"  append failed uid={uid.decode()}: {e}", flush=True)
-                        failed += 1
+                    dst.append("INBOX", "(\\Seen)",
+                               idate or imaplib.Time2Internaldate(time.time()), raw)
+                    copied += 1
+                    if msgid:
+                        have.add(msgid)
+        except Exception as e:
+            print(f"  msg {gid} failed: {str(e)[:120]}", flush=True)
+            failed += 1
         if n % 100 == 0:
-            print(f"{n}/{len(uids)} copied={copied} skipped={skipped} failed={failed}", flush=True)
-    print(f"DONE {SRC_MB}: copied={copied} skipped={skipped} failed={failed}", flush=True)
-    g.logout(); dst.logout()
+            print(f"{n}/{len(ids)} copied={copied} skipped={skipped} failed={failed}", flush=True)
+            try:
+                dst.noop()  # keep the Stalwart connection alive on long runs
+            except Exception:
+                pass
+    print(f"DONE: copied={copied} skipped={skipped} failed={failed}", flush=True)
+    dst.logout()
 
 if __name__ == "__main__":
     main()

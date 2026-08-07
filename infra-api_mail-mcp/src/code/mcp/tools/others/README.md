@@ -20,17 +20,28 @@ These scripts backfill mail that predates the dual-write.
 ## Scripts
 
 ### `gws_missing_backfill.py`
-Copy ONLY the messages missing from Stalwart out of a Google Workspace mailbox
-(`[Gmail]/All Mail` by default). Dedups by Message-ID across every Stalwart
-folder → zero duplicates. Uses the domain-wide-delegation service account
-(diego-cli@diegonmarcos-infra-prod) to mint a Gmail IMAP XOAUTH2 token — no
-app password, no user consent. See the module docstring for the exact token
-command and usage. Run from oci-mail (reaches both imap.gmail.com and the WG
-Stalwart IMAP).
+Copy ONLY the messages missing from Stalwart out of a Google Workspace mailbox.
+Dedups by Message-ID across every Stalwart folder → zero duplicates.
+
+- READ: Gmail **REST API** (`gmail.readonly`) impersonating the user via the
+  domain-wide-delegation service account (diego-cli@diegonmarcos-infra-prod).
+  The SA is delegated the API scope but NOT the IMAP scope
+  `https://mail.google.com/` (that mints `unauthorized_client`), so the API is
+  the only no-consent read path. No app password, no user consent.
+- WRITE: Stalwart IMAP APPEND to INBOX with original internalDate + `\Seen`.
+- RUN inside the google-workspace-mcp container (has google-auth +
+  googleapiclient and, via network_mode host, WG reach to Stalwart):
+
+    docker cp gws_missing_backfill.py google-workspace-mcp:/tmp/bf.py
+    docker exec -u 0 google-workspace-mcp chmod 644 /tmp/bf.py
+    docker exec google-workspace-mcp /app/.venv/bin/python /tmp/bf.py <STALWART_PASSWORD>
 
 ## Gotchas
-- Stalwart has an aggressive per-account auth rate-limit (bans after a few
-  auths in a short window, even successful ones). These scripts minimise
-  logins (single Stalwart connection + backoff retry). Don't run other IMAP
-  logins against the same account concurrently.
-- Append target is Stalwart INBOX with original INTERNALDATE + `\Seen`.
+- Stalwart has an aggressive per-**account** auth rate-limit (bans after a few
+  auths in a short rolling window, even successful ones — the intended
+  fail2ban is mis-deployed: config.toml is dead in v0.16, settings live in
+  RocksDB). It clears within ~1 min of quiet. This script uses a SINGLE
+  Stalwart login (one connection for index + append) with backoff retry and
+  NOOP keepalive. Don't run other IMAP/JMAP logins for the account, on ANY
+  host, while it runs (the limit is per-account, not per-IP).
+- Append target is Stalwart INBOX with original internalDate + `\Seen`.
