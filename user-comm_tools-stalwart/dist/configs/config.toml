@@ -6,8 +6,9 @@
 # ║ Source:  a_solutions/user-comm_tools-stalwart/src/flake.nix
 # ║ Rebuild: a_solutions/user-comm_tools-stalwart/build.sh ship
 # ╚══════════════════════════════════════════════════════════════════╝
-# Stalwart v0.13 — minimal config (shadow mode, offset ports)
-# Matches auto-generated format. Admin panel manages everything else.
+# Stalwart v0.16 — file-based config (TOML). Certificate read from file on every
+# startup via %{file:...}% macro — no RocksDB API call needed for TLS.
+# Data (accounts, emails, JMAP objects) stays in RocksDB data store.
 
 [server]
 hostname = "jmap.diegonmarcos.com"
@@ -24,28 +25,27 @@ url = "https://jmap.diegonmarcos.com"
 # advertise-url config (tracked upstream).
 
 [server.listener.smtp]
-bind = "[::]:2025"
+bind = "[::]:25"
 protocol = "smtp"
 
 [server.listener.submissions]
-bind = "[::]:2465"
+bind = "[::]:465"
 protocol = "smtp"
 tls.implicit = true
 
 [server.listener.imaptls]
-bind = "[::]:2993"
+bind = "[::]:993"
 protocol = "imap"
 tls.implicit = true
 
 [server.listener.sieve]
-bind = "[::]:6190"
+bind = "[::]:4190"
 protocol = "managesieve"
 
 [server.listener.https]
 protocol = "http"
-bind = "[::]:2443"
-# Public URL is via Caddy reverse_proxy on :443 — clients should never see
-# the internal :2443. JMAP session-resource URLs are built from this.
+bind = "[::]:443"
+# Public URL is via Caddy reverse_proxy — clients never see the internal port.
 url = "https://jmap.diegonmarcos.com"
 tls.implicit = true
 
@@ -87,16 +87,24 @@ require = [{if = "local_port != 2025", then = true}, {else = false}]
 # so IP-based fail2ban / auto-blocking is redundant and actively harmful
 # (it bans the puller after a single auth misconfig retry storm).
 #
+# NOTE (v0.16.5): this entire config.toml is NOT loaded — Stalwart's --config
+# is a JSON data-store pointer and all settings live in the RocksDB registry.
+# The fail2ban-disable + allowed-ip below therefore DO NOTHING. The real,
+# working mechanism is activate.sh Step F, which upserts AllowedIp registry
+# objects (build.json#allowed_ips) via JMAP to bypass banning on the WG mesh.
+# Kept here only as documentation of intent / for a possible config revert.
+#
 # 1) Disable fail2ban by setting thresholds to never-trigger values.
 [auth.fail2ban]
 authentication = "0/0"
 invalid-rcpt   = "0/0"
 loiter         = "0/0"
 
-# 2) Allow-list the WG /24 so any IP-based block check short-circuits
-#    in security.rs::is_ip_allowed(). Stalwart's set_values() reads the key
-#    suffix as the IP/CIDR; the value is unused.
-server.allowed-ip = ["10.0.0.0/24"]
+# 2) Allow-list WG /24 + Docker bridge so any IP-based block check
+#    short-circuits in security.rs::is_ip_allowed(). Cross-VM deliveries
+#    (e.g. oci-analytics → stalwart:2025) arrive via Docker NAT as
+#    172.18.0.1 (stalwart_default bridge gateway), not the real WG IP.
+server.allowed-ip = ["10.0.0.0/24", "172.18.0.0/16"]
 
 # 2587/STARTTLS submission listener retired 2026-05-08 — implicit-TLS
 # only via [server.listener.submissions] on 2465.

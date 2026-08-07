@@ -110,6 +110,13 @@
     adminEmail   = "${adminUser.name}@${base_domain}";
     adminPassEnv = adminUser.pass_env;
 
+    # Trusted IP ranges for fail2ban/auth-ban bypass — declared in
+    # build.json#allowed_ips, emitted space-separated for activate.sh Step F,
+    # which upserts them as AllowedIp registry objects via JMAP (v0.16.5 has
+    # no live config.toml; server.allowed-ip lives only in the RocksDB registry).
+    allowedIpsList = buildJson.allowed_ips or [ "10.0.0.0/24" "172.18.0.0/16" ];
+    allowedIps     = lib.concatStringsSep " " allowedIpsList;
+
     activateShVars = {
       BASE_DOMAIN          = base_domain;
       APP_PORT             = appPort;
@@ -119,6 +126,7 @@
       FOLDERS_LINES        = foldersLines;
       ADMIN_EMAIL          = adminEmail;
       ADMIN_PASS_ENV       = adminPassEnv;
+      ALLOWED_IPS          = allowedIps;
     };
 
     # Outbound MTA routes — declared in build.json#mta_routes, emitted as
