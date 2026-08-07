@@ -35,6 +35,7 @@ in
       ];
       volumes = [
         "dagu_data:/var/lib/dagu/data"
+        "octocode_repos:/var/lib/dagu/data/repos"
         "./assets/dags:/var/lib/dagu/dags"
         "./configs/base.yaml:/var/lib/dagu/base.yaml:ro"
         "./configs/fetch-token.sh:/var/lib/dagu/fetch-token.sh:ro"
@@ -49,5 +50,6 @@ in
   };
   volumes = {
     dagu_data = {};
+    octocode_repos = { name = "octocode_repos"; };
   };
 }

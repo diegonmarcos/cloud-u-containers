@@ -39,13 +39,14 @@ in
         CF_API_KEY = "\${CF_API_KEY}";
         CF_API_EMAIL = "\${CF_API_EMAIL}";
         PATH = "/usr/local/nix-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+        REPO_SYNC = "off";
       };
       volumes = [
         "/opt/ssh-keys/${app.container_name}:/root/.ssh:ro"
         "/nix/store:/nix/store:ro"
         "/home/ubuntu/.nix-profile/bin:/usr/local/nix-bin:ro"
         "~/.config/gcloud:/root/.config/gcloud"
-        "c3_git_repos:/root/git"
+        "octocode_repos:/root/git"
         "c3_public_logs:/app/public/logs"
       ];
       healthcheck = {
@@ -61,7 +62,7 @@ in
     };
   };
   volumes = {
-    c3_git_repos = { external = true; name = "c3-mcp-api_c3-repos"; };
+    octocode_repos = { name = "octocode_repos"; };
     c3_public_logs = { };
   };
 }

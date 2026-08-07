@@ -1,0 +1,53 @@
+# ops_git-sync — the SINGLE writer that keeps the central repo volume (octocode_repos)
+# up to date on oci-apps. Every consumer (cloud-cgc-mcp, my-ai-api, and the c3-infra
+# API/MCP once repointed) mounts this ONE volume instead of keeping its own duplicate
+# clone. This replaces the retired ops_octocode-reindex clone step and the per-DAG
+# clones that sync_front-data / sync_cloud-data / security_data_scan used to do.
+#
+# Data-driven: REPO_MAP mirrors cloud-cgc-mcp build.json .runtime.octocode.repo_map
+# (local_dir:github_repo). Full clones (NOT sparse/--depth-limited working trees) so
+# octocode can index and c3/my-ai can read complete repos. Never hardcode elsewhere.
+schedule: "*/15 * * * *"
+env:
+  - SSH: ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
+  - OCI_APPS: ubuntu@10.0.0.6
+  - NTFY_URL: http://10.0.0.6:8090
+  - GIT_IMAGE: alpine/git:latest
+  - REPOS_VOLUME: octocode_repos
+  # local_dir:github_repo pairs — local dir is what consumers mount, github_repo is the clone source.
+  # Matches cloud-cgc-mcp build.json .runtime.octocode.repo_map (only 'front' differs: GitHub Pages repo).
+  - REPO_MAP: cloud:cloud cloud-data:cloud-data front:diegonmarcos.github.io unix:unix tools:tools
+mail_on:
+  failure: true
+  success: false
+type: graph
+steps:
+  - name: pull-repos
+    command: |
+      for entry in $REPO_MAP; do
+        DIR=$(echo "$entry" | cut -d: -f1)
+        REMOTE=$(echo "$entry" | cut -d: -f2)
+        echo "=== Syncing $DIR (from $REMOTE) ==="
+        $SSH "$OCI_APPS" "docker run --rm \
+          -v $REPOS_VOLUME:/repos \
+          -v /opt/ssh-keys/dagu:/home/dagu/.ssh:ro \
+          --entrypoint sh \
+          $GIT_IMAGE -c '
+            export GIT_SSH_COMMAND=\"ssh -i /home/dagu/.ssh/vault_id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null\"
+            if [ ! -d /repos/$DIR/.git ]; then
+              git clone git@github.com:diegonmarcos/$REMOTE.git /repos/$DIR
+            else
+              cd /repos/$DIR && rm -f .git/index.lock 2>/dev/null; git fetch origin main && git reset --hard origin/main
+            fi
+          '" || echo "WARN: Failed to sync $DIR"
+      done
+      echo "All repos synced into $REPOS_VOLUME"
+
+  - name: notify
+    depends:
+      - pull-repos
+    command: |
+      curl -sf -d "Central git-sync complete (octocode_repos)" \
+        -H "Title: Git Sync" \
+        -H "Tags: arrows_counterclockwise,white_check_mark" \
+        "$NTFY_URL/ops" 2>/dev/null || true

@@ -182,6 +182,7 @@ const SYNC_TTL = 5 * 60 * 1000; // 5 minutes
 const GIT_SSH = `GIT_SSH_COMMAND="ssh -i ${SSH_IDENTITY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"`;
 
 export function syncRepos(force = false): void {
+  if (process.env.REPO_SYNC === "off") return;
   if (IS_CLIENT) return; // Never touch the user's working repos
 
   const now = Date.now();
