@@ -79,6 +79,13 @@ require = [{if = "local_port != 2025", then = true}, {else = false}]
 # so IP-based fail2ban / auto-blocking is redundant and actively harmful
 # (it bans the puller after a single auth misconfig retry storm).
 #
+# NOTE (v0.16.5): this entire config.toml is NOT loaded — Stalwart's --config
+# is a JSON data-store pointer and all settings live in the RocksDB registry.
+# The fail2ban-disable + allowed-ip below therefore DO NOTHING. The real,
+# working mechanism is activate.sh Step F, which upserts AllowedIp registry
+# objects (build.json#allowed_ips) via JMAP to bypass banning on the WG mesh.
+# Kept here only as documentation of intent / for a possible config revert.
+#
 # 1) Disable fail2ban by setting thresholds to never-trigger values.
 [auth.fail2ban]
 authentication = "0/0"

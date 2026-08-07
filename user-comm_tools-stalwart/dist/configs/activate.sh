@@ -36,6 +36,8 @@ CONFIGS_DIR="/opt/containers/stalwart/configs"
 SIEVE_FILE="$CONFIGS_DIR/default.sieve"
 MTA_ROUTES_FILE="$CONFIGS_DIR/mta-routes.json"
 APPLY_ROUTES_PY="$CONFIGS_DIR/apply-mta-routes.py"
+APPLY_CERT_PY="$CONFIGS_DIR/apply-tls-cert.py"
+TLS_DIR="/opt/containers/maddy/tls"
 
 # Admin identity sourced from build.json#users.admin (data-driven). The
 # pre-v0.16 "admin:$ADMIN_PASSWORD" magic principal only exists in
@@ -87,7 +89,7 @@ except Exception:
 }
 
 # ── Per-user setup ────────────────────────────────────────────────────
-for PAIR in me=ME_PASSWORD no-reply=NOREPLY_PASSWORD; do
+for PAIR in me=ME_PASSWORD admin=ADMIN_PASSWORD no-reply=NOREPLY_PASSWORD; do
   U=${PAIR%%=*}
   PASS_ENV=${PAIR#*=}
   USER="$U@diegonmarcos.com"
@@ -213,4 +215,74 @@ if [ -s "$MTA_ROUTES_FILE" ] && [ -x "$APPLY_ROUTES_PY" -o -f "$APPLY_ROUTES_PY"
   fi
 fi
 
-echo "[activate] Done — folders + sieve + mta routes ensured"
+# ── Step E: TLS certificate (admin scope) ──────────────────────────────
+# Upsert the LE wildcard cert as a JMAP Certificate object so Stalwart
+# serves the real cert instead of the rcgen self-signed one. Idempotent.
+# After storing, restart the container so Stalwart reloads the TLS cert
+# from the JMAP store at startup (ReloadSettings does not reload TLS).
+if [ -f "$TLS_DIR/fullchain.pem" ] && [ -f "$TLS_DIR/privkey.pem" ]; then
+  echo "[activate] Applying TLS certificate from $TLS_DIR..."
+  CERT_APPLIED=0
+  if python3 "$APPLY_CERT_PY" "$BASE" "$ADMIN_EMAIL:$ADMIN_PW" \
+       "$TLS_DIR/fullchain.pem" "$TLS_DIR/privkey.pem"; then
+    CERT_APPLIED=1
+  else
+    echo "[activate]   apply-tls-cert.py exited $? (non-fatal)"
+  fi
+
+  if [ "$CERT_APPLIED" = 1 ]; then
+    echo "[activate] Restarting stalwart to reload TLS cert from JMAP store..."
+    docker restart stalwart 2>/dev/null || true
+    # Wait for JMAP to come back before exit
+    for i in $(seq 1 30); do
+      _c=$(curl -sk -o /dev/null -w '%{http_code}' -u "$ADMIN_EMAIL:$ADMIN_PW" "$BASE/jmap/session" 2>/dev/null || echo 000)
+      case "$_c" in 2*) echo "[activate]   stalwart ready (HTTP $_c)"; break ;; esac
+      sleep 2
+    done
+  fi
+else
+  echo "[activate]   TLS cert not yet on disk ($TLS_DIR) — skipping"
+fi
+
+# ── Step F: allowed-ip / fail2ban bypass (admin scope) ─────────────────
+# Trust the WG mesh + docker bridge so Stalwart's fail2ban / auth rate-limit
+# never bans internal clients (bursts of a few auths otherwise trip a
+# per-account ban that clears only after ~1min of quiet). In v0.16.5 the old
+# config.toml `server.allowed-ip` is DEAD — config.toml is not loaded (the
+# JSON --config is only a data-store pointer; all settings live in the RocksDB
+# registry). So we upsert AllowedIp registry objects via the same JMAP admin
+# channel used for MTA routes. Idempotent: only creates CIDRs not already
+# present. CIDR list is declared in build.json#allowed_ips.
+ALLOWED_IPS="10.0.0.0/24 172.18.0.0/16"
+if [ -n "$ALLOWED_IPS" ]; then
+  echo "[activate] Ensuring allowed-ip entries: $ALLOWED_IPS"
+  ALLOWED_IPS="$ALLOWED_IPS" ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64, urllib.request as ur, urllib.error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [allowed-ip] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:AllowedIp/get",{"accountId":acct,"ids":None},"0"]])
+try: existing={o.get("address") for o in r["methodResponses"][0][1].get("list",[])}
+except Exception: existing=set()
+for cidr in os.environ["ALLOWED_IPS"].split():
+    if cidr in existing:
+        print(f"  [allowed-ip] {cidr} already present"); continue
+    rr=jmap([["x:AllowedIp/set",{"accountId":acct,"create":{"c":{
+        "address":cidr,"reason":"WG mesh + docker bridge trusted (declarative)"}}},"0"]])
+    print(f"  [allowed-ip] {cidr} -> {'created' if 'created' in json.dumps(rr) else rr}")
+PYEOF
+fi
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip ensured"

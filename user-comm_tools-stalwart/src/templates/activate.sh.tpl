@@ -222,4 +222,45 @@ else
   echo "[activate]   TLS cert not yet on disk ($TLS_DIR) — skipping"
 fi
 
-echo "[activate] Done — folders + sieve + mta routes + tls cert ensured"
+# ── Step F: allowed-ip / fail2ban bypass (admin scope) ─────────────────
+# Trust the WG mesh + docker bridge so Stalwart's fail2ban / auth rate-limit
+# never bans internal clients (bursts of a few auths otherwise trip a
+# per-account ban that clears only after ~1min of quiet). In v0.16.5 the old
+# config.toml `server.allowed-ip` is DEAD — config.toml is not loaded (the
+# JSON --config is only a data-store pointer; all settings live in the RocksDB
+# registry). So we upsert AllowedIp registry objects via the same JMAP admin
+# channel used for MTA routes. Idempotent: only creates CIDRs not already
+# present. CIDR list is declared in build.json#allowed_ips.
+ALLOWED_IPS="@ALLOWED_IPS@"
+if [ -n "$ALLOWED_IPS" ]; then
+  echo "[activate] Ensuring allowed-ip entries: $ALLOWED_IPS"
+  ALLOWED_IPS="$ALLOWED_IPS" ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PW="$ADMIN_PW" BASE="$BASE" python3 - <<'PYEOF'
+import os, ssl, json, base64, urllib.request as ur, urllib.error as ue
+BASE=os.environ["BASE"]
+AUTH="Basic "+base64.b64encode(f'{os.environ["ADMIN_EMAIL"]}:{os.environ["ADMIN_PW"]}'.encode()).decode()
+ctx=ssl._create_unverified_context()
+def jmap(calls):
+    body=json.dumps({"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":calls}).encode()
+    req=ur.Request(BASE+"/jmap/",data=body,method="POST",
+                   headers={"Content-Type":"application/json","Authorization":AUTH})
+    try: return json.loads(ur.urlopen(req,context=ctx,timeout=20).read())
+    except ue.HTTPError as e: return {"err":e.code,"body":e.read().decode(errors="replace")[:300]}
+try:
+    req=ur.Request(BASE+"/jmap/session",headers={"Authorization":AUTH})
+    s=json.loads(ur.urlopen(req,context=ctx,timeout=10).read())
+except Exception as e:
+    print("  [allowed-ip] session failed (non-fatal):",e); raise SystemExit(0)
+acct=s.get("primaryAccounts",{}).get("urn:stalwart:jmap") or next(iter(s.get("accounts",{})),None)
+r=jmap([["x:AllowedIp/get",{"accountId":acct,"ids":None},"0"]])
+try: existing={o.get("address") for o in r["methodResponses"][0][1].get("list",[])}
+except Exception: existing=set()
+for cidr in os.environ["ALLOWED_IPS"].split():
+    if cidr in existing:
+        print(f"  [allowed-ip] {cidr} already present"); continue
+    rr=jmap([["x:AllowedIp/set",{"accountId":acct,"create":{"c":{
+        "address":cidr,"reason":"WG mesh + docker bridge trusted (declarative)"}}},"0"]])
+    print(f"  [allowed-ip] {cidr} -> {'created' if 'created' in json.dumps(rr) else rr}")
+PYEOF
+fi
+
+echo "[activate] Done — folders + sieve + mta routes + tls cert + allowed-ip ensured"
