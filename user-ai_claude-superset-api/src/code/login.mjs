@@ -25,6 +25,7 @@
 // than when a block buffer fills), -e propagate the child's exit status,
 // -c run this command.
 
+// ship-cover 2026-08-09T18:40Z — batched trigger; see commit message.
 import { spawn } from "node:child_process";
 
 // A login attempt is a singleton: two concurrent OAuth flows would race on

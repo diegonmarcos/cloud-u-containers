@@ -1,4 +1,5 @@
 # compose.nix — docker-compose for hermes-agent.
+# ship-cover 2026-08-09T18:40Z — single batched trigger: newest queued run must contain every undeployed oci-apps service (a newer pending run evicts older ones)
 # 2026-08-09 (retry 2): re-ship to restore .secrets on oci-apps. The first
 # attempt was killed by the 900s wall-clock watchdog (fixed in 8525be4); the
 # second was evicted from the ship-oci-apps queue by a later push.

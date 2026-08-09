@@ -13,6 +13,7 @@
 // exists so this code never assumes it is seeing every group message, and so
 // a group admin who later disables Privacy Mode doesn't turn this bot into a
 // reply-to-everything group member.
+// ship-cover 2026-08-09T18:40Z — batched trigger; see commit message.
 import { handleCommand, COMMANDS } from "./commands.mjs";
 import { routeToGoose } from "./route.mjs";
 

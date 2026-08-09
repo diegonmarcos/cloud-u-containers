@@ -1,4 +1,5 @@
 # rebuild 2026-08-09 (retry 3): queued as ONE commit — a separate push per service evicts the previously pending run from the ship-oci-apps group
+# ship-cover 2026-08-09T18:40Z — single batched trigger: newest queued run must contain every undeployed oci-apps service (a newer pending run evicts older ones)
 FROM node:22-bookworm-slim
 
 WORKDIR /app
