@@ -28,6 +28,8 @@
             ./code/py
             ./code/server.mjs
             ./code/gateway.mjs
+            ./code/bots.json
+            ./code/bots
             ./code/mcp.mjs
             ./code/package.json
             ./code/start.sh
