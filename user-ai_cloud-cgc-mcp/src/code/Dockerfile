@@ -1,3 +1,4 @@
+# rebuild 2026-08-09: shared/ out-of-context symlink fix (materialize_out_of_context_symlinks in cloud-ship-container-step-build-docker.sh)
 FROM ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest AS octocode
 
 FROM ubuntu:24.04
