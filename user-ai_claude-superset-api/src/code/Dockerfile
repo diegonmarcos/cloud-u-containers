@@ -50,7 +50,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Node (for server.mjs + the claude CLI) + curl (start.sh readiness probe) +
 # jq (the c-* PreToolUse guard hooks parse the hook JSON with jq).
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq \
+# bsdutils/util-linux provide `script`, which login.mjs uses to allocate a pty
+# for `claude setup-token` (it refuses to run without a tty). Both are normally
+# present in the slim base as Essential packages — named explicitly so an image
+# rebuild can never silently drop the interactive-login path.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq bsdutils util-linux \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && npm install -g @anthropic-ai/claude-code \

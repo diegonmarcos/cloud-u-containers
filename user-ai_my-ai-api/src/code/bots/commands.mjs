@@ -31,6 +31,8 @@ export const COMMANDS = [
   { command: "undo",       description: "remove the last user+assistant exchange" },
   { command: "stop",       description: "best-effort ack — interrupt the current turn" },
   { command: "whoami",     description: "show your Telegram id and access tier" },
+  { command: "login",      description: "log the claude agent in — returns an OAuth link" },
+  { command: "code",       description: "finish /login by sending the code from the link" },
 ];
 
 // Aliases: alias command -> canonical command handled in the switch.
@@ -53,6 +55,24 @@ const jget = async (url) => {
   try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; }
   catch { return { ok: res.ok, status: res.status, text }; }
 };
+
+// Same shape as jget, for the login handshake. Network errors are returned
+// rather than thrown so a chat command answers instead of going silent.
+const jpost = async (url, body) => {
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+    const text = await res.text();
+    try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; }
+    catch { return { ok: res.ok, status: res.status, text }; }
+  } catch (e) { return { ok: false, status: 0, text: String(e.message || e) }; }
+};
+
+// WG-only claude-superset-api endpoint (same env the gateway routes chat to).
+const CLAUDE_CLI_BASE = process.env.CLAUDE_CLI_BASE_URL || "";
 
 export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent = "goose") => {
   const cmd = ALIASES[cmdIn] || cmdIn;
@@ -209,6 +229,29 @@ export const handleCommand = async (cmdIn, arg, chatKey, meta = {}, defaultAgent
       const id = meta.fromId ?? "(unknown)";
       const tier = meta.allowFrom && meta.allowFrom.length > 0 && meta.allowFrom.includes(String(id)) ? "admin" : "open-access";
       return `your Telegram id: ${id}\naccess tier: ${tier}`;
+    }
+
+    // ── claude-superset-api interactive login ────────────────────────────────
+    // The subscription CLI authenticates by browser OAuth, and nobody can open
+    // a shell on the VM from a phone. /login starts `claude setup-token` in
+    // the superset container and hands back its authorize URL; /code carries
+    // the pasted code to the *same still-running* process (restarting it would
+    // void the PKCE state). See claude-superset-api/src/code/login.mjs.
+    case "login": {
+      if (!CLAUDE_CLI_BASE) return "CLAUDE_CLI_BASE_URL unset — cannot reach claude-superset-api";
+      const r = await jpost(`${CLAUDE_CLI_BASE}/auth/login/start`, {});
+      const j = r.json || {};
+      if (!r.ok || !j.url) return `login failed: ${j.error || r.text || r.status}${j.output ? `\n${j.output}` : ""}`;
+      return `Open this link, approve, then send the code back as:\n/code <the-code>\n\n${j.url}\n\n(the link expires in a few minutes — the login process is held open until then)`;
+    }
+    case "code": {
+      if (!CLAUDE_CLI_BASE) return "CLAUDE_CLI_BASE_URL unset — cannot reach claude-superset-api";
+      if (!arg || !arg.trim()) return "usage: /code <the-code-from-the-login-link>";
+      const r = await jpost(`${CLAUDE_CLI_BASE}/auth/login/code`, { code: arg.trim() });
+      const j = r.json || {};
+      return r.ok && j.ok
+        ? `✅ ${j.message || "logged in"} — the claude agent should answer now.`
+        : `login failed: ${j.error || r.text || r.status}${j.output ? `\n${j.output}` : ""}`;
     }
     default:
       return "unknown command, try /help";
