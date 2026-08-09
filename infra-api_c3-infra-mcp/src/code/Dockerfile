@@ -1,4 +1,4 @@
-# rebuild 2026-08-09 (retry 2): symlink fix verified OK; previous deploy died on the 900s wall-clock watchdog, now idle-based (8525be4)
+# rebuild 2026-08-09 (retry 3): queued as ONE commit — a separate push per service evicts the previously pending run from the ship-oci-apps group
 FROM node:22-bookworm-slim
 
 WORKDIR /app
