@@ -49,6 +49,17 @@ in
       volumes = [
         "hermes_data:/opt/data"
         # Declarative config overlay (read-only); operator writes configs/config.yaml.
+        # WARNING: this mount source is dist/configs/config.yaml, emitted by
+        # flake.nix's `templates` list. If flake.nix ever stops emitting it,
+        # the source path won't exist on the VM and Docker silently creates
+        # an EMPTY DIRECTORY at ./configs/config.yaml instead of failing —
+        # hermes then falls back to env vars only and the ENTIRE config file
+        # (dm_topics, require_mention, extra.allow_from/group_allow_from, the
+        # lean toolset profile, reactions, rich_messages) is silently
+        # disabled with no error anywhere. This exact failure happened on
+        # oci-apps (found 2026-08-09): flake.nix had `templates = [];` so
+        # dist/ never contained a configs/ directory at all. Keep flake.nix
+        # emitting this file.
         "./configs/config.yaml:/opt/data/config.yaml:ro"
       ];
       # NO healthcheck: the Hermes gateway subcommand exposes no HTTP health

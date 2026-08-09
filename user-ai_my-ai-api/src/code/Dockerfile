@@ -97,6 +97,8 @@ COPY --from=builder /usr/local/bin/headroom /usr/local/bin/headroom
 WORKDIR /app
 COPY server.mjs mcp.mjs package.json /app/
 COPY gateway.mjs /app/gateway.mjs
+COPY bots.json /app/bots.json
+COPY bots/ /app/bots/
 COPY py/ /app/py/
 COPY start.sh /app/start.sh
 COPY principles/ /app/principles/
