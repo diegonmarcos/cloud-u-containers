@@ -17,6 +17,7 @@ import http from "node:http";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { startLogin, submitCode, loginStatus } from "./login.mjs";
 
 const PORT          = parseInt(process.env.BRIDGE_PORT || "3107", 10);
 const BIND          = process.env.BRIDGE_BIND || "127.0.0.1";
@@ -221,6 +222,31 @@ const server = http.createServer(async (req, res) => {
     res.end(typeof obj === "string" ? obj : JSON.stringify(obj));
   };
   const isOllama = req.url.startsWith("/api/");
+
+  // ── interactive login (see login.mjs) ─────────────────────────────────────
+  // POST /auth/login/start        → { session_id, url } — child stays alive
+  // POST /auth/login/code {code}  → { ok, message }
+  // GET  /auth/login/status       → { pending, session_id }
+  // Reachable only over the WG-only listener; the Telegram allowlist is the
+  // human-facing gate (see my-ai-api's /login command).
+  if (req.url.startsWith("/auth/login")) {
+    try {
+      if (req.method === "GET" && req.url.startsWith("/auth/login/status"))
+        return send(200, loginStatus());
+      if (req.method === "POST" && req.url.startsWith("/auth/login/start")) {
+        const r = await startLogin({ claudeBin: CLAUDE_BIN });
+        return send(r.ok ? 200 : 502, r);
+      }
+      if (req.method === "POST" && req.url.startsWith("/auth/login/code")) {
+        let body = {};
+        try { body = JSON.parse(await readBody(req)); } catch { /* fall through */ }
+        if (!body.code) return send(400, { ok: false, error: "missing code" });
+        const r = await submitCode(String(body.code));
+        return send(r.ok ? 200 : 502, r);
+      }
+    } catch (e) { return send(500, { ok: false, error: String(e.message || e) }); }
+    return send(404, { error: { message: "not found" } });
+  }
 
   // ── cross-device session store ────────────────────────────────────────────
   // GET  /sessions                    → [{device,id,mtime,size}]
