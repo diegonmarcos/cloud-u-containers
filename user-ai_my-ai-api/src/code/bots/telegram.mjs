@@ -1,4 +1,6 @@
 // telegram.mjs — Telegram bot transport: offset-based long-poll.
+// Re-ship 2026-08-09: the 33f746d ship jammed on the old wall-clock watchdog;
+// this re-triggers the group-reply fix onto the idle-based one (8525be4).
 //
 // One instance per bot token (see bots.json — each roster entry gets its own
 // startTelegram() call from gateway.mjs). Zero npm dependencies: Node 22
