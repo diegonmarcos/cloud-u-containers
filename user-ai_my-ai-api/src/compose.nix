@@ -22,7 +22,6 @@ in
       env_file       = [ "./.secrets" ];
       environment    = {
         BRIDGE_PORT        = toString (ports.app      or 3217);
-        OLLAMA_PORT        = toString (ports.ollama   or 12436);
         # wg0-only: bind the /v1 API + Ollama mimic to the WG address so WG-peer
         # GHA runners can reach them. localhost default left them unreachable over
         # wg0 (octocode LLM calls from the x86 runner silently failed). NOT 0.0.0.0
@@ -34,9 +33,18 @@ in
         MYAI_LOCAL_URL     = "http://${rt.wg_bind or "10.0.0.6"}:3217";
         HEADROOM_PORT      = toString (ports.headroom or 8890);
         GOOSE_PORT         = toString (ports.goosed   or 3227);
-        DEFAULT_MODEL      = rt.model or "z-ai/glm-5";
-        MAX_CONCURRENCY    = toString (rt.max_concurrency or 12);
-        CALL_TIMEOUT_MS    = toString (rt.call_timeout_ms or 180000);
+        # BRIDGE_ prefix is MANDATORY: server.mjs reads process.env.BRIDGE_DEFAULT_MODEL /
+        # BRIDGE_MAX_CONCURRENCY / BRIDGE_CALL_TIMEOUT_MS / BRIDGE_MODEL_ALIASES. These were
+        # exported un-prefixed until 2026-08-09, so the server never saw them and silently
+        # used its hardcoded fallbacks — build.json runtime.model was dead config (goose kept
+        # answering as z-ai/glm-5 no matter what runtime.model said). Renaming a key here
+        # without changing server.mjs re-breaks it silently; keep the two in lockstep.
+        BRIDGE_DEFAULT_MODEL   = rt.model or "z-ai/glm-5";
+        BRIDGE_MAX_CONCURRENCY = toString (rt.max_concurrency or 12);
+        BRIDGE_CALL_TIMEOUT_MS = toString (rt.call_timeout_ms or 180000);
+        # Requested-id → OpenRouter slug map, consumed as JSON by server.mjs.
+        BRIDGE_MODEL_ALIASES   = builtins.toJSON (rt.model_aliases or {});
+        BRIDGE_OLLAMA_PORT     = toString (ports.ollama or 12436);
         MATTERMOST_URL     = gw.mattermost_url     or "";
         MATTERMOST_ENABLED = gw.mattermost_enabled  or "false";
         TELEGRAM_ALLOW_FROM = gw.telegram_allow_from or "";
