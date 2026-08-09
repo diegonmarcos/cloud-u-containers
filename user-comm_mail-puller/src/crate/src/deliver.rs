@@ -49,28 +49,47 @@ pub async fn deliver_raw(
     let tcp = TcpStream::connect(&addr).await
         .with_context(|| format!("smtp connect {}", addr))?;
 
-    // Plaintext SMTP banner + EHLO + STARTTLS dance.
-    let mut s = BufStream::new(tcp);
-    expect_code(&mut s, 220, "banner").await?;
-    write_line(&mut s, "EHLO mail-puller").await?;
-    expect_code(&mut s, 250, "EHLO/1").await?;
+    // Implicit-TLS (e.g. Stalwart submission on 2465) vs. plaintext-first
+    // STARTTLS (e.g. Maddy on 587) diverge only in how the TLS session is
+    // established; from here on both paths share one BufStream<TlsStream<..>>.
+    let mut s = if target.implicit_tls {
+        // TLS must start immediately after TCP connect — no plaintext
+        // banner/EHLO/STARTTLS first.
+        let connector = TlsConnector::from(Arc::new(tls_client_config()));
+        let dns = ServerName::try_from(target.host.clone())
+            .map_err(|_| anyhow!("invalid SNI hostname: {}", target.host))?;
+        let tls = connector.connect(dns, tcp).await
+            .with_context(|| format!("TLS handshake to {}", target.host))?;
+        let mut s = BufStream::new(tls);
 
-    if target.starttls {
-        write_line(&mut s, "STARTTLS").await?;
-        expect_code(&mut s, 220, "STARTTLS").await?;
-    }
+        write_line(&mut s, "EHLO mail-puller").await?;
+        expect_code(&mut s, 250, "EHLO").await?;
+        s
+    } else {
+        // Plaintext SMTP banner + EHLO + STARTTLS dance.
+        let mut s = BufStream::new(tcp);
+        expect_code(&mut s, 220, "banner").await?;
+        write_line(&mut s, "EHLO mail-puller").await?;
+        expect_code(&mut s, 250, "EHLO/1").await?;
 
-    // Recover the underlying TcpStream and upgrade to TLS.
-    let tcp = s.into_inner();
-    let connector = TlsConnector::from(Arc::new(tls_client_config()));
-    let dns = ServerName::try_from(target.host.clone())
-        .map_err(|_| anyhow!("invalid SNI hostname: {}", target.host))?;
-    let tls = connector.connect(dns, tcp).await
-        .with_context(|| format!("TLS handshake to {}", target.host))?;
-    let mut s = BufStream::new(tls);
+        if target.starttls {
+            write_line(&mut s, "STARTTLS").await?;
+            expect_code(&mut s, 220, "STARTTLS").await?;
+        }
 
-    write_line(&mut s, "EHLO mail-puller").await?;
-    expect_code(&mut s, 250, "EHLO/2").await?;
+        // Recover the underlying TcpStream and upgrade to TLS.
+        let tcp = s.into_inner();
+        let connector = TlsConnector::from(Arc::new(tls_client_config()));
+        let dns = ServerName::try_from(target.host.clone())
+            .map_err(|_| anyhow!("invalid SNI hostname: {}", target.host))?;
+        let tls = connector.connect(dns, tcp).await
+            .with_context(|| format!("TLS handshake to {}", target.host))?;
+        let mut s = BufStream::new(tls);
+
+        write_line(&mut s, "EHLO mail-puller").await?;
+        expect_code(&mut s, 250, "EHLO/2").await?;
+        s
+    };
 
     // AUTH PLAIN: \0username\0password (RFC 4616), base64.
     let mut auth = Vec::with_capacity(2 + user.len() + pass.len());

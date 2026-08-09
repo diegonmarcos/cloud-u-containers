@@ -21,8 +21,9 @@
     },
     "stalwart": {
       "host": "10.0.0.3",
-      "port": 2587,
-      "starttls": true,
+      "port": 2465,
+      "starttls": false,
+      "implicit_tls": true,
       "user_env": "LOCAL_DELIVERY_USER",
       "pass_env": "LOCAL_DELIVERY_PASSWORD"
     }

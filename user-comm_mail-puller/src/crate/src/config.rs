@@ -18,6 +18,8 @@ pub struct SmtpTarget {
     pub host: String,
     pub port: u16,
     pub starttls: bool,
+    #[serde(default)]
+    pub implicit_tls: bool,
     pub user_env: String,
     pub pass_env: String,
 }
