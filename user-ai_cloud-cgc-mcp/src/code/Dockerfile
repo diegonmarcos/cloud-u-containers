@@ -1,4 +1,4 @@
-# rebuild 2026-08-09: shared/ out-of-context symlink fix (materialize_out_of_context_symlinks in cloud-ship-container-step-build-docker.sh)
+# rebuild 2026-08-09 (retry 2): symlink fix verified OK; previous deploy died on the 900s wall-clock watchdog, now idle-based (8525be4)
 FROM ghcr.io/diegonmarcos/octocode-fastembed-graphrag-indexed-arm:latest AS octocode
 
 FROM ubuntu:24.04
