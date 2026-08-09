@@ -51,14 +51,40 @@ export const startTelegram = ({
       body: JSON.stringify(body),
     }).then((r) => r.json());
 
-  // message_thread_id threads the reply back into the forum topic (or DM
-  // topic) the message was asked in; omitted entirely for non-topic chats.
-  const sendMessage = (chat_id, text, message_thread_id) =>
+  // message_thread_id threads the reply back into the forum topic the message
+  // was asked in; omitted entirely for non-topic chats.
+  //
+  // Telegram caps a single message at 4096 chars and rejects the whole send
+  // (ok:false) if you exceed it — a long model reply would otherwise vanish
+  // silently. Split on that boundary and send the parts in order.
+  const TG_MAX = 4096;
+  const sendOne = (chat_id, text, message_thread_id) =>
     tgPost("sendMessage", {
       chat_id,
       text,
       ...(message_thread_id !== undefined ? { message_thread_id } : {}),
     });
+
+  // Send, surfacing failures instead of swallowing them. tgPost resolves with
+  // Telegram's JSON even on a 4xx, so an unchecked send fails invisibly — the
+  // bot looks alive, does the work, and the user just never sees a reply.
+  // On a thread-scoped failure, retry once unthreaded so the answer still
+  // lands in the chat rather than being lost.
+  const sendMessage = async (chat_id, text, message_thread_id) => {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += TG_MAX) chunks.push(text.slice(i, i + TG_MAX));
+    if (chunks.length === 0) chunks.push("[gateway: empty reply]");
+    for (const chunk of chunks) {
+      let res = await sendOne(chat_id, chunk, message_thread_id);
+      if (res?.ok === false && message_thread_id !== undefined) {
+        console.error(`[gateway] ${logLabel}: sendMessage(thread=${message_thread_id}) failed: ${res.description} — retrying unthreaded`);
+        res = await sendOne(chat_id, chunk);
+      }
+      if (res?.ok === false) {
+        console.error(`[gateway] ${logLabel}: sendMessage to ${chat_id} failed: ${res.description}`);
+      }
+    }
+  };
 
   tgPost("setMyCommands", { commands: COMMANDS }).catch((err) =>
     console.error(`[gateway] ${logLabel}: setMyCommands failed:`, err.message));
@@ -130,13 +156,20 @@ export const startTelegram = ({
             const isGroup = msg.chat.type === "group" || msg.chat.type === "supergroup";
             if (isGroup && requireMention && !isAddressedInGroup(msg, msg.text)) continue;
             const text = isGroup && !msg.text.startsWith("/") ? stripLeadingMention(msg.text) : msg.text;
-            // Forum groups and DM topics carry message_thread_id — fold it
-            // into the session key so each topic gets its own conversation
-            // instead of sharing the chat's single "General" session. Chats
-            // without topics are unaffected (key unchanged), so existing
-            // sessions keep their key.
-            const conversationKey = msg.message_thread_id !== undefined
-              ? `${chatKeyPrefix}:${msg.chat.id}:${msg.message_thread_id}`
+            // Only a real forum-topic message carries a thread we can reply
+            // into. Telegram also sets message_thread_id on ordinary
+            // supergroup replies (thread = the reply chain), and echoing that
+            // id back to sendMessage in a non-forum chat makes Telegram
+            // reject the send with "message thread not found" — which is
+            // exactly how a group reply disappears with the bot none the
+            // wiser. is_topic_message is the field that means "forum topic".
+            const threadId = msg.is_topic_message === true ? msg.message_thread_id : undefined;
+            // Fold the topic into the session key so each forum topic gets its
+            // own conversation instead of sharing the chat's single "General"
+            // session. Chats without topics are unaffected (key unchanged), so
+            // existing sessions keep their key.
+            const conversationKey = threadId !== undefined
+              ? `${chatKeyPrefix}:${msg.chat.id}:${threadId}`
               : `${chatKeyPrefix}:${msg.chat.id}`;
             let reply;
             if (text.startsWith("/")) {
@@ -147,7 +180,7 @@ export const startTelegram = ({
             } else {
               reply = await routeToGoose(text, conversationKey, defaultAgent);
             }
-            await sendMessage(msg.chat.id, reply, msg.message_thread_id);
+            await sendMessage(msg.chat.id, reply, threadId);
           } catch (innerErr) {
             console.error(`[gateway] ${logLabel}: error processing update:`, innerErr.message);
           }
