@@ -31,29 +31,13 @@
   "ssh_listen_host": "10.0.0.6",
   "gitea": {
     "org": "diego",
-    "mirrors": {
-      "unix": {
-        "upstream": "https://github.com/diegonmarcos/unix.git"
-      },
-      "cloud": {
-        "upstream": "https://github.com/diegonmarcos/cloud.git"
-      },
-      "cloud-data": {
-        "upstream": "https://github.com/diegonmarcos/cloud-data.git"
-      },
-      "front": {
-        "upstream": "https://github.com/diegonmarcos/front.git"
-      },
-      "front-data": {
-        "upstream": "https://github.com/diegonmarcos/front-data.git"
-      },
-      "tools": {
-        "upstream": "https://github.com/diegonmarcos/tools.git"
-      },
-      "vault": {
-        "upstream": "https://github.com/diegonmarcos/vault.git",
-        "private": true
-      }
+    "_mirrors_doc": "Mirrors are DERIVED, not listed here. The consolidator expands mirror_policy against the fetched GitHub inventory (2_configs/src/inputs/github-repos.json) into the concrete gitea.mirrors map, setting private:true from each repo's real visibility. Hand-listing them drifted: `front` pointed at a repo that has never existed and silently never synced, and `cloud-data` \u2014 private on GitHub \u2014 was mirrored WITHOUT private:true, i.e. published.",
+    "mirror_policy": {
+      "source": "github-inventory",
+      "include_forks": false,
+      "_include_forks_doc": "FairEmail and octocode are upstream forks; mirroring them copies other people's code with no backup value. Flip to true to include them.",
+      "exclude": [],
+      "_exclude_doc": "Repo names to skip entirely. Empty = mirror every non-fork repo in the inventory."
     },
     "mirror_interval": "1h"
   },
