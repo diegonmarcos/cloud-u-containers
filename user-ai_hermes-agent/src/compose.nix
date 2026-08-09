@@ -1,7 +1,7 @@
 # compose.nix — docker-compose for hermes-agent.
-# 2026-08-09: re-ship to restore .secrets on oci-apps — the 900s wall-clock
-# watchdog (fixed in 8525be4) killed an earlier ship mid-compose and left
-# hermes down with no .secrets written.
+# 2026-08-09 (retry 2): re-ship to restore .secrets on oci-apps. The first
+# attempt was killed by the 900s wall-clock watchdog (fixed in 8525be4); the
+# second was evicted from the ship-oci-apps queue by a later push.
 # engine.nix serialises this via lib.generators.toYAML, merging compose-defaults.json.
 #
 # WG-ONLY gateway: host network so the container can reach the WireGuard mesh
