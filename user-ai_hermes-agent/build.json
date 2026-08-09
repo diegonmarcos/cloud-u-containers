@@ -28,7 +28,7 @@
     "app_hub": false
   },
   "runtime": {
-    "model": "z-ai/glm-5.2",
+    "model": "deepseek/deepseek-v4-pro",
     "backend_url": "https://openrouter.ai/api/v1",
     "api_mode": "chat_completions"
   },

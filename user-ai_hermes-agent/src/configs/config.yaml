@@ -3,16 +3,18 @@
 # no metered key). All keys below verified against hermes-agent source
 # (hermes_cli/config.py, hermes_cli/tools_config.py, cli-config.yaml.example).
 
-# LLM backend → internal claude-superset-api, an OpenAI-compatible proxy over the
-# subscription Claude CLI (WG-only on oci-apps). api_mode chat_completions selects the
-# /v1/chat/completions wire format against our custom base_url.
+# LLM backend → OpenRouter (metered key). api_mode chat_completions selects the
+# /v1/chat/completions wire format against the base_url below.
+# These values mirror build.json runtime.{model,backend_url}, which compose injects as
+# OPENAI_MODEL / OPENAI_BASE_URL and which take precedence at runtime — kept in sync here
+# so this file never contradicts the deployed configuration.
 model:
   provider: openai
-  default: claude-sonnet-4-6
-  base_url: http://10.0.0.6:3117/v1
+  default: deepseek/deepseek-v4-pro
+  base_url: https://openrouter.ai/api/v1
   api_mode: chat_completions
-  # api_key supplied via OPENAI_API_KEY env (dummy; claude-superset-api authenticates
-  # through the persisted Claude CLI login, so the key value is unused).
+  # api_key supplied via OPENAI_API_KEY env (sops secrets.yaml → .secrets): an
+  # OpenRouter sk-or-v1-… key.
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LEAN PROFILE — capabilities stripped to a minimal, low-RAM / low-quota set.
