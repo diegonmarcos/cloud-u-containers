@@ -12,14 +12,14 @@
     # 2026-04-27 migrated: cloud-data-databases.json → _cloud-data-consolidated.json (databases derived from .services[].containers[].db_engine)
     # _cloud-data-consolidated.json resolution:
     #   1. /app/_cloud-data-consolidated.json        — bundled in-image
-    #   2. ../../../2_configs/dist/...               — dev: cloud repo dist/
+    #   2. ../../../1_configs/dist/...               — dev: cloud repo dist/
     #   3. ../../../cloud-data/...                   — legacy: c3_git_repos clone
     #   4. ../../../_cloud-data-consolidated.json    — legacy: cloud repo root
     consolidatedPath =
       if builtins.pathExists /app/_cloud-data-consolidated.json
         then /app/_cloud-data-consolidated.json
-      else if builtins.pathExists ../../../2_configs/dist/_cloud-data-consolidated.json
-        then ../../../2_configs/dist/_cloud-data-consolidated.json
+      else if builtins.pathExists ../../../1_configs/dist/_cloud-data-consolidated.json
+        then ../../../1_configs/dist/_cloud-data-consolidated.json
       else if builtins.pathExists ../../../cloud-data/_cloud-data-consolidated.json
         then ../../../cloud-data/_cloud-data-consolidated.json
       else ../../../_cloud-data-consolidated.json;

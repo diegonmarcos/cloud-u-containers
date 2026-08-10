@@ -9,7 +9,7 @@
     # ── Data sources (all declarative JSON) ─────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     # Primary container (mattermost itself). build-mattermost.json is the
-    # symlink to 2_configs/dist/build-mattermost.json, derived from
+    # symlink to 1_configs/dist/build-mattermost.json, derived from
     # _cloud-data-consolidated.json — carries the per-container cloud-data
     # slice including ntfy_topics propagated from bc-obs_ntfy/build.json
     # (FIRE RULE 4 — single SoT, no separate ntfy-topics.nix to chase).

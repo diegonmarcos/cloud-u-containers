@@ -11,9 +11,9 @@ steps:
     command: |
       # 2026-04-27 migrated: cloud-data-monitoring-targets.json -> _cloud-data-consolidated.json[.services]
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/2_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -26,7 +26,7 @@ steps:
         }' "$CONS" > "$MON_TARGETS"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-                 /var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-monitoring-targets.json \
                  /app/cloud-data-monitoring-targets.json; do
           [ -f "$p" ] && MON_TARGETS="$p" && break
         done

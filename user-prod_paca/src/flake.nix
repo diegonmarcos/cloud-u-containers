@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Derived per-service cloud-data slice (symlink → 2_configs/dist/build-paca.json),
+    # Derived per-service cloud-data slice (symlink → 1_configs/dist/build-paca.json),
     # produced by cloud-data-config-derive.ts after the service is registered.
     container = builtins.fromJSON (builtins.readFile ./build-paca.json);
 

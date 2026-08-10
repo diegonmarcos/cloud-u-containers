@@ -41,7 +41,7 @@ read -r -d '' CONTEXT <<'PRINCIPLES' || true
 ## CORE PRINCIPLES (per-tool-call reminder)
 
 1. FULLY DECLARATIVE — never imperative one-liners.
-2. FULLY DATA-DRIVEN — never hardcode in scripts; data lives in `2_configs/*.json` or `build.json`.
+2. FULLY DATA-DRIVEN — never hardcode in scripts; data lives in `1_configs/*.json` or `build.json`.
 3. FULLY REPRODUCIBLE — same input → same output, every machine.
 4. IMPERATIVE SOLUTIONS FORBIDDEN — no `ssh vm 'echo > x'`, no `sed -i` on VMs, no `nix-env -i`.
 5. FOUND A BUG IN AN ENGINE → FIX IT. NO HACKS, NO WORKAROUNDS, NO BYPASSES.

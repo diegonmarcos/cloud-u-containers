@@ -10,9 +10,9 @@ cd "$REPO_ROOT"
 
 # 2026-04-27 migrated: cloud-data-gha-config.json -> _cloud-data-consolidated.json[._gha]
 CONS=""
-for p in "2_configs/dist/_cloud-data-consolidated.json" \
+for p in "1_configs/dist/_cloud-data-consolidated.json" \
          "/var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json" \
-         "/var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json" \
+         "/var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json" \
          "/app/_cloud-data-consolidated.json"; do
   [ -f "$p" ] && CONS="$p" && break
 done
@@ -21,9 +21,9 @@ if [ -n "$CONS" ]; then
   GHA_CONFIG="${RUNNER_TEMP:-/tmp}/derived-gha-config.$$.json"
   jq '._gha' "$CONS" > "$GHA_CONFIG"
 else
-  for p in "2_configs/dist/cloud-data-gha-config.json" \
+  for p in "1_configs/dist/cloud-data-gha-config.json" \
            "/var/lib/dagu/data/cloud-data/cloud-data-gha-config.json" \
-           "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-gha-config.json" \
+           "/var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-gha-config.json" \
            "/app/cloud-data-gha-config.json"; do
     [ -f "$p" ] && GHA_CONFIG="$p" && break
   done

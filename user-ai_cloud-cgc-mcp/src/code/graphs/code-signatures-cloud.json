@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 2_configs/src/engines/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engines/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'cloud' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -604,7 +604,7 @@
         "cmd_build()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "build_service()",
@@ -645,7 +645,7 @@
         "cmd_profile_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_profile_ship()"
@@ -660,8 +660,8 @@
         "cmd_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh",
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-orchestrate-build.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh",
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-orchestrate-build.sh"
       ],
       "symbols": [
         "deploy_service()",
@@ -676,7 +676,7 @@
         "cmd_clean()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_clean()"
@@ -690,7 +690,7 @@
         "cmd_compose()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_compose()"
@@ -704,7 +704,7 @@
         "cmd_config()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_config()"
@@ -718,7 +718,7 @@
         "cmd_deps()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_deps()"
@@ -732,7 +732,7 @@
         "cmd_restart()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_restart()"
@@ -746,7 +746,7 @@
         "cmd_secrets()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_secrets()"
@@ -760,7 +760,7 @@
         "cmd_ssh()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_ssh()"
@@ -774,7 +774,7 @@
         "cmd_status()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_status()"
@@ -856,7 +856,7 @@
       ]
     },
     {
-      "path": "1_reports/src/_crate_engine.sh",
+      "path": "2_reports/src/_crate_engine.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -876,7 +876,7 @@
       ]
     },
     {
-      "path": "1_reports/src/build.sh",
+      "path": "2_reports/src/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -904,7 +904,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/build.sh",
+      "path": "2_reports/src/cloud-health-full-daily/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -918,7 +918,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/appendix.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/appendix.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -964,7 +964,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/collect.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/collect.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1012,7 +1012,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/context.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1034,7 +1034,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/diagrams.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/diagrams.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1082,7 +1082,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/evidence.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/evidence.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1104,7 +1104,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/checks.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1147,7 +1147,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/context.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1166,7 +1166,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/layers.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/layers.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1207,7 +1207,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/mod.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1226,7 +1226,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/output.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1249,7 +1249,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/ssh.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1272,7 +1272,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/checks.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1309,7 +1309,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/collectors.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/collectors.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1339,7 +1339,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/mod.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1353,7 +1353,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/parsers.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/parsers.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1372,7 +1372,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/sections.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/sections.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1414,7 +1414,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/template.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1430,7 +1430,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/stack/types.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/stack/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1463,7 +1463,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/template.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1481,7 +1481,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/health_full2/types.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/health_full2/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1508,7 +1508,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/html.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/html.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1565,7 +1565,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/checks.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1608,7 +1608,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/mod.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1628,7 +1628,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/output.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1648,7 +1648,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/phases.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/phases.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1686,7 +1686,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/ssh.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1720,7 +1720,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/template.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1738,7 +1738,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail_full/types.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail_full/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1759,7 +1759,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mail.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mail.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1799,7 +1799,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/main.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -1820,7 +1820,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/md.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/md.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1860,7 +1860,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/mermaid.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/mermaid.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1900,7 +1900,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/render_only.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/render_only.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1919,7 +1919,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/ssh.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1940,7 +1940,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-health-full-daily/src/types.rs",
+      "path": "2_reports/src/cloud-health-full-daily/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -1984,7 +1984,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/build.sh",
+      "path": "2_reports/src/cloud-mail-health-full/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -1994,7 +1994,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/checks.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2037,7 +2037,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/constants.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/constants.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -2047,7 +2047,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/main.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -2065,7 +2065,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/output.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2085,7 +2085,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/phases.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/phases.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2130,7 +2130,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/ssh.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2165,7 +2165,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/template.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2181,7 +2181,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-mail-health-full/src/types.rs",
+      "path": "2_reports/src/cloud-mail-health-full/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2202,7 +2202,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/build.sh",
+      "path": "2_reports/src/cloud-sec-data-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -2212,7 +2212,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/context.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2231,7 +2231,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/correlate.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/correlate.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2247,7 +2247,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/diff_analysis.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/diff_analysis.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2265,7 +2265,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/export.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/export.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2298,7 +2298,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/journal.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/journal.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2320,7 +2320,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/main.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -2334,7 +2334,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/output.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2350,7 +2350,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/repo_scan.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/repo_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2392,7 +2392,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/runtime.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/runtime.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2413,7 +2413,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/scan_config.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/scan_config.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2436,7 +2436,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/siem.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/siem.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2456,7 +2456,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/threat_intel.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/threat_intel.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2476,7 +2476,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/types.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2495,7 +2495,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-sec-data-report/src/yara_scan.rs",
+      "path": "2_reports/src/cloud-sec-data-report/src/yara_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2519,7 +2519,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/build.sh",
+      "path": "2_reports/src/cloud-sec-network-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -2529,7 +2529,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/context.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2546,7 +2546,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/dns_audit.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/dns_audit.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2568,7 +2568,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/firewall.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/firewall.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2590,7 +2590,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/main.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -2605,7 +2605,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/output.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2621,7 +2621,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/port_scan.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/port_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2642,7 +2642,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/tls_audit.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/tls_audit.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2670,7 +2670,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/types.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2686,7 +2686,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-sec-network-report/src/wireguard.rs",
+      "path": "2_reports/src/cloud-sec-network-report/src/wireguard.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2705,7 +2705,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/build.sh",
+      "path": "2_reports/src/cloud-url-health-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -2715,7 +2715,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/config.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/config.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2737,7 +2737,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/email_e2e.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/email_e2e.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2771,7 +2771,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/main.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -2793,7 +2793,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/private_checks.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/private_checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2822,7 +2822,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/public_checks.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/public_checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2845,7 +2845,7 @@
       ]
     },
     {
-      "path": "1_reports/src/cloud-url-health-report/src/template.rs",
+      "path": "2_reports/src/cloud-url-health-report/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2861,7 +2861,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/caddy.rs",
+      "path": "2_reports/src/reports-common/src/caddy.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2895,7 +2895,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/capabilities.rs",
+      "path": "2_reports/src/reports-common/src/capabilities.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2910,7 +2910,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/checks.rs",
+      "path": "2_reports/src/reports-common/src/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2957,7 +2957,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/context.rs",
+      "path": "2_reports/src/reports-common/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -2997,7 +2997,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/email_e2e.rs",
+      "path": "2_reports/src/reports-common/src/email_e2e.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3035,7 +3035,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/fleet.rs",
+      "path": "2_reports/src/reports-common/src/fleet.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3082,7 +3082,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/output.rs",
+      "path": "2_reports/src/reports-common/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3103,7 +3103,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/perf.rs",
+      "path": "2_reports/src/reports-common/src/perf.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3143,7 +3143,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/probe.rs",
+      "path": "2_reports/src/reports-common/src/probe.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3172,7 +3172,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/run_state.rs",
+      "path": "2_reports/src/reports-common/src/run_state.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3212,7 +3212,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/ssh.rs",
+      "path": "2_reports/src/reports-common/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3238,7 +3238,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/template.rs",
+      "path": "2_reports/src/reports-common/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3255,7 +3255,7 @@
       ]
     },
     {
-      "path": "1_reports/src/reports-common/src/types.rs",
+      "path": "2_reports/src/reports-common/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3279,7 +3279,7 @@
       ]
     },
     {
-      "path": "1_reports/z/server-scanning/server-scanning.sh",
+      "path": "2_reports/z/server-scanning/server-scanning.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -3295,7 +3295,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/_crate_engine.sh",
+      "path": "2_reports/z/src/_crate_engine.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -3315,7 +3315,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/build.sh",
+      "path": "2_reports/z/src/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -3343,7 +3343,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/build.sh",
+      "path": "2_reports/z/src/cloud-health-full-daily/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -3357,7 +3357,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/appendix.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/appendix.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3403,7 +3403,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/collect.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/collect.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3451,7 +3451,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/context.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3473,7 +3473,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/diagrams.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/diagrams.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3521,7 +3521,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/evidence.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/evidence.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3543,7 +3543,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/checks.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3586,7 +3586,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/context.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3605,7 +3605,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/layers.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/layers.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3646,7 +3646,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/mod.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3665,7 +3665,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/output.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3688,7 +3688,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/ssh.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3711,7 +3711,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/checks.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3748,7 +3748,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/collectors.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/collectors.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3778,7 +3778,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/mod.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3792,7 +3792,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/parsers.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/parsers.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3811,7 +3811,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/sections.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/sections.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3853,7 +3853,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/template.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3869,7 +3869,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/stack/types.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/stack/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3902,7 +3902,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/template.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3920,7 +3920,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/health_full2/types.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/health_full2/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -3947,7 +3947,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/html.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/html.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4004,7 +4004,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/checks.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4047,7 +4047,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/mod.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/mod.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4067,7 +4067,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/output.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4087,7 +4087,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/phases.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/phases.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4125,7 +4125,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/ssh.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4159,7 +4159,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/template.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4177,7 +4177,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail_full/types.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail_full/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4198,7 +4198,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mail.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mail.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4238,7 +4238,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/main.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -4259,7 +4259,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/md.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/md.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4299,7 +4299,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/mermaid.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/mermaid.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4339,7 +4339,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/render_only.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/render_only.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4358,7 +4358,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/ssh.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4379,7 +4379,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-health-full-daily/src/types.rs",
+      "path": "2_reports/z/src/cloud-health-full-daily/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4423,7 +4423,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/build.sh",
+      "path": "2_reports/z/src/cloud-mail-health-full/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -4433,7 +4433,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/checks.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4476,7 +4476,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/constants.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/constants.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -4486,7 +4486,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/main.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -4504,7 +4504,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/output.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4524,7 +4524,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/phases.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/phases.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4569,7 +4569,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/ssh.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4604,7 +4604,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/template.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4620,7 +4620,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-mail-health-full/src/types.rs",
+      "path": "2_reports/z/src/cloud-mail-health-full/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4641,7 +4641,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/build.sh",
+      "path": "2_reports/z/src/cloud-sec-data-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -4651,7 +4651,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/context.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4670,7 +4670,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/correlate.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/correlate.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4686,7 +4686,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/diff_analysis.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/diff_analysis.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4704,7 +4704,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/export.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/export.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4737,7 +4737,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/journal.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/journal.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4759,7 +4759,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/main.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -4773,7 +4773,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/output.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4789,7 +4789,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/repo_scan.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/repo_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4831,7 +4831,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/runtime.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/runtime.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4852,7 +4852,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/scan_config.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/scan_config.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4875,7 +4875,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/siem.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/siem.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4895,7 +4895,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/threat_intel.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/threat_intel.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4915,7 +4915,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/types.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4934,7 +4934,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-sec-data-report/src/yara_scan.rs",
+      "path": "2_reports/z/src/cloud-sec-data-report/src/yara_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4958,7 +4958,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/build.sh",
+      "path": "2_reports/z/src/cloud-sec-network-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -4968,7 +4968,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/context.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -4985,7 +4985,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/dns_audit.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/dns_audit.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5007,7 +5007,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/firewall.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/firewall.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5029,7 +5029,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/main.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -5044,7 +5044,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/output.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5060,7 +5060,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/port_scan.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/port_scan.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5081,7 +5081,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/tls_audit.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/tls_audit.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5109,7 +5109,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/types.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5125,7 +5125,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-sec-network-report/src/wireguard.rs",
+      "path": "2_reports/z/src/cloud-sec-network-report/src/wireguard.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5144,7 +5144,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/build.sh",
+      "path": "2_reports/z/src/cloud-url-health-report/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -5154,7 +5154,7 @@
       "symbols": []
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/config.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/config.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5176,7 +5176,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/email_e2e.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/email_e2e.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5210,7 +5210,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/main.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/main.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [],
@@ -5232,7 +5232,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/private_checks.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/private_checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5261,7 +5261,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/public_checks.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/public_checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5284,7 +5284,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/cloud-url-health-report/src/template.rs",
+      "path": "2_reports/z/src/cloud-url-health-report/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5300,7 +5300,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/caddy.rs",
+      "path": "2_reports/z/src/reports-common/src/caddy.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5334,7 +5334,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/capabilities.rs",
+      "path": "2_reports/z/src/reports-common/src/capabilities.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5349,7 +5349,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/checks.rs",
+      "path": "2_reports/z/src/reports-common/src/checks.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5396,7 +5396,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/context.rs",
+      "path": "2_reports/z/src/reports-common/src/context.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5436,7 +5436,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/email_e2e.rs",
+      "path": "2_reports/z/src/reports-common/src/email_e2e.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5474,7 +5474,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/fleet.rs",
+      "path": "2_reports/z/src/reports-common/src/fleet.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5521,7 +5521,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/output.rs",
+      "path": "2_reports/z/src/reports-common/src/output.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5542,7 +5542,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/perf.rs",
+      "path": "2_reports/z/src/reports-common/src/perf.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5582,7 +5582,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/probe.rs",
+      "path": "2_reports/z/src/reports-common/src/probe.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5611,7 +5611,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/run_state.rs",
+      "path": "2_reports/z/src/reports-common/src/run_state.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5651,7 +5651,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/ssh.rs",
+      "path": "2_reports/z/src/reports-common/src/ssh.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5677,7 +5677,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/template.rs",
+      "path": "2_reports/z/src/reports-common/src/template.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5694,7 +5694,7 @@
       ]
     },
     {
-      "path": "1_reports/z/src/reports-common/src/types.rs",
+      "path": "2_reports/z/src/reports-common/src/types.rs",
       "lang": "rust",
       "role": "rust-module",
       "exports": [
@@ -5718,7 +5718,7 @@
       ]
     },
     {
-      "path": "1_reports/z/url-triage/url-triage.sh",
+      "path": "2_reports/z/url-triage/url-triage.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5782,7 +5782,7 @@
       ]
     },
     {
-      "path": "1_workflows/build.sh",
+      "path": "1_configs/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5810,7 +5810,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/flake.nix",
+      "path": "1_configs/src/flake.nix",
       "lang": "nix",
       "role": "flake",
       "exports": [],
@@ -5845,7 +5845,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/cloud-paths.sh",
+      "path": "1_configs/src/libs/cloud-paths.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5869,7 +5869,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/engine-traps.sh",
+      "path": "1_configs/src/libs/engine-traps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5895,7 +5895,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/ensure-deps.sh",
+      "path": "1_configs/src/libs/ensure-deps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5920,7 +5920,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/inject-header.sh",
+      "path": "1_configs/src/libs/inject-header.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5957,7 +5957,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/audit-credentials-coverage.sh",
+      "path": "1_configs/src/scripts/audit-credentials-coverage.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -5969,7 +5969,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-nuke.sh",
+      "path": "1_configs/src/scripts/cloud-git-nuke.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -5993,7 +5993,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-sync.sh",
+      "path": "1_configs/src/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6019,7 +6019,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-health-full.sh",
+      "path": "1_configs/src/scripts/cloud-health-full.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6035,7 +6035,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-health-http-public.sh",
+      "path": "1_configs/src/scripts/cloud-health-http-public.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6047,7 +6047,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-ci-builder-dispatch.sh",
+      "path": "1_configs/src/scripts/cloud-ship-ci-builder-dispatch.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6061,7 +6061,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-engine.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6089,7 +6089,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-build-compose.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-build-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6101,7 +6101,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-build-configs.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-build-configs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6113,7 +6113,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-build-docker.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-build-docker.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6133,7 +6133,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-build-nix.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-build-nix.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6145,7 +6145,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-clean.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-clean.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6157,7 +6157,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-deploy-compose.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-deploy-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6169,7 +6169,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-deploy-health.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-deploy-health.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6181,7 +6181,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-deploy-rsync.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-deploy-rsync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6193,7 +6193,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-docs.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-docs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6205,7 +6205,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-lifecycle.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-lifecycle.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6217,7 +6217,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-secrets-decrypt.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-secrets-decrypt.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6229,7 +6229,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-terraform-apply.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-terraform-apply.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6241,7 +6241,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-terraform-import.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-terraform-import.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6257,7 +6257,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-terraform-plan.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-terraform-plan.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6269,7 +6269,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-verify-secret-consumption.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-verify-secret-consumption.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6291,7 +6291,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-wrangler-logs.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-wrangler-logs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6303,7 +6303,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-container-step-wrangler.sh",
+      "path": "1_configs/src/scripts/cloud-ship-container-step-wrangler.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6317,7 +6317,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-lib.sh",
+      "path": "1_configs/src/scripts/cloud-ship-lib.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6361,7 +6361,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-engine.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6393,7 +6393,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-build-docker.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-build-docker.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6407,7 +6407,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-build-flake.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-build-flake.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6419,7 +6419,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-deploy-activate.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-deploy-activate.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6437,7 +6437,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-deploy-push.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-deploy-push.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6449,7 +6449,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-deploy-rsync.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-deploy-rsync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6461,7 +6461,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-pull-pilot.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-pull-pilot.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6473,7 +6473,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-nix-homemanager-step-secrets-decrypt.sh",
+      "path": "1_configs/src/scripts/cloud-ship-nix-homemanager-step-secrets-decrypt.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6485,7 +6485,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-orchestrate-build.sh",
+      "path": "1_configs/src/scripts/cloud-ship-orchestrate-build.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6493,7 +6493,7 @@
         "cmd_build()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "build_service()",
@@ -6501,7 +6501,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-orchestrate-portable.sh",
+      "path": "1_configs/src/scripts/cloud-ship-orchestrate-portable.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6527,21 +6527,21 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-orchestrate-profile.sh",
+      "path": "1_configs/src/scripts/cloud-ship-orchestrate-profile.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_profile_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_profile_ship()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-orchestrate-ship.sh",
+      "path": "1_configs/src/scripts/cloud-ship-orchestrate-ship.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6549,8 +6549,8 @@
         "cmd_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh",
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-orchestrate-build.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh",
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-orchestrate-build.sh"
       ],
       "symbols": [
         "deploy_service()",
@@ -6558,119 +6558,119 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-clean.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-clean.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_clean()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_clean()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-compose.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_compose()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_compose()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-config-gen.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-config-gen.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_config()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_config()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-deps.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-deps.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_deps()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_deps()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-restart.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-restart.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_restart()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_restart()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-secrets.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-secrets.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_secrets()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_secrets()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-ssh.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-ssh.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_ssh()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_ssh()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-status.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-status.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_status()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_workflows/src/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/1_configs/src/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_status()"
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-repo-workflow-engine.sh",
+      "path": "1_configs/src/scripts/cloud-ship-repo-workflow-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6698,7 +6698,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-terraform-deploy-apply.sh",
+      "path": "1_configs/src/scripts/cloud-ship-terraform-deploy-apply.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6720,7 +6720,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-ship-terraform-engine.sh",
+      "path": "1_configs/src/scripts/cloud-ship-terraform-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6745,7 +6745,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_arch_runner_routing.sh",
+      "path": "1_configs/src/test/test_arch_runner_routing.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6767,7 +6767,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_binaries_image_published.sh",
+      "path": "1_configs/src/test/test_binaries_image_published.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6785,7 +6785,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_build_container_json_pattern.sh",
+      "path": "1_configs/src/test/test_build_container_json_pattern.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6799,7 +6799,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_build_schema_api_mcp.sh",
+      "path": "1_configs/src/test/test_build_schema_api_mcp.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6815,7 +6815,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_c3_services_api_registry.sh",
+      "path": "1_configs/src/test/test_c3_services_api_registry.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6829,7 +6829,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_cloud_builder_ssh_safety.sh",
+      "path": "1_configs/src/test/test_cloud_builder_ssh_safety.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6843,7 +6843,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_cloud_data_zarchive_probe.sh",
+      "path": "1_configs/src/test/test_cloud_data_zarchive_probe.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6857,7 +6857,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_compose_no_build_on_vm.sh",
+      "path": "1_configs/src/test/test_compose_no_build_on_vm.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6871,7 +6871,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_container_name_matches_declaration.sh",
+      "path": "1_configs/src/test/test_container_name_matches_declaration.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6885,7 +6885,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_dispatch_hygiene.sh",
+      "path": "1_configs/src/test/test_dispatch_hygiene.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6904,7 +6904,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_docker_compose_no_build.sh",
+      "path": "1_configs/src/test/test_docker_compose_no_build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6918,7 +6918,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_docker_npm_baked_into_image.sh",
+      "path": "1_configs/src/test/test_docker_npm_baked_into_image.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6934,7 +6934,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_engine_step_sourcing_tolerant.sh",
+      "path": "1_configs/src/test/test_engine_step_sourcing_tolerant.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -6944,7 +6944,7 @@
       "symbols": []
     },
     {
-      "path": "1_workflows/src/test/test_engine_steps_tracked.sh",
+      "path": "1_configs/src/test/test_engine_steps_tracked.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6958,7 +6958,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_engine_workspace_paths_derived.sh",
+      "path": "1_configs/src/test/test_engine_workspace_paths_derived.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6972,7 +6972,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_flake_lock_present.sh",
+      "path": "1_configs/src/test/test_flake_lock_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6986,7 +6986,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_generated_header_present.sh",
+      "path": "1_configs/src/test/test_generated_header_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7004,7 +7004,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_ghcr_visibility.sh",
+      "path": "1_configs/src/test/test_ghcr_visibility.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7020,7 +7020,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_git_nuke.sh",
+      "path": "1_configs/src/test/test_git_nuke.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7034,7 +7034,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_gitignore_synced.sh",
+      "path": "1_configs/src/test/test_gitignore_synced.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7048,7 +7048,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_health_report_semantics.sh",
+      "path": "1_configs/src/test/test_health_report_semantics.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7062,7 +7062,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_layout_detection_pre_build.sh",
+      "path": "1_configs/src/test/test_layout_detection_pre_build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7078,7 +7078,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_mattermost_multiarch.sh",
+      "path": "1_configs/src/test/test_mattermost_multiarch.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7092,7 +7092,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_native_build_app_dir.sh",
+      "path": "1_configs/src/test/test_native_build_app_dir.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7108,7 +7108,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_dead_nix_install_branch.sh",
+      "path": "1_configs/src/test/test_no_dead_nix_install_branch.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7122,7 +7122,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_hardcoded_builder_image_literals.sh",
+      "path": "1_configs/src/test/test_no_hardcoded_builder_image_literals.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7136,7 +7136,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_legacy_b_infra_home_manager.sh",
+      "path": "1_configs/src/test/test_no_legacy_b_infra_home_manager.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7150,7 +7150,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_legacy_unix_static_workflows.sh",
+      "path": "1_configs/src/test/test_no_legacy_unix_static_workflows.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7166,7 +7166,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_retired_service_refs.sh",
+      "path": "1_configs/src/test/test_no_retired_service_refs.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7180,7 +7180,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_no_silent_fallback_in_ship_ci_image.sh",
+      "path": "1_configs/src/test/test_no_silent_fallback_in_ship_ci_image.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7194,7 +7194,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_npm_lockfile_present.sh",
+      "path": "1_configs/src/test/test_npm_lockfile_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7208,7 +7208,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_precommit_allows_gha_workflow.sh",
+      "path": "1_configs/src/test/test_precommit_allows_gha_workflow.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7222,7 +7222,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_precommit_blocks_forced_add.sh",
+      "path": "1_configs/src/test/test_precommit_blocks_forced_add.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7236,7 +7236,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_precommit_blocks_plaintext_secret.sh",
+      "path": "1_configs/src/test/test_precommit_blocks_plaintext_secret.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7250,7 +7250,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_proxied_mcps_resolution.sh",
+      "path": "1_configs/src/test/test_proxied_mcps_resolution.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7264,7 +7264,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_retry_bounded_backoff.sh",
+      "path": "1_configs/src/test/test_retry_bounded_backoff.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7278,7 +7278,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_runners_image_published.sh",
+      "path": "1_configs/src/test/test_runners_image_published.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7292,7 +7292,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_runners_json_schema.sh",
+      "path": "1_configs/src/test/test_runners_json_schema.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7306,7 +7306,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_service_header_present.sh",
+      "path": "1_configs/src/test/test_service_header_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7324,7 +7324,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_ship_cargo_cache.sh",
+      "path": "1_configs/src/test/test_ship_cargo_cache.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7338,7 +7338,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_ship_wireguard_secret.sh",
+      "path": "1_configs/src/test/test_ship_wireguard_secret.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7352,7 +7352,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_ship_workflows_dual_trigger.sh",
+      "path": "1_configs/src/test/test_ship_workflows_dual_trigger.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7364,7 +7364,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_ssh_builder_pins_workspace.sh",
+      "path": "1_configs/src/test/test_ssh_builder_pins_workspace.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7378,7 +7378,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_step_docker_guards.sh",
+      "path": "1_configs/src/test/test_step_docker_guards.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7400,7 +7400,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_step_docker_isolated_config.sh",
+      "path": "1_configs/src/test/test_step_docker_isolated_config.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7414,7 +7414,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_step_docker_root_docker_repair.sh",
+      "path": "1_configs/src/test/test_step_docker_root_docker_repair.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7428,7 +7428,7 @@
       ]
     },
     {
-      "path": "1_workflows/test/test_run_with_retry.sh",
+      "path": "1_configs/test/test_run_with_retry.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7451,7 +7451,7 @@
       ]
     },
     {
-      "path": "2_configs/build.sh",
+      "path": "1_configs/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7481,7 +7481,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/_validate-block-fixture.ts",
+      "path": "1_configs/src/engines/_validate-block-fixture.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7493,7 +7493,7 @@
       "symbols": []
     },
     {
-      "path": "2_configs/src/engines/apply-api-mcp-blocks.ts",
+      "path": "1_configs/src/engines/apply-api-mcp-blocks.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7508,7 +7508,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/apply-port-protocols.ts",
+      "path": "1_configs/src/engines/apply-port-protocols.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7522,7 +7522,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/cloud-data-config-consolidated.ts",
+      "path": "1_configs/src/engines/cloud-data-config-consolidated.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7556,7 +7556,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/cloud-data-config-derive.ts",
+      "path": "1_configs/src/engines/cloud-data-config-derive.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7606,7 +7606,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/cloud-data-config.ts",
+      "path": "1_configs/src/engines/cloud-data-config.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7618,7 +7618,7 @@
       "symbols": []
     },
     {
-      "path": "2_configs/src/engines/derive-build-workflows.ts",
+      "path": "1_configs/src/engines/derive-build-workflows.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7632,7 +7632,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/derive-code-signatures.ts",
+      "path": "1_configs/src/engines/derive-code-signatures.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7655,7 +7655,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/derive-mesh-snapshot.ts",
+      "path": "1_configs/src/engines/derive-mesh-snapshot.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7671,7 +7671,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/draft-port-protocols.ts",
+      "path": "1_configs/src/engines/draft-port-protocols.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7686,7 +7686,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/authelia.ts",
+      "path": "1_configs/src/engines/parsers/authelia.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7703,7 +7703,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/build-json.ts",
+      "path": "1_configs/src/engines/parsers/build-json.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7738,7 +7738,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/caddyfile.ts",
+      "path": "1_configs/src/engines/parsers/caddyfile.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7756,7 +7756,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/cloudflare.ts",
+      "path": "1_configs/src/engines/parsers/cloudflare.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7772,7 +7772,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/compose.ts",
+      "path": "1_configs/src/engines/parsers/compose.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7789,7 +7789,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/dns.ts",
+      "path": "1_configs/src/engines/parsers/dns.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7806,7 +7806,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/mailu.ts",
+      "path": "1_configs/src/engines/parsers/mailu.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7823,7 +7823,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/ntfy.ts",
+      "path": "1_configs/src/engines/parsers/ntfy.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7844,7 +7844,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/terraform.ts",
+      "path": "1_configs/src/engines/parsers/terraform.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7873,7 +7873,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/parsers/wireguard.ts",
+      "path": "1_configs/src/engines/parsers/wireguard.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7900,7 +7900,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/preview-app-urls.ts",
+      "path": "1_configs/src/engines/preview-app-urls.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7914,7 +7914,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-build-per-container.sh",
+      "path": "1_configs/src/engines/test-build-per-container.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7928,7 +7928,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-caddy-declarative.sh",
+      "path": "1_configs/src/engines/test-caddy-declarative.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7942,7 +7942,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-derivers-json.sh",
+      "path": "1_configs/src/engines/test-derivers-json.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7956,7 +7956,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-engine-no-transients.sh",
+      "path": "1_configs/src/engines/test-engine-no-transients.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7968,7 +7968,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-external-consumers.sh",
+      "path": "1_configs/src/engines/test-external-consumers.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7986,7 +7986,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/test-kg-derive.sh",
+      "path": "1_configs/src/engines/test-kg-derive.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -8000,7 +8000,7 @@
       ]
     },
     {
-      "path": "2_configs/src/engines/validate-build-json.ts",
+      "path": "1_configs/src/engines/validate-build-json.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -8011,7 +8011,7 @@
       "symbols": []
     },
     {
-      "path": "2_configs/src/engines/validate-build-schema.ts",
+      "path": "1_configs/src/engines/validate-build-schema.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -8024,7 +8024,7 @@
       "symbols": []
     },
     {
-      "path": "2_configs/test/test_cypht.sh",
+      "path": "1_configs/test/test_cypht.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8038,7 +8038,7 @@
       ]
     },
     {
-      "path": "2_configs/test/test_etc_hosts_clean.sh",
+      "path": "1_configs/test/test_etc_hosts_clean.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8050,7 +8050,7 @@
       ]
     },
     {
-      "path": "2_configs/test/test_firewall_owners.sh",
+      "path": "1_configs/test/test_firewall_owners.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8064,7 +8064,7 @@
       ]
     },
     {
-      "path": "2_configs/test/test_maddy_filtering.sh",
+      "path": "1_configs/test/test_maddy_filtering.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8076,7 +8076,7 @@
       ]
     },
     {
-      "path": "2_configs/test/test_mail_bind.sh",
+      "path": "1_configs/test/test_mail_bind.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8088,7 +8088,7 @@
       ]
     },
     {
-      "path": "3_secrets/build.sh",
+      "path": "2_secrets/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8100,7 +8100,7 @@
       ]
     },
     {
-      "path": "3_secrets/src/engines/secrets.sh",
+      "path": "2_secrets/src/engines/secrets.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [

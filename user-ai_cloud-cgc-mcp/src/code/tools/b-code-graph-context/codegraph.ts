@@ -9,9 +9,9 @@ import { join, dirname, resolve } from "node:path";
 // Auto-discovers and merges THREE graph layers from the cloud repo (which the
 // container has at $GIT_ROOT/cloud — the same octocode repos volume):
 //
-//   1. INFRA (deterministic)    2_configs/dist/build-kg-graph_delta.json
+//   1. INFRA (deterministic)    1_configs/dist/build-kg-graph_delta.json
 //      vm / service / container / domain / repo / module / package nodes + edges.
-//   2. CODE STRUCTURE (deterministic, ALL repos)  2_configs/dist/code-signatures-*.json
+//   2. CODE STRUCTURE (deterministic, ALL repos)  1_configs/dist/code-signatures-*.json
 //      one file per repo (cloud, unix, front, tools, cloud-data, front-data).
 //      → file nodes + `imports` edges (local file→file, external file→package).
 //   (SEMANTIC code intent: retired — octocode's LLM GraphRAG supersedes the old
@@ -25,7 +25,7 @@ import { join, dirname, resolve } from "node:path";
 //   1. CODEGRAPH_GRAPHS_DIR env (explicit override)
 //   2. ./graphs bundled inside the image (/app/code/graphs) — ships with the cgc
 //      build, so the graph is live WITHOUT depending on the octocode repos volume.
-//   3. repo layout fallback ($GIT_ROOT/cloud/{2_configs/dist, …/kg-graph/src}).
+//   3. repo layout fallback ($GIT_ROOT/cloud/{1_configs/dist, …/kg-graph/src}).
 const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
 const CLOUD = join(GIT_ROOT, "cloud");
 const BUNDLED = join(import.meta.dirname!, "..", "..", "graphs");
@@ -35,7 +35,7 @@ const useBundle = (): string | null => {
   return null;
 };
 const BUNDLE = useBundle();
-const DIST = BUNDLE ?? join(CLOUD, "2_configs", "dist");          // ① infra + ② code-signatures
+const DIST = BUNDLE ?? join(CLOUD, "1_configs", "dist");          // ① infra + ② code-signatures
 const TTL_MS = 5 * 60 * 1000;
 
 interface GNode { table: string; id: string; key: string; properties: Record<string, unknown>; layer: string }
@@ -166,7 +166,7 @@ export function registerCodegraphTools(server: McpServer): void {
   server.tool(
     "cgc.codegraph.get_node",
     "Full details of one graph node plus its incident edges (in + out).",
-    { node_id: z.string().describe("Node key (e.g. 'subsystem:ship_engine', 'file:cloud/2_configs/...'), id, or name") },
+    { node_id: z.string().describe("Node key (e.g. 'subsystem:ship_engine', 'file:cloud/1_configs/...'), id, or name") },
     async ({ node_id }) => {
       const g = loadGraph();
       const ns = resolveTarget(g, node_id);

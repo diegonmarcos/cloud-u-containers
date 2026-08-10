@@ -28,13 +28,13 @@ steps:
         | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
       BEARER="${FRESH_TOKEN:-$AUTHELIA_BEARER_TOKEN}"
       # CLOUD_DATA_DIR points reports-common's find_cloud_data_file at the
-      # cloud-source 2_configs/dist tree (report cwd under cloud-data/ can't
+      # cloud-source 1_configs/dist tree (report cwd under cloud-data/ can't
       # walk up into cloud-source/).
       docker run --pull always --rm --network host \
         -v dagu_dagu_data:/var/lib/dagu/data \
         -v /opt/ssh-keys/dagu:/root/.ssh \
         -e BEARER_TOKEN="$BEARER" \
-        -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/2_configs/dist \
+        -e CLOUD_DATA_DIR=/var/lib/dagu/data/cloud-source/1_configs/dist \
         -w /var/lib/dagu/data/cloud-data/reports \
         "$REPORT_IMAGE" mail
 

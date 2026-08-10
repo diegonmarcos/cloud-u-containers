@@ -460,7 +460,7 @@ This ensures consistent context loading and access to CLAUDE.md instructions.
 | **`git add -f` / `git add --force`** | **plain `git add` — NEVER bypass gitignore. `-f` force-stages secrets, decrypted keys, sensitive/ — gitignore exists for a reason.** |
 
 Enforced by: `claude-memory.sh` (SessionStart), `declarative-guard.sh` (per-prompt), `pretool-guard.sh` (pre-tool-use warn).
-Commit-time defence: `1_workflows/src/hooks/pre-commit` **blocks** any gitignored file from being committed.
+Commit-time defence: `1_configs/src/git-hooks/pre-commit` **blocks** any gitignored file from being committed.
 
 ## E.2 Dependency Verification (CRITICAL)
 

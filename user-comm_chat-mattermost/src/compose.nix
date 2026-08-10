@@ -9,7 +9,7 @@
 #                        + assets/ntfy-bridge.py mounted from dist/assets/)
 #
 # ntfy_topics flow into the bots service from container.ntfy_topics, which is
-# emitted into 2_configs/dist/build-mattermost.json by cloud-data-config-
+# emitted into 1_configs/dist/build-mattermost.json by cloud-data-config-
 # derive.ts (FIRE RULE 4 — data-driven, single source of truth). The list is
 # declared in bc-obs_ntfy/build.json#.topics; parseNtfy lifts it into
 # _cloud-data-consolidated.json#.configs.ntfy.topics; derive forwards it as

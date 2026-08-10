@@ -470,9 +470,9 @@ interface TopologyService { category: string; vm: string; containers?: string[];
 function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<string, TopologyService> } {
   const candidates = [
     "/app/build-c3-infra-mcp.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "build-c3-infra-mcp.json"),
+    join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "build-c3-infra-mcp.json"),
     "/app/_cloud-data-consolidated.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),
+    join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
   ];
   for (const p of candidates) {
@@ -632,7 +632,7 @@ async function finOpsAssets(): Promise<string> {
     sections.push(`  ${alias}: ${sorted.map((e) => `${e.port}(${e.name})`).join(", ")}`);
   }
   sections.push("\n── CLOUDFLARE DNS ──");
-  const cfCandidates = ["/app/_cloud-data-consolidated.json", join(CLOUD_DATA_DIR, "..", "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"), join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json")];
+  const cfCandidates = ["/app/_cloud-data-consolidated.json", join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"), join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json")];
   const cfPath = cfCandidates.find((p) => existsSync(p));
   if (cfPath) {
     try {

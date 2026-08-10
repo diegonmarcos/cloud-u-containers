@@ -25,7 +25,7 @@ nb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(nb)
 
 
-# ── load real policy (symlink → 2_configs/dist/build-notify.json) ──────────
+# ── load real policy (symlink → 1_configs/dist/build-notify.json) ──────────
 def _load_policy():
     for cand in ("./build-notify.json", "../build-notify.json"):
         p = Path(cand)

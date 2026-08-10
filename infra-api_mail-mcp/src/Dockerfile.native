@@ -3,8 +3,8 @@
 # ║   GENERATED FILE — DO NOT EDIT                                   ║
 # ║                                                                  ║
 # ║   Source : a_solutions/aa-sui_mail-mcp/dist/Dockerfile.native
-# ║   Engine : 1_workflows/src/scripts/cloud-ship-container-step-build-docker.sh
-# ║   Rebuild: ./1_workflows/build.sh
+# ║   Engine : 1_configs/src/scripts/cloud-ship-container-step-build-docker.sh
+# ║   Rebuild: ./1_configs/build.sh
 # ║                                                                  ║
 # ║   Manual edits will be overwritten on next build.                ║
 # ║                                                                  ║

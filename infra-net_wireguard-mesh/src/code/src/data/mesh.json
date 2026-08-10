@@ -1,5 +1,5 @@
 {
-  "_doc": "Sample / fallback snapshot. In production this file is overwritten at build-prep time by a symlink to ../../../I_cloud-data/cloud-data-wg-mesh-snapshot.json (emitted by 2_configs/src/engines/derive-mesh-snapshot.ts). Schema: wg-mesh/v1.",
+  "_doc": "Sample / fallback snapshot. In production this file is overwritten at build-prep time by a symlink to ../../../I_cloud-data/cloud-data-wg-mesh-snapshot.json (emitted by 1_configs/src/engines/derive-mesh-snapshot.ts). Schema: wg-mesh/v1.",
   "_meta": {
     "generated_at": "2026-05-08T12:00:00Z",
     "generated_by": "sample-fallback",

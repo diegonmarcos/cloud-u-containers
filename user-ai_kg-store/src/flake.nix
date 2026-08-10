@@ -10,7 +10,7 @@
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
     container = builtins.fromJSON (builtins.readFile ./build-surrealdb.json);
 
-    # build-kg-graph_schema.json — emitted by 2_configs/build.sh derive,
+    # build-kg-graph_schema.json — emitted by 1_configs/build.sh derive,
     # symlinked into ./build-kg-graph_schema.json. SoT for embedder config
     # + vector index list. When embedder.enabled=false, vector_indexes is []
     # → MTREE block becomes a single comment line (declarative gating).
