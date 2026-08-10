@@ -67,7 +67,7 @@ cd a_solutions/user-ai_my-ai-api
 ```
 
 `build.sh` is a symlink to the shared container engine
-(`1_configs/src/scripts/cloud-ship-container-engine.sh`); all behaviour is
+(`1_configs/src/deploy/scripts/cloud-ship-container-engine.sh`); all behaviour is
 data-driven from `build.json`.
 
 ## Client wiring (my-ai / goose)

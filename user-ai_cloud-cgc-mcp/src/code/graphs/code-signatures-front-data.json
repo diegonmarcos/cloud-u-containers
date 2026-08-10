@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engines/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engine/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'front-data' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1

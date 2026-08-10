@@ -3,7 +3,7 @@
   "_meta": {
     "version": 2,
     "generated_at": "",
-    "generated_by": "1_configs/src/engines/cloud-data-config-consolidated.ts",
+    "generated_by": "1_configs/src/engine/cloud-data-config-consolidated.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -13,8 +13,8 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "1_configs/src/engines/cloud-data-config-consolidated.ts",
-        "derive": "1_configs/src/engines/cloud-data-config-derive.ts"
+        "consolidator": "1_configs/src/engine/cloud-data-config-consolidated.ts",
+        "derive": "1_configs/src/engine/cloud-data-config-derive.ts"
       },
       "outputs": {
         "master": "1_configs/dist/_cloud-data-consolidated.json (this file)",
@@ -1371,7 +1371,7 @@
         "networks": []
       },
       "proxy": {
-        "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (1_configs/src/engines/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
+        "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (1_configs/src/engine/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
         "primary": {
           "wg_only": false,
           "auth": "two_factor",
@@ -3861,7 +3861,7 @@
         "enabled": true
       },
       "timezone": "Europe/Paris",
-      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 1_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 1_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
+      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 1_configs/src/engine/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 1_configs/src/engine/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
       "topics": [
         {
           "name": "all",
@@ -5363,7 +5363,7 @@
         "path": "/mcp"
       },
       "db_publish": {
-        "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_configs/src/scripts/cloud-kg-db-snapshot.sh.",
+        "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_configs/src/deploy/scripts/cloud-kg-db-snapshot.sh.",
         "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp-octocode-db",
         "tag": "latest",
         "volume": "octocode_db",
