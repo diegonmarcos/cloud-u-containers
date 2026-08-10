@@ -52,7 +52,7 @@
       "description": "Oracle Free - E2 Micro 0 - Mail Server",
       "wg_ip": "10.0.0.3",
       "wg_ipv6": "fd0c:1d00::3",
-      "wg_public_key": null,
+      "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -90,7 +90,7 @@
       "description": "Oracle Free - E2 Micro 1 - Analytics + Workflows",
       "wg_ip": "10.0.0.4",
       "wg_ipv6": "fd0c:1d00::4",
-      "wg_public_key": null,
+      "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -144,7 +144,7 @@
       "description": "Oracle Free - A1 Flex 0 (4 OCPUs / 24GB / 100GB) — Consolidated",
       "wg_ip": "10.0.0.6",
       "wg_ipv6": "fd0c:1d00::6",
-      "wg_public_key": null,
+      "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
       "wg_port": 51820,
       "wg_role": "spoke",
       "user": "ubuntu",
@@ -223,7 +223,7 @@
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
       "wg_ipv6": "fd0c:1d00::1",
-      "wg_public_key": null,
+      "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
       "wg_port": 51820,
       "wg_role": "hub",
       "user": "diego",
@@ -396,7 +396,7 @@
         {
           "name": "oci-mail",
           "wg_ip": "10.0.0.3",
-          "wg_public_key": null,
+          "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
           "endpoint": "130.110.251.193:51820",
           "role": "spoke",
           "wg_ipv6": "fd0c:1d00::3"
@@ -404,7 +404,7 @@
         {
           "name": "oci-analytics",
           "wg_ip": "10.0.0.4",
-          "wg_public_key": null,
+          "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
           "endpoint": "129.151.228.66:51820",
           "role": "spoke",
           "wg_ipv6": "fd0c:1d00::4"
@@ -412,7 +412,7 @@
         {
           "name": "oci-apps",
           "wg_ip": "10.0.0.6",
-          "wg_public_key": null,
+          "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
           "endpoint": "82.70.229.129:51820",
           "role": "spoke",
           "wg_ipv6": "fd0c:1d00::6"
@@ -420,7 +420,7 @@
         {
           "name": "gcp-proxy",
           "wg_ip": "10.0.0.1",
-          "wg_public_key": null,
+          "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
           "endpoint": "35.226.147.64:51820",
           "role": "hub",
           "wg_ipv6": "fd0c:1d00::1"
@@ -431,25 +431,25 @@
           "wg_ip": "10.0.0.5",
           "wg_ipv6": "fd0c:1d00::5",
           "role": "client",
-          "wg_public_key": null
+          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
         },
         "termux": {
           "wg_ip": "10.0.0.9",
           "wg_ipv6": "fd0c:1d00::9",
           "role": "client",
-          "wg_public_key": null
+          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
         },
         "gha-runner": {
           "wg_ip": "10.0.0.200",
           "wg_ipv6": "fd0c:1d00::200",
           "role": "client",
-          "wg_public_key": null
+          "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
         },
         "health-runner": {
           "wg_ip": "10.0.0.201",
           "wg_ipv6": "fd0c:1d00::201",
           "role": "client",
-          "wg_public_key": null
+          "wg_public_key": "VeUK6t5/oXQiACcqXgCGkzLZlP2iBTgPghhhwFADViQ="
         }
       }
     },
@@ -466,7 +466,7 @@
           "wg_ipv6": "fd0c:1d01::1",
           "role": "hub",
           "endpoint": "129.151.228.66:51821",
-          "wg_public_key": null
+          "wg_public_key": "Bnyf83VpvGY4BjcjQEXgutNEzx9OXMltHIcKNh7cKkc="
         },
         {
           "name": "gcp-proxy",
@@ -474,7 +474,7 @@
           "wg_ipv6": "fd0c:1d01::2",
           "role": "spoke",
           "endpoint": "35.226.147.64:51821",
-          "wg_public_key": null
+          "wg_public_key": "jkGSUNImyWXEx4PB9hfTvIsG8ui4PnvWakBhAB7WSj4="
         },
         {
           "name": "oci-mail",
@@ -482,7 +482,7 @@
           "wg_ipv6": "fd0c:1d01::3",
           "role": "spoke",
           "endpoint": "130.110.251.193:51821",
-          "wg_public_key": null
+          "wg_public_key": "kt9Hy6EZtwiR3mx1GiQiARfHUjsszkAI75AYvjMQaiY="
         },
         {
           "name": "oci-apps",
@@ -490,7 +490,7 @@
           "wg_ipv6": "fd0c:1d01::4",
           "role": "spoke",
           "endpoint": "82.70.229.129:51821",
-          "wg_public_key": null
+          "wg_public_key": "Z54BMXtL7Wb9HiSePnK8hFTecX2q3Sui1OpWmn+IxAY="
         }
       ],
       "clients": {
@@ -499,28 +499,28 @@
           "wg_ipv6": "fd0c:1d01::5",
           "role": "client",
           "_doc": "Diego's laptop. wg-public access only.",
-          "wg_public_key": null
+          "wg_public_key": "hG1x8b4JXsD0r0TXVD+ExVBigKRipZwY/vc8ui3sIQY="
         },
         "termux": {
           "wg_ip": "10.1.0.9",
           "wg_ipv6": "fd0c:1d01::9",
           "role": "client",
           "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/.",
-          "wg_public_key": null
+          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
         },
         "termux-share": {
           "wg_ip": "10.1.0.10",
           "wg_ipv6": "fd0c:1d01::10",
           "role": "client",
           "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0.",
-          "wg_public_key": null
+          "wg_public_key": "nNpzC6gB2vm0jV+i3o+WC2jHIafII6ek202naOEhZX8="
         },
         "health-runner": {
           "wg_ip": "10.1.0.11",
           "wg_ipv6": "fd0c:1d01::11",
           "role": "client",
           "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block.",
-          "wg_public_key": null
+          "wg_public_key": "DBEHl3jJehUxuLxLn4cEnNk5c5ggH3fmB6qHDwTqw28="
         }
       }
     },
@@ -575,7 +575,7 @@
         "wg_ipv6": "fd0c:1d01::1",
         "role": "hub",
         "endpoint": "129.151.228.66:51821",
-        "wg_public_key": null
+        "wg_public_key": "Bnyf83VpvGY4BjcjQEXgutNEzx9OXMltHIcKNh7cKkc="
       },
       {
         "name": "gcp-proxy",
@@ -583,7 +583,7 @@
         "wg_ipv6": "fd0c:1d01::2",
         "role": "spoke",
         "endpoint": "35.226.147.64:51821",
-        "wg_public_key": null
+        "wg_public_key": "jkGSUNImyWXEx4PB9hfTvIsG8ui4PnvWakBhAB7WSj4="
       },
       {
         "name": "oci-mail",
@@ -591,7 +591,7 @@
         "wg_ipv6": "fd0c:1d01::3",
         "role": "spoke",
         "endpoint": "130.110.251.193:51821",
-        "wg_public_key": null
+        "wg_public_key": "kt9Hy6EZtwiR3mx1GiQiARfHUjsszkAI75AYvjMQaiY="
       },
       {
         "name": "oci-apps",
@@ -599,7 +599,7 @@
         "wg_ipv6": "fd0c:1d01::4",
         "role": "spoke",
         "endpoint": "82.70.229.129:51821",
-        "wg_public_key": null
+        "wg_public_key": "Z54BMXtL7Wb9HiSePnK8hFTecX2q3Sui1OpWmn+IxAY="
       }
     ],
     "clients": {
@@ -608,28 +608,28 @@
         "wg_ipv6": "fd0c:1d01::5",
         "role": "client",
         "_doc": "Diego's laptop. wg-public access only.",
-        "wg_public_key": null
+        "wg_public_key": "hG1x8b4JXsD0r0TXVD+ExVBigKRipZwY/vc8ui3sIQY="
       },
       "termux": {
         "wg_ip": "10.1.0.9",
         "wg_ipv6": "fd0c:1d01::9",
         "role": "client",
         "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/.",
-        "wg_public_key": null
+        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
       },
       "termux-share": {
         "wg_ip": "10.1.0.10",
         "wg_ipv6": "fd0c:1d01::10",
         "role": "client",
         "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0.",
-        "wg_public_key": null
+        "wg_public_key": "nNpzC6gB2vm0jV+i3o+WC2jHIafII6ek202naOEhZX8="
       },
       "health-runner": {
         "wg_ip": "10.1.0.11",
         "wg_ipv6": "fd0c:1d01::11",
         "role": "client",
         "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block.",
-        "wg_public_key": null
+        "wg_public_key": "DBEHl3jJehUxuLxLn4cEnNk5c5ggH3fmB6qHDwTqw28="
       }
     }
   },
@@ -2578,15 +2578,15 @@
           "unix": {
             "upstream": "https://github.com/diegonmarcos/unix.git"
           },
+          "cloud-data": {
+            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+            "private": true
+          },
           "cloud-master": {
             "upstream": "https://github.com/diegonmarcos/cloud-master.git"
           },
           "diegonmarcos": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
-          },
-          "cloud-data": {
-            "upstream": "https://github.com/diegonmarcos/cloud-data.git",
-            "private": true
           },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
@@ -9397,7 +9397,7 @@
         "repo": "diegonmarcos/cloud",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-10T11:39:07Z",
+        "pushed_at": "2026-08-10T13:49:10Z",
         "indexed": true,
         "local_dir": "cloud",
         "mirrored": true,
@@ -9442,7 +9442,7 @@
         "repo": "diegonmarcos/unix",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-10T11:31:54Z",
+        "pushed_at": "2026-08-10T13:44:00Z",
         "indexed": true,
         "local_dir": "unix",
         "mirrored": true,
@@ -9469,6 +9469,51 @@
         "persistence": {
           "type": "git",
           "ref": "https://github.com/diegonmarcos/unix.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/cloud-data",
+        "service": "cloud-cgc-mcp",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/cloud-data",
+        "visibility": "private",
+        "fork": false,
+        "pushed_at": "2026-08-10T13:10:37Z",
+        "indexed": true,
+        "local_dir": "cloud-data",
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-data.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/cloud-data",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "cloud-data",
+        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-data.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -9559,51 +9604,6 @@
         "persistence": {
           "type": "git",
           "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/cloud-data",
-        "service": "cloud-cgc-mcp",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/cloud-data",
-        "visibility": "private",
-        "fork": false,
-        "pushed_at": "2026-08-09T22:15:54Z",
-        "indexed": true,
-        "local_dir": "cloud-data",
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-data.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/cloud-data",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "cloud-data",
-        "upstream": "https://github.com/diegonmarcos/cloud-data.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-data.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -11375,7 +11375,7 @@
         "vm_id": "oci-E2-f_0",
         "ip": "130.110.251.193",
         "wg_ip": "10.0.0.3",
-        "wg_public_key": null,
+        "wg_public_key": "8Fqo4ct/jR2D3ZJ4AT8AVxiemuRSFk9LriBJhK7ukQs=",
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -11421,7 +11421,7 @@
         "vm_id": "oci-E2-f_1",
         "ip": "129.151.228.66",
         "wg_ip": "10.0.0.4",
-        "wg_public_key": null,
+        "wg_public_key": "ugc3YpOgw9DokiM8yqT0uADF8UUkSTGad9WSODX1kC0=",
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -11473,7 +11473,7 @@
         "vm_id": "oci-A1-f_0",
         "ip": "82.70.229.129",
         "wg_ip": "10.0.0.6",
-        "wg_public_key": null,
+        "wg_public_key": "+LHoOzNYA92eJalYEQDzbEDDEi0FfT2jYhBUpz7RxHQ=",
         "wg_port": 51820,
         "wg_role": "spoke",
         "user": "ubuntu",
@@ -11588,7 +11588,7 @@
         "vm_id": "gcp-E2-f_0",
         "ip": "35.226.147.64",
         "wg_ip": "10.0.0.1",
-        "wg_public_key": null,
+        "wg_public_key": "vV/phXUwnCjxACQ5Df11Uw47BzJaK4r85jPYMu2HmDc=",
         "wg_port": 51820,
         "wg_role": "hub",
         "user": "diego",
