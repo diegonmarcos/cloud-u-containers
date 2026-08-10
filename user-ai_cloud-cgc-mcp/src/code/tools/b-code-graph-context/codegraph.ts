@@ -9,9 +9,9 @@ import { join, dirname, resolve } from "node:path";
 // Auto-discovers and merges THREE graph layers from the cloud repo (which the
 // container has at $GIT_ROOT/cloud — the same octocode repos volume):
 //
-//   1. INFRA (deterministic)    1_configs/dist/build-kg-graph_delta.json
+//   1. INFRA (deterministic)    1_cloud-configs/dist/build-kg-graph_delta.json
 //      vm / service / container / domain / repo / module / package nodes + edges.
-//   2. CODE STRUCTURE (deterministic, ALL repos)  1_configs/dist/code-signatures-*.json
+//   2. CODE STRUCTURE (deterministic, ALL repos)  1_cloud-configs/dist/code-signatures-*.json
 //      one file per repo (cloud, unix, front, tools, cloud-data, front-data).
 //      → file nodes + `imports` edges (local file→file, external file→package).
 //   (SEMANTIC code intent: retired — octocode's LLM GraphRAG supersedes the old

@@ -29,7 +29,7 @@ _resolve_topology() {
         "/app/_cloud-data-consolidated.json"
         "${override}"
         "/opt/containers/kg-graph/_cloud-data-consolidated.json"
-        "${script_dir}/../../../1_configs/dist/_cloud-data-consolidated.json"
+        "${script_dir}/../../../1_cloud-configs/dist/_cloud-data-consolidated.json"
         "${script_dir}/../_cloud-data-consolidated.json"
         # Legacy fallbacks (deprecated cloud-data-topology.json — soft transition)
         "/app/cloud-data-topology.json"

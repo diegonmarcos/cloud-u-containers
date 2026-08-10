@@ -23,9 +23,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -106,9 +106,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -191,9 +191,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -274,9 +274,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -363,9 +363,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done
@@ -468,9 +468,9 @@ steps:
       # NOTE: consolidated derivation may miss `type: custom` entries with dump_cmd
       # (photos-webhook, crawlee redis/minio, matomo). Legacy fallback preserved for those.
       CONS=""
-      for p in /var/lib/dagu/data/cloud-source/1_configs/dist/_cloud-data-consolidated.json \
+      for p in /var/lib/dagu/data/cloud-source/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json \
-               /var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json \
+               /var/lib/dagu/data/cloud-data/1_cloud-configs/dist/_cloud-data-consolidated.json \
                /app/_cloud-data-consolidated.json; do
         [ -f "$p" ] && CONS="$p" && break
       done

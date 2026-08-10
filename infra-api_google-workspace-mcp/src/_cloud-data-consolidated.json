@@ -3,7 +3,7 @@
   "_meta": {
     "version": 2,
     "generated_at": "",
-    "generated_by": "1_configs/src/engine/cloud-data-config-consolidated.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -13,13 +13,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "1_configs/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "1_configs/src/engine/cloud-data-config-derive.ts"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts"
       },
       "outputs": {
-        "master": "1_configs/dist/_cloud-data-consolidated.json (this file)",
-        "per_container": "1_configs/dist/build-{container_or_service_name}.json (one per container in topology, plus one for each container-less service)",
-        "archived": "1_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (this file)",
+        "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container in topology, plus one for each container-less service)",
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 1_configs/build.sh all"
     }
@@ -3025,11 +3025,11 @@
       "subcategory": "net",
       "data_sources": {
         "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",
-        "consolidated": "1_configs/dist/_cloud-data-consolidated.json",
+        "consolidated": "1_cloud-configs/dist/_cloud-data-consolidated.json",
         "ws_tunnel": "a_solutions/bb-net_wireguard-mesh-ws-tunnel/build.json"
       },
       "data_outputs": {
-        "snapshot": "1_configs/dist/mesh-snapshot.json",
+        "snapshot": "1_cloud-configs/dist/mesh-snapshot.json",
         "_consumer_hint": "Symlinked into src/data/mesh.json at build-prep time; PORTAL_DATA[\"mesh\"] hydration. Bare name (not cloud-data-*) so it stays at dist/ root per cloud-data-config-derive.ts L26 archival rule."
       },
       "api": {

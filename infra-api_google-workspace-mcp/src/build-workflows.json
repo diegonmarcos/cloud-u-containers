@@ -3,7 +3,7 @@
   "_source": "1_configs/build.json",
   "_generated_at": "",
   "name": "1_configs",
-  "runners_doc": "Runner-image registry: arch -> {type, host?, builder_image?}. Migrated from the legacy runners.json that lived under I_cloud-data/ (Step 3, 2026-05-09 — now z_archive). Consumed by 1_configs/src/deploy/scripts/cloud-ship-container-step-build-docker.sh and cloud-ship-ci-builder-dispatch.sh via 1_configs/dist/build-workflows.json (symlinked from 1_configs/src/build-workflows.json). 1_configs/build.sh aggregates this build.json's runners + probe + dispatch fields into dist/build-workflows.json. amd64 = local GHA/host. arm64 = remote ssh runner on oci-apps (cloud-builder-x-deb-nixhm image, master in III_unix/cb_containers-builders/build.json). Probe retry/backoff lets the engine survive transient SSH timeouts (WG flap, sshd MaxStartups burst).",
+  "runners_doc": "Runner-image registry: arch -> {type, host?, builder_image?}. Migrated from the legacy runners.json that lived under I_cloud-data/ (Step 3, 2026-05-09 — now z_archive). Consumed by 1_configs/src/deploy/scripts/cloud-ship-container-step-build-docker.sh and cloud-ship-ci-builder-dispatch.sh via 1_cloud-configs/dist/build-workflows.json (symlinked from 1_configs/src/build-workflows.json). 1_configs/build.sh aggregates this build.json's runners + probe + dispatch fields into dist/build-workflows.json. amd64 = local GHA/host. arm64 = remote ssh runner on oci-apps (cloud-builder-x-deb-nixhm image, master in III_unix/cb_containers-builders/build.json). Probe retry/backoff lets the engine survive transient SSH timeouts (WG flap, sshd MaxStartups burst).",
   "runners": {
     "amd64": {
       "type": "local"
