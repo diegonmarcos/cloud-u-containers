@@ -56,7 +56,7 @@ export function getRepoRoot(): string {
 /**
  * Resolve a cloud-data / build / consolidated file. Priority:
  *   1. /app/<filename>                             — bundled in-image (build pipeline copies dist/* into the image)
- *   2. <repoRoot>/2_configs/dist/<filename>        — dev: cloud repo dist/
+ *   2. <repoRoot>/1_configs/dist/<filename>        — dev: cloud repo dist/
  *   3. <repoRoot>/cloud-data/<filename>            — legacy c3_git_repos clone
  *   4. <repoRoot>/<filename>                       — legacy cloud repo root
  *
@@ -68,7 +68,7 @@ export function getCloudDataPath(filename: string): string {
   const repoRoot = (() => { try { return getRepoRoot(); } catch { return ""; } })();
   const candidates = [
     `/app/${filename}`,
-    repoRoot ? join(repoRoot, "2_configs", "dist", filename) : "",
+    repoRoot ? join(repoRoot, "1_configs", "dist", filename) : "",
     repoRoot ? join(repoRoot, "cloud-data", filename) : "",
     repoRoot ? join(repoRoot, filename) : "",
   ].filter(Boolean) as string[];

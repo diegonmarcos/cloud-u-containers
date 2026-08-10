@@ -1,9 +1,9 @@
 {
-  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 2_configs/build.sh all`.",
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 1_configs/build.sh all`.",
   "_meta": {
     "version": 2,
     "generated_at": "",
-    "generated_by": "2_configs/src/engines/cloud-data-config-consolidated.ts",
+    "generated_by": "1_configs/src/engines/cloud-data-config-consolidated.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -13,15 +13,15 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "2_configs/src/engines/cloud-data-config-consolidated.ts",
-        "derive": "2_configs/src/engines/cloud-data-config-derive.ts"
+        "consolidator": "1_configs/src/engines/cloud-data-config-consolidated.ts",
+        "derive": "1_configs/src/engines/cloud-data-config-derive.ts"
       },
       "outputs": {
-        "master": "2_configs/dist/_cloud-data-consolidated.json (this file)",
-        "per_container": "2_configs/dist/build-{container_or_service_name}.json (one per container in topology, plus one for each container-less service)",
-        "archived": "2_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "master": "1_configs/dist/_cloud-data-consolidated.json (this file)",
+        "per_container": "1_configs/dist/build-{container_or_service_name}.json (one per container in topology, plus one for each container-less service)",
+        "archived": "1_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
-      "rebuild_command": "bash 2_configs/build.sh all"
+      "rebuild_command": "bash 1_configs/build.sh all"
     }
   },
   "owner": {
@@ -1371,7 +1371,7 @@
         "networks": []
       },
       "proxy": {
-        "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (2_configs/src/engines/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
+        "_doc": "Mixed-auth service. Default for base_path = Bearer-gated via introspect-proxy (same as c3-infra-api write routes). The /health, /ready, /analytics/* sub-paths are public — declared via the engine-supported public_paths[] array (1_configs/src/engines/cloud-data-config-derive.ts:507 → caddyfile.nix:432 emits a pre-auth `handle <pp>` block per entry that strip_prefix base_path then reverse_proxy upstream).",
         "primary": {
           "wg_only": false,
           "auth": "two_factor",
@@ -2562,7 +2562,7 @@
       "ssh_listen_host": "10.0.0.6",
       "gitea": {
         "org": "diego",
-        "_mirrors_doc": "Mirrors are DERIVED, not listed here. The consolidator expands mirror_policy against the fetched GitHub inventory (2_configs/src/inputs/github-repos.json) into the concrete gitea.mirrors map, setting private:true from each repo's real visibility. Hand-listing them drifted: `front` pointed at a repo that has never existed and silently never synced, and `cloud-data` — private on GitHub — was mirrored WITHOUT private:true, i.e. published.",
+        "_mirrors_doc": "Mirrors are DERIVED, not listed here. The consolidator expands mirror_policy against the fetched GitHub inventory (1_configs/src/inputs/github-repos.json) into the concrete gitea.mirrors map, setting private:true from each repo's real visibility. Hand-listing them drifted: `front` pointed at a repo that has never existed and silently never synced, and `cloud-data` — private on GitHub — was mirrored WITHOUT private:true, i.e. published.",
         "mirror_policy": {
           "source": "github-inventory",
           "include_forks": false,
@@ -2575,6 +2575,12 @@
           "cloud": {
             "upstream": "https://github.com/diegonmarcos/cloud.git"
           },
+          "cloud-master": {
+            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
+          },
+          "diegonmarcos": {
+            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
+          },
           "cloud-data": {
             "upstream": "https://github.com/diegonmarcos/cloud-data.git",
             "private": true
@@ -2584,9 +2590,6 @@
           },
           "diegonmarcos.github.io": {
             "upstream": "https://github.com/diegonmarcos/diegonmarcos.github.io.git"
-          },
-          "diegonmarcos": {
-            "upstream": "https://github.com/diegonmarcos/diegonmarcos.git"
           },
           "notes": {
             "upstream": "https://github.com/diegonmarcos/notes.git",
@@ -2619,9 +2622,6 @@
           },
           "cloud-android": {
             "upstream": "https://github.com/diegonmarcos/cloud-android.git"
-          },
-          "cloud-master": {
-            "upstream": "https://github.com/diegonmarcos/cloud-master.git"
           },
           "back-System": {
             "upstream": "https://github.com/diegonmarcos/back-System.git"
@@ -3025,11 +3025,11 @@
       "subcategory": "net",
       "data_sources": {
         "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",
-        "consolidated": "2_configs/dist/_cloud-data-consolidated.json",
+        "consolidated": "1_configs/dist/_cloud-data-consolidated.json",
         "ws_tunnel": "a_solutions/bb-net_wireguard-mesh-ws-tunnel/build.json"
       },
       "data_outputs": {
-        "snapshot": "2_configs/dist/mesh-snapshot.json",
+        "snapshot": "1_configs/dist/mesh-snapshot.json",
         "_consumer_hint": "Symlinked into src/data/mesh.json at build-prep time; PORTAL_DATA[\"mesh\"] hydration. Bare name (not cloud-data-*) so it stays at dist/ root per cloud-data-config-derive.ts L26 archival rule."
       },
       "api": {
@@ -3861,7 +3861,7 @@
         "enabled": true
       },
       "timezone": "Europe/Paris",
-      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 2_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 2_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
+      "_topics_comment": "Source of truth for ntfy topics. Consumed by: (a) bc-obs_ntfy/src/code/topic-scanner.py (its own runtime topic list), (b) 1_configs/src/engines/parsers/ntfy.ts (publishes configs.ntfy.topics — incl. path/title — into _cloud-data-consolidated.json), (c) 1_configs/src/engines/cloud-data-config-derive.ts (emits topics into build-mattermost.json AND the RSS taxonomy build-ntfy-rss-channels.json consumed by the Cloud Mail SUPER RSS READER). 'path' = parent folder in the Cloud Mail feed tree (leaf = the topic itself, display = 'title'); topics sharing a 'path' become siblings under that folder, so e.g. the three dev_* topics form a nested CICD/GH group. Adding a topic = edit this array + rebuild.",
       "topics": [
         {
           "name": "all",
@@ -5363,7 +5363,7 @@
         "path": "/mcp"
       },
       "db_publish": {
-        "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_workflows/src/scripts/cloud-kg-db-snapshot.sh.",
+        "_comment": "Durability: the octocode GraphRAG index (FastEmbed vectors + LLM relationship graph, a multi-hour build) lives only in the octocode_db volume on `host`. ship-kg-db.yml (GHA) snapshots it to image:tag on GHCR so a volume wipe is restorable by pulling the image. GHA (not the local ship) so the package can be flipped PUBLIC. Consumed by 1_configs/src/scripts/cloud-kg-db-snapshot.sh.",
         "image": "ghcr.io/diegonmarcos/cloud-cgc-mcp-octocode-db",
         "tag": "latest",
         "volume": "octocode_db",
@@ -9397,7 +9397,7 @@
         "repo": "diegonmarcos/cloud",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-09T19:22:39Z",
+        "pushed_at": "2026-08-10T09:23:51Z",
         "indexed": true,
         "local_dir": "cloud",
         "mirrored": true,
@@ -9433,6 +9433,96 @@
         }
       },
       {
+        "id": "git#gh/cloud-master",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/cloud-master",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-10T09:20:08Z",
+        "indexed": false,
+        "local_dir": null,
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-master.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/cloud-master",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "cloud-master",
+        "upstream": "https://github.com/diegonmarcos/cloud-master.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/cloud-master.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gh/diegonmarcos",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "github",
+        "repo": "diegonmarcos/diegonmarcos",
+        "visibility": "public",
+        "fork": false,
+        "pushed_at": "2026-08-10T08:11:42Z",
+        "indexed": false,
+        "local_dir": null,
+        "mirrored": true,
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
+          "mount": null
+        },
+        "vm": null,
+        "backup": {
+          "enabled": false,
+          "strategy": null
+        }
+      },
+      {
+        "id": "git#gitea/diegonmarcos",
+        "service": "gitea",
+        "container": null,
+        "engine": "git",
+        "kind": "git-remote",
+        "host": "gitea",
+        "repo": "diegonmarcos",
+        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git",
+        "persistence": {
+          "type": "git",
+          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
+          "mount": null
+        },
+        "vm": "oci-A1-f_0",
+        "backup": {
+          "enabled": true,
+          "strategy": null
+        }
+      },
+      {
         "id": "git#gh/cloud-data",
         "service": "cloud-cgc-mcp",
         "container": null,
@@ -9442,7 +9532,7 @@
         "repo": "diegonmarcos/cloud-data",
         "visibility": "private",
         "fork": false,
-        "pushed_at": "2026-08-09T18:57:26Z",
+        "pushed_at": "2026-08-09T22:15:54Z",
         "indexed": true,
         "local_dir": "cloud-data",
         "mirrored": true,
@@ -9487,7 +9577,7 @@
         "repo": "diegonmarcos/unix",
         "visibility": "public",
         "fork": false,
-        "pushed_at": "2026-08-09T16:25:43Z",
+        "pushed_at": "2026-08-09T20:55:48Z",
         "indexed": true,
         "local_dir": "unix",
         "mirrored": true,
@@ -9559,51 +9649,6 @@
         "persistence": {
           "type": "git",
           "ref": "https://github.com/diegonmarcos/diegonmarcos.github.io.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/diegonmarcos",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/diegonmarcos",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-08-09T07:31:53Z",
-        "indexed": false,
-        "local_dir": null,
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/diegonmarcos",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "diegonmarcos",
-        "upstream": "https://github.com/diegonmarcos/diegonmarcos.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/diegonmarcos.git",
           "mount": null
         },
         "vm": "oci-A1-f_0",
@@ -10064,51 +10109,6 @@
         "vm": null,
         "backup": {
           "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gh/cloud-master",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "github",
-        "repo": "diegonmarcos/cloud-master",
-        "visibility": "public",
-        "fork": false,
-        "pushed_at": "2026-04-22T13:31:39Z",
-        "indexed": false,
-        "local_dir": null,
-        "mirrored": true,
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-master.git",
-          "mount": null
-        },
-        "vm": null,
-        "backup": {
-          "enabled": false,
-          "strategy": null
-        }
-      },
-      {
-        "id": "git#gitea/cloud-master",
-        "service": "gitea",
-        "container": null,
-        "engine": "git",
-        "kind": "git-remote",
-        "host": "gitea",
-        "repo": "cloud-master",
-        "upstream": "https://github.com/diegonmarcos/cloud-master.git",
-        "persistence": {
-          "type": "git",
-          "ref": "https://github.com/diegonmarcos/cloud-master.git",
-          "mount": null
-        },
-        "vm": "oci-A1-f_0",
-        "backup": {
-          "enabled": true,
           "strategy": null
         }
       },

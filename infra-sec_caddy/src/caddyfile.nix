@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════
 # caddyfile.nix — pure-Nix Caddyfile generator (v2 engine)
 #
-# Reads build-caddy.json (data-driven from 2_configs/dist/) and
+# Reads build-caddy.json (data-driven from 1_configs/dist/) and
 # returns the fully-rendered Caddyfile string. Pure-syntax fragments
 # live as `.caddy.tpl` files in `./snippets/`; this file only does
 # orchestration: read → substitute @PLACEHOLDER@ → assemble.

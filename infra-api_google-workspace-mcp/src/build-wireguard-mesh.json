@@ -1,10 +1,10 @@
 {
-  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 2_configs/build.sh all`.",
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 1_configs/build.sh all`.",
   "_meta": {
     "description": "wireguard-mesh container config (service=wireguard-mesh, role=app)",
     "format_version": 1,
     "generated_at": "",
-    "generated_by": "2_configs/src/engines/cloud-data-config-derive.ts",
+    "generated_by": "1_configs/src/engines/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,15 +14,15 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "2_configs/src/engines/cloud-data-config-consolidated.ts",
-        "derive": "2_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_configs/src/engines/cloud-data-config-consolidated.ts",
+        "derive": "1_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
-        "master": "2_configs/dist/_cloud-data-consolidated.json (consolidator output)",
-        "per_container": "2_configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "2_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "master": "1_configs/dist/_cloud-data-consolidated.json (consolidator output)",
+        "per_container": "1_configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
+        "archived": "1_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
-      "rebuild_command": "bash 2_configs/build.sh all"
+      "rebuild_command": "bash 1_configs/build.sh all"
     }
   },
   "_generated": "",
@@ -1693,11 +1693,11 @@
   },
   "data_sources": {
     "_doc": "Inputs the snapshot deriver reads — declarative cross-references, no hardcoded values in the panel. Single canonical SoT after the I_cloud-data restructure (post-2026-04): _cloud-data-consolidated.json carries every wg_ip / wg_public_key / public_port already merged.",
-    "consolidated": "2_configs/dist/_cloud-data-consolidated.json",
+    "consolidated": "1_configs/dist/_cloud-data-consolidated.json",
     "ws_tunnel": "a_solutions/bb-net_wireguard-mesh-ws-tunnel/build.json"
   },
   "data_outputs": {
-    "snapshot": "2_configs/dist/mesh-snapshot.json",
+    "snapshot": "1_configs/dist/mesh-snapshot.json",
     "_consumer_hint": "Symlinked into src/data/mesh.json at build-prep time; PORTAL_DATA[\"mesh\"] hydration. Bare name (not cloud-data-*) so it stays at dist/ root per cloud-data-config-derive.ts L26 archival rule."
   }
 }

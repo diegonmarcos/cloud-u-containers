@@ -7,7 +7,7 @@
     forAllSystems = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
 
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single source of truth: build-c3-infra-mcp.json (symlink → 2_configs/dist/).
+    # Single source of truth: build-c3-infra-mcp.json (symlink → 1_configs/dist/).
     # Engine resolves symlink before nix build.
     container = builtins.fromJSON (builtins.readFile ./build-c3-infra-mcp.json);
 

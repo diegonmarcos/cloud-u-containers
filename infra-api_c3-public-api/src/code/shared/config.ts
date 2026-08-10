@@ -1,6 +1,6 @@
 // Runtime config for c3-public-api.
 // Nothing is hardcoded: every URL, port, and limit comes from build.json
-// -> 2_configs/dist/build-c3-public-api.json -> compose.nix env vars.
+// -> 1_configs/dist/build-c3-public-api.json -> compose.nix env vars.
 //
 // Two delivery layers:
 //   1. Analytics passthrough — BACKENDS_JSON (matomo/umami/openobserve).

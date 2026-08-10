@@ -48,7 +48,7 @@ export const CLOUD_DATA_REPO = "git@github.com:diegonmarcos/cloud-data.git";
 // to pull the relevant nested key.
 //
 // 2026-04-27: priority puts IN-IMAGE bundled copies first — every container with
-// `build.include_cloud_data: true` gets 2_configs/dist/*.json copied into its
+// `build.include_cloud_data: true` gets 1_configs/dist/*.json copied into its
 // image at /app/<filename>. Falls back to dev repo dist/, c3_git_repos clone,
 // and cloud repo root for backwards compatibility.
 // 2026-04-27 migrated: ENV var (CONFIG_JSON_PATH / CONFIG_PATH) overrides apply
@@ -60,7 +60,7 @@ function resolveCloudDataPath(filename: string): string {
   if (isTopology && process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
     `/app/${filename}`,                                            // bundled in-image (preferred)
-    join(SOLUTIONS_DIR, "..", "2_configs", "dist", filename),      // dev: cloud repo dist/
+    join(SOLUTIONS_DIR, "..", "1_configs", "dist", filename),      // dev: cloud repo dist/
     join(CLOUD_DATA_DIR, filename),                                // legacy: c3_git_repos clone
     join(SOLUTIONS_DIR, "..", filename),                           // legacy: cloud repo root
   ];
@@ -78,11 +78,11 @@ function resolveConfigPath(): string {
   if (process.env.CONFIG_PATH) return process.env.CONFIG_PATH;
   const candidates = [
     `/app/_cloud-data-consolidated.json`,
-    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "_cloud-data-consolidated.json"),
+    join(SOLUTIONS_DIR, "..", "1_configs", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
     join(SOLUTIONS_DIR, "..", "_cloud-data-consolidated.json"),
     `/app/cloud-data-topology.json`,                                                          // 2026-04-27 migrated: legacy fallback
-    join(SOLUTIONS_DIR, "..", "2_configs", "dist", "cloud-data-topology.json"),               // 2026-04-27 migrated: legacy fallback
+    join(SOLUTIONS_DIR, "..", "1_configs", "dist", "cloud-data-topology.json"),               // 2026-04-27 migrated: legacy fallback
     join(CLOUD_DATA_DIR, "cloud-data-topology.json"),                                          // 2026-04-27 migrated: legacy fallback
     join(SOLUTIONS_DIR, "..", "cloud-data-topology.json"),                                     // 2026-04-27 migrated: legacy fallback
     join(SOLUTIONS_DIR, "..", "config.json"),
@@ -90,7 +90,7 @@ function resolveConfigPath(): string {
   for (const p of candidates) {
     if (existsSync(p)) return p;
   }
-  return join(SOLUTIONS_DIR, "..", "2_configs", "dist", "_cloud-data-consolidated.json");
+  return join(SOLUTIONS_DIR, "..", "1_configs", "dist", "_cloud-data-consolidated.json");
 }
 
 export { resolveConfigPath as getConfigPath, resolveCloudDataPath };

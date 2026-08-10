@@ -60,8 +60,8 @@ action button wired to that URL) resets the escalation ladder for that key.
 | `psi_high`, `disk_warn`, `cert_expiring`, `backup_stale`, `flapping` | **warn** | health-agent, reports |
 | `deploy_ok`, `heartbeat_ok`, `recovered` | **info** | (recovery / heartbeat) |
 
-Add a class = edit `2_configs/src/inputs/notify-policy.json#severity_map.by_class`
-and re-run `bash 2_configs/build.sh all`. Never hardcode severity in the producer.
+Add a class = edit `1_configs/src/inputs/notify-policy.json#severity_map.by_class`
+and re-run `bash 1_configs/build.sh all`. Never hardcode severity in the producer.
 
 ## What each vm-pilot producer should emit (guidance only)
 

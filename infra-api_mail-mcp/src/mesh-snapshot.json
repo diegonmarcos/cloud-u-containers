@@ -1,10 +1,10 @@
 {
   "_meta": {
     "generated_at": "",
-    "generated_by": "2_configs/src/engines/derive-mesh-snapshot.ts",
+    "generated_by": "1_configs/src/engines/derive-mesh-snapshot.ts",
     "schema": "wg-mesh/v1",
     "sources": {
-      "consolidated": "2_configs/dist/_cloud-data-consolidated.json",
+      "consolidated": "1_configs/dist/_cloud-data-consolidated.json",
       "ws_tunnel": "a_solutions/infra-net_wireguard-mesh-ws-tunnel/build.json"
     }
   },

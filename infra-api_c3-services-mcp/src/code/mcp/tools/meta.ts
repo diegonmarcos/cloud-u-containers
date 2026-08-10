@@ -22,9 +22,9 @@ function resolveDagu(): { base: string; path: string } {
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
     "/app/build-c3-services-mcp.json",
-    join(gitBase, "cloud", "2_configs", "dist", "build-c3-services-mcp.json"),
+    join(gitBase, "cloud", "1_configs", "dist", "build-c3-services-mcp.json"),
     "/app/_cloud-data-consolidated.json",
-    join(gitBase, "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),
+    join(gitBase, "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"),
   ];
   let base = "";
   let path = "";
@@ -263,9 +263,9 @@ function loadTopology(): TopoData | null {
   const gitBase = process.env.GIT_BASE ?? join(homedir(), "git");
   const candidates = [
     "/app/build-c3-services-mcp.json",
-    join(gitBase, "cloud", "2_configs", "dist", "build-c3-services-mcp.json"),
+    join(gitBase, "cloud", "1_configs", "dist", "build-c3-services-mcp.json"),
     "/app/_cloud-data-consolidated.json",
-    join(gitBase, "cloud", "2_configs", "dist", "_cloud-data-consolidated.json"),
+    join(gitBase, "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"),
   ];
   for (const p of candidates) {
     if (!existsSync(p)) continue;

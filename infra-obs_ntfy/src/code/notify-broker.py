@@ -5,7 +5,7 @@ Enterprise notification broker for the ntfy taxonomy.
 
 All producers (load-shedder, journal-ntfy, health-agent, reports) POST *events*
 here instead of publishing raw to the health_resources firehose. The broker
-applies a data-driven policy (build-notify.json, emitted by 2_configs) to decide:
+applies a data-driven policy (build-notify.json, emitted by 1_configs) to decide:
 severity, dedup/rate-limit, flap detection, escalation, recovery pairing, and
 multi-channel routing (ntfy topic / matrix room / email).
 
@@ -34,7 +34,7 @@ Event contract (what producers emit — see MIGRATION-notify-broker.md):
       "recovered": false                   # true = condition cleared (recovery notice)
     }
 
-Config SoT: ./build-notify.json (symlink → 2_configs/dist/build-notify.json).
+Config SoT: ./build-notify.json (symlink → 1_configs/dist/build-notify.json).
 """
 import json
 import time

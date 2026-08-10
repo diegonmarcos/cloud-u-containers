@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 2_configs/src/engines/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engines/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'unix' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -330,7 +330,7 @@
       ]
     },
     {
-      "path": "1_workflows/build.sh",
+      "path": "1_configs/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -348,7 +348,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/engine-traps.sh",
+      "path": "1_configs/src/libs/engine-traps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -374,7 +374,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/ensure-deps.sh",
+      "path": "1_configs/src/libs/ensure-deps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -401,7 +401,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/libs/inject-header.sh",
+      "path": "1_configs/src/libs/inject-header.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -438,7 +438,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-nuke.sh",
+      "path": "1_configs/src/scripts/cloud-git-nuke.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -462,7 +462,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-sync.sh",
+      "path": "1_configs/src/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -488,7 +488,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/unix-ship-repo-workflow-engine.sh",
+      "path": "1_configs/src/scripts/unix-ship-repo-workflow-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -506,7 +506,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_framework.sh",
+      "path": "1_configs/src/test/test_framework.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [

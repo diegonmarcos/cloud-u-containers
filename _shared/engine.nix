@@ -20,7 +20,7 @@
 #
 # Does NOT produce:
 #   code/<arch>/<binary>        Type A compile is ship-engine work
-#   data/                       cloud-data stays in 2_configs/dist/, never duplicated
+#   data/                       cloud-data stays in 1_configs/dist/, never duplicated
 #   secrets/ sensitive/ .build/ ship-engine concerns, gitignored
 # ══════════════════════════════════════════════════════════════════
 
@@ -62,7 +62,7 @@ let
     (lib.concatMapStringsSep "\n" (l: "${prefix} ${l}") bannerLines) + "\n";
 
   # ──────────────────────────────────────────────────────────────
-  # NOTE: dist/ does NOT duplicate cloud-data JSONs. 2_configs/dist/
+  # NOTE: dist/ does NOT duplicate cloud-data JSONs. 1_configs/dist/
   # is the single source of truth; services reference it at runtime
   # via mount/symlink, not via per-service bundling. The
   # include_cloud_data flag in build.json is kept as metadata only

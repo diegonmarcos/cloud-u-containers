@@ -207,7 +207,7 @@ for t in \
   "$ROOT/0.spec/test.sh" \
   "$HOME/git/cloud/a_solutions/bb-net_wireguard-mesh/0.spec/test.sh" \
   "${HM_MOD%.nix}.test.sh" \
-  "$HOME/git/cloud/2_configs/src/engines/test-derivers-json.sh"
+  "$HOME/git/cloud/1_configs/src/engines/test-derivers-json.sh"
 do
   # Use the bare filename so the label is meaningful regardless of nesting
   name=$(basename "$t")

@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 2_configs/src/engines/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engines/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'tools' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -23,7 +23,7 @@
   },
   "files": [
     {
-      "path": "1_workflows/build.sh",
+      "path": "1_configs/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -41,7 +41,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-nuke.sh",
+      "path": "1_configs/src/scripts/cloud-git-nuke.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -65,7 +65,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/scripts/cloud-git-sync.sh",
+      "path": "1_configs/src/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "path": "1_workflows/src/test/test_framework.sh",
+      "path": "1_configs/src/test/test_framework.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [

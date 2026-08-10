@@ -9,9 +9,9 @@ cd "$REPO_ROOT"
 
 # 2026-04-27 migrated: cloud-data-dns-services.json -> _cloud-data-consolidated.json[.services,.vms]
 CONS=""
-for p in "2_configs/dist/_cloud-data-consolidated.json" \
+for p in "1_configs/dist/_cloud-data-consolidated.json" \
          "/var/lib/dagu/data/cloud-data/_cloud-data-consolidated.json" \
-         "/var/lib/dagu/data/cloud-data/2_configs/dist/_cloud-data-consolidated.json" \
+         "/var/lib/dagu/data/cloud-data/1_configs/dist/_cloud-data-consolidated.json" \
          "/app/_cloud-data-consolidated.json"; do
   [ -f "$p" ] && CONS="$p" && break
 done
@@ -33,9 +33,9 @@ if [ -n "$CONS" ]; then
       }
   ' "$CONS" > "$DNS_FILE"
 else
-  for p in "2_configs/dist/cloud-data-dns-services.json" \
+  for p in "1_configs/dist/cloud-data-dns-services.json" \
            "/var/lib/dagu/data/cloud-data/cloud-data-dns-services.json" \
-           "/var/lib/dagu/data/cloud-data/2_configs/dist/cloud-data-dns-services.json" \
+           "/var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-dns-services.json" \
            "/app/cloud-data-dns-services.json"; do
     [ -f "$p" ] && DNS_FILE="$p" && break
   done
