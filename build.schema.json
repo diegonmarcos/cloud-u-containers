@@ -381,8 +381,8 @@
         },
         "auth": {
           "type": "string",
-          "description": "Authentication enforced by the upstream itself (NOT what Caddy/Authelia adds in front).",
-          "enum": ["none", "bearer", "oidc", "basic", "api-key", "two_factor"]
+          "description": "Authentication enforced by the upstream itself (NOT what Caddy/Authelia adds in front). Use \"mixed\" when one API enforces different modes per path — c3-public-api bearers /mail/http-to-smtp while /analytics/* is open — and describe the split in `description`.",
+          "enum": ["none", "bearer", "oidc", "basic", "api-key", "two_factor", "mixed"]
         }
       }
     },
