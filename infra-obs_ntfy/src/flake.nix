@@ -112,7 +112,7 @@
           ./code/rss-gateway.py
           # Enterprise notification broker + daily/weekly digest (§4A/§4C).
           # Policy (severity/routing/dedup/flap/escalation/recovery) is data in
-          # build-notify.json (symlink → 1_configs/dist/build-notify.json), read
+          # build-notify.json (symlink → 1_cloud-configs/dist/build-notify.json), read
           # by the broker at /app/build-notify.json. Producers POST events to the
           # broker on :8092 instead of the health_resources firehose — see
           # MIGRATION-notify-broker.md for the event contract.

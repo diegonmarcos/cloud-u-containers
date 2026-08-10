@@ -8,7 +8,7 @@
 
     # ── Data sources (declarative JSON) ────────────────────────────
     buildJson = builtins.fromJSON (builtins.readFile ../build.json);
-    # Single-container service → engine derives 1_configs/dist/build-crowdsec.json
+    # Single-container service → engine derives 1_cloud-configs/dist/build-crowdsec.json
     container = builtins.fromJSON (builtins.readFile ./build-crowdsec.json);
 
     engine = import ../../_shared/engine.nix;

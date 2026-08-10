@@ -18,8 +18,8 @@
     consolidatedPath =
       if builtins.pathExists /app/_cloud-data-consolidated.json
         then /app/_cloud-data-consolidated.json
-      else if builtins.pathExists ../../../1_configs/dist/_cloud-data-consolidated.json
-        then ../../../1_configs/dist/_cloud-data-consolidated.json
+      else if builtins.pathExists ../../../1_cloud-configs/dist/_cloud-data-consolidated.json
+        then ../../../1_cloud-configs/dist/_cloud-data-consolidated.json
       else if builtins.pathExists ../../../cloud-data/_cloud-data-consolidated.json
         then ../../../cloud-data/_cloud-data-consolidated.json
       else ../../../_cloud-data-consolidated.json;

@@ -4,7 +4,7 @@
     "generated_by": "1_configs/src/engine/derive-mesh-snapshot.ts",
     "schema": "wg-mesh/v1",
     "sources": {
-      "consolidated": "1_configs/dist/_cloud-data-consolidated.json",
+      "consolidated": "1_cloud-configs/dist/_cloud-data-consolidated.json",
       "ws_tunnel": "a_solutions/infra-net_wireguard-mesh-ws-tunnel/build.json"
     }
   },

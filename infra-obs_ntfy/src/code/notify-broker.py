@@ -34,7 +34,7 @@ Event contract (what producers emit — see MIGRATION-notify-broker.md):
       "recovered": false                   # true = condition cleared (recovery notice)
     }
 
-Config SoT: ./build-notify.json (symlink → 1_configs/dist/build-notify.json).
+Config SoT: ./build-notify.json (symlink → 1_cloud-configs/dist/build-notify.json).
 """
 import json
 import time
