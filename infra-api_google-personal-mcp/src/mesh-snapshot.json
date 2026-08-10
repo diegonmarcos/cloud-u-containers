@@ -1,7 +1,7 @@
 {
   "_meta": {
     "generated_at": "",
-    "generated_by": "1_configs/src/engines/derive-mesh-snapshot.ts",
+    "generated_by": "1_configs/src/engine/derive-mesh-snapshot.ts",
     "schema": "wg-mesh/v1",
     "sources": {
       "consolidated": "1_configs/dist/_cloud-data-consolidated.json",

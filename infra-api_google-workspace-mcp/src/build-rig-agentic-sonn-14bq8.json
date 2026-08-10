@@ -4,7 +4,7 @@
     "description": "rig-agentic-sonn-14bq8 container config (service=rig-agentic-sonn-14bq8, role=app)",
     "format_version": 1,
     "generated_at": "",
-    "generated_by": "1_configs/src/engines/cloud-data-config-derive.ts",
+    "generated_by": "1_configs/src/engine/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,8 +14,8 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "1_configs/src/engines/cloud-data-config-consolidated.ts",
-        "derive": "1_configs/src/engines/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_configs/src/engine/cloud-data-config-consolidated.ts",
+        "derive": "1_configs/src/engine/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_configs/dist/_cloud-data-consolidated.json (consolidator output)",

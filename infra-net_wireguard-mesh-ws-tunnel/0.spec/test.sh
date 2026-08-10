@@ -98,7 +98,7 @@ echo "$PANEL_DATA_SOURCES" | grep -q "a_solutions/bb-net_wireguard-mesh-ws-tunne
   && ok "panel data_sources point at this folder" \
   || nope "panel data_sources do NOT reference bb-net_wireguard-mesh-ws-tunnel — needs update"
 
-DERIVER=/home/diego/git/cloud/1_configs/src/engines/derive-mesh-snapshot.ts
+DERIVER=/home/diego/git/cloud/1_configs/src/engine/derive-mesh-snapshot.ts
 [ -f "$DERIVER" ] && ok "derive-mesh-snapshot.ts deriver exists" || nope "deriver missing"
 grep -q 'bb-net_wireguard-mesh-ws-tunnel/build.json' "$DERIVER" \
   && ok "deriver reads bb-net_wireguard-mesh-ws-tunnel/build.json" \

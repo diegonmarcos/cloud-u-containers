@@ -12,7 +12,7 @@ on:
       - "a_solutions/bb-sec_caddy/src/**"
       - "a_solutions/bb-sec_authelia/src/**"
       - "a_solutions/ba-clo_hickory-dns/src/**"
-      - "a_solutions/bc-obs_c3-infra-mcp/src/engines/**"
+      - "a_solutions/bc-obs_c3-infra-mcp/src/engine/**"
   workflow_dispatch:
 
 permissions:

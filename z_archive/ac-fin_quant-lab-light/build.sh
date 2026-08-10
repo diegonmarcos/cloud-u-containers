@@ -1,1 +1,1 @@
-../../../1_configs/src/scripts/cloud-ship-container-engine.sh
+../../../1_configs/src/deploy/scripts/cloud-ship-container-engine.sh

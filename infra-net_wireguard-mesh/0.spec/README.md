@@ -33,7 +33,7 @@ c_vps/vps_oci/...json       ──┘                    │                 │
                                                    └─────────────────┘
 ```
 
-The deriver `cloud/1_configs/src/engines/derive-mesh-snapshot.ts` flattens the
+The deriver `cloud/1_configs/src/engine/derive-mesh-snapshot.ts` flattens the
 five inputs into one snapshot:
 
 ```jsonc
