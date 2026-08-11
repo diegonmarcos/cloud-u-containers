@@ -23,6 +23,7 @@ import { registerVpsOpsTools } from "./tools/vps-ops.js";
 import { registerDeliveryTools } from "./tools/delivery.js";
 import { registerOperationsTools } from "./tools/operations.js";
 import { registerFrontendExecTools } from "./tools/frontend.js";
+import { registerTelegramTools } from "./tools/telegram.js";
 // C) Security
 import { registerSecurityExecTools } from "./tools/security.js";
 // Resources
@@ -47,6 +48,7 @@ function createMcpServer(): McpServer {
   registerDeliveryTools(server);
   registerOperationsTools(server);
   registerFrontendExecTools(server);
+  registerTelegramTools(server);
   // C) Security
   registerSecurityExecTools(server);
   // Resources
