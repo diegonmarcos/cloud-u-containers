@@ -184,6 +184,7 @@ export const startTelegram = ({
               reply = await routeToGoose(text, conversationKey, defaultAgent);
             }
             await sendMessage(msg.chat.id, reply, threadId);
+            console.log(`[gateway] ${logLabel}: handled ${text.startsWith("/") ? text.split(/\s+/)[0] : "message"} from ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""}`);
           } catch (innerErr) {
             console.error(`[gateway] ${logLabel}: error processing update:`, innerErr.message);
           }
