@@ -72,7 +72,13 @@ export const startMattermost = () => {
       if (botUserId === null || post.user_id === botUserId) return;
       if (!post.message) return;
       const conversationKey = `mattermost:${post.channel_id}`;
-      const reply = await routeToGoose(post.message, conversationKey);
+      // Tell the model where it's speaking — "posted" events carry the
+      // channel's display name alongside the post itself, no extra lookup.
+      const channelName = payload.data?.channel_display_name;
+      const platformContext = channelName
+        ? `Mattermost context: you are replying in channel "${channelName}"`
+        : undefined;
+      const reply = await routeToGoose(post.message, conversationKey, undefined, platformContext);
       await postReply(post.channel_id, reply);
     });
 

@@ -28,9 +28,14 @@ export const getState = (chatKey, defaultAgent = "goose") => {
 // Builds messages from the chat's rolling history + the new user turn, and
 // applies the chat's per-chat header overrides (agent mode, model, ponytail,
 // plugin toggles). Appends the turn to history on success.
-export const routeToGoose = async (text, chatKey = "default", defaultAgent = "goose") => {
+export const routeToGoose = async (text, chatKey = "default", defaultAgent = "goose", platformContext = undefined) => {
   const state = getState(chatKey, defaultAgent);
   const messages = [...state.history, { role: "user", content: text }];
+  // Tell the model where it is speaking (group/topic/channel). Regenerated fresh
+  // every turn from the incoming update, never persisted into state.history.
+  if (typeof platformContext === "string" && platformContext.length > 0) {
+    messages.unshift({ role: "system", content: platformContext });
+  }
   const headers = { "content-type": "application/json", "x-agent-mode": state.agent };
   if (state.ponytail !== null) headers["x-ponytail-mode"] = state.ponytail;
   if (state.toggles.rtk !== null) headers["x-rtk"] = state.toggles.rtk ? "on" : "off";
