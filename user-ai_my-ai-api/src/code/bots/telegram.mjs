@@ -130,6 +130,12 @@ export const startTelegram = ({
 
   let offset = 0;
 
+  // Forum topic names, learned from service messages and topic-root replies as
+  // they're seen — Telegram never hands us the name any other way. Keyed by
+  // "chatId:threadId" so topics with the same name in different chats don't
+  // collide.
+  const topicNames = new Map(); // "chatId:threadId" -> forum topic name, learned from service messages
+
   const poll = async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -144,8 +150,16 @@ export const startTelegram = ({
           offset = update.update_id + 1;
           try {
             const msg = update.message;
-            // Forum service messages (forum_topic_created/closed/...) have no
-            // .text, so they're already skipped here — nothing else needed.
+            // Forum service messages (forum_topic_created/edited/closed/...)
+            // have no .text and are skipped below, but forum_topic_created
+            // and forum_topic_edited are our only source for the topic's
+            // display name — learn it here before that skip fires.
+            if (msg && msg.message_thread_id !== undefined) {
+              const learnedName = msg.forum_topic_created?.name ?? msg.forum_topic_edited?.name;
+              if (learnedName) {
+                topicNames.set(`${msg.chat.id}:${msg.message_thread_id}`, learnedName);
+              }
+            }
             if (!msg?.text) continue;
             const from_id = String(msg.from?.id ?? "");
             if (allowFrom.length === 0 || !allowFrom.includes(from_id)) {
@@ -167,6 +181,13 @@ export const startTelegram = ({
             // exactly how a group reply disappears with the bot none the
             // wiser. is_topic_message is the field that means "forum topic".
             const threadId = msg.is_topic_message === true ? msg.message_thread_id : undefined;
+            // Telegram also attaches the topic-root's forum_topic_created
+            // service payload onto reply_to_message for messages sent inside
+            // a topic — a second, more reliable source for the topic name.
+            const rootName = msg.reply_to_message?.forum_topic_created?.name;
+            if (rootName && threadId !== undefined) {
+              topicNames.set(`${msg.chat.id}:${threadId}`, rootName);
+            }
             // Fold the topic into the session key so each forum topic gets its
             // own conversation instead of sharing the chat's single "General"
             // session. Chats without topics are unaffected (key unchanged), so
@@ -174,6 +195,19 @@ export const startTelegram = ({
             const conversationKey = threadId !== undefined
               ? `${chatKeyPrefix}:${msg.chat.id}:${threadId}`
               : `${chatKeyPrefix}:${msg.chat.id}`;
+            // Tell the model where it's speaking — the group and, if known,
+            // the forum topic — so it doesn't have to guess from bare text.
+            // Direct messages get no context; there's nothing to disambiguate.
+            let platformContext;
+            if (isGroup) {
+              const topicName = threadId !== undefined ? topicNames.get(`${msg.chat.id}:${threadId}`) : undefined;
+              platformContext = `Telegram context: you are replying inside the group "${msg.chat.title}"`;
+              if (topicName) {
+                platformContext += `, forum topic "${topicName}"`;
+              } else if (threadId !== undefined) {
+                platformContext += `, topic id ${threadId}`;
+              }
+            }
             let reply;
             if (text.startsWith("/")) {
               const [cmdRaw, ...argParts] = text.trim().split(/\s+/);
@@ -181,7 +215,7 @@ export const startTelegram = ({
               const arg = argParts.join(" ");
               reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom }, defaultAgent);
             } else {
-              reply = await routeToGoose(text, conversationKey, defaultAgent);
+              reply = await routeToGoose(text, conversationKey, defaultAgent, platformContext);
             }
             await sendMessage(msg.chat.id, reply, threadId);
             console.log(`[gateway] ${logLabel}: handled ${text.startsWith("/") ? text.split(/\s+/)[0] : "message"} from ${from_id} chat=${msg.chat.id}${threadId !== undefined ? ` topic=${threadId}` : ""}`);
