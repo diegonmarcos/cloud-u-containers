@@ -13,6 +13,12 @@
     lib    = nixpkgs.lib;
 
     caddy_wg_ip = container.services.caddy.ip;
+    # IPv6 mirror of caddy_wg_ip (wg0 ULA fd0c:1d00::1). When set, every zone
+    # gets apex + wildcard AAAA alongside its A records, so mesh clients prefer
+    # IPv6 via Happy Eyeballs and fall back to IPv4 on failure — which is what
+    # makes the v4 mesh 10.0.0.0/24 colliding with a hotel/home LAN survivable
+    # instead of fatal. Null (field absent) ⇒ v4-only zones, exactly as before.
+    caddy_wg_ipv6 = buildJson.dns.caddy_wg_ipv6 or null;
     zones       = buildJson.dns.zones;
     forwarders  = buildJson.dns.forwarders;
     dns_port    = buildJson.ports.dns;
@@ -81,8 +87,10 @@
         + "@    IN SOA  hickory-dns.${suffix}. admin.${suffix}. 1 3600 900 604800 60\n"
         + "@    IN NS   hickory-dns.${suffix}.\n"
         + "@    IN A    ${caddy_wg_ip}\n"
+        + lib.optionalString (caddy_wg_ipv6 != null) "@    IN AAAA ${caddy_wg_ipv6}\n"
         + recordBlock
-        + "*    IN A    ${caddy_wg_ip}\n";
+        + "*    IN A    ${caddy_wg_ip}\n"
+        + lib.optionalString (caddy_wg_ipv6 != null) "*    IN AAAA ${caddy_wg_ipv6}\n";
 
     # Template list: named.toml + one zone file per declared suffix under zones/
     templates =

@@ -14,13 +14,37 @@
     "_records_doc": "Per-zone specific A records emitted BEFORE the wildcard so they win over the catch-all `* IN A <caddy_wg_ip>`. NOTE: do NOT override `mail.diegonmarcos.com` / `jmap.diegonmarcos.com` / `imap.diegonmarcos.com` here — those hostnames must still resolve to the public Caddy edge (oci-analytics) for HTTPS probes; the wildcard already covers that. The `app` zone is purely internal so its records can point straight at the backend VMs.",
     "records": {
       "app": [
-        { "name": "maddy",         "type": "A", "value": "10.0.0.3" },
-        { "name": "stalwart",      "type": "A", "value": "10.0.0.3" }
+        {
+          "name": "maddy",
+          "type": "A",
+          "value": "10.0.0.3"
+        },
+        {
+          "name": "stalwart",
+          "type": "A",
+          "value": "10.0.0.3"
+        },
+        {
+          "name": "maddy",
+          "type": "AAAA",
+          "value": "fd0c:1d00::3"
+        },
+        {
+          "name": "stalwart",
+          "type": "AAAA",
+          "value": "fd0c:1d00::3"
+        }
       ],
       "diegonmarcos.com": [
-        { "name": "wg-public", "type": "AAAA", "value": "2603:c026:c104:8f00:0:c704:63b:6eee" }
+        {
+          "name": "wg-public",
+          "type": "AAAA",
+          "value": "2603:c026:c104:8f00:0:c704:63b:6eee"
+        }
       ]
-    }
+    },
+    "caddy_wg_ipv6": "fd0c:1d00::1",
+    "_caddy_wg_ipv6_doc": "wg0 mesh ULA of the Caddy/DNS host (gcp-proxy). Mirrors .services.caddy.ip in src/build-hickory-dns.json. Set ⇒ every zone gains apex + wildcard AAAA so mesh clients prefer IPv6 (Happy Eyeballs) and fall back to IPv4; remove the field to go back to v4-only zones."
   },
   "ports": {
     "dns": 53
