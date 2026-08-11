@@ -41,7 +41,8 @@
       "type": "path",
       "parent_domain": "mcp.diegonmarcos.com",
       "base_path": "/c3-infra-mcp",
-      "wg_only": true
+      "wg_only": true,
+      "bearer_auth": true
     },
     "app_hub": false
   },

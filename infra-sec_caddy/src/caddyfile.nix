@@ -588,17 +588,50 @@ ${plainOut}${sniMuxBlock}
           header_up X-Real-IP {http.request.remote.host}
           header_up Accept "application/json, text/event-stream"
         }'';
-          # Per-endpoint WG-only gate (ep.wg_only from build.json proxy.primary.wg_only).
-          # The MCP hub emits NO Authelia/bearer, so a bare proxy is fully public.
-          # Invert to a `handle @wg` / `handle` pair so the deny is order-independent
-          # (both are `handle` blocks → source-order, first-match-wins).
-          inner = if (ep.wg_only or false) then ''@wg remote_ip 10.0.0.0/24
+          # Per-endpoint gate. Three shapes, in increasing openness:
+          #
+          #  1. bearer_auth  — WG peers pass straight through; everyone else must
+          #     present `Authorization: Bearer <token>`, which is verified by
+          #     forward_auth against the introspection upstream (Authelia-issued
+          #     OIDC access tokens). Anything else is 403. This is the ONLY way an
+          #     MCP endpoint is reachable off-mesh: an agent outside WireGuard
+          #     (a container, CI, Claude Code on the web) can hold a token, and a
+          #     random caller cannot.
+          #
+          #     Note the bearer branch does NOT fall back to the Authelia browser
+          #     flow the way mkProtected does. An MCP client speaks JSON-RPC over
+          #     Streamable HTTP and cannot follow a login redirect — a 302 to
+          #     auth.diegonmarcos.com would surface as an opaque parse error, so
+          #     a missing/!valid token is a clean 403 instead.
+          #
+          #  2. wg_only      — WG peers only, 403 for everyone else.
+          #  3. neither      — fully public. The MCP hub itself emits no auth, so
+          #     a bare proxy really is open to the internet.
+          #
+          # Each shape is a `handle` chain, never a bare matcher: handles are
+          # source-order first-match-wins, so the deny cannot be reordered around.
+          bearerGate = ''@wg remote_ip 10.0.0.0/24
+        handle @wg {
+          ${proxyBody}
+        }
+        @bearer header Authorization Bearer*
+        handle @bearer {
+${bearer}
+          ${proxyBody}
+        }
+        handle {
+          respond "Forbidden" 403
+        }'';
+          wgGate = ''@wg remote_ip 10.0.0.0/24
         handle @wg {
           ${proxyBody}
         }
         handle {
           respond "Forbidden" 403
-        }'' else proxyBody;
+        }'';
+          inner = if (ep.bearer_auth or false) then bearerGate
+                  else if (ep.wg_only or false) then wgGate
+                  else proxyBody;
         in ''
       handle_path ${ep.base_path}/* {
         ${inner}
