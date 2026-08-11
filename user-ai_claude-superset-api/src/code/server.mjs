@@ -134,7 +134,17 @@ const callClaude = ({ system, prompt, model }) =>
     child.on("error", (e) => { clearTimeout(timer); reject(e); });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (code !== 0) return reject(new Error(`claude -p exit ${code}: ${err.slice(0, 500)}`));
+      if (code !== 0) {
+        // The "Not logged in · Please run /login" message is written to stdout, not
+        // stderr, so fall back to the stdout tail when stderr is empty, and classify
+        // the auth-required case explicitly so callers can react (e.g. auto-send a
+        // login link) instead of seeing an opaque exit-code failure.
+        const tail = (err || out).slice(0, 500);
+        if (/not logged in|please run \/login/i.test(err || out)) {
+          return reject(new Error(`claude-cli auth required — not logged in: ${tail}`));
+        }
+        return reject(new Error(`claude -p exit ${code}: ${tail}`));
+      }
       try {
         const j = JSON.parse(out);
         resolve({ text: j.result ?? "", usage: j.usage ?? {} });
@@ -342,7 +352,15 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (e) {
       stats.errors++;
-      send(502, { error: { message: String(e.message || e), type: "superset_claude_error" } });
+      // Surface the claude-cli logged-out case as 401 with a distinct error type so
+      // downstream callers (e.g. the telegram bot) can detect it and auto-send the
+      // OAuth login link instead of treating it as a generic upstream failure.
+      const message = String(e.message || e);
+      if (/auth required/i.test(message)) {
+        send(401, { error: { message, type: "superset_claude_auth_required" } });
+      } else {
+        send(502, { error: { message, type: "superset_claude_error" } });
+      }
     } finally { release(); }
     return;
   }
