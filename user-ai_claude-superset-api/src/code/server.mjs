@@ -122,13 +122,25 @@ const toPrompt = (messages = []) => {
 const mapModel = (requested) =>
   MODEL_ALIASES[String(requested || "").replace(/:latest$/, "")] || DEFAULT_MODEL;
 
+// setup-token prints a long-lived OAuth token which login.mjs persists to this
+// file (the CLI no longer writes ~/.claude/.credentials.json); read it per
+// spawn so a fresh /login takes effect without a container restart.
+const claudeEnv = () => {
+  const env = { ...process.env };
+  try {
+    const token = fs.readFileSync(process.env.CLAUDE_OAUTH_TOKEN_FILE || "/home/appuser/.claude/oauth-token", "utf8").trim();
+    if (token) env.CLAUDE_CODE_OAUTH_TOKEN = token;
+  } catch { /* no token persisted yet */ }
+  return env;
+};
+
 // ── one claude -p invocation ─────────────────────────────────────────────────
 const callClaude = ({ system, prompt, model }) =>
   new Promise((resolve, reject) => {
     const args = ["-p", "--output-format", "json", "--max-turns", "1", "--model", mapModel(model)];
     if (system) args.push("--append-system-prompt", system);
     const child = spawn(CLAUDE_BIN, args, {
-      env: { ...process.env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },
+      env: { ...claudeEnv(), CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1" },
       stdio: ["pipe", "pipe", "pipe"],
     });
     let out = "", err = "";

@@ -1,12 +1,15 @@
 // login.mjs — drive `claude setup-token` over HTTP so the Telegram bot can
 // log this container in without anyone opening a shell on the VM.
 //
-// Why this exists: the subscription CLI authenticates by browser OAuth. The
-// credential lands in ~/.claude/.credentials.json, which is persisted in the
-// claude_home named volume — so it only has to be done once, but it *does*
-// have to be done interactively, and nobody can reach the VM from a phone.
-// This splits the flow into two HTTP calls so a chat client can carry the
-// human half:
+// Why this exists: the subscription CLI authenticates by browser OAuth. Modern
+// `claude setup-token` does NOT write ~/.claude/.credentials.json — it PRINTS a
+// long-lived OAuth token (matching /sk-ant-oat[A-Za-z0-9_-]+/) to stdout on
+// success. This module captures that token and persists it to
+// CLAUDE_OAUTH_TOKEN_FILE (in the claude_home named volume, so it only has to
+// be done once), and server.mjs injects it as CLAUDE_CODE_OAUTH_TOKEN into
+// every `claude` spawn. It *does* have to be captured interactively, and
+// nobody can reach the VM from a phone. This splits the flow into two HTTP
+// calls so a chat client can carry the human half:
 //
 //   POST /auth/login/start        → { session_id, url }   (bot sends url to user)
 //   POST /auth/login/code {code}  → { ok, message }       (user pastes code back)
@@ -27,6 +30,10 @@
 
 // ship-cover 2026-08-09T18:40Z — batched trigger; see commit message.
 import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+
+const TOKEN_FILE = () => process.env.CLAUDE_OAUTH_TOKEN_FILE || "/home/appuser/.claude/oauth-token";
 
 // A login attempt is a singleton: two concurrent OAuth flows would race on
 // ~/.claude/.credentials.json and there is exactly one human doing this.
@@ -122,10 +129,25 @@ export const submitCode = (code) =>
       resolve(payload);
     };
     const onExit = (exitCode) => {
-      const tail = pending ? pending.out().slice(before) : "";
-      done(exitCode === 0
-        ? { ok: true, message: "logged in — credentials written to ~/.claude/.credentials.json" }
-        : { ok: false, error: `setup-token exited ${exitCode}`, output: tail.slice(-800) });
+      // Capture the full output BEFORE clear()/done() runs — clear() nulls
+      // `pending`, which would make pending.out() unreachable afterwards.
+      const fullOutput = pending ? pending.out() : "";
+      const tail = fullOutput.slice(before);
+      if (exitCode !== 0) {
+        return done({ ok: false, error: `setup-token exited ${exitCode}`, output: tail.slice(-800) });
+      }
+      const tokenMatch = fullOutput.match(/sk-ant-oat[A-Za-z0-9_-]+/);
+      if (!tokenMatch) {
+        return done({ ok: false, error: "setup-token exited 0 but printed no sk-ant-oat token", output: tail.slice(-800) });
+      }
+      try {
+        const file = TOKEN_FILE();
+        mkdirSync(dirname(file), { recursive: true });
+        writeFileSync(file, tokenMatch[0], { mode: 0o600 });
+      } catch (e) {
+        return done({ ok: false, error: `failed to persist token: ${e.message}` });
+      }
+      done({ ok: true, message: "logged in — token captured and stored; claude calls will use it immediately" });
     };
     child.on("exit", onExit);
 
