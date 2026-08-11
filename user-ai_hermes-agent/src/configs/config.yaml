@@ -9,12 +9,14 @@
 # OPENAI_MODEL / OPENAI_BASE_URL and which take precedence at runtime — kept in sync here
 # so this file never contradicts the deployed configuration.
 model:
-  provider: openai
+  provider: openrouter
   default: deepseek/deepseek-v4-pro
   base_url: https://openrouter.ai/api/v1
   api_mode: chat_completions
   # api_key supplied via OPENAI_API_KEY env (sops secrets.yaml → .secrets): an
   # OpenRouter sk-or-v1-… key.
+  # Provider list moved (openrouter | nous | anthropic | gemini | zai | copilot |
+  # openai-codex …); "openai" was retired in favor of explicit backend names.
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # LEAN PROFILE — capabilities stripped to a minimal, low-RAM / low-quota set.
