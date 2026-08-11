@@ -31,6 +31,9 @@ in
         MM_URL = mattermostUrl;
         DAGU_API = daguUrl;
         MCP_HTTP_PORT = port;
+        # Non-secret operator chat id for devops.telegram.* tools (dedicated
+        # @Cloud_bot_C3_Infra_bot). Bot token itself comes from .secrets.
+        C3_TELEGRAM_CHAT_ID = "6431508617";
         # bindHost() reads MCP_HTTP_HOST. Defaults to 127.0.0.1 in source.
         # WG IP keeps the listener confined to the WG mesh on host network.
         MCP_HTTP_HOST = vmIp;
