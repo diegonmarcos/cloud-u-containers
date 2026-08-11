@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// rebuild-trigger 2026-08-11: the failed Aug-9 ship rsynced .docker-src-hash to
+// the VM without pushing the rebuilt binaries image, so every later ship
+// false-skipped the build and kept deploying the 2026-06-25 image (no
+// /auth/login endpoints). This comment changes the src hash to force the build.
 // claude-api-superset — front multiplexer. One process speaks three API shapes,
 // all backed by the *subscription* Claude CLI (no metered key), with a Headroom
 // compression hop in front of every call:
