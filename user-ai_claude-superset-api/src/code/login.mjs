@@ -111,6 +111,13 @@ export const startLogin = ({ claudeBin = "claude" } = {}) =>
     }, URL_WAIT_MS).unref?.();
   });
 
+// Persist the token to CLAUDE_OAUTH_TOKEN_FILE. Throws on failure.
+const persistToken = (token) => {
+  const file = TOKEN_FILE();
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, token, { mode: 0o600 });
+};
+
 export const submitCode = (code) =>
   new Promise((resolve) => {
     if (!pending) return resolve({ ok: false, error: "no login in progress — run /login first" });
@@ -121,13 +128,52 @@ export const submitCode = (code) =>
     // The CLI is blocked on a read; a bare newline-terminated code answers it.
     child.stdin.write(`${code.trim()}\n`);
 
-    // Success is the process exiting 0 after consuming the code.
+    // Success is the token appearing in output — NOT the process exiting.
+    // After consuming the code the CLI prints the token and then parks on a
+    // "press enter to continue" screen, so waiting for exit alone hangs
+    // until the guard fires.
+    let settled = false;
+
     const done = (payload) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(guard);
+      clearInterval(poll);
+      clearTimeout(nudge);
       child.removeListener("exit", onExit);
       clear();
       resolve(payload);
     };
+
+    const tryCapture = (fullOutput) => {
+      const tokenMatch = fullOutput.match(/sk-ant-oat[A-Za-z0-9_-]+/);
+      if (!tokenMatch) return false;
+      try {
+        persistToken(tokenMatch[0]);
+      } catch (e) {
+        done({ ok: false, error: `failed to persist token: ${e.message}` });
+        return true;
+      }
+      done({ ok: true, message: "logged in — token captured and stored" });
+      return true;
+    };
+
+    // Primary path: poll accumulated output for the token — the CLI never
+    // has to exit for this to succeed.
+    const poll = setInterval(() => {
+      if (settled) return;
+      tryCapture(pending ? pending.out() : "");
+    }, 500);
+
+    // After ~20s, dismiss any "press enter to continue" prompt once so the
+    // CLI can proceed (or exit) on its own.
+    const nudge = setTimeout(() => {
+      if (settled) return;
+      try { child.stdin.write("\n"); } catch { /* already gone */ }
+    }, 20 * 1000);
+
+    // Secondary path: exit 0 with a token in output is also success; guard
+    // against double-resolving against the poll path via `settled`.
     const onExit = (exitCode) => {
       // Capture the full output BEFORE clear()/done() runs — clear() nulls
       // `pending`, which would make pending.out() unreachable afterwards.
@@ -136,25 +182,15 @@ export const submitCode = (code) =>
       if (exitCode !== 0) {
         return done({ ok: false, error: `setup-token exited ${exitCode}`, output: tail.slice(-800) });
       }
-      const tokenMatch = fullOutput.match(/sk-ant-oat[A-Za-z0-9_-]+/);
-      if (!tokenMatch) {
-        return done({ ok: false, error: "setup-token exited 0 but printed no sk-ant-oat token", output: tail.slice(-800) });
-      }
-      try {
-        const file = TOKEN_FILE();
-        mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, tokenMatch[0], { mode: 0o600 });
-      } catch (e) {
-        return done({ ok: false, error: `failed to persist token: ${e.message}` });
-      }
-      done({ ok: true, message: "logged in — token captured and stored; claude calls will use it immediately" });
+      if (tryCapture(fullOutput)) return;
+      done({ ok: false, error: "setup-token exited 0 but printed no sk-ant-oat token", output: tail.slice(-800) });
     };
     child.on("exit", onExit);
 
     const guard = setTimeout(() => {
       const tail = pending ? pending.out().slice(before) : "";
       done({ ok: false, error: "timed out waiting for setup-token to finish", output: tail.slice(-800) });
-    }, 90 * 1000);
+    }, 150 * 1000);
   });
 
 export const loginStatus = () => ({ pending: Boolean(pending), session_id: pending?.id ?? null });
