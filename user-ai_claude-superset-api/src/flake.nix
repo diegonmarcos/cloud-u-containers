@@ -37,6 +37,7 @@
             ./code/vendor
             ./code/py
             ./code/server.mjs
+            ./code/login.mjs
             ./code/package.json
             ./code/start.sh
             ./code/claude-config
