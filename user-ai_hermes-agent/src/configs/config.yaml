@@ -79,9 +79,11 @@ gateway:
   platforms:
     telegram:
       enabled: true
-      # require_mention applies to GROUP/forum chats only — the bot answers there
-      # solely when @-mentioned (keeps it quiet in busy groups). DMs always respond.
-      require_mention: true
+      # forum topics are used as sessions in the bot's dedicated group
+      # (allowed_chats below), one message per turn with no @mention friction —
+      # mirrors the my-ai gateway bots' topics-as-sessions setting; flip back
+      # to true only if the bot ever joins a busy shared group.
+      require_mention: false
       reactions: true
       # Group access: the current hermes schema reads a platform-level
       # allowed_chats list. The bot is an administrator of this forum group
