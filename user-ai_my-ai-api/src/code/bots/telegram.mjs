@@ -136,6 +136,20 @@ export const startTelegram = ({
   // collide.
   const topicNames = new Map(); // "chatId:threadId" -> forum topic name, learned from service messages
 
+  // Registry of chats this bot has seen traffic from, keyed by chat.id —
+  // Telegram offers no "list all my chats" API, so this is the only way the
+  // bot can answer "what groups/topics am I in". Both maps are deliberately
+  // in-memory: they repopulate from traffic after a restart, and are empty
+  // until then. Persist to the data volume if durability is ever needed.
+  const chatRegistry = new Map(); // chat.id -> { title, type }
+
+  // Runs a tgPost and formats the result as a one-line ok-or-description
+  // reply — used by the group/topic management commands below.
+  const postAndReport = async (method, body, okText) => {
+    const res = await tgPost(method, body);
+    return res.ok ? okText(res.result) : (res.description || `${method} failed`);
+  };
+
   const poll = async () => {
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -159,6 +173,13 @@ export const startTelegram = ({
               if (learnedName) {
                 topicNames.set(`${msg.chat.id}:${msg.message_thread_id}`, learnedName);
               }
+            }
+            // Learn this chat into the registry from every processed update,
+            // including service messages with no .text — that's the only
+            // signal available for "what chats/topics is this bot in".
+            if (msg?.chat) {
+              const title = msg.chat.title ?? [msg.chat.first_name, msg.chat.last_name].filter(Boolean).join(" ");
+              chatRegistry.set(msg.chat.id, { title, type: msg.chat.type });
             }
             if (!msg?.text) continue;
             const from_id = String(msg.from?.id ?? "");
@@ -213,7 +234,75 @@ export const startTelegram = ({
               const [cmdRaw, ...argParts] = text.trim().split(/\s+/);
               const cmd = cmdRaw.slice(1).split("@")[0].toLowerCase();
               const arg = argParts.join(" ");
-              reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom }, defaultAgent);
+              // Group/topic visibility and management commands need tgPost and
+              // the raw message envelope (chat id, thread id) — commands.mjs
+              // has neither, so they're handled here instead of dispatched
+              // into the generic handleCommand switch.
+              if (cmd === "chats") {
+                const lines = ["Chats seen since last restart (in-memory):"];
+                for (const [chatId, info] of chatRegistry) {
+                  lines.push(`${chatId}  ${info.type}  ${info.title}`);
+                  const prefix = `${chatId}:`;
+                  for (const [key, name] of topicNames) {
+                    if (key.startsWith(prefix)) lines.push(`  topic ${key.slice(prefix.length)}: ${name}`);
+                  }
+                }
+                reply = lines.length > 1 ? lines.join("\n") : lines[0] + "\n(none yet)";
+              } else if (cmd === "topics") {
+                const prefix = `${msg.chat.id}:`;
+                const lines = [];
+                for (const [key, name] of topicNames) {
+                  if (key.startsWith(prefix)) lines.push(`topic ${key.slice(prefix.length)}: ${name}`);
+                }
+                reply = lines.length ? lines.join("\n") : "no topics seen yet in this chat";
+              } else if (cmd === "chatinfo") {
+                const chatRes = await tgPost("getChat", { chat_id: msg.chat.id });
+                if (!chatRes.ok) {
+                  reply = chatRes.description || "getChat failed";
+                } else {
+                  const c = chatRes.result;
+                  const countRes = await tgPost("getChatMemberCount", { chat_id: msg.chat.id });
+                  const lines = [`id: ${c.id}`, `type: ${c.type}`, `title: ${c.title ?? "(none)"}`];
+                  if (c.description) lines.push(`description: ${c.description}`);
+                  lines.push(`members: ${countRes.ok ? countRes.result : "(unavailable)"}`);
+                  reply = lines.join("\n");
+                }
+              } else if (cmd === "newtopic") {
+                if (!arg.trim()) {
+                  reply = "usage: /newtopic <name>";
+                } else if (!isGroup) {
+                  reply = "/newtopic only works in a group chat";
+                } else {
+                  reply = await postAndReport("createForumTopic", { chat_id: msg.chat.id, name: arg.trim() }, (result) => {
+                    topicNames.set(`${msg.chat.id}:${result.message_thread_id}`, arg.trim());
+                    return `created topic "${arg.trim()}" (id ${result.message_thread_id})`;
+                  });
+                  if (reply && !reply.startsWith("created topic")) {
+                    reply += `\nthe bot needs admin with "Manage topics" in this group`;
+                  }
+                }
+              } else if (cmd === "renametopic") {
+                if (threadId === undefined) {
+                  reply = "/renametopic only works inside a forum topic";
+                } else if (!arg.trim()) {
+                  reply = "usage: /renametopic <name>";
+                } else {
+                  reply = await postAndReport("editForumTopic", { chat_id: msg.chat.id, message_thread_id: threadId, name: arg.trim() }, () => {
+                    topicNames.set(`${msg.chat.id}:${threadId}`, arg.trim());
+                    return `renamed topic to "${arg.trim()}"`;
+                  });
+                }
+              } else if (cmd === "closetopic") {
+                reply = threadId === undefined
+                  ? "/closetopic only works inside a forum topic"
+                  : await postAndReport("closeForumTopic", { chat_id: msg.chat.id, message_thread_id: threadId }, () => "topic closed");
+              } else if (cmd === "reopentopic") {
+                reply = threadId === undefined
+                  ? "/reopentopic only works inside a forum topic"
+                  : await postAndReport("reopenForumTopic", { chat_id: msg.chat.id, message_thread_id: threadId }, () => "topic reopened");
+              } else {
+                reply = await handleCommand(cmd, arg, conversationKey, { fromId: from_id, allowFrom }, defaultAgent);
+              }
             } else {
               reply = await routeToGoose(text, conversationKey, defaultAgent, platformContext);
             }
