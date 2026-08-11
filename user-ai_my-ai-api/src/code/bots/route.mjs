@@ -46,7 +46,21 @@ export const routeToGoose = async (text, chatKey = "default", defaultAgent = "go
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      return `[gateway error ${res.status}] ${(await res.text()).slice(0, 200)}`;
+      // If the upstream failure is claude-cli being logged out, kick off the OAuth
+      // login handshake automatically and hand the user the link instead of just
+      // surfacing the opaque gateway error.
+      const errText = (await res.text()).slice(0, 300);
+      if (/superset_claude_auth_required|auth required|not logged in/i.test(errText)) {
+        try {
+          const base = process.env.CLAUDE_CLI_BASE_URL || "http://10.0.0.6:3117";
+          const login = await fetch(`${base}/auth/login/start`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).then((r) => r.json());
+          if (login?.url) return `claude backend is logged out. Open this link, approve, then send the code back as:\n/code <the-code>\n\n${login.url}\n\n(link expires in a few minutes)`;
+          return `claude backend is logged out and auto-login failed: ${login?.error || "no url"} — try /login`;
+        } catch (loginErr) {
+          return `claude backend is logged out and auto-login failed: ${loginErr.message} — try /login`;
+        }
+      }
+      return `[gateway error ${res.status}] ${errText.slice(0, 200)}`;
     }
     const json = await res.json();
     const reply = json?.choices?.[0]?.message?.content ?? "[gateway: empty reply]";
