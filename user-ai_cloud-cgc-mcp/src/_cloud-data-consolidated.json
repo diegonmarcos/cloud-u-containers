@@ -1310,7 +1310,8 @@
         "OCI_API_KEY_PEM_B64",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "AWS_DEFAULT_REGION"
+        "AWS_DEFAULT_REGION",
+        "C3_TELEGRAM_BOT_TOKEN"
       ]
     },
     "c3-public-api": {
