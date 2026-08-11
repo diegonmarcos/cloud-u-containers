@@ -669,7 +669,7 @@ function findProjects(): Map<string, { dir: string; category: string; config: Bu
   const projects = new Map<string, { dir: string; category: string; config: BuildJsonConfig }>();
   const entries = readdirSync(FRONT_DIR).filter((name) => {
     const full = join(FRONT_DIR, name);
-    return statSync(full).isDirectory() && !name.startsWith(".") && name !== "node_modules" && name !== "1.ops" && name !== "0_docs" && name !== "0.spec";
+    return statSync(full).isDirectory() && !name.startsWith(".") && name !== "node_modules" && name !== "1.ops" && name !== "0_specs" && name !== "0.spec";
   });
   for (const entry of entries) {
     const entryPath = join(FRONT_DIR, entry);
