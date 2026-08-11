@@ -29,7 +29,15 @@ in
         "main:app"
       ];
       environment = {
-        JWKS_URL       = "https://auth.diegonmarcos.com/jwks.json";
+        # Fetch keys straight from Authelia on the mesh, NOT via
+        # https://auth.diegonmarcos.com/jwks.json. That public hostname is a
+        # circular dependency: the auth.diegonmarcos.com route is itself gated by
+        # forward_auth against THIS proxy, so a cold JWKS fetch cannot complete
+        # and every bearer validation fails "Auth key server unavailable" (502).
+        # This is also the URL Authelia's own discovery document advertises as
+        # jwks_uri. ISSUER stays on the public name — it is compared against the
+        # token's `iss` claim, never dialled.
+        JWKS_URL       = "http://10.0.0.1:9091/jwks.json";
         ISSUER         = "https://auth.diegonmarcos.com";
         REQUIRED_SCOPE = "authelia.bearer.authz";
         PORT           = toString buildJson.ports.app;
