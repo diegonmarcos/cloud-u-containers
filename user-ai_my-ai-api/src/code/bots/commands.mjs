@@ -33,6 +33,16 @@ export const COMMANDS = [
   { command: "whoami",     description: "show your Telegram id and access tier" },
   { command: "login",      description: "log the claude agent in — returns an OAuth link" },
   { command: "code",       description: "finish /login by sending the code from the link" },
+  // Group/topic visibility and management — handled in telegram.mjs, not
+  // here, because they need the Telegram API (tgPost) and the raw message
+  // envelope (chat id, thread id), neither of which this module sees.
+  { command: "chats",        description: "list groups/topics this bot has seen since last restart" },
+  { command: "topics",       description: "list forum topics seen in this chat" },
+  { command: "chatinfo",     description: "show live info about this chat" },
+  { command: "newtopic",     description: "create a forum topic in this group" },
+  { command: "renametopic",  description: "rename the current forum topic" },
+  { command: "closetopic",   description: "close the current forum topic" },
+  { command: "reopentopic",  description: "reopen the current forum topic" },
 ];
 
 // Aliases: alias command -> canonical command handled in the switch.
