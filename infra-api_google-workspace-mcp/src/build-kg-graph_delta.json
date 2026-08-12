@@ -9,7 +9,7 @@
       "stale_strategy": "mark with last_seen_ts (never hard-delete)"
     },
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -19,13 +19,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }
@@ -33,15 +33,15 @@
   "_generated": "",
   "_source": "_cloud-data-consolidated.json via cloud-data-config-derive.ts/kg-delta",
   "counts": {
-    "nodes": 288,
-    "edges": 388,
+    "nodes": 292,
+    "edges": 395,
     "by_table": {
       "vm": 4,
-      "service": 63,
-      "container": 88,
-      "domain": 39,
+      "service": 65,
+      "container": 85,
+      "domain": 42,
       "repo": 3,
-      "module": 63,
+      "module": 65,
       "package": 28
     }
   },
@@ -120,28 +120,80 @@
     },
     {
       "table": "service",
-      "id": "c3_analytics_api",
-      "key": "service:c3_analytics_api",
+      "id": "matrix_continuwuity",
+      "key": "service:matrix_continuwuity",
       "properties": {
-        "name": "c3-analytics-api",
-        "category": "obs",
-        "description": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve",
-        "domain": "api.diegonmarcos.com/c3a",
-        "port": 8085,
-        "vm": "gcp-proxy",
-        "folder": "infra-api_c3-analytics-api"
+        "name": "matrix-continuwuity",
+        "category": "app",
+        "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
+        "domain": "matrix.diegonmarcos.com",
+        "port": 8008,
+        "vm": "oci-apps",
+        "folder": "user-comm_matrix-continuwuity"
       }
     },
     {
       "table": "container",
-      "id": "c3_analytics_api",
-      "key": "container:c3_analytics_api",
+      "id": "continuwuity",
+      "key": "container:continuwuity",
       "properties": {
-        "name": "c3-analytics-api",
-        "image": "ghcr.io/diegonmarcos/c3-analytics-api:latest",
+        "name": "continuwuity",
+        "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
         "role": "app",
-        "port": 8085,
+        "port": 8008,
         "public": true
+      }
+    },
+    {
+      "table": "service",
+      "id": "alerts_api",
+      "key": "service:alerts_api",
+      "properties": {
+        "name": "alerts-api",
+        "category": "tools",
+        "description": "Security Alert Aggregation API",
+        "domain": null,
+        "port": 5050,
+        "vm": "oci-analytics",
+        "folder": "bc-obs_alerts-api"
+      }
+    },
+    {
+      "table": "container",
+      "id": "alerts_api",
+      "key": "container:alerts_api",
+      "properties": {
+        "name": "alerts-api",
+        "image": "",
+        "role": "app",
+        "port": 5050,
+        "public": false
+      }
+    },
+    {
+      "table": "service",
+      "id": "languagetool",
+      "key": "service:languagetool",
+      "properties": {
+        "name": "languagetool",
+        "category": "tools",
+        "description": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps",
+        "domain": "languagetool.diegonmarcos.com",
+        "port": 8010,
+        "vm": "oci-apps",
+        "folder": "infra-ai_languagetool"
+      }
+    },
+    {
+      "table": "container",
+      "id": "languagetool",
+      "key": "container:languagetool",
+      "properties": {
+        "name": "languagetool",
+        "image": "erikvl87/languagetool:latest",
+        "role": "app",
+        "port": 8010,
+        "public": false
       }
     },
     {
@@ -414,7 +466,7 @@
         "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
         "domain": null,
         "port": null,
-        "vm": "oci-apps",
+        "vm": "local",
         "folder": "infra-bld_cloud-builder-x"
       }
     },
@@ -584,6 +636,32 @@
         "role": "app",
         "port": 53,
         "public": false
+      }
+    },
+    {
+      "table": "service",
+      "id": "unbound_dns64",
+      "key": "service:unbound_dns64",
+      "properties": {
+        "name": "unbound-dns64",
+        "category": "infra-net",
+        "description": "DNS64 resolver for NAT64 — synthesises AAAA records for IPv4-only names so IPv6-only clients can reach the internet via the Tayga NAT64 translator",
+        "domain": "dns64.internal",
+        "port": 53,
+        "vm": "oci-analytics",
+        "folder": "infra-net_unbound-dns64"
+      }
+    },
+    {
+      "table": "container",
+      "id": "unbound_dns64",
+      "key": "container:unbound_dns64",
+      "properties": {
+        "name": "unbound-dns64",
+        "image": "ghcr.io/diegonmarcos/unbound-dns64:latest",
+        "role": "app",
+        "port": 53,
+        "public": true
       }
     },
     {
@@ -777,6 +855,18 @@
         "image": "python:3.11-slim",
         "role": "syslog-bridge",
         "port": null,
+        "public": false
+      }
+    },
+    {
+      "table": "container",
+      "id": "rss_gateway",
+      "key": "container:rss_gateway",
+      "properties": {
+        "name": "rss-gateway",
+        "image": "python:3.11-slim",
+        "role": "rss-gateway",
+        "port": 8091,
         "public": false
       }
     },
@@ -1128,79 +1218,53 @@
     },
     {
       "table": "service",
-      "id": "ollama",
-      "key": "service:ollama",
+      "id": "hermes_agent",
+      "key": "service:hermes_agent",
       "properties": {
-        "name": "ollama",
+        "name": "hermes-agent",
         "category": "agi",
-        "description": "Ollama LLM Server — DeepSeek/Qwen 14B on GCP Spot T4 + Vast.ai fallback",
+        "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
         "domain": null,
-        "port": 11434,
-        "vm": "gcp-t4",
-        "folder": "user-ai_ollama"
-      }
-    },
-    {
-      "table": "container",
-      "id": "ollama",
-      "key": "container:ollama",
-      "properties": {
-        "name": "ollama",
-        "image": "ollama/ollama:latest",
-        "role": "app",
-        "port": 11434,
-        "public": false
-      }
-    },
-    {
-      "table": "service",
-      "id": "ollama_arm",
-      "key": "service:ollama_arm",
-      "properties": {
-        "name": "ollama-arm",
-        "category": "agi",
-        "description": "Ollama LLM server (ARM CPU, 7b models)",
-        "domain": null,
-        "port": 11434,
-        "vm": "oci-apps-2",
-        "folder": "user-ai_ollama-arm"
-      }
-    },
-    {
-      "table": "container",
-      "id": "ollama_arm",
-      "key": "container:ollama_arm",
-      "properties": {
-        "name": "ollama-arm",
-        "image": null,
-        "role": "app",
-        "port": 11434,
-        "public": false
-      }
-    },
-    {
-      "table": "service",
-      "id": "rig_agentic_sonn_14bq8",
-      "key": "service:rig_agentic_sonn_14bq8",
-      "properties": {
-        "name": "rig-agentic-sonn-14bq8",
-        "category": "agi",
-        "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
-        "domain": null,
-        "port": 8091,
+        "port": 8642,
         "vm": "oci-apps",
-        "folder": "user-ai_rig-agentic-sonn-14bq8"
+        "folder": "user-ai_hermes-agent"
       }
     },
     {
       "table": "container",
-      "id": "rig_agentic_sonn_14bq8",
-      "key": "container:rig_agentic_sonn_14bq8",
+      "id": "hermes_agent",
+      "key": "container:hermes_agent",
       "properties": {
-        "name": "rig-agentic-sonn-14bq8",
-        "image": null,
+        "name": "hermes-agent",
+        "image": "ghcr.io/diegonmarcos/hermes-agent:latest",
         "role": "app",
-        "port": 8091,
+        "port": 8642,
+        "public": false
+      }
+    },
+    {
+      "table": "service",
+      "id": "my_ai_api",
+      "key": "service:my_ai_api",
+      "properties": {
+        "name": "my-ai-api",
+        "category": "agi",
+        "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
+        "domain": null,
+        "port": 3217,
+        "vm": "oci-apps",
+        "folder": "user-ai_my-ai-api"
+      }
+    },
+    {
+      "table": "container",
+      "id": "my_ai_api",
+      "key": "container:my_ai_api",
+      "properties": {
+        "name": "my-ai-api",
+        "image": "ghcr.io/diegonmarcos/my-ai-api:latest",
+        "role": "app",
+        "port": 3217,
         "public": false
       }
     },
@@ -1282,44 +1346,6 @@
     },
     {
       "table": "service",
-      "id": "cypht",
-      "key": "service:cypht",
-      "properties": {
-        "name": "cypht",
-        "category": "app",
-        "description": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com",
-        "domain": "webmail.diegonmarcos.com",
-        "port": 8889,
-        "vm": "oci-mail",
-        "folder": "user-comm_cypht"
-      }
-    },
-    {
-      "table": "container",
-      "id": "cypht",
-      "key": "container:cypht",
-      "properties": {
-        "name": "cypht",
-        "image": "cypht/cypht:latest",
-        "role": "app",
-        "port": 8889,
-        "public": true
-      }
-    },
-    {
-      "table": "container",
-      "id": "cypht_postgres",
-      "key": "container:cypht_postgres",
-      "properties": {
-        "name": "cypht-postgres",
-        "image": "postgres:16-alpine",
-        "role": "db",
-        "port": null,
-        "public": false
-      }
-    },
-    {
-      "table": "service",
       "id": "mail_puller",
       "key": "service:mail_puller",
       "properties": {
@@ -1342,32 +1368,6 @@
         "role": "app",
         "port": null,
         "public": false
-      }
-    },
-    {
-      "table": "service",
-      "id": "matrix_continuwuity",
-      "key": "service:matrix_continuwuity",
-      "properties": {
-        "name": "matrix-continuwuity",
-        "category": "app",
-        "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-        "domain": "matrix.diegonmarcos.com",
-        "port": 8008,
-        "vm": "oci-apps",
-        "folder": "user-comm_matrix-continuwuity"
-      }
-    },
-    {
-      "table": "container",
-      "id": "continuwuity",
-      "key": "container:continuwuity",
-      "properties": {
-        "name": "continuwuity",
-        "image": "ghcr.io/diegonmarcos/matrix-continuwuity-binaries:latest",
-        "role": "app",
-        "port": 8008,
-        "public": true
       }
     },
     {
@@ -1514,100 +1514,28 @@
     },
     {
       "table": "service",
-      "id": "crawlee_cloud",
-      "key": "service:crawlee_cloud",
+      "id": "scrappers_api",
+      "key": "service:scrappers_api",
       "properties": {
-        "name": "crawlee-cloud",
-        "category": "fin",
-        "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+        "name": "scrappers-api",
+        "category": "data",
+        "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
         "domain": "api.diegonmarcos.com",
-        "port": 3000,
+        "port": 3020,
         "vm": "oci-apps",
-        "folder": "user-fin_crawlee-cloud"
+        "folder": "user-data_scrappers-api"
       }
     },
     {
       "table": "container",
-      "id": "crawlee_api",
-      "key": "container:crawlee_api",
+      "id": "scrappers_api",
+      "key": "container:scrappers_api",
       "properties": {
-        "name": "crawlee_api",
-        "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
+        "name": "scrappers-api",
+        "image": "ghcr.io/diegonmarcos/scrappers-api:latest",
         "role": "app",
-        "port": 3000,
+        "port": 3020,
         "public": true
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_runner",
-      "key": "container:crawlee_runner",
-      "properties": {
-        "name": "crawlee_runner",
-        "image": "ghcr.io/diegonmarcos/crawlee-cloud-runner:latest",
-        "role": "runner",
-        "port": null,
-        "public": false
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_dashboard",
-      "key": "container:crawlee_dashboard",
-      "properties": {
-        "name": "crawlee_dashboard",
-        "image": "ghcr.io/diegonmarcos/crawlee-cloud-dashboard:latest",
-        "role": "dashboard",
-        "port": 3001,
-        "public": false
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_scheduler",
-      "key": "container:crawlee_scheduler",
-      "properties": {
-        "name": "crawlee_scheduler",
-        "image": "ghcr.io/diegonmarcos/crawlee-cloud-api:latest",
-        "role": "scheduler",
-        "port": null,
-        "public": false
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_db",
-      "key": "container:crawlee_db",
-      "properties": {
-        "name": "crawlee_db",
-        "image": "postgres:16-alpine",
-        "role": "db",
-        "port": 5434,
-        "public": false
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_redis",
-      "key": "container:crawlee_redis",
-      "properties": {
-        "name": "crawlee_redis",
-        "image": "redis:7-alpine",
-        "role": "redis",
-        "port": 6381,
-        "public": false
-      }
-    },
-    {
-      "table": "container",
-      "id": "crawlee_minio",
-      "key": "container:crawlee_minio",
-      "properties": {
-        "name": "crawlee_minio",
-        "image": "minio/minio:latest",
-        "role": "minio",
-        "port": 9000,
-        "public": false
       }
     },
     {
@@ -1684,6 +1612,32 @@
         "role": "rclone",
         "port": null,
         "public": false
+      }
+    },
+    {
+      "table": "service",
+      "id": "playlist_syncer",
+      "key": "service:playlist_syncer",
+      "properties": {
+        "name": "playlist-syncer",
+        "category": "app",
+        "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
+        "domain": "playlist.diegonmarcos.com",
+        "port": 8090,
+        "vm": "oci-apps",
+        "folder": "user-media_playlist-syncer"
+      }
+    },
+    {
+      "table": "container",
+      "id": "playlist_syncer",
+      "key": "container:playlist_syncer",
+      "properties": {
+        "name": "playlist-syncer",
+        "image": "ghcr.io/diegonmarcos/playlist-syncer-binaries:latest",
+        "role": "app",
+        "port": 8090,
+        "public": true
       }
     },
     {
@@ -2006,6 +1960,44 @@
     },
     {
       "table": "service",
+      "id": "send",
+      "key": "service:send",
+      "properties": {
+        "name": "send",
+        "category": "app",
+        "description": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.",
+        "domain": "send.diegonmarcos.com",
+        "port": 3016,
+        "vm": "oci-apps",
+        "folder": "user-prod_send"
+      }
+    },
+    {
+      "table": "container",
+      "id": "send_app",
+      "key": "container:send_app",
+      "properties": {
+        "name": "send_app",
+        "image": "registry.gitlab.com/timvisee/send:latest",
+        "role": "app",
+        "port": 3016,
+        "public": true
+      }
+    },
+    {
+      "table": "container",
+      "id": "send_redis",
+      "key": "container:send_redis",
+      "properties": {
+        "name": "send_redis",
+        "image": "redis:7-alpine",
+        "role": "redis",
+        "port": null,
+        "public": false
+      }
+    },
+    {
+      "table": "service",
       "id": "vaultwarden",
       "key": "service:vaultwarden",
       "properties": {
@@ -2058,10 +2050,18 @@
     },
     {
       "table": "domain",
-      "id": "api_diegonmarcos_com/c3a",
-      "key": "domain:api_diegonmarcos_com/c3a",
+      "id": "matrix_diegonmarcos_com",
+      "key": "domain:matrix_diegonmarcos_com",
       "properties": {
-        "fqdn": "api.diegonmarcos.com/c3a"
+        "fqdn": "matrix.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "domain",
+      "id": "languagetool_diegonmarcos_com",
+      "key": "domain:languagetool_diegonmarcos_com",
+      "properties": {
+        "fqdn": "languagetool.diegonmarcos.com"
       }
     },
     {
@@ -2126,6 +2126,14 @@
       "key": "domain:dns_internal",
       "properties": {
         "fqdn": "dns.internal"
+      }
+    },
+    {
+      "table": "domain",
+      "id": "dns64_internal",
+      "key": "domain:dns64_internal",
+      "properties": {
+        "fqdn": "dns64.internal"
       }
     },
     {
@@ -2226,14 +2234,6 @@
     },
     {
       "table": "domain",
-      "id": "webmail_diegonmarcos_com",
-      "key": "domain:webmail_diegonmarcos_com",
-      "properties": {
-        "fqdn": "webmail.diegonmarcos.com"
-      }
-    },
-    {
-      "table": "domain",
       "id": "mail_puller_diegonmarcos_com",
       "key": "domain:mail_puller_diegonmarcos_com",
       "properties": {
@@ -2242,18 +2242,18 @@
     },
     {
       "table": "domain",
-      "id": "matrix_diegonmarcos_com",
-      "key": "domain:matrix_diegonmarcos_com",
-      "properties": {
-        "fqdn": "matrix.diegonmarcos.com"
-      }
-    },
-    {
-      "table": "domain",
       "id": "messenger_diegonmarcos_com",
       "key": "domain:messenger_diegonmarcos_com",
       "properties": {
         "fqdn": "messenger.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "domain",
+      "id": "webmail_diegonmarcos_com",
+      "key": "domain:webmail_diegonmarcos_com",
+      "properties": {
+        "fqdn": "webmail.diegonmarcos.com"
       }
     },
     {
@@ -2294,6 +2294,14 @@
       "key": "domain:photos_diegonmarcos_com",
       "properties": {
         "fqdn": "photos.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "domain",
+      "id": "playlist_diegonmarcos_com",
+      "key": "domain:playlist_diegonmarcos_com",
+      "properties": {
+        "fqdn": "playlist.diegonmarcos.com"
       }
     },
     {
@@ -2362,6 +2370,14 @@
     },
     {
       "table": "domain",
+      "id": "send_diegonmarcos_com",
+      "key": "domain:send_diegonmarcos_com",
+      "properties": {
+        "fqdn": "send.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "domain",
       "id": "vault_diegonmarcos_com",
       "key": "domain:vault_diegonmarcos_com",
       "properties": {
@@ -2379,13 +2395,35 @@
     },
     {
       "table": "module",
-      "id": "infra_api_c3_analytics_api",
-      "key": "module:infra_api_c3_analytics_api",
+      "id": "user_comm_matrix_continuwuity",
+      "key": "module:user_comm_matrix_continuwuity",
       "properties": {
-        "name": "infra-api_c3-analytics-api",
+        "name": "user-comm_matrix-continuwuity",
         "repo": "cloud",
-        "category": "obs",
-        "service": "c3-analytics-api"
+        "category": "app",
+        "service": "matrix-continuwuity"
+      }
+    },
+    {
+      "table": "module",
+      "id": "bc_obs_alerts_api",
+      "key": "module:bc_obs_alerts_api",
+      "properties": {
+        "name": "bc-obs_alerts-api",
+        "repo": "cloud",
+        "category": "tools",
+        "service": "alerts-api"
+      }
+    },
+    {
+      "table": "module",
+      "id": "infra_ai_languagetool",
+      "key": "module:infra_ai_languagetool",
+      "properties": {
+        "name": "infra-ai_languagetool",
+        "repo": "cloud",
+        "category": "tools",
+        "service": "languagetool"
       }
     },
     {
@@ -2573,6 +2611,17 @@
         "repo": "cloud",
         "category": "cloud",
         "service": "hickory-dns"
+      }
+    },
+    {
+      "table": "module",
+      "id": "infra_net_unbound_dns64",
+      "key": "module:infra_net_unbound_dns64",
+      "properties": {
+        "name": "infra-net_unbound-dns64",
+        "repo": "cloud",
+        "category": "infra-net",
+        "service": "unbound-dns64"
       }
     },
     {
@@ -2775,35 +2824,24 @@
     },
     {
       "table": "module",
-      "id": "user_ai_ollama",
-      "key": "module:user_ai_ollama",
+      "id": "user_ai_hermes_agent",
+      "key": "module:user_ai_hermes_agent",
       "properties": {
-        "name": "user-ai_ollama",
+        "name": "user-ai_hermes-agent",
         "repo": "cloud",
         "category": "agi",
-        "service": "ollama"
+        "service": "hermes-agent"
       }
     },
     {
       "table": "module",
-      "id": "user_ai_ollama_arm",
-      "key": "module:user_ai_ollama_arm",
+      "id": "user_ai_my_ai_api",
+      "key": "module:user_ai_my_ai_api",
       "properties": {
-        "name": "user-ai_ollama-arm",
+        "name": "user-ai_my-ai-api",
         "repo": "cloud",
         "category": "agi",
-        "service": "ollama-arm"
-      }
-    },
-    {
-      "table": "module",
-      "id": "user_ai_rig_agentic_sonn_14bq8",
-      "key": "module:user_ai_rig_agentic_sonn_14bq8",
-      "properties": {
-        "name": "user-ai_rig-agentic-sonn-14bq8",
-        "repo": "cloud",
-        "category": "agi",
-        "service": "rig-agentic-sonn-14bq8"
+        "service": "my-ai-api"
       }
     },
     {
@@ -2830,17 +2868,6 @@
     },
     {
       "table": "module",
-      "id": "user_comm_cypht",
-      "key": "module:user_comm_cypht",
-      "properties": {
-        "name": "user-comm_cypht",
-        "repo": "cloud",
-        "category": "app",
-        "service": "cypht"
-      }
-    },
-    {
-      "table": "module",
       "id": "user_comm_mail_puller",
       "key": "module:user_comm_mail_puller",
       "properties": {
@@ -2848,17 +2875,6 @@
         "repo": "cloud",
         "category": "app",
         "service": "mail-puller"
-      }
-    },
-    {
-      "table": "module",
-      "id": "user_comm_matrix_continuwuity",
-      "key": "module:user_comm_matrix_continuwuity",
-      "properties": {
-        "name": "user-comm_matrix-continuwuity",
-        "repo": "cloud",
-        "category": "app",
-        "service": "matrix-continuwuity"
       }
     },
     {
@@ -2918,13 +2934,13 @@
     },
     {
       "table": "module",
-      "id": "user_fin_crawlee_cloud",
-      "key": "module:user_fin_crawlee_cloud",
+      "id": "user_data_scrappers_api",
+      "key": "module:user_data_scrappers_api",
       "properties": {
-        "name": "user-fin_crawlee-cloud",
+        "name": "user-data_scrappers-api",
         "repo": "cloud",
-        "category": "fin",
-        "service": "crawlee-cloud"
+        "category": "data",
+        "service": "scrappers-api"
       }
     },
     {
@@ -2947,6 +2963,17 @@
         "repo": "cloud",
         "category": "app",
         "service": "photoprism"
+      }
+    },
+    {
+      "table": "module",
+      "id": "user_media_playlist_syncer",
+      "key": "module:user_media_playlist_syncer",
+      "properties": {
+        "name": "user-media_playlist-syncer",
+        "repo": "cloud",
+        "category": "app",
+        "service": "playlist-syncer"
       }
     },
     {
@@ -3046,6 +3073,17 @@
         "repo": "cloud",
         "category": "app",
         "service": "paca"
+      }
+    },
+    {
+      "table": "module",
+      "id": "user_prod_send",
+      "key": "module:user_prod_send",
+      "properties": {
+        "name": "user-prod_send",
+        "repo": "cloud",
+        "category": "app",
+        "service": "send"
       }
     },
     {
@@ -3426,16 +3464,48 @@
   "edges": [
     {
       "table": "hosted_on",
-      "from": "service:c3_analytics_api",
-      "to": "vm:gcp_proxy",
-      "key": "service:c3_analytics_api->hosted_on->vm:gcp_proxy",
+      "from": "service:matrix_continuwuity",
+      "to": "vm:oci_apps",
+      "key": "service:matrix_continuwuity->hosted_on->vm:oci_apps",
       "properties": {}
     },
     {
       "table": "runs_container",
-      "from": "service:c3_analytics_api",
-      "to": "container:c3_analytics_api",
-      "key": "service:c3_analytics_api->runs_container->container:c3_analytics_api",
+      "from": "service:matrix_continuwuity",
+      "to": "container:continuwuity",
+      "key": "service:matrix_continuwuity->runs_container->container:continuwuity",
+      "properties": {
+        "role": "app"
+      }
+    },
+    {
+      "table": "hosted_on",
+      "from": "service:alerts_api",
+      "to": "vm:oci_analytics",
+      "key": "service:alerts_api->hosted_on->vm:oci_analytics",
+      "properties": {}
+    },
+    {
+      "table": "runs_container",
+      "from": "service:alerts_api",
+      "to": "container:alerts_api",
+      "key": "service:alerts_api->runs_container->container:alerts_api",
+      "properties": {
+        "role": "app"
+      }
+    },
+    {
+      "table": "hosted_on",
+      "from": "service:languagetool",
+      "to": "vm:oci_apps",
+      "key": "service:languagetool->hosted_on->vm:oci_apps",
+      "properties": {}
+    },
+    {
+      "table": "runs_container",
+      "from": "service:languagetool",
+      "to": "container:languagetool",
+      "key": "service:languagetool->runs_container->container:languagetool",
       "properties": {
         "role": "app"
       }
@@ -3594,13 +3664,6 @@
       }
     },
     {
-      "table": "hosted_on",
-      "from": "service:cloud_builder_x",
-      "to": "vm:oci_apps",
-      "key": "service:cloud_builder_x->hosted_on->vm:oci_apps",
-      "properties": {}
-    },
-    {
       "table": "runs_container",
       "from": "service:cloud_builder_x",
       "to": "container:cloud_builder_x",
@@ -3687,6 +3750,22 @@
       "from": "service:hickory_dns",
       "to": "container:hickory_dns",
       "key": "service:hickory_dns->runs_container->container:hickory_dns",
+      "properties": {
+        "role": "app"
+      }
+    },
+    {
+      "table": "hosted_on",
+      "from": "service:unbound_dns64",
+      "to": "vm:oci_analytics",
+      "key": "service:unbound_dns64->hosted_on->vm:oci_analytics",
+      "properties": {}
+    },
+    {
+      "table": "runs_container",
+      "from": "service:unbound_dns64",
+      "to": "container:unbound_dns64",
+      "key": "service:unbound_dns64->runs_container->container:unbound_dns64",
       "properties": {
         "role": "app"
       }
@@ -3810,6 +3889,15 @@
       "key": "service:ntfy->runs_container->container:syslog_bridge",
       "properties": {
         "role": "syslog-bridge"
+      }
+    },
+    {
+      "table": "runs_container",
+      "from": "service:ntfy",
+      "to": "container:rss_gateway",
+      "key": "service:ntfy->runs_container->container:rss_gateway",
+      "properties": {
+        "role": "rss-gateway"
       }
     },
     {
@@ -4038,35 +4126,33 @@
       }
     },
     {
-      "table": "runs_container",
-      "from": "service:ollama",
-      "to": "container:ollama",
-      "key": "service:ollama->runs_container->container:ollama",
-      "properties": {
-        "role": "app"
-      }
+      "table": "hosted_on",
+      "from": "service:hermes_agent",
+      "to": "vm:oci_apps",
+      "key": "service:hermes_agent->hosted_on->vm:oci_apps",
+      "properties": {}
     },
     {
       "table": "runs_container",
-      "from": "service:ollama_arm",
-      "to": "container:ollama_arm",
-      "key": "service:ollama_arm->runs_container->container:ollama_arm",
+      "from": "service:hermes_agent",
+      "to": "container:hermes_agent",
+      "key": "service:hermes_agent->runs_container->container:hermes_agent",
       "properties": {
         "role": "app"
       }
     },
     {
       "table": "hosted_on",
-      "from": "service:rig_agentic_sonn_14bq8",
+      "from": "service:my_ai_api",
       "to": "vm:oci_apps",
-      "key": "service:rig_agentic_sonn_14bq8->hosted_on->vm:oci_apps",
+      "key": "service:my_ai_api->hosted_on->vm:oci_apps",
       "properties": {}
     },
     {
       "table": "runs_container",
-      "from": "service:rig_agentic_sonn_14bq8",
-      "to": "container:rig_agentic_sonn_14bq8",
-      "key": "service:rig_agentic_sonn_14bq8->runs_container->container:rig_agentic_sonn_14bq8",
+      "from": "service:my_ai_api",
+      "to": "container:my_ai_api",
+      "key": "service:my_ai_api->runs_container->container:my_ai_api",
       "properties": {
         "role": "app"
       }
@@ -4123,31 +4209,6 @@
     },
     {
       "table": "hosted_on",
-      "from": "service:cypht",
-      "to": "vm:oci_mail",
-      "key": "service:cypht->hosted_on->vm:oci_mail",
-      "properties": {}
-    },
-    {
-      "table": "runs_container",
-      "from": "service:cypht",
-      "to": "container:cypht",
-      "key": "service:cypht->runs_container->container:cypht",
-      "properties": {
-        "role": "app"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:cypht",
-      "to": "container:cypht_postgres",
-      "key": "service:cypht->runs_container->container:cypht_postgres",
-      "properties": {
-        "role": "db"
-      }
-    },
-    {
-      "table": "hosted_on",
       "from": "service:mail_puller",
       "to": "vm:oci_mail",
       "key": "service:mail_puller->hosted_on->vm:oci_mail",
@@ -4158,22 +4219,6 @@
       "from": "service:mail_puller",
       "to": "container:mail_puller",
       "key": "service:mail_puller->runs_container->container:mail_puller",
-      "properties": {
-        "role": "app"
-      }
-    },
-    {
-      "table": "hosted_on",
-      "from": "service:matrix_continuwuity",
-      "to": "vm:oci_apps",
-      "key": "service:matrix_continuwuity->hosted_on->vm:oci_apps",
-      "properties": {}
-    },
-    {
-      "table": "runs_container",
-      "from": "service:matrix_continuwuity",
-      "to": "container:continuwuity",
-      "key": "service:matrix_continuwuity->runs_container->container:continuwuity",
       "properties": {
         "role": "app"
       }
@@ -4269,90 +4314,18 @@
     },
     {
       "table": "hosted_on",
-      "from": "service:crawlee_cloud",
+      "from": "service:scrappers_api",
       "to": "vm:oci_apps",
-      "key": "service:crawlee_cloud->hosted_on->vm:oci_apps",
+      "key": "service:scrappers_api->hosted_on->vm:oci_apps",
       "properties": {}
     },
     {
       "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_api",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_api",
+      "from": "service:scrappers_api",
+      "to": "container:scrappers_api",
+      "key": "service:scrappers_api->runs_container->container:scrappers_api",
       "properties": {
         "role": "app"
-      }
-    },
-    {
-      "table": "depends_on",
-      "from": "service:crawlee_cloud",
-      "to": "service:redis",
-      "key": "service:crawlee_cloud->depends_on->service:redis",
-      "properties": {
-        "type": "runtime"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_runner",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_runner",
-      "properties": {
-        "role": "runner"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_dashboard",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_dashboard",
-      "properties": {
-        "role": "dashboard"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_scheduler",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_scheduler",
-      "properties": {
-        "role": "scheduler"
-      }
-    },
-    {
-      "table": "depends_on",
-      "from": "service:crawlee_cloud",
-      "to": "service:redis",
-      "key": "service:crawlee_cloud->depends_on->service:redis",
-      "properties": {
-        "type": "runtime"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_db",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_db",
-      "properties": {
-        "role": "db"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_redis",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_redis",
-      "properties": {
-        "role": "redis"
-      }
-    },
-    {
-      "table": "runs_container",
-      "from": "service:crawlee_cloud",
-      "to": "container:crawlee_minio",
-      "key": "service:crawlee_cloud->runs_container->container:crawlee_minio",
-      "properties": {
-        "role": "minio"
       }
     },
     {
@@ -4403,6 +4376,22 @@
       "key": "service:photoprism->runs_container->container:photoprism_rclone",
       "properties": {
         "role": "rclone"
+      }
+    },
+    {
+      "table": "hosted_on",
+      "from": "service:playlist_syncer",
+      "to": "vm:oci_apps",
+      "key": "service:playlist_syncer->hosted_on->vm:oci_apps",
+      "properties": {}
+    },
+    {
+      "table": "runs_container",
+      "from": "service:playlist_syncer",
+      "to": "container:playlist_syncer",
+      "key": "service:playlist_syncer->runs_container->container:playlist_syncer",
+      "properties": {
+        "role": "app"
       }
     },
     {
@@ -4614,6 +4603,40 @@
     },
     {
       "table": "hosted_on",
+      "from": "service:send",
+      "to": "vm:oci_apps",
+      "key": "service:send->hosted_on->vm:oci_apps",
+      "properties": {}
+    },
+    {
+      "table": "runs_container",
+      "from": "service:send",
+      "to": "container:send_app",
+      "key": "service:send->runs_container->container:send_app",
+      "properties": {
+        "role": "app"
+      }
+    },
+    {
+      "table": "depends_on",
+      "from": "service:send",
+      "to": "service:redis",
+      "key": "service:send->depends_on->service:redis",
+      "properties": {
+        "type": "runtime"
+      }
+    },
+    {
+      "table": "runs_container",
+      "from": "service:send",
+      "to": "container:send_redis",
+      "key": "service:send->runs_container->container:send_redis",
+      "properties": {
+        "role": "redis"
+      }
+    },
+    {
+      "table": "hosted_on",
       "from": "service:vaultwarden",
       "to": "vm:oci_apps",
       "key": "service:vaultwarden->hosted_on->vm:oci_apps",
@@ -4639,11 +4662,20 @@
     },
     {
       "table": "proxied_by",
-      "from": "service:c3_analytics_api",
+      "from": "service:matrix_continuwuity",
       "to": "service:caddy",
-      "key": "service:c3_analytics_api->proxied_by->service:caddy",
+      "key": "service:matrix_continuwuity->proxied_by->service:caddy",
       "properties": {
-        "domain": "api.diegonmarcos.com/c3a"
+        "domain": "matrix.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "proxied_by",
+      "from": "service:languagetool",
+      "to": "service:caddy",
+      "key": "service:languagetool->proxied_by->service:caddy",
+      "properties": {
+        "domain": "languagetool.diegonmarcos.com"
       }
     },
     {
@@ -4734,6 +4766,15 @@
       "key": "service:hickory_dns->proxied_by->service:caddy",
       "properties": {
         "domain": "dns.internal"
+      }
+    },
+    {
+      "table": "proxied_by",
+      "from": "service:unbound_dns64",
+      "to": "service:caddy",
+      "key": "service:unbound_dns64->proxied_by->service:caddy",
+      "properties": {
+        "domain": "dns64.internal"
       }
     },
     {
@@ -4837,29 +4878,11 @@
     },
     {
       "table": "proxied_by",
-      "from": "service:cypht",
-      "to": "service:caddy",
-      "key": "service:cypht->proxied_by->service:caddy",
-      "properties": {
-        "domain": "webmail.diegonmarcos.com"
-      }
-    },
-    {
-      "table": "proxied_by",
       "from": "service:mail_puller",
       "to": "service:caddy",
       "key": "service:mail_puller->proxied_by->service:caddy",
       "properties": {
         "domain": "mail-puller.diegonmarcos.com"
-      }
-    },
-    {
-      "table": "proxied_by",
-      "from": "service:matrix_continuwuity",
-      "to": "service:caddy",
-      "key": "service:matrix_continuwuity->proxied_by->service:caddy",
-      "properties": {
-        "domain": "matrix.diegonmarcos.com"
       }
     },
     {
@@ -4900,9 +4923,9 @@
     },
     {
       "table": "proxied_by",
-      "from": "service:crawlee_cloud",
+      "from": "service:scrappers_api",
       "to": "service:caddy",
-      "key": "service:crawlee_cloud->proxied_by->service:caddy",
+      "key": "service:scrappers_api->proxied_by->service:caddy",
       "properties": {
         "domain": "api.diegonmarcos.com"
       }
@@ -4923,6 +4946,15 @@
       "key": "service:photoprism->proxied_by->service:caddy",
       "properties": {
         "domain": "photos.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "proxied_by",
+      "from": "service:playlist_syncer",
+      "to": "service:caddy",
+      "key": "service:playlist_syncer->proxied_by->service:caddy",
+      "properties": {
+        "domain": "playlist.diegonmarcos.com"
       }
     },
     {
@@ -4999,6 +5031,15 @@
     },
     {
       "table": "proxied_by",
+      "from": "service:send",
+      "to": "service:caddy",
+      "key": "service:send->proxied_by->service:caddy",
+      "properties": {
+        "domain": "send.diegonmarcos.com"
+      }
+    },
+    {
+      "table": "proxied_by",
       "from": "service:vaultwarden",
       "to": "service:caddy",
       "key": "service:vaultwarden->proxied_by->service:caddy",
@@ -5008,9 +5049,16 @@
     },
     {
       "table": "routes_to",
-      "from": "domain:api_diegonmarcos_com/c3a",
-      "to": "service:c3_analytics_api",
-      "key": "domain:api_diegonmarcos_com/c3a->routes_to->service:c3_analytics_api",
+      "from": "domain:matrix_diegonmarcos_com",
+      "to": "service:matrix_continuwuity",
+      "key": "domain:matrix_diegonmarcos_com->routes_to->service:matrix_continuwuity",
+      "properties": {}
+    },
+    {
+      "table": "routes_to",
+      "from": "domain:languagetool_diegonmarcos_com",
+      "to": "service:languagetool",
+      "key": "domain:languagetool_diegonmarcos_com->routes_to->service:languagetool",
       "properties": {}
     },
     {
@@ -5081,6 +5129,13 @@
       "from": "domain:dns_internal",
       "to": "service:hickory_dns",
       "key": "domain:dns_internal->routes_to->service:hickory_dns",
+      "properties": {}
+    },
+    {
+      "table": "routes_to",
+      "from": "domain:dns64_internal",
+      "to": "service:unbound_dns64",
+      "key": "domain:dns64_internal->routes_to->service:unbound_dns64",
       "properties": {}
     },
     {
@@ -5169,23 +5224,9 @@
     },
     {
       "table": "routes_to",
-      "from": "domain:webmail_diegonmarcos_com",
-      "to": "service:cypht",
-      "key": "domain:webmail_diegonmarcos_com->routes_to->service:cypht",
-      "properties": {}
-    },
-    {
-      "table": "routes_to",
       "from": "domain:mail_puller_diegonmarcos_com",
       "to": "service:mail_puller",
       "key": "domain:mail_puller_diegonmarcos_com->routes_to->service:mail_puller",
-      "properties": {}
-    },
-    {
-      "table": "routes_to",
-      "from": "domain:matrix_diegonmarcos_com",
-      "to": "service:matrix_continuwuity",
-      "key": "domain:matrix_diegonmarcos_com->routes_to->service:matrix_continuwuity",
       "properties": {}
     },
     {
@@ -5219,8 +5260,8 @@
     {
       "table": "routes_to",
       "from": "domain:api_diegonmarcos_com",
-      "to": "service:crawlee_cloud",
-      "key": "domain:api_diegonmarcos_com->routes_to->service:crawlee_cloud",
+      "to": "service:scrappers_api",
+      "key": "domain:api_diegonmarcos_com->routes_to->service:scrappers_api",
       "properties": {}
     },
     {
@@ -5235,6 +5276,13 @@
       "from": "domain:photos_diegonmarcos_com",
       "to": "service:photoprism",
       "key": "domain:photos_diegonmarcos_com->routes_to->service:photoprism",
+      "properties": {}
+    },
+    {
+      "table": "routes_to",
+      "from": "domain:playlist_diegonmarcos_com",
+      "to": "service:playlist_syncer",
+      "key": "domain:playlist_diegonmarcos_com->routes_to->service:playlist_syncer",
       "properties": {}
     },
     {
@@ -5295,6 +5343,13 @@
     },
     {
       "table": "routes_to",
+      "from": "domain:send_diegonmarcos_com",
+      "to": "service:send",
+      "key": "domain:send_diegonmarcos_com->routes_to->service:send",
+      "properties": {}
+    },
+    {
+      "table": "routes_to",
       "from": "domain:vault_diegonmarcos_com",
       "to": "service:vaultwarden",
       "key": "domain:vault_diegonmarcos_com->routes_to->service:vaultwarden",
@@ -5302,16 +5357,44 @@
     },
     {
       "table": "belongs_to_repo",
-      "from": "module:infra_api_c3_analytics_api",
+      "from": "module:user_comm_matrix_continuwuity",
       "to": "repo:cloud",
-      "key": "module:infra_api_c3_analytics_api->belongs_to_repo->repo:cloud",
+      "key": "module:user_comm_matrix_continuwuity->belongs_to_repo->repo:cloud",
       "properties": {}
     },
     {
       "table": "implements",
-      "from": "module:infra_api_c3_analytics_api",
-      "to": "service:c3_analytics_api",
-      "key": "module:infra_api_c3_analytics_api->implements->service:c3_analytics_api",
+      "from": "module:user_comm_matrix_continuwuity",
+      "to": "service:matrix_continuwuity",
+      "key": "module:user_comm_matrix_continuwuity->implements->service:matrix_continuwuity",
+      "properties": {}
+    },
+    {
+      "table": "belongs_to_repo",
+      "from": "module:bc_obs_alerts_api",
+      "to": "repo:cloud",
+      "key": "module:bc_obs_alerts_api->belongs_to_repo->repo:cloud",
+      "properties": {}
+    },
+    {
+      "table": "implements",
+      "from": "module:bc_obs_alerts_api",
+      "to": "service:alerts_api",
+      "key": "module:bc_obs_alerts_api->implements->service:alerts_api",
+      "properties": {}
+    },
+    {
+      "table": "belongs_to_repo",
+      "from": "module:infra_ai_languagetool",
+      "to": "repo:cloud",
+      "key": "module:infra_ai_languagetool->belongs_to_repo->repo:cloud",
+      "properties": {}
+    },
+    {
+      "table": "implements",
+      "from": "module:infra_ai_languagetool",
+      "to": "service:languagetool",
+      "key": "module:infra_ai_languagetool->implements->service:languagetool",
       "properties": {}
     },
     {
@@ -5550,6 +5633,20 @@
       "from": "module:infra_net_hickory_dns",
       "to": "service:hickory_dns",
       "key": "module:infra_net_hickory_dns->implements->service:hickory_dns",
+      "properties": {}
+    },
+    {
+      "table": "belongs_to_repo",
+      "from": "module:infra_net_unbound_dns64",
+      "to": "repo:cloud",
+      "key": "module:infra_net_unbound_dns64->belongs_to_repo->repo:cloud",
+      "properties": {}
+    },
+    {
+      "table": "implements",
+      "from": "module:infra_net_unbound_dns64",
+      "to": "service:unbound_dns64",
+      "key": "module:infra_net_unbound_dns64->implements->service:unbound_dns64",
       "properties": {}
     },
     {
@@ -5806,44 +5903,30 @@
     },
     {
       "table": "belongs_to_repo",
-      "from": "module:user_ai_ollama",
+      "from": "module:user_ai_hermes_agent",
       "to": "repo:cloud",
-      "key": "module:user_ai_ollama->belongs_to_repo->repo:cloud",
+      "key": "module:user_ai_hermes_agent->belongs_to_repo->repo:cloud",
       "properties": {}
     },
     {
       "table": "implements",
-      "from": "module:user_ai_ollama",
-      "to": "service:ollama",
-      "key": "module:user_ai_ollama->implements->service:ollama",
+      "from": "module:user_ai_hermes_agent",
+      "to": "service:hermes_agent",
+      "key": "module:user_ai_hermes_agent->implements->service:hermes_agent",
       "properties": {}
     },
     {
       "table": "belongs_to_repo",
-      "from": "module:user_ai_ollama_arm",
+      "from": "module:user_ai_my_ai_api",
       "to": "repo:cloud",
-      "key": "module:user_ai_ollama_arm->belongs_to_repo->repo:cloud",
+      "key": "module:user_ai_my_ai_api->belongs_to_repo->repo:cloud",
       "properties": {}
     },
     {
       "table": "implements",
-      "from": "module:user_ai_ollama_arm",
-      "to": "service:ollama_arm",
-      "key": "module:user_ai_ollama_arm->implements->service:ollama_arm",
-      "properties": {}
-    },
-    {
-      "table": "belongs_to_repo",
-      "from": "module:user_ai_rig_agentic_sonn_14bq8",
-      "to": "repo:cloud",
-      "key": "module:user_ai_rig_agentic_sonn_14bq8->belongs_to_repo->repo:cloud",
-      "properties": {}
-    },
-    {
-      "table": "implements",
-      "from": "module:user_ai_rig_agentic_sonn_14bq8",
-      "to": "service:rig_agentic_sonn_14bq8",
-      "key": "module:user_ai_rig_agentic_sonn_14bq8->implements->service:rig_agentic_sonn_14bq8",
+      "from": "module:user_ai_my_ai_api",
+      "to": "service:my_ai_api",
+      "key": "module:user_ai_my_ai_api->implements->service:my_ai_api",
       "properties": {}
     },
     {
@@ -5876,20 +5959,6 @@
     },
     {
       "table": "belongs_to_repo",
-      "from": "module:user_comm_cypht",
-      "to": "repo:cloud",
-      "key": "module:user_comm_cypht->belongs_to_repo->repo:cloud",
-      "properties": {}
-    },
-    {
-      "table": "implements",
-      "from": "module:user_comm_cypht",
-      "to": "service:cypht",
-      "key": "module:user_comm_cypht->implements->service:cypht",
-      "properties": {}
-    },
-    {
-      "table": "belongs_to_repo",
       "from": "module:user_comm_mail_puller",
       "to": "repo:cloud",
       "key": "module:user_comm_mail_puller->belongs_to_repo->repo:cloud",
@@ -5900,20 +5969,6 @@
       "from": "module:user_comm_mail_puller",
       "to": "service:mail_puller",
       "key": "module:user_comm_mail_puller->implements->service:mail_puller",
-      "properties": {}
-    },
-    {
-      "table": "belongs_to_repo",
-      "from": "module:user_comm_matrix_continuwuity",
-      "to": "repo:cloud",
-      "key": "module:user_comm_matrix_continuwuity->belongs_to_repo->repo:cloud",
-      "properties": {}
-    },
-    {
-      "table": "implements",
-      "from": "module:user_comm_matrix_continuwuity",
-      "to": "service:matrix_continuwuity",
-      "key": "module:user_comm_matrix_continuwuity->implements->service:matrix_continuwuity",
       "properties": {}
     },
     {
@@ -5988,16 +6043,16 @@
     },
     {
       "table": "belongs_to_repo",
-      "from": "module:user_fin_crawlee_cloud",
+      "from": "module:user_data_scrappers_api",
       "to": "repo:cloud",
-      "key": "module:user_fin_crawlee_cloud->belongs_to_repo->repo:cloud",
+      "key": "module:user_data_scrappers_api->belongs_to_repo->repo:cloud",
       "properties": {}
     },
     {
       "table": "implements",
-      "from": "module:user_fin_crawlee_cloud",
-      "to": "service:crawlee_cloud",
-      "key": "module:user_fin_crawlee_cloud->implements->service:crawlee_cloud",
+      "from": "module:user_data_scrappers_api",
+      "to": "service:scrappers_api",
+      "key": "module:user_data_scrappers_api->implements->service:scrappers_api",
       "properties": {}
     },
     {
@@ -6026,6 +6081,20 @@
       "from": "module:user_media_photoprism",
       "to": "service:photoprism",
       "key": "module:user_media_photoprism->implements->service:photoprism",
+      "properties": {}
+    },
+    {
+      "table": "belongs_to_repo",
+      "from": "module:user_media_playlist_syncer",
+      "to": "repo:cloud",
+      "key": "module:user_media_playlist_syncer->belongs_to_repo->repo:cloud",
+      "properties": {}
+    },
+    {
+      "table": "implements",
+      "from": "module:user_media_playlist_syncer",
+      "to": "service:playlist_syncer",
+      "key": "module:user_media_playlist_syncer->implements->service:playlist_syncer",
       "properties": {}
     },
     {
@@ -6152,6 +6221,20 @@
       "from": "module:user_prod_paca",
       "to": "service:paca",
       "key": "module:user_prod_paca->implements->service:paca",
+      "properties": {}
+    },
+    {
+      "table": "belongs_to_repo",
+      "from": "module:user_prod_send",
+      "to": "repo:cloud",
+      "key": "module:user_prod_send->belongs_to_repo->repo:cloud",
+      "properties": {}
+    },
+    {
+      "table": "implements",
+      "from": "module:user_prod_send",
+      "to": "service:send",
+      "key": "module:user_prod_send->implements->service:send",
       "properties": {}
     },
     {

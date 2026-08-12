@@ -4,7 +4,7 @@
     "description": "Caddy route definitions -- consumed by flake.nix to generate Caddyfile",
     "format_version": 3,
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,13 +14,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }
@@ -215,6 +215,18 @@
   ],
   "routes": [
     {
+      "domain": "matrix.diegonmarcos.com",
+      "upstream": "10.0.0.6:8008",
+      "auth": "none",
+      "comment": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443."
+    },
+    {
+      "domain": "languagetool.diegonmarcos.com",
+      "upstream": "10.0.0.6:8010",
+      "wg_only": true,
+      "comment": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps"
+    },
+    {
       "domain": "git.diegonmarcos.com",
       "upstream": "10.0.0.6:3002",
       "comment": "Self-hosted Git service"
@@ -265,22 +277,16 @@
       "comment": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot"
     },
     {
-      "domain": "webmail.diegonmarcos.com",
-      "upstream": "10.0.0.3:8889",
-      "wg_only": true,
-      "comment": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com"
-    },
-    {
-      "domain": "matrix.diegonmarcos.com",
-      "upstream": "10.0.0.6:8008",
-      "auth": "none",
-      "comment": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443."
-    },
-    {
       "domain": "messenger.diegonmarcos.com",
       "upstream": "10.0.0.6:8083",
       "wg_only": true,
       "comment": "Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA."
+    },
+    {
+      "domain": "webmail.diegonmarcos.com",
+      "upstream": "10.0.0.3:8888",
+      "wg_only": true,
+      "comment": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
     },
     {
       "domain": "jmap.diegonmarcos.com",
@@ -296,6 +302,16 @@
       "landing_page": "myphotos",
       "wg_only": true,
       "comment": "PhotoPrism AI-powered photo management (oci-flex-1)"
+    },
+    {
+      "domain": "playlist.diegonmarcos.com",
+      "upstream": "10.0.0.6:8090",
+      "wg_only": true,
+      "bypass_paths": [
+        "/api/auth/spotify/callback",
+        "/api/auth/youtube/callback"
+      ],
+      "comment": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative."
     },
     {
       "domain": "cal.diegonmarcos.com",
@@ -318,6 +334,7 @@
     {
       "domain": "sheets.diegonmarcos.com",
       "upstream": "10.0.0.6:3011",
+      "auth": "none",
       "wg_only": true,
       "comment": "Grist spreadsheet/database (sheets.diegonmarcos.com)"
     },
@@ -326,6 +343,13 @@
       "upstream": "10.0.0.6:8095",
       "wg_only": true,
       "comment": "Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1)."
+    },
+    {
+      "domain": "send.diegonmarcos.com",
+      "upstream": "10.0.0.6:3016",
+      "auth": "none",
+      "wg_only": true,
+      "comment": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time."
     },
     {
       "domain": "vault.diegonmarcos.com",
@@ -339,12 +363,6 @@
     {
       "parent_domain": "api.diegonmarcos.com",
       "paths": [
-        {
-          "base_path": "/c3a",
-          "upstream": "10.0.0.1:8085",
-          "wg_only": true,
-          "comment": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve"
-        },
         {
           "base_path": "/c3-infra-api",
           "upstream": "10.0.0.6:8081",
@@ -371,10 +389,13 @@
           "comment": "C3 Services REST API — service API gateway Fastify API"
         },
         {
-          "base_path": "/crawlee",
-          "upstream": "10.0.0.6:3000",
-          "wg_only": true,
-          "comment": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
+          "base_path": "/scrappers",
+          "upstream": "10.0.0.6:3020",
+          "public_paths": [
+            "/scrappers/health",
+            "/scrappers/openapi.json"
+          ],
+          "comment": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output."
         },
         {
           "base_path": "/fin-api",
@@ -505,7 +526,8 @@
         {
           "base_path": "/c3-infra-mcp",
           "upstream": "10.0.0.6:3100",
-          "wg_only": true
+          "wg_only": true,
+          "bearer_auth": true
         },
         {
           "base_path": "/c3-services-mcp",
@@ -546,8 +568,10 @@
     "ntfy": {
       "domain": "rss.diegonmarcos.com",
       "upstream": "10.0.0.6:8090",
+      "gateway_upstream": "10.0.0.6:8091",
       "comment": "ntfy notifications -- 3-tier auth: JWT bearer, tk_ bearer, cookie",
-      "wg_only": true
+      "wg_only": true,
+      "feed_auth": "none"
     },
     "analytics": {
       "domain": "analytics.diegonmarcos.com/matomo",
@@ -577,8 +601,8 @@
   },
   "internal_routes": [
     {
-      "service": "c3-analytics-api.app",
-      "upstream": "10.0.0.1:8085"
+      "service": "matrix-continuwuity.app",
+      "upstream": "10.0.0.6:8008"
     },
     {
       "service": "c3-infra-api.app",
@@ -619,6 +643,10 @@
     {
       "service": "gitea.app",
       "upstream": "10.0.0.6:3002"
+    },
+    {
+      "service": "unbound-dns64.app",
+      "upstream": "10.0.0.4:53"
     },
     {
       "service": "wireguard-mesh.app",
@@ -673,20 +701,8 @@
       "upstream": "10.0.0.6:3105"
     },
     {
-      "service": "rig-agentic-sonn-14bq8.app",
-      "upstream": "10.0.0.6:8091"
-    },
-    {
       "service": "mattermost.app",
       "upstream": "10.0.0.6:8065"
-    },
-    {
-      "service": "cypht.app",
-      "upstream": "10.0.0.3:8889"
-    },
-    {
-      "service": "matrix-continuwuity.app",
-      "upstream": "10.0.0.6:8008"
     },
     {
       "service": "matrix-element.app",
@@ -701,8 +717,8 @@
       "upstream": "10.0.0.3:2443"
     },
     {
-      "service": "crawlee.app",
-      "upstream": "10.0.0.6:3000"
+      "service": "scrappers-api.app",
+      "upstream": "10.0.0.6:3020"
     },
     {
       "service": "fin-api.app",
@@ -711,6 +727,10 @@
     {
       "service": "photoprism.app",
       "upstream": "10.0.0.6:3013"
+    },
+    {
+      "service": "playlist-syncer.app",
+      "upstream": "10.0.0.6:8090"
     },
     {
       "service": "news-gdelt.app",
@@ -747,6 +767,10 @@
     {
       "service": "paca.app",
       "upstream": "10.0.0.6:8095"
+    },
+    {
+      "service": "send.app",
+      "upstream": "10.0.0.6:3016"
     },
     {
       "service": "vaultwarden.app",
@@ -792,23 +816,23 @@
   "all_app_urls": [
     {
       "kind": "redirect",
-      "service": "c3-analytics-api.app",
-      "redirect_to": "https://c3-analytics-api-http-8085.app",
-      "container": "c3-analytics-api",
+      "service": "continuwuity.app",
+      "redirect_to": "https://continuwuity-http-8008.app",
+      "container": "continuwuity",
       "container_key": "app",
-      "svc": "c3-analytics-api",
-      "vm": "gcp-E2-f_0"
+      "svc": "matrix-continuwuity",
+      "vm": "oci-A1-f_0"
     },
     {
       "kind": "canonical",
-      "service": "c3-analytics-api-http-8085.app",
-      "container": "c3-analytics-api",
+      "service": "continuwuity-http-8008.app",
+      "container": "continuwuity",
       "container_key": "app",
-      "svc": "c3-analytics-api",
-      "vm": "gcp-E2-f_0",
-      "port": 8085,
+      "svc": "matrix-continuwuity",
+      "vm": "oci-A1-f_0",
+      "port": 8008,
       "protocol": "http",
-      "upstream": "10.0.0.1:8085",
+      "upstream": "10.0.0.6:8008",
       "source": "containers.app.port"
     },
     {
@@ -1002,23 +1026,6 @@
     },
     {
       "kind": "redirect",
-      "service": "cloud-builder-x.app",
-      "redirect_to": "https://cloud-builder-x-null.app",
-      "container": "cloud-builder-x",
-      "container_key": "app",
-      "svc": "cloud-builder-x",
-      "vm": "oci-A1-f_0"
-    },
-    {
-      "kind": "portless",
-      "service": "cloud-builder-x-null.app",
-      "container": "cloud-builder-x",
-      "container_key": "app",
-      "svc": "cloud-builder-x",
-      "vm": "oci-A1-f_0"
-    },
-    {
-      "kind": "redirect",
       "service": "gitea.app",
       "redirect_to": "https://gitea-http-3002.app",
       "container": "gitea",
@@ -1036,6 +1043,27 @@
       "port": 3002,
       "protocol": "http",
       "upstream": "10.0.0.6:3002",
+      "source": "containers.app.port"
+    },
+    {
+      "kind": "redirect",
+      "service": "unbound-dns64.app",
+      "redirect_to": "https://unbound-dns64-udp-53.app",
+      "container": "unbound-dns64",
+      "container_key": "app",
+      "svc": "unbound-dns64",
+      "vm": "oci-E2-f_1"
+    },
+    {
+      "kind": "canonical",
+      "service": "unbound-dns64-udp-53.app",
+      "container": "unbound-dns64",
+      "container_key": "app",
+      "svc": "unbound-dns64",
+      "vm": "oci-E2-f_1",
+      "port": 53,
+      "protocol": "udp",
+      "upstream": "10.0.0.4:53",
       "source": "containers.app.port"
     },
     {
@@ -1313,27 +1341,6 @@
     },
     {
       "kind": "redirect",
-      "service": "rig-agentic-sonn-14bq8.app",
-      "redirect_to": "https://rig-agentic-sonn-14bq8-http-8091.app",
-      "container": "rig-agentic-sonn-14bq8",
-      "container_key": "app",
-      "svc": "rig-agentic-sonn-14bq8",
-      "vm": "oci-A1-f_0"
-    },
-    {
-      "kind": "canonical",
-      "service": "rig-agentic-sonn-14bq8-http-8091.app",
-      "container": "rig-agentic-sonn-14bq8",
-      "container_key": "app",
-      "svc": "rig-agentic-sonn-14bq8",
-      "vm": "oci-A1-f_0",
-      "port": 8091,
-      "protocol": "http",
-      "upstream": "10.0.0.6:8091",
-      "source": "containers.app.port"
-    },
-    {
-      "kind": "redirect",
       "service": "mattermost.app",
       "redirect_to": "https://mattermost-http-8065.app",
       "container": "mattermost",
@@ -1351,48 +1358,6 @@
       "port": 8065,
       "protocol": "http",
       "upstream": "10.0.0.6:8065",
-      "source": "containers.app.port"
-    },
-    {
-      "kind": "redirect",
-      "service": "cypht.app",
-      "redirect_to": "https://cypht-http-8889.app",
-      "container": "cypht",
-      "container_key": "app",
-      "svc": "cypht",
-      "vm": "oci-E2-f_0"
-    },
-    {
-      "kind": "canonical",
-      "service": "cypht-http-8889.app",
-      "container": "cypht",
-      "container_key": "app",
-      "svc": "cypht",
-      "vm": "oci-E2-f_0",
-      "port": 8889,
-      "protocol": "http",
-      "upstream": "10.0.0.3:8889",
-      "source": "containers.app.port"
-    },
-    {
-      "kind": "redirect",
-      "service": "continuwuity.app",
-      "redirect_to": "https://continuwuity-http-8008.app",
-      "container": "continuwuity",
-      "container_key": "app",
-      "svc": "matrix-continuwuity",
-      "vm": "oci-A1-f_0"
-    },
-    {
-      "kind": "canonical",
-      "service": "continuwuity-http-8008.app",
-      "container": "continuwuity",
-      "container_key": "app",
-      "svc": "matrix-continuwuity",
-      "vm": "oci-A1-f_0",
-      "port": 8008,
-      "protocol": "http",
-      "upstream": "10.0.0.6:8008",
       "source": "containers.app.port"
     },
     {
@@ -1525,23 +1490,23 @@
     },
     {
       "kind": "redirect",
-      "service": "crawlee_api.app",
-      "redirect_to": "https://crawlee_api-http-3000.app",
-      "container": "crawlee_api",
+      "service": "scrappers-api.app",
+      "redirect_to": "https://scrappers-api-http-3020.app",
+      "container": "scrappers-api",
       "container_key": "app",
-      "svc": "crawlee-cloud",
+      "svc": "scrappers-api",
       "vm": "oci-A1-f_0"
     },
     {
       "kind": "canonical",
-      "service": "crawlee_api-http-3000.app",
-      "container": "crawlee_api",
+      "service": "scrappers-api-http-3020.app",
+      "container": "scrappers-api",
       "container_key": "app",
-      "svc": "crawlee-cloud",
+      "svc": "scrappers-api",
       "vm": "oci-A1-f_0",
-      "port": 3000,
+      "port": 3020,
       "protocol": "http",
-      "upstream": "10.0.0.6:3000",
+      "upstream": "10.0.0.6:3020",
       "source": "containers.app.port"
     },
     {
@@ -1584,6 +1549,27 @@
       "port": 3013,
       "protocol": "http",
       "upstream": "10.0.0.6:3013",
+      "source": "containers.app.port"
+    },
+    {
+      "kind": "redirect",
+      "service": "playlist-syncer.app",
+      "redirect_to": "https://playlist-syncer-http-8090.app",
+      "container": "playlist-syncer",
+      "container_key": "app",
+      "svc": "playlist-syncer",
+      "vm": "oci-A1-f_0"
+    },
+    {
+      "kind": "canonical",
+      "service": "playlist-syncer-http-8090.app",
+      "container": "playlist-syncer",
+      "container_key": "app",
+      "svc": "playlist-syncer",
+      "vm": "oci-A1-f_0",
+      "port": 8090,
+      "protocol": "http",
+      "upstream": "10.0.0.6:8090",
       "source": "containers.app.port"
     },
     {
@@ -1770,6 +1756,27 @@
       "protocol": "http",
       "upstream": "10.0.0.6:8095",
       "source": "containers.gateway.port"
+    },
+    {
+      "kind": "redirect",
+      "service": "send_app.app",
+      "redirect_to": "https://send_app-http-3016.app",
+      "container": "send_app",
+      "container_key": "app",
+      "svc": "send",
+      "vm": "oci-A1-f_0"
+    },
+    {
+      "kind": "canonical",
+      "service": "send_app-http-3016.app",
+      "container": "send_app",
+      "container_key": "app",
+      "svc": "send",
+      "vm": "oci-A1-f_0",
+      "port": 3016,
+      "protocol": "http",
+      "upstream": "10.0.0.6:3016",
+      "source": "containers.app.port"
     },
     {
       "kind": "redirect",
@@ -2003,16 +2010,6 @@
   "public_B_apis": [
     {
       "host": "api.diegonmarcos.com",
-      "path": "/c3a",
-      "upstream": "10.0.0.1:8085",
-      "kind": "reverse_proxy",
-      "tls": "public",
-      "zone": "com",
-      "service": null,
-      "notes": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve"
-    },
-    {
-      "host": "api.diegonmarcos.com",
       "path": "/c3-infra-api",
       "upstream": "10.0.0.6:8081",
       "kind": "reverse_proxy",
@@ -2043,13 +2040,13 @@
     },
     {
       "host": "api.diegonmarcos.com",
-      "path": "/crawlee",
-      "upstream": "10.0.0.6:3000",
+      "path": "/scrappers",
+      "upstream": "10.0.0.6:3020",
       "kind": "reverse_proxy",
       "tls": "public",
       "zone": "com",
       "service": null,
-      "notes": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)"
+      "notes": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output."
     },
     {
       "host": "api.diegonmarcos.com",
@@ -2095,6 +2092,26 @@
     }
   ],
   "public_D_others": [
+    {
+      "host": "matrix.diegonmarcos.com",
+      "path": null,
+      "upstream": "10.0.0.6:8008",
+      "kind": "reverse_proxy",
+      "tls": "public",
+      "zone": "com",
+      "service": null,
+      "notes": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443."
+    },
+    {
+      "host": "languagetool.diegonmarcos.com",
+      "path": null,
+      "upstream": "10.0.0.6:8010",
+      "kind": "reverse_proxy",
+      "tls": "public",
+      "zone": "com",
+      "service": null,
+      "notes": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps"
+    },
     {
       "host": "git.diegonmarcos.com",
       "path": null,
@@ -2176,26 +2193,6 @@
       "notes": "Mattermost team chat (TE 11.x ESR) with ntfy bridge and C3 command bot"
     },
     {
-      "host": "webmail.diegonmarcos.com",
-      "path": null,
-      "upstream": "10.0.0.3:8889",
-      "kind": "reverse_proxy",
-      "tls": "public",
-      "zone": "com",
-      "service": null,
-      "notes": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com"
-    },
-    {
-      "host": "matrix.diegonmarcos.com",
-      "path": null,
-      "upstream": "10.0.0.6:8008",
-      "kind": "reverse_proxy",
-      "tls": "public",
-      "zone": "com",
-      "service": null,
-      "notes": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443."
-    },
-    {
       "host": "messenger.diegonmarcos.com",
       "path": null,
       "upstream": "10.0.0.6:8083",
@@ -2204,6 +2201,16 @@
       "zone": "com",
       "service": null,
       "notes": "Element Web — browser Matrix client for the Continuwuity homeserver. Served at messenger.diegonmarcos.com behind Authelia 2FA."
+    },
+    {
+      "host": "webmail.diegonmarcos.com",
+      "path": null,
+      "upstream": "10.0.0.3:8888",
+      "kind": "reverse_proxy",
+      "tls": "public",
+      "zone": "com",
+      "service": null,
+      "notes": "SnappyMail webmail client (mail.diegonmarcos.com/webmail)"
     },
     {
       "host": "jmap.diegonmarcos.com",
@@ -2224,6 +2231,16 @@
       "zone": "com",
       "service": null,
       "notes": "PhotoPrism AI-powered photo management (oci-flex-1)"
+    },
+    {
+      "host": "playlist.diegonmarcos.com",
+      "path": null,
+      "upstream": "10.0.0.6:8090",
+      "kind": "reverse_proxy",
+      "tls": "public",
+      "zone": "com",
+      "service": null,
+      "notes": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative."
     },
     {
       "host": "cal.diegonmarcos.com",
@@ -2274,6 +2291,16 @@
       "zone": "com",
       "service": null,
       "notes": "Paca — AI-native open-source project management (Jira/Trello alternative). Core stack: Go API + React web + Socket.IO realtime + Postgres + Valkey, behind an nginx gateway. MinIO + ai-agent intentionally dropped (S3 = OCI; no LLM agent in v1)."
+    },
+    {
+      "host": "send.diegonmarcos.com",
+      "path": null,
+      "upstream": "10.0.0.6:3016",
+      "kind": "reverse_proxy",
+      "tls": "public",
+      "zone": "com",
+      "service": null,
+      "notes": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time."
     },
     {
       "host": "vault.diegonmarcos.com",
@@ -2398,9 +2425,9 @@
   ],
   "private_A0_app_short": [
     {
-      "host": "c3-analytics-api.app",
+      "host": "matrix-continuwuity.app",
       "path": null,
-      "upstream": "10.0.0.1:8085",
+      "upstream": "10.0.0.6:8008",
       "kind": "reverse_proxy",
       "tls": "internal",
       "zone": "com",
@@ -2501,6 +2528,16 @@
       "host": "gitea.app",
       "path": null,
       "upstream": "10.0.0.6:3002",
+      "kind": "reverse_proxy",
+      "tls": "internal",
+      "zone": "com",
+      "service": null,
+      "notes": null
+    },
+    {
+      "host": "unbound-dns64.app",
+      "path": null,
+      "upstream": "10.0.0.4:53",
       "kind": "reverse_proxy",
       "tls": "internal",
       "zone": "com",
@@ -2638,39 +2675,9 @@
       "notes": null
     },
     {
-      "host": "rig-agentic-sonn-14bq8.app",
-      "path": null,
-      "upstream": "10.0.0.6:8091",
-      "kind": "reverse_proxy",
-      "tls": "internal",
-      "zone": "com",
-      "service": null,
-      "notes": null
-    },
-    {
       "host": "mattermost.app",
       "path": null,
       "upstream": "10.0.0.6:8065",
-      "kind": "reverse_proxy",
-      "tls": "internal",
-      "zone": "com",
-      "service": null,
-      "notes": null
-    },
-    {
-      "host": "cypht.app",
-      "path": null,
-      "upstream": "10.0.0.3:8889",
-      "kind": "reverse_proxy",
-      "tls": "internal",
-      "zone": "com",
-      "service": null,
-      "notes": null
-    },
-    {
-      "host": "matrix-continuwuity.app",
-      "path": null,
-      "upstream": "10.0.0.6:8008",
       "kind": "reverse_proxy",
       "tls": "internal",
       "zone": "com",
@@ -2708,9 +2715,9 @@
       "notes": null
     },
     {
-      "host": "crawlee.app",
+      "host": "scrappers-api.app",
       "path": null,
-      "upstream": "10.0.0.6:3000",
+      "upstream": "10.0.0.6:3020",
       "kind": "reverse_proxy",
       "tls": "internal",
       "zone": "com",
@@ -2731,6 +2738,16 @@
       "host": "photoprism.app",
       "path": null,
       "upstream": "10.0.0.6:3013",
+      "kind": "reverse_proxy",
+      "tls": "internal",
+      "zone": "com",
+      "service": null,
+      "notes": null
+    },
+    {
+      "host": "playlist-syncer.app",
+      "path": null,
+      "upstream": "10.0.0.6:8090",
       "kind": "reverse_proxy",
       "tls": "internal",
       "zone": "com",
@@ -2828,6 +2845,16 @@
       "notes": null
     },
     {
+      "host": "send.app",
+      "path": null,
+      "upstream": "10.0.0.6:3016",
+      "kind": "reverse_proxy",
+      "tls": "internal",
+      "zone": "com",
+      "service": null,
+      "notes": null
+    },
+    {
       "host": "vaultwarden.app",
       "path": null,
       "upstream": "10.0.0.6:8880",
@@ -2840,13 +2867,13 @@
   ],
   "private_A1_app_canonical": [
     {
-      "host": "c3-analytics-api-http-8085.app",
+      "host": "continuwuity-http-8008.app",
       "path": null,
-      "upstream": "10.0.0.1:8085",
+      "upstream": "10.0.0.6:8008",
       "kind": "reverse_proxy",
       "tls": "on_demand",
       "zone": "com",
-      "service": "c3-analytics-api",
+      "service": "matrix-continuwuity",
       "notes": null
     },
     {
@@ -2947,6 +2974,16 @@
       "tls": "on_demand",
       "zone": "com",
       "service": "gitea",
+      "notes": null
+    },
+    {
+      "host": "unbound-dns64-udp-53.app",
+      "path": null,
+      "upstream": "10.0.0.4:53",
+      "kind": "reverse_proxy",
+      "tls": "on_demand",
+      "zone": "com",
+      "service": "unbound-dns64",
       "notes": null
     },
     {
@@ -3080,16 +3117,6 @@
       "notes": null
     },
     {
-      "host": "rig-agentic-sonn-14bq8-http-8091.app",
-      "path": null,
-      "upstream": "10.0.0.6:8091",
-      "kind": "reverse_proxy",
-      "tls": "on_demand",
-      "zone": "com",
-      "service": "rig-agentic-sonn-14bq8",
-      "notes": null
-    },
-    {
       "host": "mattermost-http-8065.app",
       "path": null,
       "upstream": "10.0.0.6:8065",
@@ -3097,26 +3124,6 @@
       "tls": "on_demand",
       "zone": "com",
       "service": "chat-mattermost",
-      "notes": null
-    },
-    {
-      "host": "cypht-http-8889.app",
-      "path": null,
-      "upstream": "10.0.0.3:8889",
-      "kind": "reverse_proxy",
-      "tls": "on_demand",
-      "zone": "com",
-      "service": "cypht",
-      "notes": null
-    },
-    {
-      "host": "continuwuity-http-8008.app",
-      "path": null,
-      "upstream": "10.0.0.6:8008",
-      "kind": "reverse_proxy",
-      "tls": "on_demand",
-      "zone": "com",
-      "service": "matrix-continuwuity",
       "notes": null
     },
     {
@@ -3190,14 +3197,14 @@
       "notes": null
     },
     {
-      "host": "crawlee_api-http-3000.app",
+      "host": "scrappers-api-http-3020.app",
       "path": null,
-      "upstream": "10.0.0.6:3000",
+      "upstream": "10.0.0.6:3020",
       "kind": "reverse_proxy",
       "tls": "on_demand",
       "zone": "com",
-      "service": "crawlee-cloud",
-      "notes": "underscore → TLS broken"
+      "service": "scrappers-api",
+      "notes": null
     },
     {
       "host": "fin-api-http-8340.app",
@@ -3218,6 +3225,16 @@
       "zone": "com",
       "service": "photoprism",
       "notes": "underscore → TLS broken"
+    },
+    {
+      "host": "playlist-syncer-http-8090.app",
+      "path": null,
+      "upstream": "10.0.0.6:8090",
+      "kind": "reverse_proxy",
+      "tls": "on_demand",
+      "zone": "com",
+      "service": "playlist-syncer",
+      "notes": null
     },
     {
       "host": "calendar-radicale-http-5232.app",
@@ -3300,6 +3317,16 @@
       "notes": null
     },
     {
+      "host": "send_app-http-3016.app",
+      "path": null,
+      "upstream": "10.0.0.6:3016",
+      "kind": "reverse_proxy",
+      "tls": "on_demand",
+      "zone": "com",
+      "service": "send",
+      "notes": "underscore → TLS broken"
+    },
+    {
       "host": "vaultwarden-http-8880.app",
       "path": null,
       "upstream": "10.0.0.6:8880",
@@ -3311,16 +3338,6 @@
     }
   ],
   "private_A2_app_portless": [
-    {
-      "host": "cloud-builder-x-null.app",
-      "path": null,
-      "upstream": "204",
-      "kind": "portless",
-      "tls": "on_demand",
-      "zone": "app",
-      "service": "cloud-builder-x",
-      "notes": null
-    },
     {
       "host": "stalwart-sorter-null.app",
       "path": null,

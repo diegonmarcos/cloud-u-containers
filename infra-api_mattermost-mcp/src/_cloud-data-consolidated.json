@@ -431,25 +431,25 @@
           "wg_ip": "10.0.0.5",
           "wg_ipv6": "fd0c:1d00::5",
           "role": "client",
-          "wg_public_key": "ii4FHxUbHiW9TOcNNlgiqHJXt3NMhe10W3dCdD6SRCY="
+          "wg_public_key": null
         },
         "termux": {
           "wg_ip": "10.0.0.9",
           "wg_ipv6": "fd0c:1d00::9",
           "role": "client",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
+          "wg_public_key": null
         },
         "gha-runner": {
           "wg_ip": "10.0.0.200",
           "wg_ipv6": "fd0c:1d00::200",
           "role": "client",
-          "wg_public_key": "QEPkGSsJXX39plcG+DwJwkSYgmEn+aMlaOF7gDPPpl8="
+          "wg_public_key": null
         },
         "health-runner": {
           "wg_ip": "10.0.0.201",
           "wg_ipv6": "fd0c:1d00::201",
           "role": "client",
-          "wg_public_key": "VeUK6t5/oXQiACcqXgCGkzLZlP2iBTgPghhhwFADViQ="
+          "wg_public_key": null
         }
       }
     },
@@ -499,28 +499,28 @@
           "wg_ipv6": "fd0c:1d01::5",
           "role": "client",
           "_doc": "Diego's laptop. wg-public access only.",
-          "wg_public_key": "hG1x8b4JXsD0r0TXVD+ExVBigKRipZwY/vc8ui3sIQY="
+          "wg_public_key": null
         },
         "termux": {
           "wg_ip": "10.1.0.9",
           "wg_ipv6": "fd0c:1d01::9",
           "role": "client",
           "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/.",
-          "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
+          "wg_public_key": null
         },
         "termux-share": {
           "wg_ip": "10.1.0.10",
           "wg_ipv6": "fd0c:1d01::10",
           "role": "client",
           "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0.",
-          "wg_public_key": "nNpzC6gB2vm0jV+i3o+WC2jHIafII6ek202naOEhZX8="
+          "wg_public_key": null
         },
         "health-runner": {
           "wg_ip": "10.1.0.11",
           "wg_ipv6": "fd0c:1d01::11",
           "role": "client",
           "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block.",
-          "wg_public_key": "DBEHl3jJehUxuLxLn4cEnNk5c5ggH3fmB6qHDwTqw28="
+          "wg_public_key": null
         }
       }
     },
@@ -608,28 +608,28 @@
         "wg_ipv6": "fd0c:1d01::5",
         "role": "client",
         "_doc": "Diego's laptop. wg-public access only.",
-        "wg_public_key": "hG1x8b4JXsD0r0TXVD+ExVBigKRipZwY/vc8ui3sIQY="
+        "wg_public_key": null
       },
       "termux": {
         "wg_ip": "10.1.0.9",
         "wg_ipv6": "fd0c:1d01::9",
         "role": "client",
         "_doc": "Diego's phone — same X25519 identity as wg0 termux (the operator's unified personal credential). The vault dir termux-public/ mirrors the pubkey from termux/.",
-        "wg_public_key": "Ke/zvGRI4Y5qUwnIyEfzog/UAw1olBUHRtvXZztztVA="
+        "wg_public_key": null
       },
       "termux-share": {
         "wg_ip": "10.1.0.10",
         "wg_ipv6": "fd0c:1d01::10",
         "role": "client",
         "_doc": "Shareable wg-public credential held on Diego's phone. Separate keypair from 'termux' (vault dir termux-share-public/) so rotating/revoking this one doesn't affect personal admin access. Designed for handout: someone gets ONLY wg-public access (10.1.0.0/24), never wg0.",
-        "wg_public_key": "nNpzC6gB2vm0jV+i3o+WC2jHIafII6ek202naOEhZX8="
+        "wg_public_key": null
       },
       "health-runner": {
         "wg_ip": "10.1.0.11",
         "wg_ipv6": "fd0c:1d01::11",
         "role": "client",
         "_doc": "URL-health prober (cloud-data reports container in GHA). Joins wg-public as a spoke so it can probe hub-bound services (e.g. cf-worker-bridge on 10.1.0.1:8092) — its wg0 identity (gha-runner, 10.0.0.200) only routes 10.0.0.0/24. Keypair: vault dir health-runner-public/; private key mirrored to the cloud-data repo GHA secret WG_PUBLIC_PRIVATE_KEY consumed by reports/entrypoint.sh wg1 block.",
-        "wg_public_key": "DBEHl3jJehUxuLxLn4cEnNk5c5ggH3fmB6qHDwTqw28="
+        "wg_public_key": null
       }
     }
   },
@@ -5429,7 +5429,7 @@
             "text_embedding_model": "fastembed:nomic-ai/nomic-embed-text-v1.5"
           },
           "llm": {
-            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). Model: deepseek/deepseek-v4-pro — 80.6% SWE-bench, 1M ctx, $0.44/$0.87.",
+            "_comment": "octocode GraphRAG LLM -> my-ai-api (OpenRouter-backed, port 3217). openai:* reads OPENAI_API_URL -> my-ai-api /v1 (3217); ollama:* reads OLLAMA_API_URL -> my-ai-api Ollama mimic (12436). Both faces route to OpenRouter; api_key is passed through and must match OPENROUTER_API_KEY in the container (my-ai-api src/secrets.yaml). my-ai-api's default model is deepseek/deepseek-v4-flash-0731, but that default does not apply here: llm_model below names the slug this service sends, and my-ai-api falls back to its default only when the caller sends none.",
             "openai_api_url": "http://10.0.0.6:3217/v1/chat/completions",
             "ollama_api_url": "http://10.0.0.6:12436",
             "api_key": "sk-dummy",
@@ -5589,7 +5589,7 @@
         "dashboard": 9119
       },
       "runtime": {
-        "model": "deepseek/deepseek-v4-pro",
+        "model": "deepseek/deepseek-v4-flash-0731",
         "backend_url": "https://openrouter.ai/api/v1",
         "api_mode": "chat_completions"
       },
@@ -5843,7 +5843,7 @@
       "_upstream_image_doc": "Top-level upstream_image marks this as a Type-B vendored-Dockerfile build: the ship engine builds src/code/Dockerfile (staged to dist/code/arm64/) natively on the arm64 cloud-builder. It is NOT injected as a FROM-override build-arg — it only selects BUILD_CONTEXT=dist/code/arch. The real multi-stage Dockerfile (builder compiles Headroom, runtime installs node) is preserved. The old docker.native_build:image-wrapper was WRONG: image-wrapper with no cmd made the native block skip AND blocked Type-B auto-detect, so CI silently built nothing and only recreated the stale image.",
       "upstream_image": "python:3.13-slim",
       "runtime": {
-        "model": "deepseek/deepseek-v4-pro",
+        "model": "deepseek/deepseek-v4-flash-0731",
         "_model_aliases_comment": "requested-id → OpenRouter slug. Callers pick a model per request; unknown/absent ids fall back to `model` (passthrough also works — OpenRouter accepts arbitrary slugs, so goose can send any OpenRouter model id directly). No Claude aliases here: this stack does not route Claude.",
         "model_aliases": {
           "glm": "z-ai/glm-5",

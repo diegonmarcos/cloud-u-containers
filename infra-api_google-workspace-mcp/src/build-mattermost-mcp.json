@@ -4,7 +4,7 @@
     "description": "mattermost-mcp container config (service=mattermost-mcp, role=app)",
     "format_version": 1,
     "generated_at": "",
-    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "1_cloud-configs/src/derive/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,13 +14,13 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "1_cloud-configs/src/derive/cloud-data-config-consolidated.ts",
+        "derive": "1_cloud-configs/src/derive/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
       "rebuild_command": "bash 9_others/build.sh all"
     }
@@ -53,29 +53,59 @@
   "role": "app",
   "vm": "oci-apps",
   "services": {
-    "c3-analytics-api": {
-      "ip": "10.0.0.1",
+    "matrix-continuwuity": {
+      "ip": "10.0.0.6",
       "ports": {
-        "app": 8085
+        "app": 8008
       },
-      "vm": "gcp-proxy",
-      "healthcheck": "/healthz",
-      "domain": "api.diegonmarcos.com/c3a",
-      "description": "Public first-party analytics collector — passthrough proxy to matomo/umami/openobserve",
+      "vm": "oci-apps",
+      "healthcheck": "/_matrix/client/versions",
+      "domain": "matrix.diegonmarcos.com",
+      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
       "api": {
         "has_api": true,
         "has_web_ui": true,
-        "api_path": "/c3a/docs/json",
-        "api_url": "https://api.diegonmarcos.com/c3a/c3a/docs/json",
+        "api_path": "/_matrix",
+        "api_url": "https://matrix.diegonmarcos.com/_matrix",
         "healthcheck_paths": [
-          "/healthz"
+          "/_matrix/client/versions"
         ],
-        "type": "openapi",
-        "spec_path": "/c3a/docs/json",
-        "base_path": "/c3a",
-        "display_name": "C3 Analytics Public Collector",
-        "description": "Public passthrough analytics collector. Browsers/sites POST to /c3a/{e|s|l}, file ingest /c3a/f, tracker /c3a/t.js.",
-        "auth": "none"
+        "type": "custom-rest",
+        "base_path": "/_matrix",
+        "display_name": "Matrix (Continuwuity)",
+        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
+        "auth": "bearer"
+      }
+    },
+    "alerts-api": {
+      "ip": "10.0.0.4",
+      "ports": {
+        "app": 5050
+      },
+      "vm": "oci-analytics",
+      "description": "Security Alert Aggregation API",
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
+    "languagetool": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8010
+      },
+      "vm": "oci-apps",
+      "domain": "languagetool.diegonmarcos.com",
+      "description": "LanguageTool grammar/spell-check HTTP API — rules-only, no n-grams, WG-only sidecar on oci-apps",
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
       }
     },
     "c3-infra-api": {
@@ -361,19 +391,6 @@
         "auth": "bearer"
       }
     },
-    "cloud-builder-x": {
-      "ip": "10.0.0.6",
-      "ports": {},
-      "vm": "oci-apps",
-      "description": "CI/CD builder images — deployed to oci-apps, source in unix repo",
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
-      }
-    },
     "gha-runner": {
       "ip": "10.0.0.6",
       "ports": {},
@@ -490,6 +507,23 @@
       "api": {
         "has_api": false,
         "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
+    "unbound-dns64": {
+      "ip": "10.0.0.4",
+      "ports": {
+        "dns": 53,
+        "app": 53
+      },
+      "vm": "oci-analytics",
+      "domain": "dns64.internal",
+      "description": "DNS64 resolver for NAT64 — synthesises AAAA records for IPv4-only names so IPv6-only clients can reach the internet via the Tayga NAT64 translator",
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
@@ -624,7 +658,9 @@
     "ntfy": {
       "ip": "10.0.0.6",
       "ports": {
-        "app": 8090
+        "app": 8090,
+        "rss_gateway": 8091,
+        "rss-gateway": 8091
       },
       "vm": "oci-apps",
       "healthcheck": "/",
@@ -869,6 +905,23 @@
         "sdk": "@modelcontextprotocol/sdk@^1.12.0"
       }
     },
+    "hermes-agent": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "api": 8642,
+        "dashboard": 9119,
+        "app": 8642
+      },
+      "vm": "oci-apps",
+      "description": "Nous Research Hermes Agent (autonomous, persistent-memory AI agent) on oci-apps. Messaging gateway (Telegram live, Mattermost scaffolded) backed by claude-superset-api (subscription CLI, no metered key). WG-internal, never public.",
+      "api": {
+        "has_api": false,
+        "has_web_ui": false,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": []
+      }
+    },
     "kg-store": {
       "ip": "10.0.0.6",
       "ports": {
@@ -884,55 +937,25 @@
         "healthcheck_paths": []
       }
     },
-    "ollama-hai": {
+    "my-ai-api": {
       "ip": "10.0.0.6",
       "ports": {
-        "app": 11435
+        "app": 3217,
+        "ollama": 12436,
+        "headroom": 8890,
+        "goosed": 3227
       },
       "vm": "oci-apps",
-      "description": "Ollama LLM server (ARM CPU) — qwen2.5:1.5b + nomic-embed-text for hai agent and octocode",
-      "api": {
-        "has_api": true,
-        "has_web_ui": false,
-        "api_path": "/api",
-        "api_url": null,
-        "healthcheck_paths": [],
-        "type": "custom-rest",
-        "base_path": "/api",
-        "endpoint_count": 16,
-        "display_name": "Ollama LLM API (HAI)",
-        "description": "REST API for LLM inference and embeddings for HAI agent and octocode support.",
-        "auth": "none"
-      }
-    },
-    "rig-agentic-hai-1.5bq4": {
-      "ip": "10.0.0.6",
-      "ports": {
-        "app": 8091
-      },
-      "vm": "oci-apps",
-      "description": "Rig Agentic AI (HAI) — Lightweight Qwen 1.5B Q4 agent with strict allowlist guardrails",
+      "healthcheck": "/health",
+      "description": "my-ai API on oci-apps — one polyglot container: OpenAI /v1 + Ollama /api + Anthropic /v1/messages mimic backed by OpenRouter (no Claude subscription, no metered Anthropic key), with a vendored Headroom (Apache-2.0) compression hop and a savings dashboard. Sibling of claude-superset-api; the agent face for this stack is goose (my-ai wraps goose, claude-superset keeps claude-cli). Internal WG-only sidecar, never public.",
       "api": {
         "has_api": false,
         "has_web_ui": false,
         "api_path": null,
         "api_url": null,
-        "healthcheck_paths": []
-      }
-    },
-    "rig-agentic-sonn-14bq8": {
-      "ip": "10.0.0.6",
-      "ports": {
-        "app": 8091
-      },
-      "vm": "oci-apps",
-      "description": "Rig Agentic AI (Heavy) — DeepSeek R1 14B Q8 agent with tool calling via C3 MCP",
-      "api": {
-        "has_api": false,
-        "has_web_ui": false,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": []
+        "healthcheck_paths": [
+          "/health"
+        ]
       }
     },
     "session-memory": {
@@ -978,128 +1001,6 @@
         "auth": "bearer"
       }
     },
-    "cypht": {
-      "ip": "10.0.0.3",
-      "ports": {
-        "app": 8889
-      },
-      "vm": "oci-mail",
-      "healthcheck": "/",
-      "domain": "webmail.diegonmarcos.com",
-      "description": "Cypht webmail (multi-account IMAP/JMAP/EWS, RSS feeds, calendar) — webmail.diegonmarcos.com",
-      "api": {
-        "has_api": false,
-        "has_web_ui": true,
-        "api_path": null,
-        "api_url": null,
-        "healthcheck_paths": [
-          "/"
-        ]
-      },
-      "mail_clients": {
-        "_doc": "Cypht-only declarations. Cross-service data (mail server hosts/ports, mailbox identities) is JOINED at engine derive time from peers' build.json (services.<peer>.users + .domain + .ports/extra_ports). Output lands in build-cypht.json#mail_accounts (resolved). The cypht flake reads build-cypht.json and emits dist/assets/seed-accounts.json + dist/assets/cypht-api/configs.json — no hand-written duplicates.",
-        "primary_user": {
-          "_doc": "Cypht UI master login (Hm_Auth_DB). INDEPENDENT from the mailbox passwords (those come from peers' users{}.pass_env). Cypht-only data — owned by cypht.",
-          "user_ref": "stalwart.users.admin",
-          "pass_env": "CYPHT_LOGIN_PASSWORD"
-        },
-        "via_internal": [
-          {
-            "_doc": "JMAP via Stalwart. Cypht runs network_mode=host on oci-mail (same VM as Stalwart). Engine resolves service=stalwart, via=jmap_tls → host=jmap.diegonmarcos.com:2443 — reachable inside-VM (Stalwart listens on 10.0.0.3:2443) and externally via Caddy L4 reverse_proxy on jmap.diegonmarcos.com:443.",
-            "label_template": "{addr_short} | JMAP-Stalwart",
-            "user_ref": "stalwart.users.admin",
-            "receive_via": {
-              "service": "stalwart",
-              "via": "jmap_tls"
-            },
-            "send_via": {
-              "service": "stalwart",
-              "via": "smtp_ssl"
-            },
-            "alias_email": "me-jmap@stalwart"
-          }
-        ],
-        "via_external": [
-          {
-            "_doc": "External providers (no internal SoT exists). Hosts/ports declared inline because no peer service owns them.",
-            "label": "diegonmarcos@livecom | IMAP-outlook",
-            "email": "diegonmarcos@live.com",
-            "pass_env": "LIVE_APP_PASSWORD",
-            "imap": {
-              "host": "outlook.office365.com",
-              "port": 993,
-              "secure": "SSL"
-            },
-            "smtp": {
-              "host": "smtp-mail.outlook.com",
-              "port": 587,
-              "secure": "TLS"
-            }
-          },
-          {
-            "label": "diegonmarcos1@gmail.com | IMAP-gaccount",
-            "email": "diegonmarcos1@gmail.com",
-            "pass_env": "GMAIL_APP_PASSWORD",
-            "imap": {
-              "host": "imap.gmail.com",
-              "port": 993,
-              "secure": "SSL"
-            },
-            "smtp": {
-              "host": "smtp.gmail.com",
-              "port": 587,
-              "secure": "TLS"
-            }
-          }
-        ],
-        "carddav": {
-          "_doc": "CardDAV providers. Engine resolves service_ref → services.{name}.domain at derive time.",
-          "contacts-radicale": {
-            "service_ref": "contacts-radicale",
-            "path_template": "/{user_url_encoded}/",
-            "user_ref": "stalwart.users.admin",
-            "pass_env": "ME_PASSWORD"
-          }
-        },
-        "feeds": {
-          "_doc": "RSS feeds. Engine resolves service_ref → services.ntfy.domain. topics_source is a path (relative to cypht src/) to a topics list — itself a build-time copy of the canonical I_cloud-data/ntfy-api/src/topics.json.",
-          "service_ref": "ntfy",
-          "topics_source": "../ntfy-topics.json",
-          "url_path_template": "/{topic}/json?poll=1"
-        },
-        "profiles": {
-          "_doc": "Cypht send-as profiles (Hm_Profiles, modules/profiles). Profile is a CYPHT-ONLY concept — owned by cypht. match_template is rendered after via_internal labels are resolved; engine wires smtp_id/imap_id by name lookup at apply-time.",
-          "diego": {
-            "name": "Diego",
-            "user_ref": "stalwart.users.admin",
-            "match_template": "{addr_short} | IMAPS-Stalwart",
-            "default": true,
-            "sig": "",
-            "rmk": ""
-          }
-        },
-        "settings": {
-          "_doc": "Per-user UI prefs. Each key MUST end in _setting (Cypht convention). Cypht-only — owned by cypht.",
-          "theme_setting": "darkly",
-          "start_page_setting": "unread",
-          "enable_sieve_filter_setting": true,
-          "enable_snooze_setting": true,
-          "smtp_compose_type_setting": 1,
-          "enable_attachment_reminder_setting": true,
-          "enable_compose_delivery_receipt_setting": true,
-          "mailto_handler_setting": true,
-          "enable_collect_address_on_send_setting": true
-        }
-      },
-      "extra_ports": {
-        "5432": {
-          "protocol": "tcp",
-          "bind": "127.0.0.1",
-          "desc": "PostgreSQL — loopback only (cypht co-located via host network)",
-          "role": "db"
-        }
-      }
-    },
     "mail-puller": {
       "ip": "10.0.0.3",
       "ports": {},
@@ -1112,30 +1013,6 @@
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
-      }
-    },
-    "matrix-continuwuity": {
-      "ip": "10.0.0.6",
-      "ports": {
-        "app": 8008
-      },
-      "vm": "oci-apps",
-      "healthcheck": "/_matrix/client/versions",
-      "domain": "matrix.diegonmarcos.com",
-      "description": "Continuwuity Matrix homeserver (maintained conduwuit fork, Rust/RocksDB) — central hub for chat bridges. Federation enabled via .well-known delegation over :443.",
-      "api": {
-        "has_api": true,
-        "has_web_ui": true,
-        "api_path": "/_matrix",
-        "api_url": "https://matrix.diegonmarcos.com/_matrix",
-        "healthcheck_paths": [
-          "/_matrix/client/versions"
-        ],
-        "type": "custom-rest",
-        "base_path": "/_matrix",
-        "display_name": "Matrix (Continuwuity)",
-        "description": "Matrix client-server + federation API served by the Continuwuity homeserver.",
-        "auth": "bearer"
       }
     },
     "matrix-element": {
@@ -1221,6 +1098,10 @@
           "aliases": [
             "noreply"
           ]
+        },
+        "mailadmin": {
+          "name": "admin",
+          "pass_env": "ADMIN_PASSWORD"
         }
       },
       "extra_ports": {
@@ -1295,6 +1176,10 @@
           "aliases": [
             "noreply"
           ]
+        },
+        "mailadmin": {
+          "name": "admin",
+          "pass_env": "ADMIN_PASSWORD"
         }
       },
       "extra_ports": {
@@ -1350,20 +1235,15 @@
         }
       }
     },
-    "crawlee-cloud": {
+    "scrappers-api": {
       "ip": "10.0.0.6",
       "ports": {
-        "app": 3000,
-        "dashboard": 3001,
-        "db": 5434,
-        "redis": 6381,
-        "minio": 9000,
-        "minio_console": 9001
+        "app": 3020
       },
       "vm": "oci-apps",
-      "healthcheck": "wget -qO /dev/null http://127.0.0.1:3000/health || exit 1",
+      "healthcheck": "curl -fsS http://127.0.0.1:3020/health >/dev/null 2>&1 || exit 1",
       "domain": "api.diegonmarcos.com",
-      "description": "Self-hosted Crawlee Cloud — Apify-compatible scraping platform (API + Runner + Dashboard + Scheduler)",
+      "description": "Unified scrapers API (Instagram / Pinterest / LinkedIn / generic crawl) — retires crawlee-cloud. Lean single-container FastAPI, on-demand, flat-JSON output.",
       "api": {
         "has_api": true,
         "has_web_ui": true,
@@ -1372,11 +1252,10 @@
         "healthcheck_paths": [],
         "type": "openapi",
         "spec_path": "/openapi.json",
-        "base_path": "/v2",
-        "endpoint_count": 74,
-        "display_name": "Crawlee Cloud Apify-Compatible API",
-        "description": "Self-hosted Apify-compatible web scraping platform with actors, runs, datasets, queues, and schedules.",
-        "auth": "api-key"
+        "base_path": "/scrappers",
+        "display_name": "Scrapers API",
+        "description": "Unified profile-scrape + generic-crawl API. Replaces crawlee-cloud.",
+        "auth": "two_factor"
       }
     },
     "fin-api": {
@@ -1424,6 +1303,30 @@
         "base_path": "/api/v1",
         "display_name": "PhotoPrism",
         "description": "AI-powered photo management system with REST API.",
+        "auth": "bearer"
+      }
+    },
+    "playlist-syncer": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 8090
+      },
+      "vm": "oci-apps",
+      "healthcheck": "/api/health",
+      "domain": "playlist.diegonmarcos.com",
+      "description": "Spotube — bidirectional Spotify <-> YouTube Music playlist sync (playlist.diegonmarcos.com). Self-hosted Soundiiz alternative.",
+      "api": {
+        "has_api": true,
+        "has_web_ui": true,
+        "api_path": "/api",
+        "api_url": "https://playlist.diegonmarcos.com/api",
+        "healthcheck_paths": [
+          "/api/health"
+        ],
+        "type": "custom-rest",
+        "base_path": "/api",
+        "display_name": "Playlist Syncer",
+        "description": "Bidirectional Spotify / YouTube Music playlist sync (Spotube fork). REST API + web UI.",
         "auth": "bearer"
       }
     },
@@ -1655,6 +1558,25 @@
         "api_path": null,
         "api_url": null,
         "healthcheck_paths": []
+      }
+    },
+    "send": {
+      "ip": "10.0.0.6",
+      "ports": {
+        "app": 3016
+      },
+      "vm": "oci-apps",
+      "healthcheck": "/__lbheartbeat__",
+      "domain": "send.diegonmarcos.com",
+      "description": "Send — self-hosted end-to-end encrypted ephemeral file sharing (timvisee/send, Firefox Send fork). Files encrypted client-side; server sees only ciphertext. Links self-destruct after configured downloads or time.",
+      "api": {
+        "has_api": false,
+        "has_web_ui": true,
+        "api_path": null,
+        "api_url": null,
+        "healthcheck_paths": [
+          "/__lbheartbeat__"
+        ]
       }
     },
     "vaultwarden": {
