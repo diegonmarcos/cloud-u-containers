@@ -22,7 +22,7 @@ cat <<'CHECKLIST'
 ## CORE PRINCIPLES (non-negotiable — reinforced at EVERY tier of hook injection)
 
 1. **FULLY DECLARATIVE** — every change goes through source files in git; never imperative ad-hoc one-liners.
-2. **FULLY DATA-DRIVEN** — data lives in `build.json` / `1_configs/*.json`; never hardcoded inline in scripts.
+2. **FULLY DATA-DRIVEN** — data lives in `build.json` / `9_others/*.json`; never hardcoded inline in scripts.
 3. **FULLY REPRODUCIBLE** — same input → same output, every time, every machine, every clean build.
 4. **IMPERATIVE SOLUTIONS FORBIDDEN** — no `ssh vm 'echo > x'`, no `sed -i` on VMs, no `nix-env -i`, no ad-hoc patches.
 5. **FOUND A BUG IN AN ENGINE → FIX IT.** NO HACKS ALLOWED. No workarounds, no temporary bypasses, no "for now" patches. The engine is the contract; bugs in it are root-cause material.

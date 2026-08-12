@@ -16,7 +16,7 @@ let
   # svc."c3-public-api" appears once the derive engine has run; fall back to
   # services.<deploy.host>.ip lookup via cloud-data vms table. We hard-default
   # to the published oci-analytics wg0 IP only as a safety net so the flake
-  # evaluates even before 1_configs has emitted this service's entry.
+  # evaluates even before 9_others has emitted this service's entry.
   myIp = svc."c3-public-api".ip or "10.0.0.4";
   port = toString buildJson.ports.app;
   basePath = buildJson.proxy.primary.base_path;

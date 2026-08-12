@@ -15,7 +15,7 @@ SURREAL_URL="${1:-http://localhost:8001}"
 #   1. /app/cloud-data-topology.json                                  — bundled in-image
 #   2. ${CONFIG_JSON} (env or $2)                                     — explicit override / legacy
 #   3. /opt/containers/kg-graph/cloud-data-topology.json              — legacy compose-mounted
-#   4. <repoRoot>/1_configs/dist/cloud-data-topology.json             — dev: cloud repo dist/
+#   4. <repoRoot>/1_cicd/dist/cloud-data-topology.json             — dev: cloud repo dist/
 #   5. <script_dir>/../cloud-data-topology.json                       — legacy: kg-graph dir
 _resolve_topology() {
     # 2026-04-28 migrated: prefer _cloud-data-consolidated.json (master file —
@@ -34,8 +34,8 @@ _resolve_topology() {
         # Legacy fallbacks (deprecated cloud-data-topology.json — soft transition)
         "/app/cloud-data-topology.json"
         "/opt/containers/kg-graph/cloud-data-topology.json"
-        "${script_dir}/../../../1_configs/dist/z_archive/cloud-data-topology.json"
-        "${script_dir}/../../../1_configs/dist/cloud-data-topology.json"
+        "${script_dir}/../../../1_cicd/dist/z_archive/cloud-data-topology.json"
+        "${script_dir}/../../../1_cicd/dist/cloud-data-topology.json"
         "${script_dir}/../cloud-data-topology.json"
     )
     for p in "${candidates[@]}"; do

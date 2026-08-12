@@ -33,9 +33,9 @@ if [ -n "$CONS" ]; then
       }
   ' "$CONS" > "$DNS_FILE"
 else
-  for p in "1_configs/dist/cloud-data-dns-services.json" \
+  for p in "1_cicd/dist/cloud-data-dns-services.json" \
            "/var/lib/dagu/data/cloud-data/cloud-data-dns-services.json" \
-           "/var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-dns-services.json" \
+           "/var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-dns-services.json" \
            "/app/cloud-data-dns-services.json"; do
     [ -f "$p" ] && DNS_FILE="$p" && break
   done

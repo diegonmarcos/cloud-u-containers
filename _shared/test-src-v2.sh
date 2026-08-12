@@ -9,7 +9,7 @@
 #   - allowed:  compose.nix, templates/*.tpl, secrets.yaml, sensitive
 #               materials, docs/, data JSONs (service's own declarative
 #               inputs), Type A native sources under src/code/,
-#               build-<ctr>.json symlinks into 1_configs/dist/
+#               build-<ctr>.json symlinks into 1_cicd/dist/
 #   - banned:   Dockerfile (engine generates),
 #               manifest.json symlinks (dashboard concern),
 #               cloud-data-*.json symlinks (engine collects),
@@ -46,7 +46,7 @@ fi
 
 # ── banned: dashboard manifest.json ──────────────────────────────
 if [ -e "$SRC/manifest.json" ]; then
-    fail "manifest.json present (dashboard concern, lives in 1_configs/dist/)"
+    fail "manifest.json present (dashboard concern, lives in 1_cicd/dist/)"
 else
     pass "no manifest.json"
 fi
@@ -55,7 +55,7 @@ fi
 printf '\n── banned: scattered cloud-data symlinks ──\n'
 cd_count=$(find "$SRC" -maxdepth 1 \( -name 'cloud-data-*.json' -o -name '_cloud-data-*.json' \) 2>/dev/null | wc -l)
 if [ "$cd_count" -gt 0 ]; then
-    fail "$cd_count cloud-data-*.json symlinks in src/ (engine reads 1_configs/dist/ directly)"
+    fail "$cd_count cloud-data-*.json symlinks in src/ (engine reads 1_cicd/dist/ directly)"
 else
     pass "no cloud-data-*.json pollution"
 fi

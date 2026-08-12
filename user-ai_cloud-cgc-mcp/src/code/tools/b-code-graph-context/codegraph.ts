@@ -25,7 +25,7 @@ import { join, dirname, resolve } from "node:path";
 //   1. CODEGRAPH_GRAPHS_DIR env (explicit override)
 //   2. ./graphs bundled inside the image (/app/code/graphs) — ships with the cgc
 //      build, so the graph is live WITHOUT depending on the octocode repos volume.
-//   3. repo layout fallback ($GIT_ROOT/cloud/{1_configs/dist, …/kg-graph/src}).
+//   3. repo layout fallback ($GIT_ROOT/cloud/{1_cicd/dist, …/kg-graph/src}).
 const GIT_ROOT = process.env.GIT_ROOT ?? `${process.env.HOME ?? "/home/diego"}/git`;
 const CLOUD = join(GIT_ROOT, "cloud");
 const BUNDLED = join(import.meta.dirname!, "..", "..", "graphs");
@@ -35,7 +35,7 @@ const useBundle = (): string | null => {
   return null;
 };
 const BUNDLE = useBundle();
-const DIST = BUNDLE ?? join(CLOUD, "1_configs", "dist");          // ① infra + ② code-signatures
+const DIST = BUNDLE ?? join(CLOUD, "9_others", "dist");          // ① infra + ② code-signatures
 const TTL_MS = 5 * 60 * 1000;
 
 interface GNode { table: string; id: string; key: string; properties: Record<string, unknown>; layer: string }
@@ -166,7 +166,7 @@ export function registerCodegraphTools(server: McpServer): void {
   server.tool(
     "cgc.codegraph.get_node",
     "Full details of one graph node plus its incident edges (in + out).",
-    { node_id: z.string().describe("Node key (e.g. 'subsystem:ship_engine', 'file:cloud/1_configs/...'), id, or name") },
+    { node_id: z.string().describe("Node key (e.g. 'subsystem:ship_engine', 'file:cloud/9_others/...'), id, or name") },
     async ({ node_id }) => {
       const g = loadGraph();
       const ns = resolveTarget(g, node_id);

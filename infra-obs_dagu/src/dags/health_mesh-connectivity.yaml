@@ -26,7 +26,7 @@ steps:
         }' "$CONS" > "$MON_TARGETS"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-monitoring-targets.json \
-                 /var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-monitoring-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-monitoring-targets.json \
                  /app/cloud-data-monitoring-targets.json; do
           [ -f "$p" ] && MON_TARGETS="$p" && break
         done

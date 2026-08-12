@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engine/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 9_others/src/engine/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'cloud-data' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -55,7 +55,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/build.sh",
+      "path": "9_others/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-git-sync.sh",
+      "path": "9_others/src/deploy/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [

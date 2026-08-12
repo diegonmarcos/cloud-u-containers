@@ -12,7 +12,7 @@
     # 2026-04-27 migrated: cloud-data-databases.json → _cloud-data-consolidated.json (databases derived from .services[].containers[].db_engine)
     # _cloud-data-consolidated.json resolution:
     #   1. /app/_cloud-data-consolidated.json        — bundled in-image
-    #   2. ../../../1_configs/dist/...               — dev: cloud repo dist/
+    #   2. ../../../1_cicd/dist/...               — dev: cloud repo dist/
     #   3. ../../../cloud-data/...                   — legacy: c3_git_repos clone
     #   4. ../../../_cloud-data-consolidated.json    — legacy: cloud repo root
     consolidatedPath =

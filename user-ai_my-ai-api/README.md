@@ -67,7 +67,7 @@ cd a_solutions/user-ai_my-ai-api
 ```
 
 `build.sh` is a symlink to the shared container engine
-(`1_configs/src/deploy/scripts/cloud-ship-container-engine.sh`); all behaviour is
+(`9_others/src/deploy/scripts/cloud-ship-container-engine.sh`); all behaviour is
 data-driven from `build.json`.
 
 ## Client wiring (my-ai / goose)
@@ -91,7 +91,7 @@ claude stack does — see the my-ai `--help`.
 ```
 user-ai_my-ai-api/
 ├── build.json                       # data-driven build/deploy config
-├── build.sh  → ../../1_configs/…/cloud-ship-container-engine.sh
+├── build.sh  → ../../9_others/…/cloud-ship-container-engine.sh
 ├── README.md
 └── src/
     ├── build.json                   # (mirror; engine reads this)

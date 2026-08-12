@@ -44,14 +44,14 @@ _credentials:
 
 | Engine | Behaviour |
 |---|---|
-| `1_configs/.../cloud-ship-container-step-secrets-decrypt.sh` | Filters `_`-prefix keys — `.secrets` on the VM only contains the app-consumed keys |
-| `1_configs/.../cloud-ship-nix-homemanager-step-secrets-decrypt.sh` | Same filter |
+| `9_others/.../cloud-ship-container-step-secrets-decrypt.sh` | Filters `_`-prefix keys — `.secrets` on the VM only contains the app-consumed keys |
+| `9_others/.../cloud-ship-nix-homemanager-step-secrets-decrypt.sh` | Same filter |
 | `a_solutions/aa-sui_mail-mcp/src/run.sh` | Inline `sops → jq filter _-prefix → eval` at boot |
 | `2_secrets/src/engine/secrets.sh` | Human-facing viewer — shows everything, nested keys flattened as dotted paths |
 
 ## Verification
 
 ```sh
-~/git/cloud/1_configs/src/deploy/scripts/audit-credentials-coverage.sh
-~/git/cloud/1_configs/tests/test-secrets-roundtrip.sh
+~/git/cloud/9_others/src/deploy/scripts/audit-credentials-coverage.sh
+~/git/cloud/9_others/tests/test-secrets-roundtrip.sh
 ```
