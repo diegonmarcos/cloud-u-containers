@@ -26,6 +26,7 @@ import {
   vmStart,
   vmStop,
   vmReset,
+  vmSerialConsole,
   vmDrain,
   containerStart,
   containerStop,
@@ -504,6 +505,22 @@ export function registerOperationsTools(server: McpServer) {
     "Reset/force-restart a VM via the C3 API",
     { vm: z.string().describe("VM ID or SSH alias") },
     async ({ vm }) => formatControl(vmReset(vm)),
+  );
+
+  // Reads the provider's serial console. This is the ONLY VM tool that works
+  // on a completely wedged box: it goes to the cloud control plane, not
+  // through SSH or the mesh. Added 2026-08-12 after gcp-proxy hung during a
+  // deploy and there was no way to tell an OOM from a panic from a slow boot —
+  // every other diagnostic routed through the fleet that had just gone down.
+  server.tool(
+    "devops.vm.console",
+    "Read a VM's serial console output from the cloud control plane. Works when the VM is wedged and SSH/WireGuard are dead — use this to find out WHY a VM died (OOM, kernel panic, boot failure).",
+    {
+      vm: z.string().describe("VM ID or SSH alias"),
+      lines: z.number().int().min(1).max(5000).optional()
+        .describe("Tail this many lines (default 200)"),
+    },
+    async ({ vm, lines }) => formatControl(vmSerialConsole(vm, lines ?? 200)),
   );
 
   server.tool(
