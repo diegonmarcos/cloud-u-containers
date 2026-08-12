@@ -2,7 +2,7 @@
 # caddyfile-public.nix — public-edge L7 allowlist generator
 #
 # Renders the Caddyfile for the caddy-public service on oci-analytics.
-# DATA-DRIVEN: reads build-caddy-public.json (symlink → 1_configs/dist/)
+# DATA-DRIVEN: reads build-caddy-public.json (symlink → 1_cicd/dist/)
 # and emits ONLY the declared-public allowlist at the edge; EVERYTHING
 # else forwards to gcp-proxy over wg-public (private_forward_upstream).
 #

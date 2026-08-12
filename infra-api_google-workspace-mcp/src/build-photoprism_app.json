@@ -1,10 +1,10 @@
 {
-  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 1_configs/build.sh all`.",
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
     "description": "photoprism_app container config (service=photoprism, role=app)",
     "format_version": 1,
     "generated_at": "",
-    "generated_by": "1_configs/src/engine/cloud-data-config-derive.ts",
+    "generated_by": "9_others/src/engine/cloud-data-config-derive.ts",
     "pipeline": {
       "description": "Two-stage build: consolidator merges all build.json + config.json sources into the master file; derive emits per-container + archived split files from the master.",
       "source_inputs": [
@@ -14,15 +14,15 @@
         "vault/secrets.yaml (sops-encrypted secrets per service, key names extracted)"
       ],
       "engines": {
-        "consolidator": "1_configs/src/engine/cloud-data-config-consolidated.ts",
-        "derive": "1_configs/src/engine/cloud-data-config-derive.ts (THIS engine)"
+        "consolidator": "9_others/src/engine/cloud-data-config-consolidated.ts",
+        "derive": "9_others/src/engine/cloud-data-config-derive.ts (THIS engine)"
       },
       "outputs": {
         "master": "1_cloud-configs/dist/_cloud-data-consolidated.json (consolidator output)",
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
-        "archived": "1_configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
+        "archived": "1_cicd/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
-      "rebuild_command": "bash 1_configs/build.sh all"
+      "rebuild_command": "bash 9_others/build.sh all"
     }
   },
   "_generated": "",

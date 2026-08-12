@@ -47,7 +47,7 @@ steps:
         ' "$CONS" > "$BACKUP_TARGETS"
       else
         for p in /var/lib/dagu/data/cloud-data/cloud-data-backup-targets.json \
-                 /var/lib/dagu/data/cloud-data/1_configs/dist/cloud-data-backup-targets.json \
+                 /var/lib/dagu/data/cloud-data/1_cicd/dist/cloud-data-backup-targets.json \
                  /app/cloud-data-backup-targets.json; do
           [ -f "$p" ] && BACKUP_TARGETS="$p" && break
         done

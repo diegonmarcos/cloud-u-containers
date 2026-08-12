@@ -1,5 +1,5 @@
 {
-  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 1_configs/build.sh all`.",
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
     "description": "gitea container config (service=gitea, role=app)",
     "format_version": 1,
@@ -22,7 +22,7 @@
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
         "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
-      "rebuild_command": "bash 1_configs/build.sh all"
+      "rebuild_command": "bash 9_others/build.sh all"
     }
   },
   "_generated": "",
@@ -1618,7 +1618,7 @@
   "ssh_listen_host": "10.0.0.6",
   "gitea": {
     "org": "diego",
-    "_mirrors_doc": "Mirrors are DERIVED, not listed here. The consolidator expands mirror_policy against the fetched GitHub inventory (1_configs/src/inputs/github-repos.json) into the concrete gitea.mirrors map, setting private:true from each repo's real visibility. Hand-listing them drifted: `front` pointed at a repo that has never existed and silently never synced, and `cloud-data` — private on GitHub — was mirrored WITHOUT private:true, i.e. published.",
+    "_mirrors_doc": "Mirrors are DERIVED, not listed here. The consolidator expands mirror_policy against the fetched GitHub inventory (9_others/src/inputs/github-repos.json) into the concrete gitea.mirrors map, setting private:true from each repo's real visibility. Hand-listing them drifted: `front` pointed at a repo that has never existed and silently never synced, and `cloud-data` — private on GitHub — was mirrored WITHOUT private:true, i.e. published.",
     "mirror_policy": {
       "source": "github-inventory",
       "include_forks": false,

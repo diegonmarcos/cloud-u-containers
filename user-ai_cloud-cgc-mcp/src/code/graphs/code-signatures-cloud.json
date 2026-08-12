@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engine/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 9_others/src/engine/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'cloud' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -604,7 +604,7 @@
         "cmd_build()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "build_service()",
@@ -645,7 +645,7 @@
         "cmd_profile_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_profile_ship()"
@@ -660,8 +660,8 @@
         "cmd_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh",
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-orchestrate-build.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh",
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-orchestrate-build.sh"
       ],
       "symbols": [
         "deploy_service()",
@@ -676,7 +676,7 @@
         "cmd_clean()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_clean()"
@@ -690,7 +690,7 @@
         "cmd_compose()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_compose()"
@@ -704,7 +704,7 @@
         "cmd_config()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_config()"
@@ -718,7 +718,7 @@
         "cmd_deps()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_deps()"
@@ -732,7 +732,7 @@
         "cmd_restart()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_restart()"
@@ -746,7 +746,7 @@
         "cmd_secrets()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_secrets()"
@@ -760,7 +760,7 @@
         "cmd_ssh()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_ssh()"
@@ -774,7 +774,7 @@
         "cmd_status()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_status()"
@@ -5782,7 +5782,7 @@
       ]
     },
     {
-      "path": "1_configs/build.sh",
+      "path": "9_others/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5810,7 +5810,7 @@
       ]
     },
     {
-      "path": "1_configs/src/flake.nix",
+      "path": "9_others/src/flake.nix",
       "lang": "nix",
       "role": "flake",
       "exports": [],
@@ -5845,7 +5845,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/libs/cloud-paths.sh",
+      "path": "9_others/src/engine/libs/cloud-paths.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5869,7 +5869,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/libs/engine-traps.sh",
+      "path": "9_others/src/engine/libs/engine-traps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5895,7 +5895,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/libs/ensure-deps.sh",
+      "path": "9_others/src/engine/libs/ensure-deps.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5920,7 +5920,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/libs/inject-header.sh",
+      "path": "9_others/src/engine/libs/inject-header.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -5957,7 +5957,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/audit-credentials-coverage.sh",
+      "path": "9_others/src/deploy/scripts/audit-credentials-coverage.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -5969,7 +5969,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-git-nuke.sh",
+      "path": "9_others/src/deploy/scripts/cloud-git-nuke.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -5993,7 +5993,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-git-sync.sh",
+      "path": "9_others/src/deploy/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6019,7 +6019,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-health-full.sh",
+      "path": "9_others/src/deploy/scripts/cloud-health-full.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6035,7 +6035,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-health-http-public.sh",
+      "path": "9_others/src/deploy/scripts/cloud-health-http-public.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6047,7 +6047,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-ci-builder-dispatch.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-ci-builder-dispatch.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6061,7 +6061,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-engine.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6089,7 +6089,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-build-compose.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-build-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6101,7 +6101,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-build-configs.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-build-configs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6113,7 +6113,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-build-docker.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-build-docker.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6133,7 +6133,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-build-nix.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-build-nix.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6145,7 +6145,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-clean.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-clean.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6157,7 +6157,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-deploy-compose.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-deploy-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6169,7 +6169,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-deploy-health.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-deploy-health.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6181,7 +6181,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-deploy-rsync.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-deploy-rsync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6193,7 +6193,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-docs.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-docs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6205,7 +6205,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-lifecycle.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-lifecycle.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6217,7 +6217,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-secrets-decrypt.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-secrets-decrypt.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6229,7 +6229,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-terraform-apply.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-terraform-apply.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6241,7 +6241,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-terraform-import.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-terraform-import.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6257,7 +6257,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-terraform-plan.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-terraform-plan.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6269,7 +6269,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-verify-secret-consumption.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-verify-secret-consumption.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6291,7 +6291,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-wrangler-logs.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-wrangler-logs.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6303,7 +6303,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-container-step-wrangler.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-container-step-wrangler.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6317,7 +6317,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-lib.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-lib.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6361,7 +6361,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-engine.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6393,7 +6393,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-build-docker.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-build-docker.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6407,7 +6407,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-build-flake.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-build-flake.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6419,7 +6419,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-activate.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-activate.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6437,7 +6437,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-push.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-push.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6449,7 +6449,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-rsync.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-deploy-rsync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6461,7 +6461,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-pull-pilot.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-pull-pilot.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6473,7 +6473,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-nix-homemanager-step-secrets-decrypt.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-nix-homemanager-step-secrets-decrypt.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6485,7 +6485,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-orchestrate-build.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-orchestrate-build.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6493,7 +6493,7 @@
         "cmd_build()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "build_service()",
@@ -6501,7 +6501,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-orchestrate-portable.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-orchestrate-portable.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6527,21 +6527,21 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-orchestrate-profile.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-orchestrate-profile.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_profile_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_profile_ship()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-orchestrate-ship.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-orchestrate-ship.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6549,8 +6549,8 @@
         "cmd_ship()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh",
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-orchestrate-build.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh",
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-orchestrate-build.sh"
       ],
       "symbols": [
         "deploy_service()",
@@ -6558,119 +6558,119 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-clean.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-clean.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_clean()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_clean()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-compose.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-compose.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_compose()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_compose()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-config-gen.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-config-gen.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_config()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_config()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-deps.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-deps.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_deps()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_deps()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-restart.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-restart.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_restart()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_restart()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-secrets.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-secrets.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_secrets()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_secrets()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-ssh.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-ssh.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_ssh()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_ssh()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-status.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-status.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
         "cmd_status()"
       ],
       "imports": [
-        "$CLOUD_ROOT/1_configs/src/deploy/scripts/cloud-ship-lib.sh"
+        "$CLOUD_ROOT/9_others/src/deploy/scripts/cloud-ship-lib.sh"
       ],
       "symbols": [
         "cmd_status()"
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-repo-workflow-engine.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-repo-workflow-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6698,7 +6698,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-terraform-deploy-apply.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-terraform-deploy-apply.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6720,7 +6720,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-ship-terraform-engine.sh",
+      "path": "9_others/src/deploy/scripts/cloud-ship-terraform-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -6745,7 +6745,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_arch_runner_routing.sh",
+      "path": "9_others/src/deploy/test/test_arch_runner_routing.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6767,7 +6767,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_binaries_image_published.sh",
+      "path": "9_others/src/deploy/test/test_binaries_image_published.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6785,7 +6785,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_build_container_json_pattern.sh",
+      "path": "9_others/src/deploy/test/test_build_container_json_pattern.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6799,7 +6799,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_build_schema_api_mcp.sh",
+      "path": "9_others/src/deploy/test/test_build_schema_api_mcp.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6815,7 +6815,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_c3_services_api_registry.sh",
+      "path": "9_others/src/deploy/test/test_c3_services_api_registry.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6829,7 +6829,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_cloud_builder_ssh_safety.sh",
+      "path": "9_others/src/deploy/test/test_cloud_builder_ssh_safety.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6843,7 +6843,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_cloud_data_zarchive_probe.sh",
+      "path": "9_others/src/deploy/test/test_cloud_data_zarchive_probe.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6857,7 +6857,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_compose_no_build_on_vm.sh",
+      "path": "9_others/src/deploy/test/test_compose_no_build_on_vm.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6871,7 +6871,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_container_name_matches_declaration.sh",
+      "path": "9_others/src/deploy/test/test_container_name_matches_declaration.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6885,7 +6885,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_dispatch_hygiene.sh",
+      "path": "9_others/src/deploy/test/test_dispatch_hygiene.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6904,7 +6904,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_docker_compose_no_build.sh",
+      "path": "9_others/src/deploy/test/test_docker_compose_no_build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6918,7 +6918,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_docker_npm_baked_into_image.sh",
+      "path": "9_others/src/deploy/test/test_docker_npm_baked_into_image.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6934,7 +6934,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_engine_step_sourcing_tolerant.sh",
+      "path": "9_others/src/deploy/test/test_engine_step_sourcing_tolerant.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [],
@@ -6944,7 +6944,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/src/deploy/test/test_engine_steps_tracked.sh",
+      "path": "9_others/src/deploy/test/test_engine_steps_tracked.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6958,7 +6958,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_engine_workspace_paths_derived.sh",
+      "path": "9_others/src/deploy/test/test_engine_workspace_paths_derived.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6972,7 +6972,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_flake_lock_present.sh",
+      "path": "9_others/src/deploy/test/test_flake_lock_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -6986,7 +6986,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_generated_header_present.sh",
+      "path": "9_others/src/deploy/test/test_generated_header_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7004,7 +7004,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_ghcr_visibility.sh",
+      "path": "9_others/src/deploy/test/test_ghcr_visibility.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7020,7 +7020,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_git_nuke.sh",
+      "path": "9_others/src/deploy/test/test_git_nuke.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7034,7 +7034,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_gitignore_synced.sh",
+      "path": "9_others/src/deploy/test/test_gitignore_synced.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7048,7 +7048,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_health_report_semantics.sh",
+      "path": "9_others/src/deploy/test/test_health_report_semantics.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7062,7 +7062,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_layout_detection_pre_build.sh",
+      "path": "9_others/src/deploy/test/test_layout_detection_pre_build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7078,7 +7078,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_mattermost_multiarch.sh",
+      "path": "9_others/src/deploy/test/test_mattermost_multiarch.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7092,7 +7092,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_native_build_app_dir.sh",
+      "path": "9_others/src/deploy/test/test_native_build_app_dir.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7108,7 +7108,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_dead_nix_install_branch.sh",
+      "path": "9_others/src/deploy/test/test_no_dead_nix_install_branch.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7122,7 +7122,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_hardcoded_builder_image_literals.sh",
+      "path": "9_others/src/deploy/test/test_no_hardcoded_builder_image_literals.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7136,7 +7136,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_legacy_b_infra_home_manager.sh",
+      "path": "9_others/src/deploy/test/test_no_legacy_b_infra_home_manager.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7150,7 +7150,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_legacy_unix_static_workflows.sh",
+      "path": "9_others/src/deploy/test/test_no_legacy_unix_static_workflows.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7166,7 +7166,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_retired_service_refs.sh",
+      "path": "9_others/src/deploy/test/test_no_retired_service_refs.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7180,7 +7180,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_no_silent_fallback_in_ship_ci_image.sh",
+      "path": "9_others/src/deploy/test/test_no_silent_fallback_in_ship_ci_image.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7194,7 +7194,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_npm_lockfile_present.sh",
+      "path": "9_others/src/deploy/test/test_npm_lockfile_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7208,7 +7208,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_precommit_allows_gha_workflow.sh",
+      "path": "9_others/src/deploy/test/test_precommit_allows_gha_workflow.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7222,7 +7222,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_precommit_blocks_forced_add.sh",
+      "path": "9_others/src/deploy/test/test_precommit_blocks_forced_add.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7236,7 +7236,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_precommit_blocks_plaintext_secret.sh",
+      "path": "9_others/src/deploy/test/test_precommit_blocks_plaintext_secret.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7250,7 +7250,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_proxied_mcps_resolution.sh",
+      "path": "9_others/src/deploy/test/test_proxied_mcps_resolution.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7264,7 +7264,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_retry_bounded_backoff.sh",
+      "path": "9_others/src/deploy/test/test_retry_bounded_backoff.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7278,7 +7278,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_runners_image_published.sh",
+      "path": "9_others/src/deploy/test/test_runners_image_published.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7292,7 +7292,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_runners_json_schema.sh",
+      "path": "9_others/src/deploy/test/test_runners_json_schema.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7306,7 +7306,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_service_header_present.sh",
+      "path": "9_others/src/deploy/test/test_service_header_present.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7324,7 +7324,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_ship_cargo_cache.sh",
+      "path": "9_others/src/deploy/test/test_ship_cargo_cache.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7338,7 +7338,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_ship_wireguard_secret.sh",
+      "path": "9_others/src/deploy/test/test_ship_wireguard_secret.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7352,7 +7352,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_ship_workflows_dual_trigger.sh",
+      "path": "9_others/src/deploy/test/test_ship_workflows_dual_trigger.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7364,7 +7364,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_ssh_builder_pins_workspace.sh",
+      "path": "9_others/src/deploy/test/test_ssh_builder_pins_workspace.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7378,7 +7378,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_step_docker_guards.sh",
+      "path": "9_others/src/deploy/test/test_step_docker_guards.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7400,7 +7400,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_step_docker_isolated_config.sh",
+      "path": "9_others/src/deploy/test/test_step_docker_isolated_config.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7414,7 +7414,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_step_docker_root_docker_repair.sh",
+      "path": "9_others/src/deploy/test/test_step_docker_root_docker_repair.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7428,7 +7428,7 @@
       ]
     },
     {
-      "path": "1_configs/test/test_run_with_retry.sh",
+      "path": "9_others/test/test_run_with_retry.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7451,7 +7451,7 @@
       ]
     },
     {
-      "path": "1_configs/build.sh",
+      "path": "9_others/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -7481,7 +7481,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/_validate-block-fixture.ts",
+      "path": "9_others/src/engine/_validate-block-fixture.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7493,7 +7493,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/src/engine/apply-api-mcp-blocks.ts",
+      "path": "9_others/src/engine/apply-api-mcp-blocks.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7508,7 +7508,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/apply-port-protocols.ts",
+      "path": "9_others/src/engine/apply-port-protocols.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7522,7 +7522,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/cloud-data-config-consolidated.ts",
+      "path": "9_others/src/engine/cloud-data-config-consolidated.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7556,7 +7556,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/cloud-data-config-derive.ts",
+      "path": "9_others/src/engine/cloud-data-config-derive.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7606,7 +7606,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/cloud-data-config.ts",
+      "path": "9_others/src/engine/cloud-data-config.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7618,7 +7618,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/src/engine/derive-build-workflows.ts",
+      "path": "9_others/src/engine/derive-build-workflows.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7632,7 +7632,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/derive-code-signatures.ts",
+      "path": "9_others/src/engine/derive-code-signatures.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7655,7 +7655,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/derive-mesh-snapshot.ts",
+      "path": "9_others/src/engine/derive-mesh-snapshot.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7671,7 +7671,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/draft-port-protocols.ts",
+      "path": "9_others/src/engine/draft-port-protocols.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7686,7 +7686,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/authelia.ts",
+      "path": "9_others/src/engine/parsers/authelia.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7703,7 +7703,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/build-json.ts",
+      "path": "9_others/src/engine/parsers/build-json.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7738,7 +7738,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/caddyfile.ts",
+      "path": "9_others/src/engine/parsers/caddyfile.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7756,7 +7756,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/cloudflare.ts",
+      "path": "9_others/src/engine/parsers/cloudflare.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7772,7 +7772,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/compose.ts",
+      "path": "9_others/src/engine/parsers/compose.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7789,7 +7789,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/dns.ts",
+      "path": "9_others/src/engine/parsers/dns.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7806,7 +7806,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/mailu.ts",
+      "path": "9_others/src/engine/parsers/mailu.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7823,7 +7823,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/ntfy.ts",
+      "path": "9_others/src/engine/parsers/ntfy.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7844,7 +7844,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/terraform.ts",
+      "path": "9_others/src/engine/parsers/terraform.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7873,7 +7873,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/parsers/wireguard.ts",
+      "path": "9_others/src/engine/parsers/wireguard.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [
@@ -7900,7 +7900,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/preview-app-urls.ts",
+      "path": "9_others/src/engine/preview-app-urls.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -7914,7 +7914,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-build-per-container.sh",
+      "path": "9_others/src/engine/test-build-per-container.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7928,7 +7928,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-caddy-declarative.sh",
+      "path": "9_others/src/engine/test-caddy-declarative.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7942,7 +7942,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-derivers-json.sh",
+      "path": "9_others/src/engine/test-derivers-json.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7956,7 +7956,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-engine-no-transients.sh",
+      "path": "9_others/src/engine/test-engine-no-transients.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7968,7 +7968,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-external-consumers.sh",
+      "path": "9_others/src/engine/test-external-consumers.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -7986,7 +7986,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/test-kg-derive.sh",
+      "path": "9_others/src/engine/test-kg-derive.sh",
       "lang": "sh",
       "role": "engine",
       "exports": [
@@ -8000,7 +8000,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/validate-build-json.ts",
+      "path": "9_others/src/engine/validate-build-json.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -8011,7 +8011,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/src/engine/validate-build-schema.ts",
+      "path": "9_others/src/engine/validate-build-schema.ts",
       "lang": "ts",
       "role": "engine",
       "exports": [],
@@ -8024,7 +8024,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/test/test_cypht.sh",
+      "path": "9_others/test/test_cypht.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8038,7 +8038,7 @@
       ]
     },
     {
-      "path": "1_configs/test/test_etc_hosts_clean.sh",
+      "path": "9_others/test/test_etc_hosts_clean.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8050,7 +8050,7 @@
       ]
     },
     {
-      "path": "1_configs/test/test_firewall_owners.sh",
+      "path": "9_others/test/test_firewall_owners.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8064,7 +8064,7 @@
       ]
     },
     {
-      "path": "1_configs/test/test_maddy_filtering.sh",
+      "path": "9_others/test/test_maddy_filtering.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -8076,7 +8076,7 @@
       ]
     },
     {
-      "path": "1_configs/test/test_mail_bind.sh",
+      "path": "9_others/test/test_mail_bind.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [

@@ -1,1 +1,1 @@
-../../1_configs/src/gha/scripts/cloud-ship-container-engine.sh
+../../1_cicd/src/scripts/cloud-ship-container-engine.sh

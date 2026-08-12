@@ -1,5 +1,5 @@
 {
-  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 1_configs/src/engine/derive-code-signatures.ts",
+  "_warning": "AUTO-GENERATED — deterministic signature extract. Regenerate: tsx 9_others/src/engine/derive-code-signatures.ts",
   "_meta": {
     "description": "Per-file code signatures for repo 'front' — structure only (exports/imports/symbols), no bodies.",
     "format_version": 1
@@ -506,7 +506,7 @@
       ]
     },
     {
-      "path": "1_configs/build.sh",
+      "path": "9_others/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -524,7 +524,7 @@
       ]
     },
     {
-      "path": "1_configs/src/engine/libs/inject-header.sh",
+      "path": "9_others/src/engine/libs/inject-header.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -558,7 +558,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/_engine.sh",
+      "path": "9_others/src/deploy/scripts/_engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -640,7 +640,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/build.sh",
+      "path": "9_others/src/deploy/scripts/build.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -680,7 +680,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-git-nuke.sh",
+      "path": "9_others/src/deploy/scripts/cloud-git-nuke.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -704,7 +704,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/cloud-git-sync.sh",
+      "path": "9_others/src/deploy/scripts/cloud-git-sync.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -730,7 +730,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-data-json-js-wrapper.sh",
+      "path": "9_others/src/deploy/scripts/front-data-json-js-wrapper.sh",
       "lang": "sh",
       "role": "script",
       "exports": [],
@@ -740,7 +740,7 @@
       "symbols": []
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-image-encoder.sh",
+      "path": "9_others/src/deploy/scripts/front-image-encoder.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -752,7 +752,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-pwa-icons.sh",
+      "path": "9_others/src/deploy/scripts/front-pwa-icons.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -764,7 +764,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-ship-repo-workflow-engine.sh",
+      "path": "9_others/src/deploy/scripts/front-ship-repo-workflow-engine.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -782,7 +782,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-sw-build.sh",
+      "path": "9_others/src/deploy/scripts/front-sw-build.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -794,7 +794,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-sw-init.sh",
+      "path": "9_others/src/deploy/scripts/front-sw-init.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -810,7 +810,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/scripts/front-sw-rollout.sh",
+      "path": "9_others/src/deploy/scripts/front-sw-rollout.sh",
       "lang": "sh",
       "role": "script",
       "exports": [
@@ -830,7 +830,7 @@
       ]
     },
     {
-      "path": "1_configs/src/templates/console-logs.ts",
+      "path": "9_others/src/templates/console-logs.ts",
       "lang": "ts",
       "role": "module",
       "exports": [],
@@ -850,7 +850,7 @@
       ]
     },
     {
-      "path": "1_configs/src/templates/script-service-worker.ts",
+      "path": "9_others/src/templates/script-service-worker.ts",
       "lang": "ts",
       "role": "module",
       "exports": [],
@@ -863,7 +863,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_engine_copy_glob.sh",
+      "path": "9_others/src/deploy/test/test_engine_copy_glob.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -877,7 +877,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_engine_sw_roundtrip.sh",
+      "path": "9_others/src/deploy/test/test_engine_sw_roundtrip.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -893,7 +893,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_framework.sh",
+      "path": "9_others/src/deploy/test/test_framework.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -909,7 +909,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_front_cache_hash.sh",
+      "path": "9_others/src/deploy/test/test_front_cache_hash.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -923,7 +923,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_front_cache_hashes_map.sh",
+      "path": "9_others/src/deploy/test/test_front_cache_hashes_map.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -937,7 +937,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_front_sw_build.sh",
+      "path": "9_others/src/deploy/test/test_front_sw_build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -953,7 +953,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_front_sw_precache.sh",
+      "path": "9_others/src/deploy/test/test_front_sw_precache.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -967,7 +967,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_front_sw_register.sh",
+      "path": "9_others/src/deploy/test/test_front_sw_register.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -981,7 +981,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_sw_cache_hardening.sh",
+      "path": "9_others/src/deploy/test/test_sw_cache_hardening.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -995,7 +995,7 @@
       ]
     },
     {
-      "path": "1_configs/src/deploy/test/test_watcher_reap.sh",
+      "path": "9_others/src/deploy/test/test_watcher_reap.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [
@@ -1019,7 +1019,7 @@
       ]
     },
     {
-      "path": "1_configs/build.sh",
+      "path": "9_others/build.sh",
       "lang": "sh",
       "role": "shell",
       "exports": [

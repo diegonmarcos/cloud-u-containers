@@ -1,5 +1,5 @@
 {
-  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 1_configs/build.sh all`.",
+  "_warning": "DO NOT EDIT — AUTO-GENERATED FILE. Source of truth lives in a_solutions/*/build.json + config.json + b_infra/*/build.json. Edits here are overwritten on every `bash 9_others/build.sh all`.",
   "_meta": {
     "description": "postlite-ntfy container config (service=postlite, role=postlite-ntfy)",
     "format_version": 1,
@@ -22,7 +22,7 @@
         "per_container": "1_cloud-configs/dist/build-{container_or_service_name}.json (one per container, plus one per container-less service — derive output)",
         "archived": "1_cloud-configs/dist/z_archive/cloud-data-{slice}.json (deprecated split files — kept for soft-transition fallbacks; consumers should read consolidated instead)"
       },
-      "rebuild_command": "bash 1_configs/build.sh all"
+      "rebuild_command": "bash 9_others/build.sh all"
     }
   },
   "_generated": "",

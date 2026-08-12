@@ -27,7 +27,7 @@ has been validated on prod for at least one full cleanup cycle.
 not copied into `dist/assets/` and not mounted into the maddy container.
 `build.json#lifecycle` does not reference them. They are git-only.
 
-A separate tester (`1_configs/test/test_maddy_filtering.sh`) asserts that
+A separate tester (`9_others/test/test_maddy_filtering.sh`) asserts that
 nothing in the active build pipeline references `src/z-archive/*` paths —
 guards against accidental re-activation.
 

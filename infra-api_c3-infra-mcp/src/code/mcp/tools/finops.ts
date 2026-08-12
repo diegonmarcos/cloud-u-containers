@@ -64,9 +64,9 @@ function loadTopology(): { vms: Record<string, TopologyVm>; services: Record<str
   // 2026-04-27 migrated: cloud-data-topology.json legacy fallback dropped — consolidated covers all data
   const candidates = [
     "/app/build-c3-infra-mcp.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "build-c3-infra-mcp.json"),
+    join(CLOUD_DATA_DIR, "..", "cloud", "9_others", "dist", "build-c3-infra-mcp.json"),
     "/app/_cloud-data-consolidated.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"),
+    join(CLOUD_DATA_DIR, "..", "cloud", "9_others", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
   ];
   for (const p of candidates) {
@@ -379,7 +379,7 @@ async function finOpsAssets(): Promise<string> {
   // 2026-04-27 migrated: cloud-data-cloudflare-dns.json → _cloud-data-consolidated.json[.dns]
   const cfCandidates = [
     "/app/_cloud-data-consolidated.json",
-    join(CLOUD_DATA_DIR, "..", "cloud", "1_configs", "dist", "_cloud-data-consolidated.json"),
+    join(CLOUD_DATA_DIR, "..", "cloud", "9_others", "dist", "_cloud-data-consolidated.json"),
     join(CLOUD_DATA_DIR, "_cloud-data-consolidated.json"),
   ];
   const cfPath = cfCandidates.find((p) => existsSync(p));
