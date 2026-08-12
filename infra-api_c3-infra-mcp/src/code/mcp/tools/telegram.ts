@@ -353,13 +353,18 @@ export function registerTelegramTools(server: McpServer) {
           return textResult(`Telegram error: ${sent.description ?? "unknown error"}`, true);
         }
 
-        // Skip stale traffic: only entries appended to the inbox after this
-        // watermark count as "the reply".
-        const watermark = inbox.length;
+        // Skip stale traffic: only entries with an updateId greater than this
+        // watermark count as "the reply". This must be the highest updateId
+        // currently in the inbox, NOT a positional index — appendInbox shifts
+        // the oldest entry out once the inbox hits INBOX_CAPACITY, so once
+        // the inbox is full, inbox.length is pinned at capacity forever and a
+        // positional watermark would make this loop scan zero entries for
+        // the rest of the process's life.
+        const watermark = inbox.reduce((max, entry) => Math.max(max, entry.updateId), 0);
 
         while (Date.now() < deadlineMs) {
-          for (let i = watermark; i < inbox.length; i++) {
-            const entry = inbox[i];
+          for (const entry of inbox) {
+            if (entry.updateId <= watermark) continue;
             if (String(entry.chatId) !== targetChatId) continue;
             if (thread_id !== undefined && entry.threadId !== thread_id) continue;
             return textResult(JSON.stringify({ replied: true, text: entry.text }));
