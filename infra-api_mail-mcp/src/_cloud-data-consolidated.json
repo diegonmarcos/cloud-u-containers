@@ -214,11 +214,15 @@
     "gcp-E2-f_0": {
       "ip": "35.226.147.64",
       "specs": {
-        "cpu": 1,
+        "cpu": 2,
         "ram_gb": 1,
         "disk_gb": 30,
         "arch": "x86_64",
-        "shape": "e2-micro"
+        "shape": "e2-micro",
+        "machine_type": "e2-micro",
+        "cloud_name": "gcp-proxy",
+        "cloud_zone": "us-central1-a",
+        "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/gcp-proxy"
       },
       "description": "GCloud Free - E2 Micro 0 - Central Proxy + Control",
       "wg_ip": "10.0.0.1",
@@ -281,8 +285,9 @@
         "host_secret": "GCP_PROXY_HOST",
         "user_secret": "GCP_PROXY_USER"
       },
-      "gcloud_instance": "arch-1",
+      "gcloud_instance": "gcp-proxy",
       "gcloud_zone": "us-central1-a",
+      "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/gcp-proxy",
       "services": [
         "http-to-smtp-proxy-api",
         "postlite",
@@ -11599,11 +11604,15 @@
         "home": "/home/diego",
         "rescue_port": 2200,
         "specs": {
-          "cpu": 1,
+          "cpu": 2,
           "ram_gb": 1,
           "disk_gb": 30,
           "arch": "x86_64",
-          "shape": "e2-micro"
+          "shape": "e2-micro",
+          "machine_type": "e2-micro",
+          "cloud_name": "gcp-proxy",
+          "cloud_zone": "us-central1-a",
+          "instance_id": "projects/diegonmarcos-infra-prod/zones/us-central1-a/instances/gcp-proxy"
         },
         "public_ports": [
           {
