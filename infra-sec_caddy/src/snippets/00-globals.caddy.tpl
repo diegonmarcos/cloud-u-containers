@@ -7,7 +7,7 @@
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
   # from .secrets (env_file in compose.nix). Phase 2a of public-surface
-  # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
+  # collapse plan (a0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
   acme_dns cloudflare {env.CF_API_TOKEN}
   # caddy-l4 owns :443 (Phase 3): https_port 8443 keeps Caddy HTTPS off
   # the public socket so caddy-l4 SNI mux + fall-through can run.
