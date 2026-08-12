@@ -11,7 +11,7 @@ Retirement:
 - Source removed from the active tree, then archived here (source only; the
   regenerable `dist/` and per-container `build-crawlee_*.json` symlinks were
   dropped). Under `z_archive/`, so `2_configs` no longer scans it.
-- Migration plan: `0_tasks/plan_scrappers-api-migration.md`.
+- Migration plan: `a0_tasks/plan_scrappers-api-migration.md`.
 
 The running `crawlee_*` containers + `crawlee_postgres/redis/minio` volumes on
 oci-apps are stopped/removed out-of-band (backup first — Apify datasets/KV live

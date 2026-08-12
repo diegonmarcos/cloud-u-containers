@@ -7,7 +7,7 @@
   # ACME via DNS-01 (Cloudflare) — eliminates port-80 HTTP-01 dependency
   # and supports wildcard certs for *.diegonmarcos.com. Token sourced
   # from .secrets (env_file in compose.nix). Phase 2a of public-surface
-  # collapse plan (0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
+  # collapse plan (a0_tasks/TASK-net-20260508-01_collapse-public-to-443.md).
   # resolvers 1.1.1.1: caddy-public's HOST resolver is Hickory (10.0.0.1),
   # which answers *.diegonmarcos.com → 10.0.0.1 and has NO view of the
   # Cloudflare _acme-challenge TXT. Without this, certmagic creates the TXT
