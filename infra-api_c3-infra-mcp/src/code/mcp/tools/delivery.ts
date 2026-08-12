@@ -1,5 +1,5 @@
-// ── Delivery Pillar — "How we ship" (6 tools) ──
-// Build, deploy, Docker build, secrets, backup
+// ── Delivery Pillar — "How we ship" (7 tools) ──
+// Build, deploy, Docker build, secrets, backup, repo create
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -264,6 +264,45 @@ export function registerDeliveryTools(server: McpServer) {
             `Exit code: ${result.exitCode}`,
             result.stdout ? `\n--- output ---\n${result.stdout.slice(-3000)}` : "",
             result.stderr ? `\n--- stderr ---\n${result.stderr.slice(-1000)}` : "",
+          ].join("\n"),
+        }],
+        isError: !result.ok,
+      };
+    }
+  );
+
+  // ── Repo (1 tool) ──
+
+  server.tool(
+    "devops.repo.create",
+    "Create a GitHub repository via the gh CLI. Private by default — pass visibility 'public' to publish.",
+    {
+      name: z.string().describe("Repository name, or owner/name to create under an org"),
+      visibility: z.enum(["private", "public"]).optional().describe("Visibility (default: private)"),
+      description: z.string().optional().describe("Repository description"),
+      dryRun: z.boolean().optional().describe("Print the gh command without running it (default: false)"),
+    },
+    async ({ name, visibility, description, dryRun }) => {
+      for (const part of name.split("/")) validatePath(part);
+
+      const args = ["repo", "create", name, `--${visibility ?? "private"}`];
+      if (description) args.push("--description", description);
+
+      if (dryRun) {
+        return { content: [{ type: "text" as const, text: `DRY RUN: gh ${args.join(" ")}` }] };
+      }
+
+      const result = exec("gh", args, { timeout: 30_000 });
+      audit("devops.repo.create", name, result.ok ? "OK" : `FAILED (exit ${result.exitCode})`);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: [
+            `Create repo ${name} (${visibility ?? "private"}): ${result.ok ? "SUCCESS" : "FAILED"}`,
+            `Exit code: ${result.exitCode}`,
+            result.stdout ? `\n--- stdout ---\n${result.stdout.slice(-2000)}` : "",
+            result.stderr ? `\n--- stderr ---\n${result.stderr.slice(-2000)}` : "",
           ].join("\n"),
         }],
         isError: !result.ok,
